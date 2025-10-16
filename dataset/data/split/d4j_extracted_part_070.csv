@@ -1,0 +1,1154 @@
+code_snippet,type,score
+"  @Override
+  public void endElement(String name, String nsPrefix, String nsURI) throws Exception {
+    myCurrentDepth--;
+    myCurrentTag = null;
+  }",method,
+"  @Override
+  public void addAttribute(@NonNls final String key, final String nsPrefix, final String nsURI, final String value, final String type)
+      throws Exception {
+    if (myCurrentDepth == 1 && ""schema"".equals(myCurrentTag)) {
+      if (""targetNamespace"".equals(key)) {
+        myNamespace = value;
+      }
+      else if (""version"".equals(key)) {
+        myVersion = value;
+      }
+    }
+    else if (""element"".equals(myCurrentTag)) {
+      if (myCurrentDepth < 3 && ""name"".equals(key)) {
+        myTags.add(value);
+      }
+      else if (""ref"".equals(key)) {
+        myReferencedTags.add(XmlUtil.getLocalName(value).toString());
+      }
+    }
+  }",method,
+"  @Override
+  public int compareTo(@NotNull XsdNamespaceBuilder o) {
+    return Comparing.compare(myNamespace, o.myNamespace);
+  }",method,
+"  public boolean hasTag(@NotNull String tagName) {
+    return myTags.contains(tagName);
+  }",method,
+"  public int getRating(@Nullable String tagName, @Nullable String version) {
+    int rate = 0;
+    if (tagName != null && myTags.contains(tagName)) {
+      rate |= 0x02;
+    }
+    if (version != null && version.equals(myVersion)) {
+      rate |= 0x01;
+    }
+    return rate;
+  }",method,
+"  private XsdNamespaceBuilder() {
+    myTags = new ArrayList<>();
+    myRootTags = new ArrayList<>();
+  }",method,
+"  XsdNamespaceBuilder(String namespace, String version, List<String> tags, List<String> rootTags) {
+    myNamespace = namespace;
+    myVersion = version;
+    myTags = tags;
+    myRootTags = rootTags;
+  }",method,
+"  public String getNamespace() {
+    return myNamespace;
+  }",method,
+"  public String getVersion() {
+    return myVersion;
+  }",method,
+"  public List<String> getTags() {
+    return myTags;
+  }",method,
+"  public List<String> getRootTags() {
+    return myRootTags;
+  }",method,
+"  public List<String> getAttributes() {
+    return myAttributes;
+  }",method,
+"  @Override
+  public boolean equals(Object o) {
+    if (this == o) return true;
+    if (o == null || getClass() != o.getClass()) return false;
+    XsdNamespaceBuilder builder = (XsdNamespaceBuilder)o;
+    if (myNamespace != null ? !myNamespace.equals(builder.myNamespace) : builder.myNamespace != null) return false;
+    if (myVersion != null ? !myVersion.equals(builder.myVersion) : builder.myVersion != null) return false;
+    if (myTags != null ? !myTags.equals(builder.myTags) : builder.myTags != null) return false;
+    return true;
+  }",method,
+"  @Override
+  public int hashCode() {
+    int result = myNamespace != null ? myNamespace.hashCode() : 0;
+    result = 31 * result + (myVersion != null ? myVersion.hashCode() : 0);
+    result = 31 * result + (myTags != null ? myTags.hashCode() : 0);
+    return result;
+  }",method,
+"import java.util.Map;
+class FakeImmutableCacheByteStreamImpl extends ByteStreamImplBase {
+  private final Map<ReadRequest, ReadResponse> cannedReplies;
+  private final Map<ReadRequest, Integer> numErrors;
+  // Start returning the correct response after this number of errors is reached.
+  private static final int MAX_ERRORS = 3;
+  public FakeImmutableCacheByteStreamImpl(Map<Digest, String> contents) {
+    ImmutableMap.Builder<ReadRequest, ReadResponse> b = ImmutableMap.builder();
+    for (Map.Entry<Digest, String> e : contents.entrySet()) {
+      b.put(
+          ReadRequest.newBuilder()
+              .setResourceName(""blobs/"" + e.getKey().getHash() + ""/"" + e.getKey().getSizeBytes())
+              .build(),
+          ReadResponse.newBuilder().setData(ByteString.copyFromUtf8(e.getValue())).build());
+    }
+    cannedReplies = b.build();
+    numErrors = new HashMap<>();
+  }
+  public FakeImmutableCacheByteStreamImpl(Digest digest, String contents) {
+    this(ImmutableMap.of(digest, contents));
+  }
+  public FakeImmutableCacheByteStreamImpl(Digest d1, String c1, Digest d2, String c2) {
+    this(ImmutableMap.of(d1, c1, d2, c2));
+  }
+  @Override
+  public void read(ReadRequest request, StreamObserver<ReadResponse> responseObserver) {
+    assertThat(cannedReplies.containsKey(request)).isTrue();
+    int errCount = numErrors.getOrDefault(request, 0);
+    if (errCount < MAX_ERRORS) {
+      numErrors.put(request, errCount + 1);
+      responseObserver.onError(Status.UNAVAILABLE.asRuntimeException());  // Retriable error.
+    } else {
+      responseObserver.onNext(cannedReplies.get(request));
+      responseObserver.onCompleted();
+    }
+  }
+}",class,
+"  public FakeImmutableCacheByteStreamImpl(Map<Digest, String> contents) {
+    ImmutableMap.Builder<ReadRequest, ReadResponse> b = ImmutableMap.builder();
+    for (Map.Entry<Digest, String> e : contents.entrySet()) {
+      b.put(
+          ReadRequest.newBuilder()
+              .setResourceName(""blobs/"" + e.getKey().getHash() + ""/"" + e.getKey().getSizeBytes())
+              .build(),
+          ReadResponse.newBuilder().setData(ByteString.copyFromUtf8(e.getValue())).build());
+    }
+    cannedReplies = b.build();
+    numErrors = new HashMap<>();
+  }",method,
+"  public FakeImmutableCacheByteStreamImpl(Digest digest, String contents) {
+    this(ImmutableMap.of(digest, contents));
+  }",method,
+"  public FakeImmutableCacheByteStreamImpl(Digest d1, String c1, Digest d2, String c2) {
+    this(ImmutableMap.of(d1, c1, d2, c2));
+  }",method,
+"  @Override
+  public void read(ReadRequest request, StreamObserver<ReadResponse> responseObserver) {
+    assertThat(cannedReplies.containsKey(request)).isTrue();
+    int errCount = numErrors.getOrDefault(request, 0);
+    if (errCount < MAX_ERRORS) {
+      numErrors.put(request, errCount + 1);
+      responseObserver.onError(Status.UNAVAILABLE.asRuntimeException());  // Retriable error.
+    } else {
+      responseObserver.onNext(cannedReplies.get(request));
+      responseObserver.onCompleted();
+    }
+  }",method,
+"    if (errCount < MAX_ERRORS) {
+      numErrors.put(request, errCount + 1);
+      responseObserver.onError(Status.UNAVAILABLE.asRuntimeException());  // Retriable error.
+    }",method,
+"public abstract class AbstractBuildOption<T> implements BuildOption<T> {
+    protected final String gradleProperty;
+    protected final List<CommandLineOptionConfiguration> commandLineOptionConfigurations;
+    public AbstractBuildOption(String gradleProperty) {
+        this(gradleProperty, new CommandLineOptionConfiguration[] {});
+    }
+    public AbstractBuildOption(String gradleProperty, CommandLineOptionConfiguration... commandLineOptionConfiguration) {
+        this.gradleProperty = gradleProperty;
+        this.commandLineOptionConfigurations = commandLineOptionConfiguration != null ? Arrays.asList(commandLineOptionConfiguration) : Collections.<CommandLineOptionConfiguration>emptyList();
+    }
+    @Override
+    public String getGradleProperty() {
+        return gradleProperty;
+    }
+    protected boolean isTrue(String value) {
+        return value != null && value.trim().equalsIgnoreCase(""true"");
+    }
+    protected CommandLineOption configureCommandLineOption(CommandLineParser parser, String[] options, String description, String deprecationWarning, boolean incubating) {
+        CommandLineOption option = parser.option(options)
+            .hasDescription(description)
+            .deprecated(deprecationWarning);
+        if (incubating) {
+            option.incubating();
+        }
+        return option;
+    }
+}",class,
+"    public AbstractBuildOption(String gradleProperty) {
+        this(gradleProperty, new CommandLineOptionConfiguration[] {});
+    }",method,
+"    public AbstractBuildOption(String gradleProperty, CommandLineOptionConfiguration... commandLineOptionConfiguration) {
+        this.gradleProperty = gradleProperty;
+        this.commandLineOptionConfigurations = commandLineOptionConfiguration != null ? Arrays.asList(commandLineOptionConfiguration) : Collections.<CommandLineOptionConfiguration>emptyList();
+    }",method,
+"    @Override
+    public String getGradleProperty() {
+        return gradleProperty;
+    }",method,
+"    protected boolean isTrue(String value) {
+        return value != null && value.trim().equalsIgnoreCase(""true"");
+    }",method,
+"    protected CommandLineOption configureCommandLineOption(CommandLineParser parser, String[] options, String description, String deprecationWarning, boolean incubating) {
+        CommandLineOption option = parser.option(options)
+            .hasDescription(description)
+            .deprecated(deprecationWarning);
+        if (incubating) {
+            option.incubating();
+        }
+        return option;
+    }",method,
+"        if (incubating) {
+            option.incubating();
+        }",method,
+"public class MappingTest_createTable_2 extends TestCase {
+    String sql = ""create table database_source.table_source(\n"" +
+            ""source_key int,\n"" +
+            ""source_value varchar(32),\n"" +
+            ""primary key(source_key)\n"" +
+            "");"";
+    Map<String, String> mapping = Collections.singletonMap(""database_source.table_source"", ""database_target.table_target"");
+    public void test_mapping_createTable() throws Exception {
+        String result = SQLUtils.refactor(sql, null, mapping);
+        assertEquals(""CREATE TABLE database_target.table_target (\n"" +
+                ""\tsource_key int,\n"" +
+                ""\tsource_value varchar(32),\n"" +
+                ""\tPRIMARY KEY (source_key)\n"" +
+                "");"", result);
+    }
+    public void test_mapping_createTable_mysql() throws Exception {
+        String result = SQLUtils.refactor(sql, JdbcConstants.MYSQL, mapping);
+        assertEquals(""CREATE TABLE database_target.table_target (\n"" +
+                ""\tsource_key int,\n"" +
+                ""\tsource_value varchar(32),\n"" +
+                ""\tPRIMARY KEY (source_key)\n"" +
+                "");"", result);
+    }
+    public void test_mapping_createTable_oracle() throws Exception {
+        String result = SQLUtils.refactor(sql, JdbcConstants.ORACLE, mapping);
+        assertEquals(""CREATE TABLE database_target.table_target (\n"" +
+                ""\tsource_key int,\n"" +
+                ""\tsource_value varchar(32),\n"" +
+                ""\tPRIMARY KEY (source_key)\n"" +
+                "");"", result);
+    }
+    public void test_mapping_createTable_pg() throws Exception {
+        String result = SQLUtils.refactor(sql, JdbcConstants.POSTGRESQL, mapping);
+        assertEquals(""CREATE TABLE database_target.table_target (\n"" +
+                ""\tsource_key int,\n"" +
+                ""\tsource_value varchar(32),\n"" +
+                ""\tPRIMARY KEY (source_key)\n"" +
+                "");"", result);
+    }
+    public void test_mapping_createTable_sqlserver() throws Exception {
+        String result = SQLUtils.refactor(sql, JdbcConstants.SQL_SERVER, mapping);
+        assertEquals(""CREATE TABLE database_target.table_target (\n"" +
+                ""\tsource_key int,\n"" +
+                ""\tsource_value varchar(32),\n"" +
+                ""\tPRIMARY KEY (source_key)\n"" +
+                "");"", result);
+    }
+    public void test_mapping_createTable_db2() throws Exception {
+        String result = SQLUtils.refactor(sql, JdbcConstants.DB2, mapping);
+        assertEquals(""CREATE TABLE database_target.table_target (\n"" +
+                ""\tsource_key int,\n"" +
+                ""\tsource_value varchar(32),\n"" +
+                ""\tPRIMARY KEY (source_key)\n"" +
+                "");"", result);
+    }
+}",class,
+"    public void test_mapping_createTable() throws Exception {
+        String result = SQLUtils.refactor(sql, null, mapping);
+        assertEquals(""CREATE TABLE database_target.table_target (\n"" +
+                ""\tsource_key int,\n"" +
+                ""\tsource_value varchar(32),\n"" +
+                ""\tPRIMARY KEY (source_key)\n"" +
+                "");"", result);
+    }",method,
+"    public void test_mapping_createTable_mysql() throws Exception {
+        String result = SQLUtils.refactor(sql, JdbcConstants.MYSQL, mapping);
+        assertEquals(""CREATE TABLE database_target.table_target (\n"" +
+                ""\tsource_key int,\n"" +
+                ""\tsource_value varchar(32),\n"" +
+                ""\tPRIMARY KEY (source_key)\n"" +
+                "");"", result);
+    }",method,
+"    public void test_mapping_createTable_oracle() throws Exception {
+        String result = SQLUtils.refactor(sql, JdbcConstants.ORACLE, mapping);
+        assertEquals(""CREATE TABLE database_target.table_target (\n"" +
+                ""\tsource_key int,\n"" +
+                ""\tsource_value varchar(32),\n"" +
+                ""\tPRIMARY KEY (source_key)\n"" +
+                "");"", result);
+    }",method,
+"    public void test_mapping_createTable_pg() throws Exception {
+        String result = SQLUtils.refactor(sql, JdbcConstants.POSTGRESQL, mapping);
+        assertEquals(""CREATE TABLE database_target.table_target (\n"" +
+                ""\tsource_key int,\n"" +
+                ""\tsource_value varchar(32),\n"" +
+                ""\tPRIMARY KEY (source_key)\n"" +
+                "");"", result);
+    }",method,
+"    public void test_mapping_createTable_sqlserver() throws Exception {
+        String result = SQLUtils.refactor(sql, JdbcConstants.SQL_SERVER, mapping);
+        assertEquals(""CREATE TABLE database_target.table_target (\n"" +
+                ""\tsource_key int,\n"" +
+                ""\tsource_value varchar(32),\n"" +
+                ""\tPRIMARY KEY (source_key)\n"" +
+                "");"", result);
+    }",method,
+"    public void test_mapping_createTable_db2() throws Exception {
+        String result = SQLUtils.refactor(sql, JdbcConstants.DB2, mapping);
+        assertEquals(""CREATE TABLE database_target.table_target (\n"" +
+                ""\tsource_key int,\n"" +
+                ""\tsource_value varchar(32),\n"" +
+                ""\tPRIMARY KEY (source_key)\n"" +
+                "");"", result);
+    }",method,
+"final class FragmentDescriptor
+    extends AbstractChainedDescriptor<Object> implements HighlightableDescriptor<Object> {
+  private static final String ID_ATTRIBUTE_NAME = ""id"";
+  private static final String TAG_ATTRIBUTE_NAME = ""tag"";
+  private final FragmentAccessor mAccessor;
+  public static DescriptorMap register(DescriptorMap map) {
+    maybeRegister(map, FragmentCompat.getSupportLibInstance());
+    maybeRegister(map, FragmentCompat.getFrameworkInstance());
+    return map;
+  }
+  private static void maybeRegister(DescriptorMap map, @Nullable FragmentCompat compat) {
+    if (compat != null) {
+      Class<?> fragmentClass = compat.getFragmentClass();
+      LogUtil.d(""Adding support for %s"", fragmentClass.getName());
+      map.registerDescriptor(fragmentClass, new FragmentDescriptor(compat));
+    }
+  }
+  private FragmentDescriptor(FragmentCompat compat) {
+    mAccessor = compat.forFragment();
+  }
+  @Override
+  protected void onGetAttributes(Object element, AttributeAccumulator attributes) {
+    int id = mAccessor.getId(element);
+    if (id != FragmentAccessor.NO_ID) {
+      String value = ResourcesUtil.getIdStringQuietly(
+          element,
+          mAccessor.getResources(element),
+          id);
+      attributes.store(ID_ATTRIBUTE_NAME, value);
+    }
+    String tag = mAccessor.getTag(element);
+    if (tag != null && tag.length() > 0) {
+      attributes.store(TAG_ATTRIBUTE_NAME, tag);
+    }
+  }
+  @Override
+  protected void onGetChildren(Object element, Accumulator<Object> children) {
+    View view = mAccessor.getView(element);
+    if (view != null) {
+      children.store(view);
+    }
+  }
+  @Override
+  @Nullable
+  public View getViewAndBoundsForHighlighting(Object element, Rect bounds) {
+    return mAccessor.getView(element);
+  }
+  @Nullable
+  @Override
+  public Object getElementToHighlightAtPosition(Object element, int x, int y, Rect bounds) {
+    final Descriptor.Host host = getHost();
+    View view = null;
+    HighlightableDescriptor descriptor = null;
+    if (host instanceof AndroidDescriptorHost) {
+      view = mAccessor.getView(element);
+      descriptor = ((AndroidDescriptorHost) host).getHighlightableDescriptor(view);
+    }
+    return descriptor == null
+        ? null
+        : descriptor.getElementToHighlightAtPosition(view, x, y, bounds);
+  }
+}",class,
+"  public static DescriptorMap register(DescriptorMap map) {
+    maybeRegister(map, FragmentCompat.getSupportLibInstance());
+    maybeRegister(map, FragmentCompat.getFrameworkInstance());
+    return map;
+  }",method,
+"  private static void maybeRegister(DescriptorMap map, @Nullable FragmentCompat compat) {
+    if (compat != null) {
+      Class<?> fragmentClass = compat.getFragmentClass();
+      LogUtil.d(""Adding support for %s"", fragmentClass.getName());
+      map.registerDescriptor(fragmentClass, new FragmentDescriptor(compat));
+    }
+  }",method,
+"    if (compat != null) {
+      Class<?> fragmentClass = compat.getFragmentClass();
+      LogUtil.d(""Adding support for %s"", fragmentClass.getName());
+      map.registerDescriptor(fragmentClass, new FragmentDescriptor(compat));
+    }",method,
+"  private FragmentDescriptor(FragmentCompat compat) {
+    mAccessor = compat.forFragment();
+  }",method,
+"  @Override
+  protected void onGetAttributes(Object element, AttributeAccumulator attributes) {
+    int id = mAccessor.getId(element);
+    if (id != FragmentAccessor.NO_ID) {
+      String value = ResourcesUtil.getIdStringQuietly(
+          element,
+          mAccessor.getResources(element),
+          id);
+      attributes.store(ID_ATTRIBUTE_NAME, value);
+    }
+    String tag = mAccessor.getTag(element);
+    if (tag != null && tag.length() > 0) {
+      attributes.store(TAG_ATTRIBUTE_NAME, tag);
+    }
+  }",method,
+"    if (id != FragmentAccessor.NO_ID) {
+      String value = ResourcesUtil.getIdStringQuietly(
+          element,
+          mAccessor.getResources(element),
+          id);
+      attributes.store(ID_ATTRIBUTE_NAME, value);
+    }",method,
+"  @Override
+  protected void onGetChildren(Object element, Accumulator<Object> children) {
+    View view = mAccessor.getView(element);
+    if (view != null) {
+      children.store(view);
+    }
+  }",method,
+"    if (view != null) {
+      children.store(view);
+    }",method,
+"  @Override
+  @Nullable
+  public View getViewAndBoundsForHighlighting(Object element, Rect bounds) {
+    return mAccessor.getView(element);
+  }",method,
+"  @Nullable
+  @Override
+  public Object getElementToHighlightAtPosition(Object element, int x, int y, Rect bounds) {
+    final Descriptor.Host host = getHost();
+    View view = null;
+    HighlightableDescriptor descriptor = null;
+    if (host instanceof AndroidDescriptorHost) {
+      view = mAccessor.getView(element);
+      descriptor = ((AndroidDescriptorHost) host).getHighlightableDescriptor(view);
+    }
+    return descriptor == null
+        ? null
+        : descriptor.getElementToHighlightAtPosition(view, x, y, bounds);
+  }",method,
+"    if (host instanceof AndroidDescriptorHost) {
+      view = mAccessor.getView(element);
+      descriptor = ((AndroidDescriptorHost) host).getHighlightableDescriptor(view);
+    }",method,
+"public class StringBytes implements Serializer {
+	public byte[] getBytes(Object o) {
+		try {
+			return ((String) o).getBytes(""US-ASCII"");
+		} catch (UnsupportedEncodingException uee) { throw new Error(""Unsupported Encoding""); }
+	}
+	public Object construct(byte[] b) {
+		try {
+			return new String(b, ""US-ASCII"");
+		} catch (UnsupportedEncodingException uee) { throw new Error(""Unsupported Encoding""); }
+	}
+}",class,
+"	public byte[] getBytes(Object o) {
+		try {
+			return ((String) o).getBytes(""US-ASCII"");
+		} catch (UnsupportedEncodingException uee) { throw new Error(""Unsupported Encoding""); }
+	}",method,
+"	public Object construct(byte[] b) {
+		try {
+			return new String(b, ""US-ASCII"");
+		} catch (UnsupportedEncodingException uee) { throw new Error(""Unsupported Encoding""); }
+	}",method,
+"public class ApolloAppToWindow { 
+	public static String getNewMxmlName (String dir, String mxml, String transform_prefix) { 
+		if (mxml.indexOf (""\\apollo\\"") != -1  || mxml.indexOf (""/apollo/"") != -1)
+			return mxml;
+		// System.out.println (""This is the getNewMxmlName with mxml=""+ mxml);
+		String className = getSwfClassName(mxml);
+		// System.out.println (""This is the getNewMxmlName className: "" +className);
+		// String subDir = getSwfSubDir(mxml);
+		// System.out.println (""This is the getNewMxmlName swf subdir: "" +subDir);
+		String newName = transform_prefix + className + "".mxml"";
+		// System.out.println (""This is the getNewMxmlName returning: "" +dir+ ""/"" + newName);
+		return dir + ""/"" + newName;
+	}
+	public static String adjustArgList (String args, String mxml, String dir, String prefix) {
+		String className = getSwfClassName (mxml);
+		args += "" -source-path=""+dir;
+		args += "" -includes=""+prefix+className;
+		return args;
+	}
+	public static final String app_string = ""<mx:Application"";
+	public static final String app_string2 = ""</mx:Application"";
+	public static final String replace_string = ""<mx:Window"";
+	public static final String replace_string2 = ""</mx:Window"";
+	public static void transformTestSwfToWindow (String fileName, String dir, String prefix2) {
+		String fileContents = readFileIntoString (fileName);
+		String height = getAttribute (fileName, ""mx:Application"", ""height"");
+		String width = getAttribute (fileName,  ""mx:Application"", ""width"");
+		String addString = """";
+		if (height == null || height.length()==0) 
+			addString = addString+"" height=\""375\"""";
+		if (width == null || width.length()==0) 
+			addString = addString+"" width=\""500\"""";
+		// System.out.println (""This is the applicaton decl w/h: "" + height + "" "" + width);
+		fileContents = fileContents.replaceAll (app_string,  replace_string + addString);
+		fileContents = fileContents.replaceAll (app_string2,  replace_string2);
+		String newFilename = getNewMxmlName (dir, fileName, prefix2);
+		try { 
+			writeStringToFile (fileContents, newFilename);
+		} catch (java.io.FileNotFoundException  fnf) { 
+			try { 
+				new File (newFilename).delete();
+				writeStringToFile (fileContents, newFilename);
+			} catch (Exception  fnf2) { 
+				fnf2.printStackTrace();
+			}
+		} catch (Exception ee) {
+			ee.printStackTrace();
+		}
+	}
+	public static String getAttribute(String fileName, String element, String attr) {
+		File file = null;
+		StringBuffer sb = new StringBuffer();
+		try { 
+			file = new File(fileName);
+  			DocumentBuilderFactory dbf = DocumentBuilderFactory.newInstance();
+  			DocumentBuilder db = dbf.newDocumentBuilder();
+  			Document doc = db.parse(file);
+ 			// System.out.println(""Root element "" + doc.getDocumentElement().getNodeName());
+  			NodeList nodeLst = doc.getElementsByTagName(element);
+			// sort of a hack:
+			Element el = (Element) nodeLst.item(0);
+			return el.getAttribute (attr);
+		} catch (Exception e) { 
+			e.printStackTrace();
+		}
+		return sb.toString();
+	}
+	public static String getBlockFromTestSwf(String fileName, String nodeName) {
+		File file = null;
+		StringBuffer sb = new StringBuffer();
+		try { 
+			file = new File(fileName);
+  			DocumentBuilderFactory dbf = DocumentBuilderFactory.newInstance();
+  			DocumentBuilder db = dbf.newDocumentBuilder();
+  			Document doc = db.parse(file);
+  			doc.getDocumentElement().normalize();
+ 			// System.out.println(""Root element "" + doc.getDocumentElement().getNodeName());
+  			NodeList nodeLst = doc.getElementsByTagName(nodeName);
+		      	TransformerFactory transfac = TransformerFactory.newInstance();
+      			Transformer trans = transfac.newTransformer();
+      			trans.setOutputProperty(OutputKeys.OMIT_XML_DECLARATION, ""yes"");
+      			trans.setOutputProperty(OutputKeys.INDENT, ""yes"");
+      			// Print the DOM node
+      			StringWriter sw = new StringWriter();
+      			StreamResult result = new StreamResult(sw);
+			for (int s = 0; s < nodeLst.getLength(); s++) {
+    				Node aNode = nodeLst.item(s);
+      				DOMSource source = new DOMSource(aNode);
+      				trans.transform(source, result);
+      				String xmlString = sw.toString();
+				// System.out.println (""adding styles: "" + xmlString);
+				sb.append (xmlString);
+			}
+		} catch (Exception e) { 
+			e.printStackTrace();
+		}
+		return sb.toString();
+	}
+	public static String getSwfSubDir(String swfString) {
+		String tmp = """";
+		if (swfString.indexOf (File.separator)!= -1) {
+			tmp = swfString.substring (0, swfString.lastIndexOf (File.separator));
+		}
+		return  tmp;
+	}
+	/// given an mxml
+	public static String getSwfClassName(String swfString) {
+		String tmp = null;
+		if (swfString.indexOf (File.separator)!= -1) {
+			tmp = swfString.substring (swfString.lastIndexOf (File.separator)+1, swfString.indexOf ("".mxml""));
+		}
+		return  tmp;
+	}
+	public static final String stock_string = ""CLASS_NAME"";
+	public static final String script_start = ""<mx:Script"";
+	public static void transformDummyAndCopy (String prefix, String prefix2, String mxml, String templateFile, String swfDir, String insertBlock) {
+		String className = getSwfClassName (mxml);
+		String fileContents = readFileIntoString (templateFile);
+		int insertPoint = -1;
+		fileContents = fileContents.replaceAll (stock_string, prefix2+className);
+		if (insertBlock.length() > 0) {
+			insertPoint = fileContents.indexOf (script_start);
+			StringBuffer sb = new StringBuffer(fileContents);
+			sb.insert ( (insertPoint-1), insertBlock);
+			fileContents = sb.toString();
+		}
+		try { 	
+		writeStringToFile (fileContents, getNewMxmlName(swfDir, mxml, prefix));
+		} catch (Exception e) { 
+			e.printStackTrace();
+		}
+	}
+	public static String doAll (String args, String prefix, String prefix2, String mxml, String templateFile, String targetDir) {
+		if (mxml.indexOf (""\\apollo\\"") != -1  || mxml.indexOf (""/apollo/"") != -1)
+			return args;
+		// System.out.println (""here is the dir AApp got; "" + targetDir);
+		/// need more from the Test swf
+		String insertBlock = getBlockFromTestSwf (mxml, ""mx:Style"");	
+		/// do all, then return the adjusted Arg
+		transformDummyAndCopy (prefix, prefix2, mxml, templateFile, targetDir, insertBlock);
+		transformTestSwfToWindow (mxml, targetDir, prefix2);
+		args += "" -includes=WaitForWindow"";
+		return adjustArgList(args, mxml, targetDir, prefix2);
+	}
+	private static void writeStringToFile (String str, String fileName) throws Exception {
+		BufferedOutputStream bos = new BufferedOutputStream (new FileOutputStream (fileName));
+		bos.write (str.getBytes(), 0, str.length());
+		bos.flush();
+		bos.close();
+    	}
+	public static String readFileIntoString (String mxml) {
+		try { 
+		BufferedInputStream bis = new BufferedInputStream (new FileInputStream (mxml));
+		ByteArrayOutputStream bos = new ByteArrayOutputStream();
+		int av = 0;
+		byte [] b = null;
+		String contents = null;
+		while ((av = bis.available()) > 0) { 
+			b = new byte[av];
+			bis.read (b, 0, av);
+			bos.write (b, 0, av);
+		}
+		bis.close();
+		return bos.toString();	
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+		return (String)null;
+    	}
+	public static void main (String [] args) { 
+	}	
+}",class,
+"	public static String getNewMxmlName (String dir, String mxml, String transform_prefix) { 
+		if (mxml.indexOf (""\\apollo\\"") != -1  || mxml.indexOf (""/apollo/"") != -1)
+			return mxml;
+		// System.out.println (""This is the getNewMxmlName with mxml=""+ mxml);
+		String className = getSwfClassName(mxml);
+		// System.out.println (""This is the getNewMxmlName className: "" +className);
+		// String subDir = getSwfSubDir(mxml);
+		// System.out.println (""This is the getNewMxmlName swf subdir: "" +subDir);
+		String newName = transform_prefix + className + "".mxml"";
+		// System.out.println (""This is the getNewMxmlName returning: "" +dir+ ""/"" + newName);
+		return dir + ""/"" + newName;
+	}",method,
+"	public static String adjustArgList (String args, String mxml, String dir, String prefix) {
+		String className = getSwfClassName (mxml);
+		args += "" -source-path=""+dir;
+		args += "" -includes=""+prefix+className;
+		return args;
+	}",method,
+"	public static void transformTestSwfToWindow (String fileName, String dir, String prefix2) {
+		String fileContents = readFileIntoString (fileName);
+		String height = getAttribute (fileName, ""mx:Application"", ""height"");
+		String width = getAttribute (fileName,  ""mx:Application"", ""width"");
+		String addString = """";
+		if (height == null || height.length()==0) 
+			addString = addString+"" height=\""375\"""";
+		if (width == null || width.length()==0) 
+			addString = addString+"" width=\""500\"""";
+		// System.out.println (""This is the applicaton decl w/h: "" + height + "" "" + width);
+		fileContents = fileContents.replaceAll (app_string,  replace_string + addString);
+		fileContents = fileContents.replaceAll (app_string2,  replace_string2);
+		String newFilename = getNewMxmlName (dir, fileName, prefix2);
+		try { 
+			writeStringToFile (fileContents, newFilename);
+		} catch (java.io.FileNotFoundException  fnf) { 
+			try { 
+				new File (newFilename).delete();
+				writeStringToFile (fileContents, newFilename);
+			} catch (Exception  fnf2) { 
+				fnf2.printStackTrace();
+			}
+		} catch (Exception ee) {
+			ee.printStackTrace();
+		}
+	}",method,
+"	public static String getAttribute(String fileName, String element, String attr) {
+		File file = null;
+		StringBuffer sb = new StringBuffer();
+		try { 
+			file = new File(fileName);
+  			DocumentBuilderFactory dbf = DocumentBuilderFactory.newInstance();
+  			DocumentBuilder db = dbf.newDocumentBuilder();
+  			Document doc = db.parse(file);
+ 			// System.out.println(""Root element "" + doc.getDocumentElement().getNodeName());
+  			NodeList nodeLst = doc.getElementsByTagName(element);
+			// sort of a hack:
+			Element el = (Element) nodeLst.item(0);
+			return el.getAttribute (attr);
+		} catch (Exception e) { 
+			e.printStackTrace();
+		}
+		return sb.toString();
+	}",method,
+"	public static String getBlockFromTestSwf(String fileName, String nodeName) {
+		File file = null;
+		StringBuffer sb = new StringBuffer();
+		try { 
+			file = new File(fileName);
+  			DocumentBuilderFactory dbf = DocumentBuilderFactory.newInstance();
+  			DocumentBuilder db = dbf.newDocumentBuilder();
+  			Document doc = db.parse(file);
+  			doc.getDocumentElement().normalize();
+ 			// System.out.println(""Root element "" + doc.getDocumentElement().getNodeName());
+  			NodeList nodeLst = doc.getElementsByTagName(nodeName);
+		      	TransformerFactory transfac = TransformerFactory.newInstance();
+      			Transformer trans = transfac.newTransformer();
+      			trans.setOutputProperty(OutputKeys.OMIT_XML_DECLARATION, ""yes"");
+      			trans.setOutputProperty(OutputKeys.INDENT, ""yes"");
+      			// Print the DOM node
+      			StringWriter sw = new StringWriter();
+      			StreamResult result = new StreamResult(sw);
+			for (int s = 0; s < nodeLst.getLength(); s++) {
+    				Node aNode = nodeLst.item(s);
+      				DOMSource source = new DOMSource(aNode);
+      				trans.transform(source, result);
+      				String xmlString = sw.toString();
+				// System.out.println (""adding styles: "" + xmlString);
+				sb.append (xmlString);
+			}
+		} catch (Exception e) { 
+			e.printStackTrace();
+		}
+		return sb.toString();
+	}",method,
+"	public static String getSwfSubDir(String swfString) {
+		String tmp = """";
+		if (swfString.indexOf (File.separator)!= -1) {
+			tmp = swfString.substring (0, swfString.lastIndexOf (File.separator));
+		}
+		return  tmp;
+	}",method,
+"	public static String getSwfClassName(String swfString) {
+		String tmp = null;
+		if (swfString.indexOf (File.separator)!= -1) {
+			tmp = swfString.substring (swfString.lastIndexOf (File.separator)+1, swfString.indexOf ("".mxml""));
+		}
+		return  tmp;
+	}",method,
+"	public static void transformDummyAndCopy (String prefix, String prefix2, String mxml, String templateFile, String swfDir, String insertBlock) {
+		String className = getSwfClassName (mxml);
+		String fileContents = readFileIntoString (templateFile);
+		int insertPoint = -1;
+		fileContents = fileContents.replaceAll (stock_string, prefix2+className);
+		if (insertBlock.length() > 0) {
+			insertPoint = fileContents.indexOf (script_start);
+			StringBuffer sb = new StringBuffer(fileContents);
+			sb.insert ( (insertPoint-1), insertBlock);
+			fileContents = sb.toString();
+		}
+		try { 	
+		writeStringToFile (fileContents, getNewMxmlName(swfDir, mxml, prefix));
+		} catch (Exception e) { 
+			e.printStackTrace();
+		}
+	}",method,
+"	public static String doAll (String args, String prefix, String prefix2, String mxml, String templateFile, String targetDir) {
+		if (mxml.indexOf (""\\apollo\\"") != -1  || mxml.indexOf (""/apollo/"") != -1)
+			return args;
+		// System.out.println (""here is the dir AApp got; "" + targetDir);
+		/// need more from the Test swf
+		String insertBlock = getBlockFromTestSwf (mxml, ""mx:Style"");	
+		/// do all, then return the adjusted Arg
+		transformDummyAndCopy (prefix, prefix2, mxml, templateFile, targetDir, insertBlock);
+		transformTestSwfToWindow (mxml, targetDir, prefix2);
+		args += "" -includes=WaitForWindow"";
+		return adjustArgList(args, mxml, targetDir, prefix2);
+	}",method,
+"	private static void writeStringToFile (String str, String fileName) throws Exception {
+		BufferedOutputStream bos = new BufferedOutputStream (new FileOutputStream (fileName));
+		bos.write (str.getBytes(), 0, str.length());
+		bos.flush();
+		bos.close();
+    	}",method,
+"	public static String readFileIntoString (String mxml) {
+		try { 
+		BufferedInputStream bis = new BufferedInputStream (new FileInputStream (mxml));
+		ByteArrayOutputStream bos = new ByteArrayOutputStream();
+		int av = 0;
+		byte [] b = null;
+		String contents = null;
+		while ((av = bis.available()) > 0) { 
+			b = new byte[av];
+			bis.read (b, 0, av);
+			bos.write (b, 0, av);
+		}
+		bis.close();
+		return bos.toString();	
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+		return (String)null;
+    	}",method,
+"	public static void main (String [] args) { 
+	}",method,
+"public abstract class AbstractListeningExecutorService extends AbstractExecutorService
+    implements ListeningExecutorService {
+  @Override
+  protected final <T> RunnableFuture<T> newTaskFor(Runnable runnable, T value) {
+    return TrustedListenableFutureTask.create(runnable, value);
+  }
+  @Override
+  protected final <T> RunnableFuture<T> newTaskFor(Callable<T> callable) {
+    return TrustedListenableFutureTask.create(callable);
+  }
+  @Override
+  public ListenableFuture<?> submit(Runnable task) {
+    return (ListenableFuture<?>) super.submit(task);
+  }
+  @Override
+  public <T> ListenableFuture<T> submit(Runnable task, @Nullable T result) {
+    return (ListenableFuture<T>) super.submit(task, result);
+  }
+  @Override
+  public <T> ListenableFuture<T> submit(Callable<T> task) {
+    return (ListenableFuture<T>) super.submit(task);
+  }
+}",class,
+"  @Override
+  protected final <T> RunnableFuture<T> newTaskFor(Runnable runnable, T value) {
+    return TrustedListenableFutureTask.create(runnable, value);
+  }",method,
+"  @Override
+  protected final <T> RunnableFuture<T> newTaskFor(Callable<T> callable) {
+    return TrustedListenableFutureTask.create(callable);
+  }",method,
+"  @Override
+  public ListenableFuture<?> submit(Runnable task) {
+    return (ListenableFuture<?>) super.submit(task);
+  }",method,
+"  @Override
+  public <T> ListenableFuture<T> submit(Runnable task, @Nullable T result) {
+    return (ListenableFuture<T>) super.submit(task, result);
+  }",method,
+"  @Override
+  public <T> ListenableFuture<T> submit(Callable<T> task) {
+    return (ListenableFuture<T>) super.submit(task);
+  }",method,
+"public class ResourcesBenchmark {
+    private AssetManager mAsset;
+    private Resources mRes;
+    private int mTextId;
+    private int mColorId;
+    private int mIntegerId;
+    private int mLayoutId;
+    @BeforeExperiment
+    protected void setUp() {
+        mAsset = new AssetManager();
+        mAsset.addAssetPath(""/system/framework/framework-res.apk"");
+        mRes = new Resources(mAsset, null, null);
+        mTextId = mRes.getIdentifier(""cancel"", ""string"", ""android"");
+        mColorId = mRes.getIdentifier(""transparent"", ""color"", ""android"");
+        mIntegerId = mRes.getIdentifier(""config_shortAnimTime"", ""integer"", ""android"");
+        mLayoutId = mRes.getIdentifier(""two_line_list_item"", ""layout"", ""android"");
+    }
+    @AfterExperiment
+    protected void tearDown() {
+        mAsset.close();
+    }
+    public void timeGetString(int reps) {
+        for (int i = 0; i < reps; i++) {
+            mRes.getText(mTextId);
+        }
+    }
+    public void timeGetColor(int reps) {
+        for (int i = 0; i < reps; i++) {
+            mRes.getColor(mColorId, null);
+        }
+    }
+    public void timeGetInteger(int reps) {
+        for (int i = 0; i < reps; i++) {
+            mRes.getInteger(mIntegerId);
+        }
+    }
+    public void timeGetLayoutAndTraverse(int reps) throws Exception {
+        for (int i = 0; i < reps; i++) {
+            final XmlResourceParser parser = mRes.getLayout(mLayoutId);
+            try {
+                while (parser.next() != XmlPullParser.END_DOCUMENT) {
+                    // Walk the entire tree
+                }
+            } finally {
+                parser.close();
+            }
+        }
+    }
+}",class,
+"    @BeforeExperiment
+    protected void setUp() {
+        mAsset = new AssetManager();
+        mAsset.addAssetPath(""/system/framework/framework-res.apk"");
+        mRes = new Resources(mAsset, null, null);
+        mTextId = mRes.getIdentifier(""cancel"", ""string"", ""android"");
+        mColorId = mRes.getIdentifier(""transparent"", ""color"", ""android"");
+        mIntegerId = mRes.getIdentifier(""config_shortAnimTime"", ""integer"", ""android"");
+        mLayoutId = mRes.getIdentifier(""two_line_list_item"", ""layout"", ""android"");
+    }",method,
+"    @AfterExperiment
+    protected void tearDown() {
+        mAsset.close();
+    }",method,
+"    public void timeGetString(int reps) {
+        for (int i = 0; i < reps; i++) {
+            mRes.getText(mTextId);
+        }
+    }",method,
+"        for (int i = 0; i < reps; i++) {
+            mRes.getText(mTextId);
+        }",method,
+"    public void timeGetColor(int reps) {
+        for (int i = 0; i < reps; i++) {
+            mRes.getColor(mColorId, null);
+        }
+    }",method,
+"        for (int i = 0; i < reps; i++) {
+            mRes.getColor(mColorId, null);
+        }",method,
+"    public void timeGetInteger(int reps) {
+        for (int i = 0; i < reps; i++) {
+            mRes.getInteger(mIntegerId);
+        }
+    }",method,
+"        for (int i = 0; i < reps; i++) {
+            mRes.getInteger(mIntegerId);
+        }",method,
+"    public void timeGetLayoutAndTraverse(int reps) throws Exception {
+        for (int i = 0; i < reps; i++) {
+            final XmlResourceParser parser = mRes.getLayout(mLayoutId);
+            try {
+                while (parser.next() != XmlPullParser.END_DOCUMENT) {
+                    // Walk the entire tree
+                }
+            } finally {
+                parser.close();
+            }
+        }
+    }",method,
+"        for (int i = 0; i < reps; i++) {
+            final XmlResourceParser parser = mRes.getLayout(mLayoutId);
+            try {
+                while (parser.next() != XmlPullParser.END_DOCUMENT) {
+                    // Walk the entire tree
+                }
+            } finally {
+                parser.close();
+            }
+        }",method,
+"public class ExampleUnitTest {
+    @Test
+    public void addition_isCorrect() throws Exception {
+        assertEquals(4, 2 + 2);
+    }
+}",class,
+"    @Test
+    public void addition_isCorrect() throws Exception {
+        assertEquals(4, 2 + 2);
+    }",method,
+"public class BuckTreeNodeTarget implements TreeNode {
+  private String mTarget;
+  private List<BuckTreeNodeFileError> mFileError;
+  private BuckTreeNodeBuild mParent;
+  public BuckTreeNodeTarget(BuckTreeNodeBuild build, String target) {
+    mTarget = target;
+    mParent = build;
+    mFileError = new ArrayList<BuckTreeNodeFileError>();
+  }
+  public void addFileError(BuckTreeNodeFileError error) {
+    mFileError.add(error);
+  }
+  @Override
+  public TreeNode getChildAt(int childIndex) {
+    return mFileError.get(childIndex);
+  }
+  @Override
+  public int getChildCount() {
+    return mFileError.size();
+  }
+  @Override
+  public TreeNode getParent() {
+    return mParent;
+  }
+  @Override
+  public int getIndex(TreeNode node) {
+    return 0;
+  }
+  @Override
+  public boolean getAllowsChildren() {
+    return true;
+  }
+  @Override
+  public boolean isLeaf() {
+    return false;
+  }
+  @Override
+  public Enumeration children() {
+    return new Enumeration<TreeNode>() {
+      private int currentIndex = 0;
+      @Override
+      public boolean hasMoreElements() {
+        if (currentIndex >= BuckTreeNodeTarget.this.mFileError.size()) {
+          return false;
+        }
+        return true;
+      }
+      @Override
+      public TreeNode nextElement() {
+        return BuckTreeNodeTarget.this.mFileError.get(++currentIndex);
+      }
+    };
+  }
+  public String getTarget() {
+    return mTarget;
+  }
+}",class,
+"  public BuckTreeNodeTarget(BuckTreeNodeBuild build, String target) {
+    mTarget = target;
+    mParent = build;
+    mFileError = new ArrayList<BuckTreeNodeFileError>();
+  }",method,
+"  public void addFileError(BuckTreeNodeFileError error) {
+    mFileError.add(error);
+  }",method,
+"  @Override
+  public TreeNode getChildAt(int childIndex) {
+    return mFileError.get(childIndex);
+  }",method,
+"  @Override
+  public int getChildCount() {
+    return mFileError.size();
+  }",method,
+"  @Override
+  public TreeNode getParent() {
+    return mParent;
+  }",method,
+"  @Override
+  public int getIndex(TreeNode node) {
+    return 0;
+  }",method,
+"  @Override
+  public boolean getAllowsChildren() {
+    return true;
+  }",method,
+"  @Override
+  public boolean isLeaf() {
+    return false;
+  }",method,
+"  @Override
+  public Enumeration children() {
+    return new Enumeration<TreeNode>() {
+      private int currentIndex = 0;
+      @Override
+      public boolean hasMoreElements() {
+        if (currentIndex >= BuckTreeNodeTarget.this.mFileError.size()) {
+          return false;
+        }
+        return true;
+      }
+      @Override
+      public TreeNode nextElement() {
+        return BuckTreeNodeTarget.this.mFileError.get(++currentIndex);
+      }
+    };
+  }",method,
+"      @Override
+      public boolean hasMoreElements() {
+        if (currentIndex >= BuckTreeNodeTarget.this.mFileError.size()) {
+          return false;
+        }
+        return true;
+      }",method,
+"      @Override
+      public TreeNode nextElement() {
+        return BuckTreeNodeTarget.this.mFileError.get(++currentIndex);
+      }",method,
+"  public String getTarget() {
+    return mTarget;
+  }",method,
+"    static class Context {
+        public final Context parent;
+        public final SQLObject object;
+        private SQLTableSource tableSource;
+        private SQLTableSource from;
+        private Map<Long, SQLTableSource> tableSourceMap;
+        protected Map<Long, SQLDeclareItem> declares;
+        public Context(SQLObject object, Context parent) {
+            this.object = object;
+            this.parent = parent;
+        }
+        public SQLTableSource getFrom() {
+            return from;
+        }
+        public void setFrom(SQLTableSource from) {
+            this.from = from;
+        }
+        public SQLTableSource getTableSource() {
+            return tableSource;
+        }
+        public void setTableSource(SQLTableSource tableSource) {
+            this.tableSource = tableSource;
+        }
+        public void addTableSource(long alias_hash, SQLTableSource tableSource) {
+            tableSourceMap.put(alias_hash, tableSource);
+        }
+        protected void declare(SQLDeclareItem x) {
+            if (declares == null) {
+                declares = new HashMap<Long, SQLDeclareItem>();
+            }
+            declares.put(x.getName().nameHashCode64(), x);
+        }
+        protected SQLDeclareItem findDeclare(long nameHash) {
+            if (declares == null) {
+                return null;
+            }
+            return declares.get(nameHash);
+        }
+    }",class,
+"        private Option() {
+            mask = (1 << ordinal());
+        }",method,
+"        public static int of(Option... options) {
+            if (options == null) {
+                return 0;
+            }
+            int value = 0;
+            for (Option option : options) {
+                value |= option.mask;
+            }
+            return value;
+        }",method,
+"            if (options == null) {
+                return 0;
+            }",method,
+"            for (Option option : options) {
+                value |= option.mask;
+            }",method,
+"        public Context(SQLObject object, Context parent) {
+            this.object = object;
+            this.parent = parent;
+        }",method,
+"        public SQLTableSource getFrom() {
+            return from;
+        }",method,

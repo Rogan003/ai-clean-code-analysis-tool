@@ -1,0 +1,1468 @@
+code_snippet,type,score
+"    @Override
+    public void dockTopTask(int topTaskId, int dragMode, int stackCreateMode,
+            Rect initialBounds) throws RemoteException {
+        SomeArgs args = SomeArgs.obtain();
+        args.argi1 = topTaskId;
+        args.argi2 = dragMode;
+        args.argi3 = stackCreateMode;
+        args.arg1 = initialBounds;
+        mHandler.sendMessage(mHandler.obtainMessage(MSG_DOCK_TOP_TASK, args));
+    }",method,
+"    @Override
+    public void onDraggingInRecents(float distanceFromTop) throws RemoteException {
+        mHandler.sendMessage(mHandler.obtainMessage(MSG_ON_DRAGGING_IN_RECENTS, distanceFromTop));
+    }",method,
+"    @Override
+    public void onDraggingInRecentsEnded(float velocity) throws RemoteException {
+        mHandler.sendMessage(mHandler.obtainMessage(MSG_ON_DRAGGING_IN_RECENTS_ENDED, velocity));
+    }",method,
+"    @Override
+    public void showCurrentUserToast(int msgResId, int msgLength) {
+        mHandler.sendMessage(mHandler.obtainMessage(MSG_SHOW_USER_TOAST, msgResId, msgLength));
+    }",method,
+"        @Override
+        public void handleMessage(Message msg) {
+            SomeArgs args;
+            switch (msg.what) {
+                case MSG_PRELOAD_RECENTS:
+                    mImpl.preloadRecents();
+                    break;
+                case MSG_CANCEL_PRELOADING_RECENTS:
+                    mImpl.cancelPreloadingRecents();
+                    break;
+                case MSG_SHOW_RECENTS:
+                    args = (SomeArgs) msg.obj;
+                    mImpl.showRecents(args.argi1 != 0, args.argi2 != 0, args.argi3 != 0,
+                            args.argi4 != 0, args.argi5 != 0, args.argi6);
+                    break;
+                case MSG_HIDE_RECENTS:
+                    mImpl.hideRecents(msg.arg1 != 0, msg.arg2 != 0);
+                    break;
+                case MSG_TOGGLE_RECENTS:
+                    args = (SomeArgs) msg.obj;
+                    mImpl.toggleRecents(args.argi1);
+                    break;
+                case MSG_ON_CONFIGURATION_CHANGED:
+                    mImpl.onConfigurationChanged();
+                    break;
+                case MSG_DOCK_TOP_TASK:
+                    args = (SomeArgs) msg.obj;
+                    mImpl.dockTopTask(args.argi1, args.argi2, args.argi3 = 0,
+                            (Rect) args.arg1);
+                    break;
+                case MSG_ON_DRAGGING_IN_RECENTS:
+                    mImpl.onDraggingInRecents((Float) msg.obj);
+                    break;
+                case MSG_ON_DRAGGING_IN_RECENTS_ENDED:
+                    mImpl.onDraggingInRecentsEnded((Float) msg.obj);
+                    break;
+                case MSG_SHOW_USER_TOAST:
+                    mImpl.onShowCurrentUserToast(msg.arg1, msg.arg2);
+                    break;
+                default:
+                    super.handleMessage(msg);
+            }
+            super.handleMessage(msg);
+        }",method,
+"            switch (msg.what) {
+                case MSG_PRELOAD_RECENTS:
+                    mImpl.preloadRecents();
+                    break;
+                case MSG_CANCEL_PRELOADING_RECENTS:
+                    mImpl.cancelPreloadingRecents();
+                    break;
+                case MSG_SHOW_RECENTS:
+                    args = (SomeArgs) msg.obj;
+                    mImpl.showRecents(args.argi1 != 0, args.argi2 != 0, args.argi3 != 0,
+                            args.argi4 != 0, args.argi5 != 0, args.argi6);
+                    break;
+                case MSG_HIDE_RECENTS:
+                    mImpl.hideRecents(msg.arg1 != 0, msg.arg2 != 0);
+                    break;
+                case MSG_TOGGLE_RECENTS:
+                    args = (SomeArgs) msg.obj;
+                    mImpl.toggleRecents(args.argi1);
+                    break;
+                case MSG_ON_CONFIGURATION_CHANGED:
+                    mImpl.onConfigurationChanged();
+                    break;
+                case MSG_DOCK_TOP_TASK:
+                    args = (SomeArgs) msg.obj;
+                    mImpl.dockTopTask(args.argi1, args.argi2, args.argi3 = 0,
+                            (Rect) args.arg1);
+                    break;
+                case MSG_ON_DRAGGING_IN_RECENTS:
+                    mImpl.onDraggingInRecents((Float) msg.obj);
+                    break;
+                case MSG_ON_DRAGGING_IN_RECENTS_ENDED:
+                    mImpl.onDraggingInRecentsEnded((Float) msg.obj);
+                    break;
+                case MSG_SHOW_USER_TOAST:
+                    mImpl.onShowCurrentUserToast(msg.arg1, msg.arg2);
+                    break;
+                default:
+                    super.handleMessage(msg);
+            }",method,
+"	class ValueRetrievalException extends RuntimeException {
+		@Nullable
+		private final Object key;
+		public ValueRetrievalException(@Nullable Object key, Callable<?> loader, Throwable ex) {
+			super(String.format(""Value for key '%s' could not be loaded using '%s'"", key, loader), ex);
+			this.key = key;
+		}
+		@Nullable
+		public Object getKey() {
+			return this.key;
+		}
+	}",class,
+"		public ValueRetrievalException(@Nullable Object key, Callable<?> loader, Throwable ex) {
+			super(String.format(""Value for key '%s' could not be loaded using '%s'"", key, loader), ex);
+			this.key = key;
+		}",method,
+"		@Nullable
+		public Object getKey() {
+			return this.key;
+		}",method,
+"public class DirtyTrackingProgressReceiver implements EvaluationProgressReceiver {
+  @Nullable private final EvaluationProgressReceiver progressReceiver;
+  private final Set<SkyKey> dirtyKeys = Sets.newConcurrentHashSet();
+  private Set<SkyKey> inflightKeys = Sets.newConcurrentHashSet();
+  public DirtyTrackingProgressReceiver(@Nullable EvaluationProgressReceiver progressReceiver) {
+    this.progressReceiver = progressReceiver;
+  }
+  protected void injected(SkyKey skyKey) {
+    // This node was never evaluated, but is now clean and need not be re-evaluated
+    inflightKeys.remove(skyKey);
+    removeFromDirtySet(skyKey);
+  }
+  @Override
+  public void invalidated(SkyKey skyKey, InvalidationState state) {
+    if (progressReceiver != null) {
+      progressReceiver.invalidated(skyKey, state);
+    }
+    switch (state) {
+      case DELETED:
+        // This key was removed from the graph, so no longer needs to be marked as dirty.
+        removeFromDirtySet(skyKey);
+        break;
+      case DIRTY:
+        addToDirtySet(skyKey);
+        break;
+      default:
+        throw new IllegalStateException(state.toString());
+    }
+  }
+  @Override
+  public void enqueueing(SkyKey skyKey) {
+    enqueueing(skyKey, false);
+  }
+  protected void enqueueAfterError(SkyKey skyKey) {
+    enqueueing(skyKey, true);
+  }
+  private void enqueueing(SkyKey skyKey, boolean afterError) {
+    // We unconditionally add the key to the set of in-flight nodes even if evaluation is never
+    // scheduled, because we still want to remove the previously created NodeEntry from the graph.
+    // Otherwise we would leave the graph in a weird state (wasteful garbage in the best case and
+    // inconsistent in the worst case).
+    boolean newlyEnqueued = inflightKeys.add(skyKey);
+    if (newlyEnqueued) {
+      // All nodes enqueued for evaluation will be either verified clean, re-evaluated, or cleaned
+      // up after being in-flight when an error happens in nokeep_going mode or in the event of an
+      // interrupt. In any of these cases, they won't be dirty anymore.
+      removeFromDirtySet(skyKey);
+      if (progressReceiver != null && !afterError) {
+        // Only tell the external listener the node was enqueued if no there was neither an error
+        // or interrupt.
+        progressReceiver.enqueueing(skyKey);
+      }
+    }
+  }
+  @Override
+  public void computing(SkyKey skyKey) {
+    if (progressReceiver != null) {
+      progressReceiver.computing(skyKey);
+    }
+  }
+  @Override
+  public void computed(SkyKey skyKey, long elapsedTimeNanos) {
+    if (progressReceiver != null) {
+      progressReceiver.computed(skyKey, elapsedTimeNanos);
+    }
+  }
+  @Override
+  public void evaluated(SkyKey skyKey, Supplier<SkyValue> valueSupplier,
+      EvaluationState state) {
+    if (progressReceiver != null) {
+      progressReceiver.evaluated(skyKey, valueSupplier, state);
+    }
+    // This key was either built or marked clean, so we can remove it from both the dirty and
+    // inflight nodes.
+    inflightKeys.remove(skyKey);
+    removeFromDirtySet(skyKey);
+  }
+  protected boolean isInflight(SkyKey skyKey) {
+    return inflightKeys.contains(skyKey);
+  }
+  protected Set<SkyKey> getAndClearInflightKeys() {
+    Set<SkyKey> keys = inflightKeys;
+    inflightKeys = Sets.newConcurrentHashSet();
+    return keys;
+  }
+  protected Set<SkyKey> getUnenqueuedDirtyKeys(){
+    return ImmutableSet.copyOf(dirtyKeys);
+  }
+  protected void addToDirtySet(SkyKey skyKey) {
+    dirtyKeys.add(skyKey);
+  }
+  protected void removeFromDirtySet(SkyKey skyKey) {
+    dirtyKeys.remove(skyKey);
+  }
+}",class,
+"  public DirtyTrackingProgressReceiver(@Nullable EvaluationProgressReceiver progressReceiver) {
+    this.progressReceiver = progressReceiver;
+  }",method,
+"  protected void injected(SkyKey skyKey) {
+    // This node was never evaluated, but is now clean and need not be re-evaluated
+    inflightKeys.remove(skyKey);
+    removeFromDirtySet(skyKey);
+  }",method,
+"  @Override
+  public void invalidated(SkyKey skyKey, InvalidationState state) {
+    if (progressReceiver != null) {
+      progressReceiver.invalidated(skyKey, state);
+    }
+    switch (state) {
+      case DELETED:
+        // This key was removed from the graph, so no longer needs to be marked as dirty.
+        removeFromDirtySet(skyKey);
+        break;
+      case DIRTY:
+        addToDirtySet(skyKey);
+        break;
+      default:
+        throw new IllegalStateException(state.toString());
+    }
+  }",method,
+"    if (progressReceiver != null) {
+      progressReceiver.invalidated(skyKey, state);
+    }",method,
+"    switch (state) {
+      case DELETED:
+        // This key was removed from the graph, so no longer needs to be marked as dirty.
+        removeFromDirtySet(skyKey);
+        break;
+      case DIRTY:
+        addToDirtySet(skyKey);
+        break;
+      default:
+        throw new IllegalStateException(state.toString());
+    }",method,
+"  @Override
+  public void enqueueing(SkyKey skyKey) {
+    enqueueing(skyKey, false);
+  }",method,
+"  protected void enqueueAfterError(SkyKey skyKey) {
+    enqueueing(skyKey, true);
+  }",method,
+"  private void enqueueing(SkyKey skyKey, boolean afterError) {
+    // We unconditionally add the key to the set of in-flight nodes even if evaluation is never
+    // scheduled, because we still want to remove the previously created NodeEntry from the graph.
+    // Otherwise we would leave the graph in a weird state (wasteful garbage in the best case and
+    // inconsistent in the worst case).
+    boolean newlyEnqueued = inflightKeys.add(skyKey);
+    if (newlyEnqueued) {
+      // All nodes enqueued for evaluation will be either verified clean, re-evaluated, or cleaned
+      // up after being in-flight when an error happens in nokeep_going mode or in the event of an
+      // interrupt. In any of these cases, they won't be dirty anymore.
+      removeFromDirtySet(skyKey);
+      if (progressReceiver != null && !afterError) {
+        // Only tell the external listener the node was enqueued if no there was neither an error
+        // or interrupt.
+        progressReceiver.enqueueing(skyKey);
+      }
+    }
+  }",method,
+"    if (newlyEnqueued) {
+      // All nodes enqueued for evaluation will be either verified clean, re-evaluated, or cleaned
+      // up after being in-flight when an error happens in nokeep_going mode or in the event of an
+      // interrupt. In any of these cases, they won't be dirty anymore.
+      removeFromDirtySet(skyKey);
+      if (progressReceiver != null && !afterError) {
+        // Only tell the external listener the node was enqueued if no there was neither an error
+        // or interrupt.
+        progressReceiver.enqueueing(skyKey);
+      }
+    }",method,
+"      if (progressReceiver != null && !afterError) {
+        // Only tell the external listener the node was enqueued if no there was neither an error
+        // or interrupt.
+        progressReceiver.enqueueing(skyKey);
+      }",method,
+"  @Override
+  public void computing(SkyKey skyKey) {
+    if (progressReceiver != null) {
+      progressReceiver.computing(skyKey);
+    }
+  }",method,
+"    if (progressReceiver != null) {
+      progressReceiver.computing(skyKey);
+    }",method,
+"  @Override
+  public void computed(SkyKey skyKey, long elapsedTimeNanos) {
+    if (progressReceiver != null) {
+      progressReceiver.computed(skyKey, elapsedTimeNanos);
+    }
+  }",method,
+"    if (progressReceiver != null) {
+      progressReceiver.computed(skyKey, elapsedTimeNanos);
+    }",method,
+"  @Override
+  public void evaluated(SkyKey skyKey, Supplier<SkyValue> valueSupplier,
+      EvaluationState state) {
+    if (progressReceiver != null) {
+      progressReceiver.evaluated(skyKey, valueSupplier, state);
+    }
+    // This key was either built or marked clean, so we can remove it from both the dirty and
+    // inflight nodes.
+    inflightKeys.remove(skyKey);
+    removeFromDirtySet(skyKey);
+  }",method,
+"    if (progressReceiver != null) {
+      progressReceiver.evaluated(skyKey, valueSupplier, state);
+    }",method,
+"  protected boolean isInflight(SkyKey skyKey) {
+    return inflightKeys.contains(skyKey);
+  }",method,
+"  protected Set<SkyKey> getAndClearInflightKeys() {
+    Set<SkyKey> keys = inflightKeys;
+    inflightKeys = Sets.newConcurrentHashSet();
+    return keys;
+  }",method,
+"  protected Set<SkyKey> getUnenqueuedDirtyKeys(){
+    return ImmutableSet.copyOf(dirtyKeys);
+  }",method,
+"  protected void addToDirtySet(SkyKey skyKey) {
+    dirtyKeys.add(skyKey);
+  }",method,
+"  protected void removeFromDirtySet(SkyKey skyKey) {
+    dirtyKeys.remove(skyKey);
+  }",method,
+"public class WebpTranscoderImpl implements WebpTranscoder {
+  @Override
+  public boolean isWebpNativelySupported(ImageFormat webpFormat) {
+    if (webpFormat == DefaultImageFormats.WEBP_SIMPLE) {
+      // Simple WebPs are supported on Android 4.0+
+      return Build.VERSION.SDK_INT >= Build.VERSION_CODES.ICE_CREAM_SANDWICH;
+    } else if (webpFormat == DefaultImageFormats.WEBP_LOSSLESS ||
+        webpFormat == DefaultImageFormats.WEBP_EXTENDED ||
+        webpFormat == DefaultImageFormats.WEBP_EXTENDED_WITH_ALPHA) {
+      return WebpSupportStatus.sIsExtendedWebpSupported;
+    } else if (webpFormat == DefaultImageFormats.WEBP_ANIMATED) {
+      return false;
+    }
+    throw new IllegalArgumentException(""Image format is not a WebP."");
+  }
+  @Override
+  public void transcodeWebpToJpeg(
+      InputStream inputStream,
+      OutputStream outputStream,
+      int quality) throws IOException {
+    StaticWebpNativeLoader.ensure();
+    nativeTranscodeWebpToJpeg(
+        Preconditions.checkNotNull(inputStream),
+        Preconditions.checkNotNull(outputStream),
+        quality);
+  }
+  @Override
+  public void transcodeWebpToPng(
+      InputStream inputStream,
+      OutputStream outputStream) throws IOException {
+    StaticWebpNativeLoader.ensure();
+    nativeTranscodeWebpToPng(
+        Preconditions.checkNotNull(inputStream),
+        Preconditions.checkNotNull(outputStream));
+  }
+  @DoNotStrip
+  private static native void nativeTranscodeWebpToJpeg(
+      InputStream inputStream,
+      OutputStream outputStream,
+      int quality) throws IOException;
+  @DoNotStrip
+  private static native void nativeTranscodeWebpToPng(
+      InputStream inputStream,
+      OutputStream outputStream) throws IOException;
+}",class,
+"  @Override
+  public boolean isWebpNativelySupported(ImageFormat webpFormat) {
+    if (webpFormat == DefaultImageFormats.WEBP_SIMPLE) {
+      // Simple WebPs are supported on Android 4.0+
+      return Build.VERSION.SDK_INT >= Build.VERSION_CODES.ICE_CREAM_SANDWICH;
+    } else if (webpFormat == DefaultImageFormats.WEBP_LOSSLESS ||
+        webpFormat == DefaultImageFormats.WEBP_EXTENDED ||
+        webpFormat == DefaultImageFormats.WEBP_EXTENDED_WITH_ALPHA) {
+      return WebpSupportStatus.sIsExtendedWebpSupported;
+    } else if (webpFormat == DefaultImageFormats.WEBP_ANIMATED) {
+      return false;
+    }
+    throw new IllegalArgumentException(""Image format is not a WebP."");
+  }",method,
+"    if (webpFormat == DefaultImageFormats.WEBP_SIMPLE) {
+      // Simple WebPs are supported on Android 4.0+
+      return Build.VERSION.SDK_INT >= Build.VERSION_CODES.ICE_CREAM_SANDWICH;
+    }",method,
+"  @Override
+  public void transcodeWebpToJpeg(
+      InputStream inputStream,
+      OutputStream outputStream,
+      int quality) throws IOException {
+    StaticWebpNativeLoader.ensure();
+    nativeTranscodeWebpToJpeg(
+        Preconditions.checkNotNull(inputStream),
+        Preconditions.checkNotNull(outputStream),
+        quality);
+  }",method,
+"  @Override
+  public void transcodeWebpToPng(
+      InputStream inputStream,
+      OutputStream outputStream) throws IOException {
+    StaticWebpNativeLoader.ensure();
+    nativeTranscodeWebpToPng(
+        Preconditions.checkNotNull(inputStream),
+        Preconditions.checkNotNull(outputStream));
+  }",method,
+"public final class Multimap_CustomFieldSerializerBase {
+  static ImmutableMultimap<Object, Object> instantiate(
+      SerializationStreamReader reader, ImmutableMultimap.Builder<Object, Object> builder)
+      throws SerializationException {
+    int keyCount = reader.readInt();
+    for (int i = 0; i < keyCount; ++i) {
+      Object key = reader.readObject();
+      int valueCount = reader.readInt();
+      for (int j = 0; j < valueCount; ++j) {
+        Object value = reader.readObject();
+        builder.put(key, value);
+      }
+    }
+    return builder.build();
+  }
+  @CanIgnoreReturnValue
+  public static Multimap<Object, Object> populate(
+      SerializationStreamReader reader, Multimap<Object, Object> multimap)
+      throws SerializationException {
+    int keyCount = reader.readInt();
+    for (int i = 0; i < keyCount; ++i) {
+      Object key = reader.readObject();
+      int valueCount = reader.readInt();
+      for (int j = 0; j < valueCount; ++j) {
+        Object value = reader.readObject();
+        multimap.put(key, value);
+      }
+    }
+    return multimap;
+  }
+  public static void serialize(SerializationStreamWriter writer, Multimap<?, ?> instance)
+      throws SerializationException {
+    writer.writeInt(instance.asMap().size());
+    for (Map.Entry<?, ? extends Collection<?>> entry : instance.asMap().entrySet()) {
+      writer.writeObject(entry.getKey());
+      writer.writeInt(entry.getValue().size());
+      for (Object value : entry.getValue()) {
+        writer.writeObject(value);
+      }
+    }
+  }
+  private Multimap_CustomFieldSerializerBase() {}
+}",class,
+public final class ForwardingImmutableSet_CustomFieldSerializer {},class,
+public class ImmutableMultiset_CustomFieldSerializer {},class,
+"  static ImmutableMultimap<Object, Object> instantiate(
+      SerializationStreamReader reader, ImmutableMultimap.Builder<Object, Object> builder)
+      throws SerializationException {
+    int keyCount = reader.readInt();
+    for (int i = 0; i < keyCount; ++i) {
+      Object key = reader.readObject();
+      int valueCount = reader.readInt();
+      for (int j = 0; j < valueCount; ++j) {
+        Object value = reader.readObject();
+        builder.put(key, value);
+      }
+    }
+    return builder.build();
+  }",method,
+"    for (int i = 0; i < keyCount; ++i) {
+      Object key = reader.readObject();
+      int valueCount = reader.readInt();
+      for (int j = 0; j < valueCount; ++j) {
+        Object value = reader.readObject();
+        builder.put(key, value);
+      }
+    }",method,
+"      for (int j = 0; j < valueCount; ++j) {
+        Object value = reader.readObject();
+        builder.put(key, value);
+      }",method,
+"  @CanIgnoreReturnValue
+  public static Multimap<Object, Object> populate(
+      SerializationStreamReader reader, Multimap<Object, Object> multimap)
+      throws SerializationException {
+    int keyCount = reader.readInt();
+    for (int i = 0; i < keyCount; ++i) {
+      Object key = reader.readObject();
+      int valueCount = reader.readInt();
+      for (int j = 0; j < valueCount; ++j) {
+        Object value = reader.readObject();
+        multimap.put(key, value);
+      }
+    }
+    return multimap;
+  }",method,
+"    for (int i = 0; i < keyCount; ++i) {
+      Object key = reader.readObject();
+      int valueCount = reader.readInt();
+      for (int j = 0; j < valueCount; ++j) {
+        Object value = reader.readObject();
+        multimap.put(key, value);
+      }
+    }",method,
+"      for (int j = 0; j < valueCount; ++j) {
+        Object value = reader.readObject();
+        multimap.put(key, value);
+      }",method,
+"  public static void serialize(SerializationStreamWriter writer, Multimap<?, ?> instance)
+      throws SerializationException {
+    writer.writeInt(instance.asMap().size());
+    for (Map.Entry<?, ? extends Collection<?>> entry : instance.asMap().entrySet()) {
+      writer.writeObject(entry.getKey());
+      writer.writeInt(entry.getValue().size());
+      for (Object value : entry.getValue()) {
+        writer.writeObject(value);
+      }
+    }
+  }",method,
+  private Multimap_CustomFieldSerializerBase() {},method,
+"public class TestTablePartitioningInsertInto
+        extends HivePartitioningTest
+        implements RequirementsProvider
+{
+    private static final String TARGET_NATION_NAME = ""target_nation_test"";
+    @Override
+    public Requirement getRequirements(Configuration configuration)
+    {
+        return compose(
+                mutableTable(NATION_PARTITIONED_BY_REGIONKEY),
+                mutableTable(NATION, TARGET_NATION_NAME, CREATED));
+    }
+    @Test(groups = {HIVE_CONNECTOR, SMOKE})
+    public void selectFromPartitionedNation()
+            throws Exception
+    {
+        // read all data
+        testQuerySplitsNumber(""p_nationkey < 40"", 3);
+        // read no partitions
+        testQuerySplitsNumber(""p_regionkey = 42"", 0);
+        // read one partition
+        testQuerySplitsNumber(""p_regionkey = 2 AND p_nationkey < 40"", 1);
+        // read two partitions
+        testQuerySplitsNumber(""p_regionkey = 2 AND p_nationkey < 40 or p_regionkey = 3"", 2);
+        // read all (three) partitions
+        testQuerySplitsNumber(""p_regionkey = 2 OR p_nationkey < 40"", 3);
+        // range read two partitions
+        testQuerySplitsNumber(""p_regionkey <= 2"", 2);
+        testQuerySplitsNumber(""p_regionkey <= 1 OR p_regionkey >= 3"", 2);
+    }
+    private void testQuerySplitsNumber(String condition, int expectedProcessedSplits)
+            throws Exception
+    {
+        String partitionedNation = mutableTablesState().get(NATION_PARTITIONED_BY_REGIONKEY.getTableHandle()).getNameInDatabase();
+        String targetNation = mutableTablesState().get(TARGET_NATION_NAME).getNameInDatabase();
+        String query = String.format(
+                ""INSERT INTO %s SELECT p_nationkey, p_name, p_regionkey, p_comment FROM %s WHERE %s"",
+                targetNation,
+                partitionedNation,
+                condition);
+        QueryResult queryResult = query(query, UPDATE);
+        long processedLinesCount = getProcessedLinesCount(query, queryResult);
+        int expectedLinesCount = expectedProcessedSplits * NATION_PARTITIONED_BY_REGIONKEY_NUMBER_OF_LINES_PER_SPLIT;
+        assertThat(processedLinesCount).isEqualTo(expectedLinesCount);
+    }
+}",class,
+"    @Override
+    public Requirement getRequirements(Configuration configuration)
+    {
+        return compose(
+                mutableTable(NATION_PARTITIONED_BY_REGIONKEY),
+                mutableTable(NATION, TARGET_NATION_NAME, CREATED));
+    }",method,
+"    @Test(groups = {HIVE_CONNECTOR, SMOKE})
+    public void selectFromPartitionedNation()
+            throws Exception
+    {
+        // read all data
+        testQuerySplitsNumber(""p_nationkey < 40"", 3);
+        // read no partitions
+        testQuerySplitsNumber(""p_regionkey = 42"", 0);
+        // read one partition
+        testQuerySplitsNumber(""p_regionkey = 2 AND p_nationkey < 40"", 1);
+        // read two partitions
+        testQuerySplitsNumber(""p_regionkey = 2 AND p_nationkey < 40 or p_regionkey = 3"", 2);
+        // read all (three) partitions
+        testQuerySplitsNumber(""p_regionkey = 2 OR p_nationkey < 40"", 3);
+        // range read two partitions
+        testQuerySplitsNumber(""p_regionkey <= 2"", 2);
+        testQuerySplitsNumber(""p_regionkey <= 1 OR p_regionkey >= 3"", 2);
+    }",method,
+"    private void testQuerySplitsNumber(String condition, int expectedProcessedSplits)
+            throws Exception
+    {
+        String partitionedNation = mutableTablesState().get(NATION_PARTITIONED_BY_REGIONKEY.getTableHandle()).getNameInDatabase();
+        String targetNation = mutableTablesState().get(TARGET_NATION_NAME).getNameInDatabase();
+        String query = String.format(
+                ""INSERT INTO %s SELECT p_nationkey, p_name, p_regionkey, p_comment FROM %s WHERE %s"",
+                targetNation,
+                partitionedNation,
+                condition);
+        QueryResult queryResult = query(query, UPDATE);
+        long processedLinesCount = getProcessedLinesCount(query, queryResult);
+        int expectedLinesCount = expectedProcessedSplits * NATION_PARTITIONED_BY_REGIONKEY_NUMBER_OF_LINES_PER_SPLIT;
+        assertThat(processedLinesCount).isEqualTo(expectedLinesCount);
+    }",method,
+"public class BinarySort {
+	public static void main(String[] args) {
+		// TODO Auto-generated method stub
+        int results, searchValue;
+        String input;
+        int numbers[] = {101, 142, 147, 189, 199, 207, 222, 234, 289, 296, 
+        		         310, 319, 388, 394, 417, 429, 447, 521, 536, 600}; 
+        int number1[];
+		//Create a Scanner object for keyboard input
+		Scanner keyboard = new Scanner(System.in);
+		//Before we search make sure the array is sorted in ascending order
+		do{
+			//Get a value to search for.
+			System.out.print(""Enter a value to search for: "");
+			searchValue = keyboard.nextInt();
+		//Search for the value
+			results = search(numbers, searchValue);
+		//Display the result	
+		  if(results == -1)
+			   System.out.println(searchValue + "" was not found."");
+		  else  
+			  System.out.println(searchValue + "" was found at "" + ""element "" + results);
+		//Consume the remaining newline....
+			keyboard.nextLine();
+	//Does the user want to search 	
+		System.out.print(""Do you want to search again? (Y or N): "");
+		input = keyboard.nextLine();
+		}while (input.charAt(0) == 'y' || input.charAt(0) == 'Y');
+	}
+	public static int search(int[] array, int value)
+	{
+		int first; //First array element
+		int last; //Last array element
+		int middle; //Mid point of search
+		int position; //First array element
+		boolean found; //Flag
+		//Set the initial values.
+		 first = 0;
+		 last= array.length - 1;
+		 position = -1;
+		 found = false;
+		 //search for the value
+		 while(!found && first <= last)
+		 {
+			 //calculate midpoint
+			 middle = (first + last) /2;
+			 //if value is found at mid point...
+			 if(array[middle] == value)
+			 {
+				 found = true;
+				 position = middle;
+			 }
+		 	 //else if value is in lower half...
+			 else if(array[middle] > value)
+			 last = middle - 1;
+			 //else if value is in upper half...
+			 else
+			 first = middle + 1;
+		 }
+		 //Return the position of the item, or -1 if it was not found
+		 return position;
+	}
+}",class,
+"public class BubbleSort
+{
+	public static void IntbubbleSort(int[] array)
+	{
+		int lastPosition;     					// Position of last element
+		int index;  						   // Index of an element to compare
+		int temp;     						   // Used to swap to elements
+		for (lastPosition = array.length - 1; lastPosition >= 0; lastPosition--)
+		{
+			for (index = 0; index <= lastPosition - 1; index++)
+			{
+				// Compare an element with its neighbor.
+				if (array[index] > array[index + 1])
+				{
+					// Swap the two elements.
+					temp = array[index];
+					array[index] = array[index + 1];
+					array[index + 1] = temp;
+				}
+			}
+		}
+	}
+	 public static void StringBubbleSort(String[] array)
+	 {
+	      int lastPosition;  		  	 // Marks the last element to compare
+	      int index;       				// Index of an element to compare
+	      String temp;					// Used to swap to elements
+	      // The outer loop 
+	      for (lastPosition = array.length - 1; lastPosition >= 0; lastPosition--)
+	      {
+	         // The inner loop steps through the array, 
+	         for (index = 0; index <= lastPosition - 1; index++)
+	         {
+	            // Compare an element with its neighbor.
+	            if (array[index].compareTo(array[index + 1]) > 0)
+	            {
+	               // Swap the two elements.
+	               temp = array[index];
+	               array[index] = array[index + 1];
+	               array[index + 1] = temp;
+	            }
+	         }
+	      }
+	   }
+	public static void main(String[] args)
+	{
+		// Create an int array with test values.
+		int[] values = { 6, 7, 1, 8, 4, 2 };
+		// Create a String array with test values.
+		String[] names = { ""Annie"", ""Abe"", ""John"",""Smith"", ""William"", ""Jennifer"" };
+		// Display the array's contents.
+		System.out.println(""The Original Integer's order: "");
+		for (int integerNumbers : values)
+         System.out.print(integerNumbers + "" "");
+		// Sort the array.
+		IntbubbleSort(values);
+      // Display the array's contents.
+		System.out.println(""\nThe Sorted Integer's order: "");
+		for (int elements : values)
+         System.out.print(elements + "" "");
+		System.out.println();
+		System.out.println();
+		// Display the array's contents.
+		System.out.println(""The Original name's order: "");
+		for (String Names : names)
+			System.out.print(Names + "" "");
+		// Sort the array.
+		StringBubbleSort(names);
+		// Display the array's contents.
+		System.out.println(""\nThe Sorted name's order: "");
+		for (String element : names)
+			System.out.print(element + "" "");
+		System.out.println();
+	}
+}",class,
+"public class DiscreteSort {
+    public static void main(String[] args) {
+       String[] array = ArrayGen.getArray(5,'i'); //creates an string array
+       System.out.println(""my name is Xiao"");
+       //DisplayArray.display(array); //display that array and start the algorithm selection process
+    }
+}",class,
+"	public static void main(String[] args) {
+		// TODO Auto-generated method stub
+        int results, searchValue;
+        String input;
+        int numbers[] = {101, 142, 147, 189, 199, 207, 222, 234, 289, 296, 
+        		         310, 319, 388, 394, 417, 429, 447, 521, 536, 600}; 
+        int number1[];
+		//Create a Scanner object for keyboard input
+		Scanner keyboard = new Scanner(System.in);
+		//Before we search make sure the array is sorted in ascending order
+		do{
+			//Get a value to search for.
+			System.out.print(""Enter a value to search for: "");
+			searchValue = keyboard.nextInt();
+		//Search for the value
+			results = search(numbers, searchValue);
+		//Display the result	
+		  if(results == -1)
+			   System.out.println(searchValue + "" was not found."");
+		  else  
+			  System.out.println(searchValue + "" was found at "" + ""element "" + results);
+		//Consume the remaining newline....
+			keyboard.nextLine();
+	//Does the user want to search 	
+		System.out.print(""Do you want to search again? (Y or N): "");
+		input = keyboard.nextLine();
+		}while (input.charAt(0) == 'y' || input.charAt(0) == 'Y');
+	}",method,
+"	public static int search(int[] array, int value)
+	{
+		int first; //First array element
+		int last; //Last array element
+		int middle; //Mid point of search
+		int position; //First array element
+		boolean found; //Flag
+		//Set the initial values.
+		 first = 0;
+		 last= array.length - 1;
+		 position = -1;
+		 found = false;
+		 //search for the value
+		 while(!found && first <= last)
+		 {
+			 //calculate midpoint
+			 middle = (first + last) /2;
+			 //if value is found at mid point...
+			 if(array[middle] == value)
+			 {
+				 found = true;
+				 position = middle;
+			 }
+		 	 //else if value is in lower half...
+			 else if(array[middle] > value)
+			 last = middle - 1;
+			 //else if value is in upper half...
+			 else
+			 first = middle + 1;
+		 }
+		 //Return the position of the item, or -1 if it was not found
+		 return position;
+	}",method,
+"		 while(!found && first <= last)
+		 {
+			 //calculate midpoint
+			 middle = (first + last) /2;
+			 //if value is found at mid point...
+			 if(array[middle] == value)
+			 {
+				 found = true;
+				 position = middle;
+			 }
+		 	 //else if value is in lower half...
+			 else if(array[middle] > value)
+			 last = middle - 1;
+			 //else if value is in upper half...
+			 else
+			 first = middle + 1;
+		 }",method,
+"			 if(array[middle] == value)
+			 {
+				 found = true;
+				 position = middle;
+			 }",method,
+"	public static void IntbubbleSort(int[] array)
+	{
+		int lastPosition;     					// Position of last element
+		int index;  						   // Index of an element to compare
+		int temp;     						   // Used to swap to elements
+		for (lastPosition = array.length - 1; lastPosition >= 0; lastPosition--)
+		{
+			for (index = 0; index <= lastPosition - 1; index++)
+			{
+				// Compare an element with its neighbor.
+				if (array[index] > array[index + 1])
+				{
+					// Swap the two elements.
+					temp = array[index];
+					array[index] = array[index + 1];
+					array[index + 1] = temp;
+				}
+			}
+		}
+	}",method,
+"		for (lastPosition = array.length - 1; lastPosition >= 0; lastPosition--)
+		{
+			for (index = 0; index <= lastPosition - 1; index++)
+			{
+				// Compare an element with its neighbor.
+				if (array[index] > array[index + 1])
+				{
+					// Swap the two elements.
+					temp = array[index];
+					array[index] = array[index + 1];
+					array[index + 1] = temp;
+				}
+			}
+		}",method,
+"			for (index = 0; index <= lastPosition - 1; index++)
+			{
+				// Compare an element with its neighbor.
+				if (array[index] > array[index + 1])
+				{
+					// Swap the two elements.
+					temp = array[index];
+					array[index] = array[index + 1];
+					array[index + 1] = temp;
+				}
+			}",method,
+"				if (array[index] > array[index + 1])
+				{
+					// Swap the two elements.
+					temp = array[index];
+					array[index] = array[index + 1];
+					array[index + 1] = temp;
+				}",method,
+"	 public static void StringBubbleSort(String[] array)
+	 {
+	      int lastPosition;  		  	 // Marks the last element to compare
+	      int index;       				// Index of an element to compare
+	      String temp;					// Used to swap to elements
+	      // The outer loop 
+	      for (lastPosition = array.length - 1; lastPosition >= 0; lastPosition--)
+	      {
+	         // The inner loop steps through the array, 
+	         for (index = 0; index <= lastPosition - 1; index++)
+	         {
+	            // Compare an element with its neighbor.
+	            if (array[index].compareTo(array[index + 1]) > 0)
+	            {
+	               // Swap the two elements.
+	               temp = array[index];
+	               array[index] = array[index + 1];
+	               array[index + 1] = temp;
+	            }
+	         }
+	      }
+	   }",method,
+"	      for (lastPosition = array.length - 1; lastPosition >= 0; lastPosition--)
+	      {
+	         // The inner loop steps through the array, 
+	         for (index = 0; index <= lastPosition - 1; index++)
+	         {
+	            // Compare an element with its neighbor.
+	            if (array[index].compareTo(array[index + 1]) > 0)
+	            {
+	               // Swap the two elements.
+	               temp = array[index];
+	               array[index] = array[index + 1];
+	               array[index + 1] = temp;
+	            }
+	         }
+	      }",method,
+"	         for (index = 0; index <= lastPosition - 1; index++)
+	         {
+	            // Compare an element with its neighbor.
+	            if (array[index].compareTo(array[index + 1]) > 0)
+	            {
+	               // Swap the two elements.
+	               temp = array[index];
+	               array[index] = array[index + 1];
+	               array[index + 1] = temp;
+	            }
+	         }",method,
+"	public static void main(String[] args)
+	{
+		// Create an int array with test values.
+		int[] values = { 6, 7, 1, 8, 4, 2 };
+		// Create a String array with test values.
+		String[] names = { ""Annie"", ""Abe"", ""John"",""Smith"", ""William"", ""Jennifer"" };
+		// Display the array's contents.
+		System.out.println(""The Original Integer's order: "");
+		for (int integerNumbers : values)
+         System.out.print(integerNumbers + "" "");
+		// Sort the array.
+		IntbubbleSort(values);
+      // Display the array's contents.
+		System.out.println(""\nThe Sorted Integer's order: "");
+		for (int elements : values)
+         System.out.print(elements + "" "");
+		System.out.println();
+		System.out.println();
+		// Display the array's contents.
+		System.out.println(""The Original name's order: "");
+		for (String Names : names)
+			System.out.print(Names + "" "");
+		// Sort the array.
+		StringBubbleSort(names);
+		// Display the array's contents.
+		System.out.println(""\nThe Sorted name's order: "");
+		for (String element : names)
+			System.out.print(element + "" "");
+		System.out.println();
+	}",method,
+"    public static void main(String[] args) {
+       String[] array = ArrayGen.getArray(5,'i'); //creates an string array
+       System.out.println(""my name is Xiao"");
+       //DisplayArray.display(array); //display that array and start the algorithm selection process
+    }",method,
+"public abstract class AbstractValueManager
+    extends AbstractValueFactory
+    implements ValueManager {
+    public Value createFloatValue(short unitType, float floatValue)
+        throws DOMException {
+        throw createDOMException();
+    }
+    public Value createStringValue(short type, String value, CSSEngine engine)
+        throws DOMException {
+        throw createDOMException();
+    }
+    public Value computeValue(CSSStylableElement elt,
+                              String pseudo,
+                              CSSEngine engine,
+                              int idx,
+                              StyleMap sm,
+                              Value value) {
+        if ((value.getCssValueType() == CSSValue.CSS_PRIMITIVE_VALUE) &&
+            (value.getPrimitiveType() == CSSPrimitiveValue.CSS_URI)) {
+            // Reveal the absolute value as the cssText now.
+            return new URIValue(value.getStringValue(),
+                                value.getStringValue());
+        }
+        return value;
+    }
+}",class,
+"    public Value createFloatValue(short unitType, float floatValue)
+        throws DOMException {
+        throw createDOMException();
+    }",method,
+"    public Value createStringValue(short type, String value, CSSEngine engine)
+        throws DOMException {
+        throw createDOMException();
+    }",method,
+"    public Value computeValue(CSSStylableElement elt,
+                              String pseudo,
+                              CSSEngine engine,
+                              int idx,
+                              StyleMap sm,
+                              Value value) {
+        if ((value.getCssValueType() == CSSValue.CSS_PRIMITIVE_VALUE) &&
+            (value.getPrimitiveType() == CSSPrimitiveValue.CSS_URI)) {
+            // Reveal the absolute value as the cssText now.
+            return new URIValue(value.getStringValue(),
+                                value.getStringValue());
+        }
+        return value;
+    }",method,
+"public class ProbabilityGenerator<T> {
+	// ===========================================================
+	// Constants
+	// ===========================================================
+	// ===========================================================
+	// Fields
+	// ===========================================================
+	private float mProbabilitySum;
+	private final ArrayList<Entry<T>> mEntries = new ArrayList<Entry<T>>();
+	// ===========================================================
+	// Constructors
+	// ===========================================================
+	// ===========================================================
+	// Getter & Setter
+	// ===========================================================
+	// ===========================================================
+	// Methods for/from SuperClass/Interfaces
+	// ===========================================================
+	// ===========================================================
+	// Methods
+	// ===========================================================
+	public void add(final float pFactor, final T ... pElements){
+		this.mProbabilitySum += pFactor;
+		this.mEntries.add(new Entry<T>(pFactor, pElements));
+	}
+	public T next() {
+		float random = MathUtils.random(0, this.mProbabilitySum);
+		final ArrayList<Entry<T>> factors = this.mEntries;
+		for(int i = factors.size() - 1; i >= 0; i--){
+			final Entry<T> entry = factors.get(i);
+			random -= entry.mFactor;
+			if(random <= 0){
+				return entry.getReturnValue();
+			}
+		}
+		final Entry<T> lastEntry = factors.get(factors.size() - 1);
+		return lastEntry.getReturnValue();
+	}
+	public void clear() {
+		this.mProbabilitySum = 0;
+		this.mEntries.clear();
+	}
+	// ===========================================================
+	// Inner and Anonymous Classes
+	// ===========================================================
+	private static class Entry<T> {
+		// ===========================================================
+		// Constants
+		// ===========================================================
+		// ===========================================================
+		// Fields
+		// ===========================================================
+		public final float mFactor;
+		public final T[] mData;
+		// ===========================================================
+		// Constructors
+		// ===========================================================
+		public Entry(final float pFactor, final T ... pData){
+			this.mFactor = pFactor;
+			this.mData = pData;
+		}
+		// ===========================================================
+		// Getter & Setter
+		// ===========================================================
+		public T getReturnValue() {
+			if(this.mData.length == 1){
+				return this.mData[0];
+			}else{
+				return ArrayUtils.random(mData);
+			}
+		}
+		// ===========================================================
+		// Methods for/from SuperClass/Interfaces
+		// ===========================================================
+		// ===========================================================
+		// Methods
+		// ===========================================================
+		// ===========================================================
+		// Inner and Anonymous Classes
+		// ===========================================================
+	}
+}",class,
+"	private static class Entry<T> {
+		// ===========================================================
+		// Constants
+		// ===========================================================
+		// ===========================================================
+		// Fields
+		// ===========================================================
+		public final float mFactor;
+		public final T[] mData;
+		// ===========================================================
+		// Constructors
+		// ===========================================================
+		public Entry(final float pFactor, final T ... pData){
+			this.mFactor = pFactor;
+			this.mData = pData;
+		}
+		// ===========================================================
+		// Getter & Setter
+		// ===========================================================
+		public T getReturnValue() {
+			if(this.mData.length == 1){
+				return this.mData[0];
+			}else{
+				return ArrayUtils.random(mData);
+			}
+		}
+		// ===========================================================
+		// Methods for/from SuperClass/Interfaces
+		// ===========================================================
+		// ===========================================================
+		// Methods
+		// ===========================================================
+		// ===========================================================
+		// Inner and Anonymous Classes
+		// ===========================================================
+	}",class,
+"	public void add(final float pFactor, final T ... pElements){
+		this.mProbabilitySum += pFactor;
+		this.mEntries.add(new Entry<T>(pFactor, pElements));
+	}",method,
+"	public T next() {
+		float random = MathUtils.random(0, this.mProbabilitySum);
+		final ArrayList<Entry<T>> factors = this.mEntries;
+		for(int i = factors.size() - 1; i >= 0; i--){
+			final Entry<T> entry = factors.get(i);
+			random -= entry.mFactor;
+			if(random <= 0){
+				return entry.getReturnValue();
+			}
+		}
+		final Entry<T> lastEntry = factors.get(factors.size() - 1);
+		return lastEntry.getReturnValue();
+	}",method,
+"			if(random <= 0){
+				return entry.getReturnValue();
+			}",method,
+"	public void clear() {
+		this.mProbabilitySum = 0;
+		this.mEntries.clear();
+	}",method,
+"		public Entry(final float pFactor, final T ... pData){
+			this.mFactor = pFactor;
+			this.mData = pData;
+		}",method,
+"		public T getReturnValue() {
+			if(this.mData.length == 1){
+				return this.mData[0];
+			}else{
+				return ArrayUtils.random(mData);
+			}
+		}",method,
+"			if(this.mData.length == 1){
+				return this.mData[0];
+			}",method,
+"public class TransactionSuspensionNotSupportedException extends CannotCreateTransactionException {
+	public TransactionSuspensionNotSupportedException(String msg) {
+		super(msg);
+	}
+	public TransactionSuspensionNotSupportedException(String msg, Throwable cause) {
+		super(msg, cause);
+	}
+}",class,
+"	public TransactionSuspensionNotSupportedException(String msg) {
+		super(msg);
+	}",method,
+"	public TransactionSuspensionNotSupportedException(String msg, Throwable cause) {
+		super(msg, cause);
+	}",method,
+"public class RepeatingSpriteBackground extends SpriteBackground {
+	// ===========================================================
+	// Constants
+	// ===========================================================
+	// ===========================================================
+	// Fields
+	// ===========================================================
+	private BitmapTextureAtlas mBitmapTextureAtlas;
+	private final float mScale;
+	// ===========================================================
+	// Constructors
+	// ===========================================================
+	public RepeatingSpriteBackground(final float pCameraWidth, final float pCameraHeight, final TextureManager pTextureManager, final IBitmapTextureAtlasSource pBitmapTextureAtlasSource, final VertexBufferObjectManager pVertexBufferObjectManager) throws IllegalArgumentException {
+		this(pCameraWidth, pCameraHeight, pTextureManager, pBitmapTextureAtlasSource, 1, pVertexBufferObjectManager);
+	}
+	public RepeatingSpriteBackground(final float pCameraWidth, final float pCameraHeight, final TextureManager pTextureManager, final IBitmapTextureAtlasSource pBitmapTextureAtlasSource, final float pScale, final VertexBufferObjectManager pVertexBufferObjectManager) throws IllegalArgumentException {
+		super(null);
+		this.mScale = pScale;
+		this.mEntity = this.loadSprite(pCameraWidth, pCameraHeight, pTextureManager, pBitmapTextureAtlasSource, pVertexBufferObjectManager);
+	}
+	// ===========================================================
+	// Getter & Setter
+	// ===========================================================
+	public BitmapTextureAtlas getBitmapTextureAtlas() {
+		return this.mBitmapTextureAtlas;
+	}
+	// ===========================================================
+	// Methods for/from SuperClass/Interfaces
+	// ===========================================================
+	// ===========================================================
+	// Methods
+	// ===========================================================
+	private Sprite loadSprite(final float pCameraWidth, final float pCameraHeight, final TextureManager pTextureManager, final IBitmapTextureAtlasSource pBitmapTextureAtlasSource, final VertexBufferObjectManager pVertexBufferObjectManager) throws IllegalArgumentException {
+		this.mBitmapTextureAtlas = new BitmapTextureAtlas(pTextureManager, pBitmapTextureAtlasSource.getTextureWidth(), pBitmapTextureAtlasSource.getTextureHeight(), BitmapTextureFormat.RGBA_8888, TextureOptions.REPEATING_NEAREST);
+		final ITextureRegion textureRegion = BitmapTextureAtlasTextureRegionFactory.createFromSource(this.mBitmapTextureAtlas, pBitmapTextureAtlasSource, 0, 0);
+		final int width = Math.round(pCameraWidth / this.mScale);
+		final int height = Math.round(pCameraHeight / this.mScale);
+		textureRegion.setTextureWidth(width);
+		textureRegion.setTextureHeight(height);
+		this.mBitmapTextureAtlas.load();
+		final Sprite sprite = new Sprite(0, 0, width, height, textureRegion, pVertexBufferObjectManager);
+		sprite.setScaleCenter(0, 0);
+		sprite.setScale(this.mScale);
+		return sprite;
+	}
+	// ===========================================================
+	// Inner and Anonymous Classes
+	// ===========================================================
+}",class,
+"	public RepeatingSpriteBackground(final float pCameraWidth, final float pCameraHeight, final TextureManager pTextureManager, final IBitmapTextureAtlasSource pBitmapTextureAtlasSource, final VertexBufferObjectManager pVertexBufferObjectManager) throws IllegalArgumentException {
+		this(pCameraWidth, pCameraHeight, pTextureManager, pBitmapTextureAtlasSource, 1, pVertexBufferObjectManager);
+	}",method,
+"	public RepeatingSpriteBackground(final float pCameraWidth, final float pCameraHeight, final TextureManager pTextureManager, final IBitmapTextureAtlasSource pBitmapTextureAtlasSource, final float pScale, final VertexBufferObjectManager pVertexBufferObjectManager) throws IllegalArgumentException {
+		super(null);
+		this.mScale = pScale;
+		this.mEntity = this.loadSprite(pCameraWidth, pCameraHeight, pTextureManager, pBitmapTextureAtlasSource, pVertexBufferObjectManager);
+	}",method,
+"	public BitmapTextureAtlas getBitmapTextureAtlas() {
+		return this.mBitmapTextureAtlas;
+	}",method,
+"	private Sprite loadSprite(final float pCameraWidth, final float pCameraHeight, final TextureManager pTextureManager, final IBitmapTextureAtlasSource pBitmapTextureAtlasSource, final VertexBufferObjectManager pVertexBufferObjectManager) throws IllegalArgumentException {
+		this.mBitmapTextureAtlas = new BitmapTextureAtlas(pTextureManager, pBitmapTextureAtlasSource.getTextureWidth(), pBitmapTextureAtlasSource.getTextureHeight(), BitmapTextureFormat.RGBA_8888, TextureOptions.REPEATING_NEAREST);
+		final ITextureRegion textureRegion = BitmapTextureAtlasTextureRegionFactory.createFromSource(this.mBitmapTextureAtlas, pBitmapTextureAtlasSource, 0, 0);
+		final int width = Math.round(pCameraWidth / this.mScale);
+		final int height = Math.round(pCameraHeight / this.mScale);
+		textureRegion.setTextureWidth(width);
+		textureRegion.setTextureHeight(height);
+		this.mBitmapTextureAtlas.load();
+		final Sprite sprite = new Sprite(0, 0, width, height, textureRegion, pVertexBufferObjectManager);
+		sprite.setScaleCenter(0, 0);
+		sprite.setScale(this.mScale);
+		return sprite;
+	}",method,
+"public class SingleInternalHelperTest {
+    @Test
+    public void utilityClass() {
+        TestHelper.checkUtilityClass(SingleInternalHelper.class);
+    }
+    @Test
+    public void noSuchElementCallableEnum() {
+        assertEquals(1, SingleInternalHelper.NoSuchElementCallable.values().length);
+        assertNotNull(SingleInternalHelper.NoSuchElementCallable.valueOf(""INSTANCE""));
+    }
+    @Test
+    public void toFlowableEnum() {
+        assertEquals(1, SingleInternalHelper.ToFlowable.values().length);
+        assertNotNull(SingleInternalHelper.ToFlowable.valueOf(""INSTANCE""));
+    }
+    @Test
+    public void toObservableEnum() {
+        assertEquals(1, SingleInternalHelper.ToObservable.values().length);
+        assertNotNull(SingleInternalHelper.ToObservable.valueOf(""INSTANCE""));
+    }
+    @Test
+    public void singleIterableToFlowableIterable() {
+        Iterable<? extends Flowable<Integer>> it = SingleInternalHelper.iterableToFlowable(
+                Collections.singletonList(Single.just(1)));
+        Iterator<? extends Flowable<Integer>> iter = it.iterator();
+        if (iter.hasNext()) {
+            iter.next().test().assertResult(1);
+            if (iter.hasNext()) {
+                fail(""Iterator reports an additional element"");
+            }
+        } else {
+            fail(""Iterator was empty"");
+        }
+    }
+}",class,
+"    @Test
+    public void utilityClass() {
+        TestHelper.checkUtilityClass(SingleInternalHelper.class);
+    }",method,
+"    @Test
+    public void noSuchElementCallableEnum() {
+        assertEquals(1, SingleInternalHelper.NoSuchElementCallable.values().length);
+        assertNotNull(SingleInternalHelper.NoSuchElementCallable.valueOf(""INSTANCE""));
+    }",method,
+"    @Test
+    public void toFlowableEnum() {
+        assertEquals(1, SingleInternalHelper.ToFlowable.values().length);
+        assertNotNull(SingleInternalHelper.ToFlowable.valueOf(""INSTANCE""));
+    }",method,
+"    @Test
+    public void toObservableEnum() {
+        assertEquals(1, SingleInternalHelper.ToObservable.values().length);
+        assertNotNull(SingleInternalHelper.ToObservable.valueOf(""INSTANCE""));
+    }",method,
+"    @Test
+    public void singleIterableToFlowableIterable() {
+        Iterable<? extends Flowable<Integer>> it = SingleInternalHelper.iterableToFlowable(
+                Collections.singletonList(Single.just(1)));
+        Iterator<? extends Flowable<Integer>> iter = it.iterator();
+        if (iter.hasNext()) {
+            iter.next().test().assertResult(1);
+            if (iter.hasNext()) {
+                fail(""Iterator reports an additional element"");
+            }
+        } else {
+            fail(""Iterator was empty"");
+        }
+    }",method,
+"public class ClassDependentsAccumulator {
+    private final Set<String> dependenciesToAll = Sets.newHashSet();
+    private final Map<String, String> filePathToClassName = new HashMap<String, String>();
+    private final Map<String, Set<String>> dependents = new HashMap<String, Set<String>>();
+    private final Multimap<String, Integer> classesToConstants = HashMultimap.create();
+    private final Multimap<Integer, String> literalsToClasses = HashMultimap.create();
+    private final Set<String> seenClasses = Sets.newHashSet();
+    private final Multimap<String, String> parentToChildren = HashMultimap.create();
+    public ClassDependentsAccumulator() {
+    }
+    public void addClass(File classFile, ClassAnalysis classAnalysis) {
+        addClass(classAnalysis);
+        filePathToClassName.put(classFile.getAbsolutePath(), classAnalysis.getClassName());
+    }
+    public void addClass(ClassAnalysis classAnalysis) {
+        addClass(classAnalysis.getClassName(), classAnalysis.isDependencyToAll(), classAnalysis.getClassDependencies(), classAnalysis.getConstants(), classAnalysis.getLiterals(), classAnalysis.getSuperTypes());
+    }
+    public void addClass(String className, boolean dependencyToAll, Iterable<String> classDependencies, Set<Integer> constants, Set<Integer> literals, Set<String> superTypes) {
+        if (seenClasses.contains(className)) {
+            // same classes may be found in different classpath trees/jars
+            // and we keep only the first one
+            return;
+        }
+        seenClasses.add(className);
+        for (Integer constant : constants) {
+            classesToConstants.put(className, constant);
+        }
+        for (Integer literal : literals) {
+            literalsToClasses.put(literal, className);
+        }
+        if (dependencyToAll) {
+            dependenciesToAll.add(className);
+            dependents.remove(className);
+        }
+        for (String dependency : classDependencies) {
+            if (!dependency.equals(className) && !dependenciesToAll.contains(dependency)) {
+                Set<String> d = rememberClass(dependency);
+                d.add(className);
+            }
+        }
+        for (String superType : superTypes) {
+            parentToChildren.put(superType, className);
+        }
+    }
+    private Set<String> rememberClass(String className) {
+        Set<String> d = dependents.get(className);
+        if (d == null) {
+            d = Sets.newHashSet();
+            dependents.put(className, d);
+        }
+        return d;
+    }
+    public Map<String, DependentsSet> getDependentsMap() {
+        if (dependenciesToAll.isEmpty() && dependents.isEmpty()) {
+            return Collections.emptyMap();
+        }
+        ImmutableMap.Builder<String, DependentsSet> builder = ImmutableMap.builder();
+        for (String s : dependenciesToAll) {
+            builder.put(s, DependencyToAll.INSTANCE);
+        }
+        for (Map.Entry<String, Set<String>> entry : dependents.entrySet()) {
+            builder.put(entry.getKey(), new DefaultDependentsSet(ImmutableSet.copyOf(entry.getValue())));
+        }
+        return builder.build();
+    }
+    public Multimap<String, Integer> getClassesToConstants() {
+        return classesToConstants;
+    }
+    public Multimap<Integer, String> getLiteralsToClasses() {
+        return literalsToClasses;
+    }
+    public ClassSetAnalysisData getAnalysis() {
+        return new ClassSetAnalysisData(filePathToClassName, getDependentsMap(), getClassesToConstants(), getLiteralsToClasses(), parentToChildren);
+    }
+}",class,
+"    public ClassDependentsAccumulator() {
+    }",method,
+"    public void addClass(File classFile, ClassAnalysis classAnalysis) {
+        addClass(classAnalysis);
+        filePathToClassName.put(classFile.getAbsolutePath(), classAnalysis.getClassName());
+    }",method,
+"    public void addClass(ClassAnalysis classAnalysis) {
+        addClass(classAnalysis.getClassName(), classAnalysis.isDependencyToAll(), classAnalysis.getClassDependencies(), classAnalysis.getConstants(), classAnalysis.getLiterals(), classAnalysis.getSuperTypes());
+    }",method,
+"    public void addClass(String className, boolean dependencyToAll, Iterable<String> classDependencies, Set<Integer> constants, Set<Integer> literals, Set<String> superTypes) {
+        if (seenClasses.contains(className)) {
+            // same classes may be found in different classpath trees/jars
+            // and we keep only the first one
+            return;
+        }
+        seenClasses.add(className);
+        for (Integer constant : constants) {
+            classesToConstants.put(className, constant);
+        }
+        for (Integer literal : literals) {
+            literalsToClasses.put(literal, className);
+        }
+        if (dependencyToAll) {
+            dependenciesToAll.add(className);
+            dependents.remove(className);
+        }
+        for (String dependency : classDependencies) {
+            if (!dependency.equals(className) && !dependenciesToAll.contains(dependency)) {
+                Set<String> d = rememberClass(dependency);
+                d.add(className);
+            }
+        }
+        for (String superType : superTypes) {
+            parentToChildren.put(superType, className);
+        }
+    }",method,
+"        for (Integer constant : constants) {
+            classesToConstants.put(className, constant);
+        }",method,
+"        for (Integer literal : literals) {
+            literalsToClasses.put(literal, className);
+        }",method,

@@ -1,0 +1,874 @@
+code_snippet,type,score
+"    public void testWhitelistedByPrefix() {
+        checkRemoteWhitelist(buildRemoteWhitelist(singletonList(""*.example.com:9200"")),
+                new RemoteInfo(randomAlphaOfLength(5), ""es.example.com"", 9200, new BytesArray(""test""), null, null, emptyMap(),
+                        RemoteInfo.DEFAULT_SOCKET_TIMEOUT, RemoteInfo.DEFAULT_CONNECT_TIMEOUT));
+        checkRemoteWhitelist(buildRemoteWhitelist(singletonList(""*.example.com:9200"")),
+                newRemoteInfo(""6e134134a1.us-east-1.aws.example.com"", 9200));
+    }",method,
+"    public void testWhitelistedBySuffix() {
+        checkRemoteWhitelist(buildRemoteWhitelist(singletonList(""es.example.com:*"")), newRemoteInfo(""es.example.com"", 9200));
+    }",method,
+"    public void testWhitelistedByInfix() {
+        checkRemoteWhitelist(buildRemoteWhitelist(singletonList(""es*.example.com:9200"")), newRemoteInfo(""es1.example.com"", 9200));
+    }",method,
+"    public void testLoopbackInWhitelistRemote() throws UnknownHostException {
+        List<String> whitelist = randomWhitelist();
+        whitelist.add(""127.0.0.1:*"");
+        checkRemoteWhitelist(buildRemoteWhitelist(whitelist), newRemoteInfo(""127.0.0.1"", 9200));
+    }",method,
+"    public void testUnwhitelistedRemote() {
+        int port = between(1, Integer.MAX_VALUE);
+        List<String> whitelist = randomBoolean() ? randomWhitelist() : emptyList();
+        Exception e = expectThrows(IllegalArgumentException.class,
+                () -> checkRemoteWhitelist(buildRemoteWhitelist(whitelist), newRemoteInfo(""not in list"", port)));
+        assertEquals(""[not in list:"" + port + ""] not whitelisted in reindex.remote.whitelist"", e.getMessage());
+    }",method,
+"    public void testRejectMatchAll() {
+        assertMatchesTooMuch(singletonList(""*""));
+        assertMatchesTooMuch(singletonList(""**""));
+        assertMatchesTooMuch(singletonList(""***""));
+        assertMatchesTooMuch(Arrays.asList(""realstuff"", ""*""));
+        assertMatchesTooMuch(Arrays.asList(""*"", ""realstuff""));
+        List<String> random = randomWhitelist();
+        random.add(""*"");
+        assertMatchesTooMuch(random);
+    }",method,
+"    private void assertMatchesTooMuch(List<String> whitelist) {
+        Exception e = expectThrows(IllegalArgumentException.class, () -> buildRemoteWhitelist(whitelist));
+        assertEquals(""Refusing to start because whitelist "" + whitelist + "" accepts all addresses. ""
+                + ""This would allow users to reindex-from-remote any URL they like effectively having Elasticsearch make HTTP GETs ""
+                + ""for them."", e.getMessage());
+    }",method,
+"    private List<String> randomWhitelist() {
+        int size = between(1, 100);
+        List<String> whitelist = new ArrayList<>(size);
+        for (int i = 0; i < size; i++) {
+            whitelist.add(randomAlphaOfLength(5) + ':' + between(1, Integer.MAX_VALUE));
+        }
+        return whitelist;
+    }",method,
+"        for (int i = 0; i < size; i++) {
+            whitelist.add(randomAlphaOfLength(5) + ':' + between(1, Integer.MAX_VALUE));
+        }",method,
+"public class LookupItem<T> extends MutableLookupElement<T> implements Comparable {
+  public static final ClassConditionKey<LookupItem> CLASS_CONDITION_KEY = ClassConditionKey.create(LookupItem.class);
+  public static final Object HIGHLIGHTED_ATTR = Key.create(""highlighted"");
+  public static final Object ICON_ATTR = Key.create(""icon"");
+  public static final Object TYPE_TEXT_ATTR = Key.create(""typeText"");
+  public static final Object TAIL_TEXT_ATTR = Key.create(""tailText"");
+  public static final Object TAIL_TEXT_SMALL_ATTR = Key.create(""tailTextSmall"");
+  public static final Object FORCE_QUALIFY = Key.create(""FORCE_QUALIFY"");
+  public static final Object CASE_INSENSITIVE = Key.create(""CASE_INSENSITIVE"");
+  public static final Key<TailType> TAIL_TYPE_ATTR = Key.create(""myTailType""); // one of constants defined in SimpleTailType interface
+  private Object myObject;
+  private String myLookupString;
+  private InsertHandler myInsertHandler;
+  private double myPriority;
+  private Map<Object,Object> myAttributes = null;
+  public static final LookupItem[] EMPTY_ARRAY = new LookupItem[0];
+  private final Set<String> myAllLookupStrings = new HashSet<>();
+  private String myPresentable;
+  private AutoCompletionPolicy myAutoCompletionPolicy = AutoCompletionPolicy.SETTINGS_DEPENDENT;
+  public LookupItem(T o, @NotNull @NonNls String lookupString) {
+    setObject(o);
+    setLookupString(lookupString);
+  }
+  public static LookupItem fromString(String s) {
+    return new LookupItem<>(s, s);
+  }
+  public void setObject(@NotNull T o) {
+    myObject = o;
+    if (o instanceof LookupValueWithPriority) {
+      setPriority(((LookupValueWithPriority)o).getPriority());
+    }
+  }
+  public boolean equals(Object o){
+    if (o == this) return true;
+    if (o instanceof LookupItem){
+      LookupItem item = (LookupItem)o;
+      return Comparing.equal(myObject, item.myObject)
+             && Comparing.equal(myLookupString, item.myLookupString)
+             && Comparing.equal(myAllLookupStrings, item.myAllLookupStrings)
+             && Comparing.equal(myAttributes, item.myAttributes);
+    }
+    return false;
+  }
+  public int hashCode() {
+    final Object object = getObject();
+    assert object != this: getClass().getName();
+    return myAllLookupStrings.hashCode() * 239 + object.hashCode();
+  }
+  public String toString() {
+    return getLookupString();
+  }
+  @Override
+  @NotNull
+  public T getObject() {
+    return (T)myObject;
+  }
+  @Override
+  @NotNull
+  public String getLookupString() {
+    return myLookupString;
+  }
+  public void setLookupString(@NotNull String lookupString) {
+    if (myAllLookupStrings.contains("""")) myAllLookupStrings.remove("""");
+    myLookupString = lookupString;
+    myAllLookupStrings.add(lookupString);
+  }
+  public Object getAttribute(Object key){
+    if (myAttributes != null){
+      return myAttributes.get(key);
+    }
+    else{
+      return null;
+    }
+  }
+  public <T> T getAttribute(Key<T> key) {
+    if (myAttributes != null){
+      //noinspection unchecked
+      return (T)myAttributes.get(key);
+    }
+    else{
+      return null;
+    }
+  }
+  public void setAttribute(Object key, Object value){
+    if (value == null && myAttributes != null) {
+      myAttributes.remove(key);
+      return;
+    }
+    if (myAttributes == null){
+      myAttributes = new HashMap<>(5);
+    }
+    myAttributes.put(key, value);
+  }
+  public <T> void setAttribute(Key<T> key, T value){
+    if (value == null && myAttributes != null) {
+      myAttributes.remove(key);
+      return;
+    }
+    if (myAttributes == null){
+      myAttributes = new HashMap<>(5);
+    }
+    myAttributes.put(key, value);
+  }
+  @Override
+  public InsertHandler<? extends LookupItem> getInsertHandler(){
+    return myInsertHandler;
+  }
+  @Override
+  public boolean isBold() {
+    return getAttribute(HIGHLIGHTED_ATTR) != null;
+  }
+  @Override
+  public void handleInsert(final InsertionContext context) {
+    final InsertHandler<? extends LookupElement> handler = getInsertHandler();
+    if (handler != null) {
+      //noinspection unchecked
+      ((InsertHandler)handler).handleInsert(context, this);
+    }
+    if (getTailType() != TailType.UNKNOWN && myInsertHandler == null) {
+      context.setAddCompletionChar(false);
+      final TailType type = handleCompletionChar(context.getEditor(), this, context.getCompletionChar());
+      type.processTail(context.getEditor(), context.getTailOffset());
+    }
+  }
+  @Nullable
+  public static TailType getDefaultTailType(final char completionChar) {
+    switch(completionChar){
+      case '.': return new CharTailType('.', false);
+      case ',': return TailType.COMMA;
+      case ';': return TailType.SEMICOLON;
+      case '=': return TailType.EQ;
+      case ' ': return TailType.SPACE;
+      case ':': return TailType.CASE_COLON; //?
+    }
+    return null;
+  }
+  @NotNull
+  public static TailType handleCompletionChar(@NotNull final Editor editor, @NotNull final LookupElement lookupElement, final char completionChar) {
+    final TailType type = getDefaultTailType(completionChar);
+    if (type != null) {
+      return type;
+    }
+    if (lookupElement instanceof LookupItem) {
+      final LookupItem<?> item = (LookupItem)lookupElement;
+      final TailType attr = item.getAttribute(TAIL_TYPE_ATTR);
+      if (attr != null) {
+        return attr;
+      }
+    }
+    return TailType.NONE;
+  }
+  @NotNull
+  public TailType getTailType(){
+    final TailType tailType = getAttribute(TAIL_TYPE_ATTR);
+    return tailType != null ? tailType : TailType.UNKNOWN;
+  }
+  @Override
+  @NotNull
+  public LookupItem<T> setTailType(@NotNull TailType type) {
+    setAttribute(TAIL_TYPE_ATTR, type);
+    return this;
+  }
+  @Override
+  public int compareTo(@NotNull Object o){
+    if(o instanceof String){
+      return getLookupString().compareTo((String)o);
+    }
+    if(!(o instanceof LookupItem)){
+      throw new RuntimeException(""Trying to compare LookupItem with "" + o.getClass() + ""!!!"");
+    }
+    return getLookupString().compareTo(((LookupItem)o).getLookupString());
+  }
+  @Override
+  public LookupItem<T> setInsertHandler(@NotNull final InsertHandler<? extends LookupElement> handler) {
+    myInsertHandler = handler;
+    return this;
+  }
+  @Override
+  public void renderElement(LookupElementPresentation presentation) {
+    for (final ElementLookupRenderer renderer : Extensions.getExtensions(ElementLookupRenderer.EP_NAME)) {
+      if (renderer.handlesItem(getObject())) {
+        renderer.renderElement(this, getObject(), presentation);
+        return;
+      }
+    }
+    DefaultLookupItemRenderer.INSTANCE.renderElement(this, presentation);
+  }
+  @Override
+  public LookupItem<T> setBold() {
+    setAttribute(HIGHLIGHTED_ATTR, """");
+    return this;
+  }
+  public LookupItem<T> forceQualify() {
+    setAttribute(FORCE_QUALIFY, """");
+    return this;
+  }
+  @Override
+  public LookupItem<T> setAutoCompletionPolicy(final AutoCompletionPolicy policy) {
+    myAutoCompletionPolicy = policy;
+    return this;
+  }
+  @Override
+  public AutoCompletionPolicy getAutoCompletionPolicy() {
+    return myAutoCompletionPolicy;
+  }
+  @Override
+  @NotNull
+  public LookupItem<T> setIcon(Icon icon) {
+    setAttribute(ICON_ATTR, icon);
+    return this;
+  }
+  @Override
+  @NotNull
+  public LookupItem<T> setPriority(double priority) {
+    myPriority = priority;
+    return this;
+  }
+  public final double getPriority() {
+    return myPriority;
+  }
+  @Override
+  @NotNull
+  public LookupItem<T> setPresentableText(@NotNull final String displayText) {
+    myPresentable = displayText;
+    return this;
+  }
+  @Nullable
+  public String getPresentableText() {
+    return myPresentable;
+  }
+  @NotNull
+  public MutableLookupElement<T> setTailText(final String text, final boolean grayed) {
+    setAttribute(TAIL_TEXT_ATTR, text);
+    setAttribute(TAIL_TEXT_SMALL_ATTR, Boolean.TRUE);
+    return this;
+  }
+  @Override
+  public LookupItem<T> addLookupStrings(@NonNls final String... additionalLookupStrings) {
+    ContainerUtil.addAll(myAllLookupStrings, additionalLookupStrings);
+    return this;
+  }
+  @Override
+  public Set<String> getAllLookupStrings() {
+    return myAllLookupStrings;
+  }
+  @Override
+  public boolean isCaseSensitive() {
+    return !Boolean.TRUE.equals(getAttribute(CASE_INSENSITIVE));
+  }
+}",class,
+"  public LookupItem(T o, @NotNull @NonNls String lookupString) {
+    setObject(o);
+    setLookupString(lookupString);
+  }",method,
+"  public static LookupItem fromString(String s) {
+    return new LookupItem<>(s, s);
+  }",method,
+"  public void setObject(@NotNull T o) {
+    myObject = o;
+    if (o instanceof LookupValueWithPriority) {
+      setPriority(((LookupValueWithPriority)o).getPriority());
+    }
+  }",method,
+"    if (o instanceof LookupValueWithPriority) {
+      setPriority(((LookupValueWithPriority)o).getPriority());
+    }",method,
+"  public boolean equals(Object o){
+    if (o == this) return true;
+    if (o instanceof LookupItem){
+      LookupItem item = (LookupItem)o;
+      return Comparing.equal(myObject, item.myObject)
+             && Comparing.equal(myLookupString, item.myLookupString)
+             && Comparing.equal(myAllLookupStrings, item.myAllLookupStrings)
+             && Comparing.equal(myAttributes, item.myAttributes);
+    }
+    return false;
+  }",method,
+"    if (o instanceof LookupItem){
+      LookupItem item = (LookupItem)o;
+      return Comparing.equal(myObject, item.myObject)
+             && Comparing.equal(myLookupString, item.myLookupString)
+             && Comparing.equal(myAllLookupStrings, item.myAllLookupStrings)
+             && Comparing.equal(myAttributes, item.myAttributes);
+    }",method,
+"  public int hashCode() {
+    final Object object = getObject();
+    assert object != this: getClass().getName();
+    return myAllLookupStrings.hashCode() * 239 + object.hashCode();
+  }",method,
+"  public String toString() {
+    return getLookupString();
+  }",method,
+"  @Override
+  @NotNull
+  public T getObject() {
+    return (T)myObject;
+  }",method,
+"  @Override
+  @NotNull
+  public String getLookupString() {
+    return myLookupString;
+  }",method,
+"  public void setLookupString(@NotNull String lookupString) {
+    if (myAllLookupStrings.contains("""")) myAllLookupStrings.remove("""");
+    myLookupString = lookupString;
+    myAllLookupStrings.add(lookupString);
+  }",method,
+"  public Object getAttribute(Object key){
+    if (myAttributes != null){
+      return myAttributes.get(key);
+    }
+    else{
+      return null;
+    }
+  }",method,
+"    if (myAttributes != null){
+      return myAttributes.get(key);
+    }",method,
+"  public <T> T getAttribute(Key<T> key) {
+    if (myAttributes != null){
+      //noinspection unchecked
+      return (T)myAttributes.get(key);
+    }
+    else{
+      return null;
+    }
+  }",method,
+"    if (myAttributes != null){
+      //noinspection unchecked
+      return (T)myAttributes.get(key);
+    }",method,
+"  public void setAttribute(Object key, Object value){
+    if (value == null && myAttributes != null) {
+      myAttributes.remove(key);
+      return;
+    }
+    if (myAttributes == null){
+      myAttributes = new HashMap<>(5);
+    }
+    myAttributes.put(key, value);
+  }",method,
+"    if (value == null && myAttributes != null) {
+      myAttributes.remove(key);
+      return;
+    }",method,
+"    if (myAttributes == null){
+      myAttributes = new HashMap<>(5);
+    }",method,
+"  public <T> void setAttribute(Key<T> key, T value){
+    if (value == null && myAttributes != null) {
+      myAttributes.remove(key);
+      return;
+    }
+    if (myAttributes == null){
+      myAttributes = new HashMap<>(5);
+    }
+    myAttributes.put(key, value);
+  }",method,
+"    if (value == null && myAttributes != null) {
+      myAttributes.remove(key);
+      return;
+    }",method,
+"    if (myAttributes == null){
+      myAttributes = new HashMap<>(5);
+    }",method,
+"  @Override
+  public InsertHandler<? extends LookupItem> getInsertHandler(){
+    return myInsertHandler;
+  }",method,
+"  @Override
+  public boolean isBold() {
+    return getAttribute(HIGHLIGHTED_ATTR) != null;
+  }",method,
+"  @Override
+  public void handleInsert(final InsertionContext context) {
+    final InsertHandler<? extends LookupElement> handler = getInsertHandler();
+    if (handler != null) {
+      //noinspection unchecked
+      ((InsertHandler)handler).handleInsert(context, this);
+    }
+    if (getTailType() != TailType.UNKNOWN && myInsertHandler == null) {
+      context.setAddCompletionChar(false);
+      final TailType type = handleCompletionChar(context.getEditor(), this, context.getCompletionChar());
+      type.processTail(context.getEditor(), context.getTailOffset());
+    }
+  }",method,
+"    if (handler != null) {
+      //noinspection unchecked
+      ((InsertHandler)handler).handleInsert(context, this);
+    }",method,
+"  @Nullable
+  public static TailType getDefaultTailType(final char completionChar) {
+    switch(completionChar){
+      case '.': return new CharTailType('.', false);
+      case ',': return TailType.COMMA;
+      case ';': return TailType.SEMICOLON;
+      case '=': return TailType.EQ;
+      case ' ': return TailType.SPACE;
+      case ':': return TailType.CASE_COLON; //?
+    }
+    return null;
+  }",method,
+"    switch(completionChar){
+      case '.': return new CharTailType('.', false);
+      case ',': return TailType.COMMA;
+      case ';': return TailType.SEMICOLON;
+      case '=': return TailType.EQ;
+      case ' ': return TailType.SPACE;
+      case ':': return TailType.CASE_COLON; //?
+    }",method,
+"  @NotNull
+  public static TailType handleCompletionChar(@NotNull final Editor editor, @NotNull final LookupElement lookupElement, final char completionChar) {
+    final TailType type = getDefaultTailType(completionChar);
+    if (type != null) {
+      return type;
+    }
+    if (lookupElement instanceof LookupItem) {
+      final LookupItem<?> item = (LookupItem)lookupElement;
+      final TailType attr = item.getAttribute(TAIL_TYPE_ATTR);
+      if (attr != null) {
+        return attr;
+      }
+    }
+    return TailType.NONE;
+  }",method,
+"    if (type != null) {
+      return type;
+    }",method,
+"    if (lookupElement instanceof LookupItem) {
+      final LookupItem<?> item = (LookupItem)lookupElement;
+      final TailType attr = item.getAttribute(TAIL_TYPE_ATTR);
+      if (attr != null) {
+        return attr;
+      }
+    }",method,
+"      if (attr != null) {
+        return attr;
+      }",method,
+"  @NotNull
+  public TailType getTailType(){
+    final TailType tailType = getAttribute(TAIL_TYPE_ATTR);
+    return tailType != null ? tailType : TailType.UNKNOWN;
+  }",method,
+"  @Override
+  @NotNull
+  public LookupItem<T> setTailType(@NotNull TailType type) {
+    setAttribute(TAIL_TYPE_ATTR, type);
+    return this;
+  }",method,
+"  @Override
+  public int compareTo(@NotNull Object o){
+    if(o instanceof String){
+      return getLookupString().compareTo((String)o);
+    }
+    if(!(o instanceof LookupItem)){
+      throw new RuntimeException(""Trying to compare LookupItem with "" + o.getClass() + ""!!!"");
+    }
+    return getLookupString().compareTo(((LookupItem)o).getLookupString());
+  }",method,
+"    if(o instanceof String){
+      return getLookupString().compareTo((String)o);
+    }",method,
+"  @Override
+  public LookupItem<T> setInsertHandler(@NotNull final InsertHandler<? extends LookupElement> handler) {
+    myInsertHandler = handler;
+    return this;
+  }",method,
+"  @Override
+  public void renderElement(LookupElementPresentation presentation) {
+    for (final ElementLookupRenderer renderer : Extensions.getExtensions(ElementLookupRenderer.EP_NAME)) {
+      if (renderer.handlesItem(getObject())) {
+        renderer.renderElement(this, getObject(), presentation);
+        return;
+      }
+    }
+    DefaultLookupItemRenderer.INSTANCE.renderElement(this, presentation);
+  }",method,
+"  @Override
+  public LookupItem<T> setBold() {
+    setAttribute(HIGHLIGHTED_ATTR, """");
+    return this;
+  }",method,
+"  public LookupItem<T> forceQualify() {
+    setAttribute(FORCE_QUALIFY, """");
+    return this;
+  }",method,
+"  @Override
+  public LookupItem<T> setAutoCompletionPolicy(final AutoCompletionPolicy policy) {
+    myAutoCompletionPolicy = policy;
+    return this;
+  }",method,
+"  @Override
+  public AutoCompletionPolicy getAutoCompletionPolicy() {
+    return myAutoCompletionPolicy;
+  }",method,
+"  @Override
+  @NotNull
+  public LookupItem<T> setIcon(Icon icon) {
+    setAttribute(ICON_ATTR, icon);
+    return this;
+  }",method,
+"  @Override
+  @NotNull
+  public LookupItem<T> setPriority(double priority) {
+    myPriority = priority;
+    return this;
+  }",method,
+"  public final double getPriority() {
+    return myPriority;
+  }",method,
+"  @Override
+  @NotNull
+  public LookupItem<T> setPresentableText(@NotNull final String displayText) {
+    myPresentable = displayText;
+    return this;
+  }",method,
+"  @Nullable
+  public String getPresentableText() {
+    return myPresentable;
+  }",method,
+"  @NotNull
+  public MutableLookupElement<T> setTailText(final String text, final boolean grayed) {
+    setAttribute(TAIL_TEXT_ATTR, text);
+    setAttribute(TAIL_TEXT_SMALL_ATTR, Boolean.TRUE);
+    return this;
+  }",method,
+"  @Override
+  public LookupItem<T> addLookupStrings(@NonNls final String... additionalLookupStrings) {
+    ContainerUtil.addAll(myAllLookupStrings, additionalLookupStrings);
+    return this;
+  }",method,
+"  @Override
+  public Set<String> getAllLookupStrings() {
+    return myAllLookupStrings;
+  }",method,
+"  @Override
+  public boolean isCaseSensitive() {
+    return !Boolean.TRUE.equals(getAttribute(CASE_INSENSITIVE));
+  }",method,
+"           ""class MyClass(Generic[T]):\n"" +
+           ""    def __init__(self, type: Type[T]):\n"" +
+           ""        pass\n"" +
+           ""\n"" +
+           ""def f(x: Type[T]):\n"" +
+           ""    expr = MyClass(x)\n"");
+  }
+  // PY-18816
+  public void testLocalTypeAlias() {
+    doTest(""int"",
+           ""def func(g):\n"" +
+           ""    Alias = int\n"" +
+           ""    expr: Alias = g()"");
+  }",class,
+"  public void testLocalTypeAlias() {
+    doTest(""int"",
+           ""def func(g):\n"" +
+           ""    Alias = int\n"" +
+           ""    expr: Alias = g()"");
+  }",method,
+"  public void testLocalTypeAliasInFunctionTypeComment() {
+    doTest(""int"",
+           ""def func():\n"" +
+           ""    Alias = int\n"" +
+           ""    def g(x):\n"" +
+           ""        # type: (Alias) -> None\n"" +
+           ""        expr = x\n"");
+  }",method,
+"  private void doTestNoInjectedText(@NotNull String text) {
+    myFixture.configureByText(PythonFileType.INSTANCE, text);
+    final InjectedLanguageManager languageManager = InjectedLanguageManager.getInstance(myFixture.getProject());
+    final PsiLanguageInjectionHost host = languageManager.getInjectionHost(getElementAtCaret());
+    assertNull(host);
+  }",method,
+"  private void doTestInjectedText(@NotNull String text, @NotNull String expected) {
+    myFixture.configureByText(PythonFileType.INSTANCE, text);
+    final InjectedLanguageManager languageManager = InjectedLanguageManager.getInstance(myFixture.getProject());
+    final PsiLanguageInjectionHost host = languageManager.getInjectionHost(getElementAtCaret());
+    assertNotNull(host);
+    final List<Pair<PsiElement, TextRange>> files = languageManager.getInjectedPsiFiles(host);
+    assertNotNull(files);
+    assertFalse(files.isEmpty());
+    final PsiElement injected = files.get(0).getFirst();
+    assertEquals(expected, injected.getText());
+  }",method,
+"  private void doTest(@NotNull String expectedType, @NotNull String text) {
+    myFixture.copyDirectoryToProject(""typing"", """");
+    myFixture.configureByText(PythonFileType.INSTANCE, text);
+    final PyExpression expr = myFixture.findElementByText(""expr"", PyExpression.class);
+    final TypeEvalContext codeAnalysis = TypeEvalContext.codeAnalysis(expr.getProject(),expr.getContainingFile());
+    final TypeEvalContext userInitiated = TypeEvalContext.userInitiated(expr.getProject(), expr.getContainingFile()).withTracing();
+    assertType(""Failed in code analysis context"", expectedType, expr, codeAnalysis);
+    assertType(""Failed in user initiated context"", expectedType, expr, userInitiated);
+  }",method,
+"public class TestLoggerFactory extends InternalLoggerFactory {
+  private ConcurrentMap<String, String> names = new ConcurrentHashMap<>();
+  public boolean hasName(String name) {
+    return names.containsKey(name);
+  }
+  @Override
+  protected InternalLogger newInstance(String name) {
+    names.put(name, name);
+    return new AbstractInternalLogger(name) {
+      public boolean isTraceEnabled() { return true; }
+      public void trace(String msg) {}
+      public void trace(String format, Object arg) {}
+      public void trace(String format, Object argA, Object argB) {}
+      public void trace(String format, Object... arguments) {}
+      public void trace(String msg, Throwable t) {}
+      public boolean isDebugEnabled() { return false; }
+      public void debug(String msg) {}
+      public void debug(String format, Object arg) {}
+      public void debug(String format, Object argA, Object argB) {}
+      public void debug(String format, Object... arguments) {}
+      public void debug(String msg, Throwable t) {}
+      public boolean isInfoEnabled() { return false; }
+      public void info(String msg) {}
+      public void info(String format, Object arg) {}
+      public void info(String format, Object argA, Object argB) {}
+      public void info(String format, Object... arguments) {}
+      public void info(String msg, Throwable t) {}
+      public boolean isWarnEnabled() { return false; }
+      public void warn(String msg) {}
+      public void warn(String format, Object arg) {}
+      public void warn(String format, Object... arguments) {}
+      public void warn(String format, Object argA, Object argB) {}
+      public void warn(String msg, Throwable t) {}
+      public boolean isErrorEnabled() { return true; }
+      public void error(String msg) {}
+      public void error(String format, Object arg) {}
+      public void error(String format, Object argA, Object argB) {}
+      public void error(String format, Object... arguments) {}
+      public void error(String msg, Throwable t) {}
+    };
+  }
+}",class,
+"  public boolean hasName(String name) {
+    return names.containsKey(name);
+  }",method,
+"  @Override
+  protected InternalLogger newInstance(String name) {
+    names.put(name, name);
+    return new AbstractInternalLogger(name) {
+      public boolean isTraceEnabled() { return true; }
+      public void trace(String msg) {}
+      public void trace(String format, Object arg) {}
+      public void trace(String format, Object argA, Object argB) {}
+      public void trace(String format, Object... arguments) {}
+      public void trace(String msg, Throwable t) {}
+      public boolean isDebugEnabled() { return false; }
+      public void debug(String msg) {}
+      public void debug(String format, Object arg) {}
+      public void debug(String format, Object argA, Object argB) {}
+      public void debug(String format, Object... arguments) {}
+      public void debug(String msg, Throwable t) {}
+      public boolean isInfoEnabled() { return false; }
+      public void info(String msg) {}
+      public void info(String format, Object arg) {}
+      public void info(String format, Object argA, Object argB) {}
+      public void info(String format, Object... arguments) {}
+      public void info(String msg, Throwable t) {}
+      public boolean isWarnEnabled() { return false; }
+      public void warn(String msg) {}
+      public void warn(String format, Object arg) {}
+      public void warn(String format, Object... arguments) {}
+      public void warn(String format, Object argA, Object argB) {}
+      public void warn(String msg, Throwable t) {}
+      public boolean isErrorEnabled() { return true; }
+      public void error(String msg) {}
+      public void error(String format, Object arg) {}
+      public void error(String format, Object argA, Object argB) {}
+      public void error(String format, Object... arguments) {}
+      public void error(String msg, Throwable t) {}
+    };
+  }",method,
+"    return new AbstractInternalLogger(name) {
+      public boolean isTraceEnabled() { return true; }
+      public void trace(String msg) {}
+      public void trace(String format, Object arg) {}
+      public void trace(String format, Object argA, Object argB) {}
+      public void trace(String format, Object... arguments) {}
+      public void trace(String msg, Throwable t) {}
+      public boolean isDebugEnabled() { return false; }
+      public void debug(String msg) {}
+      public void debug(String format, Object arg) {}
+      public void debug(String format, Object argA, Object argB) {}
+      public void debug(String format, Object... arguments) {}
+      public void debug(String msg, Throwable t) {}
+      public boolean isInfoEnabled() { return false; }
+      public void info(String msg) {}
+      public void info(String format, Object arg) {}
+      public void info(String format, Object argA, Object argB) {}
+      public void info(String format, Object... arguments) {}
+      public void info(String msg, Throwable t) {}
+      public boolean isWarnEnabled() { return false; }
+      public void warn(String msg) {}
+      public void warn(String format, Object arg) {}
+      public void warn(String format, Object... arguments) {}
+      public void warn(String format, Object argA, Object argB) {}
+      public void warn(String msg, Throwable t) {}
+      public boolean isErrorEnabled() { return true; }
+      public void error(String msg) {}
+      public void error(String format, Object arg) {}
+      public void error(String format, Object argA, Object argB) {}
+      public void error(String format, Object... arguments) {}
+      public void error(String msg, Throwable t) {}
+    }",method,
+      public boolean isTraceEnabled() { return true; },method,
+      public void trace(String msg) {},method,
+"      public void trace(String format, Object arg) {}",method,
+"      public void trace(String format, Object argA, Object argB) {}",method,
+"      public void trace(String format, Object... arguments) {}",method,
+"      public void trace(String msg, Throwable t) {}",method,
+      public boolean isDebugEnabled() { return false; },method,
+      public void debug(String msg) {},method,
+"      public void debug(String format, Object arg) {}",method,
+"      public void debug(String format, Object argA, Object argB) {}",method,
+"      public void debug(String format, Object... arguments) {}",method,
+"      public void debug(String msg, Throwable t) {}",method,
+      public boolean isInfoEnabled() { return false; },method,
+      public void info(String msg) {},method,
+"      public void info(String format, Object arg) {}",method,
+"      public void info(String format, Object argA, Object argB) {}",method,
+"      public void info(String format, Object... arguments) {}",method,
+"      public void info(String msg, Throwable t) {}",method,
+      public boolean isWarnEnabled() { return false; },method,
+      public void warn(String msg) {},method,
+"      public void warn(String format, Object arg) {}",method,
+"      public void warn(String format, Object... arguments) {}",method,
+"      public void warn(String format, Object argA, Object argB) {}",method,
+"      public void warn(String msg, Throwable t) {}",method,
+      public boolean isErrorEnabled() { return true; },method,
+      public void error(String msg) {},method,
+"      public void error(String format, Object arg) {}",method,
+"      public void error(String format, Object argA, Object argB) {}",method,
+"      public void error(String format, Object... arguments) {}",method,
+"      public void error(String msg, Throwable t) {}",method,
+"public class ArtifactCache {
+  public static String ARTIFACT_CACHE_DIR = ""cache"";
+  public static int LEVEL_1_LENGTH = 4;
+  public static int LEVEL_2_LENGTH = 4;
+  public static int HASH_LENGTH = 64;
+  public static int LEVEL_3_LENGTH = HASH_LENGTH - LEVEL_2_LENGTH - LEVEL_2_LENGTH;
+  private static void copy(File src, File dest) throws FileNotFoundException, IOException {
+    FileOutputStream fos = null;
+    FileInputStream fis = null;
+    try {
+      createParentDir(dest);
+      fos = new FileOutputStream(dest);
+      fis = new FileInputStream(src);
+      fos.getChannel().transferFrom(fis.getChannel(), 0, Long.MAX_VALUE);
+    } finally {
+      if (fos != null)
+        fos.close();
+      if (fis != null)
+        fis.close();
+    }
+  }
+  private static File createParentDir(File file) throws IOException {
+    File dir = file.getParentFile();
+    if (!(dir.isDirectory() || dir.mkdirs()))
+      throw new IOException(""Could not create dir: "" + dir.getAbsolutePath());
+    else
+      return file;
+  }
+  public static File getCacheFile(File baseDir, ArtifactHash hash, String filename) {
+    assert (hash.value.length() == HASH_LENGTH); // we are slicing later and
+                                                 // need at least 8 chars
+    File artifactDir = new File(baseDir, ARTIFACT_CACHE_DIR);
+    File level1 = new File(artifactDir, hash.value.subSequence(0, LEVEL_1_LENGTH).toString());
+    File level2 = new File(level1, hash.value.subSequence(LEVEL_1_LENGTH, LEVEL_1_LENGTH + LEVEL_2_LENGTH).toString());
+    File level3 = new File(level2, hash.value.subSequence(LEVEL_1_LENGTH + LEVEL_2_LENGTH, HASH_LENGTH).toString());
+    return new File(level3, filename);
+  }
+  private static String hashFile(File file) throws IOException {
+    FileInputStream fis = new FileInputStream(file);
+    try {
+      return Hasher.hash(fis);
+    } finally {
+      fis.close();
+    }
+  }
+  public static File getOrCreateExistingCacheFile(File baseDir, ArtifactHash hash, String filename, boolean verify)
+      throws IOException {
+    File currentCacheFile = getCacheFile(baseDir, hash, filename);
+    if (currentCacheFile.isFile()) {
+      if (verify)
+        assert (hashFile(currentCacheFile).equals(hash.value));
+      return currentCacheFile;
+    } else { // cache file is not there, but perhaps there is one with a
+             // different name?
+      File parentDir = currentCacheFile.getParentFile();
+      if (parentDir != null && parentDir.listFiles() != null) {
+        for (File file : parentDir.listFiles()) {
+          if (!verify || hashFile(file).equals(hash.value)) {
+            copy(file, currentCacheFile);
+            return currentCacheFile;
+          }
+        }
+        return null;
+      } else {
+        return null;
+      }
+    }
+  }
+  public static File cache(File baseDir, File srcFile, ArtifactHash expectedHash, String filename) throws AdeptCacheException,
+      IOException {
+    String actualHash = hashFile(srcFile);
+    if (!actualHash.equals(expectedHash.value))
+      throw new AdeptCacheException(""Expected file: "" + srcFile.getAbsolutePath() + "" (with new name: "" + filename
+          + "") to have hash: "" + expectedHash.value + "" but it was: "" + actualHash);
+    else {
+      File existingCacheFile = getOrCreateExistingCacheFile(baseDir, expectedHash, filename, true);
+      if (existingCacheFile == null) {
+        File newCacheFile = getCacheFile(baseDir, expectedHash, filename);
+        copy(srcFile, newCacheFile);
+        return newCacheFile;
+      } else
+        return existingCacheFile;
+    }
+  }
+}",class,

@@ -1,0 +1,1184 @@
+code_snippet,type,score
+"  @Override
+  public void pushElementAsInt(ComputeMethod method, Optional<Label> integerNaLabel) {
+    if (argumentType.equals(double.class)) {
+      computeDouble(method, integerNaLabel);
+    } else if(argumentType.equals(int.class)) {
+      computeInt(method, integerNaLabel);
+    } else {
+      throw new UnsupportedOperationException();
+    }
+    cast(method.getVisitor(), applyMethod.getReturnType(), int.class);
+  }",method,
+"  @Override
+  public boolean mustCheckForIntegerNAs() {
+    return operands[0].mustCheckForIntegerNAs() || operands[1].mustCheckForIntegerNAs();
+  }",method,
+"  @Override
+  public void appendToKey(StringBuilder key) {
+    key.append(operatorName);
+    key.append('(');
+    for (LoopNode operandAccessor : operands) {
+      operandAccessor.appendToKey(key);
+      key.append(';');
+    }
+    key.append(')');
+  }",method,
+"    for (LoopNode operandAccessor : operands) {
+      operandAccessor.appendToKey(key);
+      key.append(';');
+    }",method,
+"  @Override
+  public void pushElementAsDouble(ComputeMethod method, Optional<Label> naIntegerLabel) {
+    if (argumentType.equals(double.class)) {
+      computeDouble(method, naIntegerLabel);
+    } else if (argumentType.equals(int.class)) {
+      computeInt(method, naIntegerLabel);
+    } else {
+      throw new UnsupportedOperationException(argumentType.getName());
+    }
+    cast(method.getVisitor(), applyMethod.getReturnType(), double.class);
+  }",method,
+"  private void computeInt(ComputeMethod method, Optional<Label> naLabel) {
+    // If we've been asked to handle NA checking, then we have to set up our
+    // internal NA handler block to handle the case that one of the arguments
+    // is NA so that we can clean up the stack before jumping to the outer naLabel.
+    // The Java bytecode verifier will not accept that multiple execution paths
+    // arrive at the same point with different types on the stack.
+    Optional<Label> argNaLabel = Optional.absent();
+    if(naLabel.isPresent() &&
+            (operands[0].mustCheckForIntegerNAs() || operands[1].mustCheckForIntegerNAs())) {
+      argNaLabel = Optional.of(new Label());
+    }
+    Optional<Label> done = Optional.absent();
+    if(argNaLabel.isPresent()) {
+      done = Optional.of(new Label());
+    }
+    MethodVisitor mv = method.getVisitor();
+    mv.visitInsn(DUP);
+    mv.visitVarInsn(ILOAD, lengthLocal1);
+    // stack => { index, index, length1 }
+    mv.visitInsn(IREM);
+    // stack => { index, index1 }
+    operands[0].pushElementAsInt(method, argNaLabel);
+    // stack => { index, value1 }
+    mv.visitInsn(SWAP);
+    // stack => { value1, index}
+    mv.visitVarInsn(ILOAD, lengthLocal2);
+    // stack => { value1, index, length2 }
+    mv.visitInsn(IREM);
+    // stack => { value1, index2 }
+    operands[1].pushElementAsInt(method, argNaLabel);
+    // stack => { value1, value2}
+    mv.visitMethodInsn(INVOKESTATIC,
+            Type.getInternalName(applyMethod.getDeclaringClass()),
+            applyMethod.getName(),
+            Type.getMethodDescriptor(applyMethod), false);
+    if(done.isPresent()) {
+      mv.visitJumpInsn(GOTO, done.get());
+    }
+    if(argNaLabel.isPresent()) {
+      mv.visitLabel(argNaLabel.get());
+      // upon arriving here, the stack either contains
+      // { index, value1 } if is.na(arg1), or
+      // { value1, value2 } if !is.na(arg1) && is.na(arg2).
+      // in either case, we have to get rid of one of the ints
+      // so that we jump to the outer na block, there is exactly
+      // one extra int on the stack as expected.
+      mv.visitInsn(POP);
+      mv.visitJumpInsn(GOTO, naLabel.get());
+    }
+    if(done.isPresent()) {
+      mv.visitLabel(done.get());
+    }
+  }",method,
+"  private void computeDouble(ComputeMethod method, Optional<Label> integerNaLabel) {
+    // If we've been asked to handle NA checking, then it gets even more complicated
+    // than above because the stack will look different depending on which argument is NA,
+    // because the double value of the first operand we push onto the stack requires
+    // two positions on the stack.
+    Optional<Label> argNaLabel1 = Optional.absent();
+    if(integerNaLabel.isPresent() && operands[0].mustCheckForIntegerNAs()) {
+      argNaLabel1 = Optional.of(new Label());
+    }
+    Optional<Label> argNaLabel2 = Optional.absent();
+    if(integerNaLabel.isPresent() && operands[1].mustCheckForIntegerNAs()) {
+      argNaLabel2 = Optional.of(new Label());
+    }
+    Optional<Label> done = Optional.absent();
+    if(argNaLabel1.isPresent() || argNaLabel2.isPresent()) {
+      done = Optional.of(new Label());
+    }
+    MethodVisitor mv = method.getVisitor();
+    mv.visitInsn(DUP);
+    mv.visitVarInsn(ILOAD, lengthLocal1);
+    // stack => { index, index, length1 }
+    mv.visitInsn(IREM);
+    // stack => { index, index1 }
+    operands[0].pushElementAsDouble(method, argNaLabel1);
+    // stack => { index, [value1, value1] }
+    mv.visitInsn(DUP2_X1); // next two instructions equivalent to swap
+    mv.visitInsn(POP2);
+    // stack => { value1, value1, index}
+    mv.visitVarInsn(ILOAD, lengthLocal2);
+    // stack => { value1, value1, index, length2 }
+    mv.visitInsn(IREM);
+    // stack => { value1, value1, index2 }
+    operands[1].pushElementAsDouble(method, argNaLabel2);
+    // stack => { value1, value2}
+    mv.visitMethodInsn(INVOKESTATIC,
+            Type.getInternalName(applyMethod.getDeclaringClass()),
+            applyMethod.getName(),
+            Type.getMethodDescriptor(applyMethod), false);
+    if(done.isPresent()) {
+      mv.visitJumpInsn(GOTO, done.get());
+    }
+    if(argNaLabel1.isPresent()) {
+      mv.visitLabel(argNaLabel1.get());
+      // upon arriving here, the stack contains
+      // { index, value1::int } if is.na(arg1)
+      // get rid of one of the ints
+      // so that we jump to the outer na block, there is exactly
+      // one extra int on the stack as expected.
+      mv.visitInsn(POP);
+      mv.visitJumpInsn(GOTO, integerNaLabel.get());
+    }
+    if(argNaLabel2.isPresent()) {
+      mv.visitLabel(argNaLabel2.get());
+      // upon arriving here, the stack contains
+      // {value1, value1}, value2::int if is.na(arg2)
+      // because the first value has already been converted to a double,
+      // which occupies two slots on the stack
+      mv.visitInsn(POP);
+      mv.visitInsn(POP2);
+      mv.visitInsn(ICONST_0);
+      mv.visitJumpInsn(GOTO, integerNaLabel.get());
+    }
+    if(done.isPresent()) {
+      mv.visitLabel(done.get());
+    }
+  }",method,
+"  @Override
+  public String toString() {
+    return ""("" + operands[0] + operatorName +  operands[1] + "")"";
+  }",method,
+"public class JpsRootModel extends RootModelBase implements ModuleRootModel {
+  private final Module myModule;
+  private final JpsModule myJpsModule;
+  public VirtualFilePointer myExplodedDirectoryPointer;
+  private final List<ContentEntry> myContentEntries;
+  private final List<OrderEntry> myOrderEntries;
+  public JpsRootModel(Module module, JpsModule jpsModule) {
+    myModule = module;
+    myJpsModule = jpsModule;
+    myContentEntries = new ArrayList<>();
+    for (String contentRoot : myJpsModule.getContentRootsList().getUrls()) {
+      myContentEntries.add(new JpsContentEntry(jpsModule, this, contentRoot));
+    }
+    myOrderEntries = new ArrayList<>();
+    for (JpsDependencyElement element : myJpsModule.getDependenciesList().getDependencies()) {
+      myOrderEntries.add(JpsOrderEntryFactory.createOrderEntry(this, element));
+    }
+  }
+  public JpsModule getJpsModule() {
+    return myJpsModule;
+  }
+  @NotNull
+  @Override
+  public Module getModule() {
+    return myModule;
+  }
+  @Override
+  protected Collection<ContentEntry> getContent() {
+    return myContentEntries;
+  }
+  @NotNull
+  @Override
+  public OrderEntry[] getOrderEntries() {
+    return myOrderEntries.toArray(new OrderEntry[myOrderEntries.size()]);
+  }
+  @Override
+  public <T> T getModuleExtension(@NotNull Class<T> klass) {
+    throw new UnsupportedOperationException(""'getModuleExtension' not implemented in "" + getClass().getName());
+  }
+  public Project getProject() {
+    return myModule.getProject();
+  }
+  public boolean isExcludeExplodedDirectory() {
+    return false;
+  }
+}",class,
+"  public JpsRootModel(Module module, JpsModule jpsModule) {
+    myModule = module;
+    myJpsModule = jpsModule;
+    myContentEntries = new ArrayList<>();
+    for (String contentRoot : myJpsModule.getContentRootsList().getUrls()) {
+      myContentEntries.add(new JpsContentEntry(jpsModule, this, contentRoot));
+    }
+    myOrderEntries = new ArrayList<>();
+    for (JpsDependencyElement element : myJpsModule.getDependenciesList().getDependencies()) {
+      myOrderEntries.add(JpsOrderEntryFactory.createOrderEntry(this, element));
+    }
+  }",method,
+"  public JpsModule getJpsModule() {
+    return myJpsModule;
+  }",method,
+"  @NotNull
+  @Override
+  public Module getModule() {
+    return myModule;
+  }",method,
+"  @Override
+  protected Collection<ContentEntry> getContent() {
+    return myContentEntries;
+  }",method,
+"  @NotNull
+  @Override
+  public OrderEntry[] getOrderEntries() {
+    return myOrderEntries.toArray(new OrderEntry[myOrderEntries.size()]);
+  }",method,
+"  @Override
+  public <T> T getModuleExtension(@NotNull Class<T> klass) {
+    throw new UnsupportedOperationException(""'getModuleExtension' not implemented in "" + getClass().getName());
+  }",method,
+"  public Project getProject() {
+    return myModule.getProject();
+  }",method,
+"  public boolean isExcludeExplodedDirectory() {
+    return false;
+  }",method,
+"public class LibraryJarStatisticsService extends SettingsConnectionService implements StartupActivity, DumbAware {
+  private static final String FILE_NAME = ""statistics/library-jar-statistics.xml"";
+  private static final String DEFAULT_SETTINGS_URL = ""https://www.jetbrains.com/idea/download-assistant.xml"";
+  private static final String DEFAULT_SERVICE_URL = ""https://frameworks.jetbrains.com"";
+  private static final LibraryJarStatisticsService myInstance = new LibraryJarStatisticsService();
+  private LibraryJarDescriptor[] myDescriptors;
+  public static LibraryJarStatisticsService getInstance() {
+    return myInstance;
+  }
+  protected LibraryJarStatisticsService() {
+    super(DEFAULT_SETTINGS_URL, DEFAULT_SERVICE_URL);
+  }
+  @NotNull
+  public LibraryJarDescriptor[] getTechnologyDescriptors() {
+    if (myDescriptors == null) {
+      if (!StatisticsUploadAssistant.isSendAllowed()) return LibraryJarDescriptor.EMPTY;
+      final URL url = createVersionsUrl();
+      if (url == null) return LibraryJarDescriptor.EMPTY;
+      final LibraryJarDescriptors descriptors = deserialize(url);
+      myDescriptors = descriptors == null ? LibraryJarDescriptor.EMPTY : descriptors.getDescriptors();
+    }
+    return myDescriptors;
+  }
+  @Nullable
+  private static LibraryJarDescriptors deserialize(@Nullable URL url) {
+    if (url == null) return null;
+    LibraryJarDescriptors libraryJarDescriptors = null;
+    try {
+      libraryJarDescriptors = XmlSerializer.deserialize(url, LibraryJarDescriptors.class);
+    }
+    catch (XmlSerializationException e) {
+      //
+    }
+    return libraryJarDescriptors;
+  }
+  @Nullable
+  private URL createVersionsUrl() {
+    final String serviceUrl = getServiceUrl();
+    if (StringUtil.isNotEmpty(serviceUrl)) {
+      try {
+        final String url = serviceUrl + ""/"" + FILE_NAME;
+        HttpConfigurable.getInstance().prepareURL(url);
+        return new URL(url);
+      }
+      catch (IOException e) {
+        // no route to host, unknown host, malformed url, etc.
+      }
+    }
+    return null;
+  }
+  @Override
+  public void runActivity(@NotNull Project project) {
+    final Application application = ApplicationManager.getApplication();
+    if (application.isUnitTestMode() || application.isHeadlessEnvironment()) return;
+    ApplicationManager.getApplication().executeOnPooledThread((Runnable)() -> getInstance().getTechnologyDescriptors());
+  }
+}",class,
+"  public static LibraryJarStatisticsService getInstance() {
+    return myInstance;
+  }",method,
+"  protected LibraryJarStatisticsService() {
+    super(DEFAULT_SETTINGS_URL, DEFAULT_SERVICE_URL);
+  }",method,
+"  @NotNull
+  public LibraryJarDescriptor[] getTechnologyDescriptors() {
+    if (myDescriptors == null) {
+      if (!StatisticsUploadAssistant.isSendAllowed()) return LibraryJarDescriptor.EMPTY;
+      final URL url = createVersionsUrl();
+      if (url == null) return LibraryJarDescriptor.EMPTY;
+      final LibraryJarDescriptors descriptors = deserialize(url);
+      myDescriptors = descriptors == null ? LibraryJarDescriptor.EMPTY : descriptors.getDescriptors();
+    }
+    return myDescriptors;
+  }",method,
+"    if (myDescriptors == null) {
+      if (!StatisticsUploadAssistant.isSendAllowed()) return LibraryJarDescriptor.EMPTY;
+      final URL url = createVersionsUrl();
+      if (url == null) return LibraryJarDescriptor.EMPTY;
+      final LibraryJarDescriptors descriptors = deserialize(url);
+      myDescriptors = descriptors == null ? LibraryJarDescriptor.EMPTY : descriptors.getDescriptors();
+    }",method,
+"  @Nullable
+  private static LibraryJarDescriptors deserialize(@Nullable URL url) {
+    if (url == null) return null;
+    LibraryJarDescriptors libraryJarDescriptors = null;
+    try {
+      libraryJarDescriptors = XmlSerializer.deserialize(url, LibraryJarDescriptors.class);
+    }
+    catch (XmlSerializationException e) {
+      //
+    }
+    return libraryJarDescriptors;
+  }",method,
+"    catch (XmlSerializationException e) {
+      //
+    }",method,
+"  @Nullable
+  private URL createVersionsUrl() {
+    final String serviceUrl = getServiceUrl();
+    if (StringUtil.isNotEmpty(serviceUrl)) {
+      try {
+        final String url = serviceUrl + ""/"" + FILE_NAME;
+        HttpConfigurable.getInstance().prepareURL(url);
+        return new URL(url);
+      }
+      catch (IOException e) {
+        // no route to host, unknown host, malformed url, etc.
+      }
+    }
+    return null;
+  }",method,
+"      catch (IOException e) {
+        // no route to host, unknown host, malformed url, etc.
+      }",method,
+"  @Override
+  public void runActivity(@NotNull Project project) {
+    final Application application = ApplicationManager.getApplication();
+    if (application.isUnitTestMode() || application.isHeadlessEnvironment()) return;
+    ApplicationManager.getApplication().executeOnPooledThread((Runnable)() -> getInstance().getTechnologyDescriptors());
+  }",method,
+"public class SpringOptionsProvider extends JavaOptionsProvider {
+    public static final String TITLE = ""swagger"";
+    public static final String CONFIG_PACKAGE_VALUE = ""configPackage"";
+    public static final String BASE_PACKAGE_VALUE = ""basePackage"";
+    public static final String LIBRARY_VALUE = ""spring-mvc""; //FIXME hidding value from super class
+    public static final String INTERFACE_ONLY = ""true"";
+    public static final String DELEGATE_PATTERN = ""true"";
+    public static final String SINGLE_CONTENT_TYPES = ""true"";
+    public static final String JAVA_8 = ""true"";
+    public static final String ASYNC = ""true"";
+    public static final String RESPONSE_WRAPPER = ""Callable"";
+    public static final String USE_TAGS = ""useTags"";
+    public static final String USE_BEANVALIDATION = ""false"";
+    public static final String IMPLICIT_HEADERS = ""false"";
+    public static final String SWAGGER_DOCKET_CONFIG = ""false"";
+    public static final String USE_OPTIONAL = ""false"";
+    @Override
+    public String getLanguage() {
+        return ""spring"";
+    }
+    @Override
+    public Map<String, String> createOptions() {
+        Map<String, String> options = new HashMap<String, String>(super.createOptions());
+        options.put(SpringCodegen.TITLE, TITLE);
+        options.put(SpringCodegen.CONFIG_PACKAGE, CONFIG_PACKAGE_VALUE);
+        options.put(SpringCodegen.BASE_PACKAGE, BASE_PACKAGE_VALUE);
+        options.put(CodegenConstants.LIBRARY, LIBRARY_VALUE);
+        options.put(SpringCodegen.INTERFACE_ONLY, INTERFACE_ONLY);
+        options.put(SpringCodegen.DELEGATE_PATTERN, DELEGATE_PATTERN);
+        options.put(SpringCodegen.SINGLE_CONTENT_TYPES, SINGLE_CONTENT_TYPES);
+        options.put(SpringCodegen.JAVA_8, JAVA_8);
+        options.put(SpringCodegen.ASYNC, ASYNC);
+        options.put(SpringCodegen.RESPONSE_WRAPPER, RESPONSE_WRAPPER);
+        options.put(SpringCodegen.USE_TAGS, USE_TAGS);
+        options.put(SpringCodegen.USE_BEANVALIDATION, USE_BEANVALIDATION);
+        options.put(SpringCodegen.IMPLICIT_HEADERS, IMPLICIT_HEADERS);
+        options.put(SpringCodegen.SWAGGER_DOCKET_CONFIG, SWAGGER_DOCKET_CONFIG);
+        options.put(SpringCodegen.USE_OPTIONAL, USE_OPTIONAL);
+        return options;
+    }
+    @Override
+    public boolean isServer() {
+        return true;
+    }
+}",class,
+"    public static final String LIBRARY_VALUE = ""spring-mvc""; //FIXME hidding value from super class
+    public static final String INTERFACE_ONLY = ""true"";
+    public static final String DELEGATE_PATTERN = ""true"";
+    public static final String SINGLE_CONTENT_TYPES = ""true"";
+    public static final String JAVA_8 = ""true"";
+    public static final String ASYNC = ""true"";
+    public static final String RESPONSE_WRAPPER = ""Callable"";
+    public static final String USE_TAGS = ""useTags"";
+    public static final String USE_BEANVALIDATION = ""false"";
+    public static final String IMPLICIT_HEADERS = ""false"";
+    public static final String SWAGGER_DOCKET_CONFIG = ""false"";
+    public static final String USE_OPTIONAL = ""false"";
+    @Override
+    public String getLanguage() {
+        return ""spring"";
+    }",class,
+"    @Override
+    public String getLanguage() {
+        return ""spring"";
+    }",method,
+"    @Override
+    public Map<String, String> createOptions() {
+        Map<String, String> options = new HashMap<String, String>(super.createOptions());
+        options.put(SpringCodegen.TITLE, TITLE);
+        options.put(SpringCodegen.CONFIG_PACKAGE, CONFIG_PACKAGE_VALUE);
+        options.put(SpringCodegen.BASE_PACKAGE, BASE_PACKAGE_VALUE);
+        options.put(CodegenConstants.LIBRARY, LIBRARY_VALUE);
+        options.put(SpringCodegen.INTERFACE_ONLY, INTERFACE_ONLY);
+        options.put(SpringCodegen.DELEGATE_PATTERN, DELEGATE_PATTERN);
+        options.put(SpringCodegen.SINGLE_CONTENT_TYPES, SINGLE_CONTENT_TYPES);
+        options.put(SpringCodegen.JAVA_8, JAVA_8);
+        options.put(SpringCodegen.ASYNC, ASYNC);
+        options.put(SpringCodegen.RESPONSE_WRAPPER, RESPONSE_WRAPPER);
+        options.put(SpringCodegen.USE_TAGS, USE_TAGS);
+        options.put(SpringCodegen.USE_BEANVALIDATION, USE_BEANVALIDATION);
+        options.put(SpringCodegen.IMPLICIT_HEADERS, IMPLICIT_HEADERS);
+        options.put(SpringCodegen.SWAGGER_DOCKET_CONFIG, SWAGGER_DOCKET_CONFIG);
+        options.put(SpringCodegen.USE_OPTIONAL, USE_OPTIONAL);
+        return options;
+    }",method,
+"    @Override
+    public boolean isServer() {
+        return true;
+    }",method,
+"public class ScramLoginModule implements LoginModule {
+    private static final String USERNAME_CONFIG = ""username"";
+    private static final String PASSWORD_CONFIG = ""password"";
+    static {
+        ScramSaslClientProvider.initialize();
+        ScramSaslServerProvider.initialize();
+    }
+    @Override
+    public void initialize(Subject subject, CallbackHandler callbackHandler, Map<String, ?> sharedState, Map<String, ?> options) {
+        String username = (String) options.get(USERNAME_CONFIG);
+        if (username != null)
+            subject.getPublicCredentials().add(username);
+        String password = (String) options.get(PASSWORD_CONFIG);
+        if (password != null)
+            subject.getPrivateCredentials().add(password);
+    }
+    @Override
+    public boolean login() throws LoginException {
+        return true;
+    }
+    @Override
+    public boolean logout() throws LoginException {
+        return true;
+    }
+    @Override
+    public boolean commit() throws LoginException {
+        return true;
+    }
+    @Override
+    public boolean abort() throws LoginException {
+        return false;
+    }
+}",class,
+"    @Override
+    public void initialize(Subject subject, CallbackHandler callbackHandler, Map<String, ?> sharedState, Map<String, ?> options) {
+        String username = (String) options.get(USERNAME_CONFIG);
+        if (username != null)
+            subject.getPublicCredentials().add(username);
+        String password = (String) options.get(PASSWORD_CONFIG);
+        if (password != null)
+            subject.getPrivateCredentials().add(password);
+    }",method,
+"    @Override
+    public boolean login() throws LoginException {
+        return true;
+    }",method,
+"    @Override
+    public boolean logout() throws LoginException {
+        return true;
+    }",method,
+"    @Override
+    public boolean commit() throws LoginException {
+        return true;
+    }",method,
+"    @Override
+    public boolean abort() throws LoginException {
+        return false;
+    }",method,
+"public class LogExpressionCommand extends Command {
+    @Override
+    public void doPost(HttpServletRequest request, HttpServletResponse response)
+            throws ServletException, IOException {
+        try {
+            Project project = getProject(request);
+            String expression = request.getParameter(""expression"");
+            ((TopList) project.getMetadata().getPreferenceStore().get(""scripting.expressions""))
+                .add(expression);
+            ((TopList) ProjectManager.singleton.getPreferenceStore().get(""scripting.expressions""))
+                .add(expression);
+            response.setCharacterEncoding(""UTF-8"");
+            response.setHeader(""Content-Type"", ""application/json"");
+            response.getWriter().write(""{ \""code\"" : \""ok\"" }"");
+        } catch (Exception e) {
+            respondException(response, e);
+        }
+    }
+}",class,
+"    @Override
+    public void doPost(HttpServletRequest request, HttpServletResponse response)
+            throws ServletException, IOException {
+        try {
+            Project project = getProject(request);
+            String expression = request.getParameter(""expression"");
+            ((TopList) project.getMetadata().getPreferenceStore().get(""scripting.expressions""))
+                .add(expression);
+            ((TopList) ProjectManager.singleton.getPreferenceStore().get(""scripting.expressions""))
+                .add(expression);
+            response.setCharacterEncoding(""UTF-8"");
+            response.setHeader(""Content-Type"", ""application/json"");
+            response.getWriter().write(""{ \""code\"" : \""ok\"" }"");
+        } catch (Exception e) {
+            respondException(response, e);
+        }
+    }",method,
+"public class BlockPassParseNode extends ParseNode {
+    private final ParseNode bodyNode;
+    private ParseNode argsNode;
+    public BlockPassParseNode(SourceIndexLength position, ParseNode bodyNode) {
+        super(position);
+        this.bodyNode = bodyNode;
+    }
+    @Override
+    public NodeType getNodeType() {
+        return NodeType.BLOCKPASSNODE;
+    }
+    @Override
+    public <T> T accept(NodeVisitor<T> iVisitor) {
+        return iVisitor.visitBlockPassNode(this);
+    }
+    public ParseNode getBodyNode() {
+        return bodyNode;
+    }
+    public ParseNode getArgsNode() {
+        return argsNode;
+    }
+    public void setArgsNode(ParseNode argsNode) {
+        this.argsNode = argsNode;
+    }
+    @Override
+    public List<ParseNode> childNodes() {
+        return ParseNode.createList(argsNode, bodyNode);
+    }
+}",class,
+"    public BlockPassParseNode(SourceIndexLength position, ParseNode bodyNode) {
+        super(position);
+        this.bodyNode = bodyNode;
+    }",method,
+"    @Override
+    public NodeType getNodeType() {
+        return NodeType.BLOCKPASSNODE;
+    }",method,
+"    @Override
+    public <T> T accept(NodeVisitor<T> iVisitor) {
+        return iVisitor.visitBlockPassNode(this);
+    }",method,
+"    public ParseNode getBodyNode() {
+        return bodyNode;
+    }",method,
+"    public ParseNode getArgsNode() {
+        return argsNode;
+    }",method,
+"    public void setArgsNode(ParseNode argsNode) {
+        this.argsNode = argsNode;
+    }",method,
+"    @Override
+    public List<ParseNode> childNodes() {
+        return ParseNode.createList(argsNode, bodyNode);
+    }",method,
+"public class DateParser {
+    public int parseDate(String date1, String date2) throws ParseException {
+        Date d1 = new SimpleDateFormat(""EEE MMM d HH:mm:ss Z yyyy"", Locale.ENGLISH).parse(date1);
+        Date d2 = new SimpleDateFormat(""EEE MMM d HH:mm:ss Z yyyy"", Locale.ENGLISH).parse(date2);
+        if (d2.getTime() < d1.getTime()) {
+            return -1;
+        } else {
+            return (int) ((d2.getTime() - d1.getTime()) / (24 * 60 * 60 * 1000));
+        }
+    }
+    public boolean compareDate(String date1, String date2) throws ParseException {
+        Date d0 = new Date();
+        Date d1 = new SimpleDateFormat(""EEE MMM d HH:mm:ss Z yyyy"", Locale.ENGLISH).parse(date1);
+        Date d2 = new SimpleDateFormat(""EEE MMM d HH:mm:ss Z yyyy"", Locale.ENGLISH).parse(date2);
+        return ((d1.getTime() <= d0.getTime()) && (d0.getTime() <= d2.getTime()));
+    }
+    public boolean receiveCar(String date1) throws ParseException {
+        Date d0 = new Date();
+        Date d1 = new SimpleDateFormat(""EEE MMM d HH:mm:ss Z yyyy"", Locale.ENGLISH).parse(date1);
+        return d0.getTime() > d1.getTime();
+    }
+    public boolean nonReceiveCar(String date1) throws ParseException {
+        Date d0 = new Date();
+        Date d1 = new SimpleDateFormat(""EEE MMM d HH:mm:ss Z yyyy"", Locale.ENGLISH).parse(date1);
+        return d0.getTime() < d1.getTime();
+    }
+    public static String formatDate(String date) throws ParseException {
+        Calendar mydate = new GregorianCalendar();
+        Date d1 = new SimpleDateFormat(""EEE MMM d HH:mm:ss Z yyyy"", Locale.ENGLISH).parse(date);
+        mydate.setTime(d1);
+        return mydate.get(Calendar.MONTH) + ""-"" + mydate.get(Calendar.DAY_OF_MONTH) + ""-"" + mydate.get(Calendar.YEAR);
+    }
+}",class,
+"    public int parseDate(String date1, String date2) throws ParseException {
+        Date d1 = new SimpleDateFormat(""EEE MMM d HH:mm:ss Z yyyy"", Locale.ENGLISH).parse(date1);
+        Date d2 = new SimpleDateFormat(""EEE MMM d HH:mm:ss Z yyyy"", Locale.ENGLISH).parse(date2);
+        if (d2.getTime() < d1.getTime()) {
+            return -1;
+        } else {
+            return (int) ((d2.getTime() - d1.getTime()) / (24 * 60 * 60 * 1000));
+        }
+    }",method,
+"    public boolean compareDate(String date1, String date2) throws ParseException {
+        Date d0 = new Date();
+        Date d1 = new SimpleDateFormat(""EEE MMM d HH:mm:ss Z yyyy"", Locale.ENGLISH).parse(date1);
+        Date d2 = new SimpleDateFormat(""EEE MMM d HH:mm:ss Z yyyy"", Locale.ENGLISH).parse(date2);
+        return ((d1.getTime() <= d0.getTime()) && (d0.getTime() <= d2.getTime()));
+    }",method,
+"    public boolean receiveCar(String date1) throws ParseException {
+        Date d0 = new Date();
+        Date d1 = new SimpleDateFormat(""EEE MMM d HH:mm:ss Z yyyy"", Locale.ENGLISH).parse(date1);
+        return d0.getTime() > d1.getTime();
+    }",method,
+"    public boolean nonReceiveCar(String date1) throws ParseException {
+        Date d0 = new Date();
+        Date d1 = new SimpleDateFormat(""EEE MMM d HH:mm:ss Z yyyy"", Locale.ENGLISH).parse(date1);
+        return d0.getTime() < d1.getTime();
+    }",method,
+"    public static String formatDate(String date) throws ParseException {
+        Calendar mydate = new GregorianCalendar();
+        Date d1 = new SimpleDateFormat(""EEE MMM d HH:mm:ss Z yyyy"", Locale.ENGLISH).parse(date);
+        mydate.setTime(d1);
+        return mydate.get(Calendar.MONTH) + ""-"" + mydate.get(Calendar.DAY_OF_MONTH) + ""-"" + mydate.get(Calendar.YEAR);
+    }",method,
+"public class TextDelegate {
+  private final Map<String, String> stringMap = new HashMap<>();
+  @Nullable private final LottieAnimationView animationView;
+  @Nullable private final LottieDrawable drawable;
+  private boolean cacheText = true;
+  @VisibleForTesting
+  TextDelegate() {
+    animationView = null;
+    drawable = null;
+  }
+  public TextDelegate(
+      @SuppressWarnings(""NullableProblems"") LottieAnimationView animationView) {
+    this.animationView = animationView;
+    drawable = null;
+  }
+  public TextDelegate(@SuppressWarnings(""NullableProblems"") LottieDrawable drawable) {
+    this.drawable = drawable;
+    animationView = null;
+  }
+  public String getText(String input) {
+    return input;
+  }
+  public void setText(String input, String output) {
+    stringMap.put(input, output);
+    invalidate();
+  }
+  public void setCacheText(boolean cacheText) {
+    this.cacheText = cacheText;
+  }
+  public void invalidateText(String input) {
+    stringMap.remove(input);
+    invalidate();
+  }
+  public void invalidateAllText() {
+    stringMap.clear();
+    invalidate();
+  }
+  public final String getTextInternal(String input) {
+    if (cacheText && stringMap.containsKey(input)) {
+      return stringMap.get(input);
+    }
+    String text = getText(input);
+    if (cacheText) {
+      stringMap.put(input, text);
+    }
+    return text;
+  }
+  private void invalidate() {
+    if (animationView != null) {
+      animationView.invalidate();
+    }
+    if (drawable != null) {
+      drawable.invalidateSelf();
+    }
+  }
+}",class,
+"  @VisibleForTesting
+  TextDelegate() {
+    animationView = null;
+    drawable = null;
+  }",method,
+"  public String getText(String input) {
+    return input;
+  }",method,
+"  public void setText(String input, String output) {
+    stringMap.put(input, output);
+    invalidate();
+  }",method,
+"  public void setCacheText(boolean cacheText) {
+    this.cacheText = cacheText;
+  }",method,
+"  public void invalidateText(String input) {
+    stringMap.remove(input);
+    invalidate();
+  }",method,
+"  public void invalidateAllText() {
+    stringMap.clear();
+    invalidate();
+  }",method,
+"  public final String getTextInternal(String input) {
+    if (cacheText && stringMap.containsKey(input)) {
+      return stringMap.get(input);
+    }
+    String text = getText(input);
+    if (cacheText) {
+      stringMap.put(input, text);
+    }
+    return text;
+  }",method,
+"    if (cacheText) {
+      stringMap.put(input, text);
+    }",method,
+"  private void invalidate() {
+    if (animationView != null) {
+      animationView.invalidate();
+    }
+    if (drawable != null) {
+      drawable.invalidateSelf();
+    }
+  }",method,
+"    if (animationView != null) {
+      animationView.invalidate();
+    }",method,
+"    if (drawable != null) {
+      drawable.invalidateSelf();
+    }",method,
+"public class FailureImpl implements Failure {
+  private final String myMessage;
+  private final String myDescription;
+  private final List<? extends Failure> myCauses;
+  private final Throwable myError;
+  @Nullable
+  private final NotificationData myNotificationData;
+  public FailureImpl(String message, Throwable error) {
+    this(message, null, Collections.emptyList(), error, null);
+  }
+  public FailureImpl(String message, Throwable error, @Nullable NotificationData notificationData) {
+    this(message, null, Collections.emptyList(), error, notificationData);
+  }
+  public FailureImpl(String message, String description) {
+    this(message, description, Collections.emptyList(), null, null);
+  }
+  public FailureImpl(String message, String description, List<? extends Failure> causes) {
+    this(message, description, causes, null, null);
+  }
+  private FailureImpl(String message,
+                      String description,
+                      List<? extends Failure> causes,
+                      Throwable error,
+                      @Nullable NotificationData notificationData) {
+    myMessage = message;
+    myDescription = description;
+    myCauses = causes;
+    myError = error;
+    myNotificationData = notificationData;
+  }
+  @Nullable
+  @Override
+  public String getMessage() {
+    return myMessage;
+  }
+  @Nullable
+  @Override
+  public String getDescription() {
+    return myDescription;
+  }
+  @Nullable
+  @Override
+  public Throwable getError() {
+    return myError;
+  }
+  @Override
+  public List<? extends Failure> getCauses() {
+    return myCauses;
+  }
+  @Nullable
+  public NotificationData getNotificationData() {
+    return myNotificationData;
+  }
+}",class,
+"  public FailureImpl(String message, Throwable error) {
+    this(message, null, Collections.emptyList(), error, null);
+  }",method,
+"  public FailureImpl(String message, Throwable error, @Nullable NotificationData notificationData) {
+    this(message, null, Collections.emptyList(), error, notificationData);
+  }",method,
+"  public FailureImpl(String message, String description) {
+    this(message, description, Collections.emptyList(), null, null);
+  }",method,
+"  public FailureImpl(String message, String description, List<? extends Failure> causes) {
+    this(message, description, causes, null, null);
+  }",method,
+"  private FailureImpl(String message,
+                      String description,
+                      List<? extends Failure> causes,
+                      Throwable error,
+                      @Nullable NotificationData notificationData) {
+    myMessage = message;
+    myDescription = description;
+    myCauses = causes;
+    myError = error;
+    myNotificationData = notificationData;
+  }",method,
+"  @Nullable
+  @Override
+  public String getMessage() {
+    return myMessage;
+  }",method,
+"  @Nullable
+  @Override
+  public String getDescription() {
+    return myDescription;
+  }",method,
+"  @Nullable
+  @Override
+  public Throwable getError() {
+    return myError;
+  }",method,
+"  @Override
+  public List<? extends Failure> getCauses() {
+    return myCauses;
+  }",method,
+"  @Nullable
+  public NotificationData getNotificationData() {
+    return myNotificationData;
+  }",method,
+"public class TestFileStorageService
+{
+    private File temporary;
+    private FileStorageService store;
+    @BeforeMethod
+    public void setup()
+            throws Exception
+    {
+        temporary = createTempDir();
+        store = new FileStorageService(temporary);
+        store.start();
+    }
+    @AfterMethod(alwaysRun = true)
+    public void tearDown()
+            throws Exception
+    {
+        deleteRecursively(temporary.toPath(), ALLOW_INSECURE);
+    }
+    @Test
+    public void testGetFileSystemPath()
+            throws Exception
+    {
+        UUID uuid = UUID.fromString(""701e1a79-74f7-4f56-b438-b41e8e7d019d"");
+        File expected = new File(""/test"", format(""70/1e/%s.orc"", uuid));
+        assertEquals(getFileSystemPath(new File(""/test""), uuid), expected);
+    }
+    @Test
+    public void testFilePaths()
+    {
+        UUID uuid = UUID.fromString(""701e1a79-74f7-4f56-b438-b41e8e7d019d"");
+        File staging = new File(temporary, format(""staging/%s.orc"", uuid));
+        File storage = new File(temporary, format(""storage/70/1e/%s.orc"", uuid));
+        File quarantine = new File(temporary, format(""quarantine/%s.orc"", uuid));
+        assertEquals(store.getStagingFile(uuid), staging);
+        assertEquals(store.getStorageFile(uuid), storage);
+        assertEquals(store.getQuarantineFile(uuid), quarantine);
+    }
+    @Test
+    public void testStop()
+            throws Exception
+    {
+        File staging = new File(temporary, ""staging"");
+        File storage = new File(temporary, ""storage"");
+        File quarantine = new File(temporary, ""quarantine"");
+        assertDirectory(staging);
+        assertDirectory(storage);
+        assertDirectory(quarantine);
+        File file = store.getStagingFile(randomUUID());
+        store.createParents(file);
+        assertFalse(file.exists());
+        assertTrue(file.createNewFile());
+        assertFile(file);
+        store.stop();
+        assertFalse(file.exists());
+        assertFalse(staging.exists());
+        assertDirectory(storage);
+        assertDirectory(quarantine);
+    }
+    @Test
+    public void testGetStorageShards()
+            throws Exception
+    {
+        Set<UUID> shards = ImmutableSet.<UUID>builder()
+                .add(UUID.fromString(""9e7abb51-56b5-4180-9164-ad08ddfe7c63""))
+                .add(UUID.fromString(""bbfc3895-1c3d-4bf4-bca4-7b1198b1759e""))
+                .build();
+        for (UUID shard : shards) {
+            File file = store.getStorageFile(shard);
+            store.createParents(file);
+            assertTrue(file.createNewFile());
+        }
+        File storage = new File(temporary, ""storage"");
+        assertTrue(new File(storage, ""abc"").mkdir());
+        assertTrue(new File(storage, ""ab/cd"").mkdirs());
+        assertTrue(new File(storage, format(""ab/cd/%s.junk"", randomUUID())).createNewFile());
+        assertTrue(new File(storage, ""ab/cd/junk.orc"").createNewFile());
+        assertEquals(store.getStorageShards(), shards);
+    }
+}",class,
+"    @BeforeMethod
+    public void setup()
+            throws Exception
+    {
+        temporary = createTempDir();
+        store = new FileStorageService(temporary);
+        store.start();
+    }",method,
+"    @AfterMethod(alwaysRun = true)
+    public void tearDown()
+            throws Exception
+    {
+        deleteRecursively(temporary.toPath(), ALLOW_INSECURE);
+    }",method,
+"    @Test
+    public void testGetFileSystemPath()
+            throws Exception
+    {
+        UUID uuid = UUID.fromString(""701e1a79-74f7-4f56-b438-b41e8e7d019d"");
+        File expected = new File(""/test"", format(""70/1e/%s.orc"", uuid));
+        assertEquals(getFileSystemPath(new File(""/test""), uuid), expected);
+    }",method,
+"    @Test
+    public void testFilePaths()
+    {
+        UUID uuid = UUID.fromString(""701e1a79-74f7-4f56-b438-b41e8e7d019d"");
+        File staging = new File(temporary, format(""staging/%s.orc"", uuid));
+        File storage = new File(temporary, format(""storage/70/1e/%s.orc"", uuid));
+        File quarantine = new File(temporary, format(""quarantine/%s.orc"", uuid));
+        assertEquals(store.getStagingFile(uuid), staging);
+        assertEquals(store.getStorageFile(uuid), storage);
+        assertEquals(store.getQuarantineFile(uuid), quarantine);
+    }",method,
+"    @Test
+    public void testStop()
+            throws Exception
+    {
+        File staging = new File(temporary, ""staging"");
+        File storage = new File(temporary, ""storage"");
+        File quarantine = new File(temporary, ""quarantine"");
+        assertDirectory(staging);
+        assertDirectory(storage);
+        assertDirectory(quarantine);
+        File file = store.getStagingFile(randomUUID());
+        store.createParents(file);
+        assertFalse(file.exists());
+        assertTrue(file.createNewFile());
+        assertFile(file);
+        store.stop();
+        assertFalse(file.exists());
+        assertFalse(staging.exists());
+        assertDirectory(storage);
+        assertDirectory(quarantine);
+    }",method,
+"    @Test
+    public void testGetStorageShards()
+            throws Exception
+    {
+        Set<UUID> shards = ImmutableSet.<UUID>builder()
+                .add(UUID.fromString(""9e7abb51-56b5-4180-9164-ad08ddfe7c63""))
+                .add(UUID.fromString(""bbfc3895-1c3d-4bf4-bca4-7b1198b1759e""))
+                .build();
+        for (UUID shard : shards) {
+            File file = store.getStorageFile(shard);
+            store.createParents(file);
+            assertTrue(file.createNewFile());
+        }
+        File storage = new File(temporary, ""storage"");
+        assertTrue(new File(storage, ""abc"").mkdir());
+        assertTrue(new File(storage, ""ab/cd"").mkdirs());
+        assertTrue(new File(storage, format(""ab/cd/%s.junk"", randomUUID())).createNewFile());
+        assertTrue(new File(storage, ""ab/cd/junk.orc"").createNewFile());
+        assertEquals(store.getStorageShards(), shards);
+    }",method,
+"        for (UUID shard : shards) {
+            File file = store.getStorageFile(shard);
+            store.createParents(file);
+            assertTrue(file.createNewFile());
+        }",method,
+"  public class Recognition {
+    private final String id;
+    private final String title;
+    private final Float confidence;
+    private final RectF location;
+    public Recognition(
+        final String id, final String title, final Float confidence, final RectF location) {
+      this.id = id;
+      this.title = title;
+      this.confidence = confidence;
+      this.location = location;
+    }
+    public String getId() {
+      return id;
+    }
+    public String getTitle() {
+      return title;
+    }
+    public Float getConfidence() {
+      return confidence;
+    }
+    public RectF getLocation() {
+      return new RectF(location);
+    }
+    @Override
+    public String toString() {
+      String resultString = """";
+      if (id != null) {
+        resultString += ""["" + id + ""] "";
+      }
+      if (title != null) {
+        resultString += title + "" "";
+      }
+      if (confidence != null) {
+        resultString += String.format(""(%.1f%%) "", confidence * 100.0f);
+      }
+      if (location != null) {
+        resultString += location + "" "";
+      }
+      return resultString.trim();
+    }
+  }",class,
+"    public Recognition(
+        final String id, final String title, final Float confidence, final RectF location) {
+      this.id = id;
+      this.title = title;
+      this.confidence = confidence;
+      this.location = location;
+    }",method,
+"    public String getId() {
+      return id;
+    }",method,
+"    public String getTitle() {
+      return title;
+    }",method,
+"    public Float getConfidence() {
+      return confidence;
+    }",method,
+"    public RectF getLocation() {
+      return new RectF(location);
+    }",method,
+"    @Override
+    public String toString() {
+      String resultString = """";
+      if (id != null) {
+        resultString += ""["" + id + ""] "";
+      }
+      if (title != null) {
+        resultString += title + "" "";
+      }
+      if (confidence != null) {
+        resultString += String.format(""(%.1f%%) "", confidence * 100.0f);
+      }
+      if (location != null) {
+        resultString += location + "" "";
+      }
+      return resultString.trim();
+    }",method,
+"      if (id != null) {
+        resultString += ""["" + id + ""] "";
+      }",method,
+"      if (title != null) {
+        resultString += title + "" "";
+      }",method,
+"      if (confidence != null) {
+        resultString += String.format(""(%.1f%%) "", confidence * 100.0f);
+      }",method,
+"      if (location != null) {
+        resultString += location + "" "";
+      }",method,
+"public abstract class AbstractManifestQuickFix extends LocalQuickFixOnPsiElement {
+  protected AbstractManifestQuickFix(@NotNull PsiElement element) {
+    super(element);
+  }
+  @NotNull
+  @Override
+  public final String getFamilyName() {
+    return ManifestBundle.message(""inspection.group"");
+  }
+}",class,
+"  protected AbstractManifestQuickFix(@NotNull PsiElement element) {
+    super(element);
+  }",method,
+"  @NotNull
+  @Override
+  public final String getFamilyName() {
+    return ManifestBundle.message(""inspection.group"");
+  }",method,
+"public class AssignShortcutAction extends ExternalSystemNodeAction<TaskData> {
+  public AssignShortcutAction() {
+    super(TaskData.class);
+  }
+  @Override
+  protected boolean isEnabled(AnActionEvent e) {
+    return super.isEnabled(e) && !isIgnoredNode(e);
+  }
+  @Override
+  protected void perform(@NotNull Project project,
+                         @NotNull ProjectSystemId projectSystemId,
+                         @NotNull TaskData taskData,
+                         @NotNull AnActionEvent e) {
+    final ExternalSystemShortcutsManager shortcutsManager = ExternalProjectsManagerImpl.getInstance(project).getShortcutsManager();
+    final String actionId = shortcutsManager.getActionId(taskData.getLinkedExternalProjectPath(), taskData.getName());
+    if (actionId != null) {
+      AnAction action = ActionManager.getInstance().getAction(actionId);
+      if (action == null) {
+        ExternalSystemNode<?> taskNode = ContainerUtil.getFirstItem(ExternalSystemDataKeys.SELECTED_NODES.getData(e.getDataContext()));
+        assert taskNode != null;
+        final String group;
+        final ModuleNode moduleDataNode = taskNode.findParent(ModuleNode.class);
+        if (moduleDataNode != null) {
+          ModuleData moduleData = moduleDataNode.getData();
+          group = moduleData != null ? moduleData.getInternalName() : null;
+        }
+        else {
+          ProjectNode projectNode = taskNode.findParent(ProjectNode.class);
+          ProjectData projectData = projectNode != null ? projectNode.getData() : null;
+          group = projectData != null ? projectData.getInternalName() : null;
+        }
+        if (group != null) {
+          ExternalSystemKeymapExtension.getOrRegisterAction(project, group, taskData);
+        }
+      }
+      new EditKeymapsDialog(project, actionId).show();
+    }
+  }
+}",class,
+"  public AssignShortcutAction() {
+    super(TaskData.class);
+  }",method,

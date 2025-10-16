@@ -1,0 +1,1460 @@
+code_snippet,type,score
+"        for (; skipped < numBytes; ) {
+            final int step = (int) Math.min(SKIP_BUFFER_SIZE, numBytes - skipped);
+            readBytes(skipBuffer, 0, step);
+            skipped += step;
+        }",method,
+"    @Override
+    public int available() throws IOException {
+        return in.available();
+    }",method,
+"    @Override
+    public synchronized void mark(int readlimit) {
+        in.mark(readlimit);
+    }",method,
+"    public void resetDigest() {
+        digest.reset();
+    }",method,
+"public class ClientModeDebuggerTransport extends BaseDebuggerTransport {
+  private static final Logger LOG = Logger.getInstance(ClientModeDebuggerTransport.class);
+  private static final int MAX_CONNECTION_TRIES = 20;
+  private static final long CHECK_CONNECTION_APPROVED_DELAY = 1000L;
+  private static final long SLEEP_TIME_BETWEEN_CONNECTION_TRIES = 150L;
+  @NotNull private final String myHost;
+  private final int myPort;
+  @NotNull private volatile State myState = State.INIT;
+  @Nullable private Socket mySocket;
+  @Nullable private volatile DebuggerReader myDebuggerReader;
+  public ClientModeDebuggerTransport(@NotNull RemoteDebugger debugger,
+                                     @NotNull String host,
+                                     int port) {
+    super(debugger);
+    myHost = host;
+    myPort = port;
+  }
+  @Override
+  public void waitForConnect() throws IOException {
+    if (myState != State.INIT) {
+      throw new IllegalStateException(
+        ""Inappropriate state of Python debugger for connecting to Python debugger: "" + myState + ""; "" + State.INIT + "" is expected"");
+    }
+    synchronized (mySocketObject) {
+      if (mySocket != null) {
+        try {
+          mySocket.close();
+        }
+        catch (IOException e) {
+          LOG.debug(""Failed to close previously opened socket"", e);
+        }
+        finally {
+          mySocket = null;
+        }
+      }
+    }
+    int i = 0;
+    boolean connected = false;
+    while (!connected && i < MAX_CONNECTION_TRIES) {
+      i++;
+      int attempt = i;
+      LOG.debug(String.format(""[%d] Trying to connect: #%d attempt"", hashCode(), attempt));
+      try {
+        Socket clientSocket = new Socket();
+        clientSocket.setSoTimeout(0);
+        clientSocket.connect(new InetSocketAddress(myHost, myPort));
+        synchronized (mySocketObject) {
+          mySocket = clientSocket;
+          myState = State.CONNECTED;
+        }
+        try {
+          InputStream stream;
+          synchronized (mySocketObject) {
+            stream = mySocket.getInputStream();
+          }
+          myDebuggerReader = new DebuggerReader(myDebugger, stream);
+        }
+        catch (IOException e) {
+          LOG.debug(""Failed to create debugger reader"", e);
+          throw e;
+        }
+        CountDownLatch beforeHandshake = new CountDownLatch(1);
+        Future<Boolean> future = ApplicationManager.getApplication().executeOnPooledThread(() -> {
+          beforeHandshake.countDown();
+          try {
+            myDebugger.handshake();
+            myDebuggerReader.connectionApproved();
+            return true;
+          }
+          catch (PyDebuggerException e) {
+            LOG.debug(String.format(""[%d] Handshake failed: #%d attempt"", hashCode(), attempt));
+            return false;
+          }
+        });
+        try {
+          beforeHandshake.await();
+          connected = future.get(CHECK_CONNECTION_APPROVED_DELAY, TimeUnit.MILLISECONDS);
+        }
+        catch (InterruptedException e) {
+          LOG.debug(String.format(""[%d] Waiting for handshake interrupted: #%d attempt"", hashCode(), attempt), e);
+          myDebuggerReader.close();
+          throw new IOException(""Waiting for subprocess interrupted"", e);
+        }
+        catch (ExecutionException e) {
+          LOG.debug(String.format(""[%d] Execution exception occurred: #%d attempt"", hashCode(), attempt), e);
+        }
+        catch (TimeoutException e) {
+          LOG.debug(String.format(""[%d] Timeout: #%d attempt"", hashCode(), attempt), e);
+          future.cancel(true);
+        }
+        if (!connected) {
+          myDebuggerReader.close();
+          try {
+            Thread.sleep(SLEEP_TIME_BETWEEN_CONNECTION_TRIES);
+          }
+          catch (InterruptedException e) {
+            throw new IOException(e);
+          }
+        }
+      }
+      catch (ConnectException e) {
+        if (i < MAX_CONNECTION_TRIES) {
+          try {
+            Thread.sleep(SLEEP_TIME_BETWEEN_CONNECTION_TRIES);
+          }
+          catch (InterruptedException e1) {
+            throw new IOException(e1);
+          }
+        }
+      }
+    }
+    if (!connected) {
+      myState = State.DISCONNECTED;
+      throw new IOException(""Failed to connect to debugging script"");
+    }
+    myState = State.APPROVED;
+    LOG.debug(String.format(""[%d] Connected to Python debugger script on #%d attempt"", hashCode(), i));
+  }
+  @Override
+  protected boolean sendMessageImpl(byte[] packed) throws IOException {
+    synchronized (mySocketObject) {
+      if (mySocket == null || mySocket.isClosed()) {
+        return false;
+      }
+      final OutputStream os = mySocket.getOutputStream();
+      os.write(packed);
+      os.flush();
+      return true;
+    }
+  }
+  @Override
+  protected void onSocketException() {
+    myDebugger.disconnect();
+    if (myState == State.APPROVED) {
+      myDebugger.fireCommunicationError();
+    }
+  }
+  @Override
+  public void close() {
+    try {
+      DebuggerReader debuggerReader = myDebuggerReader;
+      if (debuggerReader != null) {
+        debuggerReader.stop();
+      }
+    }
+    finally {
+      synchronized (mySocketObject) {
+        if (mySocket != null) {
+          try {
+            mySocket.close();
+          }
+          catch (IOException ignored) {
+          }
+        }
+      }
+    }
+  }
+  @Override
+  public boolean isConnected() {
+    return myState == State.APPROVED;
+  }
+  @Override
+  public void disconnect() {
+    // TODO disconnect?
+  }
+  private enum State {
+    INIT,
+    CONNECTED,
+    APPROVED,
+    DISCONNECTED
+  }
+  public static class DebuggerReader extends BaseDebuggerReader {
+    private final AtomicBoolean myConnectionApproved = new AtomicBoolean(false);
+    public DebuggerReader(@NotNull RemoteDebugger debugger, @NotNull InputStream stream) throws IOException {
+      super(stream, CharsetToolkit.UTF8_CHARSET, debugger); //TODO: correct encoding?
+      start(getClass().getName());
+    }
+    @Override
+    protected void onExit() {
+      if (myConnectionApproved.get()) {
+        getDebugger().fireExitEvent();
+      }
+    }
+    @Override
+    protected void onCommunicationError() {
+      if (myConnectionApproved.get()) {
+        getDebugger().fireCommunicationError();
+      }
+    }
+    public void connectionApproved() {
+      myConnectionApproved.set(true);
+    }
+  }
+}",class,
+"  public static class DebuggerReader extends BaseDebuggerReader {
+    private final AtomicBoolean myConnectionApproved = new AtomicBoolean(false);
+    public DebuggerReader(@NotNull RemoteDebugger debugger, @NotNull InputStream stream) throws IOException {
+      super(stream, CharsetToolkit.UTF8_CHARSET, debugger); //TODO: correct encoding?
+      start(getClass().getName());
+    }
+    @Override
+    protected void onExit() {
+      if (myConnectionApproved.get()) {
+        getDebugger().fireExitEvent();
+      }
+    }
+    @Override
+    protected void onCommunicationError() {
+      if (myConnectionApproved.get()) {
+        getDebugger().fireCommunicationError();
+      }
+    }
+    public void connectionApproved() {
+      myConnectionApproved.set(true);
+    }
+  }",class,
+"  @NotNull private volatile State myState = State.INIT;
+  @Nullable private Socket mySocket;
+  @Nullable private volatile DebuggerReader myDebuggerReader;
+  public ClientModeDebuggerTransport(@NotNull RemoteDebugger debugger,
+                                     @NotNull String host,
+                                     int port) {
+    super(debugger);
+    myHost = host;
+    myPort = port;
+  }",method,
+"  @Override
+  public void waitForConnect() throws IOException {
+    if (myState != State.INIT) {
+      throw new IllegalStateException(
+        ""Inappropriate state of Python debugger for connecting to Python debugger: "" + myState + ""; "" + State.INIT + "" is expected"");
+    }
+    synchronized (mySocketObject) {
+      if (mySocket != null) {
+        try {
+          mySocket.close();
+        }
+        catch (IOException e) {
+          LOG.debug(""Failed to close previously opened socket"", e);
+        }
+        finally {
+          mySocket = null;
+        }
+      }
+    }
+    int i = 0;
+    boolean connected = false;
+    while (!connected && i < MAX_CONNECTION_TRIES) {
+      i++;
+      int attempt = i;
+      LOG.debug(String.format(""[%d] Trying to connect: #%d attempt"", hashCode(), attempt));
+      try {
+        Socket clientSocket = new Socket();
+        clientSocket.setSoTimeout(0);
+        clientSocket.connect(new InetSocketAddress(myHost, myPort));
+        synchronized (mySocketObject) {
+          mySocket = clientSocket;
+          myState = State.CONNECTED;
+        }
+        try {
+          InputStream stream;
+          synchronized (mySocketObject) {
+            stream = mySocket.getInputStream();
+          }
+          myDebuggerReader = new DebuggerReader(myDebugger, stream);
+        }
+        catch (IOException e) {
+          LOG.debug(""Failed to create debugger reader"", e);
+          throw e;
+        }
+        CountDownLatch beforeHandshake = new CountDownLatch(1);
+        Future<Boolean> future = ApplicationManager.getApplication().executeOnPooledThread(() -> {
+          beforeHandshake.countDown();
+          try {
+            myDebugger.handshake();
+            myDebuggerReader.connectionApproved();
+            return true;
+          }
+          catch (PyDebuggerException e) {
+            LOG.debug(String.format(""[%d] Handshake failed: #%d attempt"", hashCode(), attempt));
+            return false;
+          }
+        });
+        try {
+          beforeHandshake.await();
+          connected = future.get(CHECK_CONNECTION_APPROVED_DELAY, TimeUnit.MILLISECONDS);
+        }
+        catch (InterruptedException e) {
+          LOG.debug(String.format(""[%d] Waiting for handshake interrupted: #%d attempt"", hashCode(), attempt), e);
+          myDebuggerReader.close();
+          throw new IOException(""Waiting for subprocess interrupted"", e);
+        }
+        catch (ExecutionException e) {
+          LOG.debug(String.format(""[%d] Execution exception occurred: #%d attempt"", hashCode(), attempt), e);
+        }
+        catch (TimeoutException e) {
+          LOG.debug(String.format(""[%d] Timeout: #%d attempt"", hashCode(), attempt), e);
+          future.cancel(true);
+        }
+        if (!connected) {
+          myDebuggerReader.close();
+          try {
+            Thread.sleep(SLEEP_TIME_BETWEEN_CONNECTION_TRIES);
+          }
+          catch (InterruptedException e) {
+            throw new IOException(e);
+          }
+        }
+      }
+      catch (ConnectException e) {
+        if (i < MAX_CONNECTION_TRIES) {
+          try {
+            Thread.sleep(SLEEP_TIME_BETWEEN_CONNECTION_TRIES);
+          }
+          catch (InterruptedException e1) {
+            throw new IOException(e1);
+          }
+        }
+      }
+    }
+    if (!connected) {
+      myState = State.DISCONNECTED;
+      throw new IOException(""Failed to connect to debugging script"");
+    }
+    myState = State.APPROVED;
+    LOG.debug(String.format(""[%d] Connected to Python debugger script on #%d attempt"", hashCode(), i));
+  }",method,
+"    if (myState != State.INIT) {
+      throw new IllegalStateException(
+        ""Inappropriate state of Python debugger for connecting to Python debugger: "" + myState + ""; "" + State.INIT + "" is expected"");
+    }",method,
+"    synchronized (mySocketObject) {
+      if (mySocket != null) {
+        try {
+          mySocket.close();
+        }
+        catch (IOException e) {
+          LOG.debug(""Failed to close previously opened socket"", e);
+        }
+        finally {
+          mySocket = null;
+        }
+      }
+    }",method,
+"      if (mySocket != null) {
+        try {
+          mySocket.close();
+        }
+        catch (IOException e) {
+          LOG.debug(""Failed to close previously opened socket"", e);
+        }
+        finally {
+          mySocket = null;
+        }
+      }",method,
+"        catch (IOException e) {
+          LOG.debug(""Failed to close previously opened socket"", e);
+        }",method,
+"    while (!connected && i < MAX_CONNECTION_TRIES) {
+      i++;
+      int attempt = i;
+      LOG.debug(String.format(""[%d] Trying to connect: #%d attempt"", hashCode(), attempt));
+      try {
+        Socket clientSocket = new Socket();
+        clientSocket.setSoTimeout(0);
+        clientSocket.connect(new InetSocketAddress(myHost, myPort));
+        synchronized (mySocketObject) {
+          mySocket = clientSocket;
+          myState = State.CONNECTED;
+        }
+        try {
+          InputStream stream;
+          synchronized (mySocketObject) {
+            stream = mySocket.getInputStream();
+          }
+          myDebuggerReader = new DebuggerReader(myDebugger, stream);
+        }
+        catch (IOException e) {
+          LOG.debug(""Failed to create debugger reader"", e);
+          throw e;
+        }
+        CountDownLatch beforeHandshake = new CountDownLatch(1);
+        Future<Boolean> future = ApplicationManager.getApplication().executeOnPooledThread(() -> {
+          beforeHandshake.countDown();
+          try {
+            myDebugger.handshake();
+            myDebuggerReader.connectionApproved();
+            return true;
+          }
+          catch (PyDebuggerException e) {
+            LOG.debug(String.format(""[%d] Handshake failed: #%d attempt"", hashCode(), attempt));
+            return false;
+          }
+        });
+        try {
+          beforeHandshake.await();
+          connected = future.get(CHECK_CONNECTION_APPROVED_DELAY, TimeUnit.MILLISECONDS);
+        }
+        catch (InterruptedException e) {
+          LOG.debug(String.format(""[%d] Waiting for handshake interrupted: #%d attempt"", hashCode(), attempt), e);
+          myDebuggerReader.close();
+          throw new IOException(""Waiting for subprocess interrupted"", e);
+        }
+        catch (ExecutionException e) {
+          LOG.debug(String.format(""[%d] Execution exception occurred: #%d attempt"", hashCode(), attempt), e);
+        }
+        catch (TimeoutException e) {
+          LOG.debug(String.format(""[%d] Timeout: #%d attempt"", hashCode(), attempt), e);
+          future.cancel(true);
+        }
+        if (!connected) {
+          myDebuggerReader.close();
+          try {
+            Thread.sleep(SLEEP_TIME_BETWEEN_CONNECTION_TRIES);
+          }
+          catch (InterruptedException e) {
+            throw new IOException(e);
+          }
+        }
+      }
+      catch (ConnectException e) {
+        if (i < MAX_CONNECTION_TRIES) {
+          try {
+            Thread.sleep(SLEEP_TIME_BETWEEN_CONNECTION_TRIES);
+          }
+          catch (InterruptedException e1) {
+            throw new IOException(e1);
+          }
+        }
+      }
+    }",method,
+"        synchronized (mySocketObject) {
+          mySocket = clientSocket;
+          myState = State.CONNECTED;
+        }",method,
+"          synchronized (mySocketObject) {
+            stream = mySocket.getInputStream();
+          }",method,
+"        catch (IOException e) {
+          LOG.debug(""Failed to create debugger reader"", e);
+          throw e;
+        }",method,
+"          catch (PyDebuggerException e) {
+            LOG.debug(String.format(""[%d] Handshake failed: #%d attempt"", hashCode(), attempt));
+            return false;
+          }",method,
+"        catch (InterruptedException e) {
+          LOG.debug(String.format(""[%d] Waiting for handshake interrupted: #%d attempt"", hashCode(), attempt), e);
+          myDebuggerReader.close();
+          throw new IOException(""Waiting for subprocess interrupted"", e);
+        }",method,
+"        catch (ExecutionException e) {
+          LOG.debug(String.format(""[%d] Execution exception occurred: #%d attempt"", hashCode(), attempt), e);
+        }",method,
+"        catch (TimeoutException e) {
+          LOG.debug(String.format(""[%d] Timeout: #%d attempt"", hashCode(), attempt), e);
+          future.cancel(true);
+        }",method,
+"        if (!connected) {
+          myDebuggerReader.close();
+          try {
+            Thread.sleep(SLEEP_TIME_BETWEEN_CONNECTION_TRIES);
+          }
+          catch (InterruptedException e) {
+            throw new IOException(e);
+          }
+        }",method,
+"          catch (InterruptedException e) {
+            throw new IOException(e);
+          }",method,
+"      catch (ConnectException e) {
+        if (i < MAX_CONNECTION_TRIES) {
+          try {
+            Thread.sleep(SLEEP_TIME_BETWEEN_CONNECTION_TRIES);
+          }
+          catch (InterruptedException e1) {
+            throw new IOException(e1);
+          }
+        }
+      }",method,
+"        if (i < MAX_CONNECTION_TRIES) {
+          try {
+            Thread.sleep(SLEEP_TIME_BETWEEN_CONNECTION_TRIES);
+          }
+          catch (InterruptedException e1) {
+            throw new IOException(e1);
+          }
+        }",method,
+"          catch (InterruptedException e1) {
+            throw new IOException(e1);
+          }",method,
+"    if (!connected) {
+      myState = State.DISCONNECTED;
+      throw new IOException(""Failed to connect to debugging script"");
+    }",method,
+"  @Override
+  protected boolean sendMessageImpl(byte[] packed) throws IOException {
+    synchronized (mySocketObject) {
+      if (mySocket == null || mySocket.isClosed()) {
+        return false;
+      }
+      final OutputStream os = mySocket.getOutputStream();
+      os.write(packed);
+      os.flush();
+      return true;
+    }
+  }",method,
+"    synchronized (mySocketObject) {
+      if (mySocket == null || mySocket.isClosed()) {
+        return false;
+      }
+      final OutputStream os = mySocket.getOutputStream();
+      os.write(packed);
+      os.flush();
+      return true;
+    }",method,
+"  @Override
+  protected void onSocketException() {
+    myDebugger.disconnect();
+    if (myState == State.APPROVED) {
+      myDebugger.fireCommunicationError();
+    }
+  }",method,
+"    if (myState == State.APPROVED) {
+      myDebugger.fireCommunicationError();
+    }",method,
+"  @Override
+  public void close() {
+    try {
+      DebuggerReader debuggerReader = myDebuggerReader;
+      if (debuggerReader != null) {
+        debuggerReader.stop();
+      }
+    }
+    finally {
+      synchronized (mySocketObject) {
+        if (mySocket != null) {
+          try {
+            mySocket.close();
+          }
+          catch (IOException ignored) {
+          }
+        }
+      }
+    }
+  }",method,
+"      if (debuggerReader != null) {
+        debuggerReader.stop();
+      }",method,
+"      synchronized (mySocketObject) {
+        if (mySocket != null) {
+          try {
+            mySocket.close();
+          }
+          catch (IOException ignored) {
+          }
+        }
+      }",method,
+"        if (mySocket != null) {
+          try {
+            mySocket.close();
+          }
+          catch (IOException ignored) {
+          }
+        }",method,
+"          catch (IOException ignored) {
+          }",method,
+"  @Override
+  public boolean isConnected() {
+    return myState == State.APPROVED;
+  }",method,
+"  @Override
+  public void disconnect() {
+    // TODO disconnect?
+  }",method,
+"    public DebuggerReader(@NotNull RemoteDebugger debugger, @NotNull InputStream stream) throws IOException {
+      super(stream, CharsetToolkit.UTF8_CHARSET, debugger); //TODO: correct encoding?
+      start(getClass().getName());
+    }",method,
+"    @Override
+    protected void onExit() {
+      if (myConnectionApproved.get()) {
+        getDebugger().fireExitEvent();
+      }
+    }",method,
+"    @Override
+    protected void onCommunicationError() {
+      if (myConnectionApproved.get()) {
+        getDebugger().fireCommunicationError();
+      }
+    }",method,
+"    public void connectionApproved() {
+      myConnectionApproved.set(true);
+    }",method,
+"public class AnnotatedDescriptionTest {
+    @Retention(RetentionPolicy.RUNTIME)
+    public @interface MyOwnAnnotation {
+    }
+    @MyOwnAnnotation
+    public static class AnnotatedClass {
+        @Test
+        public void a() {
+        }
+    }
+    @Test
+    public void annotationsExistOnDescriptionsOfClasses() {
+        assertTrue((describe(AnnotatedClass.class).getAnnotation(
+                MyOwnAnnotation.class) != null));
+    }
+    @Test
+    public void getAnnotationsReturnsAllAnnotations() {
+        assertEquals(1, describe(ValueAnnotatedClass.class).getAnnotations()
+                .size());
+    }
+    @Ignore
+    public static class IgnoredClass {
+        @Test
+        public void a() {
+        }
+    }
+    @Test
+    public void annotationsExistOnDescriptionsOfIgnoredClass() {
+        assertTrue((describe(IgnoredClass.class).getAnnotation(Ignore.class) != null));
+    }
+    @Retention(RetentionPolicy.RUNTIME)
+    public @interface ValuedAnnotation {
+        String value();
+    }
+    @ValuedAnnotation(""hello"")
+    public static class ValueAnnotatedClass {
+        @Test
+        public void a() {
+        }
+    }
+    @Test
+    public void descriptionOfTestClassHasValuedAnnotation() {
+        Description description = describe(ValueAnnotatedClass.class);
+        assertEquals(""hello"", description.getAnnotation(ValuedAnnotation.class)
+                .value());
+    }
+    @Test
+    public void childlessCopyOfDescriptionStillHasAnnotations() {
+        Description description = describe(ValueAnnotatedClass.class);
+        assertEquals(""hello"", description.childlessCopy().getAnnotation(ValuedAnnotation.class)
+                .value());
+    }
+    @Test
+    public void characterizeCreatingMyOwnAnnotation() {
+        Annotation annotation = new Ignore() {
+            public String value() {
+                return ""message"";
+            }
+            public Class<? extends Annotation> annotationType() {
+                return Ignore.class;
+            }
+        };
+        assertEquals(Ignore.class, annotation.annotationType());
+    }
+    private Description describe(Class<?> testClass) {
+        return Request.aClass(testClass).getRunner().getDescription();
+    }
+}",class,
+"    public static class AnnotatedClass {
+        @Test
+        public void a() {
+        }
+    }",class,
+"    public static class IgnoredClass {
+        @Test
+        public void a() {
+        }
+    }",class,
+"    public static class ValueAnnotatedClass {
+        @Test
+        public void a() {
+        }
+    }",class,
+"        @Test
+        public void a() {
+        }",method,
+"    @Test
+    public void annotationsExistOnDescriptionsOfClasses() {
+        assertTrue((describe(AnnotatedClass.class).getAnnotation(
+                MyOwnAnnotation.class) != null));
+    }",method,
+"    @Test
+    public void getAnnotationsReturnsAllAnnotations() {
+        assertEquals(1, describe(ValueAnnotatedClass.class).getAnnotations()
+                .size());
+    }",method,
+"        @Test
+        public void a() {
+        }",method,
+"    @Test
+    public void annotationsExistOnDescriptionsOfIgnoredClass() {
+        assertTrue((describe(IgnoredClass.class).getAnnotation(Ignore.class) != null));
+    }",method,
+"        @Test
+        public void a() {
+        }",method,
+"    @Test
+    public void descriptionOfTestClassHasValuedAnnotation() {
+        Description description = describe(ValueAnnotatedClass.class);
+        assertEquals(""hello"", description.getAnnotation(ValuedAnnotation.class)
+                .value());
+    }",method,
+"    @Test
+    public void childlessCopyOfDescriptionStillHasAnnotations() {
+        Description description = describe(ValueAnnotatedClass.class);
+        assertEquals(""hello"", description.childlessCopy().getAnnotation(ValuedAnnotation.class)
+                .value());
+    }",method,
+"    @Test
+    public void characterizeCreatingMyOwnAnnotation() {
+        Annotation annotation = new Ignore() {
+            public String value() {
+                return ""message"";
+            }
+            public Class<? extends Annotation> annotationType() {
+                return Ignore.class;
+            }
+        };
+        assertEquals(Ignore.class, annotation.annotationType());
+    }",method,
+"            public String value() {
+                return ""message"";
+            }",method,
+"            public Class<? extends Annotation> annotationType() {
+                return Ignore.class;
+            }",method,
+"    private Description describe(Class<?> testClass) {
+        return Request.aClass(testClass).getRunner().getDescription();
+    }",method,
+"public class CvsConnectionUtil {
+  private CvsConnectionUtil() {
+  }
+  public static IConnection createSshConnection(final CvsRootData settings,
+                                                final SshSettings sshConfiguration,
+                                                final ProxySettings proxySettings,
+                                                final SSHPasswordProvider sshPasswordProvider,
+                                                final int timeout) {
+    ConnectionSettingsImpl connectionSettings = new ConnectionSettingsImpl(settings.HOST,
+                                                                           settings.PORT,
+                                                                           proxySettings.USE_PROXY,
+                                                                           proxySettings.PROXY_HOST,
+                                                                           proxySettings.PROXY_PORT,
+                                                                           timeout,
+                                                                           proxySettings.getType(),
+                                                                           proxySettings.getLogin(),
+                                                                           proxySettings.getPassword());
+    final SshAuthentication authentication;
+    if (sshConfiguration.USE_PPK) {
+      authentication = new SshPublicKeyAuthentication(new File(sshConfiguration.PATH_TO_PPK), getUserName(settings), sshPasswordProvider,
+                                                      settings.getCvsRootAsString());
+    }
+    else {
+      authentication = new SshPasswordAuthentication(getUserName(settings), sshPasswordProvider, settings.getCvsRootAsString());
+    }
+    return SshConnectionPool.getInstance().getConnection(settings.REPOSITORY, connectionSettings, authentication);
+  }
+  public static IConnection createExtConnection(final CvsRootData settings,
+                                                final ExtConfiguration extConfiguration,
+                                                final SshSettings sshConfiguration,
+                                                final SSHPasswordProvider sshPasswordProvider,
+                                                final ProxySettings proxySettings,
+                                                final ErrorRegistry errorRegistry,
+                                                final int timeout) {
+    if (extConfiguration.USE_INTERNAL_SSH_IMPLEMENTATION) {
+      return createSshConnection(settings, sshConfiguration, proxySettings, sshPasswordProvider, timeout);
+    }
+    else {
+      return new ExtConnection(settings.HOST, getUserName(settings), settings.REPOSITORY, extConfiguration, errorRegistry);
+    }
+  }
+  public static IConnection createPServerConnection(CvsRootData root, ProxySettings proxySettings, final int timeout) {
+    ConnectionSettings connectionSettings = new ConnectionSettingsImpl(root.HOST,
+                                                                       root.PORT,
+                                                                       proxySettings.USE_PROXY,
+                                                                       proxySettings.PROXY_HOST,
+                                                                       proxySettings.PROXY_PORT,
+                                                                       timeout,
+                                                                       proxySettings.TYPE,
+                                                                       proxySettings.getLogin(),
+                                                                       proxySettings.getPassword());
+    return new PServerConnection(connectionSettings, root.USER, root.PASSWORD, adjustRepository(root));
+  }
+  private static String getUserName(CvsRootData settings) {
+    return settings.USER.isEmpty() ? SystemProperties.getUserName() : settings.USER;
+  }
+  private static String adjustRepository(CvsRootData root) {
+    return (root.REPOSITORY != null) ? root.REPOSITORY.replace('\\', '/') : null;
+  }
+}",class,
+"  private CvsConnectionUtil() {
+  }",method,
+"  public static IConnection createSshConnection(final CvsRootData settings,
+                                                final SshSettings sshConfiguration,
+                                                final ProxySettings proxySettings,
+                                                final SSHPasswordProvider sshPasswordProvider,
+                                                final int timeout) {
+    ConnectionSettingsImpl connectionSettings = new ConnectionSettingsImpl(settings.HOST,
+                                                                           settings.PORT,
+                                                                           proxySettings.USE_PROXY,
+                                                                           proxySettings.PROXY_HOST,
+                                                                           proxySettings.PROXY_PORT,
+                                                                           timeout,
+                                                                           proxySettings.getType(),
+                                                                           proxySettings.getLogin(),
+                                                                           proxySettings.getPassword());
+    final SshAuthentication authentication;
+    if (sshConfiguration.USE_PPK) {
+      authentication = new SshPublicKeyAuthentication(new File(sshConfiguration.PATH_TO_PPK), getUserName(settings), sshPasswordProvider,
+                                                      settings.getCvsRootAsString());
+    }
+    else {
+      authentication = new SshPasswordAuthentication(getUserName(settings), sshPasswordProvider, settings.getCvsRootAsString());
+    }
+    return SshConnectionPool.getInstance().getConnection(settings.REPOSITORY, connectionSettings, authentication);
+  }",method,
+"    if (sshConfiguration.USE_PPK) {
+      authentication = new SshPublicKeyAuthentication(new File(sshConfiguration.PATH_TO_PPK), getUserName(settings), sshPasswordProvider,
+                                                      settings.getCvsRootAsString());
+    }",method,
+"  public static IConnection createExtConnection(final CvsRootData settings,
+                                                final ExtConfiguration extConfiguration,
+                                                final SshSettings sshConfiguration,
+                                                final SSHPasswordProvider sshPasswordProvider,
+                                                final ProxySettings proxySettings,
+                                                final ErrorRegistry errorRegistry,
+                                                final int timeout) {
+    if (extConfiguration.USE_INTERNAL_SSH_IMPLEMENTATION) {
+      return createSshConnection(settings, sshConfiguration, proxySettings, sshPasswordProvider, timeout);
+    }
+    else {
+      return new ExtConnection(settings.HOST, getUserName(settings), settings.REPOSITORY, extConfiguration, errorRegistry);
+    }
+  }",method,
+"    if (extConfiguration.USE_INTERNAL_SSH_IMPLEMENTATION) {
+      return createSshConnection(settings, sshConfiguration, proxySettings, sshPasswordProvider, timeout);
+    }",method,
+"  public static IConnection createPServerConnection(CvsRootData root, ProxySettings proxySettings, final int timeout) {
+    ConnectionSettings connectionSettings = new ConnectionSettingsImpl(root.HOST,
+                                                                       root.PORT,
+                                                                       proxySettings.USE_PROXY,
+                                                                       proxySettings.PROXY_HOST,
+                                                                       proxySettings.PROXY_PORT,
+                                                                       timeout,
+                                                                       proxySettings.TYPE,
+                                                                       proxySettings.getLogin(),
+                                                                       proxySettings.getPassword());
+    return new PServerConnection(connectionSettings, root.USER, root.PASSWORD, adjustRepository(root));
+  }",method,
+"  private static String getUserName(CvsRootData settings) {
+    return settings.USER.isEmpty() ? SystemProperties.getUserName() : settings.USER;
+  }",method,
+"  private static String adjustRepository(CvsRootData root) {
+    return (root.REPOSITORY != null) ? root.REPOSITORY.replace('\\', '/') : null;
+  }",method,
+"public class ActivityTaskMgr {
+    private List<WeakReference<Activity>> activityList = new ArrayList<WeakReference<Activity>>();
+    public  static Dialog sReminderDialog;
+    private static ActivityTaskMgr       sInstance = null;
+    private ActivityTaskMgr(){
+    }
+    public static synchronized ActivityTaskMgr getInstance() {
+        if (sInstance == null) {
+            sInstance = new ActivityTaskMgr();
+        }
+        return sInstance;
+    }
+    public List<WeakReference<Activity>> getActivityList(){
+        return activityList;
+    }
+    public Activity peekTopActivity(){
+        if(activityList!=null && activityList.size()>0){
+            WeakReference<Activity> ref = activityList.get(activityList.size()-1);
+            if(ref!=null && ref.get()!=null){
+                return ref.get();
+            }
+        }
+        return null;
+    }
+    public void pushToActivityStack(Activity activity) {
+        activityList.add(new WeakReference<Activity>(activity));
+    }
+    public void popFromActivityStack(Activity activity) {
+        if(sReminderDialog!=null &&
+                (sReminderDialog.getContext()==activity ||
+                        (sReminderDialog.getContext() instanceof ContextWrapper && ((ContextWrapper)sReminderDialog.getContext()).getBaseContext()==activity))){
+            try{
+                sReminderDialog.dismiss();
+            }catch (Throwable e){}finally {
+                sReminderDialog = null;
+            }
+        }
+        for(int x=0; x<activityList.size(); x++){
+            WeakReference<Activity> ref = activityList.get(x);
+            if(ref!=null && ref.get()!=null && ref.get()==activity){
+                activityList.remove(ref);
+            }
+        }
+    }
+    public void clearActivityStack(){
+        try {
+            for (WeakReference<Activity> ref : activityList) {
+                if (ref != null && ref.get() != null && !ref.get().isFinishing()) {
+                    ref.get().finish();
+                }
+            }
+        }catch (Throwable e){
+        }finally {
+            activityList = null;
+        }
+    }
+    public boolean isActivityStackEmpty() {
+        return activityList.size() == 0;
+    }
+	public int sizeOfActivityStack() {
+		return activityList.size();
+	}
+    public void updateBundleActivityResource(String bundleName){
+        for(int x=0; x<activityList.size(); x++){
+            WeakReference<Activity> ref = activityList.get(x);
+            if(ref!=null && ref.get()!=null && !ref.get().isFinishing()){
+                Activity activity =  ref.get();
+                try {
+                    if(Build.VERSION.SDK_INT>=17 && activity.getResources()!=RuntimeVariables.delegateResources) {
+                        Field mResourcesField = Activity.class.getSuperclass().getDeclaredField(""mResources"");
+                        mResourcesField.setAccessible(true);
+                        mResourcesField.set(activity, RuntimeVariables.delegateResources);
+                    }
+                    Field mThemeField = Activity.class.getSuperclass().getDeclaredField(""mTheme"");
+                    mThemeField.setAccessible(true);
+                    Object mTheme = mThemeField.get(activity);
+                    Field mReferenceResource = mTheme.getClass().getDeclaredField(""this$0"");
+                    mReferenceResource.setAccessible(true);
+                    if(mReferenceResource.get(mTheme) != RuntimeVariables.delegateResources){
+                        mThemeField.set(activity, null);
+                    }
+                    Class TintContextWrapper = Class.forName(""android.support.v7.widget.TintContextWrapper"");
+                    Field tintWrapperField = TintContextWrapper.getDeclaredField(""sCache"");
+                    tintWrapperField.setAccessible(true);
+                    ArrayList<WeakReference<Object>> sCache = (ArrayList<WeakReference<Object>>)tintWrapperField.get(TintContextWrapper);
+                    if(sCache!=null){
+                        for(int n=0; n<sCache.size();n++){
+                            final WeakReference<Object> wrappRef = sCache.get(n);
+                            final Object wrapper = wrappRef != null ? wrappRef.get() : null;
+                            if (wrapper != null && ((ContextWrapper)wrapper).getBaseContext() == activity) {
+                                Field mTintResourcesField = TintContextWrapper.getDeclaredField(""mResources"");
+                                mTintResourcesField.setAccessible(true);
+                                mTintResourcesField.set(wrapper,RuntimeVariables.delegateResources);
+                                break;
+                            }
+                        }
+                    }
+                } catch (Throwable e) {
+                    //e.printStackTrace();
+                }
+            }
+        }
+    }
+}",class,
+"    private ActivityTaskMgr(){
+    }",method,
+"    public static synchronized ActivityTaskMgr getInstance() {
+        if (sInstance == null) {
+            sInstance = new ActivityTaskMgr();
+        }
+        return sInstance;
+    }",method,
+"        if (sInstance == null) {
+            sInstance = new ActivityTaskMgr();
+        }",method,
+"    public List<WeakReference<Activity>> getActivityList(){
+        return activityList;
+    }",method,
+"    public Activity peekTopActivity(){
+        if(activityList!=null && activityList.size()>0){
+            WeakReference<Activity> ref = activityList.get(activityList.size()-1);
+            if(ref!=null && ref.get()!=null){
+                return ref.get();
+            }
+        }
+        return null;
+    }",method,
+"    public void pushToActivityStack(Activity activity) {
+        activityList.add(new WeakReference<Activity>(activity));
+    }",method,
+"    public void popFromActivityStack(Activity activity) {
+        if(sReminderDialog!=null &&
+                (sReminderDialog.getContext()==activity ||
+                        (sReminderDialog.getContext() instanceof ContextWrapper && ((ContextWrapper)sReminderDialog.getContext()).getBaseContext()==activity))){
+            try{
+                sReminderDialog.dismiss();
+            }catch (Throwable e){}finally {
+                sReminderDialog = null;
+            }
+        }
+        for(int x=0; x<activityList.size(); x++){
+            WeakReference<Activity> ref = activityList.get(x);
+            if(ref!=null && ref.get()!=null && ref.get()==activity){
+                activityList.remove(ref);
+            }
+        }
+    }",method,
+"    public void clearActivityStack(){
+        try {
+            for (WeakReference<Activity> ref : activityList) {
+                if (ref != null && ref.get() != null && !ref.get().isFinishing()) {
+                    ref.get().finish();
+                }
+            }
+        }catch (Throwable e){
+        }finally {
+            activityList = null;
+        }
+    }",method,
+"            for (WeakReference<Activity> ref : activityList) {
+                if (ref != null && ref.get() != null && !ref.get().isFinishing()) {
+                    ref.get().finish();
+                }
+            }",method,
+"    public boolean isActivityStackEmpty() {
+        return activityList.size() == 0;
+    }",method,
+"	public int sizeOfActivityStack() {
+		return activityList.size();
+	}",method,
+"    public void updateBundleActivityResource(String bundleName){
+        for(int x=0; x<activityList.size(); x++){
+            WeakReference<Activity> ref = activityList.get(x);
+            if(ref!=null && ref.get()!=null && !ref.get().isFinishing()){
+                Activity activity =  ref.get();
+                try {
+                    if(Build.VERSION.SDK_INT>=17 && activity.getResources()!=RuntimeVariables.delegateResources) {
+                        Field mResourcesField = Activity.class.getSuperclass().getDeclaredField(""mResources"");
+                        mResourcesField.setAccessible(true);
+                        mResourcesField.set(activity, RuntimeVariables.delegateResources);
+                    }
+                    Field mThemeField = Activity.class.getSuperclass().getDeclaredField(""mTheme"");
+                    mThemeField.setAccessible(true);
+                    Object mTheme = mThemeField.get(activity);
+                    Field mReferenceResource = mTheme.getClass().getDeclaredField(""this$0"");
+                    mReferenceResource.setAccessible(true);
+                    if(mReferenceResource.get(mTheme) != RuntimeVariables.delegateResources){
+                        mThemeField.set(activity, null);
+                    }
+                    Class TintContextWrapper = Class.forName(""android.support.v7.widget.TintContextWrapper"");
+                    Field tintWrapperField = TintContextWrapper.getDeclaredField(""sCache"");
+                    tintWrapperField.setAccessible(true);
+                    ArrayList<WeakReference<Object>> sCache = (ArrayList<WeakReference<Object>>)tintWrapperField.get(TintContextWrapper);
+                    if(sCache!=null){
+                        for(int n=0; n<sCache.size();n++){
+                            final WeakReference<Object> wrappRef = sCache.get(n);
+                            final Object wrapper = wrappRef != null ? wrappRef.get() : null;
+                            if (wrapper != null && ((ContextWrapper)wrapper).getBaseContext() == activity) {
+                                Field mTintResourcesField = TintContextWrapper.getDeclaredField(""mResources"");
+                                mTintResourcesField.setAccessible(true);
+                                mTintResourcesField.set(wrapper,RuntimeVariables.delegateResources);
+                                break;
+                            }
+                        }
+                    }
+                } catch (Throwable e) {
+                    //e.printStackTrace();
+                }
+            }
+        }
+    }",method,
+"                    if(sCache!=null){
+                        for(int n=0; n<sCache.size();n++){
+                            final WeakReference<Object> wrappRef = sCache.get(n);
+                            final Object wrapper = wrappRef != null ? wrappRef.get() : null;
+                            if (wrapper != null && ((ContextWrapper)wrapper).getBaseContext() == activity) {
+                                Field mTintResourcesField = TintContextWrapper.getDeclaredField(""mResources"");
+                                mTintResourcesField.setAccessible(true);
+                                mTintResourcesField.set(wrapper,RuntimeVariables.delegateResources);
+                                break;
+                            }
+                        }
+                    }",method,
+"public final class BasicVector_UnsignedByte16 extends AbstractVector
+{
+    private int capacity;
+    private int[] elements;
+    public BasicVector_UnsignedByte16(int capacity)
+    {
+        elements = new int[capacity];
+        this.capacity = capacity;
+    }
+    private BasicVector_UnsignedByte16(LispObject[] array)
+    {
+        capacity = array.length;
+        elements = new int[capacity];
+        for (int i = array.length; i-- > 0;)
+            elements[i] = Fixnum.getValue(array[i]);
+    }
+    @Override
+    public LispObject typeOf()
+    {
+        return list(Symbol.SIMPLE_ARRAY, UNSIGNED_BYTE_16,
+                     new Cons(Fixnum.getInstance(capacity)));
+    }
+    @Override
+    public LispObject classOf()
+    {
+        return BuiltInClass.VECTOR;
+    }
+    @Override
+    public LispObject typep(LispObject type)
+    {
+        if (type == Symbol.SIMPLE_ARRAY)
+            return T;
+        if (type == BuiltInClass.SIMPLE_ARRAY)
+            return T;
+        return super.typep(type);
+    }
+    @Override
+    public LispObject getElementType()
+    {
+        return UNSIGNED_BYTE_16;
+    }
+    @Override
+    public boolean isSimpleVector()
+    {
+        return false;
+    }
+    @Override
+    public boolean hasFillPointer()
+    {
+        return false;
+    }
+    @Override
+    public boolean isAdjustable()
+    {
+        return false;
+    }
+    @Override
+    public int capacity()
+    {
+        return capacity;
+    }
+    @Override
+    public int length()
+    {
+        return capacity;
+    }
+    @Override
+    public LispObject elt(int index)
+    {
+        try {
+            return Fixnum.getInstance(elements[index]);
+        }
+        catch (ArrayIndexOutOfBoundsException e) {
+            badIndex(index, capacity);
+            return NIL; // Not reached.
+        }
+    }
+    // Ignores fill pointer.
+    @Override
+    public int aref(int index)
+    {
+        try {
+            return elements[index];
+        }
+        catch (ArrayIndexOutOfBoundsException e) {
+            badIndex(index, elements.length);
+            // Not reached.
+            return 0;
+        }
+    }
+    // Ignores fill pointer.
+    @Override
+    public LispObject AREF(int index)
+    {
+        try {
+            return Fixnum.getInstance(elements[index]);
+        }
+        catch (ArrayIndexOutOfBoundsException e) {
+            badIndex(index, elements.length);
+            return NIL; // Not reached.
+        }
+    }
+    @Override
+    public void aset(int index, int n)
+    {
+        try {
+            elements[index] = n;
+        }
+        catch (ArrayIndexOutOfBoundsException e) {
+            badIndex(index, capacity);
+        }
+    }
+    @Override
+    public void aset(int index, LispObject obj)
+    {
+        if (obj instanceof Fixnum) {
+                try {
+            elements[index] = ((Fixnum)obj).value;
+        }
+        catch (ArrayIndexOutOfBoundsException e) {
+            badIndex(index, capacity);
+        }
+        }
+        else {
+            type_error(obj, UNSIGNED_BYTE_16);
+        }
+    }
+    @Override
+    public LispObject subseq(int start, int end)
+    {
+        BasicVector_UnsignedByte16 v = new BasicVector_UnsignedByte16(end - start);
+        int i = start, j = 0;
+        try {
+            while (i < end)
+                v.elements[j++] = elements[i++];
+            return v;
+        }
+        catch (ArrayIndexOutOfBoundsException e) {
+            return error(new TypeError(""Array index out of bounds: "" + i + "".""));
+        }
+    }
+    @Override
+    public void fill(LispObject obj)
+    {
+        int n = Fixnum.getValue(obj);
+        for (int i = capacity; i-- > 0;)
+            elements[i] = n;
+    }
+    @Override
+    public void shrink(int n)
+    {
+        if (n < capacity) {
+            int[] newArray = new int[n];
+            System.arraycopy(elements, 0, newArray, 0, n);
+            elements = newArray;
+            capacity = n;
+            return;
+        }
+        if (n == capacity)
+            return;
+        error(new LispError());
+    }
+    @Override
+    public LispObject reverse()
+    {
+        BasicVector_UnsignedByte16 result = new BasicVector_UnsignedByte16(capacity);
+        int i, j;
+        for (i = 0, j = capacity - 1; i < capacity; i++, j--)
+            result.elements[i] = elements[j];
+        return result;
+    }
+    @Override
+    public LispObject nreverse()
+    {
+        int i = 0;
+        int j = capacity - 1;
+        while (i < j) {
+            int temp = elements[i];
+            elements[i] = elements[j];
+            elements[j] = temp;
+            ++i;
+            --j;
+        }
+        return this;
+    }
+    @Override
+    public AbstractVector adjustArray(int newCapacity,
+                                       LispObject initialElement,
+                                       LispObject initialContents)
+    {
+        if (initialContents != null) {
+            LispObject[] newElements = new LispObject[newCapacity];
+            if (initialContents.listp()) {
+                LispObject list = initialContents;
+                for (int i = 0; i < newCapacity; i++) {
+                    newElements[i] = list.car();
+                    list = list.cdr();
+                }
+            } else if (initialContents.vectorp()) {
+                for (int i = 0; i < newCapacity; i++)
+                    newElements[i] = initialContents.elt(i);
+            } else
+                type_error(initialContents, Symbol.SEQUENCE);
+            return new BasicVector_UnsignedByte16(newElements);
+        }
+        if (capacity != newCapacity) {
+            LispObject[] newElements = new LispObject[newCapacity];
+            System.arraycopy(elements, 0, newElements, 0,
+                             Math.min(capacity, newCapacity));
+            if (initialElement != null)
+                for (int i = capacity; i < newCapacity; i++)
+                    newElements[i] = initialElement;
+            return new BasicVector_UnsignedByte16(newElements);
+        }
+        // No change.
+        return this;
+    }
+    @Override
+    public AbstractVector adjustArray(int newCapacity,
+                                       AbstractArray displacedTo,
+                                       int displacement)
+    {
+        return new ComplexVector(newCapacity, displacedTo, displacement);
+    }
+}",class,
+"    public BasicVector_UnsignedByte16(int capacity)
+    {
+        elements = new int[capacity];
+        this.capacity = capacity;
+    }",method,
+"    private BasicVector_UnsignedByte16(LispObject[] array)
+    {
+        capacity = array.length;
+        elements = new int[capacity];
+        for (int i = array.length; i-- > 0;)
+            elements[i] = Fixnum.getValue(array[i]);
+    }",method,
+"    @Override
+    public LispObject typeOf()
+    {
+        return list(Symbol.SIMPLE_ARRAY, UNSIGNED_BYTE_16,
+                     new Cons(Fixnum.getInstance(capacity)));
+    }",method,
+"    @Override
+    public LispObject classOf()
+    {
+        return BuiltInClass.VECTOR;
+    }",method,
+"    @Override
+    public LispObject typep(LispObject type)
+    {
+        if (type == Symbol.SIMPLE_ARRAY)
+            return T;
+        if (type == BuiltInClass.SIMPLE_ARRAY)
+            return T;
+        return super.typep(type);
+    }",method,
+"    @Override
+    public LispObject getElementType()
+    {
+        return UNSIGNED_BYTE_16;
+    }",method,
+"    @Override
+    public boolean isSimpleVector()
+    {
+        return false;
+    }",method,
+"    @Override
+    public boolean hasFillPointer()
+    {
+        return false;
+    }",method,
+"    @Override
+    public boolean isAdjustable()
+    {
+        return false;
+    }",method,
+"    @Override
+    public int capacity()
+    {
+        return capacity;
+    }",method,
+"    @Override
+    public int length()
+    {
+        return capacity;
+    }",method,
+"    @Override
+    public LispObject elt(int index)
+    {
+        try {
+            return Fixnum.getInstance(elements[index]);
+        }
+        catch (ArrayIndexOutOfBoundsException e) {
+            badIndex(index, capacity);
+            return NIL; // Not reached.
+        }
+    }",method,
+"        catch (ArrayIndexOutOfBoundsException e) {
+            badIndex(index, capacity);
+            return NIL; // Not reached.
+        }",method,
+"    @Override
+    public int aref(int index)
+    {
+        try {
+            return elements[index];
+        }
+        catch (ArrayIndexOutOfBoundsException e) {
+            badIndex(index, elements.length);
+            // Not reached.
+            return 0;
+        }
+    }",method,
+"        catch (ArrayIndexOutOfBoundsException e) {
+            badIndex(index, elements.length);
+            // Not reached.
+            return 0;
+        }",method,
+"    @Override
+    public LispObject AREF(int index)
+    {
+        try {
+            return Fixnum.getInstance(elements[index]);
+        }
+        catch (ArrayIndexOutOfBoundsException e) {
+            badIndex(index, elements.length);
+            return NIL; // Not reached.
+        }
+    }",method,
+"        catch (ArrayIndexOutOfBoundsException e) {
+            badIndex(index, elements.length);
+            return NIL; // Not reached.
+        }",method,
+"    @Override
+    public void aset(int index, int n)
+    {
+        try {
+            elements[index] = n;
+        }
+        catch (ArrayIndexOutOfBoundsException e) {
+            badIndex(index, capacity);
+        }
+    }",method,
+"        catch (ArrayIndexOutOfBoundsException e) {
+            badIndex(index, capacity);
+        }",method,
+"    @Override
+    public void aset(int index, LispObject obj)
+    {
+        if (obj instanceof Fixnum) {
+                try {
+            elements[index] = ((Fixnum)obj).value;
+        }
+        catch (ArrayIndexOutOfBoundsException e) {
+            badIndex(index, capacity);
+        }
+        }
+        else {
+            type_error(obj, UNSIGNED_BYTE_16);
+        }
+    }",method,

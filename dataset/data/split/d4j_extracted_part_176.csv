@@ -1,0 +1,1453 @@
+code_snippet,type,score
+"    private InputStream getInputStream(Source source, String locale) throws IOException
+	{
+		ResourceFile f = (ResourceFile) source.getBackingFile();
+		f.setLocale(locale);
+		return f.getInputStream();
+	}",method,
+"    public TranslationException(String str)
+    {
+        super(str);
+    }",method,
+"    public TranslationException(Exception e)
+    {
+        super(e);
+    }",method,
+"public class StatusInfoCollector extends BaseVisitor {
+	private MessageStatistics m_statistics;
+	private boolean m_dumpLocked;
+	private String m_jars;
+	private String m_dataPath = ""/data"";
+	private StatusInfo m_statusInfo;
+	public StatusInfoCollector(MessageStatistics statistics, String jars) {
+		m_statistics = statistics;
+		m_jars = jars;
+	}
+	private int countThreadsByPrefix(ThreadInfo[] threads, String... prefixes) {
+		int count = 0;
+		for (ThreadInfo thread : threads) {
+			for (String prefix : prefixes) {
+				if (thread.getThreadName().startsWith(prefix)) {
+					count++;
+				}
+			}
+		}
+		return count;
+	}
+	private int countThreadsBySubstring(ThreadInfo[] threads, String... substrings) {
+		int count = 0;
+		for (ThreadInfo thread : threads) {
+			for (String str : substrings) {
+				if (thread.getThreadName().contains(str)) {
+					count++;
+				}
+			}
+		}
+		return count;
+	}
+	private String getThreadDump(ThreadInfo[] threads) {
+		StringBuilder sb = new StringBuilder(32768);
+		int index = 1;
+		TreeMap<String, ThreadInfo> sortedThreads = new TreeMap<String, ThreadInfo>();
+		for (ThreadInfo thread : threads) {
+			sortedThreads.put(thread.getThreadName(), thread);
+		}
+		for (ThreadInfo thread : sortedThreads.values()) {
+			sb.append(index++).append("": "").append(thread);
+		}
+		return sb.toString();
+	}
+	boolean isInstanceOfInterface(Class<?> clazz, String interfaceName) {
+		if (clazz == Object.class) {
+			return false;
+		} else if (clazz.getName().equals(interfaceName)) {
+			return true;
+		}
+		Class<?>[] interfaceclasses = clazz.getInterfaces();
+		for (Class<?> interfaceClass : interfaceclasses) {
+			if (isInstanceOfInterface(interfaceClass, interfaceName)) {
+				return true;
+			}
+		}
+		return isInstanceOfInterface(clazz.getSuperclass(), interfaceName);
+	}
+	public StatusInfoCollector setDumpLocked(boolean dumpLocked) {
+		m_dumpLocked = dumpLocked;
+		return this;
+	}
+	@Override
+	public void visitDisk(DiskInfo disk) {
+		File[] roots = File.listRoots();
+		if (roots != null) {
+			for (File root : roots) {
+				disk.addDiskVolume(new DiskVolumeInfo(root.getAbsolutePath()));
+			}
+		}
+		File data = new File(m_dataPath);
+		if (data.exists()) {
+			disk.addDiskVolume(new DiskVolumeInfo(data.getAbsolutePath()));
+		}
+		super.visitDisk(disk);
+	}
+	@Override
+	public void visitDiskVolume(DiskVolumeInfo diskVolume) {
+		Extension diskExtension = m_statusInfo.findOrCreateExtension(""Disk"");
+		File volume = new File(diskVolume.getId());
+		diskVolume.setTotal(volume.getTotalSpace());
+		diskVolume.setFree(volume.getFreeSpace());
+		diskVolume.setUsable(volume.getUsableSpace());
+		diskExtension.findOrCreateExtensionDetail(diskVolume.getId() + "" Free"").setValue(volume.getFreeSpace());
+	}
+	@Override
+	public void visitMemory(MemoryInfo memory) {
+		MemoryMXBean bean = ManagementFactory.getMemoryMXBean();
+		Runtime runtime = Runtime.getRuntime();
+		memory.setMax(runtime.maxMemory());
+		memory.setTotal(runtime.totalMemory());
+		memory.setFree(runtime.freeMemory());
+		memory.setHeapUsage(bean.getHeapMemoryUsage().getUsed());
+		memory.setNonHeapUsage(bean.getNonHeapMemoryUsage().getUsed());
+		List<GarbageCollectorMXBean> beans = ManagementFactory.getGarbageCollectorMXBeans();
+		Extension gcExtension = m_statusInfo.findOrCreateExtension(""GC"");
+		for (GarbageCollectorMXBean mxbean : beans) {
+			if (mxbean.isValid()) {
+				GcInfo gc = new GcInfo();
+				String name = mxbean.getName();
+				long count = mxbean.getCollectionCount();
+				gc.setName(name);
+				gc.setCount(count);
+				gc.setTime(mxbean.getCollectionTime());
+				memory.addGc(gc);
+				gcExtension.findOrCreateExtensionDetail(name + ""Count"").setValue(count);
+				gcExtension.findOrCreateExtensionDetail(name + ""Time"").setValue(mxbean.getCollectionTime());
+			}
+		}
+		Extension heapUsage = m_statusInfo.findOrCreateExtension(""JVMHeap"");
+		for (MemoryPoolMXBean mpBean : ManagementFactory.getMemoryPoolMXBeans()) {
+			long count = mpBean.getUsage().getUsed();
+			String name = mpBean.getName();
+			heapUsage.findOrCreateExtensionDetail(name).setValue(count);
+		}
+		super.visitMemory(memory);
+	}
+	@Override
+	public void visitMessage(MessageInfo message) {
+		Extension catExtension = m_statusInfo.findOrCreateExtension(""CatUsage"");
+		if (m_statistics != null) {
+			catExtension.findOrCreateExtensionDetail(""Produced"").setValue(m_statistics.getProduced());
+			catExtension.findOrCreateExtensionDetail(""Overflowed"").setValue(m_statistics.getOverflowed());
+			catExtension.findOrCreateExtensionDetail(""Bytes"").setValue(m_statistics.getBytes());
+		}
+	}
+	@Override
+	public void visitOs(OsInfo os) {
+		Extension systemExtension = m_statusInfo.findOrCreateExtension(""System"");
+		OperatingSystemMXBean bean = ManagementFactory.getOperatingSystemMXBean();
+		os.setArch(bean.getArch());
+		os.setName(bean.getName());
+		os.setVersion(bean.getVersion());
+		os.setAvailableProcessors(bean.getAvailableProcessors());
+		os.setSystemLoadAverage(bean.getSystemLoadAverage());
+		systemExtension.findOrCreateExtensionDetail(""LoadAverage"").setValue(bean.getSystemLoadAverage());
+		// for Sun JDK
+		if (isInstanceOfInterface(bean.getClass(), ""com.sun.management.OperatingSystemMXBean"")) {
+			com.sun.management.OperatingSystemMXBean b = (com.sun.management.OperatingSystemMXBean) bean;
+			os.setTotalPhysicalMemory(b.getTotalPhysicalMemorySize());
+			os.setFreePhysicalMemory(b.getFreePhysicalMemorySize());
+			os.setTotalSwapSpace(b.getTotalSwapSpaceSize());
+			os.setFreeSwapSpace(b.getFreeSwapSpaceSize());
+			os.setProcessTime(b.getProcessCpuTime());
+			os.setCommittedVirtualMemory(b.getCommittedVirtualMemorySize());
+			systemExtension.findOrCreateExtensionDetail(""FreePhysicalMemory"").setValue(b.getFreePhysicalMemorySize());
+			systemExtension.findOrCreateExtensionDetail(""FreeSwapSpaceSize"").setValue(b.getFreeSwapSpaceSize());
+		}
+		m_statusInfo.addExtension(systemExtension);
+	}
+	@Override
+	public void visitRuntime(RuntimeInfo runtime) {
+		RuntimeMXBean bean = ManagementFactory.getRuntimeMXBean();
+		runtime.setStartTime(bean.getStartTime());
+		runtime.setUpTime(bean.getUptime());
+		runtime.setJavaClasspath(m_jars);
+		runtime.setJavaVersion(System.getProperty(""java.version""));
+		runtime.setUserDir(System.getProperty(""user.dir""));
+		runtime.setUserName(System.getProperty(""user.name""));
+	}
+	@Override
+	public void visitStatus(StatusInfo status) {
+		status.setTimestamp(new Date());
+		status.setOs(new OsInfo());
+		status.setDisk(new DiskInfo());
+		status.setRuntime(new RuntimeInfo());
+		status.setMemory(new MemoryInfo());
+		status.setThread(new ThreadsInfo());
+		status.setMessage(new MessageInfo());
+		m_statusInfo = status;
+		super.visitStatus(status);
+	}
+	@Override
+	public void visitThread(ThreadsInfo thread) {
+		Extension frameworkThread = m_statusInfo.findOrCreateExtension(""FrameworkThread"");
+		ThreadMXBean bean = ManagementFactory.getThreadMXBean();
+		bean.setThreadContentionMonitoringEnabled(true);
+		ThreadInfo[] threads;
+		if (m_dumpLocked) {
+			threads = bean.dumpAllThreads(true, true);
+		} else {
+			threads = bean.dumpAllThreads(false, false);
+		}
+		thread.setCount(bean.getThreadCount());
+		thread.setDaemonCount(bean.getDaemonThreadCount());
+		thread.setPeekCount(bean.getPeakThreadCount());
+		thread.setTotalStartedCount((int) bean.getTotalStartedThreadCount());
+		int jbossThreadsCount = countThreadsByPrefix(threads, ""http-"", ""catalina-exec-"");
+		int jettyThreadsCount = countThreadsBySubstring(threads, ""@qtp"");
+		thread.setDump(getThreadDump(threads));
+		frameworkThread.findOrCreateExtensionDetail(""HttpThread"").setValue(jbossThreadsCount + jettyThreadsCount);
+		frameworkThread.findOrCreateExtensionDetail(""CatThread"").setValue(countThreadsByPrefix(threads, ""Cat-""));
+		frameworkThread.findOrCreateExtensionDetail(""PigeonThread"").setValue(
+		      countThreadsByPrefix(threads, ""Pigeon-"", ""DPSF-"", ""Netty-"", ""Client-ResponseProcessor""));
+		frameworkThread.findOrCreateExtensionDetail(""ActiveThread"").setValue(bean.getThreadCount());
+		frameworkThread.findOrCreateExtensionDetail(""StartedThread"").setValue(bean.getTotalStartedThreadCount());
+		m_statusInfo.addExtension(frameworkThread);
+	}
+}",class,
+"	public StatusInfoCollector(MessageStatistics statistics, String jars) {
+		m_statistics = statistics;
+		m_jars = jars;
+	}",method,
+"	private int countThreadsByPrefix(ThreadInfo[] threads, String... prefixes) {
+		int count = 0;
+		for (ThreadInfo thread : threads) {
+			for (String prefix : prefixes) {
+				if (thread.getThreadName().startsWith(prefix)) {
+					count++;
+				}
+			}
+		}
+		return count;
+	}",method,
+"		for (ThreadInfo thread : threads) {
+			for (String prefix : prefixes) {
+				if (thread.getThreadName().startsWith(prefix)) {
+					count++;
+				}
+			}
+		}",method,
+"			for (String prefix : prefixes) {
+				if (thread.getThreadName().startsWith(prefix)) {
+					count++;
+				}
+			}",method,
+"	private int countThreadsBySubstring(ThreadInfo[] threads, String... substrings) {
+		int count = 0;
+		for (ThreadInfo thread : threads) {
+			for (String str : substrings) {
+				if (thread.getThreadName().contains(str)) {
+					count++;
+				}
+			}
+		}
+		return count;
+	}",method,
+"		for (ThreadInfo thread : threads) {
+			for (String str : substrings) {
+				if (thread.getThreadName().contains(str)) {
+					count++;
+				}
+			}
+		}",method,
+"			for (String str : substrings) {
+				if (thread.getThreadName().contains(str)) {
+					count++;
+				}
+			}",method,
+"	private String getThreadDump(ThreadInfo[] threads) {
+		StringBuilder sb = new StringBuilder(32768);
+		int index = 1;
+		TreeMap<String, ThreadInfo> sortedThreads = new TreeMap<String, ThreadInfo>();
+		for (ThreadInfo thread : threads) {
+			sortedThreads.put(thread.getThreadName(), thread);
+		}
+		for (ThreadInfo thread : sortedThreads.values()) {
+			sb.append(index++).append("": "").append(thread);
+		}
+		return sb.toString();
+	}",method,
+"		for (ThreadInfo thread : threads) {
+			sortedThreads.put(thread.getThreadName(), thread);
+		}",method,
+"	boolean isInstanceOfInterface(Class<?> clazz, String interfaceName) {
+		if (clazz == Object.class) {
+			return false;
+		} else if (clazz.getName().equals(interfaceName)) {
+			return true;
+		}
+		Class<?>[] interfaceclasses = clazz.getInterfaces();
+		for (Class<?> interfaceClass : interfaceclasses) {
+			if (isInstanceOfInterface(interfaceClass, interfaceName)) {
+				return true;
+			}
+		}
+		return isInstanceOfInterface(clazz.getSuperclass(), interfaceName);
+	}",method,
+"		if (clazz == Object.class) {
+			return false;
+		}",method,
+"		for (Class<?> interfaceClass : interfaceclasses) {
+			if (isInstanceOfInterface(interfaceClass, interfaceName)) {
+				return true;
+			}
+		}",method,
+"	public StatusInfoCollector setDumpLocked(boolean dumpLocked) {
+		m_dumpLocked = dumpLocked;
+		return this;
+	}",method,
+"	@Override
+	public void visitDisk(DiskInfo disk) {
+		File[] roots = File.listRoots();
+		if (roots != null) {
+			for (File root : roots) {
+				disk.addDiskVolume(new DiskVolumeInfo(root.getAbsolutePath()));
+			}
+		}
+		File data = new File(m_dataPath);
+		if (data.exists()) {
+			disk.addDiskVolume(new DiskVolumeInfo(data.getAbsolutePath()));
+		}
+		super.visitDisk(disk);
+	}",method,
+"		if (roots != null) {
+			for (File root : roots) {
+				disk.addDiskVolume(new DiskVolumeInfo(root.getAbsolutePath()));
+			}
+		}",method,
+"			for (File root : roots) {
+				disk.addDiskVolume(new DiskVolumeInfo(root.getAbsolutePath()));
+			}",method,
+"	@Override
+	public void visitDiskVolume(DiskVolumeInfo diskVolume) {
+		Extension diskExtension = m_statusInfo.findOrCreateExtension(""Disk"");
+		File volume = new File(diskVolume.getId());
+		diskVolume.setTotal(volume.getTotalSpace());
+		diskVolume.setFree(volume.getFreeSpace());
+		diskVolume.setUsable(volume.getUsableSpace());
+		diskExtension.findOrCreateExtensionDetail(diskVolume.getId() + "" Free"").setValue(volume.getFreeSpace());
+	}",method,
+"	@Override
+	public void visitMemory(MemoryInfo memory) {
+		MemoryMXBean bean = ManagementFactory.getMemoryMXBean();
+		Runtime runtime = Runtime.getRuntime();
+		memory.setMax(runtime.maxMemory());
+		memory.setTotal(runtime.totalMemory());
+		memory.setFree(runtime.freeMemory());
+		memory.setHeapUsage(bean.getHeapMemoryUsage().getUsed());
+		memory.setNonHeapUsage(bean.getNonHeapMemoryUsage().getUsed());
+		List<GarbageCollectorMXBean> beans = ManagementFactory.getGarbageCollectorMXBeans();
+		Extension gcExtension = m_statusInfo.findOrCreateExtension(""GC"");
+		for (GarbageCollectorMXBean mxbean : beans) {
+			if (mxbean.isValid()) {
+				GcInfo gc = new GcInfo();
+				String name = mxbean.getName();
+				long count = mxbean.getCollectionCount();
+				gc.setName(name);
+				gc.setCount(count);
+				gc.setTime(mxbean.getCollectionTime());
+				memory.addGc(gc);
+				gcExtension.findOrCreateExtensionDetail(name + ""Count"").setValue(count);
+				gcExtension.findOrCreateExtensionDetail(name + ""Time"").setValue(mxbean.getCollectionTime());
+			}
+		}
+		Extension heapUsage = m_statusInfo.findOrCreateExtension(""JVMHeap"");
+		for (MemoryPoolMXBean mpBean : ManagementFactory.getMemoryPoolMXBeans()) {
+			long count = mpBean.getUsage().getUsed();
+			String name = mpBean.getName();
+			heapUsage.findOrCreateExtensionDetail(name).setValue(count);
+		}
+		super.visitMemory(memory);
+	}",method,
+"		for (GarbageCollectorMXBean mxbean : beans) {
+			if (mxbean.isValid()) {
+				GcInfo gc = new GcInfo();
+				String name = mxbean.getName();
+				long count = mxbean.getCollectionCount();
+				gc.setName(name);
+				gc.setCount(count);
+				gc.setTime(mxbean.getCollectionTime());
+				memory.addGc(gc);
+				gcExtension.findOrCreateExtensionDetail(name + ""Count"").setValue(count);
+				gcExtension.findOrCreateExtensionDetail(name + ""Time"").setValue(mxbean.getCollectionTime());
+			}
+		}",method,
+"	@Override
+	public void visitMessage(MessageInfo message) {
+		Extension catExtension = m_statusInfo.findOrCreateExtension(""CatUsage"");
+		if (m_statistics != null) {
+			catExtension.findOrCreateExtensionDetail(""Produced"").setValue(m_statistics.getProduced());
+			catExtension.findOrCreateExtensionDetail(""Overflowed"").setValue(m_statistics.getOverflowed());
+			catExtension.findOrCreateExtensionDetail(""Bytes"").setValue(m_statistics.getBytes());
+		}
+	}",method,
+"		if (m_statistics != null) {
+			catExtension.findOrCreateExtensionDetail(""Produced"").setValue(m_statistics.getProduced());
+			catExtension.findOrCreateExtensionDetail(""Overflowed"").setValue(m_statistics.getOverflowed());
+			catExtension.findOrCreateExtensionDetail(""Bytes"").setValue(m_statistics.getBytes());
+		}",method,
+"	@Override
+	public void visitOs(OsInfo os) {
+		Extension systemExtension = m_statusInfo.findOrCreateExtension(""System"");
+		OperatingSystemMXBean bean = ManagementFactory.getOperatingSystemMXBean();
+		os.setArch(bean.getArch());
+		os.setName(bean.getName());
+		os.setVersion(bean.getVersion());
+		os.setAvailableProcessors(bean.getAvailableProcessors());
+		os.setSystemLoadAverage(bean.getSystemLoadAverage());
+		systemExtension.findOrCreateExtensionDetail(""LoadAverage"").setValue(bean.getSystemLoadAverage());
+		// for Sun JDK
+		if (isInstanceOfInterface(bean.getClass(), ""com.sun.management.OperatingSystemMXBean"")) {
+			com.sun.management.OperatingSystemMXBean b = (com.sun.management.OperatingSystemMXBean) bean;
+			os.setTotalPhysicalMemory(b.getTotalPhysicalMemorySize());
+			os.setFreePhysicalMemory(b.getFreePhysicalMemorySize());
+			os.setTotalSwapSpace(b.getTotalSwapSpaceSize());
+			os.setFreeSwapSpace(b.getFreeSwapSpaceSize());
+			os.setProcessTime(b.getProcessCpuTime());
+			os.setCommittedVirtualMemory(b.getCommittedVirtualMemorySize());
+			systemExtension.findOrCreateExtensionDetail(""FreePhysicalMemory"").setValue(b.getFreePhysicalMemorySize());
+			systemExtension.findOrCreateExtensionDetail(""FreeSwapSpaceSize"").setValue(b.getFreeSwapSpaceSize());
+		}
+		m_statusInfo.addExtension(systemExtension);
+	}",method,
+"	@Override
+	public void visitRuntime(RuntimeInfo runtime) {
+		RuntimeMXBean bean = ManagementFactory.getRuntimeMXBean();
+		runtime.setStartTime(bean.getStartTime());
+		runtime.setUpTime(bean.getUptime());
+		runtime.setJavaClasspath(m_jars);
+		runtime.setJavaVersion(System.getProperty(""java.version""));
+		runtime.setUserDir(System.getProperty(""user.dir""));
+		runtime.setUserName(System.getProperty(""user.name""));
+	}",method,
+"	@Override
+	public void visitStatus(StatusInfo status) {
+		status.setTimestamp(new Date());
+		status.setOs(new OsInfo());
+		status.setDisk(new DiskInfo());
+		status.setRuntime(new RuntimeInfo());
+		status.setMemory(new MemoryInfo());
+		status.setThread(new ThreadsInfo());
+		status.setMessage(new MessageInfo());
+		m_statusInfo = status;
+		super.visitStatus(status);
+	}",method,
+"	@Override
+	public void visitThread(ThreadsInfo thread) {
+		Extension frameworkThread = m_statusInfo.findOrCreateExtension(""FrameworkThread"");
+		ThreadMXBean bean = ManagementFactory.getThreadMXBean();
+		bean.setThreadContentionMonitoringEnabled(true);
+		ThreadInfo[] threads;
+		if (m_dumpLocked) {
+			threads = bean.dumpAllThreads(true, true);
+		} else {
+			threads = bean.dumpAllThreads(false, false);
+		}
+		thread.setCount(bean.getThreadCount());
+		thread.setDaemonCount(bean.getDaemonThreadCount());
+		thread.setPeekCount(bean.getPeakThreadCount());
+		thread.setTotalStartedCount((int) bean.getTotalStartedThreadCount());
+		int jbossThreadsCount = countThreadsByPrefix(threads, ""http-"", ""catalina-exec-"");
+		int jettyThreadsCount = countThreadsBySubstring(threads, ""@qtp"");
+		thread.setDump(getThreadDump(threads));
+		frameworkThread.findOrCreateExtensionDetail(""HttpThread"").setValue(jbossThreadsCount + jettyThreadsCount);
+		frameworkThread.findOrCreateExtensionDetail(""CatThread"").setValue(countThreadsByPrefix(threads, ""Cat-""));
+		frameworkThread.findOrCreateExtensionDetail(""PigeonThread"").setValue(
+		      countThreadsByPrefix(threads, ""Pigeon-"", ""DPSF-"", ""Netty-"", ""Client-ResponseProcessor""));
+		frameworkThread.findOrCreateExtensionDetail(""ActiveThread"").setValue(bean.getThreadCount());
+		frameworkThread.findOrCreateExtensionDetail(""StartedThread"").setValue(bean.getTotalStartedThreadCount());
+		m_statusInfo.addExtension(frameworkThread);
+	}",method,
+"		if (m_dumpLocked) {
+			threads = bean.dumpAllThreads(true, true);
+		}",method,
+"public abstract class BaseController {
+	private final static Logger _log = LoggerFactory.getLogger(BaseController.class);
+	@ExceptionHandler
+	public String exceptionHandler(HttpServletRequest request, HttpServletResponse response, Exception exception) {
+		_log.error(""统一异常处理："", exception);
+		request.setAttribute(""ex"", exception);
+		if (null != request.getHeader(""X-Requested-With"") && request.getHeader(""X-Requested-With"").equalsIgnoreCase(""XMLHttpRequest"")) {
+			request.setAttribute(""requestHeader"", ""ajax"");
+		}
+		// shiro没有权限异常
+		if (exception instanceof UnauthorizedException) {
+			return ""/403.jsp"";
+		}
+		// shiro会话已过期异常
+		if (exception instanceof InvalidSessionException) {
+			return ""/error.jsp"";
+		}
+		return ""/error.jsp"";
+	}
+	public static String jsp(String path) {
+		return path.concat("".jsp"");
+	}
+	public static String thymeleaf(String path) {
+		String folder = PropertiesFileUtil.getInstance().get(""app.name"");
+		return ""/"".concat(folder).concat(path).concat("".html"");
+	}
+}",class,
+"public class BaseResult {
+    // 状态码：1成功，其他为失败
+    public int code;
+    // 成功为success，其他为失败原因
+    public String message;
+    // 数据结果集
+    public Object data;
+    public BaseResult(int code, String message, Object data) {
+        this.code = code;
+        this.message = message;
+        this.data = data;
+    }
+    public int getCode() {
+        return code;
+    }
+    public void setCode(int code) {
+        this.code = code;
+    }
+    public String getMessage() {
+        return message;
+    }
+    public void setMessage(String message) {
+        this.message = message;
+    }
+    public Object getData() {
+        return data;
+    }
+    public void setData(Object data) {
+        this.data = data;
+    }
+}",class,
+"	@ExceptionHandler
+	public String exceptionHandler(HttpServletRequest request, HttpServletResponse response, Exception exception) {
+		_log.error(""统一异常处理："", exception);
+		request.setAttribute(""ex"", exception);
+		if (null != request.getHeader(""X-Requested-With"") && request.getHeader(""X-Requested-With"").equalsIgnoreCase(""XMLHttpRequest"")) {
+			request.setAttribute(""requestHeader"", ""ajax"");
+		}
+		// shiro没有权限异常
+		if (exception instanceof UnauthorizedException) {
+			return ""/403.jsp"";
+		}
+		// shiro会话已过期异常
+		if (exception instanceof InvalidSessionException) {
+			return ""/error.jsp"";
+		}
+		return ""/error.jsp"";
+	}",method,
+"		if (exception instanceof UnauthorizedException) {
+			return ""/403.jsp"";
+		}",method,
+"		if (exception instanceof InvalidSessionException) {
+			return ""/error.jsp"";
+		}",method,
+"	public static String jsp(String path) {
+		return path.concat("".jsp"");
+	}",method,
+"	public static String thymeleaf(String path) {
+		String folder = PropertiesFileUtil.getInstance().get(""app.name"");
+		return ""/"".concat(folder).concat(path).concat("".html"");
+	}",method,
+"    public BaseResult(int code, String message, Object data) {
+        this.code = code;
+        this.message = message;
+        this.data = data;
+    }",method,
+"    public int getCode() {
+        return code;
+    }",method,
+"    public void setCode(int code) {
+        this.code = code;
+    }",method,
+"    public String getMessage() {
+        return message;
+    }",method,
+"    public void setMessage(String message) {
+        this.message = message;
+    }",method,
+"    public Object getData() {
+        return data;
+    }",method,
+"    public void setData(Object data) {
+        this.data = data;
+    }",method,
+"public class AssetExtract {
+    private static String TAG = AssetExtract.class.getSimpleName();
+    public static void recursiveDelete(File parent) {
+        if (parent.isDirectory()) {
+            for (File child : parent.listFiles()) {
+                recursiveDelete(child);
+            }
+        }
+        parent.delete();
+    }
+    public static void extractAsset(Context ctx, String assetName, File target) {
+        Log.v(TAG, ""Extract asset "" + assetName + "" to "" + target.getAbsolutePath());
+        // The version of data in memory and on disk.
+        String packaged_version;
+        String disk_version;
+        try {
+            PackageManager manager = ctx.getPackageManager();
+            PackageInfo info = manager.getPackageInfo(ctx.getPackageName(), 0);
+            packaged_version = info.versionName;
+            Log.v(TAG, ""Data version is "" + packaged_version);
+        } catch (PackageManager.NameNotFoundException e) {
+            packaged_version = null;
+        }
+        // If no packaged data version, no unpacking is necessary.
+        if (packaged_version == null) {
+            Log.w(TAG, ""Data version not found"");
+            return;
+        }
+        // Check the current disk version, if any.
+        String filesDir = target.getAbsolutePath();
+        String disk_version_fn = filesDir + ""/"" + assetName + "".version"";
+        try {
+            byte buf[] = new byte[64];
+            FileInputStream is = new FileInputStream(disk_version_fn);
+            int len = is.read(buf);
+            disk_version = new String(buf, 0, len);
+            is.close();
+        } catch (Exception e) {
+            disk_version = """";
+        }
+        if (packaged_version.equals(disk_version)) {
+            Log.v(TAG, ""Disk data version equals packaged data version."");
+            return;
+        }
+        recursiveDelete(target);
+        target.mkdirs();
+        if (!extractTar(ctx.getAssets(), assetName, target.getAbsolutePath())) {
+            Log.e(TAG, ""Could not extract "" + assetName + "" data."");
+        }
+        try {
+            // Write .nomedia.
+            new File(target, "".nomedia"").createNewFile();
+            // Write version file.
+            FileOutputStream os = new FileOutputStream(disk_version_fn);
+            os.write(packaged_version.getBytes());
+            os.close();
+        } catch (Exception ex) {
+            Log.w(TAG, ex);
+        }
+    }
+    public static boolean extractTar(AssetManager assets, String assetName, String target) {
+        byte buf[] = new byte[1024 * 1024];
+        InputStream assetStream = null;
+        TarInputStream tis = null;
+        try {
+            assetStream = assets.open(assetName, AssetManager.ACCESS_STREAMING);
+            tis = new TarInputStream(new BufferedInputStream(
+                    new GZIPInputStream(new BufferedInputStream(assetStream,
+                            8192)), 8192));
+        } catch (IOException e) {
+            Log.e(TAG, ""opening up extract tar"", e);
+            return false;
+        }
+        while (true) {
+            TarEntry entry = null;
+            try {
+                entry = tis.getNextEntry();
+            } catch (java.io.IOException e) {
+                Log.e(TAG, ""extracting tar"", e);
+                return false;
+            }
+            if (entry == null) {
+                break;
+            }
+            Log.v(TAG, ""extracting "" + entry.getName());
+            if (entry.isDirectory()) {
+                try {
+                    new File(target + ""/"" + entry.getName()).mkdirs();
+                } catch (SecurityException e) {
+                    Log.e(TAG, ""extracting tar"", e);
+                }
+                continue;
+            }
+            OutputStream out = null;
+            String path = target + ""/"" + entry.getName();
+            try {
+                out = new BufferedOutputStream(new FileOutputStream(path), 8192);
+            } catch (FileNotFoundException e) {
+                Log.e(TAG, ""extracting tar"", e);
+            } catch (SecurityException e) {
+                Log.e(TAG, ""extracting tar"", e);
+            }
+            if (out == null) {
+                Log.e(TAG, ""could not open "" + path);
+                return false;
+            }
+            try {
+                while (true) {
+                    int len = tis.read(buf);
+                    if (len == -1) {
+                        break;
+                    }
+                    out.write(buf, 0, len);
+                }
+                out.flush();
+                out.close();
+            } catch (java.io.IOException e) {
+                Log.e(TAG, ""extracting zip"", e);
+                return false;
+            }
+        }
+        try {
+            tis.close();
+            assetStream.close();
+        } catch (IOException e) {
+            // pass
+        }
+        return true;
+    }
+}",class,
+"    public static void recursiveDelete(File parent) {
+        if (parent.isDirectory()) {
+            for (File child : parent.listFiles()) {
+                recursiveDelete(child);
+            }
+        }
+        parent.delete();
+    }",method,
+"    public static void extractAsset(Context ctx, String assetName, File target) {
+        Log.v(TAG, ""Extract asset "" + assetName + "" to "" + target.getAbsolutePath());
+        // The version of data in memory and on disk.
+        String packaged_version;
+        String disk_version;
+        try {
+            PackageManager manager = ctx.getPackageManager();
+            PackageInfo info = manager.getPackageInfo(ctx.getPackageName(), 0);
+            packaged_version = info.versionName;
+            Log.v(TAG, ""Data version is "" + packaged_version);
+        } catch (PackageManager.NameNotFoundException e) {
+            packaged_version = null;
+        }
+        // If no packaged data version, no unpacking is necessary.
+        if (packaged_version == null) {
+            Log.w(TAG, ""Data version not found"");
+            return;
+        }
+        // Check the current disk version, if any.
+        String filesDir = target.getAbsolutePath();
+        String disk_version_fn = filesDir + ""/"" + assetName + "".version"";
+        try {
+            byte buf[] = new byte[64];
+            FileInputStream is = new FileInputStream(disk_version_fn);
+            int len = is.read(buf);
+            disk_version = new String(buf, 0, len);
+            is.close();
+        } catch (Exception e) {
+            disk_version = """";
+        }
+        if (packaged_version.equals(disk_version)) {
+            Log.v(TAG, ""Disk data version equals packaged data version."");
+            return;
+        }
+        recursiveDelete(target);
+        target.mkdirs();
+        if (!extractTar(ctx.getAssets(), assetName, target.getAbsolutePath())) {
+            Log.e(TAG, ""Could not extract "" + assetName + "" data."");
+        }
+        try {
+            // Write .nomedia.
+            new File(target, "".nomedia"").createNewFile();
+            // Write version file.
+            FileOutputStream os = new FileOutputStream(disk_version_fn);
+            os.write(packaged_version.getBytes());
+            os.close();
+        } catch (Exception ex) {
+            Log.w(TAG, ex);
+        }
+    }",method,
+"        if (packaged_version == null) {
+            Log.w(TAG, ""Data version not found"");
+            return;
+        }",method,
+"    public static boolean extractTar(AssetManager assets, String assetName, String target) {
+        byte buf[] = new byte[1024 * 1024];
+        InputStream assetStream = null;
+        TarInputStream tis = null;
+        try {
+            assetStream = assets.open(assetName, AssetManager.ACCESS_STREAMING);
+            tis = new TarInputStream(new BufferedInputStream(
+                    new GZIPInputStream(new BufferedInputStream(assetStream,
+                            8192)), 8192));
+        } catch (IOException e) {
+            Log.e(TAG, ""opening up extract tar"", e);
+            return false;
+        }
+        while (true) {
+            TarEntry entry = null;
+            try {
+                entry = tis.getNextEntry();
+            } catch (java.io.IOException e) {
+                Log.e(TAG, ""extracting tar"", e);
+                return false;
+            }
+            if (entry == null) {
+                break;
+            }
+            Log.v(TAG, ""extracting "" + entry.getName());
+            if (entry.isDirectory()) {
+                try {
+                    new File(target + ""/"" + entry.getName()).mkdirs();
+                } catch (SecurityException e) {
+                    Log.e(TAG, ""extracting tar"", e);
+                }
+                continue;
+            }
+            OutputStream out = null;
+            String path = target + ""/"" + entry.getName();
+            try {
+                out = new BufferedOutputStream(new FileOutputStream(path), 8192);
+            } catch (FileNotFoundException e) {
+                Log.e(TAG, ""extracting tar"", e);
+            } catch (SecurityException e) {
+                Log.e(TAG, ""extracting tar"", e);
+            }
+            if (out == null) {
+                Log.e(TAG, ""could not open "" + path);
+                return false;
+            }
+            try {
+                while (true) {
+                    int len = tis.read(buf);
+                    if (len == -1) {
+                        break;
+                    }
+                    out.write(buf, 0, len);
+                }
+                out.flush();
+                out.close();
+            } catch (java.io.IOException e) {
+                Log.e(TAG, ""extracting zip"", e);
+                return false;
+            }
+        }
+        try {
+            tis.close();
+            assetStream.close();
+        } catch (IOException e) {
+            // pass
+        }
+        return true;
+    }",method,
+"        while (true) {
+            TarEntry entry = null;
+            try {
+                entry = tis.getNextEntry();
+            } catch (java.io.IOException e) {
+                Log.e(TAG, ""extracting tar"", e);
+                return false;
+            }
+            if (entry == null) {
+                break;
+            }
+            Log.v(TAG, ""extracting "" + entry.getName());
+            if (entry.isDirectory()) {
+                try {
+                    new File(target + ""/"" + entry.getName()).mkdirs();
+                } catch (SecurityException e) {
+                    Log.e(TAG, ""extracting tar"", e);
+                }
+                continue;
+            }
+            OutputStream out = null;
+            String path = target + ""/"" + entry.getName();
+            try {
+                out = new BufferedOutputStream(new FileOutputStream(path), 8192);
+            } catch (FileNotFoundException e) {
+                Log.e(TAG, ""extracting tar"", e);
+            } catch (SecurityException e) {
+                Log.e(TAG, ""extracting tar"", e);
+            }
+            if (out == null) {
+                Log.e(TAG, ""could not open "" + path);
+                return false;
+            }
+            try {
+                while (true) {
+                    int len = tis.read(buf);
+                    if (len == -1) {
+                        break;
+                    }
+                    out.write(buf, 0, len);
+                }
+                out.flush();
+                out.close();
+            } catch (java.io.IOException e) {
+                Log.e(TAG, ""extracting zip"", e);
+                return false;
+            }
+        }",method,
+"            if (entry == null) {
+                break;
+            }",method,
+"            if (out == null) {
+                Log.e(TAG, ""could not open "" + path);
+                return false;
+            }",method,
+"                while (true) {
+                    int len = tis.read(buf);
+                    if (len == -1) {
+                        break;
+                    }
+                    out.write(buf, 0, len);
+                }",method,
+"                    if (len == -1) {
+                        break;
+                    }",method,
+"public class ResourceTable extends ResChunk {
+  public static final int HEADER_SIZE = 12;
+  private final StringPool strings;
+  private final ResTablePackage resPackage;
+  public ResourceTable(StringPool strings, ResTablePackage resPackage) {
+    super(
+        CHUNK_RESOURCE_TABLE,
+        HEADER_SIZE,
+        HEADER_SIZE + strings.getChunkSize() + resPackage.getChunkSize());
+    this.strings = strings;
+    this.resPackage = resPackage;
+  }
+  public static ResourceTable get(ByteBuffer buf) {
+    int type = buf.getShort();
+    int headerSize = buf.getShort();
+    int chunkSize = buf.getInt();
+    int packageCount = buf.getInt();
+    Preconditions.checkState(type == CHUNK_RESOURCE_TABLE);
+    Preconditions.checkState(headerSize == HEADER_SIZE);
+    Preconditions.checkState(packageCount == 1);
+    StringPool strings = StringPool.get(slice(buf, buf.position()));
+    ResTablePackage resPackage =
+        ResTablePackage.get(slice(buf, HEADER_SIZE + strings.getChunkSize()));
+    Preconditions.checkState(
+        chunkSize == HEADER_SIZE + strings.getChunkSize() + resPackage.getChunkSize());
+    return new ResourceTable(strings, resPackage);
+  }
+  @Override
+  public void put(ByteBuffer buf) {
+    putChunkHeader(buf);
+    buf.putInt(1); // packageCount
+    Preconditions.checkState(buf.position() == HEADER_SIZE);
+    strings.put(buf);
+    Preconditions.checkState(buf.position() == HEADER_SIZE + strings.getChunkSize());
+    resPackage.put(buf);
+  }
+  public void reassignIds(ReferenceMapper refMapping) {
+    resPackage.reassignIds(refMapping);
+  }
+  public static ResourceTable slice(ResourceTable table, Map<Integer, Integer> countsToExtract) {
+    ResTablePackage newPackage = ResTablePackage.slice(table.resPackage, countsToExtract);
+    StringPool strings = table.strings;
+    // Figure out what strings are used by the retained references.
+    ImmutableSortedSet.Builder<Integer> stringRefs =
+        ImmutableSortedSet.orderedBy(
+            Comparator.comparing(strings::getString).thenComparingInt(i -> i));
+    newPackage.visitStringReferences(stringRefs::add);
+    ImmutableList<Integer> stringsToExtract = stringRefs.build().asList();
+    ImmutableMap<Integer, Integer> stringMapping =
+        Maps.uniqueIndex(
+            IntStream.range(0, stringsToExtract.size())::iterator, stringsToExtract::get);
+    // Extract a StringPool that contains just the strings used by the new package.
+    // This drops styles.
+    StringPool newStrings =
+        StringPool.create(stringsToExtract.stream().map(strings::getString)::iterator);
+    // Adjust the string references.
+    newPackage.transformStringReferences(stringMapping::get);
+    return new ResourceTable(newStrings, newPackage);
+  }
+  public void dump(PrintStream out) {
+    out.format(""Package Groups (1)\n"");
+    resPackage.dump(strings, out);
+  }
+  public StringPool getStrings() {
+    return strings;
+  }
+  public ResTablePackage getPackage() {
+    return resPackage;
+  }
+  public void dumpStrings(PrintStream out) {
+    strings.dump(out);
+  }
+}",class,
+"  public ResourceTable(StringPool strings, ResTablePackage resPackage) {
+    super(
+        CHUNK_RESOURCE_TABLE,
+        HEADER_SIZE,
+        HEADER_SIZE + strings.getChunkSize() + resPackage.getChunkSize());
+    this.strings = strings;
+    this.resPackage = resPackage;
+  }",method,
+"  public static ResourceTable get(ByteBuffer buf) {
+    int type = buf.getShort();
+    int headerSize = buf.getShort();
+    int chunkSize = buf.getInt();
+    int packageCount = buf.getInt();
+    Preconditions.checkState(type == CHUNK_RESOURCE_TABLE);
+    Preconditions.checkState(headerSize == HEADER_SIZE);
+    Preconditions.checkState(packageCount == 1);
+    StringPool strings = StringPool.get(slice(buf, buf.position()));
+    ResTablePackage resPackage =
+        ResTablePackage.get(slice(buf, HEADER_SIZE + strings.getChunkSize()));
+    Preconditions.checkState(
+        chunkSize == HEADER_SIZE + strings.getChunkSize() + resPackage.getChunkSize());
+    return new ResourceTable(strings, resPackage);
+  }",method,
+"  @Override
+  public void put(ByteBuffer buf) {
+    putChunkHeader(buf);
+    buf.putInt(1); // packageCount
+    Preconditions.checkState(buf.position() == HEADER_SIZE);
+    strings.put(buf);
+    Preconditions.checkState(buf.position() == HEADER_SIZE + strings.getChunkSize());
+    resPackage.put(buf);
+  }",method,
+"  public void reassignIds(ReferenceMapper refMapping) {
+    resPackage.reassignIds(refMapping);
+  }",method,
+"  public static ResourceTable slice(ResourceTable table, Map<Integer, Integer> countsToExtract) {
+    ResTablePackage newPackage = ResTablePackage.slice(table.resPackage, countsToExtract);
+    StringPool strings = table.strings;
+    // Figure out what strings are used by the retained references.
+    ImmutableSortedSet.Builder<Integer> stringRefs =
+        ImmutableSortedSet.orderedBy(
+            Comparator.comparing(strings::getString).thenComparingInt(i -> i));
+    newPackage.visitStringReferences(stringRefs::add);
+    ImmutableList<Integer> stringsToExtract = stringRefs.build().asList();
+    ImmutableMap<Integer, Integer> stringMapping =
+        Maps.uniqueIndex(
+            IntStream.range(0, stringsToExtract.size())::iterator, stringsToExtract::get);
+    // Extract a StringPool that contains just the strings used by the new package.
+    // This drops styles.
+    StringPool newStrings =
+        StringPool.create(stringsToExtract.stream().map(strings::getString)::iterator);
+    // Adjust the string references.
+    newPackage.transformStringReferences(stringMapping::get);
+    return new ResourceTable(newStrings, newPackage);
+  }",method,
+"  public void dump(PrintStream out) {
+    out.format(""Package Groups (1)\n"");
+    resPackage.dump(strings, out);
+  }",method,
+"  public StringPool getStrings() {
+    return strings;
+  }",method,
+"  public ResTablePackage getPackage() {
+    return resPackage;
+  }",method,
+"  public void dumpStrings(PrintStream out) {
+    strings.dump(out);
+  }",method,
+"public class BulkByScrollResponse extends ActionResponse implements ToXContentFragment {
+    private TimeValue took;
+    private BulkByScrollTask.Status status;
+    private List<Failure> bulkFailures;
+    private List<ScrollableHitSource.SearchFailure> searchFailures;
+    private boolean timedOut;
+    public BulkByScrollResponse() {
+    }
+    public BulkByScrollResponse(TimeValue took, BulkByScrollTask.Status status, List<Failure> bulkFailures,
+                                List<ScrollableHitSource.SearchFailure> searchFailures, boolean timedOut) {
+        this.took = took;
+        this.status = requireNonNull(status, ""Null status not supported"");
+        this.bulkFailures = bulkFailures;
+        this.searchFailures = searchFailures;
+        this.timedOut = timedOut;
+    }
+    public BulkByScrollResponse(Iterable<BulkByScrollResponse> toMerge, @Nullable String reasonCancelled) {
+        long mergedTook = 0;
+        List<BulkByScrollTask.StatusOrException> statuses = new ArrayList<>();
+        bulkFailures = new ArrayList<>();
+        searchFailures = new ArrayList<>();
+        for (BulkByScrollResponse response : toMerge) {
+            mergedTook = max(mergedTook, response.getTook().nanos());
+            statuses.add(new BulkByScrollTask.StatusOrException(response.status));
+            bulkFailures.addAll(response.getBulkFailures());
+            searchFailures.addAll(response.getSearchFailures());
+            timedOut |= response.isTimedOut();
+        }
+        took = timeValueNanos(mergedTook);
+        status = new BulkByScrollTask.Status(statuses, reasonCancelled);
+    }
+    public TimeValue getTook() {
+        return took;
+    }
+    public BulkByScrollTask.Status getStatus() {
+        return status;
+    }
+    public long getCreated() {
+        return status.getCreated();
+    }
+    public long getDeleted() {
+        return status.getDeleted();
+    }
+    public long getUpdated() {
+        return status.getUpdated();
+    }
+    public int getBatches() {
+        return status.getBatches();
+    }
+    public long getVersionConflicts() {
+        return status.getVersionConflicts();
+    }
+    public long getNoops() {
+        return status.getNoops();
+    }
+    public String getReasonCancelled() {
+        return status.getReasonCancelled();
+    }
+    public long getBulkRetries() {
+        return status.getBulkRetries();
+    }
+    public long getSearchRetries() {
+        return status.getSearchRetries();
+    }
+    public List<Failure> getBulkFailures() {
+        return bulkFailures;
+    }
+    public List<ScrollableHitSource.SearchFailure> getSearchFailures() {
+        return searchFailures;
+    }
+    public boolean isTimedOut() {
+        return timedOut;
+    }
+    @Override
+    public void writeTo(StreamOutput out) throws IOException {
+        super.writeTo(out);
+        took.writeTo(out);
+        status.writeTo(out);
+        out.writeList(bulkFailures);
+        out.writeList(searchFailures);
+        out.writeBoolean(timedOut);
+    }
+    @Override
+    public void readFrom(StreamInput in) throws IOException {
+        super.readFrom(in);
+        took = new TimeValue(in);
+        status = new BulkByScrollTask.Status(in);
+        bulkFailures = in.readList(Failure::new);
+        searchFailures = in.readList(ScrollableHitSource.SearchFailure::new);
+        timedOut = in.readBoolean();
+    }
+    @Override
+    public XContentBuilder toXContent(XContentBuilder builder, Params params) throws IOException {
+        builder.field(""took"", took.millis());
+        builder.field(""timed_out"", timedOut);
+        status.innerXContent(builder, params);
+        builder.startArray(""failures"");
+        for (Failure failure: bulkFailures) {
+            builder.startObject();
+            failure.toXContent(builder, params);
+            builder.endObject();
+        }
+        for (ScrollableHitSource.SearchFailure failure: searchFailures) {
+            failure.toXContent(builder, params);
+        }
+        builder.endArray();
+        return builder;
+    }
+    @Override
+    public String toString() {
+        StringBuilder builder = new StringBuilder();
+        builder.append(getClass().getSimpleName()).append(""["");
+        builder.append(""took="").append(took).append(',');
+        builder.append(""timed_out="").append(timedOut).append(',');
+        status.innerToString(builder);
+        builder.append("",bulk_failures="").append(getBulkFailures().subList(0, min(3, getBulkFailures().size())));
+        builder.append("",search_failures="").append(getSearchFailures().subList(0, min(3, getSearchFailures().size())));
+        return builder.append(']').toString();
+    }
+}",class,
+"    public BulkByScrollResponse() {
+    }",method,
+"    public BulkByScrollResponse(TimeValue took, BulkByScrollTask.Status status, List<Failure> bulkFailures,
+                                List<ScrollableHitSource.SearchFailure> searchFailures, boolean timedOut) {
+        this.took = took;
+        this.status = requireNonNull(status, ""Null status not supported"");
+        this.bulkFailures = bulkFailures;
+        this.searchFailures = searchFailures;
+        this.timedOut = timedOut;
+    }",method,
+"    public BulkByScrollResponse(Iterable<BulkByScrollResponse> toMerge, @Nullable String reasonCancelled) {
+        long mergedTook = 0;
+        List<BulkByScrollTask.StatusOrException> statuses = new ArrayList<>();
+        bulkFailures = new ArrayList<>();
+        searchFailures = new ArrayList<>();
+        for (BulkByScrollResponse response : toMerge) {
+            mergedTook = max(mergedTook, response.getTook().nanos());
+            statuses.add(new BulkByScrollTask.StatusOrException(response.status));
+            bulkFailures.addAll(response.getBulkFailures());
+            searchFailures.addAll(response.getSearchFailures());
+            timedOut |= response.isTimedOut();
+        }
+        took = timeValueNanos(mergedTook);
+        status = new BulkByScrollTask.Status(statuses, reasonCancelled);
+    }",method,
+"        for (BulkByScrollResponse response : toMerge) {
+            mergedTook = max(mergedTook, response.getTook().nanos());
+            statuses.add(new BulkByScrollTask.StatusOrException(response.status));
+            bulkFailures.addAll(response.getBulkFailures());
+            searchFailures.addAll(response.getSearchFailures());
+            timedOut |= response.isTimedOut();
+        }",method,
+"    public TimeValue getTook() {
+        return took;
+    }",method,
+"    public BulkByScrollTask.Status getStatus() {
+        return status;
+    }",method,
+"    public long getCreated() {
+        return status.getCreated();
+    }",method,
+"    public long getDeleted() {
+        return status.getDeleted();
+    }",method,
+"    public long getUpdated() {
+        return status.getUpdated();
+    }",method,
+"    public int getBatches() {
+        return status.getBatches();
+    }",method,
+"    public long getVersionConflicts() {
+        return status.getVersionConflicts();
+    }",method,
+"    public long getNoops() {
+        return status.getNoops();
+    }",method,
+"    public String getReasonCancelled() {
+        return status.getReasonCancelled();
+    }",method,
+"    public long getBulkRetries() {
+        return status.getBulkRetries();
+    }",method,
+"    public long getSearchRetries() {
+        return status.getSearchRetries();
+    }",method,
+"    public List<Failure> getBulkFailures() {
+        return bulkFailures;
+    }",method,
+"    public List<ScrollableHitSource.SearchFailure> getSearchFailures() {
+        return searchFailures;
+    }",method,
+"    public boolean isTimedOut() {
+        return timedOut;
+    }",method,
+"    @Override
+    public void writeTo(StreamOutput out) throws IOException {
+        super.writeTo(out);
+        took.writeTo(out);
+        status.writeTo(out);
+        out.writeList(bulkFailures);
+        out.writeList(searchFailures);
+        out.writeBoolean(timedOut);
+    }",method,
+"    @Override
+    public void readFrom(StreamInput in) throws IOException {
+        super.readFrom(in);
+        took = new TimeValue(in);
+        status = new BulkByScrollTask.Status(in);
+        bulkFailures = in.readList(Failure::new);
+        searchFailures = in.readList(ScrollableHitSource.SearchFailure::new);
+        timedOut = in.readBoolean();
+    }",method,
+"    @Override
+    public XContentBuilder toXContent(XContentBuilder builder, Params params) throws IOException {
+        builder.field(""took"", took.millis());
+        builder.field(""timed_out"", timedOut);
+        status.innerXContent(builder, params);
+        builder.startArray(""failures"");
+        for (Failure failure: bulkFailures) {
+            builder.startObject();
+            failure.toXContent(builder, params);
+            builder.endObject();
+        }
+        for (ScrollableHitSource.SearchFailure failure: searchFailures) {
+            failure.toXContent(builder, params);
+        }
+        builder.endArray();
+        return builder;
+    }",method,
+"        for (Failure failure: bulkFailures) {
+            builder.startObject();
+            failure.toXContent(builder, params);
+            builder.endObject();
+        }",method,
+"        for (ScrollableHitSource.SearchFailure failure: searchFailures) {
+            failure.toXContent(builder, params);
+        }",method,
+"    @Override
+    public String toString() {
+        StringBuilder builder = new StringBuilder();
+        builder.append(getClass().getSimpleName()).append(""["");
+        builder.append(""took="").append(took).append(',');
+        builder.append(""timed_out="").append(timedOut).append(',');
+        status.innerToString(builder);
+        builder.append("",bulk_failures="").append(getBulkFailures().subList(0, min(3, getBulkFailures().size())));
+        builder.append("",search_failures="").append(getSearchFailures().subList(0, min(3, getSearchFailures().size())));
+        return builder.append(']').toString();
+    }",method,
+"public final class ShortcutTextField extends JTextField {
+  private KeyStroke myKeyStroke;
+  ShortcutTextField() {
+    enableEvents(AWTEvent.KEY_EVENT_MASK);
+    setFocusTraversalKeysEnabled(false);
+    setCaret(new DefaultCaret() {
+      @Override
+      public boolean isVisible() {
+        return false;
+      }
+    });
+  }
+  private static boolean absolutelyUnknownKey (KeyEvent e) {
+    return e.getKeyCode() == 0
+           && e.getExtendedKeyCode() == 0
+           && e.getKeyChar() == KeyEvent.CHAR_UNDEFINED
+           && e.getKeyLocation() == KeyEvent.KEY_LOCATION_UNKNOWN
+           && e.getExtendedKeyCode() == 0;
+  }
+  protected void processKeyEvent(KeyEvent e) {
+    if (e.getID() == KeyEvent.KEY_PRESSED) {
+      int keyCode = e.getKeyCode();
+      if (keyCode == KeyEvent.VK_SHIFT ||
+          keyCode == KeyEvent.VK_ALT ||
+          keyCode == KeyEvent.VK_CONTROL ||
+          keyCode == KeyEvent.VK_ALT_GRAPH ||
+          keyCode == KeyEvent.VK_META ||
+          absolutelyUnknownKey(e)) {
+        return;
+      }
+      setKeyStroke(KeyStrokeAdapter.getDefaultKeyStroke(e));
+    }
+  }
+  void setKeyStroke(KeyStroke keyStroke) {
+    KeyStroke old = myKeyStroke;
+    if (old != null || keyStroke != null) {
+      myKeyStroke = keyStroke;
+      super.setText(KeymapUtil.getKeystrokeText(keyStroke));
+      setCaretPosition(0);
+      firePropertyChange(""keyStroke"", old, keyStroke);
+    }
+  }
+  KeyStroke getKeyStroke() {
+    return myKeyStroke;
+  }
+  @Override
+  public void enableInputMethods(boolean enable) {
+    super.enableInputMethods(enable && Registry.is(""ide.settings.keymap.input.method.enabled""));
+  }
+  @Override
+  public void setText(String text) {
+    super.setText(text);
+    setCaretPosition(0);
+    if (text == null || text.isEmpty()) {
+      myKeyStroke = null;
+      firePropertyChange(""keyStroke"", null, null);
+    }
+  }
+}",class,
+"  ShortcutTextField() {
+    enableEvents(AWTEvent.KEY_EVENT_MASK);
+    setFocusTraversalKeysEnabled(false);
+    setCaret(new DefaultCaret() {
+      @Override
+      public boolean isVisible() {
+        return false;
+      }
+    });
+  }",method,
+"    setCaret(new DefaultCaret() {
+      @Override
+      public boolean isVisible() {
+        return false;
+      }
+    }",method,
+"      @Override
+      public boolean isVisible() {
+        return false;
+      }",method,
+"  private static boolean absolutelyUnknownKey (KeyEvent e) {
+    return e.getKeyCode() == 0
+           && e.getExtendedKeyCode() == 0
+           && e.getKeyChar() == KeyEvent.CHAR_UNDEFINED
+           && e.getKeyLocation() == KeyEvent.KEY_LOCATION_UNKNOWN
+           && e.getExtendedKeyCode() == 0;
+  }",method,
+"  protected void processKeyEvent(KeyEvent e) {
+    if (e.getID() == KeyEvent.KEY_PRESSED) {
+      int keyCode = e.getKeyCode();
+      if (keyCode == KeyEvent.VK_SHIFT ||
+          keyCode == KeyEvent.VK_ALT ||
+          keyCode == KeyEvent.VK_CONTROL ||
+          keyCode == KeyEvent.VK_ALT_GRAPH ||
+          keyCode == KeyEvent.VK_META ||
+          absolutelyUnknownKey(e)) {
+        return;
+      }
+      setKeyStroke(KeyStrokeAdapter.getDefaultKeyStroke(e));
+    }
+  }",method,
+"  void setKeyStroke(KeyStroke keyStroke) {
+    KeyStroke old = myKeyStroke;
+    if (old != null || keyStroke != null) {
+      myKeyStroke = keyStroke;
+      super.setText(KeymapUtil.getKeystrokeText(keyStroke));
+      setCaretPosition(0);
+      firePropertyChange(""keyStroke"", old, keyStroke);
+    }
+  }",method,
+"    if (old != null || keyStroke != null) {
+      myKeyStroke = keyStroke;
+      super.setText(KeymapUtil.getKeystrokeText(keyStroke));
+      setCaretPosition(0);
+      firePropertyChange(""keyStroke"", old, keyStroke);
+    }",method,
+"  KeyStroke getKeyStroke() {
+    return myKeyStroke;
+  }",method,
+"  @Override
+  public void enableInputMethods(boolean enable) {
+    super.enableInputMethods(enable && Registry.is(""ide.settings.keymap.input.method.enabled""));
+  }",method,
+"  @Override
+  public void setText(String text) {
+    super.setText(text);
+    setCaretPosition(0);
+    if (text == null || text.isEmpty()) {
+      myKeyStroke = null;
+      firePropertyChange(""keyStroke"", null, null);
+    }
+  }",method,
+"import com.google.devtools.build.skyframe.SkyKey;
+class ChainUniquenessUtils {
+  private ChainUniquenessUtils() {}
+  static SkyKey key(SkyFunctionName functionName, ImmutableList<? extends Object> chain) {
+    Preconditions.checkState(!chain.isEmpty());
+    return LegacySkyKey.create(functionName, canonicalize(chain));
+  }
+  private static ImmutableList<Object> canonicalize(ImmutableList<? extends Object> cycle) {
+    int minPos = 0;
+    String minString = cycle.get(0).toString();
+    for (int i = 1; i < cycle.size(); i++) {
+      // TOOD(bazel-team): Is the toString representation stable enough?
+      String candidateString = cycle.get(i).toString();
+      if (candidateString.compareTo(minString) < 0) {
+        minPos = i;
+        minString = candidateString;
+      }
+    }
+    ImmutableList.Builder<Object> builder = ImmutableList.builder();
+    for (int i = 0; i < cycle.size(); i++) {
+      int pos = (minPos + i) % cycle.size();
+      builder.add(cycle.get(pos));
+    }
+    return builder.build();
+  }
+}",class,

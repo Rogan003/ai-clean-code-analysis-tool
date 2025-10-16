@@ -1,0 +1,1408 @@
+code_snippet,type,score
+"    @After
+    public void tearDown() {
+        MockFontProvider.cleanUpFontFiles(
+                InstrumentationRegistry.getInstrumentation().getTargetContext());
+    }",method,
+"        public void onTypefaceRetrieved(Typeface typeface) {
+            mTypeface = typeface;
+            mSuccessCallCount++;
+        }",method,
+"        public void onTypefaceRequestFailed(int reason) {
+            mFailedCallCount++;
+        }",method,
+"        public Typeface getTypeface() {
+            return mTypeface;
+        }",method,
+"        public int getSuccessCallCount() {
+            return mSuccessCallCount;
+        }",method,
+"        public int getFailedCallCount() {
+            return mFailedCallCount;
+        }",method,
+"    @Test
+    public void typefaceCacheTest() throws NameNotFoundException {
+        Instrumentation inst = InstrumentationRegistry.getInstrumentation();
+        Context ctx = inst.getTargetContext();
+        final TestCallback callback = new TestCallback();
+        inst.runOnMainSync(() -> {
+            FontRequest request = new FontRequest(
+                    AUTHORITY, PACKAGE, ""singleFontFamily"", SIGNATURE);
+            FontsContract.requestFonts(ctx, request, new Handler(), null, callback);
+        });
+        inst.waitForIdleSync();
+        assertEquals(1, callback.getSuccessCallCount());
+        assertEquals(0, callback.getFailedCallCount());
+        assertNotNull(callback.getTypeface());
+        final TestCallback callback2 = new TestCallback();
+        inst.runOnMainSync(() -> {
+            FontRequest request = new FontRequest(
+                    AUTHORITY, PACKAGE, ""singleFontFamily"", SIGNATURE);
+            FontsContract.requestFonts(ctx, request, new Handler(), null, callback2);
+        });
+        inst.waitForIdleSync();
+        assertEquals(1, callback2.getSuccessCallCount());
+        assertEquals(0, callback2.getFailedCallCount());
+        assertSame(callback.getTypeface(), callback2.getTypeface());
+        final TestCallback callback3 = new TestCallback();
+        inst.runOnMainSync(() -> {
+            FontRequest request = new FontRequest(
+                    AUTHORITY, PACKAGE, ""singleFontFamily2"", SIGNATURE);
+            FontsContract.requestFonts(ctx, request, new Handler(), null, callback3);
+        });
+        inst.waitForIdleSync();
+        assertEquals(1, callback3.getSuccessCallCount());
+        assertEquals(0, callback3.getFailedCallCount());
+        assertNotSame(callback.getTypeface(), callback3.getTypeface());
+    }",method,
+"    @Test
+    public void typefaceNotCacheTest() throws NameNotFoundException {
+        Instrumentation inst = InstrumentationRegistry.getInstrumentation();
+        Context ctx = inst.getTargetContext();
+        FontRequest request = new FontRequest(
+                AUTHORITY, PACKAGE, ""singleFontFamily"", SIGNATURE);
+        FontFamilyResult result = FontsContract.fetchFonts(
+                ctx, null , request);
+        assertEquals(FontFamilyResult.STATUS_OK, result.getStatusCode());
+        Typeface typeface = FontsContract.buildTypeface(
+                ctx, null , result.getFonts());
+        FontFamilyResult result2 = FontsContract.fetchFonts(
+                ctx, null , request);
+        assertEquals(FontFamilyResult.STATUS_OK, result2.getStatusCode());
+        Typeface typeface2 = FontsContract.buildTypeface(
+                ctx, null , result2.getFonts());
+        // Neighter fetchFonts nor buildTypeface should cache the Typeface.
+        assertNotSame(typeface, typeface2);
+    }",method,
+"    @Test
+    public void typefaceNullFdTest() throws NameNotFoundException {
+        Instrumentation inst = InstrumentationRegistry.getInstrumentation();
+        Context ctx = inst.getTargetContext();
+        FontRequest request = new FontRequest(
+                AUTHORITY, PACKAGE, MockFontProvider.NULL_FD_QUERY, SIGNATURE);
+        FontFamilyResult result = FontsContract.fetchFonts(
+                ctx, null , request);
+        assertNull(FontsContract.buildTypeface(
+                ctx, null , result.getFonts()));
+    }",method,
+"    @Test
+    public void getFontSyncTest() {
+        FontRequest request = new FontRequest(AUTHORITY, PACKAGE, ""singleFontFamily"", SIGNATURE);
+        assertNotNull(FontsContract.getFontSync(request));
+    }",method,
+"    @Test
+    public void getFontSyncTest_timeout() {
+        FontRequest request = new FontRequest(
+                AUTHORITY, PACKAGE, MockFontProvider.BLOCKING_QUERY, SIGNATURE);
+        assertNull(FontsContract.getFontSync(request));
+        MockFontProvider.unblock();
+    }",method,
+"public final class MaybeTest {
+  @Rule public final MockWebServer server = new MockWebServer();
+  @Rule public final RecordingMaybeObserver.Rule observerRule = new RecordingMaybeObserver.Rule();
+  interface Service {
+    @GET(""/"") Maybe<String> body();
+    @GET(""/"") Maybe<Response<String>> response();
+    @GET(""/"") Maybe<Result<String>> result();
+  }
+  private Service service;
+  @Before public void setUp() {
+    Retrofit retrofit = new Retrofit.Builder()
+        .baseUrl(server.url(""/""))
+        .addConverterFactory(new StringConverterFactory())
+        .addCallAdapterFactory(RxJava2CallAdapterFactory.create())
+        .build();
+    service = retrofit.create(Service.class);
+  }
+  @Test public void bodySuccess200() {
+    server.enqueue(new MockResponse().setBody(""Hi""));
+    RecordingMaybeObserver<String> observer = observerRule.create();
+    service.body().subscribe(observer);
+    observer.assertValue(""Hi"");
+  }
+  @Test public void bodySuccess404() {
+    server.enqueue(new MockResponse().setResponseCode(404));
+    RecordingMaybeObserver<String> observer = observerRule.create();
+    service.body().subscribe(observer);
+    // Required for backwards compatibility.
+    observer.assertError(HttpException.class, ""HTTP 404 Client Error"");
+  }
+  @Test public void bodyFailure() {
+    server.enqueue(new MockResponse().setSocketPolicy(DISCONNECT_AFTER_REQUEST));
+    RecordingMaybeObserver<String> observer = observerRule.create();
+    service.body().subscribe(observer);
+    observer.assertError(IOException.class);
+  }
+  @Test public void responseSuccess200() {
+    server.enqueue(new MockResponse().setBody(""Hi""));
+    RecordingMaybeObserver<Response<String>> observer = observerRule.create();
+    service.response().subscribe(observer);
+    Response<String> response = observer.takeValue();
+    assertThat(response.isSuccessful()).isTrue();
+  }
+  @Test public void responseSuccess404() {
+    server.enqueue(new MockResponse().setResponseCode(404));
+    RecordingMaybeObserver<Response<String>> observer = observerRule.create();
+    service.response().subscribe(observer);
+    assertThat(observer.takeValue().isSuccessful()).isFalse();
+  }
+  @Test public void responseFailure() {
+    server.enqueue(new MockResponse().setSocketPolicy(DISCONNECT_AFTER_REQUEST));
+    RecordingMaybeObserver<Response<String>> observer = observerRule.create();
+    service.response().subscribe(observer);
+    observer.assertError(IOException.class);
+  }
+  @Test public void resultSuccess200() {
+    server.enqueue(new MockResponse().setBody(""Hi""));
+    RecordingMaybeObserver<Result<String>> observer = observerRule.create();
+    service.result().subscribe(observer);
+    Result<String> result = observer.takeValue();
+    assertThat(result.isError()).isFalse();
+    assertThat(result.response().isSuccessful()).isTrue();
+  }
+  @Test public void resultSuccess404() {
+    server.enqueue(new MockResponse().setResponseCode(404));
+    RecordingMaybeObserver<Result<String>> observer = observerRule.create();
+    service.result().subscribe(observer);
+    Result<String> result = observer.takeValue();
+    assertThat(result.isError()).isFalse();
+    assertThat(result.response().isSuccessful()).isFalse();
+  }
+  @Test public void resultFailure() {
+    server.enqueue(new MockResponse().setSocketPolicy(DISCONNECT_AFTER_REQUEST));
+    RecordingMaybeObserver<Result<String>> observer = observerRule.create();
+    service.result().subscribe(observer);
+    Result<String> result = observer.takeValue();
+    assertThat(result.isError()).isTrue();
+    assertThat(result.error()).isInstanceOf(IOException.class);
+  }
+}",class,
+"public class BluetoothDeviceFilterUtils {
+    private BluetoothDeviceFilterUtils() {}
+    private static final boolean DEBUG = false;
+    private static final String LOG_TAG = ""BluetoothDeviceFilterUtils"";
+    @Nullable
+    static String patternToString(@Nullable Pattern p) {
+        return p == null ? null : p.pattern();
+    }
+    @Nullable
+    static Pattern patternFromString(@Nullable String s) {
+        return s == null ? null : Pattern.compile(s);
+    }
+    static boolean matches(ScanFilter filter, BluetoothDevice device) {
+        boolean result = matchesAddress(filter.getDeviceAddress(), device)
+                && matchesServiceUuid(filter.getServiceUuid(), filter.getServiceUuidMask(), device);
+        if (DEBUG) debugLogMatchResult(result, device, filter);
+        return result;
+    }
+    static boolean matchesAddress(String deviceAddress, BluetoothDevice device) {
+        final boolean result = deviceAddress == null
+                || (device != null && deviceAddress.equals(device.getAddress()));
+        if (DEBUG) debugLogMatchResult(result, device, deviceAddress);
+        return result;
+    }
+    static boolean matchesServiceUuids(List<ParcelUuid> serviceUuids,
+            List<ParcelUuid> serviceUuidMasks, BluetoothDevice device) {
+        for (int i = 0; i < serviceUuids.size(); i++) {
+            ParcelUuid uuid = serviceUuids.get(i);
+            ParcelUuid uuidMask = serviceUuidMasks.get(i);
+            if (!matchesServiceUuid(uuid, uuidMask, device)) {
+                return false;
+            }
+        }
+        return true;
+    }
+    static boolean matchesServiceUuid(ParcelUuid serviceUuid, ParcelUuid serviceUuidMask,
+            BluetoothDevice device) {
+        final boolean result = serviceUuid == null ||
+                ScanFilter.matchesServiceUuids(
+                        serviceUuid,
+                        serviceUuidMask,
+                        Arrays.asList(device.getUuids()));
+        if (DEBUG) debugLogMatchResult(result, device, serviceUuid);
+        return result;
+    }
+    static boolean matchesName(@Nullable Pattern namePattern, BluetoothDevice device) {
+        boolean result;
+        if (namePattern == null)  {
+            result = true;
+        } else if (device == null) {
+            result = false;
+        } else {
+            final String name = device.getName();
+            result = name != null && namePattern.matcher(name).find();
+        }
+        if (DEBUG) debugLogMatchResult(result, device, namePattern);
+        return result;
+    }
+    static boolean matchesName(@Nullable Pattern namePattern, ScanResult device) {
+        boolean result;
+        if (namePattern == null)  {
+            result = true;
+        } else if (device == null) {
+            result = false;
+        } else {
+            final String name = device.SSID;
+            result = name != null && namePattern.matcher(name).find();
+        }
+        if (DEBUG) debugLogMatchResult(result, device, namePattern);
+        return result;
+    }
+    private static void debugLogMatchResult(
+            boolean result, BluetoothDevice device, Object criteria) {
+        Log.i(LOG_TAG, getDeviceDisplayNameInternal(device) + (result ? "" ~ "" : "" !~ "") + criteria);
+    }
+    private static void debugLogMatchResult(
+            boolean result, ScanResult device, Object criteria) {
+        Log.i(LOG_TAG, getDeviceDisplayNameInternal(device) + (result ? "" ~ "" : "" !~ "") + criteria);
+    }
+    public static String getDeviceDisplayNameInternal(@NonNull BluetoothDevice device) {
+        return firstNotEmpty(device.getAliasName(), device.getAddress());
+    }
+    public static String getDeviceDisplayNameInternal(@NonNull ScanResult device) {
+        return firstNotEmpty(device.SSID, device.BSSID);
+    }
+    public static String getDeviceMacAddress(@NonNull Parcelable device) {
+        if (device instanceof BluetoothDevice) {
+            return ((BluetoothDevice) device).getAddress();
+        } else if (device instanceof ScanResult) {
+            return ((ScanResult) device).BSSID;
+        } else if (device instanceof android.bluetooth.le.ScanResult) {
+            return getDeviceMacAddress(((android.bluetooth.le.ScanResult) device).getDevice());
+        } else {
+            throw new IllegalArgumentException(""Unknown device type: "" + device);
+        }
+    }
+}",class,
+    private BluetoothDeviceFilterUtils() {},method,
+"    @Nullable
+    static String patternToString(@Nullable Pattern p) {
+        return p == null ? null : p.pattern();
+    }",method,
+"    @Nullable
+    static Pattern patternFromString(@Nullable String s) {
+        return s == null ? null : Pattern.compile(s);
+    }",method,
+"    static boolean matches(ScanFilter filter, BluetoothDevice device) {
+        boolean result = matchesAddress(filter.getDeviceAddress(), device)
+                && matchesServiceUuid(filter.getServiceUuid(), filter.getServiceUuidMask(), device);
+        if (DEBUG) debugLogMatchResult(result, device, filter);
+        return result;
+    }",method,
+"    static boolean matchesAddress(String deviceAddress, BluetoothDevice device) {
+        final boolean result = deviceAddress == null
+                || (device != null && deviceAddress.equals(device.getAddress()));
+        if (DEBUG) debugLogMatchResult(result, device, deviceAddress);
+        return result;
+    }",method,
+"    static boolean matchesServiceUuids(List<ParcelUuid> serviceUuids,
+            List<ParcelUuid> serviceUuidMasks, BluetoothDevice device) {
+        for (int i = 0; i < serviceUuids.size(); i++) {
+            ParcelUuid uuid = serviceUuids.get(i);
+            ParcelUuid uuidMask = serviceUuidMasks.get(i);
+            if (!matchesServiceUuid(uuid, uuidMask, device)) {
+                return false;
+            }
+        }
+        return true;
+    }",method,
+"    static boolean matchesServiceUuid(ParcelUuid serviceUuid, ParcelUuid serviceUuidMask,
+            BluetoothDevice device) {
+        final boolean result = serviceUuid == null ||
+                ScanFilter.matchesServiceUuids(
+                        serviceUuid,
+                        serviceUuidMask,
+                        Arrays.asList(device.getUuids()));
+        if (DEBUG) debugLogMatchResult(result, device, serviceUuid);
+        return result;
+    }",method,
+"    static boolean matchesName(@Nullable Pattern namePattern, BluetoothDevice device) {
+        boolean result;
+        if (namePattern == null)  {
+            result = true;
+        } else if (device == null) {
+            result = false;
+        } else {
+            final String name = device.getName();
+            result = name != null && namePattern.matcher(name).find();
+        }
+        if (DEBUG) debugLogMatchResult(result, device, namePattern);
+        return result;
+    }",method,
+"        if (namePattern == null)  {
+            result = true;
+        }",method,
+"    static boolean matchesName(@Nullable Pattern namePattern, ScanResult device) {
+        boolean result;
+        if (namePattern == null)  {
+            result = true;
+        } else if (device == null) {
+            result = false;
+        } else {
+            final String name = device.SSID;
+            result = name != null && namePattern.matcher(name).find();
+        }
+        if (DEBUG) debugLogMatchResult(result, device, namePattern);
+        return result;
+    }",method,
+"        if (namePattern == null)  {
+            result = true;
+        }",method,
+"    private static void debugLogMatchResult(
+            boolean result, BluetoothDevice device, Object criteria) {
+        Log.i(LOG_TAG, getDeviceDisplayNameInternal(device) + (result ? "" ~ "" : "" !~ "") + criteria);
+    }",method,
+"    private static void debugLogMatchResult(
+            boolean result, ScanResult device, Object criteria) {
+        Log.i(LOG_TAG, getDeviceDisplayNameInternal(device) + (result ? "" ~ "" : "" !~ "") + criteria);
+    }",method,
+"    public static String getDeviceDisplayNameInternal(@NonNull BluetoothDevice device) {
+        return firstNotEmpty(device.getAliasName(), device.getAddress());
+    }",method,
+"    public static String getDeviceDisplayNameInternal(@NonNull ScanResult device) {
+        return firstNotEmpty(device.SSID, device.BSSID);
+    }",method,
+"    public static String getDeviceMacAddress(@NonNull Parcelable device) {
+        if (device instanceof BluetoothDevice) {
+            return ((BluetoothDevice) device).getAddress();
+        } else if (device instanceof ScanResult) {
+            return ((ScanResult) device).BSSID;
+        } else if (device instanceof android.bluetooth.le.ScanResult) {
+            return getDeviceMacAddress(((android.bluetooth.le.ScanResult) device).getDevice());
+        } else {
+            throw new IllegalArgumentException(""Unknown device type: "" + device);
+        }
+    }",method,
+"        if (device instanceof BluetoothDevice) {
+            return ((BluetoothDevice) device).getAddress();
+        }",method,
+"public class FragmentPagerItems extends PagerItems<FragmentPagerItem> {
+  public FragmentPagerItems(Context context) {
+    super(context);
+  }
+  public static Creator with(Context context) {
+    return new Creator(context);
+  }
+  public static class Creator {
+    private final FragmentPagerItems items;
+    public Creator(Context context) {
+      items = new FragmentPagerItems(context);
+    }
+    public Creator add(@StringRes int title, Class<? extends Fragment> clazz) {
+      return add(FragmentPagerItem.of(items.getContext().getString(title), clazz));
+    }
+    public Creator add(@StringRes int title, Class<? extends Fragment> clazz, Bundle args) {
+      return add(FragmentPagerItem.of(items.getContext().getString(title), clazz, args));
+    }
+    public Creator add(@StringRes int title, float width, Class<? extends Fragment> clazz) {
+      return add(FragmentPagerItem.of(items.getContext().getString(title), width, clazz));
+    }
+    public Creator add(@StringRes int title, float width, Class<? extends Fragment> clazz,
+        Bundle args) {
+      return add(FragmentPagerItem.of(items.getContext().getString(title), width, clazz, args));
+    }
+    public Creator add(CharSequence title, Class<? extends Fragment> clazz) {
+      return add(FragmentPagerItem.of(title, clazz));
+    }
+    public Creator add(CharSequence title, Class<? extends Fragment> clazz, Bundle args) {
+      return add(FragmentPagerItem.of(title, clazz, args));
+    }
+    public Creator add(FragmentPagerItem item) {
+      items.add(item);
+      return this;
+    }
+    public FragmentPagerItems create() {
+      return items;
+    }
+  }
+}",class,
+"  public static class Creator {
+    private final FragmentPagerItems items;
+    public Creator(Context context) {
+      items = new FragmentPagerItems(context);
+    }
+    public Creator add(@StringRes int title, Class<? extends Fragment> clazz) {
+      return add(FragmentPagerItem.of(items.getContext().getString(title), clazz));
+    }
+    public Creator add(@StringRes int title, Class<? extends Fragment> clazz, Bundle args) {
+      return add(FragmentPagerItem.of(items.getContext().getString(title), clazz, args));
+    }
+    public Creator add(@StringRes int title, float width, Class<? extends Fragment> clazz) {
+      return add(FragmentPagerItem.of(items.getContext().getString(title), width, clazz));
+    }
+    public Creator add(@StringRes int title, float width, Class<? extends Fragment> clazz,
+        Bundle args) {
+      return add(FragmentPagerItem.of(items.getContext().getString(title), width, clazz, args));
+    }
+    public Creator add(CharSequence title, Class<? extends Fragment> clazz) {
+      return add(FragmentPagerItem.of(title, clazz));
+    }
+    public Creator add(CharSequence title, Class<? extends Fragment> clazz, Bundle args) {
+      return add(FragmentPagerItem.of(title, clazz, args));
+    }
+    public Creator add(FragmentPagerItem item) {
+      items.add(item);
+      return this;
+    }
+    public FragmentPagerItems create() {
+      return items;
+    }
+  }",class,
+"  public FragmentPagerItems(Context context) {
+    super(context);
+  }",method,
+"  public static Creator with(Context context) {
+    return new Creator(context);
+  }",method,
+"    public Creator(Context context) {
+      items = new FragmentPagerItems(context);
+    }",method,
+"    public Creator add(@StringRes int title, Class<? extends Fragment> clazz) {
+      return add(FragmentPagerItem.of(items.getContext().getString(title), clazz));
+    }",method,
+"    public Creator add(@StringRes int title, Class<? extends Fragment> clazz, Bundle args) {
+      return add(FragmentPagerItem.of(items.getContext().getString(title), clazz, args));
+    }",method,
+"    public Creator add(@StringRes int title, float width, Class<? extends Fragment> clazz) {
+      return add(FragmentPagerItem.of(items.getContext().getString(title), width, clazz));
+    }",method,
+"    public Creator add(@StringRes int title, float width, Class<? extends Fragment> clazz,
+        Bundle args) {
+      return add(FragmentPagerItem.of(items.getContext().getString(title), width, clazz, args));
+    }",method,
+"    public Creator add(CharSequence title, Class<? extends Fragment> clazz) {
+      return add(FragmentPagerItem.of(title, clazz));
+    }",method,
+"    public Creator add(CharSequence title, Class<? extends Fragment> clazz, Bundle args) {
+      return add(FragmentPagerItem.of(title, clazz, args));
+    }",method,
+"    public Creator add(FragmentPagerItem item) {
+      items.add(item);
+      return this;
+    }",method,
+"    public FragmentPagerItems create() {
+      return items;
+    }",method,
+"public class TopWikipediaSessions {
+  private static final String EXPORTED_WIKI_TABLE =
+      ""gs://apache-beam-samples/wikipedia_edits
+  static class ExtractUserAndTimestamp extends DoFn<TableRow, String> {
+    @ProcessElement
+    public void processElement(ProcessContext c) {
+      TableRow row = c.element();
+      int timestamp = (Integer) row.get(""timestamp"");
+      String userName = (String) row.get(""contributor_username"");
+      if (userName != null) {
+        // Sets the implicit timestamp field to be used in windowing.
+        c.outputWithTimestamp(userName, new Instant(timestamp * 1000L));
+      }
+    }
+  }
+  static class ComputeSessions
+      extends PTransform<PCollection<String>, PCollection<KV<String, Long>>> {
+    @Override
+    public PCollection<KV<String, Long>> expand(PCollection<String> actions) {
+      return actions
+          .apply(Window.<String>into(Sessions.withGapDuration(Duration.standardHours(1))))
+          .apply(Count.<String>perElement());
+    }
+  }
+  private static class TopPerMonth
+      extends PTransform<PCollection<KV<String, Long>>, PCollection<List<KV<String, Long>>>> {
+    @Override
+    public PCollection<List<KV<String, Long>>> expand(PCollection<KV<String, Long>> sessions) {
+      return sessions
+        .apply(Window.<KV<String, Long>>into(CalendarWindows.months(1)))
+          .apply(Top.of(1, new SerializableComparator<KV<String, Long>>() {
+                    @Override
+                    public int compare(KV<String, Long> o1, KV<String, Long> o2) {
+                      return Long.compare(o1.getValue(), o2.getValue());
+                    }
+                  }).withoutDefaults());
+    }
+  }
+  static class SessionsToStringsDoFn extends DoFn<KV<String, Long>, KV<String, Long>> {
+    @ProcessElement
+    public void processElement(ProcessContext c, BoundedWindow window) {
+      c.output(KV.of(
+          c.element().getKey() + "" : "" + window, c.element().getValue()));
+    }
+  }
+  static class FormatOutputDoFn extends DoFn<List<KV<String, Long>>, String> {
+    @ProcessElement
+    public void processElement(ProcessContext c, BoundedWindow window) {
+      for (KV<String, Long> item : c.element()) {
+        String session = item.getKey();
+        long count = item.getValue();
+        c.output(session + "" : "" + count + "" : "" + ((IntervalWindow) window).start());
+      }
+    }
+  }
+  static class ParseTableRowJson extends SimpleFunction<String, TableRow> {
+    @Override
+    public TableRow apply(String input) {
+      try {
+        return Transport.getJsonFactory().fromString(input, TableRow.class);
+      } catch (IOException e) {
+        throw new RuntimeException(""Failed parsing table row json"", e);
+      }
+    }
+  }
+  static class ComputeTopSessions extends PTransform<PCollection<TableRow>, PCollection<String>> {
+    private final double samplingThreshold;
+    public ComputeTopSessions(double samplingThreshold) {
+      this.samplingThreshold = samplingThreshold;
+    }
+    @Override
+    public PCollection<String> expand(PCollection<TableRow> input) {
+      return input
+          .apply(ParDo.of(new ExtractUserAndTimestamp()))
+          .apply(""SampleUsers"", ParDo.of(
+              new DoFn<String, String>() {
+                @ProcessElement
+                public void processElement(ProcessContext c) {
+                  if (Math.abs(c.element().hashCode()) <= Integer.MAX_VALUE * samplingThreshold) {
+                    c.output(c.element());
+                  }
+                }
+              }))
+          .apply(new ComputeSessions())
+          .apply(""SessionsToStrings"", ParDo.of(new SessionsToStringsDoFn()))
+          .apply(new TopPerMonth())
+          .apply(""FormatOutput"", ParDo.of(new FormatOutputDoFn()));
+    }
+  }
+  public interface Options extends PipelineOptions {
+    @Description(
+      ""Input specified as a GCS path containing a BigQuery table exported as json"")
+    @Default.String(EXPORTED_WIKI_TABLE)
+    String getInput();
+    void setInput(String value);
+    @Description(""File to output results to"")
+    @Validation.Required
+    String getOutput();
+    void setOutput(String value);
+  }
+  public static void main(String[] args) {
+    Options options = PipelineOptionsFactory.fromArgs(args)
+        .withValidation()
+        .as(Options.class);
+    Pipeline p = Pipeline.create(options);
+    double samplingThreshold = 0.1;
+    p.apply(TextIO.read().from(options.getInput()))
+        .apply(MapElements.via(new ParseTableRowJson()))
+        .apply(new ComputeTopSessions(samplingThreshold))
+        .apply(""Write"", TextIO.write().withoutSharding().to(options.getOutput()));
+    p.run().waitUntilFinish();
+  }",class,
+"public final class PhaseVfsStatistics implements Iterable<ProfilerTask> {
+  public static final class Stat implements Comparable<Stat> {
+    private long duration;
+    private long count;
+    public final String path;
+    public Stat(String path) {
+      this.path = path;
+    }
+    public Stat(Stat other) {
+      this.duration = other.duration;
+      this.count = other.count;
+      this.path = other.path;
+    }
+    public long getDuration() {
+      return duration;
+    }
+    public long getCount() {
+      return count;
+    }
+    private void add(Stat other) {
+      this.duration += other.duration;
+      this.count += other.count;
+    }
+    private void add(long duration) {
+      this.duration += duration;
+      this.count++;
+    }
+    @Override
+    public int compareTo(Stat o) {
+      return ComparisonChain.start()
+          .compare(duration, o.duration)
+          .compare(count, o.count)
+          .compare(path, o.path)
+          .result();
+    }
+    @Override
+    public boolean equals(Object obj) {
+      if (obj instanceof Stat) {
+        return compareTo((Stat) obj) == 0;
+      }
+      return false;
+    }
+    @Override
+    public int hashCode() {
+      return Objects.hash(duration, count, path);
+    }
+  }
+  private final ProfilePhase phase;
+  private final Table<ProfilerTask, String, Stat> statistics;
+  public PhaseVfsStatistics(ProfilePhase phase) {
+    this.phase = phase;
+    this.statistics =
+        Tables.newCustomTable(
+            new EnumMap<ProfilerTask, Map<String, Stat>>(ProfilerTask.class), HashMap::new);
+  }
+  public PhaseVfsStatistics(final String workSpaceName, ProfilePhase phase, ProfileInfo info) {
+    this(phase);
+    addProfileInfo(workSpaceName, info);
+  }
+  public void addProfileInfo(final String workSpaceName, ProfileInfo info) {
+    Task phaseTask = info.getPhaseTask(phase);
+    if (phaseTask == null) {
+      return;
+    }
+    collectVfsEntries(workSpaceName, info.getTasksForPhase(phaseTask));
+  }
+  public ProfilePhase getProfilePhase() {
+    return phase;
+  }
+  public boolean isEmpty() {
+    return statistics.isEmpty();
+  }
+  public ImmutableSortedSet<Stat> getSortedStatistics(ProfilerTask taskType) {
+    return ImmutableSortedSet.copyOf(statistics.row(taskType).values());
+  }
+  public int getStatisticsCount(ProfilerTask taskType) {
+    return statistics.row(taskType).size();
+  }
+  @Override
+  public Iterator<ProfilerTask> iterator() {
+    return statistics.rowKeySet().iterator();
+  }
+  public void add(PhaseVfsStatistics other) {
+    for (Cell<ProfilerTask, String, Stat> cell : other.statistics.cellSet()) {
+      Stat stat = statistics.get(cell.getRowKey(), cell.getColumnKey());
+      if (stat == null) {
+        stat = new Stat(cell.getValue());
+        statistics.put(cell.getRowKey(), stat.path, stat);
+      } else {
+        stat.add(cell.getValue());
+      }
+    }
+  }
+  private void collectVfsEntries(String workSpaceName, List<Task> taskList) {
+    for (Task task : taskList) {
+      collectVfsEntries(workSpaceName, Arrays.asList(task.subtasks));
+      if (!task.type.name().startsWith(""VFS_"")) {
+        continue;
+      }
+      String path = pathMapping(workSpaceName, task.getDescription());
+      Stat stat = statistics.get(task.type, path);
+      if (stat == null) {
+        stat = new Stat(path);
+        statistics.put(task.type, path, stat);
+      }
+      stat.add(task.durationNanos);
+    }
+  }
+  private String pathMapping(String workSpaceName, String input) {
+    if (workSpaceName.isEmpty()) {
+      return input;
+    } else {
+      return input.substring(input.lastIndexOf(""/"" + workSpaceName) + 1);
+    }
+  }
+}",class,
+"  public static final class Stat implements Comparable<Stat> {
+    private long duration;
+    private long count;
+    public final String path;
+    public Stat(String path) {
+      this.path = path;
+    }
+    public Stat(Stat other) {
+      this.duration = other.duration;
+      this.count = other.count;
+      this.path = other.path;
+    }
+    public long getDuration() {
+      return duration;
+    }
+    public long getCount() {
+      return count;
+    }
+    private void add(Stat other) {
+      this.duration += other.duration;
+      this.count += other.count;
+    }
+    private void add(long duration) {
+      this.duration += duration;
+      this.count++;
+    }
+    @Override
+    public int compareTo(Stat o) {
+      return ComparisonChain.start()
+          .compare(duration, o.duration)
+          .compare(count, o.count)
+          .compare(path, o.path)
+          .result();
+    }
+    @Override
+    public boolean equals(Object obj) {
+      if (obj instanceof Stat) {
+        return compareTo((Stat) obj) == 0;
+      }
+      return false;
+    }
+    @Override
+    public int hashCode() {
+      return Objects.hash(duration, count, path);
+    }
+  }",class,
+"    public Stat(String path) {
+      this.path = path;
+    }",method,
+"    public Stat(Stat other) {
+      this.duration = other.duration;
+      this.count = other.count;
+      this.path = other.path;
+    }",method,
+"    public long getDuration() {
+      return duration;
+    }",method,
+"    public long getCount() {
+      return count;
+    }",method,
+"    private void add(Stat other) {
+      this.duration += other.duration;
+      this.count += other.count;
+    }",method,
+"    private void add(long duration) {
+      this.duration += duration;
+      this.count++;
+    }",method,
+"    @Override
+    public int compareTo(Stat o) {
+      return ComparisonChain.start()
+          .compare(duration, o.duration)
+          .compare(count, o.count)
+          .compare(path, o.path)
+          .result();
+    }",method,
+"    @Override
+    public boolean equals(Object obj) {
+      if (obj instanceof Stat) {
+        return compareTo((Stat) obj) == 0;
+      }
+      return false;
+    }",method,
+"      if (obj instanceof Stat) {
+        return compareTo((Stat) obj) == 0;
+      }",method,
+"    @Override
+    public int hashCode() {
+      return Objects.hash(duration, count, path);
+    }",method,
+"  public PhaseVfsStatistics(ProfilePhase phase) {
+    this.phase = phase;
+    this.statistics =
+        Tables.newCustomTable(
+            new EnumMap<ProfilerTask, Map<String, Stat>>(ProfilerTask.class), HashMap::new);
+  }",method,
+"  public PhaseVfsStatistics(final String workSpaceName, ProfilePhase phase, ProfileInfo info) {
+    this(phase);
+    addProfileInfo(workSpaceName, info);
+  }",method,
+"  public void addProfileInfo(final String workSpaceName, ProfileInfo info) {
+    Task phaseTask = info.getPhaseTask(phase);
+    if (phaseTask == null) {
+      return;
+    }
+    collectVfsEntries(workSpaceName, info.getTasksForPhase(phaseTask));
+  }",method,
+"    if (phaseTask == null) {
+      return;
+    }",method,
+"  public ProfilePhase getProfilePhase() {
+    return phase;
+  }",method,
+"  public boolean isEmpty() {
+    return statistics.isEmpty();
+  }",method,
+"  public ImmutableSortedSet<Stat> getSortedStatistics(ProfilerTask taskType) {
+    return ImmutableSortedSet.copyOf(statistics.row(taskType).values());
+  }",method,
+"  public int getStatisticsCount(ProfilerTask taskType) {
+    return statistics.row(taskType).size();
+  }",method,
+"  @Override
+  public Iterator<ProfilerTask> iterator() {
+    return statistics.rowKeySet().iterator();
+  }",method,
+"  public void add(PhaseVfsStatistics other) {
+    for (Cell<ProfilerTask, String, Stat> cell : other.statistics.cellSet()) {
+      Stat stat = statistics.get(cell.getRowKey(), cell.getColumnKey());
+      if (stat == null) {
+        stat = new Stat(cell.getValue());
+        statistics.put(cell.getRowKey(), stat.path, stat);
+      } else {
+        stat.add(cell.getValue());
+      }
+    }
+  }",method,
+"      if (stat == null) {
+        stat = new Stat(cell.getValue());
+        statistics.put(cell.getRowKey(), stat.path, stat);
+      }",method,
+"  private void collectVfsEntries(String workSpaceName, List<Task> taskList) {
+    for (Task task : taskList) {
+      collectVfsEntries(workSpaceName, Arrays.asList(task.subtasks));
+      if (!task.type.name().startsWith(""VFS_"")) {
+        continue;
+      }
+      String path = pathMapping(workSpaceName, task.getDescription());
+      Stat stat = statistics.get(task.type, path);
+      if (stat == null) {
+        stat = new Stat(path);
+        statistics.put(task.type, path, stat);
+      }
+      stat.add(task.durationNanos);
+    }
+  }",method,
+"    for (Task task : taskList) {
+      collectVfsEntries(workSpaceName, Arrays.asList(task.subtasks));
+      if (!task.type.name().startsWith(""VFS_"")) {
+        continue;
+      }
+      String path = pathMapping(workSpaceName, task.getDescription());
+      Stat stat = statistics.get(task.type, path);
+      if (stat == null) {
+        stat = new Stat(path);
+        statistics.put(task.type, path, stat);
+      }
+      stat.add(task.durationNanos);
+    }",method,
+"      if (stat == null) {
+        stat = new Stat(path);
+        statistics.put(task.type, path, stat);
+      }",method,
+"  private String pathMapping(String workSpaceName, String input) {
+    if (workSpaceName.isEmpty()) {
+      return input;
+    } else {
+      return input.substring(input.lastIndexOf(""/"" + workSpaceName) + 1);
+    }
+  }",method,
+"public class ExpressionNominalValueGrouper implements RowVisitor, RecordVisitor {
+    static public class IndexedNominalFacetChoice extends NominalFacetChoice {
+        int _latestIndex;
+        public IndexedNominalFacetChoice(DecoratedValue decoratedValue, int latestIndex) {
+            super(decoratedValue);
+            _latestIndex = latestIndex;
+        }
+    }
+    final protected Evaluable   _evaluable;
+    final protected String      _columnName;
+    final protected int         _cellIndex;
+    final public Map<Object, IndexedNominalFacetChoice> choices = new HashMap<Object, IndexedNominalFacetChoice>();
+    public int blankCount = 0;
+    public int errorCount = 0;
+    protected boolean hasBlank;
+    protected boolean hasError;
+    public ExpressionNominalValueGrouper(Evaluable evaluable, String columnName, int cellIndex) {
+        _evaluable = evaluable;
+        _columnName = columnName;
+        _cellIndex = cellIndex;
+    }
+    @Override
+    public void start(Project project) {
+        // nothing to do
+    }
+    @Override
+    public void end(Project project) {
+        // nothing to do
+    }
+    @Override
+    public boolean visit(Project project, int rowIndex, Row row) {
+        hasError = false;
+        hasBlank = false;
+        Properties bindings = ExpressionUtils.createBindings(project);
+        visitRow(project, rowIndex, row, bindings, rowIndex);
+        if (hasError) {
+            errorCount++;
+        }
+        if (hasBlank) {
+            blankCount++;
+        }
+        return false;
+    }
+    @Override
+    public boolean visit(Project project, Record record) {
+        hasError = false;
+        hasBlank = false;
+        Properties bindings = ExpressionUtils.createBindings(project);
+        for (int r = record.fromRowIndex; r < record.toRowIndex; r++) {
+            Row row = project.rows.get(r);
+            visitRow(project, r, row, bindings, record.recordIndex);
+        }
+        if (hasError) {
+            errorCount++;
+        }
+        if (hasBlank) {
+            blankCount++;
+        }
+        return false;
+    }
+    protected void visitRow(Project project, int rowIndex, Row row, Properties bindings, int index) {
+        Object value = evalRow(project, rowIndex, row, bindings);
+        if (value != null) {
+            if (value.getClass().isArray()) {
+                Object[] a = (Object[]) value;
+                for (Object v : a) {
+                    processValue(v, rowIndex);
+                }
+            } else if (value instanceof Collection<?>) {
+                for (Object v : ExpressionUtils.toObjectCollection(value)) {
+                    processValue(v, rowIndex);
+                }
+            } else {
+                processValue(value, rowIndex);
+            }
+        } else {
+            processValue(value, rowIndex);
+        }
+    }
+    protected Object evalRow(Project project, int rowIndex, Row row, Properties bindings) {
+        Cell cell = _cellIndex < 0 ? null : row.getCell(_cellIndex);
+        ExpressionUtils.bind(bindings, row, rowIndex, _columnName, cell);
+        return _evaluable.evaluate(bindings);
+    }
+    protected void processValue(Object value, int index) {
+        if (ExpressionUtils.isError(value)) {
+            hasError = true;
+        } else if (ExpressionUtils.isNonBlankData(value)) {
+            String valueString = StringUtils.toString(value);
+            IndexedNominalFacetChoice facetChoice = choices.get(valueString);
+            if (facetChoice != null) {
+                if (facetChoice._latestIndex < index) {
+                    facetChoice._latestIndex = index;
+                    facetChoice.count++;
+                }
+            } else {
+                String label = valueString;
+                DecoratedValue dValue = new DecoratedValue(value, label);
+                IndexedNominalFacetChoice choice = 
+                    new IndexedNominalFacetChoice(dValue, index);
+                choice.count = 1;
+                choices.put(valueString, choice);
+            }
+        } else {
+            hasBlank = true;
+        }
+    }
+    public RowEvaluable getChoiceCountRowEvaluable() {
+        return new RowEvaluable() {
+            @Override
+            public Object eval(Project project, int rowIndex, Row row, Properties bindings) {
+                Object value = evalRow(project, rowIndex, row, bindings);
+                return getChoiceValueCountMultiple(value);
+            }
+        };
+    }
+    public Object getChoiceValueCountMultiple(Object value) {
+        if (value != null) {
+            if (value.getClass().isArray()) {
+                Object[] choiceValues = (Object[]) value;
+                List<Integer> counts = new ArrayList<Integer>(choiceValues.length);
+                for (Object choiceValue : choiceValues) {
+                    counts.add(getChoiceValueCount(choiceValue));
+                }
+                return counts;
+            } else if (value instanceof Collection<?>) {
+                List<Object> choiceValues = ExpressionUtils.toObjectList(value);
+                List<Integer> counts = new ArrayList<Integer>(choiceValues.size());
+                int count = choiceValues.size();
+                for (int i = 0; i < count; i++) {
+                    counts.add(getChoiceValueCount(choiceValues.get(i)));
+                }
+                return counts;
+            }
+        }
+        return getChoiceValueCount(value);
+    }
+    public Integer getChoiceValueCount(Object choiceValue) {
+        if (ExpressionUtils.isError(choiceValue)) {
+            return errorCount;
+        } else if (ExpressionUtils.isNonBlankData(choiceValue)) {
+            IndexedNominalFacetChoice choice = choices.get(StringUtils.toString(choiceValue));
+            return choice != null ? choice.count : 0;
+        } else {
+            return blankCount;
+        }
+    }
+}",class,
+"    static public class IndexedNominalFacetChoice extends NominalFacetChoice {
+        int _latestIndex;
+        public IndexedNominalFacetChoice(DecoratedValue decoratedValue, int latestIndex) {
+            super(decoratedValue);
+            _latestIndex = latestIndex;
+        }
+    }",class,
+"        public IndexedNominalFacetChoice(DecoratedValue decoratedValue, int latestIndex) {
+            super(decoratedValue);
+            _latestIndex = latestIndex;
+        }",method,
+"    public ExpressionNominalValueGrouper(Evaluable evaluable, String columnName, int cellIndex) {
+        _evaluable = evaluable;
+        _columnName = columnName;
+        _cellIndex = cellIndex;
+    }",method,
+"    @Override
+    public void start(Project project) {
+        // nothing to do
+    }",method,
+"    @Override
+    public void end(Project project) {
+        // nothing to do
+    }",method,
+"    @Override
+    public boolean visit(Project project, int rowIndex, Row row) {
+        hasError = false;
+        hasBlank = false;
+        Properties bindings = ExpressionUtils.createBindings(project);
+        visitRow(project, rowIndex, row, bindings, rowIndex);
+        if (hasError) {
+            errorCount++;
+        }
+        if (hasBlank) {
+            blankCount++;
+        }
+        return false;
+    }",method,
+"        if (hasError) {
+            errorCount++;
+        }",method,
+"        if (hasBlank) {
+            blankCount++;
+        }",method,
+"    @Override
+    public boolean visit(Project project, Record record) {
+        hasError = false;
+        hasBlank = false;
+        Properties bindings = ExpressionUtils.createBindings(project);
+        for (int r = record.fromRowIndex; r < record.toRowIndex; r++) {
+            Row row = project.rows.get(r);
+            visitRow(project, r, row, bindings, record.recordIndex);
+        }
+        if (hasError) {
+            errorCount++;
+        }
+        if (hasBlank) {
+            blankCount++;
+        }
+        return false;
+    }",method,
+"        for (int r = record.fromRowIndex; r < record.toRowIndex; r++) {
+            Row row = project.rows.get(r);
+            visitRow(project, r, row, bindings, record.recordIndex);
+        }",method,
+"        if (hasError) {
+            errorCount++;
+        }",method,
+"        if (hasBlank) {
+            blankCount++;
+        }",method,
+"    protected void visitRow(Project project, int rowIndex, Row row, Properties bindings, int index) {
+        Object value = evalRow(project, rowIndex, row, bindings);
+        if (value != null) {
+            if (value.getClass().isArray()) {
+                Object[] a = (Object[]) value;
+                for (Object v : a) {
+                    processValue(v, rowIndex);
+                }
+            } else if (value instanceof Collection<?>) {
+                for (Object v : ExpressionUtils.toObjectCollection(value)) {
+                    processValue(v, rowIndex);
+                }
+            } else {
+                processValue(value, rowIndex);
+            }
+        } else {
+            processValue(value, rowIndex);
+        }
+    }",method,
+"        if (value != null) {
+            if (value.getClass().isArray()) {
+                Object[] a = (Object[]) value;
+                for (Object v : a) {
+                    processValue(v, rowIndex);
+                }
+            } else if (value instanceof Collection<?>) {
+                for (Object v : ExpressionUtils.toObjectCollection(value)) {
+                    processValue(v, rowIndex);
+                }
+            } else {
+                processValue(value, rowIndex);
+            }
+        }",method,
+"                for (Object v : a) {
+                    processValue(v, rowIndex);
+                }",method,
+"    protected Object evalRow(Project project, int rowIndex, Row row, Properties bindings) {
+        Cell cell = _cellIndex < 0 ? null : row.getCell(_cellIndex);
+        ExpressionUtils.bind(bindings, row, rowIndex, _columnName, cell);
+        return _evaluable.evaluate(bindings);
+    }",method,
+"    protected void processValue(Object value, int index) {
+        if (ExpressionUtils.isError(value)) {
+            hasError = true;
+        } else if (ExpressionUtils.isNonBlankData(value)) {
+            String valueString = StringUtils.toString(value);
+            IndexedNominalFacetChoice facetChoice = choices.get(valueString);
+            if (facetChoice != null) {
+                if (facetChoice._latestIndex < index) {
+                    facetChoice._latestIndex = index;
+                    facetChoice.count++;
+                }
+            } else {
+                String label = valueString;
+                DecoratedValue dValue = new DecoratedValue(value, label);
+                IndexedNominalFacetChoice choice = 
+                    new IndexedNominalFacetChoice(dValue, index);
+                choice.count = 1;
+                choices.put(valueString, choice);
+            }
+        } else {
+            hasBlank = true;
+        }
+    }",method,
+"            if (facetChoice != null) {
+                if (facetChoice._latestIndex < index) {
+                    facetChoice._latestIndex = index;
+                    facetChoice.count++;
+                }
+            }",method,
+"                if (facetChoice._latestIndex < index) {
+                    facetChoice._latestIndex = index;
+                    facetChoice.count++;
+                }",method,
+"    public RowEvaluable getChoiceCountRowEvaluable() {
+        return new RowEvaluable() {
+            @Override
+            public Object eval(Project project, int rowIndex, Row row, Properties bindings) {
+                Object value = evalRow(project, rowIndex, row, bindings);
+                return getChoiceValueCountMultiple(value);
+            }
+        };
+    }",method,
+"        return new RowEvaluable() {
+            @Override
+            public Object eval(Project project, int rowIndex, Row row, Properties bindings) {
+                Object value = evalRow(project, rowIndex, row, bindings);
+                return getChoiceValueCountMultiple(value);
+            }
+        }",method,
+"            @Override
+            public Object eval(Project project, int rowIndex, Row row, Properties bindings) {
+                Object value = evalRow(project, rowIndex, row, bindings);
+                return getChoiceValueCountMultiple(value);
+            }",method,
+"    public Object getChoiceValueCountMultiple(Object value) {
+        if (value != null) {
+            if (value.getClass().isArray()) {
+                Object[] choiceValues = (Object[]) value;
+                List<Integer> counts = new ArrayList<Integer>(choiceValues.length);
+                for (Object choiceValue : choiceValues) {
+                    counts.add(getChoiceValueCount(choiceValue));
+                }
+                return counts;
+            } else if (value instanceof Collection<?>) {
+                List<Object> choiceValues = ExpressionUtils.toObjectList(value);
+                List<Integer> counts = new ArrayList<Integer>(choiceValues.size());
+                int count = choiceValues.size();
+                for (int i = 0; i < count; i++) {
+                    counts.add(getChoiceValueCount(choiceValues.get(i)));
+                }
+                return counts;
+            }
+        }
+        return getChoiceValueCount(value);
+    }",method,
+"        if (value != null) {
+            if (value.getClass().isArray()) {
+                Object[] choiceValues = (Object[]) value;
+                List<Integer> counts = new ArrayList<Integer>(choiceValues.length);
+                for (Object choiceValue : choiceValues) {
+                    counts.add(getChoiceValueCount(choiceValue));
+                }
+                return counts;
+            } else if (value instanceof Collection<?>) {
+                List<Object> choiceValues = ExpressionUtils.toObjectList(value);
+                List<Integer> counts = new ArrayList<Integer>(choiceValues.size());
+                int count = choiceValues.size();
+                for (int i = 0; i < count; i++) {
+                    counts.add(getChoiceValueCount(choiceValues.get(i)));
+                }
+                return counts;
+            }
+        }",method,
+"                for (Object choiceValue : choiceValues) {
+                    counts.add(getChoiceValueCount(choiceValue));
+                }",method,
+"                for (int i = 0; i < count; i++) {
+                    counts.add(getChoiceValueCount(choiceValues.get(i)));
+                }",method,
+"    public Integer getChoiceValueCount(Object choiceValue) {
+        if (ExpressionUtils.isError(choiceValue)) {
+            return errorCount;
+        } else if (ExpressionUtils.isNonBlankData(choiceValue)) {
+            IndexedNominalFacetChoice choice = choices.get(StringUtils.toString(choiceValue));
+            return choice != null ? choice.count : 0;
+        } else {
+            return blankCount;
+        }
+    }",method,
+"import java.awt.event.*;
+class MarkerGUI {
+	Frame frame;
+	Button sendButton, connectButton;
+	TextField addrField, typeField, valueField;
+	BufferClient ftClient;
+	Color conColor;
+	public MarkerGUI(String address) {
+		ftClient = new BufferClient();
+		frame = new Frame(""Insert Markers as FieldTrip events"");
+		frame.setLayout(new GridLayout(4,1));
+		conColor = new Color(128,255,128);
+		Panel panA = new Panel();
+		Panel panB = new Panel();
+		Panel panC = new Panel();
+		Panel panD = new Panel();
+		panA.add(new Label(""Address"")); 
+		addrField = new TextField(address);
+		connectButton = new Button(""  Connect  "");
+		panA.add(addrField);
+		panA.add(connectButton);
+		connectButton.addActionListener(new ActionListener() {
+			public void actionPerformed(ActionEvent e) {
+				onConnect();
+			}
+		});
+		panB.add(new Label("" Marker type""));
+		typeField = new TextField(""Some name"", 30); 
+		panB.add(typeField);
+		panC.add(new Label(""Marker value""));
+		valueField = new TextField(""Some value"", 30); 
+		panC.add(valueField);
+		sendButton = new Button(""Insert marker"");
+		panD.add(sendButton);
+		sendButton.setEnabled(false);
+		sendButton.addActionListener(new ActionListener() {
+			public void actionPerformed(ActionEvent e) {
+				onInsert();
+			}
+		});
+		frame.add(panA);
+		frame.add(panB);
+		frame.add(panC);
+		frame.add(panD);
+		frame.setSize(400,200);
+		frame.setVisible(true);
+		frame.addWindowListener(new WindowAdapter() {
+			public void windowClosing(WindowEvent e) {
+                System.exit(0);
+			}
+		});
+	}
+	public void disconnect() {
+		try {
+			ftClient.disconnect();
+		}
+		catch (IOException e) {}
+		connectButton.setLabel(""Connect"");
+		addrField.setBackground(Color.WHITE);
+		sendButton.setEnabled(false);
+	}
+	public void connect() {
+		try {
+			if (ftClient.connect(addrField.getText())) {
+				connectButton.setLabel(""Disconnect"");
+				addrField.setBackground(conColor);
+				sendButton.setEnabled(true);
+			}
+		}
+		catch (IOException e) {
+			disconnect();
+		}
+	}
+	public void onConnect() {
+		if (ftClient.isConnected()) {
+			disconnect();
+		} else {
+			connect();
+		}
+	}
+	public void onInsert() {
+		System.out.println(""Inserting marker"");
+		System.out.println(typeField.getText());
+		System.out.println(valueField.getText());
+		try {
+			SamplesEventsCount count = ftClient.poll();
+			BufferEvent E = new BufferEvent(typeField.getText(), valueField.getText(), count.nSamples);
+			ftClient.putEvent(E);
+		}
+		catch (IOException e) {
+			disconnect();
+		}		
+	}
+	public static void main(String[] args) {
+		if (args.length>=1) {
+			new MarkerGUI(args[0]);
+		} else {
+			new MarkerGUI(""localhost:1972"");
+		}
+	}
+}",class,
+"	public MarkerGUI(String address) {
+		ftClient = new BufferClient();
+		frame = new Frame(""Insert Markers as FieldTrip events"");
+		frame.setLayout(new GridLayout(4,1));
+		conColor = new Color(128,255,128);
+		Panel panA = new Panel();
+		Panel panB = new Panel();
+		Panel panC = new Panel();
+		Panel panD = new Panel();
+		panA.add(new Label(""Address"")); 
+		addrField = new TextField(address);
+		connectButton = new Button(""  Connect  "");
+		panA.add(addrField);
+		panA.add(connectButton);
+		connectButton.addActionListener(new ActionListener() {
+			public void actionPerformed(ActionEvent e) {
+				onConnect();
+			}
+		});
+		panB.add(new Label("" Marker type""));
+		typeField = new TextField(""Some name"", 30); 
+		panB.add(typeField);
+		panC.add(new Label(""Marker value""));
+		valueField = new TextField(""Some value"", 30); 
+		panC.add(valueField);
+		sendButton = new Button(""Insert marker"");
+		panD.add(sendButton);
+		sendButton.setEnabled(false);
+		sendButton.addActionListener(new ActionListener() {
+			public void actionPerformed(ActionEvent e) {
+				onInsert();
+			}
+		});
+		frame.add(panA);
+		frame.add(panB);
+		frame.add(panC);
+		frame.add(panD);
+		frame.setSize(400,200);
+		frame.setVisible(true);
+		frame.addWindowListener(new WindowAdapter() {
+			public void windowClosing(WindowEvent e) {
+                System.exit(0);
+			}
+		});
+	}",method,

@@ -1,0 +1,1587 @@
+code_snippet,type,score
+"  @Override
+  public String toString() {
+    return myType + "":"" + myDescription + "":"" + myPath;
+  }",method,
+"  @Override
+  public boolean equals(Object o) {
+    if (this == o) return true;
+    if (o == null || getClass() != o.getClass()) return false;
+    MavenProjectProblem that = (MavenProjectProblem)o;
+    if (myDescription != null ? !myDescription.equals(that.myDescription) : that.myDescription != null) return false;
+    if (myType != that.myType) return false;
+    if (myPath != null ? !myPath.equals(that.myPath) : that.myPath != null) return false;
+    return true;
+  }",method,
+"  @Override
+  public int hashCode() {
+    int result = myPath != null ? myPath.hashCode() : 0;
+    result = 31 * result + (myDescription != null ? myDescription.hashCode() : 0);
+    result = 31 * result + (myType != null ? myType.hashCode() : 0);
+    return result;
+  }",method,
+"public class TransactionGraphCreatorTest {
+	@Test
+	public void testSplitReportToGraphs() throws Exception {
+		TransactionGraphCreator creator = new TransactionGraphCreator();
+		String xml = Files.forIO().readFrom(getClass().getResourceAsStream(""BaseTransactionReportForGraph.xml""), ""utf-8"");
+		TransactionReport report = DefaultSaxParser.parse(xml);
+		List<Graph> graphs = creator.splitReportToGraphs(report.getStartTime(), report.getDomain(), ""transaction"", report);
+		Map<String, Range> realResult = new HashMap<String, Range>();
+		Map<String, Range> excepectedResult = buildExcepetedResult();
+		buildRealResult(graphs, realResult);
+		Assert.assertEquals(excepectedResult.size(),realResult.size());
+		for (String str : realResult.keySet()) {
+			Range realRange = realResult.get(str);
+			Range exceptedRange = excepectedResult.get(str);
+			assertStr(realRange.total, exceptedRange.total);
+			assertStr(realRange.fail, exceptedRange.fail);
+			assertStr(realRange.sum, exceptedRange.sum);
+		}
+	}
+	private void assertStr(String expected, String real) {
+		String[] expecteds = expected.split("","");
+		String[] reals = real.split("","");
+		Assert.assertEquals(expecteds.length, reals.length);
+		for (int i = 0; i < expecteds.length; i++) {
+			Assert.assertEquals(Double.parseDouble(expecteds[i]), Double.parseDouble(reals[i]));
+		}
+	}
+	private Map<String, Range> buildExcepetedResult() throws Exception {
+		Map<String, Range> result = new HashMap<String, Range>();
+		String contents = Files.forIO().readFrom(getClass().getResourceAsStream(""TransactionGraphResult""), ""utf-8"");
+		String[] lines = contents.split(""\n"");
+		for (String line : lines) {
+			String[] tabs = line.split(""\t"");
+			if (tabs.length > 3) {
+				Range range = new Range();
+				range.total = tabs[1];
+				range.sum = tabs[2];
+				range.fail = tabs[3];
+				result.put(tabs[0], range);
+			}
+		}
+		return result;
+	}
+	private void buildRealResult(List<Graph> graphs, Map<String, Range> realResult) {
+		for (Graph graph : graphs) {
+			String ip = graph.getIp();
+			String summaryContent = graph.getSummaryContent();
+			String lines[] = summaryContent.split(""\n"");
+			for (String line : lines) {
+				String records[] = line.split(""\t"");
+				String type = records[0];
+				Range range = new Range();
+				range.total = records[SummaryOrder.TOTAL_COUNT.ordinal()];
+				range.fail = records[SummaryOrder.FAILURE_COUNT.ordinal()];
+				range.sum = records[SummaryOrder.SUM.ordinal()];
+				String key = ip + ':' + type;
+				realResult.put(key, range);
+			}
+			String detailContent = graph.getDetailContent();
+			lines = detailContent.split(""\n"");
+			for (String line : lines) {
+				String records[] = line.split(""\t"");
+				String type = records[0];
+				String name = records[1];
+				Range range = new Range();
+				range.total = records[DetailOrder.TOTAL_COUNT.ordinal()];
+				range.fail = records[DetailOrder.FAILURE_COUNT.ordinal()];
+				range.sum = records[DetailOrder.SUM.ordinal()];
+				realResult.put(ip + ':' + type + ':' + name, range);
+			}
+		}
+	}
+	private static class Range {
+		public String total;
+		public String fail;
+		public String sum;
+	}
+}",class,
+"	private static class Range {
+		public String total;
+		public String fail;
+		public String sum;
+	}",class,
+"	@Test
+	public void testSplitReportToGraphs() throws Exception {
+		TransactionGraphCreator creator = new TransactionGraphCreator();
+		String xml = Files.forIO().readFrom(getClass().getResourceAsStream(""BaseTransactionReportForGraph.xml""), ""utf-8"");
+		TransactionReport report = DefaultSaxParser.parse(xml);
+		List<Graph> graphs = creator.splitReportToGraphs(report.getStartTime(), report.getDomain(), ""transaction"", report);
+		Map<String, Range> realResult = new HashMap<String, Range>();
+		Map<String, Range> excepectedResult = buildExcepetedResult();
+		buildRealResult(graphs, realResult);
+		Assert.assertEquals(excepectedResult.size(),realResult.size());
+		for (String str : realResult.keySet()) {
+			Range realRange = realResult.get(str);
+			Range exceptedRange = excepectedResult.get(str);
+			assertStr(realRange.total, exceptedRange.total);
+			assertStr(realRange.fail, exceptedRange.fail);
+			assertStr(realRange.sum, exceptedRange.sum);
+		}
+	}",method,
+"	private void assertStr(String expected, String real) {
+		String[] expecteds = expected.split("","");
+		String[] reals = real.split("","");
+		Assert.assertEquals(expecteds.length, reals.length);
+		for (int i = 0; i < expecteds.length; i++) {
+			Assert.assertEquals(Double.parseDouble(expecteds[i]), Double.parseDouble(reals[i]));
+		}
+	}",method,
+"		for (int i = 0; i < expecteds.length; i++) {
+			Assert.assertEquals(Double.parseDouble(expecteds[i]), Double.parseDouble(reals[i]));
+		}",method,
+"	private Map<String, Range> buildExcepetedResult() throws Exception {
+		Map<String, Range> result = new HashMap<String, Range>();
+		String contents = Files.forIO().readFrom(getClass().getResourceAsStream(""TransactionGraphResult""), ""utf-8"");
+		String[] lines = contents.split(""\n"");
+		for (String line : lines) {
+			String[] tabs = line.split(""\t"");
+			if (tabs.length > 3) {
+				Range range = new Range();
+				range.total = tabs[1];
+				range.sum = tabs[2];
+				range.fail = tabs[3];
+				result.put(tabs[0], range);
+			}
+		}
+		return result;
+	}",method,
+"		for (String line : lines) {
+			String[] tabs = line.split(""\t"");
+			if (tabs.length > 3) {
+				Range range = new Range();
+				range.total = tabs[1];
+				range.sum = tabs[2];
+				range.fail = tabs[3];
+				result.put(tabs[0], range);
+			}
+		}",method,
+"			if (tabs.length > 3) {
+				Range range = new Range();
+				range.total = tabs[1];
+				range.sum = tabs[2];
+				range.fail = tabs[3];
+				result.put(tabs[0], range);
+			}",method,
+"	private void buildRealResult(List<Graph> graphs, Map<String, Range> realResult) {
+		for (Graph graph : graphs) {
+			String ip = graph.getIp();
+			String summaryContent = graph.getSummaryContent();
+			String lines[] = summaryContent.split(""\n"");
+			for (String line : lines) {
+				String records[] = line.split(""\t"");
+				String type = records[0];
+				Range range = new Range();
+				range.total = records[SummaryOrder.TOTAL_COUNT.ordinal()];
+				range.fail = records[SummaryOrder.FAILURE_COUNT.ordinal()];
+				range.sum = records[SummaryOrder.SUM.ordinal()];
+				String key = ip + ':' + type;
+				realResult.put(key, range);
+			}
+			String detailContent = graph.getDetailContent();
+			lines = detailContent.split(""\n"");
+			for (String line : lines) {
+				String records[] = line.split(""\t"");
+				String type = records[0];
+				String name = records[1];
+				Range range = new Range();
+				range.total = records[DetailOrder.TOTAL_COUNT.ordinal()];
+				range.fail = records[DetailOrder.FAILURE_COUNT.ordinal()];
+				range.sum = records[DetailOrder.SUM.ordinal()];
+				realResult.put(ip + ':' + type + ':' + name, range);
+			}
+		}
+	}",method,
+"		for (Graph graph : graphs) {
+			String ip = graph.getIp();
+			String summaryContent = graph.getSummaryContent();
+			String lines[] = summaryContent.split(""\n"");
+			for (String line : lines) {
+				String records[] = line.split(""\t"");
+				String type = records[0];
+				Range range = new Range();
+				range.total = records[SummaryOrder.TOTAL_COUNT.ordinal()];
+				range.fail = records[SummaryOrder.FAILURE_COUNT.ordinal()];
+				range.sum = records[SummaryOrder.SUM.ordinal()];
+				String key = ip + ':' + type;
+				realResult.put(key, range);
+			}
+			String detailContent = graph.getDetailContent();
+			lines = detailContent.split(""\n"");
+			for (String line : lines) {
+				String records[] = line.split(""\t"");
+				String type = records[0];
+				String name = records[1];
+				Range range = new Range();
+				range.total = records[DetailOrder.TOTAL_COUNT.ordinal()];
+				range.fail = records[DetailOrder.FAILURE_COUNT.ordinal()];
+				range.sum = records[DetailOrder.SUM.ordinal()];
+				realResult.put(ip + ':' + type + ':' + name, range);
+			}
+		}",method,
+"			for (String line : lines) {
+				String records[] = line.split(""\t"");
+				String type = records[0];
+				Range range = new Range();
+				range.total = records[SummaryOrder.TOTAL_COUNT.ordinal()];
+				range.fail = records[SummaryOrder.FAILURE_COUNT.ordinal()];
+				range.sum = records[SummaryOrder.SUM.ordinal()];
+				String key = ip + ':' + type;
+				realResult.put(key, range);
+			}",method,
+"			for (String line : lines) {
+				String records[] = line.split(""\t"");
+				String type = records[0];
+				String name = records[1];
+				Range range = new Range();
+				range.total = records[DetailOrder.TOTAL_COUNT.ordinal()];
+				range.fail = records[DetailOrder.FAILURE_COUNT.ordinal()];
+				range.sum = records[DetailOrder.SUM.ordinal()];
+				realResult.put(ip + ':' + type + ':' + name, range);
+			}",method,
+"public class Scopes {
+    private Scopes() {
+    }
+    public static final Scope SINGLETON = new Scope() {
+        @Override
+        public <T> Provider<T> scope(Key<T> key, final Provider<T> creator) {
+            return new Provider<T>() {
+                private volatile T instance;
+                // DCL on a volatile is safe as of Java 5, which we obviously require.
+                @Override
+                @SuppressWarnings(""DoubleCheckedLocking"")
+                public T get() {
+                    if (instance == null) {
+                        synchronized (InjectorImpl.class) {
+                            if (instance == null) {
+                                instance = creator.get();
+                            }
+                        }
+                    }
+                    return instance;
+                }
+                @Override
+                public String toString() {
+                    return String.format(Locale.ROOT, ""%s[%s]"", creator, SINGLETON);
+                }
+            };
+        }
+        @Override
+        public String toString() {
+            return ""Scopes.SINGLETON"";
+        }
+    };
+    public static final Scope NO_SCOPE = new Scope() {
+        @Override
+        public <T> Provider<T> scope(Key<T> key, Provider<T> unscoped) {
+            return unscoped;
+        }
+        @Override
+        public String toString() {
+            return ""Scopes.NO_SCOPE"";
+        }
+    };
+    static <T> InternalFactory<? extends T> scope(Key<T> key, InjectorImpl injector,
+                                                  InternalFactory<? extends T> creator, Scoping scoping) {
+        if (scoping.isNoScope()) {
+            return creator;
+        }
+        Scope scope = scoping.getScopeInstance();
+        // TODO: use diamond operator once JI-9019884 is fixed
+        Provider<T> scoped
+                = scope.scope(key, new ProviderToInternalFactoryAdapter<T>(injector, creator));
+        return new InternalFactoryToProviderAdapter<>(
+                Initializables.<Provider<? extends T>>of(scoped));
+    }
+    static Scoping makeInjectable(Scoping scoping, InjectorImpl injector, Errors errors) {
+        Class<? extends Annotation> scopeAnnotation = scoping.getScopeAnnotation();
+        if (scopeAnnotation == null) {
+            return scoping;
+        }
+        Scope scope = injector.state.getScope(scopeAnnotation);
+        if (scope != null) {
+            return Scoping.forInstance(scope);
+        }
+        errors.scopeNotFound(scopeAnnotation);
+        return Scoping.UNSCOPED;
+    }
+}",class,
+"    private Scopes() {
+    }",method,
+"        @Override
+        public <T> Provider<T> scope(Key<T> key, final Provider<T> creator) {
+            return new Provider<T>() {
+                private volatile T instance;
+                // DCL on a volatile is safe as of Java 5, which we obviously require.
+                @Override
+                @SuppressWarnings(""DoubleCheckedLocking"")
+                public T get() {
+                    if (instance == null) {
+                        synchronized (InjectorImpl.class) {
+                            if (instance == null) {
+                                instance = creator.get();
+                            }
+                        }
+                    }
+                    return instance;
+                }
+                @Override
+                public String toString() {
+                    return String.format(Locale.ROOT, ""%s[%s]"", creator, SINGLETON);
+                }
+            };
+        }",method,
+"                @Override
+                @SuppressWarnings(""DoubleCheckedLocking"")
+                public T get() {
+                    if (instance == null) {
+                        synchronized (InjectorImpl.class) {
+                            if (instance == null) {
+                                instance = creator.get();
+                            }
+                        }
+                    }
+                    return instance;
+                }",method,
+"                    if (instance == null) {
+                        synchronized (InjectorImpl.class) {
+                            if (instance == null) {
+                                instance = creator.get();
+                            }
+                        }
+                    }",method,
+"                        synchronized (InjectorImpl.class) {
+                            if (instance == null) {
+                                instance = creator.get();
+                            }
+                        }",method,
+"                            if (instance == null) {
+                                instance = creator.get();
+                            }",method,
+"                @Override
+                public String toString() {
+                    return String.format(Locale.ROOT, ""%s[%s]"", creator, SINGLETON);
+                }",method,
+"        @Override
+        public String toString() {
+            return ""Scopes.SINGLETON"";
+        }",method,
+"        @Override
+        public <T> Provider<T> scope(Key<T> key, Provider<T> unscoped) {
+            return unscoped;
+        }",method,
+"        @Override
+        public String toString() {
+            return ""Scopes.NO_SCOPE"";
+        }",method,
+"    static <T> InternalFactory<? extends T> scope(Key<T> key, InjectorImpl injector,
+                                                  InternalFactory<? extends T> creator, Scoping scoping) {
+        if (scoping.isNoScope()) {
+            return creator;
+        }
+        Scope scope = scoping.getScopeInstance();
+        // TODO: use diamond operator once JI-9019884 is fixed
+        Provider<T> scoped
+                = scope.scope(key, new ProviderToInternalFactoryAdapter<T>(injector, creator));
+        return new InternalFactoryToProviderAdapter<>(
+                Initializables.<Provider<? extends T>>of(scoped));
+    }",method,
+"    static Scoping makeInjectable(Scoping scoping, InjectorImpl injector, Errors errors) {
+        Class<? extends Annotation> scopeAnnotation = scoping.getScopeAnnotation();
+        if (scopeAnnotation == null) {
+            return scoping;
+        }
+        Scope scope = injector.state.getScope(scopeAnnotation);
+        if (scope != null) {
+            return Scoping.forInstance(scope);
+        }
+        errors.scopeNotFound(scopeAnnotation);
+        return Scoping.UNSCOPED;
+    }",method,
+"        if (scopeAnnotation == null) {
+            return scoping;
+        }",method,
+"        if (scope != null) {
+            return Scoping.forInstance(scope);
+        }",method,
+"public class EditorEmptyTextPainter {
+  public void paintEmptyText(@NotNull final JComponent splitters, @NotNull Graphics g) {
+    UISettings.setupAntialiasing(g);
+    UIUtil.TextPainter painter = createTextPainter();
+    advertiseActions(splitters, painter);
+    painter.draw(g, (width, height) -> {
+      Dimension s = splitters.getSize();
+      int w = (s.width - width) / 2;
+      int h = (int)(s.height * heightRatio());
+      return Couple.of(w, h);
+    });
+  }
+  protected double heightRatio() {
+    return 0.375; // fix vertical position @ golden ratio
+  }
+  protected void advertiseActions(@NotNull JComponent splitters, @NotNull UIUtil.TextPainter painter) {
+    appendSearchEverywhere(painter);
+    appendToolWindow(painter, ""Project View"", ToolWindowId.PROJECT_VIEW, splitters);
+    appendAction(painter, ""Go to File"", getActionShortcutText(""GotoFile""));
+    appendAction(painter, ""Recent Files"", getActionShortcutText(IdeActions.ACTION_RECENT_FILES));
+    appendAction(painter, ""Navigation Bar"", getActionShortcutText(""ShowNavBar""));
+    appendDnd(painter);
+  }
+  protected void appendDnd(@NotNull UIUtil.TextPainter painter) {
+    appendLine(painter, ""Drop files here to open"");
+  }
+  protected void appendSearchEverywhere(@NotNull UIUtil.TextPainter painter) {
+    Shortcut[] shortcuts = getActiveKeymapShortcuts(IdeActions.ACTION_SEARCH_EVERYWHERE).getShortcuts();
+    appendAction(painter, ""Search Everywhere"", shortcuts.length == 0 ?
+                                               ""Double "" + (SystemInfo.isMac ? MacKeymapUtil.SHIFT : ""Shift"") :
+                                               KeymapUtil.getShortcutsText(shortcuts));
+  }
+  protected void appendToolWindow(@NotNull UIUtil.TextPainter painter,
+                                  @NotNull String action,
+                                  @NotNull String toolWindowId,
+                                  @NotNull JComponent splitters) {
+    if (!isToolwindowVisible(splitters, toolWindowId)) {
+      String activateActionId = ActivateToolWindowAction.getActionIdForToolWindow(toolWindowId);
+      appendAction(painter, action, getActionShortcutText(activateActionId));
+    }
+  }
+  protected void appendAction(@NotNull UIUtil.TextPainter painter, @NotNull String action, @Nullable String shortcut) {
+    if (StringUtil.isEmpty(shortcut)) return;
+    appendLine(painter, action + "" "" + ""<shortcut>"" + shortcut + ""</shortcut>"");
+  }
+  protected void appendLine(@NotNull UIUtil.TextPainter painter, String line) {
+    painter.appendLine(line);
+  }
+  @NotNull
+  protected String getActionShortcutText(@NotNull String actionId) {
+    return KeymapUtil.getFirstKeyboardShortcutText(actionId);
+  }
+  protected static boolean isToolwindowVisible(@NotNull JComponent splitters, @NotNull String toolwindowId) {
+    Window frame = SwingUtilities.getWindowAncestor(splitters);
+    if (frame instanceof IdeFrameImpl) {
+      Project project = ((IdeFrameImpl)frame).getProject();
+      if (project != null) {
+        if (!project.isInitialized()) return true;
+        ToolWindow toolWindow = ToolWindowManager.getInstance(project).getToolWindow(toolwindowId);
+        return toolWindow != null && toolWindow.isVisible();
+      }
+    }
+    return false;
+  }
+  @NotNull
+  public static UIUtil.TextPainter createTextPainter() {
+    return new UIUtil.TextPainter()
+      .withLineSpacing(1.8f)
+      .withColor(new JBColor(Gray._80, Gray._160))
+      .withFont(JBUI.Fonts.label(16f));
+  }
+}",class,
+"  public void paintEmptyText(@NotNull final JComponent splitters, @NotNull Graphics g) {
+    UISettings.setupAntialiasing(g);
+    UIUtil.TextPainter painter = createTextPainter();
+    advertiseActions(splitters, painter);
+    painter.draw(g, (width, height) -> {
+      Dimension s = splitters.getSize();
+      int w = (s.width - width) / 2;
+      int h = (int)(s.height * heightRatio());
+      return Couple.of(w, h);
+    });
+  }",method,
+"  protected double heightRatio() {
+    return 0.375; // fix vertical position @ golden ratio
+  }",method,
+"  protected void advertiseActions(@NotNull JComponent splitters, @NotNull UIUtil.TextPainter painter) {
+    appendSearchEverywhere(painter);
+    appendToolWindow(painter, ""Project View"", ToolWindowId.PROJECT_VIEW, splitters);
+    appendAction(painter, ""Go to File"", getActionShortcutText(""GotoFile""));
+    appendAction(painter, ""Recent Files"", getActionShortcutText(IdeActions.ACTION_RECENT_FILES));
+    appendAction(painter, ""Navigation Bar"", getActionShortcutText(""ShowNavBar""));
+    appendDnd(painter);
+  }",method,
+"  protected void appendDnd(@NotNull UIUtil.TextPainter painter) {
+    appendLine(painter, ""Drop files here to open"");
+  }",method,
+"  protected void appendSearchEverywhere(@NotNull UIUtil.TextPainter painter) {
+    Shortcut[] shortcuts = getActiveKeymapShortcuts(IdeActions.ACTION_SEARCH_EVERYWHERE).getShortcuts();
+    appendAction(painter, ""Search Everywhere"", shortcuts.length == 0 ?
+                                               ""Double "" + (SystemInfo.isMac ? MacKeymapUtil.SHIFT : ""Shift"") :
+                                               KeymapUtil.getShortcutsText(shortcuts));
+  }",method,
+"  protected void appendToolWindow(@NotNull UIUtil.TextPainter painter,
+                                  @NotNull String action,
+                                  @NotNull String toolWindowId,
+                                  @NotNull JComponent splitters) {
+    if (!isToolwindowVisible(splitters, toolWindowId)) {
+      String activateActionId = ActivateToolWindowAction.getActionIdForToolWindow(toolWindowId);
+      appendAction(painter, action, getActionShortcutText(activateActionId));
+    }
+  }",method,
+"  protected void appendAction(@NotNull UIUtil.TextPainter painter, @NotNull String action, @Nullable String shortcut) {
+    if (StringUtil.isEmpty(shortcut)) return;
+    appendLine(painter, action + "" "" + ""<shortcut>"" + shortcut + ""</shortcut>"");
+  }",method,
+"  protected void appendLine(@NotNull UIUtil.TextPainter painter, String line) {
+    painter.appendLine(line);
+  }",method,
+"  @NotNull
+  protected String getActionShortcutText(@NotNull String actionId) {
+    return KeymapUtil.getFirstKeyboardShortcutText(actionId);
+  }",method,
+"  protected static boolean isToolwindowVisible(@NotNull JComponent splitters, @NotNull String toolwindowId) {
+    Window frame = SwingUtilities.getWindowAncestor(splitters);
+    if (frame instanceof IdeFrameImpl) {
+      Project project = ((IdeFrameImpl)frame).getProject();
+      if (project != null) {
+        if (!project.isInitialized()) return true;
+        ToolWindow toolWindow = ToolWindowManager.getInstance(project).getToolWindow(toolwindowId);
+        return toolWindow != null && toolWindow.isVisible();
+      }
+    }
+    return false;
+  }",method,
+"    if (frame instanceof IdeFrameImpl) {
+      Project project = ((IdeFrameImpl)frame).getProject();
+      if (project != null) {
+        if (!project.isInitialized()) return true;
+        ToolWindow toolWindow = ToolWindowManager.getInstance(project).getToolWindow(toolwindowId);
+        return toolWindow != null && toolWindow.isVisible();
+      }
+    }",method,
+"      if (project != null) {
+        if (!project.isInitialized()) return true;
+        ToolWindow toolWindow = ToolWindowManager.getInstance(project).getToolWindow(toolwindowId);
+        return toolWindow != null && toolWindow.isVisible();
+      }",method,
+"  @NotNull
+  public static UIUtil.TextPainter createTextPainter() {
+    return new UIUtil.TextPainter()
+      .withLineSpacing(1.8f)
+      .withColor(new JBColor(Gray._80, Gray._160))
+      .withFont(JBUI.Fonts.label(16f));
+  }",method,
+"public class App {
+  public static void main(String[] args) {
+    Converter<UserDto, User> userConverter = new UserConverter();
+    UserDto dtoUser = new UserDto(""John"", ""Doe"", true, ""whatever[at]wherever.com"");
+    User user = userConverter.convertFromDto(dtoUser);
+    System.out.println(""Entity converted from DTO:"" + user);
+    ArrayList<User> users = Lists.newArrayList(new User(""Camile"", ""Tough"", false, ""124sad""),
+        new User(""Marti"", ""Luther"", true, ""42309fd""), new User(""Kate"", ""Smith"", true, ""if0243""));
+    System.out.println(""Domain entities:"");
+    users.forEach(System.out::println);
+    System.out.println(""DTO entities converted from domain:"");
+    List<UserDto> dtoEntities = userConverter.createFromEntities(users);
+    dtoEntities.forEach(System.out::println);
+  }
+}",class,
+"  public static void main(String[] args) {
+    Converter<UserDto, User> userConverter = new UserConverter();
+    UserDto dtoUser = new UserDto(""John"", ""Doe"", true, ""whatever[at]wherever.com"");
+    User user = userConverter.convertFromDto(dtoUser);
+    System.out.println(""Entity converted from DTO:"" + user);
+    ArrayList<User> users = Lists.newArrayList(new User(""Camile"", ""Tough"", false, ""124sad""),
+        new User(""Marti"", ""Luther"", true, ""42309fd""), new User(""Kate"", ""Smith"", true, ""if0243""));
+    System.out.println(""Domain entities:"");
+    users.forEach(System.out::println);
+    System.out.println(""DTO entities converted from domain:"");
+    List<UserDto> dtoEntities = userConverter.createFromEntities(users);
+    dtoEntities.forEach(System.out::println);
+  }",method,
+"public class AttachmentRegionDecoder implements ImageRegionDecoder {
+  private static final String TAG = AttachmentRegionDecoder.class.getName();
+  private SkiaImageRegionDecoder passthrough;
+  private BitmapRegionDecoder bitmapRegionDecoder;
+  @RequiresApi(api = Build.VERSION_CODES.GINGERBREAD_MR1)
+  @Override
+  public Point init(Context context, Uri uri) throws Exception {
+    Log.w(TAG, ""Init!"");
+    if (!PartAuthority.isLocalUri(uri)) {
+      passthrough = new SkiaImageRegionDecoder();
+      return passthrough.init(context, uri);
+    }
+    MasterSecret masterSecret = KeyCachingService.getMasterSecret(context);
+    if (masterSecret == null) {
+      throw new IllegalStateException(""No master secret available..."");
+    }
+    InputStream inputStream = PartAuthority.getAttachmentStream(context, masterSecret, uri);
+    this.bitmapRegionDecoder = BitmapRegionDecoder.newInstance(inputStream, false);
+    inputStream.close();
+    return new Point(bitmapRegionDecoder.getWidth(), bitmapRegionDecoder.getHeight());
+  }
+  @RequiresApi(api = Build.VERSION_CODES.GINGERBREAD_MR1)
+  @Override
+  public Bitmap decodeRegion(Rect rect, int sampleSize) {
+    Log.w(TAG, ""Decode region: "" + rect);
+    if (passthrough != null) {
+      return passthrough.decodeRegion(rect, sampleSize);
+    }
+    synchronized(this) {
+      BitmapFactory.Options options = new BitmapFactory.Options();
+      options.inSampleSize      = sampleSize;
+      options.inPreferredConfig = Bitmap.Config.RGB_565;
+      Bitmap bitmap = bitmapRegionDecoder.decodeRegion(rect, options);
+      if (bitmap == null) {
+        throw new RuntimeException(""Skia image decoder returned null bitmap - image format may not be supported"");
+      }
+      return bitmap;
+    }
+  }
+  @RequiresApi(api = Build.VERSION_CODES.GINGERBREAD_MR1)
+  public boolean isReady() {
+    Log.w(TAG, ""isReady"");
+    return (passthrough != null && passthrough.isReady()) ||
+           (bitmapRegionDecoder != null && !bitmapRegionDecoder.isRecycled());
+  }
+  @RequiresApi(api = Build.VERSION_CODES.GINGERBREAD_MR1)
+  public void recycle() {
+    if (passthrough != null) {
+      passthrough.recycle();
+      passthrough = null;
+    } else {
+      bitmapRegionDecoder.recycle();
+    }
+  }
+}",class,
+"  @RequiresApi(api = Build.VERSION_CODES.GINGERBREAD_MR1)
+  @Override
+  public Point init(Context context, Uri uri) throws Exception {
+    Log.w(TAG, ""Init!"");
+    if (!PartAuthority.isLocalUri(uri)) {
+      passthrough = new SkiaImageRegionDecoder();
+      return passthrough.init(context, uri);
+    }
+    MasterSecret masterSecret = KeyCachingService.getMasterSecret(context);
+    if (masterSecret == null) {
+      throw new IllegalStateException(""No master secret available..."");
+    }
+    InputStream inputStream = PartAuthority.getAttachmentStream(context, masterSecret, uri);
+    this.bitmapRegionDecoder = BitmapRegionDecoder.newInstance(inputStream, false);
+    inputStream.close();
+    return new Point(bitmapRegionDecoder.getWidth(), bitmapRegionDecoder.getHeight());
+  }",method,
+"    if (masterSecret == null) {
+      throw new IllegalStateException(""No master secret available..."");
+    }",method,
+"  @RequiresApi(api = Build.VERSION_CODES.GINGERBREAD_MR1)
+  @Override
+  public Bitmap decodeRegion(Rect rect, int sampleSize) {
+    Log.w(TAG, ""Decode region: "" + rect);
+    if (passthrough != null) {
+      return passthrough.decodeRegion(rect, sampleSize);
+    }
+    synchronized(this) {
+      BitmapFactory.Options options = new BitmapFactory.Options();
+      options.inSampleSize      = sampleSize;
+      options.inPreferredConfig = Bitmap.Config.RGB_565;
+      Bitmap bitmap = bitmapRegionDecoder.decodeRegion(rect, options);
+      if (bitmap == null) {
+        throw new RuntimeException(""Skia image decoder returned null bitmap - image format may not be supported"");
+      }
+      return bitmap;
+    }
+  }",method,
+"    if (passthrough != null) {
+      return passthrough.decodeRegion(rect, sampleSize);
+    }",method,
+"    synchronized(this) {
+      BitmapFactory.Options options = new BitmapFactory.Options();
+      options.inSampleSize      = sampleSize;
+      options.inPreferredConfig = Bitmap.Config.RGB_565;
+      Bitmap bitmap = bitmapRegionDecoder.decodeRegion(rect, options);
+      if (bitmap == null) {
+        throw new RuntimeException(""Skia image decoder returned null bitmap - image format may not be supported"");
+      }
+      return bitmap;
+    }",method,
+"      if (bitmap == null) {
+        throw new RuntimeException(""Skia image decoder returned null bitmap - image format may not be supported"");
+      }",method,
+"  @RequiresApi(api = Build.VERSION_CODES.GINGERBREAD_MR1)
+  public boolean isReady() {
+    Log.w(TAG, ""isReady"");
+    return (passthrough != null && passthrough.isReady()) ||
+           (bitmapRegionDecoder != null && !bitmapRegionDecoder.isRecycled());
+  }",method,
+"  @RequiresApi(api = Build.VERSION_CODES.GINGERBREAD_MR1)
+  public void recycle() {
+    if (passthrough != null) {
+      passthrough.recycle();
+      passthrough = null;
+    } else {
+      bitmapRegionDecoder.recycle();
+    }
+  }",method,
+"    if (passthrough != null) {
+      passthrough.recycle();
+      passthrough = null;
+    }",method,
+"public class ProjectTemplateEP extends AbstractExtensionPointBean {
+  public static final ExtensionPointName<ProjectTemplateEP> EP_NAME = ExtensionPointName.create(""com.intellij.projectTemplate"");
+  @Attribute(""projectType"")
+  public String projectType;
+  @Attribute(""templatePath"")
+  public String templatePath;
+  @Attribute(""category"")
+  public boolean category;
+}",class,
+"public class DictionaryClientTest {
+  private static ColumnSchema empColumnSchema;
+  private static CarbonDimension empDimension;
+  private static ColumnSchema ageColumnSchema;
+  private static CarbonDimension ageDimension;
+  private static TableSchema tableSchema;
+  private static TableInfo tableInfo;
+  private static String storePath;
+  private static DictionaryServer server;
+  @BeforeClass public static void setUp() throws Exception {
+    // enable lru cache by setting cache size
+    CarbonProperties.getInstance()
+        .addProperty(CarbonCommonConstants.CARBON_MAX_DRIVER_LRU_CACHE_SIZE, ""10"");
+    // Create two column schemas and dimensions for the table
+    empColumnSchema = new ColumnSchema();
+    empColumnSchema.setColumnName(""empNameCol"");
+    empColumnSchema.setColumnUniqueId(""empNameCol"");
+    empColumnSchema.setDimensionColumn(true);
+    empColumnSchema.setEncodingList(Arrays.asList(Encoding.DICTIONARY));
+    empDimension = new CarbonDimension(empColumnSchema, 0, 0, 0, 0, 0);
+    ageColumnSchema = new ColumnSchema();
+    ageColumnSchema.setColumnName(""ageNameCol"");
+    ageColumnSchema.setColumnUniqueId(""ageNameCol"");
+    ageColumnSchema.setDimensionColumn(true);
+    ageColumnSchema.setEncodingList(Arrays.asList(Encoding.DICTIONARY));
+    ageDimension = new CarbonDimension(ageColumnSchema, 0, 0, 0, 0, 0);
+    // Create a Table
+    tableSchema = new TableSchema();
+    tableSchema.setTableName(""TestTable"");
+    tableSchema.setTableId(""1"");
+    tableSchema.setListOfColumns(Arrays.asList(empColumnSchema, ageColumnSchema));
+    CarbonMetadata metadata = CarbonMetadata.getInstance();
+    tableInfo = new TableInfo();
+    tableInfo.setFactTable(tableSchema);
+    tableInfo.setTableUniqueName(""TestTable"");
+    tableInfo.setDatabaseName(""test"");
+    storePath = System.getProperty(""java.io.tmpdir"") + ""/tmp"";
+    tableInfo.setStorePath(storePath);
+    CarbonTable carbonTable = CarbonTable.buildFromTableInfo(tableInfo);
+    // Add the created table to metadata
+    metadata.addCarbonTable(carbonTable);
+    // Start the server for testing the client
+    server = DictionaryServer.getInstance(5678, carbonTable);
+  }
+  @Test public void testClient() throws Exception {
+    DictionaryClient client = new DictionaryClient();
+    client.startClient(""localhost"", 5678);
+    Thread.sleep(1000);
+    // Create a dictionary key
+    DictionaryMessage empKey = new DictionaryMessage();
+    empKey.setColumnName(empColumnSchema.getColumnName());
+    empKey.setData(""FirstKey"");
+    // Test dictionary initialization call
+    int count = 2;
+    // Test dictionary generation
+    for (; count <= 10000; count++) {
+      empKey.setType(DictionaryMessageType.DICT_GENERATION);
+      empKey.setTableUniqueId(""1"");
+      empKey.setData(""FirstKey"" + count);
+      DictionaryMessage val = client.getDictionary(empKey);
+      Assert.assertEquals(count, val.getDictionaryValue());
+    }
+    // Test dictionary generation with big messages
+    for (; count <= 10010; count++) {
+      empKey.setType(DictionaryMessageType.DICT_GENERATION);
+      empKey.setData(
+          ""FirstKeyFirstKeyFirstKeyFirstKeyFirstKeyFirstKeyFirstKeyFirstKeyFirstKeyFirstKey""
+              + ""FirstKeyFirstKeyFirstKeyFirstKeyFirstKeyFirstKeyFirstKeyFirstKeyFirstKeyFirstKey""
+              + ""FirstKeyFirstKeyFirstKeyFirstKeyFirstKeyFirstKeyFirstKeyFirstKeyFirstKeyFirstKey""
+              + ""FirstKeyFirstKeyFirstKeyFirstKeyFirstKeyFirstKeyFirstKeyFirstKeyFirstKeyFirstKey""
+              + ""FirstKeyFirstKeyFirstKeyFirstKeyFirstKeyFirstKeyFirstKeyFirstKeyFirstKeyFirstKey""
+              + ""FirstKeyFirstKeyFirstKeyFirstKeyFirstKeyFirstKeyFirstKeyFirstKeyFirstKeyFirstKey""
+              + ""FirstKeyFirstKeyFirstKeyFirstKeyFirstKeyFirstKeyFirstKeyFirstKeyFirstKeyFirstKey""
+              + ""FirstKeyFirstKeyFirstKeyFirstKeyFirstKeyFirstKeyFirstKeyFirstKeyFirstKeyFirstKey""
+              + ""FirstKeyFirstKeyFirstKeyFirstKeyFirstKeyFirstKeyFirstKeyFirstKeyFirstKeyFirstKey""
+              + ""FirstKeyFirstKeyFirstKeyFirstKeyFirstKeyFirstKeyFirstKeyFirstKeyFirstKeyFirstKey""
+              + ""FirstKeyFirstKeyFirstKeyFirstKeyFirstKeyFirstKeyFirstKeyFirstKeyFirstKeyFirstKey""
+              + ""FirstKeyFirstKeyFirstKeyFirstKeyFirstKeyFirstKeyFirstKeyFirstKeyFirstKeyFirstKey""
+              + ""FirstKeyFirstKeyFirstKeyFirstKeyFirstKeyFirstKeyFirstKeyFirstKeyFirstKeyFirstKey""
+              + ""FirstKeyFirstKeyFirstKeyFirstKeyFirstKeyFirstKeyFirstKeyFirstKeyFirstKeyFirstKey""
+              + ""FirstKeyFirstKeyFirstKeyFirstKeyFirstKeyFirstKeyFirstKeyFirstKeyFirstKeyFirstKey""
+              + ""FirstKeyFirstKeyFirstKeyFirstKeyFirstKeyFirstKeyFirstKeyFirstKeyFirstKeyFirstKey""
+              + ""FirstKeyFirstKeyFirstKeyFirstKeyFirstKeyFirstKeyFirstKeyFirstKeyFirstKeyFirstKey""
+              + ""FirstKeyFirstKeyFirstKeyFirstKeyFirstKeyFirstKeyFirstKeyFirstKeyFirstKeyFirstKey""
+              + ""FirstKeyFirstKeyFirstKeyFirstKeyFirstKeyFirstKeyFirstKeyFirstKeyFirstKeyFirstKey""
+              + ""FirstKeyFirstKeyFirstKeyFirstKeyFirstKeyFirstKeyFirstKeyFirstKeyFirstKeyFirstKey""
+              + ""FirstKeyFirstKeyFirstKeyFirstKeyFirstKeyFirstKeyFirstKeyFirstKeyFirstKeyFirstKey""
+              + ""FirstKeyFirstKeyFirstKeyFirstKeyFirstKeyFirstKeyFirstKeyFirstKeyFirstKeyFirstKey""
+              + ""FirstKeyFirstKeyFirstKeyFirstKeyFirstKeyFirstKeyFirstKeyFirstKeyFirstKeyFirstKey""
+              + ""FirstKeyFirstKeyFirstKeyFirstKeyFirstKeyFirstKeyFirstKeyFirstKeyFirstKeyFirstKey""
+              + count);
+      DictionaryMessage val = client.getDictionary(empKey);
+      Assert.assertEquals(count, val.getDictionaryValue());
+    }
+    // Test size function
+    empKey.setType(DictionaryMessageType.SIZE);
+    DictionaryMessage val = client.getDictionary(empKey);
+    Assert.assertEquals(10010, val.getDictionaryValue());
+    client.shutDown();
+    // Shutdown the server
+  }
+  @Test public void testToCheckIfCorrectTimeOutExceptionMessageIsThrown() {
+    new MockUp<LinkedBlockingQueue<DictionaryMessage>>() {
+      @SuppressWarnings(""unused"")
+      @Mock
+      DictionaryMessage poll(long timeout, TimeUnit unit) throws InterruptedException {
+        return null;
+      }
+    };
+    try {
+      testClient();
+      Assert.fail();
+    } catch (Exception e) {
+      Assert.assertFalse(e.getMessage().contains(""data""));
+    }
+  }
+  @After public void tearDown() {
+    // Cleanup created files
+    CarbonMetadata.getInstance().removeTable(tableInfo.getTableUniqueName());
+    cleanUpDirectory(new File(storePath));
+  }
+  private static void cleanUpDirectory(File path) {
+    File[] files = path.listFiles();
+    if (null == files) {
+      return;
+    }
+    for (File file : files) {
+      if (file.isDirectory()) cleanUpDirectory(file);
+      else file.delete();
+    }
+    path.delete();
+  }
+}",class,
+"    for (; count <= 10000; count++) {
+      empKey.setType(DictionaryMessageType.DICT_GENERATION);
+      empKey.setTableUniqueId(""1"");
+      empKey.setData(""FirstKey"" + count);
+      DictionaryMessage val = client.getDictionary(empKey);
+      Assert.assertEquals(count, val.getDictionaryValue());
+    }",method,
+"    for (; count <= 10010; count++) {
+      empKey.setType(DictionaryMessageType.DICT_GENERATION);
+      empKey.setData(
+          ""FirstKeyFirstKeyFirstKeyFirstKeyFirstKeyFirstKeyFirstKeyFirstKeyFirstKeyFirstKey""
+              + ""FirstKeyFirstKeyFirstKeyFirstKeyFirstKeyFirstKeyFirstKeyFirstKeyFirstKeyFirstKey""
+              + ""FirstKeyFirstKeyFirstKeyFirstKeyFirstKeyFirstKeyFirstKeyFirstKeyFirstKeyFirstKey""
+              + ""FirstKeyFirstKeyFirstKeyFirstKeyFirstKeyFirstKeyFirstKeyFirstKeyFirstKeyFirstKey""
+              + ""FirstKeyFirstKeyFirstKeyFirstKeyFirstKeyFirstKeyFirstKeyFirstKeyFirstKeyFirstKey""
+              + ""FirstKeyFirstKeyFirstKeyFirstKeyFirstKeyFirstKeyFirstKeyFirstKeyFirstKeyFirstKey""
+              + ""FirstKeyFirstKeyFirstKeyFirstKeyFirstKeyFirstKeyFirstKeyFirstKeyFirstKeyFirstKey""
+              + ""FirstKeyFirstKeyFirstKeyFirstKeyFirstKeyFirstKeyFirstKeyFirstKeyFirstKeyFirstKey""
+              + ""FirstKeyFirstKeyFirstKeyFirstKeyFirstKeyFirstKeyFirstKeyFirstKeyFirstKeyFirstKey""
+              + ""FirstKeyFirstKeyFirstKeyFirstKeyFirstKeyFirstKeyFirstKeyFirstKeyFirstKeyFirstKey""
+              + ""FirstKeyFirstKeyFirstKeyFirstKeyFirstKeyFirstKeyFirstKeyFirstKeyFirstKeyFirstKey""
+              + ""FirstKeyFirstKeyFirstKeyFirstKeyFirstKeyFirstKeyFirstKeyFirstKeyFirstKeyFirstKey""
+              + ""FirstKeyFirstKeyFirstKeyFirstKeyFirstKeyFirstKeyFirstKeyFirstKeyFirstKeyFirstKey""
+              + ""FirstKeyFirstKeyFirstKeyFirstKeyFirstKeyFirstKeyFirstKeyFirstKeyFirstKeyFirstKey""
+              + ""FirstKeyFirstKeyFirstKeyFirstKeyFirstKeyFirstKeyFirstKeyFirstKeyFirstKeyFirstKey""
+              + ""FirstKeyFirstKeyFirstKeyFirstKeyFirstKeyFirstKeyFirstKeyFirstKeyFirstKeyFirstKey""
+              + ""FirstKeyFirstKeyFirstKeyFirstKeyFirstKeyFirstKeyFirstKeyFirstKeyFirstKeyFirstKey""
+              + ""FirstKeyFirstKeyFirstKeyFirstKeyFirstKeyFirstKeyFirstKeyFirstKeyFirstKeyFirstKey""
+              + ""FirstKeyFirstKeyFirstKeyFirstKeyFirstKeyFirstKeyFirstKeyFirstKeyFirstKeyFirstKey""
+              + ""FirstKeyFirstKeyFirstKeyFirstKeyFirstKeyFirstKeyFirstKeyFirstKeyFirstKeyFirstKey""
+              + ""FirstKeyFirstKeyFirstKeyFirstKeyFirstKeyFirstKeyFirstKeyFirstKeyFirstKeyFirstKey""
+              + ""FirstKeyFirstKeyFirstKeyFirstKeyFirstKeyFirstKeyFirstKeyFirstKeyFirstKeyFirstKey""
+              + ""FirstKeyFirstKeyFirstKeyFirstKeyFirstKeyFirstKeyFirstKeyFirstKeyFirstKeyFirstKey""
+              + ""FirstKeyFirstKeyFirstKeyFirstKeyFirstKeyFirstKeyFirstKeyFirstKeyFirstKeyFirstKey""
+              + count);
+      DictionaryMessage val = client.getDictionary(empKey);
+      Assert.assertEquals(count, val.getDictionaryValue());
+    }",method,
+"      @SuppressWarnings(""unused"")
+      @Mock
+      DictionaryMessage poll(long timeout, TimeUnit unit) throws InterruptedException {
+        return null;
+      }",method,
+"  private static void cleanUpDirectory(File path) {
+    File[] files = path.listFiles();
+    if (null == files) {
+      return;
+    }
+    for (File file : files) {
+      if (file.isDirectory()) cleanUpDirectory(file);
+      else file.delete();
+    }
+    path.delete();
+  }",method,
+"    if (null == files) {
+      return;
+    }",method,
+"    for (File file : files) {
+      if (file.isDirectory()) cleanUpDirectory(file);
+      else file.delete();
+    }",method,
+"public class SvnFormatWorker extends Task.Backgroundable {
+  private static final Logger LOG = Logger.getInstance(SvnFormatWorker.class);
+  private List<Throwable> myExceptions;
+  private final Project myProject;
+  @NotNull private final WorkingCopyFormat myNewFormat;
+  private final List<WCInfo> myWcInfos;
+  private List<LocalChangeList> myBeforeChangeLists;
+  private final SvnVcs myVcs;
+  public SvnFormatWorker(final Project project, @NotNull final WorkingCopyFormat newFormat, final List<WCInfo> wcInfos) {
+    super(project, SvnBundle.message(""action.change.wcopy.format.task.title""), false, DEAF);
+    myProject = project;
+    myNewFormat = newFormat;
+    myExceptions = new ArrayList<>();
+    myWcInfos = wcInfos;
+    myVcs = SvnVcs.getInstance(myProject);
+  }
+  public SvnFormatWorker(final Project project, @NotNull final WorkingCopyFormat newFormat, final WCInfo wcInfo) {
+    this(project, newFormat, Collections.singletonList(wcInfo));
+  }
+  public boolean haveStuffToConvert() {
+    return ! myWcInfos.isEmpty();
+  }
+  @Override
+  public void onCancel() {
+    onSuccess();
+  }
+  @Override
+  public void onSuccess() {
+    if (myProject.isDisposed()) {
+      return;
+    }
+    if (! myExceptions.isEmpty()) {
+      final List<String> messages = new ArrayList<>();
+      for (Throwable exception : myExceptions) {
+        messages.add(exception.getMessage());
+      }
+      AbstractVcsHelper.getInstance(myProject)
+          .showErrors(Collections.singletonList(new VcsException(messages)), SvnBundle.message(""action.change.wcopy.format.task.title""));
+    }
+  }
+  public void run(@NotNull final ProgressIndicator indicator) {
+    ProjectLevelVcsManager.getInstanceChecked(myProject).startBackgroundVcsOperation();
+    indicator.setIndeterminate(true);
+    final boolean supportsChangelists = myNewFormat.supportsChangelists();
+    if (supportsChangelists) {
+      myBeforeChangeLists = ChangeListManager.getInstance(myProject).getChangeListsCopy();
+    }
+    try {
+      for (WCInfo wcInfo : myWcInfos) {
+        File path = new File(wcInfo.getPath());
+        if (! wcInfo.isIsWcRoot()) {
+          path = SvnUtil.getWorkingCopyRoot(path);
+        }
+        try {
+          String cleanupMessage = SvnBundle.message(""action.Subversion.cleanup.progress.text"", path.getAbsolutePath());
+          String upgradeMessage =
+            SvnBundle.message(""action.change.wcopy.format.task.progress.text"", path.getAbsolutePath(), wcInfo.getFormat(), myNewFormat);
+          ProgressTracker handler = createUpgradeHandler(indicator, cleanupMessage, upgradeMessage);
+          getFactory(path, myNewFormat).createUpgradeClient().upgrade(path, myNewFormat, handler);
+        } catch (Throwable e) {
+          myExceptions.add(e);
+        }
+      }
+    }
+    finally {
+      ProjectLevelVcsManager.getInstance(myProject).stopBackgroundVcsOperation();
+      // to map to native
+      if (supportsChangelists) {
+        SvnVcs.getInstance(myProject).processChangeLists(myBeforeChangeLists);
+      }
+      BackgroundTaskUtil.syncPublisher(SvnVcs.WC_CONVERTED).run();
+    }
+  }
+  @NotNull
+  private ClientFactory getFactory(@NotNull File path, @NotNull WorkingCopyFormat format) throws VcsException {
+    ClientFactory factory = myVcs.getFactory(path);
+    ClientFactory otherFactory = myVcs.getOtherFactory(factory);
+    List<WorkingCopyFormat> factoryFormats = factory.createUpgradeClient().getSupportedFormats();
+    List<WorkingCopyFormat> otherFactoryFormats = getOtherFactoryFormats(otherFactory);
+    return factoryFormats.contains(format) || !otherFactoryFormats.contains(format) ? factory : otherFactory;
+  }
+  public static List<WorkingCopyFormat> getOtherFactoryFormats(@NotNull ClientFactory otherFactory) {
+    List<WorkingCopyFormat> result;
+    try {
+      result = otherFactory.createUpgradeClient().getSupportedFormats();
+    }
+    catch (VcsException e) {
+      result = ContainerUtil.newArrayList();
+      LOG.info(""Failed to get upgrade formats from other factory"", e);
+    }
+    return result;
+  }
+  private static ProgressTracker createUpgradeHandler(@NotNull final ProgressIndicator indicator,
+                                                       @NotNull final String cleanupMessage,
+                                                       @NotNull final String upgradeMessage) {
+    return new ProgressTracker() {
+      @Override
+      public void consume(ProgressEvent event) {
+        if (event.getFile() != null) {
+          if (EventAction.UPGRADED_PATH.equals(event.getAction())) {
+            indicator.setText2(""Upgraded path "" + VcsUtil.getPathForProgressPresentation(event.getFile()));
+          }
+          // fake event indicating cleanup start
+          if (EventAction.UPDATE_STARTED.equals(event.getAction())) {
+            indicator.setText(cleanupMessage);
+          }
+          // fake event indicating upgrade start
+          if (EventAction.UPDATE_COMPLETED.equals(event.getAction())) {
+            indicator.setText(upgradeMessage);
+          }
+        }
+      }
+      @Override
+      public void checkCancelled() {
+        indicator.checkCanceled();
+      }
+    };
+  }
+}",class,
+"  public SvnFormatWorker(final Project project, @NotNull final WorkingCopyFormat newFormat, final List<WCInfo> wcInfos) {
+    super(project, SvnBundle.message(""action.change.wcopy.format.task.title""), false, DEAF);
+    myProject = project;
+    myNewFormat = newFormat;
+    myExceptions = new ArrayList<>();
+    myWcInfos = wcInfos;
+    myVcs = SvnVcs.getInstance(myProject);
+  }",method,
+"  public SvnFormatWorker(final Project project, @NotNull final WorkingCopyFormat newFormat, final WCInfo wcInfo) {
+    this(project, newFormat, Collections.singletonList(wcInfo));
+  }",method,
+"  public boolean haveStuffToConvert() {
+    return ! myWcInfos.isEmpty();
+  }",method,
+"  @Override
+  public void onCancel() {
+    onSuccess();
+  }",method,
+"  @Override
+  public void onSuccess() {
+    if (myProject.isDisposed()) {
+      return;
+    }
+    if (! myExceptions.isEmpty()) {
+      final List<String> messages = new ArrayList<>();
+      for (Throwable exception : myExceptions) {
+        messages.add(exception.getMessage());
+      }
+      AbstractVcsHelper.getInstance(myProject)
+          .showErrors(Collections.singletonList(new VcsException(messages)), SvnBundle.message(""action.change.wcopy.format.task.title""));
+    }
+  }",method,
+"      for (Throwable exception : myExceptions) {
+        messages.add(exception.getMessage());
+      }",method,
+"  public void run(@NotNull final ProgressIndicator indicator) {
+    ProjectLevelVcsManager.getInstanceChecked(myProject).startBackgroundVcsOperation();
+    indicator.setIndeterminate(true);
+    final boolean supportsChangelists = myNewFormat.supportsChangelists();
+    if (supportsChangelists) {
+      myBeforeChangeLists = ChangeListManager.getInstance(myProject).getChangeListsCopy();
+    }
+    try {
+      for (WCInfo wcInfo : myWcInfos) {
+        File path = new File(wcInfo.getPath());
+        if (! wcInfo.isIsWcRoot()) {
+          path = SvnUtil.getWorkingCopyRoot(path);
+        }
+        try {
+          String cleanupMessage = SvnBundle.message(""action.Subversion.cleanup.progress.text"", path.getAbsolutePath());
+          String upgradeMessage =
+            SvnBundle.message(""action.change.wcopy.format.task.progress.text"", path.getAbsolutePath(), wcInfo.getFormat(), myNewFormat);
+          ProgressTracker handler = createUpgradeHandler(indicator, cleanupMessage, upgradeMessage);
+          getFactory(path, myNewFormat).createUpgradeClient().upgrade(path, myNewFormat, handler);
+        } catch (Throwable e) {
+          myExceptions.add(e);
+        }
+      }
+    }
+    finally {
+      ProjectLevelVcsManager.getInstance(myProject).stopBackgroundVcsOperation();
+      // to map to native
+      if (supportsChangelists) {
+        SvnVcs.getInstance(myProject).processChangeLists(myBeforeChangeLists);
+      }
+      BackgroundTaskUtil.syncPublisher(SvnVcs.WC_CONVERTED).run();
+    }
+  }",method,
+"    if (supportsChangelists) {
+      myBeforeChangeLists = ChangeListManager.getInstance(myProject).getChangeListsCopy();
+    }",method,
+"      for (WCInfo wcInfo : myWcInfos) {
+        File path = new File(wcInfo.getPath());
+        if (! wcInfo.isIsWcRoot()) {
+          path = SvnUtil.getWorkingCopyRoot(path);
+        }
+        try {
+          String cleanupMessage = SvnBundle.message(""action.Subversion.cleanup.progress.text"", path.getAbsolutePath());
+          String upgradeMessage =
+            SvnBundle.message(""action.change.wcopy.format.task.progress.text"", path.getAbsolutePath(), wcInfo.getFormat(), myNewFormat);
+          ProgressTracker handler = createUpgradeHandler(indicator, cleanupMessage, upgradeMessage);
+          getFactory(path, myNewFormat).createUpgradeClient().upgrade(path, myNewFormat, handler);
+        } catch (Throwable e) {
+          myExceptions.add(e);
+        }
+      }",method,
+"      if (supportsChangelists) {
+        SvnVcs.getInstance(myProject).processChangeLists(myBeforeChangeLists);
+      }",method,
+"  @NotNull
+  private ClientFactory getFactory(@NotNull File path, @NotNull WorkingCopyFormat format) throws VcsException {
+    ClientFactory factory = myVcs.getFactory(path);
+    ClientFactory otherFactory = myVcs.getOtherFactory(factory);
+    List<WorkingCopyFormat> factoryFormats = factory.createUpgradeClient().getSupportedFormats();
+    List<WorkingCopyFormat> otherFactoryFormats = getOtherFactoryFormats(otherFactory);
+    return factoryFormats.contains(format) || !otherFactoryFormats.contains(format) ? factory : otherFactory;
+  }",method,
+"  public static List<WorkingCopyFormat> getOtherFactoryFormats(@NotNull ClientFactory otherFactory) {
+    List<WorkingCopyFormat> result;
+    try {
+      result = otherFactory.createUpgradeClient().getSupportedFormats();
+    }
+    catch (VcsException e) {
+      result = ContainerUtil.newArrayList();
+      LOG.info(""Failed to get upgrade formats from other factory"", e);
+    }
+    return result;
+  }",method,
+"    catch (VcsException e) {
+      result = ContainerUtil.newArrayList();
+      LOG.info(""Failed to get upgrade formats from other factory"", e);
+    }",method,
+"  private static ProgressTracker createUpgradeHandler(@NotNull final ProgressIndicator indicator,
+                                                       @NotNull final String cleanupMessage,
+                                                       @NotNull final String upgradeMessage) {
+    return new ProgressTracker() {
+      @Override
+      public void consume(ProgressEvent event) {
+        if (event.getFile() != null) {
+          if (EventAction.UPGRADED_PATH.equals(event.getAction())) {
+            indicator.setText2(""Upgraded path "" + VcsUtil.getPathForProgressPresentation(event.getFile()));
+          }
+          // fake event indicating cleanup start
+          if (EventAction.UPDATE_STARTED.equals(event.getAction())) {
+            indicator.setText(cleanupMessage);
+          }
+          // fake event indicating upgrade start
+          if (EventAction.UPDATE_COMPLETED.equals(event.getAction())) {
+            indicator.setText(upgradeMessage);
+          }
+        }
+      }
+      @Override
+      public void checkCancelled() {
+        indicator.checkCanceled();
+      }
+    };
+  }",method,
+"    return new ProgressTracker() {
+      @Override
+      public void consume(ProgressEvent event) {
+        if (event.getFile() != null) {
+          if (EventAction.UPGRADED_PATH.equals(event.getAction())) {
+            indicator.setText2(""Upgraded path "" + VcsUtil.getPathForProgressPresentation(event.getFile()));
+          }
+          // fake event indicating cleanup start
+          if (EventAction.UPDATE_STARTED.equals(event.getAction())) {
+            indicator.setText(cleanupMessage);
+          }
+          // fake event indicating upgrade start
+          if (EventAction.UPDATE_COMPLETED.equals(event.getAction())) {
+            indicator.setText(upgradeMessage);
+          }
+        }
+      }
+      @Override
+      public void checkCancelled() {
+        indicator.checkCanceled();
+      }
+    }",method,
+"      @Override
+      public void consume(ProgressEvent event) {
+        if (event.getFile() != null) {
+          if (EventAction.UPGRADED_PATH.equals(event.getAction())) {
+            indicator.setText2(""Upgraded path "" + VcsUtil.getPathForProgressPresentation(event.getFile()));
+          }
+          // fake event indicating cleanup start
+          if (EventAction.UPDATE_STARTED.equals(event.getAction())) {
+            indicator.setText(cleanupMessage);
+          }
+          // fake event indicating upgrade start
+          if (EventAction.UPDATE_COMPLETED.equals(event.getAction())) {
+            indicator.setText(upgradeMessage);
+          }
+        }
+      }",method,
+"      @Override
+      public void checkCancelled() {
+        indicator.checkCanceled();
+      }",method,
+"public class ZkConnectionProvider implements Provider<ZkConnection> {
+    private final static Logger log = getLogger(ZkConnectionProvider.class);
+    // WARN: should this string change, also replace it in HostService
+    public static final String DIRECTORY_REACTOR_TAG = ""directoryReactor"";
+    @BindingAnnotation
+    @Retention(RetentionPolicy.RUNTIME)
+    public @interface BGP_ZK_INFRA { }
+    @Inject
+    MidonetBackendConfig config;
+    @Inject(optional = true)
+    @Named(DIRECTORY_REACTOR_TAG)
+    Reactor reactorLoop;
+    @Inject(optional = true)
+    ZkConnectionAwareWatcher watcher;
+    @Override
+    public ZkConnection get() {
+        if (watcher == null) {
+            log.info(""ZK connection provider will not use a conn. watcher"");
+        }
+        return get(watcher, reactorLoop);
+    }
+    public ZkConnection get(ZkConnectionAwareWatcher watcher,
+                            Reactor reactor) {
+        try {
+            ZkConnection zkConnection = new ZkConnection(
+                    config.hosts(), config.sessionTimeout(), watcher, reactor);
+            if (watcher != null) {
+                watcher.setZkConnection(zkConnection);
+            }
+            zkConnection.open();
+            return zkConnection;
+        } catch (Exception e) {
+            throw new RuntimeException(e);
+        }
+    }
+}",class,
+"    @Override
+    public ZkConnection get() {
+        if (watcher == null) {
+            log.info(""ZK connection provider will not use a conn. watcher"");
+        }
+        return get(watcher, reactorLoop);
+    }",method,
+"        if (watcher == null) {
+            log.info(""ZK connection provider will not use a conn. watcher"");
+        }",method,
+"    public ZkConnection get(ZkConnectionAwareWatcher watcher,
+                            Reactor reactor) {
+        try {
+            ZkConnection zkConnection = new ZkConnection(
+                    config.hosts(), config.sessionTimeout(), watcher, reactor);
+            if (watcher != null) {
+                watcher.setZkConnection(zkConnection);
+            }
+            zkConnection.open();
+            return zkConnection;
+        } catch (Exception e) {
+            throw new RuntimeException(e);
+        }
+    }",method,
+"            if (watcher != null) {
+                watcher.setZkConnection(zkConnection);
+            }",method,
+"public class StudyStepicFormatTest {
+  @Test
+  public void fromFirstVersion() throws IOException {
+    doStepOptionsCreationTest(""1.json"");
+  }
+  @Test
+  public void fromSecondVersion() throws IOException {
+    doStepOptionsCreationTest(""2.json"");
+  }
+  @Test
+  public void testWithSubtasks() throws IOException {
+    StepicWrappers.StepOptions stepOptions = doStepOptionsCreationTest(""3.json"");
+    assertEquals(1, stepOptions.lastSubtaskIndex);
+  }
+  private static StepicWrappers.StepOptions doStepOptionsCreationTest(String fileName) throws IOException {
+    String responseString =
+      FileUtil.loadFile(new File(getTestDataPath(), fileName));
+    StepicWrappers.StepSource stepSource =
+      EduStepicClient.deserializeStepicResponse(StepicWrappers.StepContainer.class, responseString).steps.get(0);
+    StepicWrappers.StepOptions options = stepSource.block.options;
+    List<TaskFile> files = options.files;
+    assertTrue(""Wrong number of task files"", files.size() == 1);
+    List<AnswerPlaceholder> placeholders = files.get(0).getAnswerPlaceholders();
+    assertTrue(""Wrong number of placeholders"", placeholders.size() == 1);
+    Map<Integer, AnswerPlaceholderSubtaskInfo> infos = placeholders.get(0).getSubtaskInfos();
+    assertNotNull(infos);
+    assertEquals(Collections.singletonList(""Type your name here.""), infos.get(0).getHints());
+    assertEquals(""Liana"", infos.get(0).getPossibleAnswer());
+    return options;
+  }
+  @Test
+  public void testAvailableCourses() throws IOException {
+    String responseString = FileUtil.loadFile(new File(getTestDataPath(), ""courses.json""));
+    StepicWrappers.CoursesContainer container =
+      EduStepicClient.deserializeStepicResponse(StepicWrappers.CoursesContainer.class, responseString);
+    assertNotNull(container.courses);
+    assertTrue(""Incorrect number of courses"", container.courses.size() == 4);
+  }
+  @Test
+  public void placeholderSerialization() throws IOException {
+    final Gson gson = new GsonBuilder().setPrettyPrinting().excludeFieldsWithoutExposeAnnotation().
+      registerTypeAdapter(AnswerPlaceholder.class, new StudySerializationUtils.Json.StepicAnswerPlaceholderAdapter()).create();
+    AnswerPlaceholder answerPlaceholder = new AnswerPlaceholder();
+    answerPlaceholder.setOffset(1);
+    answerPlaceholder.setLength(10);
+    AnswerPlaceholderSubtaskInfo info1 = createSubtaskInfo(""type here"", ""answer1"", ContainerUtil.list(""hint 1"", ""hint 2""));
+    AnswerPlaceholderSubtaskInfo info2 = createSubtaskInfo(""type here1"", ""answer2"", ContainerUtil.list(""hint 11"", ""hint 22""));
+    answerPlaceholder.setSubtaskInfos(ContainerUtil.newHashMap(ContainerUtil.list(0, 1), ContainerUtil.list(info1, info2)));
+    final String placeholderSerialization = gson.toJson(answerPlaceholder);
+    String expected = FileUtil.loadFile(new File(getTestDataPath(), ""placeholder.json""));
+    JsonObject object = new JsonParser().parse(expected).getAsJsonObject();
+    StudySerializationUtils.Json.removeIndexFromSubtaskInfos(object);
+    assertEquals(gson.toJson(gson.fromJson(object, AnswerPlaceholder.class)), placeholderSerialization);
+  }
+  private static AnswerPlaceholderSubtaskInfo createSubtaskInfo(String placeholderText, String possibleAnswer, List<String> hints) {
+    AnswerPlaceholderSubtaskInfo info = new AnswerPlaceholderSubtaskInfo();
+    info.setPlaceholderText(placeholderText);
+    info.setPossibleAnswer(possibleAnswer);
+    info.setHints(hints);
+    info.setNeedInsertText(true);
+    return info;
+  }
+  @NotNull
+  private static String getTestDataPath() {
+    return FileUtil.join(""testData/stepic"");
+  }
+}",class,
+"  @Test
+  public void fromFirstVersion() throws IOException {
+    doStepOptionsCreationTest(""1.json"");
+  }",method,
+"  @Test
+  public void fromSecondVersion() throws IOException {
+    doStepOptionsCreationTest(""2.json"");
+  }",method,
+"  @Test
+  public void testWithSubtasks() throws IOException {
+    StepicWrappers.StepOptions stepOptions = doStepOptionsCreationTest(""3.json"");
+    assertEquals(1, stepOptions.lastSubtaskIndex);
+  }",method,
+"  private static StepicWrappers.StepOptions doStepOptionsCreationTest(String fileName) throws IOException {
+    String responseString =
+      FileUtil.loadFile(new File(getTestDataPath(), fileName));
+    StepicWrappers.StepSource stepSource =
+      EduStepicClient.deserializeStepicResponse(StepicWrappers.StepContainer.class, responseString).steps.get(0);
+    StepicWrappers.StepOptions options = stepSource.block.options;
+    List<TaskFile> files = options.files;
+    assertTrue(""Wrong number of task files"", files.size() == 1);
+    List<AnswerPlaceholder> placeholders = files.get(0).getAnswerPlaceholders();
+    assertTrue(""Wrong number of placeholders"", placeholders.size() == 1);
+    Map<Integer, AnswerPlaceholderSubtaskInfo> infos = placeholders.get(0).getSubtaskInfos();
+    assertNotNull(infos);
+    assertEquals(Collections.singletonList(""Type your name here.""), infos.get(0).getHints());
+    assertEquals(""Liana"", infos.get(0).getPossibleAnswer());
+    return options;
+  }",method,
+"  @Test
+  public void testAvailableCourses() throws IOException {
+    String responseString = FileUtil.loadFile(new File(getTestDataPath(), ""courses.json""));
+    StepicWrappers.CoursesContainer container =
+      EduStepicClient.deserializeStepicResponse(StepicWrappers.CoursesContainer.class, responseString);
+    assertNotNull(container.courses);
+    assertTrue(""Incorrect number of courses"", container.courses.size() == 4);
+  }",method,
+"  @Test
+  public void placeholderSerialization() throws IOException {
+    final Gson gson = new GsonBuilder().setPrettyPrinting().excludeFieldsWithoutExposeAnnotation().
+      registerTypeAdapter(AnswerPlaceholder.class, new StudySerializationUtils.Json.StepicAnswerPlaceholderAdapter()).create();
+    AnswerPlaceholder answerPlaceholder = new AnswerPlaceholder();
+    answerPlaceholder.setOffset(1);
+    answerPlaceholder.setLength(10);
+    AnswerPlaceholderSubtaskInfo info1 = createSubtaskInfo(""type here"", ""answer1"", ContainerUtil.list(""hint 1"", ""hint 2""));
+    AnswerPlaceholderSubtaskInfo info2 = createSubtaskInfo(""type here1"", ""answer2"", ContainerUtil.list(""hint 11"", ""hint 22""));
+    answerPlaceholder.setSubtaskInfos(ContainerUtil.newHashMap(ContainerUtil.list(0, 1), ContainerUtil.list(info1, info2)));
+    final String placeholderSerialization = gson.toJson(answerPlaceholder);
+    String expected = FileUtil.loadFile(new File(getTestDataPath(), ""placeholder.json""));
+    JsonObject object = new JsonParser().parse(expected).getAsJsonObject();
+    StudySerializationUtils.Json.removeIndexFromSubtaskInfos(object);
+    assertEquals(gson.toJson(gson.fromJson(object, AnswerPlaceholder.class)), placeholderSerialization);
+  }",method,
+"  private static AnswerPlaceholderSubtaskInfo createSubtaskInfo(String placeholderText, String possibleAnswer, List<String> hints) {
+    AnswerPlaceholderSubtaskInfo info = new AnswerPlaceholderSubtaskInfo();
+    info.setPlaceholderText(placeholderText);
+    info.setPossibleAnswer(possibleAnswer);
+    info.setHints(hints);
+    info.setNeedInsertText(true);
+    return info;
+  }",method,
+"  @NotNull
+  private static String getTestDataPath() {
+    return FileUtil.join(""testData/stepic"");
+  }",method,
+"public class Line {
+  private static final Pattern WORD = Pattern.compile(""([\\dA-F]{2})\\s([\\dA-F]{2})"");
+  private static final Pattern BYTE = Pattern.compile(""([\\dA-F]{2})"");
+  private class Relocation {
+    private int _mode;
+    private int _offset;
+    // area index(!S) or symbol index(S)
+    private int _symbol;
+  }
+  private Area _area;
+  private int _address;
+  private List<Short> _bytes;
+  private List<Relocation> _relocs;
+  public Line(Objfile object, String tline, String rline) {
+    _relocs = new ArrayList<Relocation>(16);
+    _bytes = new ArrayList<Short>(16);
+    rline = rline.substring(8);
+    int areaindex = getWord(rline);
+    _area = object.getArea(areaindex);
+    if (_area == null) {
+      throw new IllegalArgumentException(""no such area:"" + areaindex);
+    }
+    _area.addLine(this);
+    tline = tline.substring(2);
+    _address = getWord(tline);
+    tline = tline.substring(3);
+    while (true) {
+      if (tline.length() < 3) {
+        break;
+      }
+      tline = tline.substring(3);
+      _bytes.add(getByte(tline));
+    }
+    // relocation line
+    while (true) {
+      if (rline.length() < 6) {
+        break;
+      }
+      Relocation reloc = new Relocation();
+      _relocs.add(reloc);
+      rline = rline.substring(6);
+      reloc._mode = getByte(rline);
+      rline = rline.substring(3);
+      reloc._offset = getByte(rline) - 2;
+      rline = rline.substring(3);
+      reloc._symbol = getWord(rline);
+    }
+  }
+  private int getWord(String line) {
+    Matcher m = WORD.matcher(line);
+    if (!m.find()) {
+      return -1;
+    }
+    String hexstr = m.group(2) + m.group(1);
+    return Integer.parseInt(hexstr, 16);
+  }
+  private short getByte(String line) {
+    Matcher m = BYTE.matcher(line);
+    if (!m.find()) {
+      return -1;
+    }
+    String hexstr = m.group(1);
+    return Short.parseShort(hexstr, 16);
+  }
+  public void fill(Objfile object, byte[] image) {
+    int address = _address + _area.getOffset();
+    for (Relocation reloc : _relocs) {
+      int target = 0;
+      byte mode = 0;  // Ext/Int MSB/LSB Byte/Word 
+      RelocationInformation info = new RelocationInformation();
+      if ((reloc._mode & 2) > 0) {
+        // external
+        Symbol symbol = object.getSymbol(reloc._symbol);
+        target = symbol.calcOffset();
+        System.out.printf(""%s %04X=>%04X\n"", symbol, symbol.getOffset(), target);
+        if (symbol.isAbsolute()) {
+          mode |= 0x80;
+        }
+      } else {
+        // internal
+        Area area = object.getArea(reloc._symbol);
+        int offset = area.getOffset();
+        short source = (short) ((_bytes.get(reloc._offset + 1) << 8) + _bytes.get(reloc._offset)); 
+        target = (short) (source + offset);
+        // TODO: save relocation information
+        System.out.printf(""%s:%04X=>%04X\n"", area, source,  target);
+      }
+      info.setAddress(address);
+      if ((reloc._mode & 1) > 0) {
+        // byte mode
+        if ((reloc._mode & 128) > 0) {
+          // MSB
+          mode |= 0x60;
+          _bytes.set(reloc._offset, (short) (target >> 8));
+          _bytes.set(reloc._offset + 1, (short) -1);
+        } else {
+          // LSB
+          mode |= 0x20;
+          _bytes.set(reloc._offset, (short) -1);
+          _bytes.set(reloc._offset, (short) (target & 0xff));
+        }
+        address++;
+      } else {
+        // word mode
+        _bytes.set(reloc._offset, (short) (target & 0xff));
+        _bytes.set(reloc._offset + 1, (short) (target >> 8));
+        address += 2;
+      }
+      info.setMode(mode);
+      info.setData(target);
+      object.getLinker().addRelocation(info);
+    }
+    address = _address + _area.getOffset();
+    for (int data : _bytes) {
+      if (data >= 0) {
+        image[address++] = (byte) data;
+      }
+    }
+  }
+}",class,
+"  private class Relocation {
+    private int _mode;
+    private int _offset;
+    // area index(!S) or symbol index(S)
+    private int _symbol;
+  }",class,
+"  public Line(Objfile object, String tline, String rline) {
+    _relocs = new ArrayList<Relocation>(16);
+    _bytes = new ArrayList<Short>(16);
+    rline = rline.substring(8);
+    int areaindex = getWord(rline);
+    _area = object.getArea(areaindex);
+    if (_area == null) {
+      throw new IllegalArgumentException(""no such area:"" + areaindex);
+    }
+    _area.addLine(this);
+    tline = tline.substring(2);
+    _address = getWord(tline);
+    tline = tline.substring(3);
+    while (true) {
+      if (tline.length() < 3) {
+        break;
+      }
+      tline = tline.substring(3);
+      _bytes.add(getByte(tline));
+    }
+    // relocation line
+    while (true) {
+      if (rline.length() < 6) {
+        break;
+      }
+      Relocation reloc = new Relocation();
+      _relocs.add(reloc);
+      rline = rline.substring(6);
+      reloc._mode = getByte(rline);
+      rline = rline.substring(3);
+      reloc._offset = getByte(rline) - 2;
+      rline = rline.substring(3);
+      reloc._symbol = getWord(rline);
+    }
+  }",method,
+"    if (_area == null) {
+      throw new IllegalArgumentException(""no such area:"" + areaindex);
+    }",method,
+"    while (true) {
+      if (tline.length() < 3) {
+        break;
+      }
+      tline = tline.substring(3);
+      _bytes.add(getByte(tline));
+    }",method,

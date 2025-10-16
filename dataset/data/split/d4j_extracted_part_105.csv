@@ -1,0 +1,1307 @@
+code_snippet,type,score
+"	@Override
+	public String getDefaultFieldSummary(String fieldName) {
+		if(fieldName.equals(USER_NAME)) {
+			return parent.getString(R.string.w_common_phone_number_desc) + "" (without +)"";
+		}
+		return super.getDefaultFieldSummary(fieldName);
+	}",method,
+"	public SipProfile buildAccount(SipProfile account) {
+		account = super.buildAccount(account);
+		account.proxies = new String[] {""sip:sip.traveltele.net""};
+		return account;
+	}",method,
+"public abstract class CookieDecoder {
+    private final InternalLogger logger = InternalLoggerFactory.getInstance(getClass());
+    private final boolean strict;
+    protected CookieDecoder(boolean strict) {
+        this.strict = strict;
+    }
+    protected DefaultCookie initCookie(String header, int nameBegin, int nameEnd, int valueBegin, int valueEnd) {
+        if (nameBegin == -1 || nameBegin == nameEnd) {
+            logger.debug(""Skipping cookie with null name"");
+            return null;
+        }
+        if (valueBegin == -1) {
+            logger.debug(""Skipping cookie with null value"");
+            return null;
+        }
+        CharSequence wrappedValue = CharBuffer.wrap(header, valueBegin, valueEnd);
+        CharSequence unwrappedValue = unwrapValue(wrappedValue);
+        if (unwrappedValue == null) {
+            logger.debug(""Skipping cookie because starting quotes are not properly balanced in '{}'"",
+                    wrappedValue);
+            return null;
+        }
+        final String name = header.substring(nameBegin, nameEnd);
+        int invalidOctetPos;
+        if (strict && (invalidOctetPos = firstInvalidCookieNameOctet(name)) >= 0) {
+            if (logger.isDebugEnabled()) {
+                logger.debug(""Skipping cookie because name '{}' contains invalid char '{}'"",
+                        name, name.charAt(invalidOctetPos));
+            }
+            return null;
+        }
+        final boolean wrap = unwrappedValue.length() != valueEnd - valueBegin;
+        if (strict && (invalidOctetPos = firstInvalidCookieValueOctet(unwrappedValue)) >= 0) {
+            if (logger.isDebugEnabled()) {
+                logger.debug(""Skipping cookie because value '{}' contains invalid char '{}'"",
+                        unwrappedValue, unwrappedValue.charAt(invalidOctetPos));
+            }
+            return null;
+        }
+        DefaultCookie cookie = new DefaultCookie(name, unwrappedValue.toString());
+        cookie.setWrap(wrap);
+        return cookie;
+    }
+}",class,
+"    protected CookieDecoder(boolean strict) {
+        this.strict = strict;
+    }",method,
+"    protected DefaultCookie initCookie(String header, int nameBegin, int nameEnd, int valueBegin, int valueEnd) {
+        if (nameBegin == -1 || nameBegin == nameEnd) {
+            logger.debug(""Skipping cookie with null name"");
+            return null;
+        }
+        if (valueBegin == -1) {
+            logger.debug(""Skipping cookie with null value"");
+            return null;
+        }
+        CharSequence wrappedValue = CharBuffer.wrap(header, valueBegin, valueEnd);
+        CharSequence unwrappedValue = unwrapValue(wrappedValue);
+        if (unwrappedValue == null) {
+            logger.debug(""Skipping cookie because starting quotes are not properly balanced in '{}'"",
+                    wrappedValue);
+            return null;
+        }
+        final String name = header.substring(nameBegin, nameEnd);
+        int invalidOctetPos;
+        if (strict && (invalidOctetPos = firstInvalidCookieNameOctet(name)) >= 0) {
+            if (logger.isDebugEnabled()) {
+                logger.debug(""Skipping cookie because name '{}' contains invalid char '{}'"",
+                        name, name.charAt(invalidOctetPos));
+            }
+            return null;
+        }
+        final boolean wrap = unwrappedValue.length() != valueEnd - valueBegin;
+        if (strict && (invalidOctetPos = firstInvalidCookieValueOctet(unwrappedValue)) >= 0) {
+            if (logger.isDebugEnabled()) {
+                logger.debug(""Skipping cookie because value '{}' contains invalid char '{}'"",
+                        unwrappedValue, unwrappedValue.charAt(invalidOctetPos));
+            }
+            return null;
+        }
+        DefaultCookie cookie = new DefaultCookie(name, unwrappedValue.toString());
+        cookie.setWrap(wrap);
+        return cookie;
+    }",method,
+"        if (nameBegin == -1 || nameBegin == nameEnd) {
+            logger.debug(""Skipping cookie with null name"");
+            return null;
+        }",method,
+"        if (valueBegin == -1) {
+            logger.debug(""Skipping cookie with null value"");
+            return null;
+        }",method,
+"        if (unwrappedValue == null) {
+            logger.debug(""Skipping cookie because starting quotes are not properly balanced in '{}'"",
+                    wrappedValue);
+            return null;
+        }",method,
+"public class RnnToCnnPreProcessor implements InputPreProcessor {
+    private int inputHeight;
+    private int inputWidth;
+    private int numChannels;
+    @Getter(AccessLevel.NONE)
+    @Setter(AccessLevel.NONE)
+    private int product;
+    public RnnToCnnPreProcessor(@JsonProperty(""inputHeight"") int inputHeight,
+                    @JsonProperty(""inputWidth"") int inputWidth, @JsonProperty(""numChannels"") int numChannels) {
+        this.inputHeight = inputHeight;
+        this.inputWidth = inputWidth;
+        this.numChannels = numChannels;
+        this.product = inputHeight * inputWidth * numChannels;
+    }
+    @Override
+    public INDArray preProcess(INDArray input, int miniBatchSize) {
+        if (input.ordering() == 'c')
+            input = input.dup('f');
+        //Input: 3d activations (RNN)
+        //Output: 4d activations (CNN)
+        int[] shape = input.shape();
+        INDArray in2d;
+        if (shape[0] == 1) {
+            //Edge case: miniBatchSize = 1
+            in2d = input.tensorAlongDimension(0, 1, 2).permutei(1, 0);
+        } else if (shape[2] == 1) {
+            //Edge case: time series length = 1
+            in2d = input.tensorAlongDimension(0, 1, 0);
+        } else {
+            INDArray permuted = input.permute(0, 2, 1); //Permute, so we get correct order after reshaping
+            in2d = permuted.reshape('f', shape[0] * shape[2], shape[1]);
+        }
+        return in2d.dup('c').reshape('c', shape[0] * shape[2], numChannels, inputHeight, inputWidth);
+    }
+    @Override
+    public INDArray backprop(INDArray output, int miniBatchSize) {
+        //Input: 4d epsilons (CNN)
+        //Output: 3d epsilons (RNN)
+        if (output.ordering() == 'f')
+            output = output.dup('c');
+        int[] shape = output.shape();
+        //First: reshape 4d to 2d
+        INDArray twod = output.reshape('c', output.size(0), ArrayUtil.prod(output.shape()) / output.size(0));
+        //Second: reshape 2d to 4d
+        INDArray reshaped = twod.dup('f').reshape('f', miniBatchSize, shape[0] / miniBatchSize, product);
+        return reshaped.permute(0, 2, 1);
+    }
+    @Override
+    public RnnToCnnPreProcessor clone() {
+        return new RnnToCnnPreProcessor(inputHeight, inputWidth, numChannels);
+    }
+    @Override
+    public InputType getOutputType(InputType inputType) {
+        if (inputType == null || inputType.getType() != InputType.Type.RNN) {
+            throw new IllegalStateException(""Invalid input type: Expected input of type RNN, got "" + inputType);
+        }
+        InputType.InputTypeRecurrent c = (InputType.InputTypeRecurrent) inputType;
+        int expSize = inputHeight * inputWidth * numChannels;
+        if (c.getSize() != expSize) {
+            throw new IllegalStateException(""Invalid input: expected RNN input of size "" + expSize + "" = (d=""
+                            + numChannels + "" * w="" + inputWidth + "" * h="" + inputHeight + ""), got "" + inputType);
+        }
+        return InputType.convolutional(inputHeight, inputWidth, numChannels);
+    }
+    @Override
+    public Pair<INDArray, MaskState> feedForwardMaskArray(INDArray maskArray, MaskState currentMaskState,
+                    int minibatchSize) {
+        //Assume mask array is 2d for time series (1 value per time step)
+        if (maskArray == null) {
+            return new Pair<>(maskArray, currentMaskState);
+        } else if (maskArray.rank() == 2) {
+            //Need to reshape mask array from [minibatch,timeSeriesLength] to [minibatch*timeSeriesLength, 1]
+            return new Pair<>(TimeSeriesUtils.reshapeTimeSeriesMaskToVector(maskArray), currentMaskState);
+        } else {
+            throw new IllegalArgumentException(""Received mask array of rank "" + maskArray.rank()
+                            + ""; expected rank 2 mask array. Mask array shape: "" + Arrays.toString(maskArray.shape()));
+        }
+    }
+}",class,
+"    @Override
+    public INDArray preProcess(INDArray input, int miniBatchSize) {
+        if (input.ordering() == 'c')
+            input = input.dup('f');
+        //Input: 3d activations (RNN)
+        //Output: 4d activations (CNN)
+        int[] shape = input.shape();
+        INDArray in2d;
+        if (shape[0] == 1) {
+            //Edge case: miniBatchSize = 1
+            in2d = input.tensorAlongDimension(0, 1, 2).permutei(1, 0);
+        } else if (shape[2] == 1) {
+            //Edge case: time series length = 1
+            in2d = input.tensorAlongDimension(0, 1, 0);
+        } else {
+            INDArray permuted = input.permute(0, 2, 1); //Permute, so we get correct order after reshaping
+            in2d = permuted.reshape('f', shape[0] * shape[2], shape[1]);
+        }
+        return in2d.dup('c').reshape('c', shape[0] * shape[2], numChannels, inputHeight, inputWidth);
+    }",method,
+"        if (shape[0] == 1) {
+            //Edge case: miniBatchSize = 1
+            in2d = input.tensorAlongDimension(0, 1, 2).permutei(1, 0);
+        }",method,
+"    @Override
+    public INDArray backprop(INDArray output, int miniBatchSize) {
+        //Input: 4d epsilons (CNN)
+        //Output: 3d epsilons (RNN)
+        if (output.ordering() == 'f')
+            output = output.dup('c');
+        int[] shape = output.shape();
+        //First: reshape 4d to 2d
+        INDArray twod = output.reshape('c', output.size(0), ArrayUtil.prod(output.shape()) / output.size(0));
+        //Second: reshape 2d to 4d
+        INDArray reshaped = twod.dup('f').reshape('f', miniBatchSize, shape[0] / miniBatchSize, product);
+        return reshaped.permute(0, 2, 1);
+    }",method,
+"    @Override
+    public RnnToCnnPreProcessor clone() {
+        return new RnnToCnnPreProcessor(inputHeight, inputWidth, numChannels);
+    }",method,
+"    @Override
+    public InputType getOutputType(InputType inputType) {
+        if (inputType == null || inputType.getType() != InputType.Type.RNN) {
+            throw new IllegalStateException(""Invalid input type: Expected input of type RNN, got "" + inputType);
+        }
+        InputType.InputTypeRecurrent c = (InputType.InputTypeRecurrent) inputType;
+        int expSize = inputHeight * inputWidth * numChannels;
+        if (c.getSize() != expSize) {
+            throw new IllegalStateException(""Invalid input: expected RNN input of size "" + expSize + "" = (d=""
+                            + numChannels + "" * w="" + inputWidth + "" * h="" + inputHeight + ""), got "" + inputType);
+        }
+        return InputType.convolutional(inputHeight, inputWidth, numChannels);
+    }",method,
+"    @Override
+    public Pair<INDArray, MaskState> feedForwardMaskArray(INDArray maskArray, MaskState currentMaskState,
+                    int minibatchSize) {
+        //Assume mask array is 2d for time series (1 value per time step)
+        if (maskArray == null) {
+            return new Pair<>(maskArray, currentMaskState);
+        } else if (maskArray.rank() == 2) {
+            //Need to reshape mask array from [minibatch,timeSeriesLength] to [minibatch*timeSeriesLength, 1]
+            return new Pair<>(TimeSeriesUtils.reshapeTimeSeriesMaskToVector(maskArray), currentMaskState);
+        } else {
+            throw new IllegalArgumentException(""Received mask array of rank "" + maskArray.rank()
+                            + ""; expected rank 2 mask array. Mask array shape: "" + Arrays.toString(maskArray.shape()));
+        }
+    }",method,
+"        if (maskArray == null) {
+            return new Pair<>(maskArray, currentMaskState);
+        }",method,
+"public class AndroidTestingRunner extends BlockJUnit4ClassRunner {
+    private final long mTimeout;
+    private final Class<?> mKlass;
+    public AndroidTestingRunner(Class<?> klass) throws InitializationError {
+        super(klass);
+        mKlass = klass;
+        // Can't seem to get reference to timeout parameter from here, so set default to 10 mins.
+        mTimeout = 10 * 60 * 1000;
+    }
+    @Override
+    protected Statement methodInvoker(FrameworkMethod method, Object test) {
+        method = looperWrap(method, test, method);
+        final Statement statement = super.methodInvoker(method, test);
+        return shouldRunOnUiThread(method) ? new UiThreadStatement(statement, true) : statement;
+    }
+    protected Statement withBefores(FrameworkMethod method, Object target, Statement statement) {
+        List befores = looperWrap(method, target,
+                this.getTestClass().getAnnotatedMethods(Before.class));
+        return befores.isEmpty() ? statement : new RunBefores(method, statement,
+                befores, target);
+    }
+    protected Statement withAfters(FrameworkMethod method, Object target, Statement statement) {
+        List afters = looperWrap(method, target,
+                this.getTestClass().getAnnotatedMethods(After.class));
+        return afters.isEmpty() ? statement : new RunAfters(method, statement, afters,
+                target);
+    }
+    protected Statement withPotentialTimeout(FrameworkMethod method, Object test, Statement next) {
+        long timeout = this.getTimeout(method.getAnnotation(Test.class));
+        if (timeout <= 0L && mTimeout > 0L) {
+            timeout = mTimeout;
+        }
+        return timeout <= 0L ? next : new FailOnTimeout(next, timeout);
+    }
+    private long getTimeout(Test annotation) {
+        return annotation == null ? 0L : annotation.timeout();
+    }
+    protected List<FrameworkMethod> looperWrap(FrameworkMethod method, Object test,
+            List<FrameworkMethod> methods) {
+        RunWithLooper annotation = method.getAnnotation(RunWithLooper.class);
+        if (annotation == null) annotation = mKlass.getAnnotation(RunWithLooper.class);
+        if (annotation != null) {
+            methods = new ArrayList<>(methods);
+            for (int i = 0; i < methods.size(); i++) {
+                methods.set(i, LooperFrameworkMethod.get(methods.get(i),
+                        annotation.setAsMainLooper(), test));
+            }
+        }
+        return methods;
+    }
+    protected FrameworkMethod looperWrap(FrameworkMethod method, Object test,
+            FrameworkMethod base) {
+        RunWithLooper annotation = method.getAnnotation(RunWithLooper.class);
+        if (annotation == null) annotation = mKlass.getAnnotation(RunWithLooper.class);
+        if (annotation != null) {
+            return LooperFrameworkMethod.get(base, annotation.setAsMainLooper(), test);
+        }
+        return base;
+    }
+    public boolean shouldRunOnUiThread(FrameworkMethod method) {
+        if (mKlass.getAnnotation(UiThreadTest.class) != null) {
+            return true;
+        } else {
+            return UiThreadStatement.shouldRunOnUiThread(method);
+        }
+    }
+}",class,
+"    public AndroidTestingRunner(Class<?> klass) throws InitializationError {
+        super(klass);
+        mKlass = klass;
+        // Can't seem to get reference to timeout parameter from here, so set default to 10 mins.
+        mTimeout = 10 * 60 * 1000;
+    }",method,
+"    @Override
+    protected Statement methodInvoker(FrameworkMethod method, Object test) {
+        method = looperWrap(method, test, method);
+        final Statement statement = super.methodInvoker(method, test);
+        return shouldRunOnUiThread(method) ? new UiThreadStatement(statement, true) : statement;
+    }",method,
+"    protected Statement withBefores(FrameworkMethod method, Object target, Statement statement) {
+        List befores = looperWrap(method, target,
+                this.getTestClass().getAnnotatedMethods(Before.class));
+        return befores.isEmpty() ? statement : new RunBefores(method, statement,
+                befores, target);
+    }",method,
+"    protected Statement withAfters(FrameworkMethod method, Object target, Statement statement) {
+        List afters = looperWrap(method, target,
+                this.getTestClass().getAnnotatedMethods(After.class));
+        return afters.isEmpty() ? statement : new RunAfters(method, statement, afters,
+                target);
+    }",method,
+"    protected Statement withPotentialTimeout(FrameworkMethod method, Object test, Statement next) {
+        long timeout = this.getTimeout(method.getAnnotation(Test.class));
+        if (timeout <= 0L && mTimeout > 0L) {
+            timeout = mTimeout;
+        }
+        return timeout <= 0L ? next : new FailOnTimeout(next, timeout);
+    }",method,
+"        if (timeout <= 0L && mTimeout > 0L) {
+            timeout = mTimeout;
+        }",method,
+"    private long getTimeout(Test annotation) {
+        return annotation == null ? 0L : annotation.timeout();
+    }",method,
+"    protected List<FrameworkMethod> looperWrap(FrameworkMethod method, Object test,
+            List<FrameworkMethod> methods) {
+        RunWithLooper annotation = method.getAnnotation(RunWithLooper.class);
+        if (annotation == null) annotation = mKlass.getAnnotation(RunWithLooper.class);
+        if (annotation != null) {
+            methods = new ArrayList<>(methods);
+            for (int i = 0; i < methods.size(); i++) {
+                methods.set(i, LooperFrameworkMethod.get(methods.get(i),
+                        annotation.setAsMainLooper(), test));
+            }
+        }
+        return methods;
+    }",method,
+"        if (annotation != null) {
+            methods = new ArrayList<>(methods);
+            for (int i = 0; i < methods.size(); i++) {
+                methods.set(i, LooperFrameworkMethod.get(methods.get(i),
+                        annotation.setAsMainLooper(), test));
+            }
+        }",method,
+"    protected FrameworkMethod looperWrap(FrameworkMethod method, Object test,
+            FrameworkMethod base) {
+        RunWithLooper annotation = method.getAnnotation(RunWithLooper.class);
+        if (annotation == null) annotation = mKlass.getAnnotation(RunWithLooper.class);
+        if (annotation != null) {
+            return LooperFrameworkMethod.get(base, annotation.setAsMainLooper(), test);
+        }
+        return base;
+    }",method,
+"        if (annotation != null) {
+            return LooperFrameworkMethod.get(base, annotation.setAsMainLooper(), test);
+        }",method,
+"    public boolean shouldRunOnUiThread(FrameworkMethod method) {
+        if (mKlass.getAnnotation(UiThreadTest.class) != null) {
+            return true;
+        } else {
+            return UiThreadStatement.shouldRunOnUiThread(method);
+        }
+    }",method,
+"import javax.tools.JavaFileObject;
+class JavacTurbineJavaCompiler extends JavaCompiler implements AutoCloseable {
+  @Nullable private final StrictJavaDepsPlugin strictJavaDeps;
+  private final JavacTransitive transitive;
+  public JavacTurbineJavaCompiler(
+      Context context, @Nullable StrictJavaDepsPlugin strictJavaDeps, JavacTransitive transitive) {
+    super(context);
+    this.strictJavaDeps = strictJavaDeps;
+    if (strictJavaDeps != null) {
+      strictJavaDeps.init(context, Log.instance(context), this);
+    }
+    this.transitive = transitive;
+  }
+  @Override
+  protected JCCompilationUnit parse(JavaFileObject javaFileObject, CharSequence charSequence) {
+    JCCompilationUnit result = super.parse(javaFileObject, charSequence);
+    TreePruner.prune(context, result);
+    return result;
+  }
+  @Override
+  public Env<AttrContext> attribute(Env<AttrContext> env) {
+    if (compileStates.isDone(env, CompileState.ATTR)) {
+      return env;
+    }
+    Env<AttrContext> result = super.attribute(env);
+    if (strictJavaDeps != null) {
+      strictJavaDeps.postAttribute(result);
+    }
+    transitive.postAttribute(result);
+    return result;
+  }
+  @Override
+  protected void flow(Env<AttrContext> env, Queue<Env<AttrContext>> results) {
+    // skip FLOW (as if -relax was enabled, except -relax is broken for JDK >= 8)
+    if (!compileStates.isDone(env, CompileState.FLOW)) {
+      compileStates.put(env, CompileState.FLOW);
+    }
+    results.add(env);
+  }
+  @Override
+  public void close() {
+    if (strictJavaDeps != null) {
+      strictJavaDeps.finish();
+    }
+    transitive.finish();
+  }
+  public static void preRegister(
+      Context context, @Nullable final StrictJavaDepsPlugin sjd, JavacTransitive transitive) {
+    context.put(
+        compilerKey,
+        new Context.Factory<JavaCompiler>() {
+          @Override
+          public JavaCompiler make(Context c) {
+            return new JavacTurbineJavaCompiler(c, sjd, transitive);
+          }
+        });
+  }
+}",class,
+"  public JavacTurbineJavaCompiler(
+      Context context, @Nullable StrictJavaDepsPlugin strictJavaDeps, JavacTransitive transitive) {
+    super(context);
+    this.strictJavaDeps = strictJavaDeps;
+    if (strictJavaDeps != null) {
+      strictJavaDeps.init(context, Log.instance(context), this);
+    }
+    this.transitive = transitive;
+  }",method,
+"    if (strictJavaDeps != null) {
+      strictJavaDeps.init(context, Log.instance(context), this);
+    }",method,
+"  @Override
+  protected JCCompilationUnit parse(JavaFileObject javaFileObject, CharSequence charSequence) {
+    JCCompilationUnit result = super.parse(javaFileObject, charSequence);
+    TreePruner.prune(context, result);
+    return result;
+  }",method,
+"  @Override
+  public Env<AttrContext> attribute(Env<AttrContext> env) {
+    if (compileStates.isDone(env, CompileState.ATTR)) {
+      return env;
+    }
+    Env<AttrContext> result = super.attribute(env);
+    if (strictJavaDeps != null) {
+      strictJavaDeps.postAttribute(result);
+    }
+    transitive.postAttribute(result);
+    return result;
+  }",method,
+"    if (strictJavaDeps != null) {
+      strictJavaDeps.postAttribute(result);
+    }",method,
+"  @Override
+  protected void flow(Env<AttrContext> env, Queue<Env<AttrContext>> results) {
+    // skip FLOW (as if -relax was enabled, except -relax is broken for JDK >= 8)
+    if (!compileStates.isDone(env, CompileState.FLOW)) {
+      compileStates.put(env, CompileState.FLOW);
+    }
+    results.add(env);
+  }",method,
+"  @Override
+  public void close() {
+    if (strictJavaDeps != null) {
+      strictJavaDeps.finish();
+    }
+    transitive.finish();
+  }",method,
+"    if (strictJavaDeps != null) {
+      strictJavaDeps.finish();
+    }",method,
+"  public static void preRegister(
+      Context context, @Nullable final StrictJavaDepsPlugin sjd, JavacTransitive transitive) {
+    context.put(
+        compilerKey,
+        new Context.Factory<JavaCompiler>() {
+          @Override
+          public JavaCompiler make(Context c) {
+            return new JavacTurbineJavaCompiler(c, sjd, transitive);
+          }
+        });
+  }",method,
+"    context.put(
+        compilerKey,
+        new Context.Factory<JavaCompiler>() {
+          @Override
+          public JavaCompiler make(Context c) {
+            return new JavacTurbineJavaCompiler(c, sjd, transitive);
+          }
+        }",method,
+"          @Override
+          public JavaCompiler make(Context c) {
+            return new JavacTurbineJavaCompiler(c, sjd, transitive);
+          }",method,
+"public class ProjectionActivity extends Activity {
+    public static class ProjectedView extends View {
+        private final Paint mPaint = new Paint();
+        private final RectF mRectF = new RectF();
+        public ProjectedView(Context context) {
+            this(context, null);
+        }
+        public ProjectedView(Context context, AttributeSet attrs) {
+            this(context, attrs, 0);
+        }
+        public ProjectedView(Context context, AttributeSet attrs, int defStyleAttr) {
+            super(context, attrs, defStyleAttr);
+            setOnClickListener(new OnClickListener() {
+                boolean toggle = false;
+                @Override
+                public void onClick(View v) {
+                    toggle = !toggle;
+                    setProject(toggle);
+                }
+            });
+        }
+        private void setProject(boolean value) {
+            RenderNode renderNode = updateDisplayListIfDirty();
+            if (renderNode != null) {
+                renderNode.setProjectBackwards(value);
+            }
+            // NOTE: we can't invalidate ProjectedView for the redraw because:
+            // 1) the view won't preserve displayList properties that it doesn't know about
+            // 2) the damage rect won't be big enough
+            // instead, twiddle properties on the container, so that enough area of the screen is
+            // redrawn without rerecording any DisplayLists.
+            container.setTranslationX(100f);
+            container.setTranslationX(0.0f);
+        }
+        @Override
+        protected void onDraw(Canvas canvas) {
+            // TODO: set projection flag
+            final int w = getWidth();
+            final int h = getHeight();
+            mRectF.set(0, -h, w, 2 * h);
+            mPaint.setAntiAlias(true);
+            mPaint.setColor(0x5f00ff00);
+            canvas.drawOval(mRectF, mPaint);
+        }
+    }
+    static View container;
+    @Override
+    protected void onCreate(Bundle savedInstanceState) {
+        super.onCreate(savedInstanceState);
+        setContentView(R.layout.projection);
+        container = findViewById(R.id.container);
+    }
+}",class,
+"    public static class ProjectedView extends View {
+        private final Paint mPaint = new Paint();
+        private final RectF mRectF = new RectF();
+        public ProjectedView(Context context) {
+            this(context, null);
+        }
+        public ProjectedView(Context context, AttributeSet attrs) {
+            this(context, attrs, 0);
+        }
+        public ProjectedView(Context context, AttributeSet attrs, int defStyleAttr) {
+            super(context, attrs, defStyleAttr);
+            setOnClickListener(new OnClickListener() {
+                boolean toggle = false;
+                @Override
+                public void onClick(View v) {
+                    toggle = !toggle;
+                    setProject(toggle);
+                }
+            });
+        }
+        private void setProject(boolean value) {
+            RenderNode renderNode = updateDisplayListIfDirty();
+            if (renderNode != null) {
+                renderNode.setProjectBackwards(value);
+            }
+            // NOTE: we can't invalidate ProjectedView for the redraw because:
+            // 1) the view won't preserve displayList properties that it doesn't know about
+            // 2) the damage rect won't be big enough
+            // instead, twiddle properties on the container, so that enough area of the screen is
+            // redrawn without rerecording any DisplayLists.
+            container.setTranslationX(100f);
+            container.setTranslationX(0.0f);
+        }
+        @Override
+        protected void onDraw(Canvas canvas) {
+            // TODO: set projection flag
+            final int w = getWidth();
+            final int h = getHeight();
+            mRectF.set(0, -h, w, 2 * h);
+            mPaint.setAntiAlias(true);
+            mPaint.setColor(0x5f00ff00);
+            canvas.drawOval(mRectF, mPaint);
+        }
+    }",class,
+"        public ProjectedView(Context context) {
+            this(context, null);
+        }",method,
+"        public ProjectedView(Context context, AttributeSet attrs) {
+            this(context, attrs, 0);
+        }",method,
+"        public ProjectedView(Context context, AttributeSet attrs, int defStyleAttr) {
+            super(context, attrs, defStyleAttr);
+            setOnClickListener(new OnClickListener() {
+                boolean toggle = false;
+                @Override
+                public void onClick(View v) {
+                    toggle = !toggle;
+                    setProject(toggle);
+                }
+            });
+        }",method,
+"            setOnClickListener(new OnClickListener() {
+                boolean toggle = false;
+                @Override
+                public void onClick(View v) {
+                    toggle = !toggle;
+                    setProject(toggle);
+                }
+            }",method,
+"                @Override
+                public void onClick(View v) {
+                    toggle = !toggle;
+                    setProject(toggle);
+                }",method,
+"        private void setProject(boolean value) {
+            RenderNode renderNode = updateDisplayListIfDirty();
+            if (renderNode != null) {
+                renderNode.setProjectBackwards(value);
+            }
+            // NOTE: we can't invalidate ProjectedView for the redraw because:
+            // 1) the view won't preserve displayList properties that it doesn't know about
+            // 2) the damage rect won't be big enough
+            // instead, twiddle properties on the container, so that enough area of the screen is
+            // redrawn without rerecording any DisplayLists.
+            container.setTranslationX(100f);
+            container.setTranslationX(0.0f);
+        }",method,
+"            if (renderNode != null) {
+                renderNode.setProjectBackwards(value);
+            }",method,
+"        @Override
+        protected void onDraw(Canvas canvas) {
+            // TODO: set projection flag
+            final int w = getWidth();
+            final int h = getHeight();
+            mRectF.set(0, -h, w, 2 * h);
+            mPaint.setAntiAlias(true);
+            mPaint.setColor(0x5f00ff00);
+            canvas.drawOval(mRectF, mPaint);
+        }",method,
+"    @Override
+    protected void onCreate(Bundle savedInstanceState) {
+        super.onCreate(savedInstanceState);
+        setContentView(R.layout.projection);
+        container = findViewById(R.id.container);
+    }",method,
+"public class WelcomeFrame extends JFrame implements IdeFrame, AccessibleContextAccessor {
+  public static final ExtensionPointName<WelcomeFrameProvider> EP = ExtensionPointName.create(""com.intellij.welcomeFrameProvider"");
+  static final String DIMENSION_KEY = ""WELCOME_SCREEN"";
+  private static IdeFrame ourInstance;
+  private final WelcomeScreen myScreen;
+  private final BalloonLayout myBalloonLayout;
+  public WelcomeFrame() {
+    JRootPane rootPane = getRootPane();
+    final WelcomeScreen screen = createScreen(rootPane);
+    final IdeGlassPaneImpl glassPane = new IdeGlassPaneImpl(rootPane);
+    setGlassPane(glassPane);
+    glassPane.setVisible(false);
+    setContentPane(screen.getWelcomePanel());
+    setTitle(ApplicationNamesInfo.getInstance().getFullProductName());
+    AppUIUtil.updateWindowIcon(this);
+    ApplicationManager.getApplication().getMessageBus().connect().subscribe(ProjectManager.TOPIC, new ProjectManagerListener() {
+      @Override
+      public void projectOpened(Project project) {
+        dispose();
+      }
+    });
+    myBalloonLayout = new BalloonLayoutImpl(rootPane, new Insets(8, 8, 8, 8));
+    myScreen = screen;
+    setupCloseAction(this);
+    MnemonicHelper.init(this);
+    myScreen.setupFrame(this);
+    Disposer.register(ApplicationManager.getApplication(), new Disposable() {
+      @Override
+      public void dispose() {
+        WelcomeFrame.this.dispose();
+      }
+    });
+  }
+  public static IdeFrame getInstance() {
+    return ourInstance;
+  }
+  @Override
+  public void dispose() {
+    saveLocation(getBounds());
+    super.dispose();
+    Disposer.dispose(myScreen);
+    resetInstance();
+  }
+  private static void saveLocation(Rectangle location) {
+    Point middle = new Point(location.x + location.width / 2, location.y = location.height / 2);
+    DimensionService.getInstance().setLocation(DIMENSION_KEY, middle, null);
+  }
+  static void setupCloseAction(final JFrame frame) {
+    frame.setDefaultCloseOperation(WindowConstants.DO_NOTHING_ON_CLOSE);
+    frame.addWindowListener(
+      new WindowAdapter() {
+        public void windowClosing(final WindowEvent e) {
+          if (ProjectManager.getInstance().getOpenProjects().length == 0) {
+            ApplicationManagerEx.getApplicationEx().exit();
+          }
+          else {
+            frame.dispose();
+          }
+        }
+      });
+  }
+  private static WelcomeScreen createScreen(JRootPane rootPane) {
+    WelcomeScreen screen = null;
+    for (WelcomeScreenProvider provider : WelcomeScreenProvider.EP_NAME.getExtensions()) {
+      if (!provider.isAvailable()) continue;
+      screen = provider.createWelcomeScreen(rootPane);
+      if (screen != null) break;
+    }
+    if (screen == null) {
+      screen = new NewWelcomeScreen();
+    }
+    return screen;
+  }
+  public static void resetInstance() {
+    ourInstance = null;
+  }
+  public static void showNow() {
+    if (ourInstance == null) {
+      IdeFrame frame = null;
+      for (WelcomeFrameProvider provider : EP.getExtensions()) {
+        frame = provider.createFrame();
+        if (frame != null) break;
+      }
+      if (frame == null) {
+        frame = new WelcomeFrame();
+      }
+      IdeMenuBar.installAppMenuIfNeeded((JFrame)frame);
+      ((JFrame)frame).setVisible(true);
+      ourInstance = frame;
+    }
+  }
+  public static void showIfNoProjectOpened() {
+    if (ApplicationManager.getApplication().isUnitTestMode()) return;
+    ApplicationManager.getApplication().invokeLater((DumbAwareRunnable)() -> {
+      WindowManagerImpl windowManager = (WindowManagerImpl)WindowManager.getInstance();
+      windowManager.disposeRootFrame();
+      IdeFrameImpl[] frames = windowManager.getAllProjectFrames();
+      if (frames.length == 0) {
+        showNow();
+      }
+    }, ModalityState.NON_MODAL);
+  }
+  @Override
+  public StatusBar getStatusBar() {
+    Container pane = getContentPane();
+    //noinspection ConstantConditions
+    return pane instanceof JComponent ? UIUtil.findComponentOfType((JComponent)pane, IdeStatusBarImpl.class) : null;
+  }
+  @Override
+  public BalloonLayout getBalloonLayout() {
+    return myBalloonLayout;
+  }
+  @Override
+  public Rectangle suggestChildFrameBounds() {
+    return getBounds();
+  }
+  @Nullable
+  @Override
+  public Project getProject() {
+    return ProjectManager.getInstance().getDefaultProject();
+  }
+  @Override
+  public void setFrameTitle(String title) {
+    setTitle(title);
+  }
+  @Override
+  public void setFileTitle(String fileTitle, File ioFile) {
+    setTitle(fileTitle);
+  }
+  @Override
+  public IdeRootPaneNorthExtension getNorthExtension(String key) {
+    return null;
+  }
+  @Override
+  public JComponent getComponent() {
+    return getRootPane();
+  }
+  @Override
+  public AccessibleContext getCurrentAccessibleContext() {
+    return accessibleContext;
+  }
+}",class,
+"  public WelcomeFrame() {
+    JRootPane rootPane = getRootPane();
+    final WelcomeScreen screen = createScreen(rootPane);
+    final IdeGlassPaneImpl glassPane = new IdeGlassPaneImpl(rootPane);
+    setGlassPane(glassPane);
+    glassPane.setVisible(false);
+    setContentPane(screen.getWelcomePanel());
+    setTitle(ApplicationNamesInfo.getInstance().getFullProductName());
+    AppUIUtil.updateWindowIcon(this);
+    ApplicationManager.getApplication().getMessageBus().connect().subscribe(ProjectManager.TOPIC, new ProjectManagerListener() {
+      @Override
+      public void projectOpened(Project project) {
+        dispose();
+      }
+    });
+    myBalloonLayout = new BalloonLayoutImpl(rootPane, new Insets(8, 8, 8, 8));
+    myScreen = screen;
+    setupCloseAction(this);
+    MnemonicHelper.init(this);
+    myScreen.setupFrame(this);
+    Disposer.register(ApplicationManager.getApplication(), new Disposable() {
+      @Override
+      public void dispose() {
+        WelcomeFrame.this.dispose();
+      }
+    });
+  }",method,
+"      @Override
+      public void projectOpened(Project project) {
+        dispose();
+      }",method,
+"      @Override
+      public void dispose() {
+        WelcomeFrame.this.dispose();
+      }",method,
+"  public static IdeFrame getInstance() {
+    return ourInstance;
+  }",method,
+"  @Override
+  public void dispose() {
+    saveLocation(getBounds());
+    super.dispose();
+    Disposer.dispose(myScreen);
+    resetInstance();
+  }",method,
+"  private static void saveLocation(Rectangle location) {
+    Point middle = new Point(location.x + location.width / 2, location.y = location.height / 2);
+    DimensionService.getInstance().setLocation(DIMENSION_KEY, middle, null);
+  }",method,
+"  static void setupCloseAction(final JFrame frame) {
+    frame.setDefaultCloseOperation(WindowConstants.DO_NOTHING_ON_CLOSE);
+    frame.addWindowListener(
+      new WindowAdapter() {
+        public void windowClosing(final WindowEvent e) {
+          if (ProjectManager.getInstance().getOpenProjects().length == 0) {
+            ApplicationManagerEx.getApplicationEx().exit();
+          }
+          else {
+            frame.dispose();
+          }
+        }
+      });
+  }",method,
+"    frame.addWindowListener(
+      new WindowAdapter() {
+        public void windowClosing(final WindowEvent e) {
+          if (ProjectManager.getInstance().getOpenProjects().length == 0) {
+            ApplicationManagerEx.getApplicationEx().exit();
+          }
+          else {
+            frame.dispose();
+          }
+        }
+      }",method,
+"        public void windowClosing(final WindowEvent e) {
+          if (ProjectManager.getInstance().getOpenProjects().length == 0) {
+            ApplicationManagerEx.getApplicationEx().exit();
+          }
+          else {
+            frame.dispose();
+          }
+        }",method,
+"  private static WelcomeScreen createScreen(JRootPane rootPane) {
+    WelcomeScreen screen = null;
+    for (WelcomeScreenProvider provider : WelcomeScreenProvider.EP_NAME.getExtensions()) {
+      if (!provider.isAvailable()) continue;
+      screen = provider.createWelcomeScreen(rootPane);
+      if (screen != null) break;
+    }
+    if (screen == null) {
+      screen = new NewWelcomeScreen();
+    }
+    return screen;
+  }",method,
+"    if (screen == null) {
+      screen = new NewWelcomeScreen();
+    }",method,
+"  public static void resetInstance() {
+    ourInstance = null;
+  }",method,
+"  public static void showNow() {
+    if (ourInstance == null) {
+      IdeFrame frame = null;
+      for (WelcomeFrameProvider provider : EP.getExtensions()) {
+        frame = provider.createFrame();
+        if (frame != null) break;
+      }
+      if (frame == null) {
+        frame = new WelcomeFrame();
+      }
+      IdeMenuBar.installAppMenuIfNeeded((JFrame)frame);
+      ((JFrame)frame).setVisible(true);
+      ourInstance = frame;
+    }
+  }",method,
+"    if (ourInstance == null) {
+      IdeFrame frame = null;
+      for (WelcomeFrameProvider provider : EP.getExtensions()) {
+        frame = provider.createFrame();
+        if (frame != null) break;
+      }
+      if (frame == null) {
+        frame = new WelcomeFrame();
+      }
+      IdeMenuBar.installAppMenuIfNeeded((JFrame)frame);
+      ((JFrame)frame).setVisible(true);
+      ourInstance = frame;
+    }",method,
+"      if (frame == null) {
+        frame = new WelcomeFrame();
+      }",method,
+"  public static void showIfNoProjectOpened() {
+    if (ApplicationManager.getApplication().isUnitTestMode()) return;
+    ApplicationManager.getApplication().invokeLater((DumbAwareRunnable)() -> {
+      WindowManagerImpl windowManager = (WindowManagerImpl)WindowManager.getInstance();
+      windowManager.disposeRootFrame();
+      IdeFrameImpl[] frames = windowManager.getAllProjectFrames();
+      if (frames.length == 0) {
+        showNow();
+      }
+    }, ModalityState.NON_MODAL);
+  }",method,
+"      if (frames.length == 0) {
+        showNow();
+      }",method,
+"  @Override
+  public StatusBar getStatusBar() {
+    Container pane = getContentPane();
+    //noinspection ConstantConditions
+    return pane instanceof JComponent ? UIUtil.findComponentOfType((JComponent)pane, IdeStatusBarImpl.class) : null;
+  }",method,
+"  @Override
+  public BalloonLayout getBalloonLayout() {
+    return myBalloonLayout;
+  }",method,
+"  @Override
+  public Rectangle suggestChildFrameBounds() {
+    return getBounds();
+  }",method,
+"  @Nullable
+  @Override
+  public Project getProject() {
+    return ProjectManager.getInstance().getDefaultProject();
+  }",method,
+"  @Override
+  public void setFrameTitle(String title) {
+    setTitle(title);
+  }",method,
+"  @Override
+  public void setFileTitle(String fileTitle, File ioFile) {
+    setTitle(fileTitle);
+  }",method,
+"  @Override
+  public IdeRootPaneNorthExtension getNorthExtension(String key) {
+    return null;
+  }",method,
+"  @Override
+  public JComponent getComponent() {
+    return getRootPane();
+  }",method,
+"  @Override
+  public AccessibleContext getCurrentAccessibleContext() {
+    return accessibleContext;
+  }",method,
+"public class BrutIO {
+    public static void copyAndClose(InputStream in, OutputStream out)
+            throws IOException {
+        try {
+            IOUtils.copy(in, out);
+        } finally {
+            IOUtils.closeQuietly(in);
+            IOUtils.closeQuietly(out);
+        }
+    }
+    public static long recursiveModifiedTime(File[] files) {
+        long modified = 0;
+        for (int i = 0; i < files.length; i++) {
+            long submodified = recursiveModifiedTime(files[i]);
+            if (submodified > modified) {
+                modified = submodified;
+            }
+        }
+        return modified;
+    }
+    public static long recursiveModifiedTime(File file) {
+        long modified = file.lastModified();
+        if (file.isDirectory()) {
+            File[] subfiles = file.listFiles();
+            for (int i = 0; i < subfiles.length; i++) {
+                long submodified = recursiveModifiedTime(subfiles[i]);
+                if (submodified > modified) {
+                    modified = submodified;
+                }
+            }
+        }
+        return modified;
+    }
+    public static CRC32 calculateCrc(InputStream input) throws IOException {
+        CRC32 crc = new CRC32();
+        int bytesRead;
+        byte[] buffer = new byte[8192];
+        while((bytesRead = input.read(buffer)) != -1) {
+            crc.update(buffer, 0, bytesRead);
+        }
+        return crc;
+    }
+    public static String sanitizeUnknownFile(final File directory, final String entry) throws IOException, BrutException {
+        if (entry.length() == 0) {
+            throw new InvalidUnknownFileException(""Invalid Unknown File - "" + entry);
+        }
+        if (new File(entry).isAbsolute()) {
+            throw new RootUnknownFileException(""Absolute Unknown Files is not allowed - "" + entry);
+        }
+        final String canonicalDirPath = directory.getCanonicalPath() + File.separator;
+        final String canonicalEntryPath = new File(directory, entry).getCanonicalPath();
+        if (!canonicalEntryPath.startsWith(canonicalDirPath)) {
+            throw new TraversalUnknownFileException(""Directory Traversal is not allowed - "" + entry);
+        }
+        // https://stackoverflow.com/q/2375903/455008
+        return canonicalEntryPath.substring(canonicalDirPath.length());
+    }
+    public static void copy(File inputFile, ZipOutputStream outputFile) throws IOException {
+        try (
+                FileInputStream fis = new FileInputStream(inputFile)
+        ) {
+            IOUtils.copy(fis, outputFile);
+        }
+    }
+    public static void copy(ZipFile inputFile, ZipOutputStream outputFile, ZipEntry entry) throws IOException {
+        try (
+                InputStream is = inputFile.getInputStream(entry)
+        ) {
+            IOUtils.copy(is, outputFile);
+        }
+    }
+}",class,
+"    public static void copyAndClose(InputStream in, OutputStream out)
+            throws IOException {
+        try {
+            IOUtils.copy(in, out);
+        } finally {
+            IOUtils.closeQuietly(in);
+            IOUtils.closeQuietly(out);
+        }
+    }",method,
+"    public static long recursiveModifiedTime(File[] files) {
+        long modified = 0;
+        for (int i = 0; i < files.length; i++) {
+            long submodified = recursiveModifiedTime(files[i]);
+            if (submodified > modified) {
+                modified = submodified;
+            }
+        }
+        return modified;
+    }",method,
+"        for (int i = 0; i < files.length; i++) {
+            long submodified = recursiveModifiedTime(files[i]);
+            if (submodified > modified) {
+                modified = submodified;
+            }
+        }",method,
+"            if (submodified > modified) {
+                modified = submodified;
+            }",method,
+"    public static long recursiveModifiedTime(File file) {
+        long modified = file.lastModified();
+        if (file.isDirectory()) {
+            File[] subfiles = file.listFiles();
+            for (int i = 0; i < subfiles.length; i++) {
+                long submodified = recursiveModifiedTime(subfiles[i]);
+                if (submodified > modified) {
+                    modified = submodified;
+                }
+            }
+        }
+        return modified;
+    }",method,
+"            for (int i = 0; i < subfiles.length; i++) {
+                long submodified = recursiveModifiedTime(subfiles[i]);
+                if (submodified > modified) {
+                    modified = submodified;
+                }
+            }",method,
+"                if (submodified > modified) {
+                    modified = submodified;
+                }",method,
+"    public static CRC32 calculateCrc(InputStream input) throws IOException {
+        CRC32 crc = new CRC32();
+        int bytesRead;
+        byte[] buffer = new byte[8192];
+        while((bytesRead = input.read(buffer)) != -1) {
+            crc.update(buffer, 0, bytesRead);
+        }
+        return crc;
+    }",method,
+"    public static String sanitizeUnknownFile(final File directory, final String entry) throws IOException, BrutException {
+        if (entry.length() == 0) {
+            throw new InvalidUnknownFileException(""Invalid Unknown File - "" + entry);
+        }
+        if (new File(entry).isAbsolute()) {
+            throw new RootUnknownFileException(""Absolute Unknown Files is not allowed - "" + entry);
+        }
+        final String canonicalDirPath = directory.getCanonicalPath() + File.separator;
+        final String canonicalEntryPath = new File(directory, entry).getCanonicalPath();
+        if (!canonicalEntryPath.startsWith(canonicalDirPath)) {
+            throw new TraversalUnknownFileException(""Directory Traversal is not allowed - "" + entry);
+        }
+        // https://stackoverflow.com/q/2375903/455008
+        return canonicalEntryPath.substring(canonicalDirPath.length());
+    }",method,
+"    public static void copy(File inputFile, ZipOutputStream outputFile) throws IOException {
+        try (
+                FileInputStream fis = new FileInputStream(inputFile)
+        ) {
+            IOUtils.copy(fis, outputFile);
+        }
+    }",method,
+"    public static void copy(ZipFile inputFile, ZipOutputStream outputFile, ZipEntry entry) throws IOException {
+        try (
+                InputStream is = inputFile.getInputStream(entry)
+        ) {
+            IOUtils.copy(is, outputFile);
+        }
+    }",method,
+"public class HgPullDialog extends DialogWrapper {
+  private final Project project;
+  private HgRepositorySelectorComponent hgRepositorySelector;
+  private JPanel mainPanel;
+  private EditorComboBox myRepositoryURL;
+  private String myCurrentRepositoryUrl;
+  public HgPullDialog(@NotNull Project project, @NotNull Collection<HgRepository> repositories, @Nullable final HgRepository selectedRepo) {
+    super(project, false);
+    this.project = project;
+    hgRepositorySelector.setTitle(""Select repository to pull changesets for"");
+    hgRepositorySelector.addActionListener(new ActionListener() {
+      public void actionPerformed(ActionEvent e) {
+        onChangeRepository();
+      }
+    });
+    setTitle(""Pull"");
+    setOKButtonText(""Pull"");
+    init();
+    setRoots(repositories, selectedRepo);
+  }
+  public void createUIComponents() {
+    myRepositoryURL = new EditorComboBox("""");
+    myRepositoryURL.addDocumentListener(new DocumentListener() {
+      @Override
+      public void documentChanged(DocumentEvent e) {
+        onChangePullSource();
+      }
+    });
+  }
+  private void addPathsFromHgrc(@NotNull VirtualFile repo) {
+    Collection<String> paths = HgUtil.getRepositoryPaths(project, repo);
+    for (String path : paths) {
+      myRepositoryURL.prependItem(path);
+    }
+  }
+  @NotNull
+  public HgRepository getRepository() {
+    return hgRepositorySelector.getRepository();
+  }
+  public String getSource() {
+    return myCurrentRepositoryUrl;
+  }
+  private void setRoots(@NotNull Collection<HgRepository> repositories, @Nullable final HgRepository selectedRepo) {
+    hgRepositorySelector.setRoots(repositories);
+    hgRepositorySelector.setSelectedRoot(selectedRepo);
+    onChangeRepository();
+  }
+  protected JComponent createCenterPanel() {
+    return mainPanel;
+  }
+  @Override
+  protected String getHelpId() {
+    return ""reference.mercurial.pull.dialog"";
+  }
+  private void onChangeRepository() {
+    final VirtualFile repo = hgRepositorySelector.getRepository().getRoot();
+    final String defaultPath = HgUtil.getRepositoryDefaultPath(project, repo);
+    if (!StringUtil.isEmptyOrSpaces(defaultPath)) {
+      addPathsFromHgrc(repo);
+      myRepositoryURL.setText(HgUtil.removePasswordIfNeeded(defaultPath));
+      myCurrentRepositoryUrl = defaultPath;
+      onChangePullSource();
+    }
+  }
+  private void onChangePullSource() {
+    myCurrentRepositoryUrl = myRepositoryURL.getText();
+    setOKActionEnabled(!StringUtil.isEmptyOrSpaces(myRepositoryURL.getText()));
+  }
+  @Override
+  protected String getDimensionServiceKey() {
+    return HgPullDialog.class.getName();
+  }
+}",class,
+"  public HgPullDialog(@NotNull Project project, @NotNull Collection<HgRepository> repositories, @Nullable final HgRepository selectedRepo) {
+    super(project, false);
+    this.project = project;
+    hgRepositorySelector.setTitle(""Select repository to pull changesets for"");
+    hgRepositorySelector.addActionListener(new ActionListener() {
+      public void actionPerformed(ActionEvent e) {
+        onChangeRepository();
+      }
+    });
+    setTitle(""Pull"");
+    setOKButtonText(""Pull"");
+    init();
+    setRoots(repositories, selectedRepo);
+  }",method,
+"    hgRepositorySelector.addActionListener(new ActionListener() {
+      public void actionPerformed(ActionEvent e) {
+        onChangeRepository();
+      }
+    }",method,
+"      public void actionPerformed(ActionEvent e) {
+        onChangeRepository();
+      }",method,
+"  public void createUIComponents() {
+    myRepositoryURL = new EditorComboBox("""");
+    myRepositoryURL.addDocumentListener(new DocumentListener() {
+      @Override
+      public void documentChanged(DocumentEvent e) {
+        onChangePullSource();
+      }
+    });
+  }",method,
+"    myRepositoryURL.addDocumentListener(new DocumentListener() {
+      @Override
+      public void documentChanged(DocumentEvent e) {
+        onChangePullSource();
+      }
+    }",method,
+"      @Override
+      public void documentChanged(DocumentEvent e) {
+        onChangePullSource();
+      }",method,
+"  private void addPathsFromHgrc(@NotNull VirtualFile repo) {
+    Collection<String> paths = HgUtil.getRepositoryPaths(project, repo);
+    for (String path : paths) {
+      myRepositoryURL.prependItem(path);
+    }
+  }",method,
+"    for (String path : paths) {
+      myRepositoryURL.prependItem(path);
+    }",method,
+"  @NotNull
+  public HgRepository getRepository() {
+    return hgRepositorySelector.getRepository();
+  }",method,

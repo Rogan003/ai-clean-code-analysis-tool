@@ -1,0 +1,1353 @@
+code_snippet,type,score
+"            if (gzipQ >= deflateQ) {
+                return ZlibWrapper.GZIP;
+            }",method,
+"        if (starQ > 0.0f) {
+            if (gzipQ == -1.0f) {
+                return ZlibWrapper.GZIP;
+            }
+            if (deflateQ == -1.0f) {
+                return ZlibWrapper.ZLIB;
+            }
+        }",method,
+"            if (gzipQ == -1.0f) {
+                return ZlibWrapper.GZIP;
+            }",method,
+"            if (deflateQ == -1.0f) {
+                return ZlibWrapper.ZLIB;
+            }",method,
+"public class UpmsServiceTest {
+    @Autowired
+    private UpmsSystemService upmsSystemService;
+    @Autowired
+    private UpmsUserMapper upmsUserMapper;
+    @Autowired
+    private UpmsUserService upmsUserService;
+    @Autowired
+    private UpmsPermissionService upmsPermissionService;
+    @Test
+    public void index() {
+        UpmsUser upmsUser = new UpmsUser();
+        upmsUser.setAvatar("""");
+        upmsUser.setCtime(System.currentTimeMillis());
+        upmsUser.setEmail("""");
+        upmsUser.setLocked((byte) 0);
+        upmsUser.setPassword(""xxx"");
+        upmsUser.setPhone("""");
+        upmsUser.setRealname(""zsz"");
+        upmsUser.setSex((byte) 1);
+        upmsUser.setSalt("""");
+        upmsUser.setUsername(""zsz"");
+        upmsUserService.insertSelective(upmsUser);
+        System.out.println(upmsUser.getUserId());
+    }
+    @Test
+    public void selectForPage() {
+        // 根据条件，按页码+每页条数分页
+        UpmsPermissionExample upmsPermissionExample = new UpmsPermissionExample();
+        upmsPermissionExample.createCriteria()
+                .andSystemIdEqualTo(1);
+        List<UpmsPermission> upmsPermissions = upmsPermissionService.selectByExampleForStartPage(upmsPermissionExample, 2, 20);
+        System.out.println(upmsPermissions.size());
+        // 根据条件，按offset+limit分页
+        upmsPermissionExample = new UpmsPermissionExample();
+        upmsPermissionExample.createCriteria()
+                .andSystemIdEqualTo(2);
+        upmsPermissions = upmsPermissionService.selectByExampleForOffsetPage(upmsPermissionExample, 3, 5);
+        System.out.println(upmsPermissions.size());
+    }
+}",class,
+"    @Test
+    public void index() {
+        UpmsUser upmsUser = new UpmsUser();
+        upmsUser.setAvatar("""");
+        upmsUser.setCtime(System.currentTimeMillis());
+        upmsUser.setEmail("""");
+        upmsUser.setLocked((byte) 0);
+        upmsUser.setPassword(""xxx"");
+        upmsUser.setPhone("""");
+        upmsUser.setRealname(""zsz"");
+        upmsUser.setSex((byte) 1);
+        upmsUser.setSalt("""");
+        upmsUser.setUsername(""zsz"");
+        upmsUserService.insertSelective(upmsUser);
+        System.out.println(upmsUser.getUserId());
+    }",method,
+"    @Test
+    public void selectForPage() {
+        // 根据条件，按页码+每页条数分页
+        UpmsPermissionExample upmsPermissionExample = new UpmsPermissionExample();
+        upmsPermissionExample.createCriteria()
+                .andSystemIdEqualTo(1);
+        List<UpmsPermission> upmsPermissions = upmsPermissionService.selectByExampleForStartPage(upmsPermissionExample, 2, 20);
+        System.out.println(upmsPermissions.size());
+        // 根据条件，按offset+limit分页
+        upmsPermissionExample = new UpmsPermissionExample();
+        upmsPermissionExample.createCriteria()
+                .andSystemIdEqualTo(2);
+        upmsPermissions = upmsPermissionService.selectByExampleForOffsetPage(upmsPermissionExample, 3, 5);
+        System.out.println(upmsPermissions.size());
+    }",method,
+"public abstract class AbstractListenerReadPublisher<T> implements Publisher<T> {
+	protected final Log logger = LogFactory.getLog(getClass());
+	private final AtomicReference<State> state = new AtomicReference<>(State.UNSUBSCRIBED);
+	private volatile long demand;
+	@SuppressWarnings(""rawtypes"")
+	private static final AtomicLongFieldUpdater<AbstractListenerReadPublisher> DEMAND_FIELD_UPDATER =
+			AtomicLongFieldUpdater.newUpdater(AbstractListenerReadPublisher.class, ""demand"");
+	@Nullable
+	private Subscriber<? super T> subscriber;
+	// Publisher implementation...
+	@Override
+	public void subscribe(Subscriber<? super T> subscriber) {
+		if (this.logger.isTraceEnabled()) {
+			this.logger.trace(this.state + "" subscribe: "" + subscriber);
+		}
+		this.state.get().subscribe(this, subscriber);
+	}
+	// Listener delegation methods...
+	public final void onDataAvailable() {
+		if (this.logger.isTraceEnabled()) {
+			this.logger.trace(this.state + "" onDataAvailable"");
+		}
+		this.state.get().onDataAvailable(this);
+	}
+	public void onAllDataRead() {
+		if (this.logger.isTraceEnabled()) {
+			this.logger.trace(this.state + "" onAllDataRead"");
+		}
+		this.state.get().onAllDataRead(this);
+	}
+	public final void onError(Throwable t) {
+		if (this.logger.isTraceEnabled()) {
+			this.logger.trace(this.state + "" onError: "" + t);
+		}
+		this.state.get().onError(this, t);
+	}
+	protected abstract void checkOnDataAvailable();
+	@Nullable
+	protected abstract T read() throws IOException;
+	private boolean readAndPublish() throws IOException {
+		long r;
+		while ((r = demand) > 0) {
+			T data = read();
+			if (data != null) {
+				if (r != Long.MAX_VALUE) {
+					DEMAND_FIELD_UPDATER.addAndGet(this, -1L);
+				}
+				Assert.state(this.subscriber != null, ""No subscriber"");
+				this.subscriber.onNext(data);
+			}
+			else {
+				return true;
+			}
+		}
+		return false;
+	}
+	private boolean changeState(State oldState, State newState) {
+		return this.state.compareAndSet(oldState, newState);
+	}
+	private static final class ReadSubscription implements Subscription {
+		private final AbstractListenerReadPublisher<?> publisher;
+		public ReadSubscription(AbstractListenerReadPublisher<?> publisher) {
+			this.publisher = publisher;
+		}
+		@Override
+		public final void request(long n) {
+			if (this.publisher.logger.isTraceEnabled()) {
+				this.publisher.logger.trace(state() + "" request: "" + n);
+			}
+			state().request(this.publisher, n);
+		}
+		@Override
+		public final void cancel() {
+			if (this.publisher.logger.isTraceEnabled()) {
+				this.publisher.logger.trace(state() + "" cancel"");
+			}
+			state().cancel(this.publisher);
+		}
+		private State state() {
+			return this.publisher.state.get();
+		}
+	}
+	private enum State {
+		UNSUBSCRIBED {
+			@Override
+			<T> void subscribe(AbstractListenerReadPublisher<T> publisher, Subscriber<? super T> subscriber) {
+				Assert.notNull(publisher, ""Publisher must not be null"");
+				Assert.notNull(subscriber, ""Subscriber must not be null"");
+				if (publisher.changeState(this, NO_DEMAND)) {
+					Subscription subscription = new ReadSubscription(publisher);
+					publisher.subscriber = subscriber;
+					subscriber.onSubscribe(subscription);
+				}
+				else {
+					throw new IllegalStateException(toString());
+				}
+			}
+		},
+		NO_DEMAND {
+			@Override
+			<T> void request(AbstractListenerReadPublisher<T> publisher, long n) {
+				if (Operators.validate(n)) {
+					Operators.addCap(DEMAND_FIELD_UPDATER, publisher, n);
+					if (publisher.changeState(this, DEMAND)) {
+						publisher.checkOnDataAvailable();
+					}
+				}
+			}
+		},
+		DEMAND {
+			@Override
+			<T> void request(AbstractListenerReadPublisher<T> publisher, long n) {
+				if (Operators.validate(n)) {
+					Operators.addCap(DEMAND_FIELD_UPDATER, publisher, n);
+				}
+			}
+			@Override
+			<T> void onDataAvailable(AbstractListenerReadPublisher<T> publisher) {
+				if (publisher.changeState(this, READING)) {
+					try {
+						boolean demandAvailable = publisher.readAndPublish();
+						if (demandAvailable) {
+							publisher.changeState(READING, DEMAND);
+							publisher.checkOnDataAvailable();
+						}
+						else {
+							publisher.changeState(READING, NO_DEMAND);
+						}
+					}
+					catch (IOException ex) {
+						publisher.onError(ex);
+					}
+				}
+			}
+		},
+		READING {
+			@Override
+			<T> void request(AbstractListenerReadPublisher<T> publisher, long n) {
+				if (Operators.validate(n)) {
+					Operators.addCap(DEMAND_FIELD_UPDATER, publisher, n);
+				}
+			}
+		},
+		COMPLETED {
+			@Override
+			<T> void request(AbstractListenerReadPublisher<T> publisher, long n) {
+				// ignore
+			}
+			@Override
+			<T> void cancel(AbstractListenerReadPublisher<T> publisher) {
+				// ignore
+			}
+			@Override
+			<T> void onAllDataRead(AbstractListenerReadPublisher<T> publisher) {
+				// ignore
+			}
+			@Override
+			<T> void onError(AbstractListenerReadPublisher<T> publisher, Throwable t) {
+				// ignore
+			}
+		};
+		<T> void subscribe(AbstractListenerReadPublisher<T> publisher, Subscriber<? super T> subscriber) {
+			throw new IllegalStateException(toString());
+		}
+		<T> void request(AbstractListenerReadPublisher<T> publisher, long n) {
+			throw new IllegalStateException(toString());
+		}
+		<T> void cancel(AbstractListenerReadPublisher<T> publisher) {
+			publisher.changeState(this, COMPLETED);
+		}
+		<T> void onDataAvailable(AbstractListenerReadPublisher<T> publisher) {
+			// ignore
+		}
+		<T> void onAllDataRead(AbstractListenerReadPublisher<T> publisher) {
+			if (publisher.changeState(this, COMPLETED)) {
+				if (publisher.subscriber != null) {
+					publisher.subscriber.onComplete();
+				}
+			}
+		}
+		<T> void onError(AbstractListenerReadPublisher<T> publisher, Throwable t) {
+			if (publisher.changeState(this, COMPLETED)) {
+				if (publisher.subscriber != null) {
+					publisher.subscriber.onError(t);
+				}
+			}
+		}
+	}
+}",class,
+"	private static final class ReadSubscription implements Subscription {
+		private final AbstractListenerReadPublisher<?> publisher;
+		public ReadSubscription(AbstractListenerReadPublisher<?> publisher) {
+			this.publisher = publisher;
+		}
+		@Override
+		public final void request(long n) {
+			if (this.publisher.logger.isTraceEnabled()) {
+				this.publisher.logger.trace(state() + "" request: "" + n);
+			}
+			state().request(this.publisher, n);
+		}
+		@Override
+		public final void cancel() {
+			if (this.publisher.logger.isTraceEnabled()) {
+				this.publisher.logger.trace(state() + "" cancel"");
+			}
+			state().cancel(this.publisher);
+		}
+		private State state() {
+			return this.publisher.state.get();
+		}
+	}",class,
+"	@Override
+	public void subscribe(Subscriber<? super T> subscriber) {
+		if (this.logger.isTraceEnabled()) {
+			this.logger.trace(this.state + "" subscribe: "" + subscriber);
+		}
+		this.state.get().subscribe(this, subscriber);
+	}",method,
+"	public final void onDataAvailable() {
+		if (this.logger.isTraceEnabled()) {
+			this.logger.trace(this.state + "" onDataAvailable"");
+		}
+		this.state.get().onDataAvailable(this);
+	}",method,
+"	public void onAllDataRead() {
+		if (this.logger.isTraceEnabled()) {
+			this.logger.trace(this.state + "" onAllDataRead"");
+		}
+		this.state.get().onAllDataRead(this);
+	}",method,
+"	public final void onError(Throwable t) {
+		if (this.logger.isTraceEnabled()) {
+			this.logger.trace(this.state + "" onError: "" + t);
+		}
+		this.state.get().onError(this, t);
+	}",method,
+"	private boolean readAndPublish() throws IOException {
+		long r;
+		while ((r = demand) > 0) {
+			T data = read();
+			if (data != null) {
+				if (r != Long.MAX_VALUE) {
+					DEMAND_FIELD_UPDATER.addAndGet(this, -1L);
+				}
+				Assert.state(this.subscriber != null, ""No subscriber"");
+				this.subscriber.onNext(data);
+			}
+			else {
+				return true;
+			}
+		}
+		return false;
+	}",method,
+"			if (data != null) {
+				if (r != Long.MAX_VALUE) {
+					DEMAND_FIELD_UPDATER.addAndGet(this, -1L);
+				}
+				Assert.state(this.subscriber != null, ""No subscriber"");
+				this.subscriber.onNext(data);
+			}",method,
+"				if (r != Long.MAX_VALUE) {
+					DEMAND_FIELD_UPDATER.addAndGet(this, -1L);
+				}",method,
+"	private boolean changeState(State oldState, State newState) {
+		return this.state.compareAndSet(oldState, newState);
+	}",method,
+"		public ReadSubscription(AbstractListenerReadPublisher<?> publisher) {
+			this.publisher = publisher;
+		}",method,
+"		@Override
+		public final void request(long n) {
+			if (this.publisher.logger.isTraceEnabled()) {
+				this.publisher.logger.trace(state() + "" request: "" + n);
+			}
+			state().request(this.publisher, n);
+		}",method,
+"		@Override
+		public final void cancel() {
+			if (this.publisher.logger.isTraceEnabled()) {
+				this.publisher.logger.trace(state() + "" cancel"");
+			}
+			state().cancel(this.publisher);
+		}",method,
+"		private State state() {
+			return this.publisher.state.get();
+		}",method,
+"			@Override
+			<T> void subscribe(AbstractListenerReadPublisher<T> publisher, Subscriber<? super T> subscriber) {
+				Assert.notNull(publisher, ""Publisher must not be null"");
+				Assert.notNull(subscriber, ""Subscriber must not be null"");
+				if (publisher.changeState(this, NO_DEMAND)) {
+					Subscription subscription = new ReadSubscription(publisher);
+					publisher.subscriber = subscriber;
+					subscriber.onSubscribe(subscription);
+				}
+				else {
+					throw new IllegalStateException(toString());
+				}
+			}",method,
+"			@Override
+			<T> void request(AbstractListenerReadPublisher<T> publisher, long n) {
+				if (Operators.validate(n)) {
+					Operators.addCap(DEMAND_FIELD_UPDATER, publisher, n);
+					if (publisher.changeState(this, DEMAND)) {
+						publisher.checkOnDataAvailable();
+					}
+				}
+			}",method,
+"			@Override
+			<T> void request(AbstractListenerReadPublisher<T> publisher, long n) {
+				if (Operators.validate(n)) {
+					Operators.addCap(DEMAND_FIELD_UPDATER, publisher, n);
+				}
+			}",method,
+"			@Override
+			<T> void onDataAvailable(AbstractListenerReadPublisher<T> publisher) {
+				if (publisher.changeState(this, READING)) {
+					try {
+						boolean demandAvailable = publisher.readAndPublish();
+						if (demandAvailable) {
+							publisher.changeState(READING, DEMAND);
+							publisher.checkOnDataAvailable();
+						}
+						else {
+							publisher.changeState(READING, NO_DEMAND);
+						}
+					}
+					catch (IOException ex) {
+						publisher.onError(ex);
+					}
+				}
+			}",method,
+"						if (demandAvailable) {
+							publisher.changeState(READING, DEMAND);
+							publisher.checkOnDataAvailable();
+						}",method,
+"					catch (IOException ex) {
+						publisher.onError(ex);
+					}",method,
+"			@Override
+			<T> void request(AbstractListenerReadPublisher<T> publisher, long n) {
+				if (Operators.validate(n)) {
+					Operators.addCap(DEMAND_FIELD_UPDATER, publisher, n);
+				}
+			}",method,
+"			@Override
+			<T> void request(AbstractListenerReadPublisher<T> publisher, long n) {
+				// ignore
+			}",method,
+"			@Override
+			<T> void cancel(AbstractListenerReadPublisher<T> publisher) {
+				// ignore
+			}",method,
+"			@Override
+			<T> void onAllDataRead(AbstractListenerReadPublisher<T> publisher) {
+				// ignore
+			}",method,
+"			@Override
+			<T> void onError(AbstractListenerReadPublisher<T> publisher, Throwable t) {
+				// ignore
+			}",method,
+"		<T> void subscribe(AbstractListenerReadPublisher<T> publisher, Subscriber<? super T> subscriber) {
+			throw new IllegalStateException(toString());
+		}",method,
+"		<T> void request(AbstractListenerReadPublisher<T> publisher, long n) {
+			throw new IllegalStateException(toString());
+		}",method,
+"		<T> void cancel(AbstractListenerReadPublisher<T> publisher) {
+			publisher.changeState(this, COMPLETED);
+		}",method,
+"		<T> void onDataAvailable(AbstractListenerReadPublisher<T> publisher) {
+			// ignore
+		}",method,
+"		<T> void onAllDataRead(AbstractListenerReadPublisher<T> publisher) {
+			if (publisher.changeState(this, COMPLETED)) {
+				if (publisher.subscriber != null) {
+					publisher.subscriber.onComplete();
+				}
+			}
+		}",method,
+"				if (publisher.subscriber != null) {
+					publisher.subscriber.onComplete();
+				}",method,
+"		<T> void onError(AbstractListenerReadPublisher<T> publisher, Throwable t) {
+			if (publisher.changeState(this, COMPLETED)) {
+				if (publisher.subscriber != null) {
+					publisher.subscriber.onError(t);
+				}
+			}
+		}",method,
+"				if (publisher.subscriber != null) {
+					publisher.subscriber.onError(t);
+				}",method,
+"public class GithubConfusingException extends IOException {
+  private String myDetails;
+  public GithubConfusingException() {
+  }
+  public GithubConfusingException(String message) {
+    super(message);
+  }
+  public GithubConfusingException(String message, Throwable cause) {
+    super(message, cause);
+  }
+  public GithubConfusingException(Throwable cause) {
+    super(cause);
+  }
+  public void setDetails(@Nullable String details) {
+    myDetails = details;
+  }
+  @Override
+  public String getMessage() {
+    if (myDetails == null) {
+      return super.getMessage();
+    }
+    else {
+      return myDetails + ""\n\n"" + super.getMessage();
+    }
+  }
+}",class,
+"public class GithubJsonException extends GithubConfusingException {
+  public GithubJsonException() {
+    super();
+  }
+  public GithubJsonException(String message) {
+    super(message);
+  }
+  public GithubJsonException(String message, Throwable cause) {
+    super(message, cause);
+  }
+  public GithubJsonException(Throwable cause) {
+    super(cause);
+  }
+}",class,
+"  public GithubConfusingException() {
+  }",method,
+"  public GithubConfusingException(String message) {
+    super(message);
+  }",method,
+"  public GithubConfusingException(String message, Throwable cause) {
+    super(message, cause);
+  }",method,
+"  public GithubConfusingException(Throwable cause) {
+    super(cause);
+  }",method,
+"  public void setDetails(@Nullable String details) {
+    myDetails = details;
+  }",method,
+"  @Override
+  public String getMessage() {
+    if (myDetails == null) {
+      return super.getMessage();
+    }
+    else {
+      return myDetails + ""\n\n"" + super.getMessage();
+    }
+  }",method,
+"    if (myDetails == null) {
+      return super.getMessage();
+    }",method,
+"  public GithubJsonException() {
+    super();
+  }",method,
+"  public GithubJsonException(String message) {
+    super(message);
+  }",method,
+"  public GithubJsonException(String message, Throwable cause) {
+    super(message, cause);
+  }",method,
+"  public GithubJsonException(Throwable cause) {
+    super(cause);
+  }",method,
+"public final class BazelPyLibraryRule implements RuleDefinition {
+  @Override
+  public RuleClass build(RuleClass.Builder builder, RuleDefinitionEnvironment env) {
+    return builder
+        .requiresConfigurationFragments(PythonConfiguration.class)
+        .add(attr(""srcs"", LABEL_LIST)
+            .direct_compile_time_input()
+            .allowedFileTypes(BazelPyRuleClasses.PYTHON_SOURCE))
+        .build();
+  }
+  @Override
+  public Metadata getMetadata() {
+    return RuleDefinition.Metadata.builder()
+        .name(""py_library"")
+        .ancestors(PyBaseRule.class)
+        .factoryClass(BazelPyLibrary.class)
+        .build();
+  }
+}",class,
+"  @Override
+  public RuleClass build(RuleClass.Builder builder, RuleDefinitionEnvironment env) {
+    return builder
+        .requiresConfigurationFragments(PythonConfiguration.class)
+        .add(attr(""srcs"", LABEL_LIST)
+            .direct_compile_time_input()
+            .allowedFileTypes(BazelPyRuleClasses.PYTHON_SOURCE))
+        .build();
+  }",method,
+"  @Override
+  public Metadata getMetadata() {
+    return RuleDefinition.Metadata.builder()
+        .name(""py_library"")
+        .ancestors(PyBaseRule.class)
+        .factoryClass(BazelPyLibrary.class)
+        .build();
+  }",method,
+"public class SplitClockView extends LinearLayout {
+    private TextClock mTimeView;
+    private TextClock mAmPmView;
+    private BroadcastReceiver mIntentReceiver = new BroadcastReceiver() {
+        @Override
+        public void onReceive(Context context, Intent intent) {
+            final String action = intent.getAction();
+            if (Intent.ACTION_TIME_CHANGED.equals(action)
+                    || Intent.ACTION_TIMEZONE_CHANGED.equals(action)
+                    || Intent.ACTION_LOCALE_CHANGED.equals(action)
+                    || Intent.ACTION_CONFIGURATION_CHANGED.equals(action)
+                    || Intent.ACTION_USER_SWITCHED.equals(action)) {
+                updatePatterns();
+            }
+        }
+    };
+    public SplitClockView(Context context, AttributeSet attrs) {
+        super(context, attrs);
+    }
+    @Override
+    protected void onFinishInflate() {
+        super.onFinishInflate();
+        mTimeView = findViewById(R.id.time_view);
+        mAmPmView = findViewById(R.id.am_pm_view);
+        mTimeView.setShowCurrentUserTime(true);
+        mAmPmView.setShowCurrentUserTime(true);
+    }
+    @Override
+    protected void onAttachedToWindow() {
+        super.onAttachedToWindow();
+        IntentFilter filter = new IntentFilter();
+        filter.addAction(Intent.ACTION_TIME_CHANGED);
+        filter.addAction(Intent.ACTION_TIMEZONE_CHANGED);
+        filter.addAction(Intent.ACTION_LOCALE_CHANGED);
+        filter.addAction(Intent.ACTION_CONFIGURATION_CHANGED);
+        filter.addAction(Intent.ACTION_USER_SWITCHED);
+        getContext().registerReceiverAsUser(mIntentReceiver, UserHandle.ALL, filter, null, null);
+        updatePatterns();
+    }
+    @Override
+    protected void onDetachedFromWindow() {
+        super.onDetachedFromWindow();
+        getContext().unregisterReceiver(mIntentReceiver);
+    }
+    private void updatePatterns() {
+        String formatString = DateFormat.getTimeFormatString(getContext(),
+                ActivityManager.getCurrentUser());
+        int index = getAmPmPartEndIndex(formatString);
+        String timeString;
+        String amPmString;
+        if (index == -1) {
+            timeString = formatString;
+            amPmString = """";
+        } else {
+            timeString = formatString.substring(0, index);
+            amPmString = formatString.substring(index);
+        }
+        mTimeView.setFormat12Hour(timeString);
+        mTimeView.setFormat24Hour(timeString);
+        mTimeView.setContentDescriptionFormat12Hour(formatString);
+        mTimeView.setContentDescriptionFormat24Hour(formatString);
+        mAmPmView.setFormat12Hour(amPmString);
+        mAmPmView.setFormat24Hour(amPmString);
+    }
+    private static int getAmPmPartEndIndex(String formatString) {
+        boolean hasAmPm = false;
+        int length = formatString.length();
+        for (int i = length - 1; i >= 0; i--) {
+            char c = formatString.charAt(i);
+            boolean isAmPm = c == 'a';
+            boolean isWhitespace = Character.isWhitespace(c);
+            if (isAmPm) {
+                hasAmPm = true;
+            }
+            if (isAmPm || isWhitespace) {
+                continue;
+            }
+            if (i == length - 1) {
+                // First character was not AM/PM and not whitespace, so it's not ending with AM/PM.
+                return -1;
+            } else {
+                // If we have AM/PM at all, return last index, or -1 to indicate that it's not
+                // ending with AM/PM.
+                return hasAmPm ? i + 1 : -1;
+            }
+        }
+        // Only AM/PM and whitespaces? The whole string is AM/PM. Else: Only whitespaces in the
+        // string.
+        return hasAmPm ? 0 : -1;
+    }
+}",class,
+"        @Override
+        public void onReceive(Context context, Intent intent) {
+            final String action = intent.getAction();
+            if (Intent.ACTION_TIME_CHANGED.equals(action)
+                    || Intent.ACTION_TIMEZONE_CHANGED.equals(action)
+                    || Intent.ACTION_LOCALE_CHANGED.equals(action)
+                    || Intent.ACTION_CONFIGURATION_CHANGED.equals(action)
+                    || Intent.ACTION_USER_SWITCHED.equals(action)) {
+                updatePatterns();
+            }
+        }",method,
+"    public SplitClockView(Context context, AttributeSet attrs) {
+        super(context, attrs);
+    }",method,
+"    @Override
+    protected void onFinishInflate() {
+        super.onFinishInflate();
+        mTimeView = findViewById(R.id.time_view);
+        mAmPmView = findViewById(R.id.am_pm_view);
+        mTimeView.setShowCurrentUserTime(true);
+        mAmPmView.setShowCurrentUserTime(true);
+    }",method,
+"    @Override
+    protected void onAttachedToWindow() {
+        super.onAttachedToWindow();
+        IntentFilter filter = new IntentFilter();
+        filter.addAction(Intent.ACTION_TIME_CHANGED);
+        filter.addAction(Intent.ACTION_TIMEZONE_CHANGED);
+        filter.addAction(Intent.ACTION_LOCALE_CHANGED);
+        filter.addAction(Intent.ACTION_CONFIGURATION_CHANGED);
+        filter.addAction(Intent.ACTION_USER_SWITCHED);
+        getContext().registerReceiverAsUser(mIntentReceiver, UserHandle.ALL, filter, null, null);
+        updatePatterns();
+    }",method,
+"    @Override
+    protected void onDetachedFromWindow() {
+        super.onDetachedFromWindow();
+        getContext().unregisterReceiver(mIntentReceiver);
+    }",method,
+"    private void updatePatterns() {
+        String formatString = DateFormat.getTimeFormatString(getContext(),
+                ActivityManager.getCurrentUser());
+        int index = getAmPmPartEndIndex(formatString);
+        String timeString;
+        String amPmString;
+        if (index == -1) {
+            timeString = formatString;
+            amPmString = """";
+        } else {
+            timeString = formatString.substring(0, index);
+            amPmString = formatString.substring(index);
+        }
+        mTimeView.setFormat12Hour(timeString);
+        mTimeView.setFormat24Hour(timeString);
+        mTimeView.setContentDescriptionFormat12Hour(formatString);
+        mTimeView.setContentDescriptionFormat24Hour(formatString);
+        mAmPmView.setFormat12Hour(amPmString);
+        mAmPmView.setFormat24Hour(amPmString);
+    }",method,
+"        if (index == -1) {
+            timeString = formatString;
+            amPmString = """";
+        }",method,
+"    private static int getAmPmPartEndIndex(String formatString) {
+        boolean hasAmPm = false;
+        int length = formatString.length();
+        for (int i = length - 1; i >= 0; i--) {
+            char c = formatString.charAt(i);
+            boolean isAmPm = c == 'a';
+            boolean isWhitespace = Character.isWhitespace(c);
+            if (isAmPm) {
+                hasAmPm = true;
+            }
+            if (isAmPm || isWhitespace) {
+                continue;
+            }
+            if (i == length - 1) {
+                // First character was not AM/PM and not whitespace, so it's not ending with AM/PM.
+                return -1;
+            } else {
+                // If we have AM/PM at all, return last index, or -1 to indicate that it's not
+                // ending with AM/PM.
+                return hasAmPm ? i + 1 : -1;
+            }
+        }
+        // Only AM/PM and whitespaces? The whole string is AM/PM. Else: Only whitespaces in the
+        // string.
+        return hasAmPm ? 0 : -1;
+    }",method,
+"        for (int i = length - 1; i >= 0; i--) {
+            char c = formatString.charAt(i);
+            boolean isAmPm = c == 'a';
+            boolean isWhitespace = Character.isWhitespace(c);
+            if (isAmPm) {
+                hasAmPm = true;
+            }
+            if (isAmPm || isWhitespace) {
+                continue;
+            }
+            if (i == length - 1) {
+                // First character was not AM/PM and not whitespace, so it's not ending with AM/PM.
+                return -1;
+            } else {
+                // If we have AM/PM at all, return last index, or -1 to indicate that it's not
+                // ending with AM/PM.
+                return hasAmPm ? i + 1 : -1;
+            }
+        }",method,
+"            if (isAmPm) {
+                hasAmPm = true;
+            }",method,
+"            if (isAmPm || isWhitespace) {
+                continue;
+            }",method,
+"            if (i == length - 1) {
+                // First character was not AM/PM and not whitespace, so it's not ending with AM/PM.
+                return -1;
+            }",method,
+"public class FileOffsetBackingStore extends MemoryOffsetBackingStore {
+    private static final Logger log = LoggerFactory.getLogger(FileOffsetBackingStore.class);
+    private File file;
+    public FileOffsetBackingStore() {
+    }
+    @Override
+    public void configure(WorkerConfig config) {
+        super.configure(config);
+        file = new File(config.getString(StandaloneConfig.OFFSET_STORAGE_FILE_FILENAME_CONFIG));
+    }
+    @Override
+    public synchronized void start() {
+        super.start();
+        log.info(""Starting FileOffsetBackingStore with file {}"", file);
+        load();
+    }
+    @Override
+    public synchronized void stop() {
+        super.stop();
+        // Nothing to do since this doesn't maintain any outstanding connections/data
+        log.info(""Stopped FileOffsetBackingStore"");
+    }
+    @SuppressWarnings(""unchecked"")
+    private void load() {
+        try (SafeObjectInputStream is = new SafeObjectInputStream(new FileInputStream(file))) {
+            Object obj = is.readObject();
+            if (!(obj instanceof HashMap))
+                throw new ConnectException(""Expected HashMap but found "" + obj.getClass());
+            Map<byte[], byte[]> raw = (Map<byte[], byte[]>) obj;
+            data = new HashMap<>();
+            for (Map.Entry<byte[], byte[]> mapEntry : raw.entrySet()) {
+                ByteBuffer key = (mapEntry.getKey() != null) ? ByteBuffer.wrap(mapEntry.getKey()) : null;
+                ByteBuffer value = (mapEntry.getValue() != null) ? ByteBuffer.wrap(mapEntry.getValue()) : null;
+                data.put(key, value);
+            }
+        } catch (FileNotFoundException | EOFException e) {
+            // FileNotFoundException: Ignore, may be new.
+            // EOFException: Ignore, this means the file was missing or corrupt
+        } catch (IOException | ClassNotFoundException e) {
+            throw new ConnectException(e);
+        }
+    }
+    protected void save() {
+        try {
+            ObjectOutputStream os = new ObjectOutputStream(new FileOutputStream(file));
+            Map<byte[], byte[]> raw = new HashMap<>();
+            for (Map.Entry<ByteBuffer, ByteBuffer> mapEntry : data.entrySet()) {
+                byte[] key = (mapEntry.getKey() != null) ? mapEntry.getKey().array() : null;
+                byte[] value = (mapEntry.getValue() != null) ? mapEntry.getValue().array() : null;
+                raw.put(key, value);
+            }
+            os.writeObject(raw);
+            os.close();
+        } catch (IOException e) {
+            throw new ConnectException(e);
+        }
+    }
+}",class,
+"    public FileOffsetBackingStore() {
+    }",method,
+"    @Override
+    public void configure(WorkerConfig config) {
+        super.configure(config);
+        file = new File(config.getString(StandaloneConfig.OFFSET_STORAGE_FILE_FILENAME_CONFIG));
+    }",method,
+"    @Override
+    public synchronized void start() {
+        super.start();
+        log.info(""Starting FileOffsetBackingStore with file {}"", file);
+        load();
+    }",method,
+"    @Override
+    public synchronized void stop() {
+        super.stop();
+        // Nothing to do since this doesn't maintain any outstanding connections/data
+        log.info(""Stopped FileOffsetBackingStore"");
+    }",method,
+"    @SuppressWarnings(""unchecked"")
+    private void load() {
+        try (SafeObjectInputStream is = new SafeObjectInputStream(new FileInputStream(file))) {
+            Object obj = is.readObject();
+            if (!(obj instanceof HashMap))
+                throw new ConnectException(""Expected HashMap but found "" + obj.getClass());
+            Map<byte[], byte[]> raw = (Map<byte[], byte[]>) obj;
+            data = new HashMap<>();
+            for (Map.Entry<byte[], byte[]> mapEntry : raw.entrySet()) {
+                ByteBuffer key = (mapEntry.getKey() != null) ? ByteBuffer.wrap(mapEntry.getKey()) : null;
+                ByteBuffer value = (mapEntry.getValue() != null) ? ByteBuffer.wrap(mapEntry.getValue()) : null;
+                data.put(key, value);
+            }
+        } catch (FileNotFoundException | EOFException e) {
+            // FileNotFoundException: Ignore, may be new.
+            // EOFException: Ignore, this means the file was missing or corrupt
+        } catch (IOException | ClassNotFoundException e) {
+            throw new ConnectException(e);
+        }
+    }",method,
+"    protected void save() {
+        try {
+            ObjectOutputStream os = new ObjectOutputStream(new FileOutputStream(file));
+            Map<byte[], byte[]> raw = new HashMap<>();
+            for (Map.Entry<ByteBuffer, ByteBuffer> mapEntry : data.entrySet()) {
+                byte[] key = (mapEntry.getKey() != null) ? mapEntry.getKey().array() : null;
+                byte[] value = (mapEntry.getValue() != null) ? mapEntry.getValue().array() : null;
+                raw.put(key, value);
+            }
+            os.writeObject(raw);
+            os.close();
+        } catch (IOException e) {
+            throw new ConnectException(e);
+        }
+    }",method,
+"public class HashMapTest
+{
+    @Test
+    public void testPut()
+    {
+        HashMap map = new HashMap(10);
+        assertEquals(map.size(), 0);
+        map.put(1, 4);
+        assertEquals(map.size(),1);
+        map.put(20,7);
+        assertEquals(map.size(),2);
+        map.put(1,8);
+        assertEquals(map.size(),2);//ключ со значением ""1"" уже присутствует, поэтому старая запись с таким ключом
+                                    //заменяется текущей
+        for (int i = map.size(); i<map.getCapacity();i++)//заполняем хеш-карту
+            map.put(i,i*4);
+        assertEquals(map.size(),10);
+        assertTrue(map.isFull());//проверяем полна ли она
+        try{
+            map.put(22,48);//попытка вставки в полную таблицу
+            fail();
+        }
+        catch(RuntimeException ex)
+        {
+        }
+    }
+    @Test
+    public void testGet()
+    {
+        Map map = new HashMap(5);
+        map.put(55,123);
+        assertEquals(map.get(55), 123);
+        map.put(55,111);
+        assertEquals(map.get(55),111);
+        try
+        {
+            map.get(44);//поиск по отсутствующему ключу
+            fail();
+        }
+        catch (RuntimeException ex)
+        {
+        }
+    }
+}",class,
+"public class DateAndTime {
+    public static void main(String[] args) {
+        // TODO code application logic here
+    }
+}",class,
+"    @Test
+    public void testPut()
+    {
+        HashMap map = new HashMap(10);
+        assertEquals(map.size(), 0);
+        map.put(1, 4);
+        assertEquals(map.size(),1);
+        map.put(20,7);
+        assertEquals(map.size(),2);
+        map.put(1,8);
+        assertEquals(map.size(),2);//ключ со значением ""1"" уже присутствует, поэтому старая запись с таким ключом
+                                    //заменяется текущей
+        for (int i = map.size(); i<map.getCapacity();i++)//заполняем хеш-карту
+            map.put(i,i*4);
+        assertEquals(map.size(),10);
+        assertTrue(map.isFull());//проверяем полна ли она
+        try{
+            map.put(22,48);//попытка вставки в полную таблицу
+            fail();
+        }
+        catch(RuntimeException ex)
+        {
+        }
+    }",method,
+"        catch(RuntimeException ex)
+        {
+        }",method,
+"    @Test
+    public void testGet()
+    {
+        Map map = new HashMap(5);
+        map.put(55,123);
+        assertEquals(map.get(55), 123);
+        map.put(55,111);
+        assertEquals(map.get(55),111);
+        try
+        {
+            map.get(44);//поиск по отсутствующему ключу
+            fail();
+        }
+        catch (RuntimeException ex)
+        {
+        }
+    }",method,
+"        catch (RuntimeException ex)
+        {
+        }",method,
+"    public static void main(String[] args) {
+        // TODO code application logic here
+    }",method,
+"public class DoubleSequence extends DoubleVector {
+  private double from;
+  private double by;
+  private int length;
+  public DoubleSequence(AttributeMap attributes, double from, double by, int length) {
+    super(attributes);
+    this.from = from;
+    this.by = by;
+    this.length = length;
+  }
+  public DoubleSequence(double from, double by, int length) {
+    this.from = from;
+    this.by = by;
+    this.length = length;
+  }
+  @Override
+  public double getElementAsDouble(int index) {
+    return from + index * by;
+  }
+  @Override
+  public boolean isConstantAccessTime() {
+    return false;
+  }
+  @Override
+  public int length() {
+    return length;
+  }
+  @Override
+  protected SEXP cloneWithNewAttributes(AttributeMap attributes) {
+    return new DoubleSequence(attributes, from, by, length);
+  }
+  public static AtomicVector fromTo(double n1, double n2) {
+    if(n1 == n2) {
+      return new DoubleArrayVector(n1);
+    } else if(n1 <= n2) {
+      return new DoubleSequence(n1, 1d, (int)Math.ceil(n2-n1));
+    } else {
+      return new DoubleSequence(n1, -1d, (int)(Math.floor(n1-n2)+1));
+    }
+  }
+}",class,
+"  public DoubleSequence(AttributeMap attributes, double from, double by, int length) {
+    super(attributes);
+    this.from = from;
+    this.by = by;
+    this.length = length;
+  }",method,
+"  public DoubleSequence(double from, double by, int length) {
+    this.from = from;
+    this.by = by;
+    this.length = length;
+  }",method,
+"  @Override
+  public double getElementAsDouble(int index) {
+    return from + index * by;
+  }",method,
+"  @Override
+  public boolean isConstantAccessTime() {
+    return false;
+  }",method,
+"  @Override
+  public int length() {
+    return length;
+  }",method,
+"  @Override
+  protected SEXP cloneWithNewAttributes(AttributeMap attributes) {
+    return new DoubleSequence(attributes, from, by, length);
+  }",method,
+"  public static AtomicVector fromTo(double n1, double n2) {
+    if(n1 == n2) {
+      return new DoubleArrayVector(n1);
+    } else if(n1 <= n2) {
+      return new DoubleSequence(n1, 1d, (int)Math.ceil(n2-n1));
+    } else {
+      return new DoubleSequence(n1, -1d, (int)(Math.floor(n1-n2)+1));
+    }
+  }",method,
+"    if(n1 == n2) {
+      return new DoubleArrayVector(n1);
+    }",method,
+"public class AnimatableGradientColorValue extends BaseAnimatableValue<GradientColor,
+    GradientColor> {
+  private AnimatableGradientColorValue(
+      List<Keyframe<GradientColor>> keyframes, GradientColor initialValue) {
+    super(keyframes, initialValue);
+  }
+  @Override public BaseKeyframeAnimation<GradientColor, GradientColor> createAnimation() {
+    if (!hasAnimation()) {
+      return new StaticKeyframeAnimation<>(initialValue);
+    }
+    return new GradientColorKeyframeAnimation(keyframes);
+  }
+  public static final class Factory {
+    private Factory() {
+    }
+    public static AnimatableGradientColorValue newInstance(
+        JSONObject json, LottieComposition composition) {
+      int points = json.optInt(""p"", json.optJSONArray(""k"").length() / 4);
+      AnimatableValueParser.Result<GradientColor> result = AnimatableValueParser
+          .newInstance(json, 1, composition, new ValueFactory(points))
+          .parseJson();
+      GradientColor initialValue = result.initialValue;
+      return new AnimatableGradientColorValue(result.keyframes, initialValue);
+    }
+  }
+  private static class ValueFactory implements AnimatableValue.Factory<GradientColor> {
+    private final int colorPoints;
+    private ValueFactory(int colorPoints) {
+      this.colorPoints = colorPoints;
+    }
+    @Override public GradientColor valueFromObject(Object object, float scale) {
+      JSONArray array = (JSONArray) object;
+      float[] positions = new float[colorPoints];
+      int[] colors = new int[colorPoints];
+      GradientColor gradientColor = new GradientColor(positions, colors);
+      int r = 0;
+      int g = 0;
+      if (array.length() != colorPoints * 4) {
+        Log.w(L.TAG, ""Unexpected gradient length: "" + array.length() +
+            "". Expected "" + (colorPoints * 4) + "". This may affect the appearance of the gradient. "" +
+            ""Make sure to save your After Effects file before exporting an animation with "" +
+            ""gradients."");
+      }
+      for (int i = 0; i < colorPoints * 4; i++) {
+        int colorIndex = i / 4;
+        double value = array.optDouble(i);
+        switch (i % 4) {
+          case 0:
+            // position
+            positions[colorIndex] = (float) value;
+            break;
+          case 1:
+            r = (int) (value * 255);
+            break;
+          case 2:
+            g = (int) (value * 255);
+            break;
+          case 3:
+            int b = (int) (value * 255);
+            colors[colorIndex] = Color.argb(255, r, g, b);
+            break;
+        }
+      }
+      addOpacityStopsToGradientIfNeeded(gradientColor, array);
+      return gradientColor;
+    }
+    private void addOpacityStopsToGradientIfNeeded(GradientColor gradientColor, JSONArray array) {
+      int startIndex = colorPoints * 4;
+      if (array.length() <= startIndex) {
+        return;
+      }
+      int opacityStops = (array.length() - startIndex) / 2;
+      double[] positions = new double[opacityStops];
+      double[] opacities = new double[opacityStops];
+      for (int i = startIndex, j = 0; i < array.length(); i++) {
+        if (i % 2 == 0) {
+          positions[j] = array.optDouble(i);
+        } else {
+          opacities[j] = array.optDouble(i);
+          j++;
+        }
+      }
+      for (int i = 0; i < gradientColor.getSize(); i++) {
+        int color = gradientColor.getColors()[i];
+        color = Color.argb(
+            getOpacityAtPosition(gradientColor.getPositions()[i], positions, opacities),
+            Color.red(color),
+            Color.green(color),
+            Color.blue(color)
+        );
+        gradientColor.getColors()[i] = color;
+      }
+    }
+    @IntRange(from=0, to=255)
+    private int getOpacityAtPosition(double position, double[] positions, double[] opacities) {
+      for (int i = 1; i < positions.length; i++) {
+        double lastPosition = positions[i - 1];
+        double thisPosition = positions[i];
+        if (positions[i] >= position) {
+          double progress = (position - lastPosition) / (thisPosition - lastPosition);
+          return (int) (255 * MiscUtils.lerp(opacities[i - 1], opacities[i], progress));
+        }
+      }
+      return (int) (255 * opacities[opacities.length - 1]);
+    }
+  }
+}",class,
+"  public static final class Factory {
+    private Factory() {
+    }
+    public static AnimatableGradientColorValue newInstance(
+        JSONObject json, LottieComposition composition) {
+      int points = json.optInt(""p"", json.optJSONArray(""k"").length() / 4);
+      AnimatableValueParser.Result<GradientColor> result = AnimatableValueParser
+          .newInstance(json, 1, composition, new ValueFactory(points))
+          .parseJson();
+      GradientColor initialValue = result.initialValue;
+      return new AnimatableGradientColorValue(result.keyframes, initialValue);
+    }
+  }",class,
+"  private static class ValueFactory implements AnimatableValue.Factory<GradientColor> {
+    private final int colorPoints;
+    private ValueFactory(int colorPoints) {
+      this.colorPoints = colorPoints;
+    }
+    @Override public GradientColor valueFromObject(Object object, float scale) {
+      JSONArray array = (JSONArray) object;
+      float[] positions = new float[colorPoints];
+      int[] colors = new int[colorPoints];
+      GradientColor gradientColor = new GradientColor(positions, colors);
+      int r = 0;
+      int g = 0;
+      if (array.length() != colorPoints * 4) {
+        Log.w(L.TAG, ""Unexpected gradient length: "" + array.length() +
+            "". Expected "" + (colorPoints * 4) + "". This may affect the appearance of the gradient. "" +
+            ""Make sure to save your After Effects file before exporting an animation with "" +
+            ""gradients."");
+      }
+      for (int i = 0; i < colorPoints * 4; i++) {
+        int colorIndex = i / 4;
+        double value = array.optDouble(i);
+        switch (i % 4) {
+          case 0:
+            // position
+            positions[colorIndex] = (float) value;
+            break;
+          case 1:
+            r = (int) (value * 255);
+            break;
+          case 2:
+            g = (int) (value * 255);
+            break;
+          case 3:
+            int b = (int) (value * 255);
+            colors[colorIndex] = Color.argb(255, r, g, b);
+            break;
+        }
+      }
+      addOpacityStopsToGradientIfNeeded(gradientColor, array);
+      return gradientColor;
+    }
+    private void addOpacityStopsToGradientIfNeeded(GradientColor gradientColor, JSONArray array) {
+      int startIndex = colorPoints * 4;
+      if (array.length() <= startIndex) {
+        return;
+      }
+      int opacityStops = (array.length() - startIndex) / 2;
+      double[] positions = new double[opacityStops];
+      double[] opacities = new double[opacityStops];
+      for (int i = startIndex, j = 0; i < array.length(); i++) {
+        if (i % 2 == 0) {
+          positions[j] = array.optDouble(i);
+        } else {
+          opacities[j] = array.optDouble(i);
+          j++;
+        }
+      }
+      for (int i = 0; i < gradientColor.getSize(); i++) {
+        int color = gradientColor.getColors()[i];
+        color = Color.argb(
+            getOpacityAtPosition(gradientColor.getPositions()[i], positions, opacities),
+            Color.red(color),
+            Color.green(color),
+            Color.blue(color)
+        );
+        gradientColor.getColors()[i] = color;
+      }
+    }
+    @IntRange(from=0, to=255)
+    private int getOpacityAtPosition(double position, double[] positions, double[] opacities) {
+      for (int i = 1; i < positions.length; i++) {
+        double lastPosition = positions[i - 1];
+        double thisPosition = positions[i];
+        if (positions[i] >= position) {
+          double progress = (position - lastPosition) / (thisPosition - lastPosition);
+          return (int) (255 * MiscUtils.lerp(opacities[i - 1], opacities[i], progress));
+        }
+      }
+      return (int) (255 * opacities[opacities.length - 1]);
+    }
+  }",class,
+"  private AnimatableGradientColorValue(
+      List<Keyframe<GradientColor>> keyframes, GradientColor initialValue) {
+    super(keyframes, initialValue);
+  }",method,
+"    private Factory() {
+    }",method,
+"    public static AnimatableGradientColorValue newInstance(
+        JSONObject json, LottieComposition composition) {
+      int points = json.optInt(""p"", json.optJSONArray(""k"").length() / 4);
+      AnimatableValueParser.Result<GradientColor> result = AnimatableValueParser
+          .newInstance(json, 1, composition, new ValueFactory(points))
+          .parseJson();
+      GradientColor initialValue = result.initialValue;
+      return new AnimatableGradientColorValue(result.keyframes, initialValue);
+    }",method,
+"    private ValueFactory(int colorPoints) {
+      this.colorPoints = colorPoints;
+    }",method,
+"      for (int i = 0; i < colorPoints * 4; i++) {
+        int colorIndex = i / 4;
+        double value = array.optDouble(i);
+        switch (i % 4) {
+          case 0:
+            // position
+            positions[colorIndex] = (float) value;
+            break;
+          case 1:
+            r = (int) (value * 255);
+            break;
+          case 2:
+            g = (int) (value * 255);
+            break;
+          case 3:
+            int b = (int) (value * 255);
+            colors[colorIndex] = Color.argb(255, r, g, b);
+            break;
+        }
+      }",method,
+"        switch (i % 4) {
+          case 0:
+            // position
+            positions[colorIndex] = (float) value;
+            break;
+          case 1:
+            r = (int) (value * 255);
+            break;
+          case 2:
+            g = (int) (value * 255);
+            break;
+          case 3:
+            int b = (int) (value * 255);
+            colors[colorIndex] = Color.argb(255, r, g, b);
+            break;
+        }",method,

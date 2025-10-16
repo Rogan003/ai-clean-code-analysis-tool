@@ -1,0 +1,1020 @@
+code_snippet,type,score
+"  private static boolean defaultFunctionalityWorked(final PsiLanguageInjectionHost host) {
+    final THashSet<String> languages = new THashSet<>();
+    final List<Pair<PsiElement, TextRange>> files = InjectedLanguageManager.getInstance(host.getProject()).getInjectedPsiFiles(host);
+    if (files == null) return false;
+    for (Pair<PsiElement, TextRange> pair : files) {
+      for (Language lang = pair.first.getLanguage(); lang != null; lang = lang.getBaseLanguage()) {
+        languages.add(lang.getID());
+      }
+    }
+    // todo there is a problem: host i.e. literal expression is confused with ""target"" i.e. parameter
+    // todo therefore this part doesn't work for java
+    return Configuration.getProjectInstance(host.getProject()).setHostInjectionEnabled(host, languages, false);
+  }",method,
+"    for (Pair<PsiElement, TextRange> pair : files) {
+      for (Language lang = pair.first.getLanguage(); lang != null; lang = lang.getBaseLanguage()) {
+        languages.add(lang.getID());
+      }
+    }",method,
+"  public boolean startInWriteAction() {
+    return false;
+  }",method,
+"public class DefaultMethod extends DynamicMethod implements CacheableMethod {
+    public static final boolean DEBUG = Options.FFI_COMPILE_DUMP.load() || Options.COMPILE_DUMP.load();
+    public static final boolean REIFY = Options.FFI_COMPILE_REIFY.load();
+    protected final Signature signature;
+    private final NativeInvoker defaultInvoker;
+    private volatile NativeInvoker compiledInvoker;
+    private JITHandle jitHandle;
+    protected final Arity arity;
+    protected final Function function;
+    public DefaultMethod(RubyModule implementationClass, Function function,
+                         Signature signature, NativeInvoker defaultInvoker) {
+        super(implementationClass, Visibility.PUBLIC);
+        this.arity = Arity.fixed(signature.getParameterCount());
+        this.function = function;
+        this.defaultInvoker = defaultInvoker;
+        this.signature = signature;
+    }
+    @Override
+    public final DynamicMethod dup() {
+        return this;
+    }
+    @Override
+    public final Arity getArity() {
+        return arity;
+    }
+    @Override
+    public final boolean isNative() {
+        return true;
+    }
+    public DynamicMethod getMethodForCaching() {
+        return compiledInvoker != null ? compiledInvoker : this;
+    }
+    Signature getSignature() {
+        return signature;
+    }
+    CallContext getCallContext() {
+        return function.getCallContext();
+    }
+    long getFunctionAddress() {
+        return function.getFunctionAddress();
+    }
+    protected final NativeInvoker getNativeInvoker() {
+        return compiledInvoker != null ? compiledInvoker : tryCompilation();
+    }
+    private synchronized JITHandle getJITHandle() {
+        if (jitHandle == null) {
+            jitHandle = JITCompiler.getInstance().getHandle(signature, REIFY);
+        }
+        return jitHandle;
+    }
+    private synchronized NativeInvoker tryCompilation() {
+        if (compiledInvoker != null) {
+            return compiledInvoker;
+        }
+        NativeInvoker invoker = getJITHandle().compile(getImplementationClass(), function, signature, getName());
+        if (invoker != null) {
+            invoker.setName(getName());
+            compiledInvoker = invoker;
+            getImplementationClass().invalidateCacheDescendants();
+            return compiledInvoker;
+        }
+        //
+        // Once compilation has failed, always fallback to the default invoker
+        //
+        if (getJITHandle().compilationFailed()) {
+            compiledInvoker = defaultInvoker;
+            getImplementationClass().invalidateCacheDescendants();
+        }
+        return defaultInvoker;
+    }
+    @Override
+    public IRubyObject call(ThreadContext context, IRubyObject self,
+                            RubyModule clazz, String name, IRubyObject[] args) {
+        return getNativeInvoker().call(context, self, clazz, name, args);
+    }
+    @Override
+    public IRubyObject call(ThreadContext context, IRubyObject self,
+            RubyModule clazz, String name, IRubyObject[] args, Block block) {
+        return getNativeInvoker().call(context, self, clazz, name, args, block);
+    }
+    public final NativeInvoker forceCompilation() {
+        NativeInvoker invoker = null;
+        while (!getJITHandle().compilationFailed() && (invoker = getJITHandle().compile(getImplementationClass(), function, signature, getName())) == null)
+            ;
+        return invoker;
+    }
+}",class,
+"    public DefaultMethod(RubyModule implementationClass, Function function,
+                         Signature signature, NativeInvoker defaultInvoker) {
+        super(implementationClass, Visibility.PUBLIC);
+        this.arity = Arity.fixed(signature.getParameterCount());
+        this.function = function;
+        this.defaultInvoker = defaultInvoker;
+        this.signature = signature;
+    }",method,
+"    @Override
+    public final DynamicMethod dup() {
+        return this;
+    }",method,
+"    @Override
+    public final Arity getArity() {
+        return arity;
+    }",method,
+"    @Override
+    public final boolean isNative() {
+        return true;
+    }",method,
+"    public DynamicMethod getMethodForCaching() {
+        return compiledInvoker != null ? compiledInvoker : this;
+    }",method,
+"    Signature getSignature() {
+        return signature;
+    }",method,
+"    CallContext getCallContext() {
+        return function.getCallContext();
+    }",method,
+"    long getFunctionAddress() {
+        return function.getFunctionAddress();
+    }",method,
+"    protected final NativeInvoker getNativeInvoker() {
+        return compiledInvoker != null ? compiledInvoker : tryCompilation();
+    }",method,
+"    private synchronized JITHandle getJITHandle() {
+        if (jitHandle == null) {
+            jitHandle = JITCompiler.getInstance().getHandle(signature, REIFY);
+        }
+        return jitHandle;
+    }",method,
+"        if (jitHandle == null) {
+            jitHandle = JITCompiler.getInstance().getHandle(signature, REIFY);
+        }",method,
+"    private synchronized NativeInvoker tryCompilation() {
+        if (compiledInvoker != null) {
+            return compiledInvoker;
+        }
+        NativeInvoker invoker = getJITHandle().compile(getImplementationClass(), function, signature, getName());
+        if (invoker != null) {
+            invoker.setName(getName());
+            compiledInvoker = invoker;
+            getImplementationClass().invalidateCacheDescendants();
+            return compiledInvoker;
+        }
+        //
+        // Once compilation has failed, always fallback to the default invoker
+        //
+        if (getJITHandle().compilationFailed()) {
+            compiledInvoker = defaultInvoker;
+            getImplementationClass().invalidateCacheDescendants();
+        }
+        return defaultInvoker;
+    }",method,
+"        if (compiledInvoker != null) {
+            return compiledInvoker;
+        }",method,
+"        if (invoker != null) {
+            invoker.setName(getName());
+            compiledInvoker = invoker;
+            getImplementationClass().invalidateCacheDescendants();
+            return compiledInvoker;
+        }",method,
+"    @Override
+    public IRubyObject call(ThreadContext context, IRubyObject self,
+                            RubyModule clazz, String name, IRubyObject[] args) {
+        return getNativeInvoker().call(context, self, clazz, name, args);
+    }",method,
+"    @Override
+    public IRubyObject call(ThreadContext context, IRubyObject self,
+            RubyModule clazz, String name, IRubyObject[] args, Block block) {
+        return getNativeInvoker().call(context, self, clazz, name, args, block);
+    }",method,
+"    public final NativeInvoker forceCompilation() {
+        NativeInvoker invoker = null;
+        while (!getJITHandle().compilationFailed() && (invoker = getJITHandle().compile(getImplementationClass(), function, signature, getName())) == null)
+            ;
+        return invoker;
+    }",method,
+"public class ECFieldFp implements ECField {
+    private BigInteger p;
+    public ECFieldFp(BigInteger p) {
+        if (p.signum() != 1) {
+            throw new IllegalArgumentException(""p is not positive"");
+        }
+        this.p = p;
+    }
+    public int getFieldSize() {
+        return p.bitLength();
+    };
+    public BigInteger getP() {
+        return p;
+    }
+    public boolean equals(Object obj) {
+        if (this == obj)  return true;
+        if (obj instanceof ECFieldFp) {
+            return (p.equals(((ECFieldFp)obj).p));
+        }
+        return false;
+    }
+    public int hashCode() {
+        return p.hashCode();
+    }
+}",class,
+"public class ECGenParameterSpec implements AlgorithmParameterSpec {
+    private String name;
+    public ECGenParameterSpec(String stdName) {
+        if (stdName == null) {
+            throw new NullPointerException(""stdName is null"");
+        }
+        this.name = stdName;
+    }
+    public String getName() {
+        return name;
+    }
+}",class,
+"    public ECFieldFp(BigInteger p) {
+        if (p.signum() != 1) {
+            throw new IllegalArgumentException(""p is not positive"");
+        }
+        this.p = p;
+    }",method,
+"    public int getFieldSize() {
+        return p.bitLength();
+    }",method,
+"    public BigInteger getP() {
+        return p;
+    }",method,
+"    public boolean equals(Object obj) {
+        if (this == obj)  return true;
+        if (obj instanceof ECFieldFp) {
+            return (p.equals(((ECFieldFp)obj).p));
+        }
+        return false;
+    }",method,
+"        if (obj instanceof ECFieldFp) {
+            return (p.equals(((ECFieldFp)obj).p));
+        }",method,
+"    public int hashCode() {
+        return p.hashCode();
+    }",method,
+"    public ECGenParameterSpec(String stdName) {
+        if (stdName == null) {
+            throw new NullPointerException(""stdName is null"");
+        }
+        this.name = stdName;
+    }",method,
+"        if (stdName == null) {
+            throw new NullPointerException(""stdName is null"");
+        }",method,
+"    public String getName() {
+        return name;
+    }",method,
+"public class PassThroughFilterChain implements FilterChain {
+	@Nullable
+	private Filter filter;
+	@Nullable
+	private FilterChain nextFilterChain;
+	@Nullable
+	private Servlet servlet;
+	public PassThroughFilterChain(Filter filter, FilterChain nextFilterChain) {
+		Assert.notNull(filter, ""Filter must not be null"");
+		Assert.notNull(nextFilterChain, ""'FilterChain must not be null"");
+		this.filter = filter;
+		this.nextFilterChain = nextFilterChain;
+	}
+	public PassThroughFilterChain(Servlet servlet) {
+		Assert.notNull(servlet, ""Servlet must not be null"");
+		this.servlet = servlet;
+	}
+	@Override
+	public void doFilter(ServletRequest request, ServletResponse response) throws ServletException, IOException {
+		if (this.filter != null) {
+			this.filter.doFilter(request, response, this.nextFilterChain);
+		}
+		else {
+			Assert.state(this.servlet != null, ""Neither a Filter not a Servlet set"");
+			this.servlet.service(request, response);
+		}
+	}
+}",class,
+"	public PassThroughFilterChain(Filter filter, FilterChain nextFilterChain) {
+		Assert.notNull(filter, ""Filter must not be null"");
+		Assert.notNull(nextFilterChain, ""'FilterChain must not be null"");
+		this.filter = filter;
+		this.nextFilterChain = nextFilterChain;
+	}",method,
+"	public PassThroughFilterChain(Servlet servlet) {
+		Assert.notNull(servlet, ""Servlet must not be null"");
+		this.servlet = servlet;
+	}",method,
+"	@Override
+	public void doFilter(ServletRequest request, ServletResponse response) throws ServletException, IOException {
+		if (this.filter != null) {
+			this.filter.doFilter(request, response, this.nextFilterChain);
+		}
+		else {
+			Assert.state(this.servlet != null, ""Neither a Filter not a Servlet set"");
+			this.servlet.service(request, response);
+		}
+	}",method,
+"		if (this.filter != null) {
+			this.filter.doFilter(request, response, this.nextFilterChain);
+		}",method,
+"public class MBeanRegistrationSupport {
+	protected final Log logger = LogFactory.getLog(getClass());
+	@Nullable
+	protected MBeanServer server;
+	private final Set<ObjectName> registeredBeans = new LinkedHashSet<>();
+	private RegistrationPolicy registrationPolicy = RegistrationPolicy.FAIL_ON_EXISTING;
+	public void setServer(@Nullable MBeanServer server) {
+		this.server = server;
+	}
+	@Nullable
+	public final MBeanServer getServer() {
+		return this.server;
+	}
+	public void setRegistrationPolicy(RegistrationPolicy registrationPolicy) {
+		Assert.notNull(registrationPolicy, ""RegistrationPolicy must not be null"");
+		this.registrationPolicy = registrationPolicy;
+	}
+	protected void doRegister(Object mbean, ObjectName objectName) throws JMException {
+		Assert.state(this.server != null, ""No MBeanServer set"");
+		ObjectName actualObjectName;
+		synchronized (this.registeredBeans) {
+			ObjectInstance registeredBean = null;
+			try {
+				registeredBean = this.server.registerMBean(mbean, objectName);
+			}
+			catch (InstanceAlreadyExistsException ex) {
+				if (this.registrationPolicy == RegistrationPolicy.IGNORE_EXISTING) {
+					if (logger.isDebugEnabled()) {
+						logger.debug(""Ignoring existing MBean at ["" + objectName + ""]"");
+					}
+				}
+				else if (this.registrationPolicy == RegistrationPolicy.REPLACE_EXISTING) {
+					try {
+						if (logger.isDebugEnabled()) {
+							logger.debug(""Replacing existing MBean at ["" + objectName + ""]"");
+						}
+						this.server.unregisterMBean(objectName);
+						registeredBean = this.server.registerMBean(mbean, objectName);
+					}
+					catch (InstanceNotFoundException ex2) {
+						logger.error(""Unable to replace existing MBean at ["" + objectName + ""]"", ex2);
+						throw ex;
+					}
+				}
+				else {
+					throw ex;
+				}
+			}
+			// Track registration and notify listeners.
+			actualObjectName = (registeredBean != null ? registeredBean.getObjectName() : null);
+			if (actualObjectName == null) {
+				actualObjectName = objectName;
+			}
+			this.registeredBeans.add(actualObjectName);
+		}
+		onRegister(actualObjectName, mbean);
+	}
+	protected void unregisterBeans() {
+		Set<ObjectName> snapshot;
+		synchronized (this.registeredBeans) {
+			snapshot = new LinkedHashSet<>(this.registeredBeans);
+		}
+		if (!snapshot.isEmpty()) {
+			logger.info(""Unregistering JMX-exposed beans"");
+		}
+		for (ObjectName objectName : snapshot) {
+			doUnregister(objectName);
+		}
+	}
+	protected void doUnregister(ObjectName objectName) {
+		Assert.state(this.server != null, ""No MBeanServer set"");
+		boolean actuallyUnregistered = false;
+		synchronized (this.registeredBeans) {
+			if (this.registeredBeans.remove(objectName)) {
+				try {
+					// MBean might already have been unregistered by an external process
+					if (this.server.isRegistered(objectName)) {
+						this.server.unregisterMBean(objectName);
+						actuallyUnregistered = true;
+					}
+					else {
+						if (logger.isWarnEnabled()) {
+							logger.warn(""Could not unregister MBean ["" + objectName + ""] as said MBean "" +
+									""is not registered (perhaps already unregistered by an external process)"");
+						}
+					}
+				}
+				catch (JMException ex) {
+					if (logger.isErrorEnabled()) {
+						logger.error(""Could not unregister MBean ["" + objectName + ""]"", ex);
+					}
+				}
+			}
+		}
+		if (actuallyUnregistered) {
+			onUnregister(objectName);
+		}
+	}
+	protected final ObjectName[] getRegisteredObjectNames() {
+		synchronized (this.registeredBeans) {
+			return this.registeredBeans.toArray(new ObjectName[this.registeredBeans.size()]);
+		}
+	}
+	protected void onRegister(ObjectName objectName, Object mbean) {
+		onRegister(objectName);
+	}
+	protected void onRegister(ObjectName objectName) {
+	}
+	protected void onUnregister(ObjectName objectName) {
+	}
+}",class,
+"	public void setServer(@Nullable MBeanServer server) {
+		this.server = server;
+	}",method,
+"	@Nullable
+	public final MBeanServer getServer() {
+		return this.server;
+	}",method,
+"	public void setRegistrationPolicy(RegistrationPolicy registrationPolicy) {
+		Assert.notNull(registrationPolicy, ""RegistrationPolicy must not be null"");
+		this.registrationPolicy = registrationPolicy;
+	}",method,
+"	protected void doRegister(Object mbean, ObjectName objectName) throws JMException {
+		Assert.state(this.server != null, ""No MBeanServer set"");
+		ObjectName actualObjectName;
+		synchronized (this.registeredBeans) {
+			ObjectInstance registeredBean = null;
+			try {
+				registeredBean = this.server.registerMBean(mbean, objectName);
+			}
+			catch (InstanceAlreadyExistsException ex) {
+				if (this.registrationPolicy == RegistrationPolicy.IGNORE_EXISTING) {
+					if (logger.isDebugEnabled()) {
+						logger.debug(""Ignoring existing MBean at ["" + objectName + ""]"");
+					}
+				}
+				else if (this.registrationPolicy == RegistrationPolicy.REPLACE_EXISTING) {
+					try {
+						if (logger.isDebugEnabled()) {
+							logger.debug(""Replacing existing MBean at ["" + objectName + ""]"");
+						}
+						this.server.unregisterMBean(objectName);
+						registeredBean = this.server.registerMBean(mbean, objectName);
+					}
+					catch (InstanceNotFoundException ex2) {
+						logger.error(""Unable to replace existing MBean at ["" + objectName + ""]"", ex2);
+						throw ex;
+					}
+				}
+				else {
+					throw ex;
+				}
+			}
+			// Track registration and notify listeners.
+			actualObjectName = (registeredBean != null ? registeredBean.getObjectName() : null);
+			if (actualObjectName == null) {
+				actualObjectName = objectName;
+			}
+			this.registeredBeans.add(actualObjectName);
+		}
+		onRegister(actualObjectName, mbean);
+	}",method,
+"		synchronized (this.registeredBeans) {
+			ObjectInstance registeredBean = null;
+			try {
+				registeredBean = this.server.registerMBean(mbean, objectName);
+			}
+			catch (InstanceAlreadyExistsException ex) {
+				if (this.registrationPolicy == RegistrationPolicy.IGNORE_EXISTING) {
+					if (logger.isDebugEnabled()) {
+						logger.debug(""Ignoring existing MBean at ["" + objectName + ""]"");
+					}
+				}
+				else if (this.registrationPolicy == RegistrationPolicy.REPLACE_EXISTING) {
+					try {
+						if (logger.isDebugEnabled()) {
+							logger.debug(""Replacing existing MBean at ["" + objectName + ""]"");
+						}
+						this.server.unregisterMBean(objectName);
+						registeredBean = this.server.registerMBean(mbean, objectName);
+					}
+					catch (InstanceNotFoundException ex2) {
+						logger.error(""Unable to replace existing MBean at ["" + objectName + ""]"", ex2);
+						throw ex;
+					}
+				}
+				else {
+					throw ex;
+				}
+			}
+			// Track registration and notify listeners.
+			actualObjectName = (registeredBean != null ? registeredBean.getObjectName() : null);
+			if (actualObjectName == null) {
+				actualObjectName = objectName;
+			}
+			this.registeredBeans.add(actualObjectName);
+		}",method,
+"			catch (InstanceAlreadyExistsException ex) {
+				if (this.registrationPolicy == RegistrationPolicy.IGNORE_EXISTING) {
+					if (logger.isDebugEnabled()) {
+						logger.debug(""Ignoring existing MBean at ["" + objectName + ""]"");
+					}
+				}
+				else if (this.registrationPolicy == RegistrationPolicy.REPLACE_EXISTING) {
+					try {
+						if (logger.isDebugEnabled()) {
+							logger.debug(""Replacing existing MBean at ["" + objectName + ""]"");
+						}
+						this.server.unregisterMBean(objectName);
+						registeredBean = this.server.registerMBean(mbean, objectName);
+					}
+					catch (InstanceNotFoundException ex2) {
+						logger.error(""Unable to replace existing MBean at ["" + objectName + ""]"", ex2);
+						throw ex;
+					}
+				}
+				else {
+					throw ex;
+				}
+			}",method,
+"				if (this.registrationPolicy == RegistrationPolicy.IGNORE_EXISTING) {
+					if (logger.isDebugEnabled()) {
+						logger.debug(""Ignoring existing MBean at ["" + objectName + ""]"");
+					}
+				}",method,
+"				else if (this.registrationPolicy == RegistrationPolicy.REPLACE_EXISTING) {
+					try {
+						if (logger.isDebugEnabled()) {
+							logger.debug(""Replacing existing MBean at ["" + objectName + ""]"");
+						}
+						this.server.unregisterMBean(objectName);
+						registeredBean = this.server.registerMBean(mbean, objectName);
+					}
+					catch (InstanceNotFoundException ex2) {
+						logger.error(""Unable to replace existing MBean at ["" + objectName + ""]"", ex2);
+						throw ex;
+					}
+				}",method,
+"					catch (InstanceNotFoundException ex2) {
+						logger.error(""Unable to replace existing MBean at ["" + objectName + ""]"", ex2);
+						throw ex;
+					}",method,
+"			if (actualObjectName == null) {
+				actualObjectName = objectName;
+			}",method,
+"	protected void unregisterBeans() {
+		Set<ObjectName> snapshot;
+		synchronized (this.registeredBeans) {
+			snapshot = new LinkedHashSet<>(this.registeredBeans);
+		}
+		if (!snapshot.isEmpty()) {
+			logger.info(""Unregistering JMX-exposed beans"");
+		}
+		for (ObjectName objectName : snapshot) {
+			doUnregister(objectName);
+		}
+	}",method,
+"		synchronized (this.registeredBeans) {
+			snapshot = new LinkedHashSet<>(this.registeredBeans);
+		}",method,
+"		for (ObjectName objectName : snapshot) {
+			doUnregister(objectName);
+		}",method,
+"	protected void doUnregister(ObjectName objectName) {
+		Assert.state(this.server != null, ""No MBeanServer set"");
+		boolean actuallyUnregistered = false;
+		synchronized (this.registeredBeans) {
+			if (this.registeredBeans.remove(objectName)) {
+				try {
+					// MBean might already have been unregistered by an external process
+					if (this.server.isRegistered(objectName)) {
+						this.server.unregisterMBean(objectName);
+						actuallyUnregistered = true;
+					}
+					else {
+						if (logger.isWarnEnabled()) {
+							logger.warn(""Could not unregister MBean ["" + objectName + ""] as said MBean "" +
+									""is not registered (perhaps already unregistered by an external process)"");
+						}
+					}
+				}
+				catch (JMException ex) {
+					if (logger.isErrorEnabled()) {
+						logger.error(""Could not unregister MBean ["" + objectName + ""]"", ex);
+					}
+				}
+			}
+		}
+		if (actuallyUnregistered) {
+			onUnregister(objectName);
+		}
+	}",method,
+"		synchronized (this.registeredBeans) {
+			if (this.registeredBeans.remove(objectName)) {
+				try {
+					// MBean might already have been unregistered by an external process
+					if (this.server.isRegistered(objectName)) {
+						this.server.unregisterMBean(objectName);
+						actuallyUnregistered = true;
+					}
+					else {
+						if (logger.isWarnEnabled()) {
+							logger.warn(""Could not unregister MBean ["" + objectName + ""] as said MBean "" +
+									""is not registered (perhaps already unregistered by an external process)"");
+						}
+					}
+				}
+				catch (JMException ex) {
+					if (logger.isErrorEnabled()) {
+						logger.error(""Could not unregister MBean ["" + objectName + ""]"", ex);
+					}
+				}
+			}
+		}",method,
+"				catch (JMException ex) {
+					if (logger.isErrorEnabled()) {
+						logger.error(""Could not unregister MBean ["" + objectName + ""]"", ex);
+					}
+				}",method,
+"		if (actuallyUnregistered) {
+			onUnregister(objectName);
+		}",method,
+"	protected final ObjectName[] getRegisteredObjectNames() {
+		synchronized (this.registeredBeans) {
+			return this.registeredBeans.toArray(new ObjectName[this.registeredBeans.size()]);
+		}
+	}",method,
+"		synchronized (this.registeredBeans) {
+			return this.registeredBeans.toArray(new ObjectName[this.registeredBeans.size()]);
+		}",method,
+"	protected void onRegister(ObjectName objectName, Object mbean) {
+		onRegister(objectName);
+	}",method,
+"	protected void onRegister(ObjectName objectName) {
+	}",method,
+"	protected void onUnregister(ObjectName objectName) {
+	}",method,
+"import org.slf4j.Logger;
+class Slf4JLogger extends AbstractInternalLogger {
+    private static final long serialVersionUID = 108038972685130825L;
+    private final transient Logger logger;
+    Slf4JLogger(Logger logger) {
+        super(logger.getName());
+        this.logger = logger;
+    }
+    @Override
+    public boolean isTraceEnabled() {
+        return logger.isTraceEnabled();
+    }
+    @Override
+    public void trace(String msg) {
+        logger.trace(msg);
+    }
+    @Override
+    public void trace(String format, Object arg) {
+        logger.trace(format, arg);
+    }
+    @Override
+    public void trace(String format, Object argA, Object argB) {
+        logger.trace(format, argA, argB);
+    }
+    @Override
+    public void trace(String format, Object... argArray) {
+        logger.trace(format, argArray);
+    }
+    @Override
+    public void trace(String msg, Throwable t) {
+        logger.trace(msg, t);
+    }
+    @Override
+    public boolean isDebugEnabled() {
+        return logger.isDebugEnabled();
+    }
+    @Override
+    public void debug(String msg) {
+        logger.debug(msg);
+    }
+    @Override
+    public void debug(String format, Object arg) {
+        logger.debug(format, arg);
+    }
+    @Override
+    public void debug(String format, Object argA, Object argB) {
+        logger.debug(format, argA, argB);
+    }
+    @Override
+    public void debug(String format, Object... argArray) {
+        logger.debug(format, argArray);
+    }
+    @Override
+    public void debug(String msg, Throwable t) {
+        logger.debug(msg, t);
+    }
+    @Override
+    public boolean isInfoEnabled() {
+        return logger.isInfoEnabled();
+    }
+    @Override
+    public void info(String msg) {
+        logger.info(msg);
+    }
+    @Override
+    public void info(String format, Object arg) {
+        logger.info(format, arg);
+    }
+    @Override
+    public void info(String format, Object argA, Object argB) {
+        logger.info(format, argA, argB);
+    }
+    @Override
+    public void info(String format, Object... argArray) {
+        logger.info(format, argArray);
+    }
+    @Override
+    public void info(String msg, Throwable t) {
+        logger.info(msg, t);
+    }
+    @Override
+    public boolean isWarnEnabled() {
+        return logger.isWarnEnabled();
+    }
+    @Override
+    public void warn(String msg) {
+        logger.warn(msg);
+    }
+    @Override
+    public void warn(String format, Object arg) {
+        logger.warn(format, arg);
+    }
+    @Override
+    public void warn(String format, Object... argArray) {
+        logger.warn(format, argArray);
+    }
+    @Override
+    public void warn(String format, Object argA, Object argB) {
+        logger.warn(format, argA, argB);
+    }
+    @Override
+    public void warn(String msg, Throwable t) {
+        logger.warn(msg, t);
+    }
+    @Override
+    public boolean isErrorEnabled() {
+        return logger.isErrorEnabled();
+    }
+    @Override
+    public void error(String msg) {
+        logger.error(msg);
+    }
+    @Override
+    public void error(String format, Object arg) {
+        logger.error(format, arg);
+    }
+    @Override
+    public void error(String format, Object argA, Object argB) {
+        logger.error(format, argA, argB);
+    }
+    @Override
+    public void error(String format, Object... argArray) {
+        logger.error(format, argArray);
+    }
+    @Override
+    public void error(String msg, Throwable t) {
+        logger.error(msg, t);
+    }
+}",class,
+"    Slf4JLogger(Logger logger) {
+        super(logger.getName());
+        this.logger = logger;
+    }",method,
+"    @Override
+    public boolean isTraceEnabled() {
+        return logger.isTraceEnabled();
+    }",method,
+"    @Override
+    public void trace(String msg) {
+        logger.trace(msg);
+    }",method,
+"    @Override
+    public void trace(String format, Object arg) {
+        logger.trace(format, arg);
+    }",method,
+"    @Override
+    public void trace(String format, Object argA, Object argB) {
+        logger.trace(format, argA, argB);
+    }",method,
+"    @Override
+    public void trace(String format, Object... argArray) {
+        logger.trace(format, argArray);
+    }",method,
+"    @Override
+    public void trace(String msg, Throwable t) {
+        logger.trace(msg, t);
+    }",method,
+"    @Override
+    public boolean isDebugEnabled() {
+        return logger.isDebugEnabled();
+    }",method,
+"    @Override
+    public void debug(String msg) {
+        logger.debug(msg);
+    }",method,
+"    @Override
+    public void debug(String format, Object arg) {
+        logger.debug(format, arg);
+    }",method,
+"    @Override
+    public void debug(String format, Object argA, Object argB) {
+        logger.debug(format, argA, argB);
+    }",method,
+"    @Override
+    public void debug(String format, Object... argArray) {
+        logger.debug(format, argArray);
+    }",method,
+"    @Override
+    public void debug(String msg, Throwable t) {
+        logger.debug(msg, t);
+    }",method,
+"    @Override
+    public boolean isInfoEnabled() {
+        return logger.isInfoEnabled();
+    }",method,
+"    @Override
+    public void info(String msg) {
+        logger.info(msg);
+    }",method,
+"    @Override
+    public void info(String format, Object arg) {
+        logger.info(format, arg);
+    }",method,
+"    @Override
+    public void info(String format, Object argA, Object argB) {
+        logger.info(format, argA, argB);
+    }",method,
+"    @Override
+    public void info(String format, Object... argArray) {
+        logger.info(format, argArray);
+    }",method,
+"    @Override
+    public void info(String msg, Throwable t) {
+        logger.info(msg, t);
+    }",method,
+"    @Override
+    public boolean isWarnEnabled() {
+        return logger.isWarnEnabled();
+    }",method,
+"    @Override
+    public void warn(String msg) {
+        logger.warn(msg);
+    }",method,
+"    @Override
+    public void warn(String format, Object arg) {
+        logger.warn(format, arg);
+    }",method,
+"    @Override
+    public void warn(String format, Object... argArray) {
+        logger.warn(format, argArray);
+    }",method,
+"    @Override
+    public void warn(String format, Object argA, Object argB) {
+        logger.warn(format, argA, argB);
+    }",method,
+"    @Override
+    public void warn(String msg, Throwable t) {
+        logger.warn(msg, t);
+    }",method,
+"    @Override
+    public boolean isErrorEnabled() {
+        return logger.isErrorEnabled();
+    }",method,
+"    @Override
+    public void error(String msg) {
+        logger.error(msg);
+    }",method,
+"    @Override
+    public void error(String format, Object arg) {
+        logger.error(format, arg);
+    }",method,
+"    @Override
+    public void error(String format, Object argA, Object argB) {
+        logger.error(format, argA, argB);
+    }",method,
+"    @Override
+    public void error(String format, Object... argArray) {
+        logger.error(format, argArray);
+    }",method,
+"    @Override
+    public void error(String msg, Throwable t) {
+        logger.error(msg, t);
+    }",method,
+"import javax.swing.*;
+class GitRebaseUnstructuredEditor extends DialogWrapper {
+  @NotNull private final JBLabel myRootLabel;
+  @NotNull private final CommitMessage myTextEditor;
+  GitRebaseUnstructuredEditor(@NotNull Project project, @NotNull VirtualFile root, @NotNull String initialText) {
+    super(project, true);
+    setTitle(GitBundle.message(""rebase.unstructured.editor.title""));
+    setOKButtonText(GitBundle.message(""rebase.unstructured.editor.button""));
+    myRootLabel = new JBLabel(""Git Root: "" + root.getPresentableUrl());
+    myTextEditor = new CommitMessage(project, false, false, false);
+    myTextEditor.setText(initialText);
+    myTextEditor.getEditorField().setCaretPosition(0);
+    init();
+  }
+  @NotNull
+  protected JComponent createCenterPanel() {
+    BorderLayoutPanel rootPanel = JBUI.Panels.simplePanel(UIUtil.DEFAULT_HGAP, UIUtil.DEFAULT_VGAP);
+    rootPanel.addToTop(myRootLabel);
+    rootPanel.addToCenter(myTextEditor);
+    return rootPanel;
+  }
+  @Override
+  protected String getDimensionServiceKey() {
+    return getClass().getName();
+  }
+  @Override
+  public JComponent getPreferredFocusedComponent() {
+    return myTextEditor.getEditorField().getFocusTarget();
+  }
+  @NotNull
+  String getText() {
+    return myTextEditor.getComment();
+  }
+}",class,
+"  @NotNull private final JBLabel myRootLabel;
+  @NotNull private final CommitMessage myTextEditor;
+  GitRebaseUnstructuredEditor(@NotNull Project project, @NotNull VirtualFile root, @NotNull String initialText) {
+    super(project, true);
+    setTitle(GitBundle.message(""rebase.unstructured.editor.title""));
+    setOKButtonText(GitBundle.message(""rebase.unstructured.editor.button""));
+    myRootLabel = new JBLabel(""Git Root: "" + root.getPresentableUrl());
+    myTextEditor = new CommitMessage(project, false, false, false);
+    myTextEditor.setText(initialText);
+    myTextEditor.getEditorField().setCaretPosition(0);
+    init();
+  }",method,
+"  @NotNull
+  protected JComponent createCenterPanel() {
+    BorderLayoutPanel rootPanel = JBUI.Panels.simplePanel(UIUtil.DEFAULT_HGAP, UIUtil.DEFAULT_VGAP);
+    rootPanel.addToTop(myRootLabel);
+    rootPanel.addToCenter(myTextEditor);
+    return rootPanel;
+  }",method,
+"  @Override
+  protected String getDimensionServiceKey() {
+    return getClass().getName();
+  }",method,
+"  @Override
+  public JComponent getPreferredFocusedComponent() {
+    return myTextEditor.getEditorField().getFocusTarget();
+  }",method,
+"  @NotNull
+  String getText() {
+    return myTextEditor.getComment();
+  }",method,
+"public final class Sets {
+  private Sets() {}
+  public static <E> HashSet<E> newHashSet() {
+    return new HashSet<E>();
+  }
+  public static <E> HashSet<E> newHashSet(E... elements) {
+    HashSet<E> set = newHashSetWithCapacity(elements.length);
+    Collections.addAll(set, elements);
+    return set;
+  }
+  public static <E> HashSet<E> newHashSetWithCapacity(int capacity) {
+    return new HashSet<E>(capacity);
+  }
+  public static <E> HashSet<E> newHashSet(Iterable<? extends E> elements) {
+    return (elements instanceof Collection)
+        ? new HashSet<E>((Collection<E>) elements)
+        : newHashSet(elements.iterator());
+  }
+  public static <E> HashSet<E> newHashSet(Iterator<? extends E> elements) {
+    HashSet<E> set = newHashSet();
+    while (elements.hasNext()) {
+      set.add(elements.next());
+    }
+    return set;
+  }
+  public static <E> Set<E> newIdentityHashSet() {
+    return Sets.newSetFromMap(new IdentityHashMap<E, Boolean>());
+  }
+  public static <E> Set<E> newSetFromMap(Map<E, Boolean> map) {
+    return Collections.newSetFromMap(map);
+  }
+  public static <E> CopyOnWriteArraySet<E> newCopyOnWriteArraySet() {
+    return new CopyOnWriteArraySet<E>();
+  }
+  public static <E> LinkedHashSet<E> newLinkedHashSet() {
+    return new LinkedHashSet<E>();
+  }
+}",class,
+  private Sets() {},method,
+"  public static <E> HashSet<E> newHashSet() {
+    return new HashSet<E>();
+  }",method,

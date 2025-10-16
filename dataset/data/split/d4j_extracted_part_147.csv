@@ -1,0 +1,1230 @@
+code_snippet,type,score
+"  @Override
+  public BaseInspectionVisitor buildVisitor() {
+    return new NewExceptionWithoutArgumentsVisitor();
+  }",method,
+"    @Override
+    public void visitNewExpression(PsiNewExpression expression) {
+      super.visitNewExpression(expression);
+      final PsiExpressionList argumentList = expression.getArgumentList();
+      if (argumentList == null) {
+        return;
+      }
+      final PsiExpression[] expressions = argumentList.getExpressions();
+      if (expressions.length != 0) {
+        return;
+      }
+      final PsiJavaCodeReferenceElement classReference = expression.getClassReference();
+      if (classReference == null) {
+        return;
+      }
+      final PsiElement target = classReference.resolve();
+      if (!(target instanceof PsiClass)) {
+        return;
+      }
+      final PsiClass aClass = (PsiClass)target;
+      if (!InheritanceUtil.isInheritor(aClass, CommonClassNames.JAVA_LANG_EXCEPTION)) {
+        return;
+      }
+      if (hasAccessibleConstructorWithParameters(aClass, expression)) {
+        registerNewExpressionError(expression);
+      }
+    }",method,
+"      if (argumentList == null) {
+        return;
+      }",method,
+"      if (expressions.length != 0) {
+        return;
+      }",method,
+"      if (classReference == null) {
+        return;
+      }",method,
+"    private boolean hasAccessibleConstructorWithParameters(PsiClass aClass, PsiElement context) {
+      final PsiMethod[] constructors = aClass.getConstructors();
+      for (PsiMethod constructor : constructors) {
+        final PsiParameterList parameterList = constructor.getParameterList();
+        final int count = parameterList.getParametersCount();
+        if (count <= 0) {
+          continue;
+        }
+        final PsiResolveHelper resolveHelper = JavaPsiFacade.getInstance(context.getProject()).getResolveHelper();
+        if (resolveHelper.isAccessible(constructor, context, aClass)) {
+          return true;
+        }
+      }
+      return false;
+    }",method,
+"      for (PsiMethod constructor : constructors) {
+        final PsiParameterList parameterList = constructor.getParameterList();
+        final int count = parameterList.getParametersCount();
+        if (count <= 0) {
+          continue;
+        }
+        final PsiResolveHelper resolveHelper = JavaPsiFacade.getInstance(context.getProject()).getResolveHelper();
+        if (resolveHelper.isAccessible(constructor, context, aClass)) {
+          return true;
+        }
+      }",method,
+"        if (count <= 0) {
+          continue;
+        }",method,
+"public class StringConstant extends Constant
+{
+    public int u2stringIndex;
+    public Clazz referencedClass;
+    public Member referencedMember;
+    public Clazz javaLangStringClass;
+    public StringConstant()
+    {
+    }
+    public StringConstant(int    u2stringIndex,
+                          Clazz  referencedClass,
+                          Member referenceMember)
+    {
+        this.u2stringIndex    = u2stringIndex;
+        this.referencedClass  = referencedClass;
+        this.referencedMember = referenceMember;
+    }
+    public String getString(Clazz clazz)
+    {
+        return clazz.getString(u2stringIndex);
+    }
+    // Implementations for Constant.
+    public int getTag()
+    {
+        return ClassConstants.CONSTANT_String;
+    }
+    public void accept(Clazz clazz, ConstantVisitor constantVisitor)
+    {
+        constantVisitor.visitStringConstant(clazz, this);
+    }
+    public void referencedClassAccept(ClassVisitor classVisitor)
+    {
+        if (referencedClass  != null &&
+            referencedMember == null)
+        {
+            referencedClass.accept(classVisitor);
+        }
+    }
+    public void referencedMemberAccept(MemberVisitor memberVisitor)
+    {
+        if (referencedMember != null)
+        {
+            referencedMember.accept(referencedClass, memberVisitor);
+        }
+    }
+}",class,
+"    public StringConstant()
+    {
+    }",method,
+"    public StringConstant(int    u2stringIndex,
+                          Clazz  referencedClass,
+                          Member referenceMember)
+    {
+        this.u2stringIndex    = u2stringIndex;
+        this.referencedClass  = referencedClass;
+        this.referencedMember = referenceMember;
+    }",method,
+"    public String getString(Clazz clazz)
+    {
+        return clazz.getString(u2stringIndex);
+    }",method,
+"    public int getTag()
+    {
+        return ClassConstants.CONSTANT_String;
+    }",method,
+"    public void accept(Clazz clazz, ConstantVisitor constantVisitor)
+    {
+        constantVisitor.visitStringConstant(clazz, this);
+    }",method,
+"    public void referencedClassAccept(ClassVisitor classVisitor)
+    {
+        if (referencedClass  != null &&
+            referencedMember == null)
+        {
+            referencedClass.accept(classVisitor);
+        }
+    }",method,
+"        if (referencedClass  != null &&
+            referencedMember == null)
+        {
+            referencedClass.accept(classVisitor);
+        }",method,
+"    public void referencedMemberAccept(MemberVisitor memberVisitor)
+    {
+        if (referencedMember != null)
+        {
+            referencedMember.accept(referencedClass, memberVisitor);
+        }
+    }",method,
+"        if (referencedMember != null)
+        {
+            referencedMember.accept(referencedClass, memberVisitor);
+        }",method,
+"public abstract class AbstractRtlTest extends AbstractEditorTest {
+  private static final char RTL_CHAR_REPRESENTATION = 'R';
+  private static final char RTL_CHAR = '\u05d0'; // Hebrew 'aleph' letter
+  private static final char BIDI_BOUNDARY_MARKER = '|';
+  protected void prepareText(String text) {
+    prepare(text, TestFileType.TEXT);
+  }
+  protected void prepare(String text, TestFileType fileType) {
+    init(text.replace(RTL_CHAR_REPRESENTATION, RTL_CHAR), fileType);
+  }
+  protected void checkResult(String text) {
+    checkResultByText(text.replace(RTL_CHAR_REPRESENTATION, RTL_CHAR));
+  }
+  protected static void checkOffsetConversions(int offset,
+                                             LogicalPosition logicalPosition,
+                                             VisualPosition visualPositionTowardsSmallerOffsets,
+                                             VisualPosition visualPositionTowardsLargerOffsets,
+                                             Point xy) {
+    checkOffsetConversions(offset, logicalPosition, visualPositionTowardsSmallerOffsets, visualPositionTowardsLargerOffsets, xy, xy);
+  }
+  protected static void checkOffsetConversions(int offset,
+                                             LogicalPosition logicalPosition, 
+                                             VisualPosition visualPositionTowardsSmallerOffsets, 
+                                             VisualPosition visualPositionTowardsLargerOffsets, 
+                                             Point xyTowardsSmallerOffsets, 
+                                             Point xyTowardsLargerOffsets) {
+    assertLogicalPositionsEqual(""Wrong offset->logicalPosition calculation"", logicalPosition, myEditor.offsetToLogicalPosition(offset));
+    assertVisualPositionsEqual(""Wrong beforeOffset->visualPosition calculation"",
+                               visualPositionTowardsSmallerOffsets, myEditor.offsetToVisualPosition(offset, false, false));
+    assertVisualPositionsEqual(""Wrong afterOffset->visualPosition calculation"",
+                               visualPositionTowardsLargerOffsets, myEditor.offsetToVisualPosition(offset, true, false));
+    assertEquals(""Wrong afterOffset->visualLine calculation"", 
+                 visualPositionTowardsLargerOffsets.line, ((EditorImpl)myEditor).offsetToVisualLine(offset));
+    assertEquals(""Wrong beforeOffset->xy calculation"", xyTowardsSmallerOffsets, myEditor.offsetToXY(offset, false, false));
+    assertEquals(""Wrong afterOffset->xy calculation"", xyTowardsLargerOffsets, myEditor.offsetToXY(offset, true, false));
+  }
+  protected static void checkLPConversions(int logicalColumn, int offset,
+                                         VisualPosition visualPositionForPrecedingLp, VisualPosition visualPositionForSucceedingLp) {
+    checkLPConversions(lB(logicalColumn), offset, visualPositionForPrecedingLp);
+    checkLPConversions(lF(logicalColumn), offset, visualPositionForSucceedingLp);
+  }
+  protected static void checkLPConversions(LogicalPosition logicalPosition, int offset, VisualPosition visualPosition) {
+    assertEquals(""Wrong logicalPosition->offset calculation"", offset, myEditor.logicalPositionToOffset(logicalPosition));
+    assertVisualPositionsEqual(""Wrong logicalPosition->visualPosition calculation"",
+                               visualPosition, myEditor.logicalToVisualPosition(logicalPosition));
+  }
+  protected static void checkVPConversions(int visualColumn, LogicalPosition logicalPositionForLeftLeaningVp,
+                                         LogicalPosition logicalPositionForRightLeaningVp, Point xy) {
+    checkVPConversions(vL(visualColumn), logicalPositionForLeftLeaningVp, xy);
+    checkVPConversions(vR(visualColumn), logicalPositionForRightLeaningVp, xy);
+  }
+  protected static void checkVPConversions(VisualPosition visualPosition, LogicalPosition logicalPosition, Point xy) {
+    assertLogicalPositionsEqual(""Wrong visualPosition->logicalPosition calculation"",
+                                logicalPosition, myEditor.visualToLogicalPosition(visualPosition));
+    assertEquals(""Wrong visualPosition->xy calculation"", xy, myEditor.visualPositionToXY(visualPosition));
+  }
+  protected static void checkXYConversion(Point xy,
+                                       VisualPosition visualPosition) {
+    assertVisualPositionsEqual(""Wrong xy->visualPosition calculation"", visualPosition, myEditor.xyToVisualPosition(xy));
+  }
+  protected static void assertLogicalPositionsEqual(String message, LogicalPosition expectedPosition, LogicalPosition actualPosition) {
+    assertEquals(message, expectedPosition, actualPosition);
+    assertEquals(message + "" (direction flag)"", expectedPosition.leansForward, actualPosition.leansForward);
+  }
+  protected static void assertVisualPositionsEqual(String message, VisualPosition expectedPosition, VisualPosition actualPosition) {
+    assertEquals(message, expectedPosition, actualPosition);
+    assertEquals(message + "" (direction flag)"", expectedPosition.leansRight, actualPosition.leansRight);
+  }
+  protected static void assertCaretPosition(VisualPosition visualPosition) {
+    assertVisualPositionsEqual(""Wrong caret position"", visualPosition, myEditor.getCaretModel().getVisualPosition());
+  }
+  protected static void assertVisualCaretLocation(int visualColumn, boolean reversedDirection) {
+    assertVisualCaretLocation(0, visualColumn, reversedDirection);
+  }
+  protected static void assertVisualCaretLocation(int visualLine, int visualColumn, boolean reversedDirection) {
+    assertEquals(1, myEditor.getCaretModel().getCaretCount());
+    Caret caret = myEditor.getCaretModel().getPrimaryCaret();
+    assertEquals(visualLine, caret.getVisualPosition().line);
+    assertEquals(visualColumn, caret.getVisualPosition().column);
+    assertEquals(reversedDirection, caret.isAtRtlLocation());
+  }
+  protected void checkBidiRunBoundaries(String textWithBoundaryMarkers, String fileExtension) {
+    java.util.List<Integer> expectedBoundaryPositions = new ArrayList<>();
+    StringBuilder rawTextBuilder = new StringBuilder();
+    for (int i = 0; i < textWithBoundaryMarkers.length(); i++) {
+      char c = textWithBoundaryMarkers.charAt(i);
+      if (c == BIDI_BOUNDARY_MARKER) {
+        expectedBoundaryPositions.add(rawTextBuilder.length());
+      }
+      else {
+        rawTextBuilder.append(c);
+      }
+    }
+    String rawText = rawTextBuilder.toString();
+    configureFromFileText(getTestName(false) + ""."" + fileExtension, rawText.replace(RTL_CHAR_REPRESENTATION, RTL_CHAR));
+    java.util.List<Integer> actualBoundaryPositions = new ArrayList<>();
+    for (int i = 1; i < rawText.length(); i++) {
+      if (!myEditor.offsetToVisualPosition(i, false, false).equals(
+        myEditor.offsetToVisualPosition(i, true, false))) {
+        actualBoundaryPositions.add(i);
+      }
+    }
+    assertEquals(""Unexpected bidi regions boundaries' positions"", expectedBoundaryPositions, actualBoundaryPositions);
+  }
+  // logical position leaning backward
+  protected static LogicalPosition lB(int column) {
+    return new LogicalPosition(0, column);
+  }
+  // logical position leaning backward
+  protected static LogicalPosition lB(int line, int column) {
+    return new LogicalPosition(line, column);
+  }
+  // logical position leaning forward
+  protected static LogicalPosition lF(int column) {
+    return new LogicalPosition(0, column, true);
+  }
+  // logical position leaning forward
+  protected static LogicalPosition lF(int line, int column) {
+    return new LogicalPosition(line, column, true);
+  }
+  // visual position leaning to the left
+  protected static VisualPosition vL(int column) {
+    return new VisualPosition(0, column);
+  }
+  // visual position leaning to the left
+  protected static VisualPosition vL(int line, int column) {
+    return new VisualPosition(line, column);
+  }
+  // visual position leaning to the right
+  protected static VisualPosition vR(int column) {
+    return new VisualPosition(0, column, true);
+  }
+  // visual position leaning to the right
+  protected static VisualPosition vR(int line, int column) {
+    return new VisualPosition(line, column, true);
+  }
+  protected static Point xy(int x) {
+    return new Point(x, 0);
+  }
+  protected static Point xy(int x, int y) {
+    return new Point(x, y);
+  }
+}",class,
+"  protected void prepareText(String text) {
+    prepare(text, TestFileType.TEXT);
+  }",method,
+"  protected void prepare(String text, TestFileType fileType) {
+    init(text.replace(RTL_CHAR_REPRESENTATION, RTL_CHAR), fileType);
+  }",method,
+"  protected void checkResult(String text) {
+    checkResultByText(text.replace(RTL_CHAR_REPRESENTATION, RTL_CHAR));
+  }",method,
+"  protected static void checkOffsetConversions(int offset,
+                                             LogicalPosition logicalPosition,
+                                             VisualPosition visualPositionTowardsSmallerOffsets,
+                                             VisualPosition visualPositionTowardsLargerOffsets,
+                                             Point xy) {
+    checkOffsetConversions(offset, logicalPosition, visualPositionTowardsSmallerOffsets, visualPositionTowardsLargerOffsets, xy, xy);
+  }",method,
+"  protected static void checkOffsetConversions(int offset,
+                                             LogicalPosition logicalPosition, 
+                                             VisualPosition visualPositionTowardsSmallerOffsets, 
+                                             VisualPosition visualPositionTowardsLargerOffsets, 
+                                             Point xyTowardsSmallerOffsets, 
+                                             Point xyTowardsLargerOffsets) {
+    assertLogicalPositionsEqual(""Wrong offset->logicalPosition calculation"", logicalPosition, myEditor.offsetToLogicalPosition(offset));
+    assertVisualPositionsEqual(""Wrong beforeOffset->visualPosition calculation"",
+                               visualPositionTowardsSmallerOffsets, myEditor.offsetToVisualPosition(offset, false, false));
+    assertVisualPositionsEqual(""Wrong afterOffset->visualPosition calculation"",
+                               visualPositionTowardsLargerOffsets, myEditor.offsetToVisualPosition(offset, true, false));
+    assertEquals(""Wrong afterOffset->visualLine calculation"", 
+                 visualPositionTowardsLargerOffsets.line, ((EditorImpl)myEditor).offsetToVisualLine(offset));
+    assertEquals(""Wrong beforeOffset->xy calculation"", xyTowardsSmallerOffsets, myEditor.offsetToXY(offset, false, false));
+    assertEquals(""Wrong afterOffset->xy calculation"", xyTowardsLargerOffsets, myEditor.offsetToXY(offset, true, false));
+  }",method,
+"  protected static void checkLPConversions(int logicalColumn, int offset,
+                                         VisualPosition visualPositionForPrecedingLp, VisualPosition visualPositionForSucceedingLp) {
+    checkLPConversions(lB(logicalColumn), offset, visualPositionForPrecedingLp);
+    checkLPConversions(lF(logicalColumn), offset, visualPositionForSucceedingLp);
+  }",method,
+"  protected static void checkLPConversions(LogicalPosition logicalPosition, int offset, VisualPosition visualPosition) {
+    assertEquals(""Wrong logicalPosition->offset calculation"", offset, myEditor.logicalPositionToOffset(logicalPosition));
+    assertVisualPositionsEqual(""Wrong logicalPosition->visualPosition calculation"",
+                               visualPosition, myEditor.logicalToVisualPosition(logicalPosition));
+  }",method,
+"  protected static void checkVPConversions(int visualColumn, LogicalPosition logicalPositionForLeftLeaningVp,
+                                         LogicalPosition logicalPositionForRightLeaningVp, Point xy) {
+    checkVPConversions(vL(visualColumn), logicalPositionForLeftLeaningVp, xy);
+    checkVPConversions(vR(visualColumn), logicalPositionForRightLeaningVp, xy);
+  }",method,
+"  protected static void checkVPConversions(VisualPosition visualPosition, LogicalPosition logicalPosition, Point xy) {
+    assertLogicalPositionsEqual(""Wrong visualPosition->logicalPosition calculation"",
+                                logicalPosition, myEditor.visualToLogicalPosition(visualPosition));
+    assertEquals(""Wrong visualPosition->xy calculation"", xy, myEditor.visualPositionToXY(visualPosition));
+  }",method,
+"  protected static void checkXYConversion(Point xy,
+                                       VisualPosition visualPosition) {
+    assertVisualPositionsEqual(""Wrong xy->visualPosition calculation"", visualPosition, myEditor.xyToVisualPosition(xy));
+  }",method,
+"  protected static void assertLogicalPositionsEqual(String message, LogicalPosition expectedPosition, LogicalPosition actualPosition) {
+    assertEquals(message, expectedPosition, actualPosition);
+    assertEquals(message + "" (direction flag)"", expectedPosition.leansForward, actualPosition.leansForward);
+  }",method,
+"  protected static void assertVisualPositionsEqual(String message, VisualPosition expectedPosition, VisualPosition actualPosition) {
+    assertEquals(message, expectedPosition, actualPosition);
+    assertEquals(message + "" (direction flag)"", expectedPosition.leansRight, actualPosition.leansRight);
+  }",method,
+"  protected static void assertCaretPosition(VisualPosition visualPosition) {
+    assertVisualPositionsEqual(""Wrong caret position"", visualPosition, myEditor.getCaretModel().getVisualPosition());
+  }",method,
+"  protected static void assertVisualCaretLocation(int visualColumn, boolean reversedDirection) {
+    assertVisualCaretLocation(0, visualColumn, reversedDirection);
+  }",method,
+"  protected static void assertVisualCaretLocation(int visualLine, int visualColumn, boolean reversedDirection) {
+    assertEquals(1, myEditor.getCaretModel().getCaretCount());
+    Caret caret = myEditor.getCaretModel().getPrimaryCaret();
+    assertEquals(visualLine, caret.getVisualPosition().line);
+    assertEquals(visualColumn, caret.getVisualPosition().column);
+    assertEquals(reversedDirection, caret.isAtRtlLocation());
+  }",method,
+"  protected void checkBidiRunBoundaries(String textWithBoundaryMarkers, String fileExtension) {
+    java.util.List<Integer> expectedBoundaryPositions = new ArrayList<>();
+    StringBuilder rawTextBuilder = new StringBuilder();
+    for (int i = 0; i < textWithBoundaryMarkers.length(); i++) {
+      char c = textWithBoundaryMarkers.charAt(i);
+      if (c == BIDI_BOUNDARY_MARKER) {
+        expectedBoundaryPositions.add(rawTextBuilder.length());
+      }
+      else {
+        rawTextBuilder.append(c);
+      }
+    }
+    String rawText = rawTextBuilder.toString();
+    configureFromFileText(getTestName(false) + ""."" + fileExtension, rawText.replace(RTL_CHAR_REPRESENTATION, RTL_CHAR));
+    java.util.List<Integer> actualBoundaryPositions = new ArrayList<>();
+    for (int i = 1; i < rawText.length(); i++) {
+      if (!myEditor.offsetToVisualPosition(i, false, false).equals(
+        myEditor.offsetToVisualPosition(i, true, false))) {
+        actualBoundaryPositions.add(i);
+      }
+    }
+    assertEquals(""Unexpected bidi regions boundaries' positions"", expectedBoundaryPositions, actualBoundaryPositions);
+  }",method,
+"      if (c == BIDI_BOUNDARY_MARKER) {
+        expectedBoundaryPositions.add(rawTextBuilder.length());
+      }",method,
+"  protected static LogicalPosition lB(int column) {
+    return new LogicalPosition(0, column);
+  }",method,
+"  protected static LogicalPosition lB(int line, int column) {
+    return new LogicalPosition(line, column);
+  }",method,
+"  protected static LogicalPosition lF(int column) {
+    return new LogicalPosition(0, column, true);
+  }",method,
+"  protected static LogicalPosition lF(int line, int column) {
+    return new LogicalPosition(line, column, true);
+  }",method,
+"  protected static VisualPosition vL(int column) {
+    return new VisualPosition(0, column);
+  }",method,
+"  protected static VisualPosition vL(int line, int column) {
+    return new VisualPosition(line, column);
+  }",method,
+"  protected static VisualPosition vR(int column) {
+    return new VisualPosition(0, column, true);
+  }",method,
+"  protected static VisualPosition vR(int line, int column) {
+    return new VisualPosition(line, column, true);
+  }",method,
+"  protected static Point xy(int x) {
+    return new Point(x, 0);
+  }",method,
+"  protected static Point xy(int x, int y) {
+    return new Point(x, y);
+  }",method,
+"public class JavaFxGetterSetterPrototypeProvider extends GetterSetterPrototypeProvider {
+  private static final Logger LOG = Logger.getInstance(JavaFxGetterSetterPrototypeProvider.class);
+  @Override
+  public boolean canGeneratePrototypeFor(PsiField field) {
+    return InheritanceUtil.isInheritor(field.getType(), JavaFxCommonNames.JAVAFX_BEANS_VALUE_OBSERVABLE_VALUE) &&
+           JavaFxPsiUtil.getWrappedPropertyType(field, field.getProject(), JavaFxCommonNames.ourReadOnlyMap) != null;
+  }
+  @Override
+  public PsiMethod[] generateGetters(PsiField field) {
+    final Project project = field.getProject();
+    final PsiElementFactory factory = JavaPsiFacade.getElementFactory(project);
+    final PsiMethod getter = GenerateMembersUtil.generateSimpleGetterPrototype(field);
+    final PsiType wrappedType = JavaFxPsiUtil.getWrappedPropertyType(field, project, JavaFxCommonNames.ourReadOnlyMap);
+    LOG.assertTrue(wrappedType != null, field.getType());
+    getter.setName(PropertyUtilBase.suggestGetterName(PropertyUtilBase.suggestPropertyName(field), wrappedType));
+    final PsiTypeElement returnTypeElement = getter.getReturnTypeElement();
+    LOG.assertTrue(returnTypeElement != null);
+    returnTypeElement.replace(factory.createTypeElement(wrappedType));
+    final PsiCodeBlock getterBody = getter.getBody();
+    LOG.assertTrue(getterBody != null);
+    final String fieldName = field.getName();
+    getterBody.getStatements()[0].replace(factory.createStatementFromText(""return "" + fieldName + "".get();"", field));
+    final PsiMethod propertyGetter = PropertyUtilBase.generateGetterPrototype(field);
+    if (propertyGetter != null && fieldName != null) {
+      propertyGetter.setName(JavaCodeStyleManager.getInstance(project).variableNameToPropertyName(fieldName, VariableKind.FIELD) + JavaFxCommonNames.PROPERTY_METHOD_SUFFIX);
+    }
+    return new PsiMethod[] {getter, GenerateMembersUtil.annotateOnOverrideImplement(field.getContainingClass(), propertyGetter)};
+  }
+  @Override
+  public PsiMethod[] generateSetters(PsiField field) {
+    final PsiMethod setter = GenerateMembersUtil.generateSimpleSetterPrototype(field);
+    final Project project = field.getProject();
+    final PsiType wrappedType = JavaFxPsiUtil.getWrappedPropertyType(field, project, JavaFxCommonNames.ourWritableMap);
+    LOG.assertTrue(wrappedType != null, field.getType());
+    final PsiElementFactory elementFactory = JavaPsiFacade.getElementFactory(project);
+    final PsiTypeElement newTypeElement = elementFactory.createTypeElement(wrappedType);
+    final PsiParameter[] parameters = setter.getParameterList().getParameters();
+    LOG.assertTrue(parameters.length == 1);
+    final PsiParameter parameter = parameters[0];
+    final PsiTypeElement typeElement = parameter.getTypeElement();
+    LOG.assertTrue(typeElement != null);
+    typeElement.replace(newTypeElement);
+    final PsiCodeBlock body = setter.getBody();
+    LOG.assertTrue(body != null);
+    body.getStatements()[0].replace(elementFactory.createStatementFromText(""this."" + field.getName() + "".set("" + parameter.getName() + "");"", field));
+    return new PsiMethod[] {setter};
+  }
+  @Override
+  public PsiMethod[] findGetters(PsiClass psiClass, String propertyName) {
+    final String getterName = suggestGetterName(propertyName);
+    final PsiMethod specificGetter = psiClass
+      .findMethodBySignature(JavaPsiFacade.getElementFactory(psiClass.getProject()).createMethod(getterName, PsiType.VOID), false);
+    if (specificGetter != null) {
+      final PsiMethod getter = PropertyUtilBase.findPropertyGetter(psiClass, propertyName, false, false);
+      return getter == null ? new PsiMethod[] {specificGetter} : new PsiMethod[] {getter, specificGetter};
+    }
+    return super.findGetters(psiClass, propertyName);
+  }
+  @Override
+  public String suggestGetterName(String propertyName) {
+    return propertyName + JavaFxCommonNames.PROPERTY_METHOD_SUFFIX;
+  }
+  @Override
+  public boolean isSimpleGetter(PsiMethod method, String oldPropertyName) {
+    return method.getName().equals(suggestGetterName(oldPropertyName));
+  }
+  @Override
+  public boolean isReadOnly(PsiField field) {
+    return !InheritanceUtil.isInheritor(field.getType(), JavaFxCommonNames.JAVAFX_BEANS_VALUE_WRITABLE_VALUE);
+  }
+}",class,
+"  @Override
+  public boolean canGeneratePrototypeFor(PsiField field) {
+    return InheritanceUtil.isInheritor(field.getType(), JavaFxCommonNames.JAVAFX_BEANS_VALUE_OBSERVABLE_VALUE) &&
+           JavaFxPsiUtil.getWrappedPropertyType(field, field.getProject(), JavaFxCommonNames.ourReadOnlyMap) != null;
+  }",method,
+"  @Override
+  public PsiMethod[] generateGetters(PsiField field) {
+    final Project project = field.getProject();
+    final PsiElementFactory factory = JavaPsiFacade.getElementFactory(project);
+    final PsiMethod getter = GenerateMembersUtil.generateSimpleGetterPrototype(field);
+    final PsiType wrappedType = JavaFxPsiUtil.getWrappedPropertyType(field, project, JavaFxCommonNames.ourReadOnlyMap);
+    LOG.assertTrue(wrappedType != null, field.getType());
+    getter.setName(PropertyUtilBase.suggestGetterName(PropertyUtilBase.suggestPropertyName(field), wrappedType));
+    final PsiTypeElement returnTypeElement = getter.getReturnTypeElement();
+    LOG.assertTrue(returnTypeElement != null);
+    returnTypeElement.replace(factory.createTypeElement(wrappedType));
+    final PsiCodeBlock getterBody = getter.getBody();
+    LOG.assertTrue(getterBody != null);
+    final String fieldName = field.getName();
+    getterBody.getStatements()[0].replace(factory.createStatementFromText(""return "" + fieldName + "".get();"", field));
+    final PsiMethod propertyGetter = PropertyUtilBase.generateGetterPrototype(field);
+    if (propertyGetter != null && fieldName != null) {
+      propertyGetter.setName(JavaCodeStyleManager.getInstance(project).variableNameToPropertyName(fieldName, VariableKind.FIELD) + JavaFxCommonNames.PROPERTY_METHOD_SUFFIX);
+    }
+    return new PsiMethod[] {getter, GenerateMembersUtil.annotateOnOverrideImplement(field.getContainingClass(), propertyGetter)};
+  }",method,
+"    if (propertyGetter != null && fieldName != null) {
+      propertyGetter.setName(JavaCodeStyleManager.getInstance(project).variableNameToPropertyName(fieldName, VariableKind.FIELD) + JavaFxCommonNames.PROPERTY_METHOD_SUFFIX);
+    }",method,
+"  @Override
+  public PsiMethod[] generateSetters(PsiField field) {
+    final PsiMethod setter = GenerateMembersUtil.generateSimpleSetterPrototype(field);
+    final Project project = field.getProject();
+    final PsiType wrappedType = JavaFxPsiUtil.getWrappedPropertyType(field, project, JavaFxCommonNames.ourWritableMap);
+    LOG.assertTrue(wrappedType != null, field.getType());
+    final PsiElementFactory elementFactory = JavaPsiFacade.getElementFactory(project);
+    final PsiTypeElement newTypeElement = elementFactory.createTypeElement(wrappedType);
+    final PsiParameter[] parameters = setter.getParameterList().getParameters();
+    LOG.assertTrue(parameters.length == 1);
+    final PsiParameter parameter = parameters[0];
+    final PsiTypeElement typeElement = parameter.getTypeElement();
+    LOG.assertTrue(typeElement != null);
+    typeElement.replace(newTypeElement);
+    final PsiCodeBlock body = setter.getBody();
+    LOG.assertTrue(body != null);
+    body.getStatements()[0].replace(elementFactory.createStatementFromText(""this."" + field.getName() + "".set("" + parameter.getName() + "");"", field));
+    return new PsiMethod[] {setter};
+  }",method,
+"  @Override
+  public PsiMethod[] findGetters(PsiClass psiClass, String propertyName) {
+    final String getterName = suggestGetterName(propertyName);
+    final PsiMethod specificGetter = psiClass
+      .findMethodBySignature(JavaPsiFacade.getElementFactory(psiClass.getProject()).createMethod(getterName, PsiType.VOID), false);
+    if (specificGetter != null) {
+      final PsiMethod getter = PropertyUtilBase.findPropertyGetter(psiClass, propertyName, false, false);
+      return getter == null ? new PsiMethod[] {specificGetter} : new PsiMethod[] {getter, specificGetter};
+    }
+    return super.findGetters(psiClass, propertyName);
+  }",method,
+"    if (specificGetter != null) {
+      final PsiMethod getter = PropertyUtilBase.findPropertyGetter(psiClass, propertyName, false, false);
+      return getter == null ? new PsiMethod[] {specificGetter} : new PsiMethod[] {getter, specificGetter};
+    }",method,
+"  @Override
+  public String suggestGetterName(String propertyName) {
+    return propertyName + JavaFxCommonNames.PROPERTY_METHOD_SUFFIX;
+  }",method,
+"  @Override
+  public boolean isSimpleGetter(PsiMethod method, String oldPropertyName) {
+    return method.getName().equals(suggestGetterName(oldPropertyName));
+  }",method,
+"  @Override
+  public boolean isReadOnly(PsiField field) {
+    return !InheritanceUtil.isInheritor(field.getType(), JavaFxCommonNames.JAVAFX_BEANS_VALUE_WRITABLE_VALUE);
+  }",method,
+"public class JndiRmiProxyFactoryBean extends JndiRmiClientInterceptor
+		implements FactoryBean<Object>, BeanClassLoaderAware {
+	private ClassLoader beanClassLoader = ClassUtils.getDefaultClassLoader();
+	private Object serviceProxy;
+	@Override
+	public void setBeanClassLoader(ClassLoader classLoader) {
+		this.beanClassLoader = classLoader;
+	}
+	@Override
+	public void afterPropertiesSet() throws NamingException {
+		super.afterPropertiesSet();
+		Class<?> ifc = getServiceInterface();
+		Assert.notNull(ifc, ""Property 'serviceInterface' is required"");
+		this.serviceProxy = new ProxyFactory(ifc, this).getProxy(this.beanClassLoader);
+	}
+	@Override
+	public Object getObject() {
+		return this.serviceProxy;
+	}
+	@Override
+	public Class<?> getObjectType() {
+		return getServiceInterface();
+	}
+	@Override
+	public boolean isSingleton() {
+		return true;
+	}
+}",class,
+"	@Override
+	public void setBeanClassLoader(ClassLoader classLoader) {
+		this.beanClassLoader = classLoader;
+	}",method,
+"	@Override
+	public void afterPropertiesSet() throws NamingException {
+		super.afterPropertiesSet();
+		Class<?> ifc = getServiceInterface();
+		Assert.notNull(ifc, ""Property 'serviceInterface' is required"");
+		this.serviceProxy = new ProxyFactory(ifc, this).getProxy(this.beanClassLoader);
+	}",method,
+"	@Override
+	public Object getObject() {
+		return this.serviceProxy;
+	}",method,
+"	@Override
+	public Class<?> getObjectType() {
+		return getServiceInterface();
+	}",method,
+"	@Override
+	public boolean isSingleton() {
+		return true;
+	}",method,
+"public final class FingerprintManagerCompatApi23 {
+    private static FingerprintManager getFingerprintManager(Context ctx) {
+        return ctx.getSystemService(FingerprintManager.class);
+    }
+    public static boolean hasEnrolledFingerprints(Context context) {
+        try {
+            return getFingerprintManager(context).hasEnrolledFingerprints();
+        } catch (Exception e) {
+            FileLog.e(e);
+        }
+        return false;
+    }
+    public static boolean isHardwareDetected(Context context) {
+        try {
+            return getFingerprintManager(context).isHardwareDetected();
+        } catch (Exception e) {
+            FileLog.e(e);
+        }
+        return false;
+    }
+    public static void authenticate(Context context, CryptoObject crypto, int flags, Object cancel,
+                                    AuthenticationCallback callback, Handler handler) {
+        try {
+            getFingerprintManager(context).authenticate(wrapCryptoObject(crypto),
+                    (android.os.CancellationSignal) cancel, flags,
+                    wrapCallback(callback), handler);
+        } catch (Exception e) {
+            FileLog.e(e);
+        }
+    }
+    private static FingerprintManager.CryptoObject wrapCryptoObject(CryptoObject cryptoObject) {
+        if (cryptoObject == null) {
+            return null;
+        } else if (cryptoObject.getCipher() != null) {
+            return new FingerprintManager.CryptoObject(cryptoObject.getCipher());
+        } else if (cryptoObject.getSignature() != null) {
+            return new FingerprintManager.CryptoObject(cryptoObject.getSignature());
+        } else if (cryptoObject.getMac() != null) {
+            return new FingerprintManager.CryptoObject(cryptoObject.getMac());
+        } else {
+            return null;
+        }
+    }
+    private static CryptoObject unwrapCryptoObject(FingerprintManager.CryptoObject cryptoObject) {
+        if (cryptoObject == null) {
+            return null;
+        } else if (cryptoObject.getCipher() != null) {
+            return new CryptoObject(cryptoObject.getCipher());
+        } else if (cryptoObject.getSignature() != null) {
+            return new CryptoObject(cryptoObject.getSignature());
+        } else if (cryptoObject.getMac() != null) {
+            return new CryptoObject(cryptoObject.getMac());
+        } else {
+            return null;
+        }
+    }
+    private static FingerprintManager.AuthenticationCallback wrapCallback(
+            final AuthenticationCallback callback) {
+        return new FingerprintManager.AuthenticationCallback() {
+            @Override
+            public void onAuthenticationError(int errMsgId, CharSequence errString) {
+                callback.onAuthenticationError(errMsgId, errString);
+            }
+            @Override
+            public void onAuthenticationHelp(int helpMsgId, CharSequence helpString) {
+                callback.onAuthenticationHelp(helpMsgId, helpString);
+            }
+            @Override
+            public void onAuthenticationSucceeded(FingerprintManager.AuthenticationResult result) {
+                callback.onAuthenticationSucceeded(new AuthenticationResultInternal(
+                        unwrapCryptoObject(result.getCryptoObject())));
+            }
+            @Override
+            public void onAuthenticationFailed() {
+                callback.onAuthenticationFailed();
+            }
+        };
+    }
+    public static class CryptoObject {
+        private final Signature mSignature;
+        private final Cipher mCipher;
+        private final Mac mMac;
+        public CryptoObject(Signature signature) {
+            mSignature = signature;
+            mCipher = null;
+            mMac = null;
+        }
+        public CryptoObject(Cipher cipher) {
+            mCipher = cipher;
+            mSignature = null;
+            mMac = null;
+        }
+        public CryptoObject(Mac mac) {
+            mMac = mac;
+            mCipher = null;
+            mSignature = null;
+        }
+        public Signature getSignature() {
+            return mSignature;
+        }
+        public Cipher getCipher() {
+            return mCipher;
+        }
+        public Mac getMac() {
+            return mMac;
+        }
+    }
+    public static final class AuthenticationResultInternal {
+        private CryptoObject mCryptoObject;
+        public AuthenticationResultInternal(CryptoObject crypto) {
+            mCryptoObject = crypto;
+        }
+        public CryptoObject getCryptoObject() {
+            return mCryptoObject;
+        }
+    }
+    public static abstract class AuthenticationCallback {
+        public void onAuthenticationError(int errMsgId, CharSequence errString) {
+        }
+        public void onAuthenticationHelp(int helpMsgId, CharSequence helpString) {
+        }
+        public void onAuthenticationSucceeded(AuthenticationResultInternal result) {
+        }
+        public void onAuthenticationFailed() {
+        }
+    }
+}",class,
+"    public static class CryptoObject {
+        private final Signature mSignature;
+        private final Cipher mCipher;
+        private final Mac mMac;
+        public CryptoObject(Signature signature) {
+            mSignature = signature;
+            mCipher = null;
+            mMac = null;
+        }
+        public CryptoObject(Cipher cipher) {
+            mCipher = cipher;
+            mSignature = null;
+            mMac = null;
+        }
+        public CryptoObject(Mac mac) {
+            mMac = mac;
+            mCipher = null;
+            mSignature = null;
+        }
+        public Signature getSignature() {
+            return mSignature;
+        }
+        public Cipher getCipher() {
+            return mCipher;
+        }
+        public Mac getMac() {
+            return mMac;
+        }
+    }",class,
+"    public static final class AuthenticationResultInternal {
+        private CryptoObject mCryptoObject;
+        public AuthenticationResultInternal(CryptoObject crypto) {
+            mCryptoObject = crypto;
+        }
+        public CryptoObject getCryptoObject() {
+            return mCryptoObject;
+        }
+    }",class,
+"    public static abstract class AuthenticationCallback {
+        public void onAuthenticationError(int errMsgId, CharSequence errString) {
+        }
+        public void onAuthenticationHelp(int helpMsgId, CharSequence helpString) {
+        }
+        public void onAuthenticationSucceeded(AuthenticationResultInternal result) {
+        }
+        public void onAuthenticationFailed() {
+        }
+    }",class,
+"    private static FingerprintManager getFingerprintManager(Context ctx) {
+        return ctx.getSystemService(FingerprintManager.class);
+    }",method,
+"    public static boolean hasEnrolledFingerprints(Context context) {
+        try {
+            return getFingerprintManager(context).hasEnrolledFingerprints();
+        } catch (Exception e) {
+            FileLog.e(e);
+        }
+        return false;
+    }",method,
+"    public static boolean isHardwareDetected(Context context) {
+        try {
+            return getFingerprintManager(context).isHardwareDetected();
+        } catch (Exception e) {
+            FileLog.e(e);
+        }
+        return false;
+    }",method,
+"    public static void authenticate(Context context, CryptoObject crypto, int flags, Object cancel,
+                                    AuthenticationCallback callback, Handler handler) {
+        try {
+            getFingerprintManager(context).authenticate(wrapCryptoObject(crypto),
+                    (android.os.CancellationSignal) cancel, flags,
+                    wrapCallback(callback), handler);
+        } catch (Exception e) {
+            FileLog.e(e);
+        }
+    }",method,
+"    private static FingerprintManager.CryptoObject wrapCryptoObject(CryptoObject cryptoObject) {
+        if (cryptoObject == null) {
+            return null;
+        } else if (cryptoObject.getCipher() != null) {
+            return new FingerprintManager.CryptoObject(cryptoObject.getCipher());
+        } else if (cryptoObject.getSignature() != null) {
+            return new FingerprintManager.CryptoObject(cryptoObject.getSignature());
+        } else if (cryptoObject.getMac() != null) {
+            return new FingerprintManager.CryptoObject(cryptoObject.getMac());
+        } else {
+            return null;
+        }
+    }",method,
+"        if (cryptoObject == null) {
+            return null;
+        }",method,
+"    private static CryptoObject unwrapCryptoObject(FingerprintManager.CryptoObject cryptoObject) {
+        if (cryptoObject == null) {
+            return null;
+        } else if (cryptoObject.getCipher() != null) {
+            return new CryptoObject(cryptoObject.getCipher());
+        } else if (cryptoObject.getSignature() != null) {
+            return new CryptoObject(cryptoObject.getSignature());
+        } else if (cryptoObject.getMac() != null) {
+            return new CryptoObject(cryptoObject.getMac());
+        } else {
+            return null;
+        }
+    }",method,
+"        if (cryptoObject == null) {
+            return null;
+        }",method,
+"    private static FingerprintManager.AuthenticationCallback wrapCallback(
+            final AuthenticationCallback callback) {
+        return new FingerprintManager.AuthenticationCallback() {
+            @Override
+            public void onAuthenticationError(int errMsgId, CharSequence errString) {
+                callback.onAuthenticationError(errMsgId, errString);
+            }
+            @Override
+            public void onAuthenticationHelp(int helpMsgId, CharSequence helpString) {
+                callback.onAuthenticationHelp(helpMsgId, helpString);
+            }
+            @Override
+            public void onAuthenticationSucceeded(FingerprintManager.AuthenticationResult result) {
+                callback.onAuthenticationSucceeded(new AuthenticationResultInternal(
+                        unwrapCryptoObject(result.getCryptoObject())));
+            }
+            @Override
+            public void onAuthenticationFailed() {
+                callback.onAuthenticationFailed();
+            }
+        };
+    }",method,
+"        return new FingerprintManager.AuthenticationCallback() {
+            @Override
+            public void onAuthenticationError(int errMsgId, CharSequence errString) {
+                callback.onAuthenticationError(errMsgId, errString);
+            }
+            @Override
+            public void onAuthenticationHelp(int helpMsgId, CharSequence helpString) {
+                callback.onAuthenticationHelp(helpMsgId, helpString);
+            }
+            @Override
+            public void onAuthenticationSucceeded(FingerprintManager.AuthenticationResult result) {
+                callback.onAuthenticationSucceeded(new AuthenticationResultInternal(
+                        unwrapCryptoObject(result.getCryptoObject())));
+            }
+            @Override
+            public void onAuthenticationFailed() {
+                callback.onAuthenticationFailed();
+            }
+        }",method,
+"            @Override
+            public void onAuthenticationError(int errMsgId, CharSequence errString) {
+                callback.onAuthenticationError(errMsgId, errString);
+            }",method,
+"            @Override
+            public void onAuthenticationHelp(int helpMsgId, CharSequence helpString) {
+                callback.onAuthenticationHelp(helpMsgId, helpString);
+            }",method,
+"            @Override
+            public void onAuthenticationSucceeded(FingerprintManager.AuthenticationResult result) {
+                callback.onAuthenticationSucceeded(new AuthenticationResultInternal(
+                        unwrapCryptoObject(result.getCryptoObject())));
+            }",method,
+"            @Override
+            public void onAuthenticationFailed() {
+                callback.onAuthenticationFailed();
+            }",method,
+"        public CryptoObject(Signature signature) {
+            mSignature = signature;
+            mCipher = null;
+            mMac = null;
+        }",method,
+"        public CryptoObject(Cipher cipher) {
+            mCipher = cipher;
+            mSignature = null;
+            mMac = null;
+        }",method,
+"        public CryptoObject(Mac mac) {
+            mMac = mac;
+            mCipher = null;
+            mSignature = null;
+        }",method,
+"        public Signature getSignature() {
+            return mSignature;
+        }",method,
+"        public Cipher getCipher() {
+            return mCipher;
+        }",method,
+"        public Mac getMac() {
+            return mMac;
+        }",method,
+"        public AuthenticationResultInternal(CryptoObject crypto) {
+            mCryptoObject = crypto;
+        }",method,
+"        public CryptoObject getCryptoObject() {
+            return mCryptoObject;
+        }",method,
+"        public void onAuthenticationError(int errMsgId, CharSequence errString) {
+        }",method,
+"        public void onAuthenticationHelp(int helpMsgId, CharSequence helpString) {
+        }",method,
+"        public void onAuthenticationSucceeded(AuthenticationResultInternal result) {
+        }",method,
+"        public void onAuthenticationFailed() {
+        }",method,
+"public class SimpleImageHandler implements GenericImageHandler, SVGSyntax, ErrorConstants {
+    // duplicate the string here to remove dependencies on
+    // org.apache.flex.forks.batik.dom.util.XLinkSupport
+    static final String XLINK_NAMESPACE_URI =
+        ""http://www.w3.org/1999/xlink"";
+    protected ImageHandler imageHandler;
+    public SimpleImageHandler(ImageHandler imageHandler){
+        if (imageHandler == null){
+            throw new IllegalArgumentException();
+        }
+        this.imageHandler = imageHandler;
+    }
+    public void setDOMTreeManager(DOMTreeManager domTreeManager){
+    }
+    public Element createElement(SVGGeneratorContext generatorContext) {
+        // Create a DOM Element in SVG namespace to refer to an image
+        Element imageElement =
+            generatorContext.getDOMFactory().createElementNS
+            (SVG_NAMESPACE_URI, SVG_IMAGE_TAG);
+        return imageElement;
+    }
+    public AffineTransform handleImage(Image image,
+                                       Element imageElement,
+                                       int x, int y,
+                                       int width, int height,
+                                       SVGGeneratorContext generatorContext) {
+        int imageWidth      = image.getWidth(null);
+        int imageHeight     = image.getHeight(null);
+        if(imageWidth == 0 || imageHeight == 0 ||
+           width == 0 || height == 0) {
+            // Forget about it
+            handleEmptyImage(imageElement);
+        } else {
+            imageHandler.handleImage(image, imageElement, generatorContext);
+            setImageAttributes(imageElement, x, y, width, height,
+                               generatorContext);
+        }
+        return null;
+    }
+    public AffineTransform handleImage(RenderedImage image,
+                                       Element imageElement,
+                                       int x, int y,
+                                       int width, int height,
+                                       SVGGeneratorContext generatorContext) {
+        int imageWidth      = image.getWidth();
+        int imageHeight     = image.getHeight();
+        if(imageWidth == 0 || imageHeight == 0 ||
+           width == 0 || height == 0) {
+            // Forget about it
+            handleEmptyImage(imageElement);
+        } else {
+            imageHandler.handleImage(image, imageElement, generatorContext);
+            setImageAttributes(imageElement, x, y, width, height, 
+                               generatorContext);
+        }
+        return null;
+    }
+    public AffineTransform handleImage(RenderableImage image,
+                                       Element imageElement,
+                                       double x, double y,
+                                       double width, double height,
+                                       SVGGeneratorContext generatorContext) {
+        double imageWidth   = image.getWidth();
+        double imageHeight  = image.getHeight();
+        if(imageWidth == 0 || imageHeight == 0 ||
+           width == 0 || height == 0) {
+            // Forget about it
+            handleEmptyImage(imageElement);
+        } else {
+            imageHandler.handleImage(image, imageElement, generatorContext);
+            setImageAttributes(imageElement, x, y, width, height, generatorContext);
+        }
+        return null;
+    }
+    protected void setImageAttributes(Element imageElement,
+                                      double x, 
+                                      double y,
+                                      double width,
+                                      double height,
+                                      SVGGeneratorContext generatorContext) {
+        imageElement.setAttributeNS(null,
+                                    SVG_X_ATTRIBUTE,
+                                    generatorContext.doubleString(x));
+        imageElement.setAttributeNS(null,
+                                    SVG_Y_ATTRIBUTE,
+                                    generatorContext.doubleString(y));
+        imageElement.setAttributeNS(null,
+                                    SVG_WIDTH_ATTRIBUTE,
+                                    generatorContext.doubleString(width));
+        imageElement.setAttributeNS(null,
+                                    SVG_HEIGHT_ATTRIBUTE,
+                                    generatorContext.doubleString(height));
+        imageElement.setAttributeNS(null,
+                                    SVG_PRESERVE_ASPECT_RATIO_ATTRIBUTE,
+                                    SVG_NONE_VALUE);
+    }
+    protected void handleEmptyImage(Element imageElement) {
+        imageElement.setAttributeNS(XLINK_NAMESPACE_URI,
+                                    XLINK_HREF_QNAME, """");
+        imageElement.setAttributeNS(null, SVG_WIDTH_ATTRIBUTE, ""0"");
+        imageElement.setAttributeNS(null, SVG_HEIGHT_ATTRIBUTE, ""0"");
+    }",class,
+"public class EnterInPropertiesFileHandler extends EnterHandlerDelegateAdapter {
+  @Override
+  public Result preprocessEnter(@NotNull final PsiFile file, @NotNull final Editor editor, @NotNull final Ref<Integer> caretOffsetRef, @NotNull final Ref<Integer> caretAdvance,
+                                @NotNull final DataContext dataContext, final EditorActionHandler originalHandler) {
+    if (file instanceof PropertiesFile) {
+      int caretOffset = caretOffsetRef.get().intValue();
+      Document document = editor.getDocument();
+      PsiDocumentManager.getInstance(file.getProject()).commitDocument(document);
+      PsiElement psiAtOffset = file.findElementAt(caretOffset);
+      handleEnterInPropertiesFile(editor, document, psiAtOffset, caretOffset);
+      return Result.Stop;
+    }
+    return Result.Continue;
+  }
+  private static void handleEnterInPropertiesFile(final Editor editor,
+                                                  final Document document,
+                                                  final PsiElement psiAtOffset,
+                                                  int caretOffset) {
+    String text = document.getText();
+    String line = text.substring(0, caretOffset);
+    int i = line.lastIndexOf('\n');
+    if (i > 0) {
+      line = line.substring(i);
+    }
+    final String toInsert;
+    if (PropertiesUtil.isUnescapedBackSlashAtTheEnd(line)) {
+      toInsert = ""\n  "";
+    }
+    else {
+      final IElementType elementType = psiAtOffset == null ? null : psiAtOffset.getNode().getElementType();
+      if (elementType == PropertiesTokenTypes.VALUE_CHARACTERS) {
+        toInsert = ""\\\n  "";
+      }
+      else if (elementType == PropertiesTokenTypes.END_OF_LINE_COMMENT && ""#!"".indexOf(document.getText().charAt(caretOffset)) == -1) {
+        toInsert = ""\n#"";
+      }
+      else {
+        toInsert = ""\n"";
+      }
+    }
+    document.insertString(caretOffset, toInsert);
+    caretOffset+=toInsert.length();
+    editor.getCaretModel().moveToOffset(caretOffset);
+    editor.getScrollingModel().scrollToCaret(ScrollType.RELATIVE);
+    editor.getSelectionModel().removeSelection();
+  }
+}",class,
+"  @Override
+  public Result preprocessEnter(@NotNull final PsiFile file, @NotNull final Editor editor, @NotNull final Ref<Integer> caretOffsetRef, @NotNull final Ref<Integer> caretAdvance,
+                                @NotNull final DataContext dataContext, final EditorActionHandler originalHandler) {
+    if (file instanceof PropertiesFile) {
+      int caretOffset = caretOffsetRef.get().intValue();
+      Document document = editor.getDocument();
+      PsiDocumentManager.getInstance(file.getProject()).commitDocument(document);
+      PsiElement psiAtOffset = file.findElementAt(caretOffset);
+      handleEnterInPropertiesFile(editor, document, psiAtOffset, caretOffset);
+      return Result.Stop;
+    }
+    return Result.Continue;
+  }",method,
+"    if (file instanceof PropertiesFile) {
+      int caretOffset = caretOffsetRef.get().intValue();
+      Document document = editor.getDocument();
+      PsiDocumentManager.getInstance(file.getProject()).commitDocument(document);
+      PsiElement psiAtOffset = file.findElementAt(caretOffset);
+      handleEnterInPropertiesFile(editor, document, psiAtOffset, caretOffset);
+      return Result.Stop;
+    }",method,
+"  private static void handleEnterInPropertiesFile(final Editor editor,
+                                                  final Document document,
+                                                  final PsiElement psiAtOffset,
+                                                  int caretOffset) {
+    String text = document.getText();
+    String line = text.substring(0, caretOffset);
+    int i = line.lastIndexOf('\n');
+    if (i > 0) {
+      line = line.substring(i);
+    }
+    final String toInsert;
+    if (PropertiesUtil.isUnescapedBackSlashAtTheEnd(line)) {
+      toInsert = ""\n  "";
+    }
+    else {
+      final IElementType elementType = psiAtOffset == null ? null : psiAtOffset.getNode().getElementType();
+      if (elementType == PropertiesTokenTypes.VALUE_CHARACTERS) {
+        toInsert = ""\\\n  "";
+      }
+      else if (elementType == PropertiesTokenTypes.END_OF_LINE_COMMENT && ""#!"".indexOf(document.getText().charAt(caretOffset)) == -1) {
+        toInsert = ""\n#"";
+      }
+      else {
+        toInsert = ""\n"";
+      }
+    }
+    document.insertString(caretOffset, toInsert);
+    caretOffset+=toInsert.length();
+    editor.getCaretModel().moveToOffset(caretOffset);
+    editor.getScrollingModel().scrollToCaret(ScrollType.RELATIVE);
+    editor.getSelectionModel().removeSelection();
+  }",method,
+"    if (i > 0) {
+      line = line.substring(i);
+    }",method,
+"      if (elementType == PropertiesTokenTypes.VALUE_CHARACTERS) {
+        toInsert = ""\\\n  "";
+      }",method,
+"                                @NotNull final DataContext dataContext, final EditorActionHandler originalHandler) {
+    if (file instanceof PropertiesFile) {
+      int caretOffset = caretOffsetRef.get().intValue();
+      Document document = editor.getDocument();
+      PsiDocumentManager.getInstance(file.getProject()).commitDocument(document);
+      PsiElement psiAtOffset = file.findElementAt(caretOffset);
+      handleEnterInPropertiesFile(editor, document, psiAtOffset, caretOffset);
+      return Result.Stop;
+    }",method,
+"public class SQLAlterDatabaseStatement extends SQLStatementImpl implements SQLAlterStatement {
+    private SQLName name;
+    private boolean upgradeDataDirectoryName;
+    private SQLAlterCharacter character;
+    public SQLAlterDatabaseStatement() {
+    }
+    public SQLAlterDatabaseStatement(String dbType) {
+        this.setDbType(dbType);
+    }
+    public SQLName getName() {
+        return name;
+    }
+    public void setName(SQLName name) {
+        if (name != null) {
+            name.setParent(this);
+        }
+        this.name = name;
+    }
+    public SQLAlterCharacter getCharacter() {
+        return character;
+    }
+    public void setCharacter(SQLAlterCharacter character) {
+        if (character != null) {
+            character.setParent(this);
+        }
+        this.character = character;
+    }
+    public boolean isUpgradeDataDirectoryName() {
+        return upgradeDataDirectoryName;
+    }
+    public void setUpgradeDataDirectoryName(boolean upgradeDataDirectoryName) {
+        this.upgradeDataDirectoryName = upgradeDataDirectoryName;
+    }
+    @Override
+    protected void accept0(SQLASTVisitor visitor) {
+        if (visitor.visit(this)) {
+            acceptChild(visitor, name);
+        }
+        visitor.endVisit(this);
+    }
+    @Override
+    public List<SQLObject> getChildren() {
+        return Collections.<SQLObject>singletonList(name);
+    }
+}",class,

@@ -1,0 +1,1530 @@
+code_snippet,type,score
+"    @UiThreadTest
+    public void testIssueComment() {
+        Issue issue = Issue.builder()
+                .number(5)
+                .build();
+        IssueCommentPayload payload = IssueCommentPayload.builder()
+                .issue(issue)
+                .build();
+        GitHubEvent event = createEvent(GitHubEventType.IssueCommentEvent, payload);
+        updateView(event);
+        verify(""user commented on issue 5 on user/repo"");
+    }",method,
+"    @UiThreadTest
+    public void testIssue() {
+        Issue issue = Issue.builder()
+                .number(8)
+                .build();
+        IssuesPayload payload = IssuesPayload.builder()
+                .action(""closed"")
+                .issue(issue)
+                .build();
+        GitHubEvent event = createEvent(GitHubEventType.IssuesEvent, payload);
+        updateView(event);
+        verify(""user closed issue 8 on user/repo"");
+    }",method,
+"    @UiThreadTest
+    public void testAddMember() {
+        User user = User.builder()
+                .login(""person"")
+                .build();
+        MemberPayload payload = MemberPayload.builder()
+                .member(user)
+                .build();
+        GitHubEvent event = createEvent(GitHubEventType.MemberEvent, payload);
+        updateView(event);
+        verify(""user added person as a collaborator to user/repo"");
+    }",method,
+"    @UiThreadTest
+    public void testOpenSourced() {
+        GitHubEvent event = createEvent(GitHubEventType.PublicEvent, null);
+        updateView(event);
+        verify(""user open sourced repository user/repo"");
+    }",method,
+"    @UiThreadTest
+    public void testWatch() {
+        GitHubEvent event = createEvent(GitHubEventType.WatchEvent, null);
+        updateView(event);
+        verify(""user starred user/repo"");
+    }",method,
+"    @UiThreadTest
+    public void testPullRequest() {
+        PullRequestPayload payload = PullRequestPayload.builder()
+                .number(30)
+                .action(""merged"")
+                .build();
+        GitHubEvent event = createEvent(GitHubEventType.PullRequestEvent, payload);
+        updateView(event);
+        verify(""user merged pull request 30 on user/repo"");
+    }",method,
+"    @UiThreadTest
+    public void testPush() {
+        PushPayload payload = PushPayload.builder()
+                .ref(""refs/heads/master"")
+                .build();
+        GitHubEvent event = createEvent(GitHubEventType.PushEvent, payload);
+        updateView(event);
+        verify(""user pushed to master at user/repo"");
+    }",method,
+"    @UiThreadTest
+    public void testTeamAdd() {
+        Team team = Team.builder()
+                .name(""t1"")
+                .build();
+        Repository repo = Repository.builder()
+                .name(""r2"")
+                .build();
+        TeamAddPayload payload = TeamAddPayload.builder()
+                .repository(repo)
+                .team(team)
+                .build();
+        GitHubEvent event = createEvent(GitHubEventType.TeamAddEvent, payload);
+        updateView(event);
+        verify(""user added r2 to team t1"");
+    }",method,
+"public class SelectBuilderTest {
+  @Test
+  public void shouldProduceExpectedSimpleSelectStatement() {
+    String expected =
+        ""SELECT P.ID, P.USERNAME, P.PASSWORD, P.FIRST_NAME, P.LAST_NAME\n"" +
+            ""FROM PERSON P\n"" +
+            ""WHERE (P.ID like #id# AND P.FIRST_NAME like #firstName# AND P.LAST_NAME like #lastName#)\n"" +
+            ""ORDER BY P.LAST_NAME"";
+    assertEquals(expected, example2(""a"", ""b"", ""c""));
+  }
+  @Test
+  public void shouldProduceExpectedSimpleSelectStatementMissingFirstParam() {
+    String expected =
+        ""SELECT P.ID, P.USERNAME, P.PASSWORD, P.FIRST_NAME, P.LAST_NAME\n"" +
+            ""FROM PERSON P\n"" +
+            ""WHERE (P.FIRST_NAME like #firstName# AND P.LAST_NAME like #lastName#)\n"" +
+            ""ORDER BY P.LAST_NAME"";
+    assertEquals(expected, example2(null, ""b"", ""c""));
+  }
+  @Test
+  public void shouldProduceExpectedSimpleSelectStatementMissingFirstTwoParams() {
+    String expected =
+        ""SELECT P.ID, P.USERNAME, P.PASSWORD, P.FIRST_NAME, P.LAST_NAME\n"" +
+            ""FROM PERSON P\n"" +
+            ""WHERE (P.LAST_NAME like #lastName#)\n"" +
+            ""ORDER BY P.LAST_NAME"";
+    assertEquals(expected, example2(null, null, ""c""));
+  }
+  @Test
+  public void shouldProduceExpectedSimpleSelectStatementMissingAllParams() {
+    String expected =
+        ""SELECT P.ID, P.USERNAME, P.PASSWORD, P.FIRST_NAME, P.LAST_NAME\n"" +
+            ""FROM PERSON P\n"" +
+            ""ORDER BY P.LAST_NAME"";
+    assertEquals(expected, example2(null, null, null));
+  }
+  @Test
+  public void shouldProduceExpectedComplexSelectStatement() {
+    String expected =
+        ""SELECT P.ID, P.USERNAME, P.PASSWORD, P.FULL_NAME, P.LAST_NAME, P.CREATED_ON, P.UPDATED_ON\n"" +
+            ""FROM PERSON P, ACCOUNT A\n"" +
+            ""INNER JOIN DEPARTMENT D on D.ID = P.DEPARTMENT_ID\n"" +
+            ""INNER JOIN COMPANY C on D.COMPANY_ID = C.ID\n"" +
+            ""WHERE (P.ID = A.ID AND P.FIRST_NAME like ?) \n"" +
+            ""OR (P.LAST_NAME like ?)\n"" +
+            ""GROUP BY P.ID\n"" +
+            ""HAVING (P.LAST_NAME like ?) \n"" +
+            ""OR (P.FIRST_NAME like ?)\n"" +
+            ""ORDER BY P.ID, P.FULL_NAME"";
+    assertEquals(expected, example1());
+  }
+  private static String example1() {
+    SELECT(""P.ID, P.USERNAME, P.PASSWORD, P.FULL_NAME"");
+    SELECT(""P.LAST_NAME, P.CREATED_ON, P.UPDATED_ON"");
+    FROM(""PERSON P"");
+    FROM(""ACCOUNT A"");
+    INNER_JOIN(""DEPARTMENT D on D.ID = P.DEPARTMENT_ID"");
+    INNER_JOIN(""COMPANY C on D.COMPANY_ID = C.ID"");
+    WHERE(""P.ID = A.ID"");
+    WHERE(""P.FIRST_NAME like ?"");
+    OR();
+    WHERE(""P.LAST_NAME like ?"");
+    GROUP_BY(""P.ID"");
+    HAVING(""P.LAST_NAME like ?"");
+    OR();
+    HAVING(""P.FIRST_NAME like ?"");
+    ORDER_BY(""P.ID"");
+    ORDER_BY(""P.FULL_NAME"");
+    return SQL();
+  }
+  private static String example2(String id, String firstName, String lastName) {
+    SELECT(""P.ID, P.USERNAME, P.PASSWORD, P.FIRST_NAME, P.LAST_NAME"");
+    FROM(""PERSON P"");
+    if (id != null) {
+      WHERE(""P.ID like #id#"");
+    }
+    if (firstName != null) {
+      WHERE(""P.FIRST_NAME like #firstName#"");
+    }
+    if (lastName != null) {
+      WHERE(""P.LAST_NAME like #lastName#"");
+    }
+    ORDER_BY(""P.LAST_NAME"");
+    return SQL();
+  }
+}",class,
+"  @Test
+  public void shouldProduceExpectedSimpleSelectStatement() {
+    String expected =
+        ""SELECT P.ID, P.USERNAME, P.PASSWORD, P.FIRST_NAME, P.LAST_NAME\n"" +
+            ""FROM PERSON P\n"" +
+            ""WHERE (P.ID like #id# AND P.FIRST_NAME like #firstName# AND P.LAST_NAME like #lastName#)\n"" +
+            ""ORDER BY P.LAST_NAME"";
+    assertEquals(expected, example2(""a"", ""b"", ""c""));
+  }",method,
+"  @Test
+  public void shouldProduceExpectedSimpleSelectStatementMissingFirstParam() {
+    String expected =
+        ""SELECT P.ID, P.USERNAME, P.PASSWORD, P.FIRST_NAME, P.LAST_NAME\n"" +
+            ""FROM PERSON P\n"" +
+            ""WHERE (P.FIRST_NAME like #firstName# AND P.LAST_NAME like #lastName#)\n"" +
+            ""ORDER BY P.LAST_NAME"";
+    assertEquals(expected, example2(null, ""b"", ""c""));
+  }",method,
+"  @Test
+  public void shouldProduceExpectedSimpleSelectStatementMissingFirstTwoParams() {
+    String expected =
+        ""SELECT P.ID, P.USERNAME, P.PASSWORD, P.FIRST_NAME, P.LAST_NAME\n"" +
+            ""FROM PERSON P\n"" +
+            ""WHERE (P.LAST_NAME like #lastName#)\n"" +
+            ""ORDER BY P.LAST_NAME"";
+    assertEquals(expected, example2(null, null, ""c""));
+  }",method,
+"  @Test
+  public void shouldProduceExpectedSimpleSelectStatementMissingAllParams() {
+    String expected =
+        ""SELECT P.ID, P.USERNAME, P.PASSWORD, P.FIRST_NAME, P.LAST_NAME\n"" +
+            ""FROM PERSON P\n"" +
+            ""ORDER BY P.LAST_NAME"";
+    assertEquals(expected, example2(null, null, null));
+  }",method,
+"  @Test
+  public void shouldProduceExpectedComplexSelectStatement() {
+    String expected =
+        ""SELECT P.ID, P.USERNAME, P.PASSWORD, P.FULL_NAME, P.LAST_NAME, P.CREATED_ON, P.UPDATED_ON\n"" +
+            ""FROM PERSON P, ACCOUNT A\n"" +
+            ""INNER JOIN DEPARTMENT D on D.ID = P.DEPARTMENT_ID\n"" +
+            ""INNER JOIN COMPANY C on D.COMPANY_ID = C.ID\n"" +
+            ""WHERE (P.ID = A.ID AND P.FIRST_NAME like ?) \n"" +
+            ""OR (P.LAST_NAME like ?)\n"" +
+            ""GROUP BY P.ID\n"" +
+            ""HAVING (P.LAST_NAME like ?) \n"" +
+            ""OR (P.FIRST_NAME like ?)\n"" +
+            ""ORDER BY P.ID, P.FULL_NAME"";
+    assertEquals(expected, example1());
+  }",method,
+"  private static String example1() {
+    SELECT(""P.ID, P.USERNAME, P.PASSWORD, P.FULL_NAME"");
+    SELECT(""P.LAST_NAME, P.CREATED_ON, P.UPDATED_ON"");
+    FROM(""PERSON P"");
+    FROM(""ACCOUNT A"");
+    INNER_JOIN(""DEPARTMENT D on D.ID = P.DEPARTMENT_ID"");
+    INNER_JOIN(""COMPANY C on D.COMPANY_ID = C.ID"");
+    WHERE(""P.ID = A.ID"");
+    WHERE(""P.FIRST_NAME like ?"");
+    OR();
+    WHERE(""P.LAST_NAME like ?"");
+    GROUP_BY(""P.ID"");
+    HAVING(""P.LAST_NAME like ?"");
+    OR();
+    HAVING(""P.FIRST_NAME like ?"");
+    ORDER_BY(""P.ID"");
+    ORDER_BY(""P.FULL_NAME"");
+    return SQL();
+  }",method,
+"  private static String example2(String id, String firstName, String lastName) {
+    SELECT(""P.ID, P.USERNAME, P.PASSWORD, P.FIRST_NAME, P.LAST_NAME"");
+    FROM(""PERSON P"");
+    if (id != null) {
+      WHERE(""P.ID like #id#"");
+    }
+    if (firstName != null) {
+      WHERE(""P.FIRST_NAME like #firstName#"");
+    }
+    if (lastName != null) {
+      WHERE(""P.LAST_NAME like #lastName#"");
+    }
+    ORDER_BY(""P.LAST_NAME"");
+    return SQL();
+  }",method,
+"    if (id != null) {
+      WHERE(""P.ID like #id#"");
+    }",method,
+"    if (firstName != null) {
+      WHERE(""P.FIRST_NAME like #firstName#"");
+    }",method,
+"    if (lastName != null) {
+      WHERE(""P.LAST_NAME like #lastName#"");
+    }",method,
+"public class TJ_Noodler extends Applet
+{
+	Vector myNoodlers;
+	Button startOne, stopOne;
+	Label       showNumNoodlers;
+	public static void main(String args[])
+	{
+	   TJ_Noodler  applet = new TJ_Noodler();
+	   AppletFrame frame = new AppletFrame(""Test JSyn"", applet);
+	   frame.resize(600,400);
+	   frame.show();
+	   frame.test();
+	}
+	public void start()  
+	{
+	   try
+	   {
+		  Synth.startEngine(0);
+			myNoodlers = new Vector();
+			add( startOne = new Button(""StartAnother"") );
+			add( stopOne = new Button(""StopOne"") );
+			add( new UsageDisplay() );
+			add( showNumNoodlers = new Label(""Num = 0"") );
+			getParent().validate();
+			getToolkit().sync();
+	   } catch(SynthException e) {
+		  SynthAlert.showError(this,e);
+	   }
+	}
+	public void stop()  
+	{
+		for( int i=0; i<myNoodlers.size(); i++ )
+		{
+			Noodler nood = (Noodler) myNoodlers.elementAt(i);
+			nood.die();
+		}
+		System.out.println(""Wait for noodlers to finish."");
+		while( !myNoodlers.isEmpty() )
+		{
+			Noodler nood = (Noodler) myNoodlers.firstElement();
+			try
+			{
+				nood.join();
+			} catch( InterruptedException e ) {
+				System.err.println( ""Caught "" + e );
+			}
+			myNoodlers.removeElement( nood );
+		}
+		Synth.stopEngine();
+   }
+   	public void calcNewAmp()
+	{
+		int numNoodlers = myNoodlers.size();
+		Noodler.setMaxAmp(1.0 / numNoodlers );
+		showNumNoodlers.setText(""Num = "" + myNoodlers.size() );
+	}
+   	public boolean action(Event evt, Object what)
+   	{
+		int numNoodlers;
+ 		if( evt.target == startOne )
+   		{
+			Noodler nood = new Noodler();
+			myNoodlers.addElement( nood );
+			calcNewAmp();
+			nood.start();
+   			return true;
+   		}
+		else if ( evt.target == stopOne )
+		{
+			numNoodlers = myNoodlers.size();
+			if ( numNoodlers == 0 )
+				return( true );
+			int noodlerVictim = (int) (Math.random() * numNoodlers);
+			Noodler nood = (Noodler) myNoodlers.elementAt( noodlerVictim );
+			nood.die();
+			myNoodlers.removeElement( nood );
+			calcNewAmp();
+			return(true);
+		}
+   		return false;
+    }
+}",class,
+"	public static void main(String args[])
+	{
+	   TJ_Noodler  applet = new TJ_Noodler();
+	   AppletFrame frame = new AppletFrame(""Test JSyn"", applet);
+	   frame.resize(600,400);
+	   frame.show();
+	   frame.test();
+	}",method,
+"	public void start()  
+	{
+	   try
+	   {
+		  Synth.startEngine(0);
+			myNoodlers = new Vector();
+			add( startOne = new Button(""StartAnother"") );
+			add( stopOne = new Button(""StopOne"") );
+			add( new UsageDisplay() );
+			add( showNumNoodlers = new Label(""Num = 0"") );
+			getParent().validate();
+			getToolkit().sync();
+	   } catch(SynthException e) {
+		  SynthAlert.showError(this,e);
+	   }
+	}",method,
+"	public void stop()  
+	{
+		for( int i=0; i<myNoodlers.size(); i++ )
+		{
+			Noodler nood = (Noodler) myNoodlers.elementAt(i);
+			nood.die();
+		}
+		System.out.println(""Wait for noodlers to finish."");
+		while( !myNoodlers.isEmpty() )
+		{
+			Noodler nood = (Noodler) myNoodlers.firstElement();
+			try
+			{
+				nood.join();
+			} catch( InterruptedException e ) {
+				System.err.println( ""Caught "" + e );
+			}
+			myNoodlers.removeElement( nood );
+		}
+		Synth.stopEngine();
+   }",method,
+"   	public void calcNewAmp()
+	{
+		int numNoodlers = myNoodlers.size();
+		Noodler.setMaxAmp(1.0 / numNoodlers );
+		showNumNoodlers.setText(""Num = "" + myNoodlers.size() );
+	}",method,
+"   	public boolean action(Event evt, Object what)
+   	{
+		int numNoodlers;
+ 		if( evt.target == startOne )
+   		{
+			Noodler nood = new Noodler();
+			myNoodlers.addElement( nood );
+			calcNewAmp();
+			nood.start();
+   			return true;
+   		}
+		else if ( evt.target == stopOne )
+		{
+			numNoodlers = myNoodlers.size();
+			if ( numNoodlers == 0 )
+				return( true );
+			int noodlerVictim = (int) (Math.random() * numNoodlers);
+			Noodler nood = (Noodler) myNoodlers.elementAt( noodlerVictim );
+			nood.die();
+			myNoodlers.removeElement( nood );
+			calcNewAmp();
+			return(true);
+		}
+   		return false;
+    }",method,
+" 		if( evt.target == startOne )
+   		{
+			Noodler nood = new Noodler();
+			myNoodlers.addElement( nood );
+			calcNewAmp();
+			nood.start();
+   			return true;
+   		}",method,
+"		else if ( evt.target == stopOne )
+		{
+			numNoodlers = myNoodlers.size();
+			if ( numNoodlers == 0 )
+				return( true );
+			int noodlerVictim = (int) (Math.random() * numNoodlers);
+			Noodler nood = (Noodler) myNoodlers.elementAt( noodlerVictim );
+			nood.die();
+			myNoodlers.removeElement( nood );
+			calcNewAmp();
+			return(true);
+		}",method,
+"public class LineHandlerHelper {
+  public static List<String> splitText(String text) {
+    int startLine = 0;
+    int i = 0;
+    int n = text.length();
+    ArrayList<String> rc = new ArrayList<>();
+    while (i < n) {
+      switch (text.charAt(i)) {
+        case '\n':
+          i++;
+          if (i < n && text.charAt(i) == '\r') {
+            i++;
+          }
+          rc.add(text.substring(startLine, i));
+          startLine = i;
+          break;
+        case '\r':
+          i++;
+          if (i < n && text.charAt(i) == '\n') {
+            i++;
+          }
+          rc.add(text.substring(startLine, i));
+          startLine = i;
+          break;
+        default:
+          i++;
+      }
+    }
+    if (startLine == text.length()) {
+      // still add empty line or previous line wouldn't be treated as completed
+      rc.add("""");
+    } else {
+      rc.add(text.substring(startLine, i));
+    }
+    return rc;
+  }
+  public static String trimLineSeparator(String line) {
+    int n = line.length();
+    if (n == 0) {
+      return line;
+    }
+    char ch = line.charAt(n - 1);
+    if (ch == '\n' || ch == '\r') {
+      n--;
+    }
+    else {
+      return line;
+    }
+    if (n > 0) {
+      char ch2 = line.charAt(n - 1);
+      if ((ch2 == '\n' || ch2 == '\r') && ch2 != ch) {
+        n--;
+      }
+    }
+    return line.substring(0, n);
+  }
+}",class,
+"  public static List<String> splitText(String text) {
+    int startLine = 0;
+    int i = 0;
+    int n = text.length();
+    ArrayList<String> rc = new ArrayList<>();
+    while (i < n) {
+      switch (text.charAt(i)) {
+        case '\n':
+          i++;
+          if (i < n && text.charAt(i) == '\r') {
+            i++;
+          }
+          rc.add(text.substring(startLine, i));
+          startLine = i;
+          break;
+        case '\r':
+          i++;
+          if (i < n && text.charAt(i) == '\n') {
+            i++;
+          }
+          rc.add(text.substring(startLine, i));
+          startLine = i;
+          break;
+        default:
+          i++;
+      }
+    }
+    if (startLine == text.length()) {
+      // still add empty line or previous line wouldn't be treated as completed
+      rc.add("""");
+    } else {
+      rc.add(text.substring(startLine, i));
+    }
+    return rc;
+  }",method,
+"    while (i < n) {
+      switch (text.charAt(i)) {
+        case '\n':
+          i++;
+          if (i < n && text.charAt(i) == '\r') {
+            i++;
+          }
+          rc.add(text.substring(startLine, i));
+          startLine = i;
+          break;
+        case '\r':
+          i++;
+          if (i < n && text.charAt(i) == '\n') {
+            i++;
+          }
+          rc.add(text.substring(startLine, i));
+          startLine = i;
+          break;
+        default:
+          i++;
+      }
+    }",method,
+"  public static String trimLineSeparator(String line) {
+    int n = line.length();
+    if (n == 0) {
+      return line;
+    }
+    char ch = line.charAt(n - 1);
+    if (ch == '\n' || ch == '\r') {
+      n--;
+    }
+    else {
+      return line;
+    }
+    if (n > 0) {
+      char ch2 = line.charAt(n - 1);
+      if ((ch2 == '\n' || ch2 == '\r') && ch2 != ch) {
+        n--;
+      }
+    }
+    return line.substring(0, n);
+  }",method,
+"    if (n == 0) {
+      return line;
+    }",method,
+"    if (ch == '\n' || ch == '\r') {
+      n--;
+    }",method,
+"    if (n > 0) {
+      char ch2 = line.charAt(n - 1);
+      if ((ch2 == '\n' || ch2 == '\r') && ch2 != ch) {
+        n--;
+      }
+    }",method,
+"public abstract class AbstractPointVector implements GeometryVector<Point, FixedSizeListVector> {
+  private static FieldType createFieldType(Map<String, String> metadata) {
+    return new FieldType(true, new ArrowType.FixedSizeList(2), null, metadata);
+  }
+  private final FixedSizeListVector vector;
+  private final PointWriter writer;
+  private final PointReader reader;
+  protected AbstractPointVector(String name, BufferAllocator allocator, Map<String, String> metadata) {
+    this(new FixedSizeListVector(name, allocator, createFieldType(metadata), null));
+  }
+  protected AbstractPointVector(String name, AbstractContainerVector container, Map<String, String> metadata) {
+    this(container.addOrGet(name, createFieldType(metadata), FixedSizeListVector.class));
+  }
+  protected AbstractPointVector(FixedSizeListVector vector) {
+    // create the fields we will write to up front
+    if (vector.getDataVector().equals(ZeroVector.INSTANCE)) {
+      vector.initializeChildrenFromFields(getFields());
+      vector.allocateNew();
+    }
+    this.vector = vector;
+    this.writer = createWriter(vector);
+    this.reader = createReader(vector);
+  }
+  protected abstract List<Field> getFields();
+  protected abstract PointWriter createWriter(FixedSizeListVector vector);
+  protected abstract PointReader createReader(FixedSizeListVector vector);
+  @Override
+  public PointWriter getWriter() {
+    return writer;
+  }
+  @Override
+  public PointReader getReader() {
+    return reader;
+  }
+  @Override
+  public FixedSizeListVector getVector() {
+    return vector;
+  }
+  @Override
+  public void close() throws Exception {
+    vector.close();
+  }
+  public static abstract class PointWriter extends AbstractGeometryWriter<Point> {
+    private final FixedSizeListVector.Mutator mutator;
+    protected PointWriter(FixedSizeListVector vector) {
+      this.mutator = vector.getMutator();
+      setOrdinalMutator(vector.getChildrenFromFields().get(0).getMutator());
+    }
+    @Override
+    public void set(int index, Point geom) {
+      if (geom == null) {
+        mutator.setNull(index);
+      } else {
+        mutator.setNotNull(index);
+        writeOrdinal(index * 2, geom.getY());
+        writeOrdinal(index * 2 + 1, geom.getX());
+      }
+    }
+    @Override
+    public void setValueCount(int count) {
+      mutator.setValueCount(count);
+    }
+  }
+  public static abstract class PointReader extends AbstractGeometryReader<Point> {
+    private static final GeometryFactory factory = new GeometryFactory();
+    private final FixedSizeListVector.Accessor accessor;
+    protected PointReader(FixedSizeListVector vector) {
+      this.accessor = vector.getAccessor();
+      setOrdinalAccessor(vector.getChildrenFromFields().get(0).getAccessor());
+    }
+    @Override
+    public Point get(int index) {
+      if (accessor.isNull(index)) {
+        return null;
+      } else {
+        double y = readOrdinal(index * 2);
+        double x = readOrdinal(index * 2 + 1);
+        return factory.createPoint(new Coordinate(x, y));
+      }
+    }
+    public double getCoordinateY(int index) {
+      return readOrdinal(index * 2);
+    }
+    public double getCoordinateX(int index) {
+      return readOrdinal(index * 2 + 1);
+    }
+    @Override
+    public int getValueCount() {
+      return accessor.getValueCount();
+    }
+    @Override
+    public int getNullCount() {
+      return accessor.getNullCount();
+    }
+  }
+}",class,
+"  public static abstract class PointWriter extends AbstractGeometryWriter<Point> {
+    private final FixedSizeListVector.Mutator mutator;
+    protected PointWriter(FixedSizeListVector vector) {
+      this.mutator = vector.getMutator();
+      setOrdinalMutator(vector.getChildrenFromFields().get(0).getMutator());
+    }
+    @Override
+    public void set(int index, Point geom) {
+      if (geom == null) {
+        mutator.setNull(index);
+      } else {
+        mutator.setNotNull(index);
+        writeOrdinal(index * 2, geom.getY());
+        writeOrdinal(index * 2 + 1, geom.getX());
+      }
+    }
+    @Override
+    public void setValueCount(int count) {
+      mutator.setValueCount(count);
+    }
+  }",class,
+"  public static abstract class PointReader extends AbstractGeometryReader<Point> {
+    private static final GeometryFactory factory = new GeometryFactory();
+    private final FixedSizeListVector.Accessor accessor;
+    protected PointReader(FixedSizeListVector vector) {
+      this.accessor = vector.getAccessor();
+      setOrdinalAccessor(vector.getChildrenFromFields().get(0).getAccessor());
+    }
+    @Override
+    public Point get(int index) {
+      if (accessor.isNull(index)) {
+        return null;
+      } else {
+        double y = readOrdinal(index * 2);
+        double x = readOrdinal(index * 2 + 1);
+        return factory.createPoint(new Coordinate(x, y));
+      }
+    }
+    public double getCoordinateY(int index) {
+      return readOrdinal(index * 2);
+    }
+    public double getCoordinateX(int index) {
+      return readOrdinal(index * 2 + 1);
+    }
+    @Override
+    public int getValueCount() {
+      return accessor.getValueCount();
+    }
+    @Override
+    public int getNullCount() {
+      return accessor.getNullCount();
+    }
+  }",class,
+"  private static FieldType createFieldType(Map<String, String> metadata) {
+    return new FieldType(true, new ArrowType.FixedSizeList(2), null, metadata);
+  }",method,
+"  protected AbstractPointVector(String name, BufferAllocator allocator, Map<String, String> metadata) {
+    this(new FixedSizeListVector(name, allocator, createFieldType(metadata), null));
+  }",method,
+"  protected AbstractPointVector(String name, AbstractContainerVector container, Map<String, String> metadata) {
+    this(container.addOrGet(name, createFieldType(metadata), FixedSizeListVector.class));
+  }",method,
+"  protected AbstractPointVector(FixedSizeListVector vector) {
+    // create the fields we will write to up front
+    if (vector.getDataVector().equals(ZeroVector.INSTANCE)) {
+      vector.initializeChildrenFromFields(getFields());
+      vector.allocateNew();
+    }
+    this.vector = vector;
+    this.writer = createWriter(vector);
+    this.reader = createReader(vector);
+  }",method,
+"  @Override
+  public PointWriter getWriter() {
+    return writer;
+  }",method,
+"  @Override
+  public PointReader getReader() {
+    return reader;
+  }",method,
+"  @Override
+  public FixedSizeListVector getVector() {
+    return vector;
+  }",method,
+"  @Override
+  public void close() throws Exception {
+    vector.close();
+  }",method,
+"    protected PointWriter(FixedSizeListVector vector) {
+      this.mutator = vector.getMutator();
+      setOrdinalMutator(vector.getChildrenFromFields().get(0).getMutator());
+    }",method,
+"    @Override
+    public void set(int index, Point geom) {
+      if (geom == null) {
+        mutator.setNull(index);
+      } else {
+        mutator.setNotNull(index);
+        writeOrdinal(index * 2, geom.getY());
+        writeOrdinal(index * 2 + 1, geom.getX());
+      }
+    }",method,
+"      if (geom == null) {
+        mutator.setNull(index);
+      }",method,
+"    @Override
+    public void setValueCount(int count) {
+      mutator.setValueCount(count);
+    }",method,
+"    protected PointReader(FixedSizeListVector vector) {
+      this.accessor = vector.getAccessor();
+      setOrdinalAccessor(vector.getChildrenFromFields().get(0).getAccessor());
+    }",method,
+"    @Override
+    public Point get(int index) {
+      if (accessor.isNull(index)) {
+        return null;
+      } else {
+        double y = readOrdinal(index * 2);
+        double x = readOrdinal(index * 2 + 1);
+        return factory.createPoint(new Coordinate(x, y));
+      }
+    }",method,
+"    public double getCoordinateY(int index) {
+      return readOrdinal(index * 2);
+    }",method,
+"    public double getCoordinateX(int index) {
+      return readOrdinal(index * 2 + 1);
+    }",method,
+"    @Override
+    public int getValueCount() {
+      return accessor.getValueCount();
+    }",method,
+"    @Override
+    public int getNullCount() {
+      return accessor.getNullCount();
+    }",method,
+"public class ExportEclipseProjectsAction extends AnAction implements DumbAware {
+  private static final Logger LOG = Logger.getInstance(ExportEclipseProjectsAction.class);
+  @Override
+  public void update(@NotNull final AnActionEvent e) {
+    e.getPresentation().setEnabled(e.getProject() != null);
+  }
+  @Override
+  public void actionPerformed(@NotNull AnActionEvent e) {
+    Project project = e.getData(CommonDataKeys.PROJECT);
+    // to flush iml files
+    if (project == null) {
+      return;
+    }
+    project.save();
+    List<Module> modules = new SmartList<>();
+    List<Module> incompatibleModules = new SmartList<>();
+    for (Module module : ModuleManager.getInstance(project).getModules()) {
+      if (!EclipseModuleManagerImpl.isEclipseStorage(module)) {
+        try {
+          ClasspathStorageProvider provider = ClasspathStorage.getProvider(JpsEclipseClasspathSerializer.CLASSPATH_STORAGE_ID);
+          if (provider != null) {
+            provider.assertCompatible(ModuleRootManager.getInstance(module));
+          }
+          modules.add(module);
+        }
+        catch (ConfigurationException ignored) {
+          incompatibleModules.add(module);
+        }
+      }
+    }
+    //todo suggest smth with hierarchy modules
+    if (incompatibleModules.isEmpty()) {
+      if (modules.isEmpty()) {
+        Messages.showInfoMessage(project, EclipseBundle.message(""eclipse.export.nothing.to.do""),
+                                 EclipseBundle.message(""eclipse.export.dialog.title""));
+        return;
+      }
+    }
+    else if (Messages.showOkCancelDialog(project, ""<html><body>Eclipse incompatible modules found:<ul><br><li>"" +
+                                                  StringUtil.join(incompatibleModules, module -> module.getName(), ""<br><li>"") +
+                                                  ""</ul><br>Would you like to proceed and possibly lose your configurations?</body></html>"",
+                                         EclipseBundle.message(""eclipse.export.dialog.title""), Messages.getWarningIcon()) != Messages.OK) {
+      return;
+    }
+    modules.addAll(incompatibleModules);
+    ExportEclipseProjectsDialog dialog = new ExportEclipseProjectsDialog(project, modules);
+    if (!dialog.showAndGet()) {
+      return;
+    }
+    if (dialog.isLink()) {
+      for (Module module : dialog.getSelectedModules()) {
+        ClasspathStorage.setStorageType(ModuleRootManager.getInstance(module), JpsEclipseClasspathSerializer.CLASSPATH_STORAGE_ID);
+      }
+    }
+    else {
+      LinkedHashMap<Module, String> module2StorageRoot = new LinkedHashMap<>();
+      for (Module module : dialog.getSelectedModules()) {
+        VirtualFile[] contentRoots = ModuleRootManager.getInstance(module).getContentRoots();
+        String storageRoot = contentRoots.length == 1 ? contentRoots[0].getPath() : ClasspathStorage.getStorageRootFromOptions(module);
+        module2StorageRoot.put(module, storageRoot);
+        try {
+          DotProjectFileHelper.saveDotProjectFile(module, storageRoot);
+        }
+        catch (Exception e1) {
+          LOG.error(e1);
+        }
+      }
+      for (Module module : module2StorageRoot.keySet()) {
+        ModuleRootModel model = ModuleRootManager.getInstance(module);
+        String storageRoot = module2StorageRoot.get(module);
+        try {
+          Element classpathElement = new EclipseClasspathWriter().writeClasspath(null, model);
+          File classpathFile = new File(storageRoot, EclipseXml.CLASSPATH_FILE);
+          if (!FileUtil.createIfDoesntExist(classpathFile)) {
+            continue;
+          }
+          EclipseJDOMUtil.output(classpathElement, classpathFile, project);
+          final Element ideaSpecific = new Element(IdeaXml.COMPONENT_TAG);
+          if (IdeaSpecificSettings.writeIdeaSpecificClasspath(ideaSpecific, model)) {
+            File emlFile = new File(storageRoot, module.getName() + EclipseXml.IDEA_SETTINGS_POSTFIX);
+            if (!FileUtil.createIfDoesntExist(emlFile)) {
+              continue;
+            }
+            EclipseJDOMUtil.output(ideaSpecific, emlFile, project);
+          }
+        }
+        catch (Exception e1) {
+          LOG.error(e1);
+        }
+      }
+    }
+    try {
+      EclipseUserLibrariesHelper.appendProjectLibraries(project, dialog.getUserLibrariesFile());
+    }
+    catch (IOException e1) {
+      LOG.error(e1);
+    }
+    project.save();
+  }
+}",class,
+"  @Override
+  public void update(@NotNull final AnActionEvent e) {
+    e.getPresentation().setEnabled(e.getProject() != null);
+  }",method,
+"  @Override
+  public void actionPerformed(@NotNull AnActionEvent e) {
+    Project project = e.getData(CommonDataKeys.PROJECT);
+    // to flush iml files
+    if (project == null) {
+      return;
+    }
+    project.save();
+    List<Module> modules = new SmartList<>();
+    List<Module> incompatibleModules = new SmartList<>();
+    for (Module module : ModuleManager.getInstance(project).getModules()) {
+      if (!EclipseModuleManagerImpl.isEclipseStorage(module)) {
+        try {
+          ClasspathStorageProvider provider = ClasspathStorage.getProvider(JpsEclipseClasspathSerializer.CLASSPATH_STORAGE_ID);
+          if (provider != null) {
+            provider.assertCompatible(ModuleRootManager.getInstance(module));
+          }
+          modules.add(module);
+        }
+        catch (ConfigurationException ignored) {
+          incompatibleModules.add(module);
+        }
+      }
+    }
+    //todo suggest smth with hierarchy modules
+    if (incompatibleModules.isEmpty()) {
+      if (modules.isEmpty()) {
+        Messages.showInfoMessage(project, EclipseBundle.message(""eclipse.export.nothing.to.do""),
+                                 EclipseBundle.message(""eclipse.export.dialog.title""));
+        return;
+      }
+    }
+    else if (Messages.showOkCancelDialog(project, ""<html><body>Eclipse incompatible modules found:<ul><br><li>"" +
+                                                  StringUtil.join(incompatibleModules, module -> module.getName(), ""<br><li>"") +
+                                                  ""</ul><br>Would you like to proceed and possibly lose your configurations?</body></html>"",
+                                         EclipseBundle.message(""eclipse.export.dialog.title""), Messages.getWarningIcon()) != Messages.OK) {
+      return;
+    }
+    modules.addAll(incompatibleModules);
+    ExportEclipseProjectsDialog dialog = new ExportEclipseProjectsDialog(project, modules);
+    if (!dialog.showAndGet()) {
+      return;
+    }
+    if (dialog.isLink()) {
+      for (Module module : dialog.getSelectedModules()) {
+        ClasspathStorage.setStorageType(ModuleRootManager.getInstance(module), JpsEclipseClasspathSerializer.CLASSPATH_STORAGE_ID);
+      }
+    }
+    else {
+      LinkedHashMap<Module, String> module2StorageRoot = new LinkedHashMap<>();
+      for (Module module : dialog.getSelectedModules()) {
+        VirtualFile[] contentRoots = ModuleRootManager.getInstance(module).getContentRoots();
+        String storageRoot = contentRoots.length == 1 ? contentRoots[0].getPath() : ClasspathStorage.getStorageRootFromOptions(module);
+        module2StorageRoot.put(module, storageRoot);
+        try {
+          DotProjectFileHelper.saveDotProjectFile(module, storageRoot);
+        }
+        catch (Exception e1) {
+          LOG.error(e1);
+        }
+      }
+      for (Module module : module2StorageRoot.keySet()) {
+        ModuleRootModel model = ModuleRootManager.getInstance(module);
+        String storageRoot = module2StorageRoot.get(module);
+        try {
+          Element classpathElement = new EclipseClasspathWriter().writeClasspath(null, model);
+          File classpathFile = new File(storageRoot, EclipseXml.CLASSPATH_FILE);
+          if (!FileUtil.createIfDoesntExist(classpathFile)) {
+            continue;
+          }
+          EclipseJDOMUtil.output(classpathElement, classpathFile, project);
+          final Element ideaSpecific = new Element(IdeaXml.COMPONENT_TAG);
+          if (IdeaSpecificSettings.writeIdeaSpecificClasspath(ideaSpecific, model)) {
+            File emlFile = new File(storageRoot, module.getName() + EclipseXml.IDEA_SETTINGS_POSTFIX);
+            if (!FileUtil.createIfDoesntExist(emlFile)) {
+              continue;
+            }
+            EclipseJDOMUtil.output(ideaSpecific, emlFile, project);
+          }
+        }
+        catch (Exception e1) {
+          LOG.error(e1);
+        }
+      }
+    }
+    try {
+      EclipseUserLibrariesHelper.appendProjectLibraries(project, dialog.getUserLibrariesFile());
+    }
+    catch (IOException e1) {
+      LOG.error(e1);
+    }
+    project.save();
+  }",method,
+"    if (project == null) {
+      return;
+    }",method,
+"          if (provider != null) {
+            provider.assertCompatible(ModuleRootManager.getInstance(module));
+          }",method,
+"        catch (ConfigurationException ignored) {
+          incompatibleModules.add(module);
+        }",method,
+"        catch (Exception e1) {
+          LOG.error(e1);
+        }",method,
+"        catch (Exception e1) {
+          LOG.error(e1);
+        }",method,
+"    catch (IOException e1) {
+      LOG.error(e1);
+    }",method,
+"public class TestRaptorConnector
+{
+    private Handle dummyHandle;
+    private MetadataDao metadataDao;
+    private File dataDir;
+    private RaptorConnector connector;
+    @BeforeMethod
+    public void setup()
+            throws Exception
+    {
+        TypeRegistry typeRegistry = new TypeRegistry();
+        DBI dbi = new DBI(""jdbc:h2:mem:test"" + System.nanoTime());
+        dbi.registerMapper(new TableColumn.Mapper(typeRegistry));
+        dummyHandle = dbi.open();
+        metadataDao = dbi.onDemand(MetadataDao.class);
+        createTablesWithRetry(dbi);
+        dataDir = Files.createTempDir();
+        RaptorConnectorId connectorId = new RaptorConnectorId(""test"");
+        NodeManager nodeManager = new TestingNodeManager();
+        NodeSupplier nodeSupplier = nodeManager::getWorkerNodes;
+        ShardManager shardManager = createShardManager(dbi);
+        StorageManager storageManager = createOrcStorageManager(dbi, dataDir);
+        StorageManagerConfig config = new StorageManagerConfig().setDataDirectory(dataDir);
+        connector = new RaptorConnector(
+                new LifeCycleManager(ImmutableList.of(), null),
+                new TestingNodeManager(),
+                new RaptorMetadataFactory(connectorId, dbi, shardManager),
+                new RaptorSplitManager(connectorId, nodeSupplier, shardManager, false),
+                new RaptorPageSourceProvider(storageManager),
+                new RaptorPageSinkProvider(storageManager, new PagesIndexPageSorter(new PagesIndex.TestingFactory()), config),
+                new RaptorNodePartitioningProvider(nodeSupplier),
+                new RaptorSessionProperties(config),
+                new RaptorTableProperties(typeRegistry),
+                ImmutableSet.of(),
+                dbi);
+    }
+    @AfterMethod(alwaysRun = true)
+    public void tearDown()
+            throws Exception
+    {
+        dummyHandle.close();
+        deleteRecursively(dataDir.toPath(), ALLOW_INSECURE);
+    }
+    @Test
+    public void testMaintenanceBlocked()
+    {
+        long tableId1 = createTable(""test1"");
+        long tableId2 = createTable(""test2"");
+        assertFalse(metadataDao.isMaintenanceBlockedLocked(tableId1));
+        assertFalse(metadataDao.isMaintenanceBlockedLocked(tableId2));
+        // begin delete for table1
+        ConnectorTransactionHandle txn1 = connector.beginTransaction(READ_COMMITTED, false);
+        ConnectorTableHandle handle1 = getTableHandle(connector.getMetadata(txn1), ""test1"");
+        connector.getMetadata(txn1).beginDelete(SESSION, handle1);
+        assertTrue(metadataDao.isMaintenanceBlockedLocked(tableId1));
+        assertFalse(metadataDao.isMaintenanceBlockedLocked(tableId2));
+        // begin delete for table2
+        ConnectorTransactionHandle txn2 = connector.beginTransaction(READ_COMMITTED, false);
+        ConnectorTableHandle handle2 = getTableHandle(connector.getMetadata(txn2), ""test2"");
+        connector.getMetadata(txn2).beginDelete(SESSION, handle2);
+        assertTrue(metadataDao.isMaintenanceBlockedLocked(tableId1));
+        assertTrue(metadataDao.isMaintenanceBlockedLocked(tableId2));
+        // begin another delete for table1
+        ConnectorTransactionHandle txn3 = connector.beginTransaction(READ_COMMITTED, false);
+        ConnectorTableHandle handle3 = getTableHandle(connector.getMetadata(txn3), ""test1"");
+        connector.getMetadata(txn3).beginDelete(SESSION, handle3);
+        assertTrue(metadataDao.isMaintenanceBlockedLocked(tableId1));
+        assertTrue(metadataDao.isMaintenanceBlockedLocked(tableId2));
+        // commit first delete for table1
+        connector.commit(txn1);
+        assertTrue(metadataDao.isMaintenanceBlockedLocked(tableId1));
+        assertTrue(metadataDao.isMaintenanceBlockedLocked(tableId2));
+        // rollback second delete for table1
+        connector.rollback(txn3);
+        assertFalse(metadataDao.isMaintenanceBlockedLocked(tableId1));
+        assertTrue(metadataDao.isMaintenanceBlockedLocked(tableId2));
+        // commit delete for table2
+        connector.commit(txn2);
+        assertFalse(metadataDao.isMaintenanceBlockedLocked(tableId1));
+        assertFalse(metadataDao.isMaintenanceBlockedLocked(tableId2));
+    }
+    @Test
+    public void testMaintenanceUnblockedOnStart()
+            throws Exception
+    {
+        long tableId = createTable(""test"");
+        assertFalse(metadataDao.isMaintenanceBlockedLocked(tableId));
+        metadataDao.blockMaintenance(tableId);
+        assertTrue(metadataDao.isMaintenanceBlockedLocked(tableId));
+        connector.start();
+        assertFalse(metadataDao.isMaintenanceBlockedLocked(tableId));
+    }
+    private long createTable(String name)
+    {
+        ConnectorTransactionHandle transaction = connector.beginTransaction(READ_COMMITTED, false);
+        connector.getMetadata(transaction).createTable(SESSION, new ConnectorTableMetadata(
+                new SchemaTableName(""test"", name),
+                ImmutableList.of(new ColumnMetadata(""id"", BIGINT))),
+                false);
+        connector.commit(transaction);
+        transaction = connector.beginTransaction(READ_COMMITTED, false);
+        ConnectorTableHandle tableHandle = getTableHandle(connector.getMetadata(transaction), name);
+        connector.commit(transaction);
+        return ((RaptorTableHandle) tableHandle).getTableId();
+    }
+    private static ConnectorTableHandle getTableHandle(ConnectorMetadata metadata, String name)
+    {
+        return metadata.getTableHandle(SESSION, new SchemaTableName(""test"", name));
+    }
+}",class,
+"    @BeforeMethod
+    public void setup()
+            throws Exception
+    {
+        TypeRegistry typeRegistry = new TypeRegistry();
+        DBI dbi = new DBI(""jdbc:h2:mem:test"" + System.nanoTime());
+        dbi.registerMapper(new TableColumn.Mapper(typeRegistry));
+        dummyHandle = dbi.open();
+        metadataDao = dbi.onDemand(MetadataDao.class);
+        createTablesWithRetry(dbi);
+        dataDir = Files.createTempDir();
+        RaptorConnectorId connectorId = new RaptorConnectorId(""test"");
+        NodeManager nodeManager = new TestingNodeManager();
+        NodeSupplier nodeSupplier = nodeManager::getWorkerNodes;
+        ShardManager shardManager = createShardManager(dbi);
+        StorageManager storageManager = createOrcStorageManager(dbi, dataDir);
+        StorageManagerConfig config = new StorageManagerConfig().setDataDirectory(dataDir);
+        connector = new RaptorConnector(
+                new LifeCycleManager(ImmutableList.of(), null),
+                new TestingNodeManager(),
+                new RaptorMetadataFactory(connectorId, dbi, shardManager),
+                new RaptorSplitManager(connectorId, nodeSupplier, shardManager, false),
+                new RaptorPageSourceProvider(storageManager),
+                new RaptorPageSinkProvider(storageManager, new PagesIndexPageSorter(new PagesIndex.TestingFactory()), config),
+                new RaptorNodePartitioningProvider(nodeSupplier),
+                new RaptorSessionProperties(config),
+                new RaptorTableProperties(typeRegistry),
+                ImmutableSet.of(),
+                dbi);
+    }",method,
+"    @AfterMethod(alwaysRun = true)
+    public void tearDown()
+            throws Exception
+    {
+        dummyHandle.close();
+        deleteRecursively(dataDir.toPath(), ALLOW_INSECURE);
+    }",method,
+"    @Test
+    public void testMaintenanceBlocked()
+    {
+        long tableId1 = createTable(""test1"");
+        long tableId2 = createTable(""test2"");
+        assertFalse(metadataDao.isMaintenanceBlockedLocked(tableId1));
+        assertFalse(metadataDao.isMaintenanceBlockedLocked(tableId2));
+        // begin delete for table1
+        ConnectorTransactionHandle txn1 = connector.beginTransaction(READ_COMMITTED, false);
+        ConnectorTableHandle handle1 = getTableHandle(connector.getMetadata(txn1), ""test1"");
+        connector.getMetadata(txn1).beginDelete(SESSION, handle1);
+        assertTrue(metadataDao.isMaintenanceBlockedLocked(tableId1));
+        assertFalse(metadataDao.isMaintenanceBlockedLocked(tableId2));
+        // begin delete for table2
+        ConnectorTransactionHandle txn2 = connector.beginTransaction(READ_COMMITTED, false);
+        ConnectorTableHandle handle2 = getTableHandle(connector.getMetadata(txn2), ""test2"");
+        connector.getMetadata(txn2).beginDelete(SESSION, handle2);
+        assertTrue(metadataDao.isMaintenanceBlockedLocked(tableId1));
+        assertTrue(metadataDao.isMaintenanceBlockedLocked(tableId2));
+        // begin another delete for table1
+        ConnectorTransactionHandle txn3 = connector.beginTransaction(READ_COMMITTED, false);
+        ConnectorTableHandle handle3 = getTableHandle(connector.getMetadata(txn3), ""test1"");
+        connector.getMetadata(txn3).beginDelete(SESSION, handle3);
+        assertTrue(metadataDao.isMaintenanceBlockedLocked(tableId1));
+        assertTrue(metadataDao.isMaintenanceBlockedLocked(tableId2));
+        // commit first delete for table1
+        connector.commit(txn1);
+        assertTrue(metadataDao.isMaintenanceBlockedLocked(tableId1));
+        assertTrue(metadataDao.isMaintenanceBlockedLocked(tableId2));
+        // rollback second delete for table1
+        connector.rollback(txn3);
+        assertFalse(metadataDao.isMaintenanceBlockedLocked(tableId1));
+        assertTrue(metadataDao.isMaintenanceBlockedLocked(tableId2));
+        // commit delete for table2
+        connector.commit(txn2);
+        assertFalse(metadataDao.isMaintenanceBlockedLocked(tableId1));
+        assertFalse(metadataDao.isMaintenanceBlockedLocked(tableId2));
+    }",method,
+"    @Test
+    public void testMaintenanceUnblockedOnStart()
+            throws Exception
+    {
+        long tableId = createTable(""test"");
+        assertFalse(metadataDao.isMaintenanceBlockedLocked(tableId));
+        metadataDao.blockMaintenance(tableId);
+        assertTrue(metadataDao.isMaintenanceBlockedLocked(tableId));
+        connector.start();
+        assertFalse(metadataDao.isMaintenanceBlockedLocked(tableId));
+    }",method,
+"    private long createTable(String name)
+    {
+        ConnectorTransactionHandle transaction = connector.beginTransaction(READ_COMMITTED, false);
+        connector.getMetadata(transaction).createTable(SESSION, new ConnectorTableMetadata(
+                new SchemaTableName(""test"", name),
+                ImmutableList.of(new ColumnMetadata(""id"", BIGINT))),
+                false);
+        connector.commit(transaction);
+        transaction = connector.beginTransaction(READ_COMMITTED, false);
+        ConnectorTableHandle tableHandle = getTableHandle(connector.getMetadata(transaction), name);
+        connector.commit(transaction);
+        return ((RaptorTableHandle) tableHandle).getTableId();
+    }",method,
+"    private static ConnectorTableHandle getTableHandle(ConnectorMetadata metadata, String name)
+    {
+        return metadata.getTableHandle(SESSION, new SchemaTableName(""test"", name));
+    }",method,
+"public class NetworkStatsFactoryBenchmark {
+    private File mStats;
+    // TODO: consider staging stats file with different number of rows
+    @BeforeExperiment
+    protected void setUp() {
+        mStats = new File(""/proc/net/xt_qtaguid/stats"");
+    }
+    @AfterExperiment
+    protected void tearDown() {
+        mStats = null;
+    }
+    public void timeReadNetworkStatsDetailJava(int reps) throws Exception {
+        for (int i = 0; i < reps; i++) {
+            NetworkStatsFactory.javaReadNetworkStatsDetail(mStats, NetworkStats.UID_ALL,
+                    // Looks like this was broken by change d0c5b9abed60b7bc056d026bf0f2b2235410fb70
+                    // Fixed compilation problem but needs addressing properly.
+                    new String[0], 999);
+        }
+    }
+    public void timeReadNetworkStatsDetailNative(int reps) {
+        for (int i = 0; i < reps; i++) {
+            final NetworkStats stats = new NetworkStats(SystemClock.elapsedRealtime(), 0);
+            NetworkStatsFactory.nativeReadNetworkStatsDetail(
+                    stats, mStats.getAbsolutePath(), NetworkStats.UID_ALL,
+                    // Looks like this was broken by change d0c5b9abed60b7bc056d026bf0f2b2235410fb70
+                    // Fixed compilation problem but needs addressing properly.
+                    new String[0], 999);
+        }
+    }
+}",class,
+"    @BeforeExperiment
+    protected void setUp() {
+        mStats = new File(""/proc/net/xt_qtaguid/stats"");
+    }",method,
+"    @AfterExperiment
+    protected void tearDown() {
+        mStats = null;
+    }",method,
+"    public void timeReadNetworkStatsDetailJava(int reps) throws Exception {
+        for (int i = 0; i < reps; i++) {
+            NetworkStatsFactory.javaReadNetworkStatsDetail(mStats, NetworkStats.UID_ALL,
+                    // Looks like this was broken by change d0c5b9abed60b7bc056d026bf0f2b2235410fb70
+                    // Fixed compilation problem but needs addressing properly.
+                    new String[0], 999);
+        }
+    }",method,
+"        for (int i = 0; i < reps; i++) {
+            NetworkStatsFactory.javaReadNetworkStatsDetail(mStats, NetworkStats.UID_ALL,
+                    // Looks like this was broken by change d0c5b9abed60b7bc056d026bf0f2b2235410fb70
+                    // Fixed compilation problem but needs addressing properly.
+                    new String[0], 999);
+        }",method,
+"    public void timeReadNetworkStatsDetailNative(int reps) {
+        for (int i = 0; i < reps; i++) {
+            final NetworkStats stats = new NetworkStats(SystemClock.elapsedRealtime(), 0);
+            NetworkStatsFactory.nativeReadNetworkStatsDetail(
+                    stats, mStats.getAbsolutePath(), NetworkStats.UID_ALL,
+                    // Looks like this was broken by change d0c5b9abed60b7bc056d026bf0f2b2235410fb70
+                    // Fixed compilation problem but needs addressing properly.
+                    new String[0], 999);
+        }
+    }",method,
+"        for (int i = 0; i < reps; i++) {
+            final NetworkStats stats = new NetworkStats(SystemClock.elapsedRealtime(), 0);
+            NetworkStatsFactory.nativeReadNetworkStatsDetail(
+                    stats, mStats.getAbsolutePath(), NetworkStats.UID_ALL,
+                    // Looks like this was broken by change d0c5b9abed60b7bc056d026bf0f2b2235410fb70
+                    // Fixed compilation problem but needs addressing properly.
+                    new String[0], 999);
+        }",method,
+"public abstract class AbstractTransactionalAnnotatedConfigClassTests {
+	protected static final String JANE = ""jane"";
+	protected static final String SUE = ""sue"";
+	protected static final String YODA = ""yoda"";
+	protected DataSource dataSourceFromTxManager;
+	protected DataSource dataSourceViaInjection;
+	protected JdbcTemplate jdbcTemplate;
+	@Autowired
+	private Employee employee;
+	@Autowired
+	public void setTransactionManager(DataSourceTransactionManager transactionManager) {
+		this.dataSourceFromTxManager = transactionManager.getDataSource();
+	}
+	@Autowired
+	public void setDataSource(DataSource dataSource) {
+		this.dataSourceViaInjection = dataSource;
+		this.jdbcTemplate = new JdbcTemplate(dataSource);
+	}
+	private int countRowsInTable(String tableName) {
+		return jdbcTemplate.queryForObject(""SELECT COUNT(0) FROM "" + tableName, Integer.class);
+	}
+	private int createPerson(String name) {
+		return jdbcTemplate.update(""INSERT INTO person VALUES(?)"", name);
+	}
+	protected int deletePerson(String name) {
+		return jdbcTemplate.update(""DELETE FROM person WHERE name=?"", name);
+	}
+	protected void assertNumRowsInPersonTable(int expectedNumRows, String testState) {
+		assertEquals(""the number of rows in the person table ("" + testState + "")."", expectedNumRows,
+			countRowsInTable(""person""));
+	}
+	protected void assertAddPerson(final String name) {
+		assertEquals(""Adding '"" + name + ""'"", 1, createPerson(name));
+	}
+	@Test
+	public void autowiringFromConfigClass() {
+		assertNotNull(""The employee should have been autowired."", employee);
+		assertEquals(""John Smith"", employee.getName());
+	}
+	@BeforeTransaction
+	public void beforeTransaction() {
+		assertNumRowsInPersonTable(0, ""before a transactional test method"");
+		assertAddPerson(YODA);
+	}
+	@Before
+	public void setUp() throws Exception {
+		assertNumRowsInPersonTable((inTransaction() ? 1 : 0), ""before a test method"");
+	}
+	@Test
+	@Transactional
+	public void modifyTestDataWithinTransaction() {
+		assertInTransaction(true);
+		assertAddPerson(JANE);
+		assertAddPerson(SUE);
+		assertNumRowsInPersonTable(3, ""in modifyTestDataWithinTransaction()"");
+	}
+	@After
+	public void tearDown() throws Exception {
+		assertNumRowsInPersonTable((inTransaction() ? 3 : 0), ""after a test method"");
+	}
+	@AfterTransaction
+	public void afterTransaction() {
+		assertEquals(""Deleting yoda"", 1, deletePerson(YODA));
+		assertNumRowsInPersonTable(0, ""after a transactional test method"");
+	}
+}",class,
+"	@Autowired
+	public void setTransactionManager(DataSourceTransactionManager transactionManager) {
+		this.dataSourceFromTxManager = transactionManager.getDataSource();
+	}",method,
+"	@Autowired
+	public void setDataSource(DataSource dataSource) {
+		this.dataSourceViaInjection = dataSource;
+		this.jdbcTemplate = new JdbcTemplate(dataSource);
+	}",method,
+"	private int countRowsInTable(String tableName) {
+		return jdbcTemplate.queryForObject(""SELECT COUNT(0) FROM "" + tableName, Integer.class);
+	}",method,
+"	private int createPerson(String name) {
+		return jdbcTemplate.update(""INSERT INTO person VALUES(?)"", name);
+	}",method,
+"	protected int deletePerson(String name) {
+		return jdbcTemplate.update(""DELETE FROM person WHERE name=?"", name);
+	}",method,
+"	protected void assertNumRowsInPersonTable(int expectedNumRows, String testState) {
+		assertEquals(""the number of rows in the person table ("" + testState + "")."", expectedNumRows,
+			countRowsInTable(""person""));
+	}",method,
+"	protected void assertAddPerson(final String name) {
+		assertEquals(""Adding '"" + name + ""'"", 1, createPerson(name));
+	}",method,
+"	@Test
+	public void autowiringFromConfigClass() {
+		assertNotNull(""The employee should have been autowired."", employee);
+		assertEquals(""John Smith"", employee.getName());
+	}",method,
+"	@BeforeTransaction
+	public void beforeTransaction() {
+		assertNumRowsInPersonTable(0, ""before a transactional test method"");
+		assertAddPerson(YODA);
+	}",method,
+"	@Before
+	public void setUp() throws Exception {
+		assertNumRowsInPersonTable((inTransaction() ? 1 : 0), ""before a test method"");
+	}",method,
+"	@Test
+	@Transactional
+	public void modifyTestDataWithinTransaction() {
+		assertInTransaction(true);
+		assertAddPerson(JANE);
+		assertAddPerson(SUE);
+		assertNumRowsInPersonTable(3, ""in modifyTestDataWithinTransaction()"");
+	}",method,
+"	@After
+	public void tearDown() throws Exception {
+		assertNumRowsInPersonTable((inTransaction() ? 3 : 0), ""after a test method"");
+	}",method,
+"	@AfterTransaction
+	public void afterTransaction() {
+		assertEquals(""Deleting yoda"", 1, deletePerson(YODA));
+		assertNumRowsInPersonTable(0, ""after a transactional test method"");
+	}",method,
+"public final class CompletableTimer extends Completable {
+    final long delay;
+    final TimeUnit unit;
+    final Scheduler scheduler;
+    public CompletableTimer(long delay, TimeUnit unit, Scheduler scheduler) {
+        this.delay = delay;
+        this.unit = unit;
+        this.scheduler = scheduler;
+    }
+    @Override
+    protected void subscribeActual(final CompletableObserver s) {
+        TimerDisposable parent = new TimerDisposable(s);
+        s.onSubscribe(parent);
+        parent.setFuture(scheduler.scheduleDirect(parent, delay, unit));
+    }
+    static final class TimerDisposable extends AtomicReference<Disposable> implements Disposable, Runnable {
+        private static final long serialVersionUID = 3167244060586201109L;
+        final CompletableObserver actual;
+        TimerDisposable(final CompletableObserver actual) {
+            this.actual = actual;
+        }
+        @Override
+        public void run() {
+            actual.onComplete();
+        }
+        @Override
+        public void dispose() {
+            DisposableHelper.dispose(this);
+        }
+        @Override
+        public boolean isDisposed() {
+            return DisposableHelper.isDisposed(get());
+        }
+        void setFuture(Disposable d) {
+            DisposableHelper.replace(this, d);
+        }
+    }
+}",class,
+"    static final class TimerDisposable extends AtomicReference<Disposable> implements Disposable, Runnable {
+        private static final long serialVersionUID = 3167244060586201109L;
+        final CompletableObserver actual;
+        TimerDisposable(final CompletableObserver actual) {
+            this.actual = actual;
+        }
+        @Override
+        public void run() {
+            actual.onComplete();
+        }
+        @Override
+        public void dispose() {
+            DisposableHelper.dispose(this);
+        }
+        @Override
+        public boolean isDisposed() {
+            return DisposableHelper.isDisposed(get());
+        }
+        void setFuture(Disposable d) {
+            DisposableHelper.replace(this, d);
+        }
+    }",class,
+"    public CompletableTimer(long delay, TimeUnit unit, Scheduler scheduler) {
+        this.delay = delay;
+        this.unit = unit;
+        this.scheduler = scheduler;
+    }",method,
+"    @Override
+    protected void subscribeActual(final CompletableObserver s) {
+        TimerDisposable parent = new TimerDisposable(s);
+        s.onSubscribe(parent);
+        parent.setFuture(scheduler.scheduleDirect(parent, delay, unit));
+    }",method,
+"        TimerDisposable(final CompletableObserver actual) {
+            this.actual = actual;
+        }",method,
+"        @Override
+        public void run() {
+            actual.onComplete();
+        }",method,
+"        @Override
+        public void dispose() {
+            DisposableHelper.dispose(this);
+        }",method,
+"        @Override
+        public boolean isDisposed() {
+            return DisposableHelper.isDisposed(get());
+        }",method,
+"        void setFuture(Disposable d) {
+            DisposableHelper.replace(this, d);
+        }",method,

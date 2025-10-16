@@ -1,0 +1,1433 @@
+code_snippet,type,score
+"    public void setUseAnnotatedBasePath(boolean useAnnotatedBasePath) {
+        this.useAnnotatedBasePath = useAnnotatedBasePath;
+    }",method,good
+"    public void setGenerateNonSpringApplication(boolean generateNonSpringApplication) {
+        this.generateNonSpringApplication = generateNonSpringApplication;
+    }",method,good
+"    public void setUseGenericResponse(boolean useGenericResponse) {
+        this.useGenericResponse = useGenericResponse;
+    }",method,good
+"public class ImagePreviewComponent extends JPanel implements PreviewHintComponent {
+  private static final Key<Long> TIMESTAMP_KEY = Key.create(""Image.timeStamp"");
+  private static final Key<SoftReference<BufferedImage>> BUFFERED_IMAGE_REF_KEY = Key.create(""Image.bufferedImage"");
+  private static final List<String> supportedExtensions = Arrays.asList(ImageIO.getReaderFormatNames());
+  @NotNull
+  private final BufferedImage myImage;
+  private ImagePreviewComponent(@NotNull final BufferedImage image, final long imageFileSize) {
+    setLayout(new BorderLayout());
+    myImage = image;
+    add(new ImageComp(), BorderLayout.CENTER);
+    add(createLabel(image, imageFileSize), BorderLayout.SOUTH);
+    setBackground(UIUtil.getToolTipBackground());
+    setBorder(BorderFactory.createCompoundBorder(BorderFactory.createLineBorder(JBColor.BLACK), BorderFactory.createEmptyBorder(5, 5, 5, 5)));
+  }
+  @Override
+  @TestOnly
+  public boolean isEqualTo(@Nullable PreviewHintComponent other) {
+    if (!(other instanceof ImagePreviewComponent)) {
+      return false;
+    }
+    ImagePreviewComponent otherPreview = (ImagePreviewComponent)other;
+    if (myImage.getWidth() == otherPreview.myImage.getWidth() && myImage.getHeight() == otherPreview.myImage.getHeight()) {
+      for (int x = 0; x < myImage.getWidth(); x++) {
+        for (int y = 0; y < myImage.getHeight(); y++) {
+          if (myImage.getRGB(x, y) != otherPreview.myImage.getRGB(x, y)) {
+            return false;
+          }
+        }
+      }
+      return true;
+    }
+    return false;
+  }
+  @NotNull
+  private static JLabel createLabel(@NotNull final BufferedImage image, long imageFileSize) {
+    final int width = image.getWidth();
+    final int height = image.getHeight();
+    final ColorModel colorModel = image.getColorModel();
+    final int i = colorModel.getPixelSize();
+    return new JLabel(String.format(""%dx%d, %dbpp, %s"", width, height, i, StringUtil.formatFileSize(imageFileSize)));
+  }
+  private static boolean refresh(@NotNull VirtualFile file) throws IOException {
+    Long loadedTimeStamp = file.getUserData(TIMESTAMP_KEY);
+    SoftReference<BufferedImage> imageRef = file.getUserData(BUFFERED_IMAGE_REF_KEY);
+    if (loadedTimeStamp == null || loadedTimeStamp < file.getTimeStamp() || SoftReference.dereference(imageRef) == null) {
+      try {
+        final byte[] content = file.contentsToByteArray();
+        final BufferedImage image = readImageFromBytes(content);
+        file.putUserData(BUFFERED_IMAGE_REF_KEY, new SoftReference<>(image));
+        return true;
+      }
+      finally {
+        // We perform loading no more needed
+        file.putUserData(TIMESTAMP_KEY, System.currentTimeMillis());
+      }
+    }
+    return false;
+  }
+  @NotNull
+  public static BufferedImage readImageFromBytes(@NotNull byte[] content) throws IOException {
+    InputStream inputStream = new ByteArrayInputStream(content, 0, content.length);
+    ImageInputStream imageInputStream = ImageIO.createImageInputStream(inputStream);
+    try {
+      Iterator<ImageReader> imageReaders = ImageIO.getImageReaders(imageInputStream);
+      if (imageReaders.hasNext()) {
+        ImageReader imageReader = imageReaders.next();
+        try {
+          ImageReadParam param = imageReader.getDefaultReadParam();
+          imageReader.setInput(imageInputStream, true, true);
+          int minIndex = imageReader.getMinIndex();
+          return imageReader.read(minIndex, param);
+        }
+        catch (Exception e) {
+          throw new IOException(""Can't read image from given content"", e);
+        }
+        finally {
+          imageReader.dispose();
+        }
+      }
+    }
+    finally {
+      imageInputStream.close();
+    }
+    throw new IOException(""Can't read image from given content"");
+  }
+  public static JComponent getPreviewComponent(@Nullable final PsiElement parent) {
+    if (parent == null) {
+      return null;
+    }
+    final PsiReference[] references = parent.getReferences();
+    for (final PsiReference reference : references) {
+      final PsiElement fileItem = reference.resolve();
+      if (fileItem instanceof PsiFileSystemItem) {
+        final PsiFileSystemItem item = (PsiFileSystemItem)fileItem;
+        if (!item.isDirectory()) {
+          final VirtualFile file = item.getVirtualFile();
+          if (file != null && supportedExtensions.contains(file.getExtension())) {
+            try {
+              refresh(file);
+              SoftReference<BufferedImage> imageRef = file.getUserData(BUFFERED_IMAGE_REF_KEY);
+              final BufferedImage image = SoftReference.dereference(imageRef);
+              if (image != null) {
+                return new ImagePreviewComponent(image, file.getLength());
+              }
+            }
+            catch (IOException ignored) {
+              // nothing
+            }
+          }
+        }
+      }
+    }
+    return null;
+  }
+  public static ImagePreviewComponent getPreviewComponent(@NotNull final BufferedImage image, final long imageFileSize) {
+    return new ImagePreviewComponent(image, imageFileSize);
+  }
+  private class ImageComp extends JComponent {
+    private final Dimension myPreferredSize;
+    private ImageComp() {
+      if (myImage.getWidth() > 300 || myImage.getHeight() > 300) {
+        // will make image smaller
+        final float factor = 300.0f / Math.max(myImage.getWidth(), myImage.getHeight());
+        myPreferredSize = new Dimension((int)(myImage.getWidth() * factor), (int)(myImage.getHeight() * factor));
+      }
+      else {
+        myPreferredSize = new Dimension(myImage.getWidth(), myImage.getHeight());
+      }
+    }
+    @Override
+    public void paint(final Graphics g) {
+      super.paint(g);
+      Rectangle r = getBounds();
+      final int width = myImage.getWidth();
+      final int height = myImage.getHeight();
+      g.drawImage(myImage, 0, 0, r.width > width ? width : r.width, r.height > height ? height : r.height, this);
+    }
+    @Override
+    public Dimension getPreferredSize() {
+      return myPreferredSize;
+    }
+    @Override
+    public Dimension getMinimumSize() {
+      return getPreferredSize();
+    }
+    @Override
+    public Dimension getMaximumSize() {
+      return getPreferredSize();
+    }
+  }
+}",class,changes_required
+"  private class ImageComp extends JComponent {
+    private final Dimension myPreferredSize;
+    private ImageComp() {
+      if (myImage.getWidth() > 300 || myImage.getHeight() > 300) {
+        // will make image smaller
+        final float factor = 300.0f / Math.max(myImage.getWidth(), myImage.getHeight());
+        myPreferredSize = new Dimension((int)(myImage.getWidth() * factor), (int)(myImage.getHeight() * factor));
+      }
+      else {
+        myPreferredSize = new Dimension(myImage.getWidth(), myImage.getHeight());
+      }
+    }
+    @Override
+    public void paint(final Graphics g) {
+      super.paint(g);
+      Rectangle r = getBounds();
+      final int width = myImage.getWidth();
+      final int height = myImage.getHeight();
+      g.drawImage(myImage, 0, 0, r.width > width ? width : r.width, r.height > height ? height : r.height, this);
+    }
+    @Override
+    public Dimension getPreferredSize() {
+      return myPreferredSize;
+    }
+    @Override
+    public Dimension getMinimumSize() {
+      return getPreferredSize();
+    }
+    @Override
+    public Dimension getMaximumSize() {
+      return getPreferredSize();
+    }
+  }",class,changes_recommended
+"  private ImagePreviewComponent(@NotNull final BufferedImage image, final long imageFileSize) {
+    setLayout(new BorderLayout());
+    myImage = image;
+    add(new ImageComp(), BorderLayout.CENTER);
+    add(createLabel(image, imageFileSize), BorderLayout.SOUTH);
+    setBackground(UIUtil.getToolTipBackground());
+    setBorder(BorderFactory.createCompoundBorder(BorderFactory.createLineBorder(JBColor.BLACK), BorderFactory.createEmptyBorder(5, 5, 5, 5)));
+  }",method,good
+"  @Override
+  @TestOnly
+  public boolean isEqualTo(@Nullable PreviewHintComponent other) {
+    if (!(other instanceof ImagePreviewComponent)) {
+      return false;
+    }
+    ImagePreviewComponent otherPreview = (ImagePreviewComponent)other;
+    if (myImage.getWidth() == otherPreview.myImage.getWidth() && myImage.getHeight() == otherPreview.myImage.getHeight()) {
+      for (int x = 0; x < myImage.getWidth(); x++) {
+        for (int y = 0; y < myImage.getHeight(); y++) {
+          if (myImage.getRGB(x, y) != otherPreview.myImage.getRGB(x, y)) {
+            return false;
+          }
+        }
+      }
+      return true;
+    }
+    return false;
+  }",method,good
+"  @NotNull
+  private static JLabel createLabel(@NotNull final BufferedImage image, long imageFileSize) {
+    final int width = image.getWidth();
+    final int height = image.getHeight();
+    final ColorModel colorModel = image.getColorModel();
+    final int i = colorModel.getPixelSize();
+    return new JLabel(String.format(""%dx%d, %dbpp, %s"", width, height, i, StringUtil.formatFileSize(imageFileSize)));
+  }",method,good
+"  private static boolean refresh(@NotNull VirtualFile file) throws IOException {
+    Long loadedTimeStamp = file.getUserData(TIMESTAMP_KEY);
+    SoftReference<BufferedImage> imageRef = file.getUserData(BUFFERED_IMAGE_REF_KEY);
+    if (loadedTimeStamp == null || loadedTimeStamp < file.getTimeStamp() || SoftReference.dereference(imageRef) == null) {
+      try {
+        final byte[] content = file.contentsToByteArray();
+        final BufferedImage image = readImageFromBytes(content);
+        file.putUserData(BUFFERED_IMAGE_REF_KEY, new SoftReference<>(image));
+        return true;
+      }
+      finally {
+        // We perform loading no more needed
+        file.putUserData(TIMESTAMP_KEY, System.currentTimeMillis());
+      }
+    }
+    return false;
+  }",method,good
+"  @NotNull
+  public static BufferedImage readImageFromBytes(@NotNull byte[] content) throws IOException {
+    InputStream inputStream = new ByteArrayInputStream(content, 0, content.length);
+    ImageInputStream imageInputStream = ImageIO.createImageInputStream(inputStream);
+    try {
+      Iterator<ImageReader> imageReaders = ImageIO.getImageReaders(imageInputStream);
+      if (imageReaders.hasNext()) {
+        ImageReader imageReader = imageReaders.next();
+        try {
+          ImageReadParam param = imageReader.getDefaultReadParam();
+          imageReader.setInput(imageInputStream, true, true);
+          int minIndex = imageReader.getMinIndex();
+          return imageReader.read(minIndex, param);
+        }
+        catch (Exception e) {
+          throw new IOException(""Can't read image from given content"", e);
+        }
+        finally {
+          imageReader.dispose();
+        }
+      }
+    }
+    finally {
+      imageInputStream.close();
+    }
+    throw new IOException(""Can't read image from given content"");
+  }",method,good
+"        catch (Exception e) {
+          throw new IOException(""Can't read image from given content"", e);
+        }",method,good
+"  public static JComponent getPreviewComponent(@Nullable final PsiElement parent) {
+    if (parent == null) {
+      return null;
+    }
+    final PsiReference[] references = parent.getReferences();
+    for (final PsiReference reference : references) {
+      final PsiElement fileItem = reference.resolve();
+      if (fileItem instanceof PsiFileSystemItem) {
+        final PsiFileSystemItem item = (PsiFileSystemItem)fileItem;
+        if (!item.isDirectory()) {
+          final VirtualFile file = item.getVirtualFile();
+          if (file != null && supportedExtensions.contains(file.getExtension())) {
+            try {
+              refresh(file);
+              SoftReference<BufferedImage> imageRef = file.getUserData(BUFFERED_IMAGE_REF_KEY);
+              final BufferedImage image = SoftReference.dereference(imageRef);
+              if (image != null) {
+                return new ImagePreviewComponent(image, file.getLength());
+              }
+            }
+            catch (IOException ignored) {
+              // nothing
+            }
+          }
+        }
+      }
+    }
+    return null;
+  }",method,good
+"    if (parent == null) {
+      return null;
+    }",method,good
+"    for (final PsiReference reference : references) {
+      final PsiElement fileItem = reference.resolve();
+      if (fileItem instanceof PsiFileSystemItem) {
+        final PsiFileSystemItem item = (PsiFileSystemItem)fileItem;
+        if (!item.isDirectory()) {
+          final VirtualFile file = item.getVirtualFile();
+          if (file != null && supportedExtensions.contains(file.getExtension())) {
+            try {
+              refresh(file);
+              SoftReference<BufferedImage> imageRef = file.getUserData(BUFFERED_IMAGE_REF_KEY);
+              final BufferedImage image = SoftReference.dereference(imageRef);
+              if (image != null) {
+                return new ImagePreviewComponent(image, file.getLength());
+              }
+            }
+            catch (IOException ignored) {
+              // nothing
+            }
+          }
+        }
+      }
+    }",method,good
+"      if (fileItem instanceof PsiFileSystemItem) {
+        final PsiFileSystemItem item = (PsiFileSystemItem)fileItem;
+        if (!item.isDirectory()) {
+          final VirtualFile file = item.getVirtualFile();
+          if (file != null && supportedExtensions.contains(file.getExtension())) {
+            try {
+              refresh(file);
+              SoftReference<BufferedImage> imageRef = file.getUserData(BUFFERED_IMAGE_REF_KEY);
+              final BufferedImage image = SoftReference.dereference(imageRef);
+              if (image != null) {
+                return new ImagePreviewComponent(image, file.getLength());
+              }
+            }
+            catch (IOException ignored) {
+              // nothing
+            }
+          }
+        }
+      }",method,good
+"              if (image != null) {
+                return new ImagePreviewComponent(image, file.getLength());
+              }",method,good
+"            catch (IOException ignored) {
+              // nothing
+            }",method,good
+"  public static ImagePreviewComponent getPreviewComponent(@NotNull final BufferedImage image, final long imageFileSize) {
+    return new ImagePreviewComponent(image, imageFileSize);
+  }",method,good
+"    private ImageComp() {
+      if (myImage.getWidth() > 300 || myImage.getHeight() > 300) {
+        // will make image smaller
+        final float factor = 300.0f / Math.max(myImage.getWidth(), myImage.getHeight());
+        myPreferredSize = new Dimension((int)(myImage.getWidth() * factor), (int)(myImage.getHeight() * factor));
+      }
+      else {
+        myPreferredSize = new Dimension(myImage.getWidth(), myImage.getHeight());
+      }
+    }",method,good
+"    @Override
+    public void paint(final Graphics g) {
+      super.paint(g);
+      Rectangle r = getBounds();
+      final int width = myImage.getWidth();
+      final int height = myImage.getHeight();
+      g.drawImage(myImage, 0, 0, r.width > width ? width : r.width, r.height > height ? height : r.height, this);
+    }",method,good
+"    @Override
+    public Dimension getPreferredSize() {
+      return myPreferredSize;
+    }",method,good
+"    @Override
+    public Dimension getMinimumSize() {
+      return getPreferredSize();
+    }",method,good
+"    @Override
+    public Dimension getMaximumSize() {
+      return getPreferredSize();
+    }",method,good
+"public class EnumsTest extends TestCase {
+  private enum TestEnum {
+    CHEETO,
+    HONDA,
+    POODLE,
+  }
+  private enum OtherEnum {}
+  public void testGetIfPresent() {
+    assertThat(Enums.getIfPresent(TestEnum.class, ""CHEETO"")).hasValue(TestEnum.CHEETO);
+    assertThat(Enums.getIfPresent(TestEnum.class, ""HONDA"")).hasValue(TestEnum.HONDA);
+    assertThat(Enums.getIfPresent(TestEnum.class, ""POODLE"")).hasValue(TestEnum.POODLE);
+    assertThat(Enums.getIfPresent(TestEnum.class, ""CHEETO"")).isPresent();
+    assertThat(Enums.getIfPresent(TestEnum.class, ""HONDA"")).isPresent();
+    assertThat(Enums.getIfPresent(TestEnum.class, ""POODLE"")).isPresent();
+    assertThat(Enums.getIfPresent(TestEnum.class, ""CHEETO"")).hasValue(TestEnum.CHEETO);
+    assertThat(Enums.getIfPresent(TestEnum.class, ""HONDA"")).hasValue(TestEnum.HONDA);
+    assertThat(Enums.getIfPresent(TestEnum.class, ""POODLE"")).hasValue(TestEnum.POODLE);
+  }
+  public void testGetIfPresent_caseSensitive() {
+    assertThat(Enums.getIfPresent(TestEnum.class, ""cHEETO"")).isAbsent();
+    assertThat(Enums.getIfPresent(TestEnum.class, ""Honda"")).isAbsent();
+    assertThat(Enums.getIfPresent(TestEnum.class, ""poodlE"")).isAbsent();
+  }
+  public void testGetIfPresent_whenNoMatchingConstant() {
+    assertThat(Enums.getIfPresent(TestEnum.class, ""WOMBAT"")).isAbsent();
+  }
+  @GwtIncompatible // weak references
+  public void testGetIfPresent_doesNotPreventClassUnloading() throws Exception {
+    WeakReference<?> shadowLoaderReference = doTestClassUnloading();
+    GcFinalization.awaitClear(shadowLoaderReference);
+  }
+  // Create a second ClassLoader and use it to get a second version of the TestEnum class.
+  // Run Enums.getIfPresent on that other TestEnum and then return a WeakReference containing the
+  // new ClassLoader. If Enums.getIfPresent does caching that prevents the shadow TestEnum
+  // (and therefore its ClassLoader) from being unloaded, then this WeakReference will never be
+  // cleared.
+  @GwtIncompatible // weak references
+  private WeakReference<?> doTestClassUnloading() throws Exception {
+    URLClassLoader shadowLoader = new URLClassLoader(getClassPathUrls(), null);
+    @SuppressWarnings(""unchecked"")
+    Class<TestEnum> shadowTestEnum =
+        (Class<TestEnum>) Class.forName(TestEnum.class.getName(), false, shadowLoader);
+    assertNotSame(shadowTestEnum, TestEnum.class);
+    // We can't write Set<TestEnum> because that is a Set of the TestEnum from the original
+    // ClassLoader.
+    Set<Object> shadowConstants = new HashSet<>();
+    for (TestEnum constant : TestEnum.values()) {
+      Optional<TestEnum> result = Enums.getIfPresent(shadowTestEnum, constant.name());
+      assertThat(result).isPresent();
+      shadowConstants.add(result.get());
+    }
+    assertEquals(ImmutableSet.<Object>copyOf(shadowTestEnum.getEnumConstants()), shadowConstants);
+    Optional<TestEnum> result = Enums.getIfPresent(shadowTestEnum, ""blibby"");
+    assertThat(result).isAbsent();
+    return new WeakReference<>(shadowLoader);
+  }
+  public void testStringConverter_convert() {
+    Converter<String, TestEnum> converter = Enums.stringConverter(TestEnum.class);
+    assertEquals(TestEnum.CHEETO, converter.convert(""CHEETO""));
+    assertEquals(TestEnum.HONDA, converter.convert(""HONDA""));
+    assertEquals(TestEnum.POODLE, converter.convert(""POODLE""));
+    assertNull(converter.convert(null));
+    assertNull(converter.reverse().convert(null));
+  }
+  public void testStringConverter_convertError() {
+    Converter<String, TestEnum> converter = Enums.stringConverter(TestEnum.class);
+    try {
+      converter.convert(""xxx"");
+      fail();
+    } catch (IllegalArgumentException expected) {
+    }
+  }
+  public void testStringConverter_reverse() {
+    Converter<String, TestEnum> converter = Enums.stringConverter(TestEnum.class);
+    assertEquals(""CHEETO"", converter.reverse().convert(TestEnum.CHEETO));
+    assertEquals(""HONDA"", converter.reverse().convert(TestEnum.HONDA));
+    assertEquals(""POODLE"", converter.reverse().convert(TestEnum.POODLE));
+  }
+  @GwtIncompatible // NullPointerTester
+  public void testStringConverter_nullPointerTester() throws Exception {
+    Converter<String, TestEnum> converter = Enums.stringConverter(TestEnum.class);
+    NullPointerTester tester = new NullPointerTester();
+    tester.testAllPublicInstanceMethods(converter);
+  }
+  public void testStringConverter_nullConversions() {
+    Converter<String, TestEnum> converter = Enums.stringConverter(TestEnum.class);
+    assertNull(converter.convert(null));
+    assertNull(converter.reverse().convert(null));
+  }
+  @GwtIncompatible // Class.getName()
+  public void testStringConverter_toString() {
+    assertEquals(
+        ""Enums.stringConverter(com.google.common.base.EnumsTest$TestEnum.class)"",
+        Enums.stringConverter(TestEnum.class).toString());
+  }
+  public void testStringConverter_serialization() {
+    SerializableTester.reserializeAndAssert(Enums.stringConverter(TestEnum.class));
+  }
+  @GwtIncompatible // NullPointerTester
+  public void testNullPointerExceptions() {
+    NullPointerTester tester = new NullPointerTester();
+    tester.testAllPublicStaticMethods(Enums.class);
+  }
+  @Retention(RetentionPolicy.RUNTIME)
+  private @interface ExampleAnnotation {}
+  private enum AnEnum {
+    @ExampleAnnotation FOO,
+    BAR
+  }
+  @GwtIncompatible // reflection
+  public void testGetField() {
+    Field foo = Enums.getField(AnEnum.FOO);
+    assertEquals(""FOO"", foo.getName());
+    assertTrue(foo.isAnnotationPresent(ExampleAnnotation.class));
+    Field bar = Enums.getField(AnEnum.BAR);
+    assertEquals(""BAR"", bar.getName());
+    assertFalse(bar.isAnnotationPresent(ExampleAnnotation.class));
+  }
+  @GwtIncompatible // Class.getClassLoader()
+  private URL[] getClassPathUrls() {
+    ClassLoader classLoader = getClass().getClassLoader();
+    return classLoader instanceof URLClassLoader
+        ? ((URLClassLoader) classLoader).getURLs()
+        : parseJavaClassPath().toArray(new URL[0]);
+  }
+  // TODO(b/65488446): Make this a public API.
+  @GwtIncompatible
+  private static ImmutableList<URL> parseJavaClassPath() {
+    ImmutableList.Builder<URL> urls = ImmutableList.builder();
+    for (String entry : Splitter.on(PATH_SEPARATOR.value()).split(JAVA_CLASS_PATH.value())) {
+      try {
+        try {
+          urls.add(new File(entry).toURI().toURL());
+        } catch (SecurityException e) { // File.toURI checks to see if the file is a directory
+          urls.add(new URL(""file"", null, new File(entry).getAbsolutePath()));
+        }
+      } catch (MalformedURLException e) {
+        AssertionError error = new AssertionError(""malformed class path entry: "" + entry);
+        error.initCause(e);
+        throw error;
+      }
+    }
+    return urls.build();
+  }
+}",class,changes_recommended
+"  public void testGetIfPresent() {
+    assertThat(Enums.getIfPresent(TestEnum.class, ""CHEETO"")).hasValue(TestEnum.CHEETO);
+    assertThat(Enums.getIfPresent(TestEnum.class, ""HONDA"")).hasValue(TestEnum.HONDA);
+    assertThat(Enums.getIfPresent(TestEnum.class, ""POODLE"")).hasValue(TestEnum.POODLE);
+    assertThat(Enums.getIfPresent(TestEnum.class, ""CHEETO"")).isPresent();
+    assertThat(Enums.getIfPresent(TestEnum.class, ""HONDA"")).isPresent();
+    assertThat(Enums.getIfPresent(TestEnum.class, ""POODLE"")).isPresent();
+    assertThat(Enums.getIfPresent(TestEnum.class, ""CHEETO"")).hasValue(TestEnum.CHEETO);
+    assertThat(Enums.getIfPresent(TestEnum.class, ""HONDA"")).hasValue(TestEnum.HONDA);
+    assertThat(Enums.getIfPresent(TestEnum.class, ""POODLE"")).hasValue(TestEnum.POODLE);
+  }",method,good
+"  public void testGetIfPresent_caseSensitive() {
+    assertThat(Enums.getIfPresent(TestEnum.class, ""cHEETO"")).isAbsent();
+    assertThat(Enums.getIfPresent(TestEnum.class, ""Honda"")).isAbsent();
+    assertThat(Enums.getIfPresent(TestEnum.class, ""poodlE"")).isAbsent();
+  }",method,good
+"  public void testGetIfPresent_whenNoMatchingConstant() {
+    assertThat(Enums.getIfPresent(TestEnum.class, ""WOMBAT"")).isAbsent();
+  }",method,good
+"  @GwtIncompatible // weak references
+  public void testGetIfPresent_doesNotPreventClassUnloading() throws Exception {
+    WeakReference<?> shadowLoaderReference = doTestClassUnloading();
+    GcFinalization.awaitClear(shadowLoaderReference);
+  }",method,good
+"  @GwtIncompatible // weak references
+  private WeakReference<?> doTestClassUnloading() throws Exception {
+    URLClassLoader shadowLoader = new URLClassLoader(getClassPathUrls(), null);
+    @SuppressWarnings(""unchecked"")
+    Class<TestEnum> shadowTestEnum =
+        (Class<TestEnum>) Class.forName(TestEnum.class.getName(), false, shadowLoader);
+    assertNotSame(shadowTestEnum, TestEnum.class);
+    // We can't write Set<TestEnum> because that is a Set of the TestEnum from the original
+    // ClassLoader.
+    Set<Object> shadowConstants = new HashSet<>();
+    for (TestEnum constant : TestEnum.values()) {
+      Optional<TestEnum> result = Enums.getIfPresent(shadowTestEnum, constant.name());
+      assertThat(result).isPresent();
+      shadowConstants.add(result.get());
+    }
+    assertEquals(ImmutableSet.<Object>copyOf(shadowTestEnum.getEnumConstants()), shadowConstants);
+    Optional<TestEnum> result = Enums.getIfPresent(shadowTestEnum, ""blibby"");
+    assertThat(result).isAbsent();
+    return new WeakReference<>(shadowLoader);
+  }",method,good
+"  public void testStringConverter_convert() {
+    Converter<String, TestEnum> converter = Enums.stringConverter(TestEnum.class);
+    assertEquals(TestEnum.CHEETO, converter.convert(""CHEETO""));
+    assertEquals(TestEnum.HONDA, converter.convert(""HONDA""));
+    assertEquals(TestEnum.POODLE, converter.convert(""POODLE""));
+    assertNull(converter.convert(null));
+    assertNull(converter.reverse().convert(null));
+  }",method,good
+"  public void testStringConverter_convertError() {
+    Converter<String, TestEnum> converter = Enums.stringConverter(TestEnum.class);
+    try {
+      converter.convert(""xxx"");
+      fail();
+    } catch (IllegalArgumentException expected) {
+    }
+  }",method,good
+"  public void testStringConverter_reverse() {
+    Converter<String, TestEnum> converter = Enums.stringConverter(TestEnum.class);
+    assertEquals(""CHEETO"", converter.reverse().convert(TestEnum.CHEETO));
+    assertEquals(""HONDA"", converter.reverse().convert(TestEnum.HONDA));
+    assertEquals(""POODLE"", converter.reverse().convert(TestEnum.POODLE));
+  }",method,good
+"  @GwtIncompatible // NullPointerTester
+  public void testStringConverter_nullPointerTester() throws Exception {
+    Converter<String, TestEnum> converter = Enums.stringConverter(TestEnum.class);
+    NullPointerTester tester = new NullPointerTester();
+    tester.testAllPublicInstanceMethods(converter);
+  }",method,good
+"  public void testStringConverter_nullConversions() {
+    Converter<String, TestEnum> converter = Enums.stringConverter(TestEnum.class);
+    assertNull(converter.convert(null));
+    assertNull(converter.reverse().convert(null));
+  }",method,good
+"  @GwtIncompatible // Class.getName()
+  public void testStringConverter_toString() {
+    assertEquals(
+        ""Enums.stringConverter(com.google.common.base.EnumsTest$TestEnum.class)"",
+        Enums.stringConverter(TestEnum.class).toString());
+  }",method,good
+"  public void testStringConverter_serialization() {
+    SerializableTester.reserializeAndAssert(Enums.stringConverter(TestEnum.class));
+  }",method,good
+"  @GwtIncompatible // NullPointerTester
+  public void testNullPointerExceptions() {
+    NullPointerTester tester = new NullPointerTester();
+    tester.testAllPublicStaticMethods(Enums.class);
+  }",method,good
+"  @GwtIncompatible // reflection
+  public void testGetField() {
+    Field foo = Enums.getField(AnEnum.FOO);
+    assertEquals(""FOO"", foo.getName());
+    assertTrue(foo.isAnnotationPresent(ExampleAnnotation.class));
+    Field bar = Enums.getField(AnEnum.BAR);
+    assertEquals(""BAR"", bar.getName());
+    assertFalse(bar.isAnnotationPresent(ExampleAnnotation.class));
+  }",method,good
+"  @GwtIncompatible // Class.getClassLoader()
+  private URL[] getClassPathUrls() {
+    ClassLoader classLoader = getClass().getClassLoader();
+    return classLoader instanceof URLClassLoader
+        ? ((URLClassLoader) classLoader).getURLs()
+        : parseJavaClassPath().toArray(new URL[0]);
+  }",method,good
+"  @GwtIncompatible
+  private static ImmutableList<URL> parseJavaClassPath() {
+    ImmutableList.Builder<URL> urls = ImmutableList.builder();
+    for (String entry : Splitter.on(PATH_SEPARATOR.value()).split(JAVA_CLASS_PATH.value())) {
+      try {
+        try {
+          urls.add(new File(entry).toURI().toURL());
+        } catch (SecurityException e) { // File.toURI checks to see if the file is a directory
+          urls.add(new URL(""file"", null, new File(entry).getAbsolutePath()));
+        }
+      } catch (MalformedURLException e) {
+        AssertionError error = new AssertionError(""malformed class path entry: "" + entry);
+        error.initCause(e);
+        throw error;
+      }
+    }
+    return urls.build();
+  }",method,good
+"public class ReinforcementLearning implements Serializable {
+  // Updates a model using SARSA
+  // https://en.wikipedia.org/wiki/State-Action-Reward-State-Action
+  // If the nextState is terminal, pass in null
+  public static void updateSARSA(AbstractModel model,
+                                 FeatureVector stateAction,
+                                 float reward,
+                                 FeatureVector nextStateAction,
+                                 float learningRate,
+                                 float discountRate) {
+    Map<String, Map<String, Double>> flatSA = Util.flattenFeature(stateAction);
+    float nextQ = 0.0f;
+    if (nextStateAction != null) {
+      nextQ = model.scoreItem(nextStateAction);
+    }
+    float currentQ = model.scoreItem(stateAction);
+    float expectedQ = reward + discountRate * nextQ;
+    float grad = currentQ - expectedQ;
+    model.onlineUpdate(grad, learningRate, flatSA);
+  }
+  // Picks a random action with probability epsilon.
+  public static int epsilonGreedyPolicy(AbstractModel model, ArrayList<FeatureVector> stateAction, float epsilon, Random rnd) {
+    if (rnd.nextFloat() <= epsilon) {
+      return rnd.nextInt(stateAction.size());
+    }
+    int bestAction = 0;
+    float bestScore = model.scoreItem(stateAction.get(0));
+    for (int i = 1; i < stateAction.size(); i++) {
+      FeatureVector sa = stateAction.get(i);
+      float score = model.scoreItem(sa);
+      if (score > bestScore) {
+        bestAction = i;
+        bestScore = score;
+      }
+    }
+    return bestAction;
+  }
+ // Uses softmax to determine the action.
+ // As temperature approaches zero the action approaches the greedy action.
+ public static int softmaxPolicy(AbstractModel model, ArrayList<FeatureVector> stateAction, float temperature, Random rnd) {
+   int count = stateAction.size();
+   float[] scores = new float[count];
+   float[] cumScores = new float[count];
+   float maxVal = -1e10f;
+   for (int i = 0; i < count; i++) {
+     FeatureVector sa = stateAction.get(i);
+     scores[i] = model.scoreItem(sa);
+     maxVal = Math.max(maxVal, scores[i]);
+   }
+   for (int i = 0; i < count; i ++) {
+     scores[i] = (float) Math.exp((scores[i] - maxVal) / temperature);
+     cumScores[i] = scores[i];
+     if (i > 0) {
+       cumScores[i] += cumScores[i - 1];
+     }
+   }
+   float threshold = rnd.nextFloat() * cumScores[count - 1];
+   for (int i = 0; i < count; i++) {
+     if (threshold <= cumScores[i]) {
+       return i;
+     }
+   }
+   return 0;
+ }
+}",class,changes_required
+"  public static void updateSARSA(AbstractModel model,
+                                 FeatureVector stateAction,
+                                 float reward,
+                                 FeatureVector nextStateAction,
+                                 float learningRate,
+                                 float discountRate) {
+    Map<String, Map<String, Double>> flatSA = Util.flattenFeature(stateAction);
+    float nextQ = 0.0f;
+    if (nextStateAction != null) {
+      nextQ = model.scoreItem(nextStateAction);
+    }
+    float currentQ = model.scoreItem(stateAction);
+    float expectedQ = reward + discountRate * nextQ;
+    float grad = currentQ - expectedQ;
+    model.onlineUpdate(grad, learningRate, flatSA);
+  }",method,changes_recommended
+"    if (nextStateAction != null) {
+      nextQ = model.scoreItem(nextStateAction);
+    }",method,good
+"  public static int epsilonGreedyPolicy(AbstractModel model, ArrayList<FeatureVector> stateAction, float epsilon, Random rnd) {
+    if (rnd.nextFloat() <= epsilon) {
+      return rnd.nextInt(stateAction.size());
+    }
+    int bestAction = 0;
+    float bestScore = model.scoreItem(stateAction.get(0));
+    for (int i = 1; i < stateAction.size(); i++) {
+      FeatureVector sa = stateAction.get(i);
+      float score = model.scoreItem(sa);
+      if (score > bestScore) {
+        bestAction = i;
+        bestScore = score;
+      }
+    }
+    return bestAction;
+  }",method,good
+"      if (score > bestScore) {
+        bestAction = i;
+        bestScore = score;
+      }",method,good
+" public static int softmaxPolicy(AbstractModel model, ArrayList<FeatureVector> stateAction, float temperature, Random rnd) {
+   int count = stateAction.size();
+   float[] scores = new float[count];
+   float[] cumScores = new float[count];
+   float maxVal = -1e10f;
+   for (int i = 0; i < count; i++) {
+     FeatureVector sa = stateAction.get(i);
+     scores[i] = model.scoreItem(sa);
+     maxVal = Math.max(maxVal, scores[i]);
+   }
+   for (int i = 0; i < count; i ++) {
+     scores[i] = (float) Math.exp((scores[i] - maxVal) / temperature);
+     cumScores[i] = scores[i];
+     if (i > 0) {
+       cumScores[i] += cumScores[i - 1];
+     }
+   }
+   float threshold = rnd.nextFloat() * cumScores[count - 1];
+   for (int i = 0; i < count; i++) {
+     if (threshold <= cumScores[i]) {
+       return i;
+     }
+   }
+   return 0;
+ }",method,good
+"   for (int i = 0; i < count; i++) {
+     FeatureVector sa = stateAction.get(i);
+     scores[i] = model.scoreItem(sa);
+     maxVal = Math.max(maxVal, scores[i]);
+   }",method,good
+"   for (int i = 0; i < count; i ++) {
+     scores[i] = (float) Math.exp((scores[i] - maxVal) / temperature);
+     cumScores[i] = scores[i];
+     if (i > 0) {
+       cumScores[i] += cumScores[i - 1];
+     }
+   }",method,good
+"     if (i > 0) {
+       cumScores[i] += cumScores[i - 1];
+     }",method,good
+"   for (int i = 0; i < count; i++) {
+     if (threshold <= cumScores[i]) {
+       return i;
+     }
+   }",method,good
+"     if (threshold <= cumScores[i]) {
+       return i;
+     }",method,good
+"public class CDATANode extends Node
+{
+	public CDATANode()
+	{
+		super("""", """", 0);
+		inCDATA = false;
+	}
+	public boolean inCDATA;
+	public void analyze(Analyzer analyzer)
+	{
+		analyzer.prepare(this);
+		analyzer.analyze(this);
+	}
+	public void toStartElement(StringWriter w)
+	{
+		if (inCDATA)
+		{
+			w.write(""<![CDATA["");
+			w.write(image);
+			w.write(""]]>"");
+		}
+		else
+		{
+			w.write(image);
+		}
+	}
+	public void toEndElement(StringWriter w)
+	{
+	}
+	public boolean isWhitespace()
+	{
+	    return image != null && image.trim().length() == 0;
+	}
+	public String toString()
+	{
+		String cdata = image.replace('\r', ' ').replace('\n', ' ').trim();
+		cdata = (cdata.length() > 10) ? cdata.substring(0, 10) + ""..."" : cdata;
+		return ""<![[ "" + cdata + "" ]]>"";
+	}
+}",class,good
+"public class ClassNode extends PrimitiveNode
+{
+	ClassNode(String uri, String localName, int size)
+	{
+		super(uri, localName, size);
+	}
+	public void analyze(Analyzer analyzer)
+	{
+		analyzer.prepare(this);
+		analyzer.analyze(this);
+	}
+}",class,good
+"	public CDATANode()
+	{
+		super("""", """", 0);
+		inCDATA = false;
+	}",method,good
+"	public void analyze(Analyzer analyzer)
+	{
+		analyzer.prepare(this);
+		analyzer.analyze(this);
+	}",method,good
+"	public void toStartElement(StringWriter w)
+	{
+		if (inCDATA)
+		{
+			w.write(""<![CDATA["");
+			w.write(image);
+			w.write(""]]>"");
+		}
+		else
+		{
+			w.write(image);
+		}
+	}",method,good
+"		if (inCDATA)
+		{
+			w.write(""<![CDATA["");
+			w.write(image);
+			w.write(""]]>"");
+		}",method,good
+"	public void toEndElement(StringWriter w)
+	{
+	}",method,good
+"	public boolean isWhitespace()
+	{
+	    return image != null && image.trim().length() == 0;
+	}",method,good
+"	public String toString()
+	{
+		String cdata = image.replace('\r', ' ').replace('\n', ' ').trim();
+		cdata = (cdata.length() > 10) ? cdata.substring(0, 10) + ""..."" : cdata;
+		return ""<![[ "" + cdata + "" ]]>"";
+	}",method,good
+"	ClassNode(String uri, String localName, int size)
+	{
+		super(uri, localName, size);
+	}",method,good
+"	public void analyze(Analyzer analyzer)
+	{
+		analyzer.prepare(this);
+		analyzer.analyze(this);
+	}",method,good
+"public class ObservableFromTest {
+    @Test
+    public void fromFutureTimeout() throws Exception {
+        Observable.fromFuture(Observable.never()
+        .toFuture(), 100, TimeUnit.MILLISECONDS, Schedulers.io())
+        .test()
+        .awaitDone(5, TimeUnit.SECONDS)
+        .assertFailure(TimeoutException.class);
+    }
+    @Test
+    public void fromPublisher() {
+        Observable.fromPublisher(Flowable.just(1))
+        .test()
+        .assertResult(1);
+    }
+    @Test
+    public void just10() {
+        Observable.just(1, 2, 3, 4, 5, 6, 7, 8, 9, 10)
+        .test()
+        .assertResult(1, 2, 3, 4, 5, 6, 7, 8, 9, 10);
+    }
+    @Test
+    public void fromArrayEmpty() {
+        assertSame(Observable.empty(), Observable.fromArray());
+    }
+    @Test
+    public void fromArraySingle() {
+        assertTrue(Observable.fromArray(1) instanceof ScalarCallable);
+    }
+    @Test
+    public void fromPublisherDispose() {
+        TestHelper.checkDisposed(Flowable.just(1).toObservable());
+    }
+    @Test
+    public void fromPublisherDoubleOnSubscribe() {
+        TestHelper.checkDoubleOnSubscribeFlowableToObservable(new Function<Flowable<Object>, ObservableSource<Object>>() {
+            @Override
+            public ObservableSource<Object> apply(Flowable<Object> f) throws Exception {
+                return f.toObservable();
+            }
+        });
+    }
+    @Test
+    public void fusionRejected() {
+        TestObserver<Integer> to = ObserverFusion.newTest(QueueDisposable.ASYNC);
+        Observable.fromArray(1, 2, 3)
+        .subscribe(to);
+        ObserverFusion.assertFusion(to, QueueDisposable.NONE)
+        .assertResult(1, 2, 3);
+    }
+}",class,changes_required
+"    @Test
+    public void fromFutureTimeout() throws Exception {
+        Observable.fromFuture(Observable.never()
+        .toFuture(), 100, TimeUnit.MILLISECONDS, Schedulers.io())
+        .test()
+        .awaitDone(5, TimeUnit.SECONDS)
+        .assertFailure(TimeoutException.class);
+    }",method,good
+"    @Test
+    public void fromPublisher() {
+        Observable.fromPublisher(Flowable.just(1))
+        .test()
+        .assertResult(1);
+    }",method,good
+"    @Test
+    public void just10() {
+        Observable.just(1, 2, 3, 4, 5, 6, 7, 8, 9, 10)
+        .test()
+        .assertResult(1, 2, 3, 4, 5, 6, 7, 8, 9, 10);
+    }",method,changes_recommended
+"    @Test
+    public void fromArrayEmpty() {
+        assertSame(Observable.empty(), Observable.fromArray());
+    }",method,good
+"    @Test
+    public void fromArraySingle() {
+        assertTrue(Observable.fromArray(1) instanceof ScalarCallable);
+    }",method,good
+"    @Test
+    public void fromPublisherDispose() {
+        TestHelper.checkDisposed(Flowable.just(1).toObservable());
+    }",method,good
+"    @Test
+    public void fromPublisherDoubleOnSubscribe() {
+        TestHelper.checkDoubleOnSubscribeFlowableToObservable(new Function<Flowable<Object>, ObservableSource<Object>>() {
+            @Override
+            public ObservableSource<Object> apply(Flowable<Object> f) throws Exception {
+                return f.toObservable();
+            }
+        });
+    }",method,good
+"        TestHelper.checkDoubleOnSubscribeFlowableToObservable(new Function<Flowable<Object>, ObservableSource<Object>>() {
+            @Override
+            public ObservableSource<Object> apply(Flowable<Object> f) throws Exception {
+                return f.toObservable();
+            }
+        }",method,good
+"            @Override
+            public ObservableSource<Object> apply(Flowable<Object> f) throws Exception {
+                return f.toObservable();
+            }",method,good
+"    @Test
+    public void fusionRejected() {
+        TestObserver<Integer> to = ObserverFusion.newTest(QueueDisposable.ASYNC);
+        Observable.fromArray(1, 2, 3)
+        .subscribe(to);
+        ObserverFusion.assertFusion(to, QueueDisposable.NONE)
+        .assertResult(1, 2, 3);
+    }",method,good
+"public class VcsLogFileHistoryProviderImpl implements VcsLogFileHistoryProvider {
+  @NotNull
+  public static final String TAB_NAME = ""History"";
+  @Override
+  public boolean canShowFileHistory(@NotNull Project project, @NotNull FilePath path) {
+    if (!Registry.is(""vcs.new.history"")) return false;
+    VcsRoot rootObject = ProjectLevelVcsManager.getInstance(project).getVcsRootObjectFor(path);
+    if (rootObject == null) return false;
+    VirtualFile root = rootObject.getPath();
+    AbstractVcs vcs = rootObject.getVcs();
+    if (vcs == null || root == null) return false;
+    VcsLogData dataManager = VcsProjectLog.getInstance(project).getDataManager();
+    if (dataManager == null || !dataManager.getRoots().contains(root) || dataManager.getIndex().getDataGetter() == null) return false;
+    List<VcsLogProvider> allLogProviders = Arrays.asList(Extensions.getExtensions(VcsLogProvider.LOG_PROVIDER_EP, project));
+    VcsLogProvider provider = ContainerUtil.find(allLogProviders, p -> p.getSupportedVcs().equals(vcs.getKeyInstanceMethod()));
+    if (provider == null) return false;
+    return VcsLogProperties.get(provider, VcsLogProperties.SUPPORTS_INDEXING);
+  }
+  @Override
+  public void showFileHistory(@NotNull Project project, @NotNull FilePath path, @Nullable String revisionNumber) {
+    if (!VcsLogContentUtil.findAndSelectContent(project, FileHistoryUi.class, ui -> ui.getPath().equals(path))) {
+      VcsLogManager logManager = VcsProjectLog.getInstance(project).getLogManager();
+      assert logManager != null;
+      VcsLogContentUtil.openLogTab(project, logManager, TAB_NAME, path.getName(), new FileHistoryUiFactory(path));
+    }
+  }
+}",class,good
+"  @Override
+  public boolean canShowFileHistory(@NotNull Project project, @NotNull FilePath path) {
+    if (!Registry.is(""vcs.new.history"")) return false;
+    VcsRoot rootObject = ProjectLevelVcsManager.getInstance(project).getVcsRootObjectFor(path);
+    if (rootObject == null) return false;
+    VirtualFile root = rootObject.getPath();
+    AbstractVcs vcs = rootObject.getVcs();
+    if (vcs == null || root == null) return false;
+    VcsLogData dataManager = VcsProjectLog.getInstance(project).getDataManager();
+    if (dataManager == null || !dataManager.getRoots().contains(root) || dataManager.getIndex().getDataGetter() == null) return false;
+    List<VcsLogProvider> allLogProviders = Arrays.asList(Extensions.getExtensions(VcsLogProvider.LOG_PROVIDER_EP, project));
+    VcsLogProvider provider = ContainerUtil.find(allLogProviders, p -> p.getSupportedVcs().equals(vcs.getKeyInstanceMethod()));
+    if (provider == null) return false;
+    return VcsLogProperties.get(provider, VcsLogProperties.SUPPORTS_INDEXING);
+  }",method,good
+"  @Override
+  public void showFileHistory(@NotNull Project project, @NotNull FilePath path, @Nullable String revisionNumber) {
+    if (!VcsLogContentUtil.findAndSelectContent(project, FileHistoryUi.class, ui -> ui.getPath().equals(path))) {
+      VcsLogManager logManager = VcsProjectLog.getInstance(project).getLogManager();
+      assert logManager != null;
+      VcsLogContentUtil.openLogTab(project, logManager, TAB_NAME, path.getName(), new FileHistoryUiFactory(path));
+    }
+  }",method,good
+"public abstract class AbstractPsiBasedNode<Value> extends ProjectViewNode<Value> implements ValidateableNode, StatePreservingNavigatable {
+  private static final Logger LOG = Logger.getInstance(AbstractPsiBasedNode.class.getName());
+  protected AbstractPsiBasedNode(final Project project,
+                                final Value value,
+                                final ViewSettings viewSettings) {
+    super(project, value, viewSettings);
+  }
+  @Nullable
+  protected abstract PsiElement extractPsiFromValue();
+  @Nullable
+  protected abstract Collection<AbstractTreeNode> getChildrenImpl();
+  protected abstract void updateImpl(final PresentationData data);
+  @Override
+  @NotNull
+  public final Collection<AbstractTreeNode> getChildren() {
+    final PsiElement psiElement = extractPsiFromValue();
+    if (psiElement == null) {
+      return new ArrayList<>();
+    }
+    final boolean valid = psiElement.isValid();
+    if (!LOG.assertTrue(valid)) {
+      return Collections.emptyList();
+    }
+    final Collection<AbstractTreeNode> children = getChildrenImpl();
+    return children != null ? children : Collections.emptyList();
+  }
+  @Override
+  public boolean isValid() {
+    final PsiElement psiElement = extractPsiFromValue();
+    return psiElement != null && psiElement.isValid();
+  }
+  protected boolean isMarkReadOnly() {
+    final AbstractTreeNode parent = getParent();
+    if (parent == null) {
+      return false;
+    }
+    if (parent instanceof AbstractPsiBasedNode) {
+      final PsiElement psiElement = ((AbstractPsiBasedNode)parent).extractPsiFromValue();
+      return psiElement instanceof PsiDirectory;
+    }
+    final Object parentValue = parent.getValue();
+    return parentValue instanceof PsiDirectory || parentValue instanceof Module;
+  }
+  @Override
+  public FileStatus getFileStatus() {
+    VirtualFile file = getVirtualFileForValue();
+    if (file == null) {
+      return FileStatus.NOT_CHANGED;
+    }
+    else {
+      return FileStatusManager.getInstance(getProject()).getStatus(file);
+    }
+  }
+  @Nullable
+  private VirtualFile getVirtualFileForValue() {
+    PsiElement psiElement = extractPsiFromValue();
+    if (psiElement == null) {
+      return null;
+    }
+    return PsiUtilBase.getVirtualFile(psiElement);
+  }
+  // Should be called in atomic action
+  @Override
+  public void update(final PresentationData data) {
+    ApplicationManager.getApplication().runReadAction(() -> {
+      if (!validate()) {
+        return;
+      }
+      final PsiElement value = extractPsiFromValue();
+      LOG.assertTrue(value.isValid());
+      int flags = getIconableFlags();
+      try {
+        Icon icon = value.getIcon(flags);
+        data.setIcon(icon);
+      }
+      catch (IndexNotReadyException ignored) {
+      }
+      data.setPresentableText(myName);
+      try {
+        if (isDeprecated()) {
+          data.setAttributesKey(CodeInsightColors.DEPRECATED_ATTRIBUTES);
+        }
+      }
+      catch (IndexNotReadyException ignored) {
+      }
+      updateImpl(data);
+      data.setIcon(patchIcon(myProject, data.getIcon(true), getVirtualFile()));
+      for (ProjectViewNodeDecorator decorator : Extensions.getExtensions(ProjectViewNodeDecorator.EP_NAME, myProject)) {
+        try {
+          decorator.decorate(this, data);
+        }
+        catch (IndexNotReadyException ignored) {}
+      }
+    });
+  }
+  @Iconable.IconFlags
+  protected int getIconableFlags() {
+    int flags = Registry.is(""ide.projectView.show.visibility"") ? Iconable.ICON_FLAG_VISIBILITY : 0;
+    if (isMarkReadOnly()) {
+      flags |= Iconable.ICON_FLAG_READ_STATUS;
+    }
+    return flags;
+  }
+  @Nullable
+  public static Icon patchIcon(@NotNull Project project, @Nullable Icon original, @Nullable VirtualFile file) {
+    if (file == null || original == null) return original;
+    Icon icon = original;
+    final Bookmark bookmarkAtFile = BookmarkManager.getInstance(project).findFileBookmark(file);
+    if (bookmarkAtFile != null) {
+      final RowIcon composite = new RowIcon(2, RowIcon.Alignment.CENTER);
+      composite.setIcon(icon, 0);
+      composite.setIcon(bookmarkAtFile.getIcon(), 1);
+      icon = composite;
+    }
+    if (!file.isWritable()) {
+      icon = LayeredIcon.create(icon, PlatformIcons.LOCKED_ICON);
+    }
+    if (file.is(VFileProperty.SYMLINK)) {
+      icon = LayeredIcon.create(icon, PlatformIcons.SYMLINK_ICON);
+    }
+    return icon;
+  }
+  protected boolean isDeprecated() {
+    return false;
+  }
+  @Override
+  public boolean contains(@NotNull final VirtualFile file) {
+    final PsiElement psiElement = extractPsiFromValue();
+    if (psiElement == null || !psiElement.isValid()) {
+      return false;
+    }
+    final PsiFile containingFile = psiElement.getContainingFile();
+    if (containingFile == null) {
+      return false;
+    }
+    final VirtualFile valueFile = containingFile.getVirtualFile();
+    return valueFile != null && file.equals(valueFile);
+  }
+  @Nullable
+  public NavigationItem getNavigationItem() {
+    final PsiElement psiElement = extractPsiFromValue();
+    return (psiElement instanceof NavigationItem) ? (NavigationItem) psiElement : null;
+  }
+  @Override
+  public void navigate(boolean requestFocus, boolean preserveState) {
+    if (canNavigate()) {
+      if (requestFocus || preserveState) {
+        NavigationUtil.openFileWithPsiElement(extractPsiFromValue(), requestFocus, requestFocus);
+      }
+      else {
+        getNavigationItem().navigate(requestFocus);
+      }
+    }
+  }
+  @Override
+  public void navigate(boolean requestFocus) {
+    navigate(requestFocus, false);
+  }
+  @Override
+  public boolean canNavigate() {
+    final NavigationItem item = getNavigationItem();
+    return item != null && item.canNavigate();
+  }
+  @Override
+  public boolean canNavigateToSource() {
+    final NavigationItem item = getNavigationItem();
+    return item != null && item.canNavigateToSource();
+  }
+  @Nullable
+  protected String calcTooltip() {
+    return null;
+  }
+  @Override
+  public boolean validate() {
+    final PsiElement psiElement = extractPsiFromValue();
+    if (psiElement == null || !psiElement.isValid()) {
+      setValue(null);
+    }
+    return getValue() != null;
+  }
+}",class,changes_required
+"  protected AbstractPsiBasedNode(final Project project,
+                                final Value value,
+                                final ViewSettings viewSettings) {
+    super(project, value, viewSettings);
+  }",method,good
+"  @Override
+  @NotNull
+  public final Collection<AbstractTreeNode> getChildren() {
+    final PsiElement psiElement = extractPsiFromValue();
+    if (psiElement == null) {
+      return new ArrayList<>();
+    }
+    final boolean valid = psiElement.isValid();
+    if (!LOG.assertTrue(valid)) {
+      return Collections.emptyList();
+    }
+    final Collection<AbstractTreeNode> children = getChildrenImpl();
+    return children != null ? children : Collections.emptyList();
+  }",method,good
+"    if (psiElement == null) {
+      return new ArrayList<>();
+    }",method,good
+"  @Override
+  public boolean isValid() {
+    final PsiElement psiElement = extractPsiFromValue();
+    return psiElement != null && psiElement.isValid();
+  }",method,good
+"  protected boolean isMarkReadOnly() {
+    final AbstractTreeNode parent = getParent();
+    if (parent == null) {
+      return false;
+    }
+    if (parent instanceof AbstractPsiBasedNode) {
+      final PsiElement psiElement = ((AbstractPsiBasedNode)parent).extractPsiFromValue();
+      return psiElement instanceof PsiDirectory;
+    }
+    final Object parentValue = parent.getValue();
+    return parentValue instanceof PsiDirectory || parentValue instanceof Module;
+  }",method,good
+"    if (parent == null) {
+      return false;
+    }",method,good
+"    if (parent instanceof AbstractPsiBasedNode) {
+      final PsiElement psiElement = ((AbstractPsiBasedNode)parent).extractPsiFromValue();
+      return psiElement instanceof PsiDirectory;
+    }",method,good
+"  @Override
+  public FileStatus getFileStatus() {
+    VirtualFile file = getVirtualFileForValue();
+    if (file == null) {
+      return FileStatus.NOT_CHANGED;
+    }
+    else {
+      return FileStatusManager.getInstance(getProject()).getStatus(file);
+    }
+  }",method,good
+"    if (file == null) {
+      return FileStatus.NOT_CHANGED;
+    }",method,good
+"  @Nullable
+  private VirtualFile getVirtualFileForValue() {
+    PsiElement psiElement = extractPsiFromValue();
+    if (psiElement == null) {
+      return null;
+    }
+    return PsiUtilBase.getVirtualFile(psiElement);
+  }",method,good
+"    if (psiElement == null) {
+      return null;
+    }",method,good
+"  @Override
+  public void update(final PresentationData data) {
+    ApplicationManager.getApplication().runReadAction(() -> {
+      if (!validate()) {
+        return;
+      }
+      final PsiElement value = extractPsiFromValue();
+      LOG.assertTrue(value.isValid());
+      int flags = getIconableFlags();
+      try {
+        Icon icon = value.getIcon(flags);
+        data.setIcon(icon);
+      }
+      catch (IndexNotReadyException ignored) {
+      }
+      data.setPresentableText(myName);
+      try {
+        if (isDeprecated()) {
+          data.setAttributesKey(CodeInsightColors.DEPRECATED_ATTRIBUTES);
+        }
+      }
+      catch (IndexNotReadyException ignored) {
+      }
+      updateImpl(data);
+      data.setIcon(patchIcon(myProject, data.getIcon(true), getVirtualFile()));
+      for (ProjectViewNodeDecorator decorator : Extensions.getExtensions(ProjectViewNodeDecorator.EP_NAME, myProject)) {
+        try {
+          decorator.decorate(this, data);
+        }
+        catch (IndexNotReadyException ignored) {}
+      }
+    });
+  }",method,good
+"      catch (IndexNotReadyException ignored) {
+      }",method,good
+"      catch (IndexNotReadyException ignored) {
+      }",method,good
+        catch (IndexNotReadyException ignored) {},method,good
+"  @Iconable.IconFlags
+  protected int getIconableFlags() {
+    int flags = Registry.is(""ide.projectView.show.visibility"") ? Iconable.ICON_FLAG_VISIBILITY : 0;
+    if (isMarkReadOnly()) {
+      flags |= Iconable.ICON_FLAG_READ_STATUS;
+    }
+    return flags;
+  }",method,good
+"  @Nullable
+  public static Icon patchIcon(@NotNull Project project, @Nullable Icon original, @Nullable VirtualFile file) {
+    if (file == null || original == null) return original;
+    Icon icon = original;
+    final Bookmark bookmarkAtFile = BookmarkManager.getInstance(project).findFileBookmark(file);
+    if (bookmarkAtFile != null) {
+      final RowIcon composite = new RowIcon(2, RowIcon.Alignment.CENTER);
+      composite.setIcon(icon, 0);
+      composite.setIcon(bookmarkAtFile.getIcon(), 1);
+      icon = composite;
+    }
+    if (!file.isWritable()) {
+      icon = LayeredIcon.create(icon, PlatformIcons.LOCKED_ICON);
+    }
+    if (file.is(VFileProperty.SYMLINK)) {
+      icon = LayeredIcon.create(icon, PlatformIcons.SYMLINK_ICON);
+    }
+    return icon;
+  }",method,good
+"    if (bookmarkAtFile != null) {
+      final RowIcon composite = new RowIcon(2, RowIcon.Alignment.CENTER);
+      composite.setIcon(icon, 0);
+      composite.setIcon(bookmarkAtFile.getIcon(), 1);
+      icon = composite;
+    }",method,good
+"  protected boolean isDeprecated() {
+    return false;
+  }",method,good
+"  @Override
+  public boolean contains(@NotNull final VirtualFile file) {
+    final PsiElement psiElement = extractPsiFromValue();
+    if (psiElement == null || !psiElement.isValid()) {
+      return false;
+    }
+    final PsiFile containingFile = psiElement.getContainingFile();
+    if (containingFile == null) {
+      return false;
+    }
+    final VirtualFile valueFile = containingFile.getVirtualFile();
+    return valueFile != null && file.equals(valueFile);
+  }",method,good
+"    if (containingFile == null) {
+      return false;
+    }",method,good
+"  @Nullable
+  public NavigationItem getNavigationItem() {
+    final PsiElement psiElement = extractPsiFromValue();
+    return (psiElement instanceof NavigationItem) ? (NavigationItem) psiElement : null;
+  }",method,good
+"  @Override
+  public void navigate(boolean requestFocus, boolean preserveState) {
+    if (canNavigate()) {
+      if (requestFocus || preserveState) {
+        NavigationUtil.openFileWithPsiElement(extractPsiFromValue(), requestFocus, requestFocus);
+      }
+      else {
+        getNavigationItem().navigate(requestFocus);
+      }
+    }
+  }",method,good
+"      if (requestFocus || preserveState) {
+        NavigationUtil.openFileWithPsiElement(extractPsiFromValue(), requestFocus, requestFocus);
+      }",method,good

@@ -1,0 +1,1512 @@
+code_snippet,type,score
+"      if (course == null) {
+        return;
+      }",method,
+"      if (lesson == null) {
+        return;
+      }",method,
+"      if (task == null) {
+        return;
+      }",method,
+"      if (taskFile == null) {
+        return;
+      }",method,
+"    @Override
+    public void undoElementMovedOrRenamed(@NotNull PsiElement newElement, @NotNull String oldQualifiedName) {
+    }",method,
+"public class ForLoopThatDoesntUseLoopVariableInspection extends BaseInspection {
+  @Override
+  @NotNull
+  public String getDisplayName() {
+    return InspectionGadgetsBundle.message(""for.loop.not.use.loop.variable.display.name"");
+  }
+  @Override
+  @NotNull
+  public String buildErrorString(Object... infos) {
+    final boolean condition = ((Boolean)infos[0]).booleanValue();
+    final boolean update = ((Boolean)infos[1]).booleanValue();
+    if (condition && update) {
+      return InspectionGadgetsBundle.message(
+        ""for.loop.not.use.loop.variable.problem.descriptor.both.condition.and.update"");
+    }
+    if (condition) {
+      return InspectionGadgetsBundle.message(
+        ""for.loop.not.use.loop.variable.problem.descriptor.condition"");
+    }
+    return InspectionGadgetsBundle.message(
+      ""for.loop.not.use.loop.variable.problem.descriptor.update"");
+  }
+  @Override
+  public BaseInspectionVisitor buildVisitor() {
+    return new ForLoopThatDoesntUseLoopVariableVisitor();
+  }
+  private static class ForLoopThatDoesntUseLoopVariableVisitor extends BaseInspectionVisitor {
+    @Override
+    public void visitForStatement(@NotNull PsiForStatement statement) {
+      super.visitForStatement(statement);
+      PsiLocalVariable variable = extractInitializerVariable(statement);
+      if (variable == null) return;
+      boolean notUsedInCondition = !conditionUsesVariable(statement, variable);
+      boolean notUsedInUpdate = !updateUsesVariable(statement, variable);
+      if (notUsedInCondition || notUsedInUpdate) {
+        if (!notUsedInCondition && isDeclarationUsedAsBound(statement, variable)) return;
+        registerStatementError(statement, notUsedInCondition, notUsedInUpdate);
+      }
+    }
+    private static boolean isDeclarationUsedAsBound(PsiForStatement statement, PsiLocalVariable boundVar) {
+      PsiBinaryExpression condition = tryCast(PsiUtil.skipParenthesizedExprDown(statement.getCondition()), PsiBinaryExpression.class);
+      if (condition == null || !ComparisonUtils.isComparisonOperation(condition.getOperationTokenType())) return false;
+      PsiExpression otherOperand = null;
+      if (ExpressionUtils.isReferenceTo(condition.getLOperand(), boundVar)) {
+        otherOperand = condition.getROperand();
+      } else if (ExpressionUtils.isReferenceTo(condition.getROperand(), boundVar)) {
+        otherOperand = condition.getLOperand();
+      }
+      if (otherOperand == null) return false;
+      PsiReferenceExpression ref = tryCast(PsiUtil.skipParenthesizedExprDown(otherOperand), PsiReferenceExpression.class);
+      if (ref == null) return false;
+      PsiVariable indexVar = tryCast(ref.resolve(), PsiVariable.class);
+      if (indexVar == null) return false;
+      PsiStatement update = statement.getUpdate();
+      return VariableAccessUtils.variableIsIncremented(indexVar, update) || VariableAccessUtils.variableIsDecremented(indexVar, update);
+    }
+    private static PsiLocalVariable extractInitializerVariable(PsiForStatement statement) {
+      final PsiDeclarationStatement declaration = tryCast(statement.getInitialization(), PsiDeclarationStatement.class);
+      if (declaration == null) return null;
+      final PsiElement[] declaredElements = declaration.getDeclaredElements();
+      if (declaredElements.length != 1) return null;
+      return tryCast(declaredElements[0], PsiLocalVariable.class);
+    }
+    private static boolean conditionUsesVariable(PsiForStatement statement, PsiLocalVariable variable) {
+      final PsiExpression condition = statement.getCondition();
+      return condition == null || VariableAccessUtils.variableIsUsed(variable, condition);
+    }
+    private static boolean updateUsesVariable(PsiForStatement statement, PsiLocalVariable variable) {
+      final PsiStatement update = statement.getUpdate();
+      return update == null || VariableAccessUtils.variableIsUsed(variable, update);
+    }
+  }
+}",class,
+"  private static class ForLoopThatDoesntUseLoopVariableVisitor extends BaseInspectionVisitor {
+    @Override
+    public void visitForStatement(@NotNull PsiForStatement statement) {
+      super.visitForStatement(statement);
+      PsiLocalVariable variable = extractInitializerVariable(statement);
+      if (variable == null) return;
+      boolean notUsedInCondition = !conditionUsesVariable(statement, variable);
+      boolean notUsedInUpdate = !updateUsesVariable(statement, variable);
+      if (notUsedInCondition || notUsedInUpdate) {
+        if (!notUsedInCondition && isDeclarationUsedAsBound(statement, variable)) return;
+        registerStatementError(statement, notUsedInCondition, notUsedInUpdate);
+      }
+    }
+    private static boolean isDeclarationUsedAsBound(PsiForStatement statement, PsiLocalVariable boundVar) {
+      PsiBinaryExpression condition = tryCast(PsiUtil.skipParenthesizedExprDown(statement.getCondition()), PsiBinaryExpression.class);
+      if (condition == null || !ComparisonUtils.isComparisonOperation(condition.getOperationTokenType())) return false;
+      PsiExpression otherOperand = null;
+      if (ExpressionUtils.isReferenceTo(condition.getLOperand(), boundVar)) {
+        otherOperand = condition.getROperand();
+      } else if (ExpressionUtils.isReferenceTo(condition.getROperand(), boundVar)) {
+        otherOperand = condition.getLOperand();
+      }
+      if (otherOperand == null) return false;
+      PsiReferenceExpression ref = tryCast(PsiUtil.skipParenthesizedExprDown(otherOperand), PsiReferenceExpression.class);
+      if (ref == null) return false;
+      PsiVariable indexVar = tryCast(ref.resolve(), PsiVariable.class);
+      if (indexVar == null) return false;
+      PsiStatement update = statement.getUpdate();
+      return VariableAccessUtils.variableIsIncremented(indexVar, update) || VariableAccessUtils.variableIsDecremented(indexVar, update);
+    }
+    private static PsiLocalVariable extractInitializerVariable(PsiForStatement statement) {
+      final PsiDeclarationStatement declaration = tryCast(statement.getInitialization(), PsiDeclarationStatement.class);
+      if (declaration == null) return null;
+      final PsiElement[] declaredElements = declaration.getDeclaredElements();
+      if (declaredElements.length != 1) return null;
+      return tryCast(declaredElements[0], PsiLocalVariable.class);
+    }
+    private static boolean conditionUsesVariable(PsiForStatement statement, PsiLocalVariable variable) {
+      final PsiExpression condition = statement.getCondition();
+      return condition == null || VariableAccessUtils.variableIsUsed(variable, condition);
+    }
+    private static boolean updateUsesVariable(PsiForStatement statement, PsiLocalVariable variable) {
+      final PsiStatement update = statement.getUpdate();
+      return update == null || VariableAccessUtils.variableIsUsed(variable, update);
+    }
+  }",class,
+"  @Override
+  @NotNull
+  public String getDisplayName() {
+    return InspectionGadgetsBundle.message(""for.loop.not.use.loop.variable.display.name"");
+  }",method,
+"  @Override
+  @NotNull
+  public String buildErrorString(Object... infos) {
+    final boolean condition = ((Boolean)infos[0]).booleanValue();
+    final boolean update = ((Boolean)infos[1]).booleanValue();
+    if (condition && update) {
+      return InspectionGadgetsBundle.message(
+        ""for.loop.not.use.loop.variable.problem.descriptor.both.condition.and.update"");
+    }
+    if (condition) {
+      return InspectionGadgetsBundle.message(
+        ""for.loop.not.use.loop.variable.problem.descriptor.condition"");
+    }
+    return InspectionGadgetsBundle.message(
+      ""for.loop.not.use.loop.variable.problem.descriptor.update"");
+  }",method,
+"    if (condition && update) {
+      return InspectionGadgetsBundle.message(
+        ""for.loop.not.use.loop.variable.problem.descriptor.both.condition.and.update"");
+    }",method,
+"    if (condition) {
+      return InspectionGadgetsBundle.message(
+        ""for.loop.not.use.loop.variable.problem.descriptor.condition"");
+    }",method,
+"  @Override
+  public BaseInspectionVisitor buildVisitor() {
+    return new ForLoopThatDoesntUseLoopVariableVisitor();
+  }",method,
+"    @Override
+    public void visitForStatement(@NotNull PsiForStatement statement) {
+      super.visitForStatement(statement);
+      PsiLocalVariable variable = extractInitializerVariable(statement);
+      if (variable == null) return;
+      boolean notUsedInCondition = !conditionUsesVariable(statement, variable);
+      boolean notUsedInUpdate = !updateUsesVariable(statement, variable);
+      if (notUsedInCondition || notUsedInUpdate) {
+        if (!notUsedInCondition && isDeclarationUsedAsBound(statement, variable)) return;
+        registerStatementError(statement, notUsedInCondition, notUsedInUpdate);
+      }
+    }",method,
+"      if (notUsedInCondition || notUsedInUpdate) {
+        if (!notUsedInCondition && isDeclarationUsedAsBound(statement, variable)) return;
+        registerStatementError(statement, notUsedInCondition, notUsedInUpdate);
+      }",method,
+"    private static boolean isDeclarationUsedAsBound(PsiForStatement statement, PsiLocalVariable boundVar) {
+      PsiBinaryExpression condition = tryCast(PsiUtil.skipParenthesizedExprDown(statement.getCondition()), PsiBinaryExpression.class);
+      if (condition == null || !ComparisonUtils.isComparisonOperation(condition.getOperationTokenType())) return false;
+      PsiExpression otherOperand = null;
+      if (ExpressionUtils.isReferenceTo(condition.getLOperand(), boundVar)) {
+        otherOperand = condition.getROperand();
+      } else if (ExpressionUtils.isReferenceTo(condition.getROperand(), boundVar)) {
+        otherOperand = condition.getLOperand();
+      }
+      if (otherOperand == null) return false;
+      PsiReferenceExpression ref = tryCast(PsiUtil.skipParenthesizedExprDown(otherOperand), PsiReferenceExpression.class);
+      if (ref == null) return false;
+      PsiVariable indexVar = tryCast(ref.resolve(), PsiVariable.class);
+      if (indexVar == null) return false;
+      PsiStatement update = statement.getUpdate();
+      return VariableAccessUtils.variableIsIncremented(indexVar, update) || VariableAccessUtils.variableIsDecremented(indexVar, update);
+    }",method,
+"    private static PsiLocalVariable extractInitializerVariable(PsiForStatement statement) {
+      final PsiDeclarationStatement declaration = tryCast(statement.getInitialization(), PsiDeclarationStatement.class);
+      if (declaration == null) return null;
+      final PsiElement[] declaredElements = declaration.getDeclaredElements();
+      if (declaredElements.length != 1) return null;
+      return tryCast(declaredElements[0], PsiLocalVariable.class);
+    }",method,
+"    private static boolean conditionUsesVariable(PsiForStatement statement, PsiLocalVariable variable) {
+      final PsiExpression condition = statement.getCondition();
+      return condition == null || VariableAccessUtils.variableIsUsed(variable, condition);
+    }",method,
+"    private static boolean updateUsesVariable(PsiForStatement statement, PsiLocalVariable variable) {
+      final PsiStatement update = statement.getUpdate();
+      return update == null || VariableAccessUtils.variableIsUsed(variable, update);
+    }",method,
+"public class JavaLexer extends LexerBase {
+  private static final Set<String> KEYWORDS = ContainerUtil.newTroveSet(
+    ABSTRACT, BOOLEAN, BREAK, BYTE, CASE, CATCH, CHAR, CLASS, CONST, CONTINUE, DEFAULT, DO, DOUBLE, ELSE, EXTENDS, FINAL, FINALLY,
+    FLOAT, FOR, GOTO, IF, IMPLEMENTS, IMPORT, INSTANCEOF, INT, INTERFACE, LONG, NATIVE, NEW, PACKAGE, PRIVATE, PROTECTED, PUBLIC,
+    RETURN, SHORT, STATIC, STRICTFP, SUPER, SWITCH, SYNCHRONIZED, THIS, THROW, THROWS, TRANSIENT, TRY, VOID, VOLATILE, WHILE,
+    TRUE, FALSE, NULL);
+  private static final Set<CharSequence> JAVA9_KEYWORDS = ContainerUtil.newTroveSet(
+    CharSequenceHashingStrategy.CASE_SENSITIVE,
+    OPEN, MODULE, REQUIRES, EXPORTS, OPENS, USES, PROVIDES, TRANSITIVE, TO, WITH);
+  public static boolean isKeyword(String id, @NotNull LanguageLevel level) {
+    return KEYWORDS.contains(id) ||
+           level.isAtLeast(LanguageLevel.JDK_1_4) && ASSERT.equals(id) ||
+           level.isAtLeast(LanguageLevel.JDK_1_5) && ENUM.equals(id);
+  }
+  public static boolean isSoftKeyword(CharSequence id, @NotNull LanguageLevel level) {
+    return id != null &&
+           (level.isAtLeast(LanguageLevel.JDK_1_9) && JAVA9_KEYWORDS.contains(id) ||
+            level.isAtLeast(LanguageLevel.JDK_X) && VAR.contentEquals(id));
+  }
+  private final _JavaLexer myFlexLexer;
+  private CharSequence myBuffer;
+  private char[] myBufferArray;
+  private int myBufferIndex;
+  private int myBufferEndOffset;
+  private int myTokenEndOffset;  // positioned after the last symbol of the current token
+  private IElementType myTokenType;
+  public JavaLexer(@NotNull LanguageLevel level) {
+    myFlexLexer = new _JavaLexer(level);
+  }
+  @Override
+  public final void start(@NotNull CharSequence buffer, int startOffset, int endOffset, int initialState) {
+    myBuffer = buffer;
+    myBufferArray = CharArrayUtil.fromSequenceWithoutCopying(buffer);
+    myBufferIndex = startOffset;
+    myBufferEndOffset = endOffset;
+    myTokenType = null;
+    myTokenEndOffset = startOffset;
+    myFlexLexer.reset(myBuffer, startOffset, endOffset, 0);
+  }
+  @Override
+  public int getState() {
+    return 0;
+  }
+  @Override
+  public final IElementType getTokenType() {
+    if (myTokenType == null) _locateToken();
+    return myTokenType;
+  }
+  @Override
+  public final int getTokenStart() {
+    return myBufferIndex;
+  }
+  @Override
+  public final int getTokenEnd() {
+    if (myTokenType == null) _locateToken();
+    return myTokenEndOffset;
+  }
+  @Override
+  public final void advance() {
+    if (myTokenType == null) _locateToken();
+    myTokenType = null;
+  }
+  private void _locateToken() {
+    if (myTokenEndOffset == myBufferEndOffset) {
+      myTokenType = null;
+      myBufferIndex = myBufferEndOffset;
+      return;
+    }
+    myBufferIndex = myTokenEndOffset;
+    char c = myBufferArray != null ? myBufferArray[myBufferIndex] : myBuffer.charAt(myBufferIndex);
+    switch (c) {
+      case ' ':
+      case '\t':
+      case '\n':
+      case '\r':
+      case '\f':
+        myTokenType = TokenType.WHITE_SPACE;
+        myTokenEndOffset = getWhitespaces(myBufferIndex + 1);
+        break;
+      case '/':
+        if (myBufferIndex + 1 >= myBufferEndOffset) {
+          myTokenType = JavaTokenType.DIV;
+          myTokenEndOffset = myBufferEndOffset;
+        }
+        else {
+          char nextChar = myBufferArray != null ? myBufferArray[myBufferIndex + 1] : myBuffer.charAt(myBufferIndex + 1);
+          if (nextChar == '/') {
+            myTokenType = JavaTokenType.END_OF_LINE_COMMENT;
+            myTokenEndOffset = getLineTerminator(myBufferIndex + 2);
+          }
+          else if (nextChar == '*') {
+            if (myBufferIndex + 2 >= myBufferEndOffset ||
+                (myBufferArray != null ? myBufferArray[myBufferIndex + 2] : myBuffer.charAt(myBufferIndex + 2)) != '*' ||
+                (myBufferIndex + 3 < myBufferEndOffset &&
+                 (myBufferArray != null ? myBufferArray[myBufferIndex + 3] : myBuffer.charAt(myBufferIndex + 3)) == '/')) {
+              myTokenType = JavaTokenType.C_STYLE_COMMENT;
+              myTokenEndOffset = getClosingComment(myBufferIndex + 2);
+            }
+            else {
+              myTokenType = JavaDocElementType.DOC_COMMENT;
+              myTokenEndOffset = getClosingComment(myBufferIndex + 3);
+            }
+          }
+          else {
+            flexLocateToken();
+          }
+        }
+        break;
+      case '""':
+      case '\'':
+        myTokenType = c == '""' ? JavaTokenType.STRING_LITERAL : JavaTokenType.CHARACTER_LITERAL;
+        myTokenEndOffset = getClosingParenthesis(myBufferIndex + 1, c);
+        break;
+      default:
+        flexLocateToken();
+    }
+    if (myTokenEndOffset > myBufferEndOffset) {
+      myTokenEndOffset = myBufferEndOffset;
+    }
+  }
+  private int getWhitespaces(int offset) {
+    if (offset >= myBufferEndOffset) {
+      return myBufferEndOffset;
+    }
+    int pos = offset;
+    char c = myBufferArray != null ? myBufferArray[pos] : myBuffer.charAt(pos);
+    while (c == ' ' || c == '\t' || c == '\n' || c == '\r' || c == '\f') {
+      pos++;
+      if (pos == myBufferEndOffset) return pos;
+      c = myBufferArray != null ? myBufferArray[pos] : myBuffer.charAt(pos);
+    }
+    return pos;
+  }
+  private void flexLocateToken() {
+    try {
+      myFlexLexer.goTo(myBufferIndex);
+      myTokenType = myFlexLexer.advance();
+      myTokenEndOffset = myFlexLexer.getTokenEnd();
+    }
+    catch (IOException e) {  }
+  }
+  private int getClosingParenthesis(int offset, char c) {
+    if (offset >= myBufferEndOffset) {
+      return myBufferEndOffset;
+    }
+    int pos = offset;
+    char cur = myBufferArray != null ? myBufferArray[pos] : myBuffer.charAt(pos);
+    while (true) {
+      while (cur != c && cur != '\n' && cur != '\r' && cur != '\\') {
+        pos++;
+        if (pos >= myBufferEndOffset) return myBufferEndOffset;
+        cur = myBufferArray != null ? myBufferArray[pos] : myBuffer.charAt(pos);
+      }
+      if (cur == '\\') {
+        pos++;
+        if (pos >= myBufferEndOffset) return myBufferEndOffset;
+        cur = myBufferArray != null ? myBufferArray[pos] : myBuffer.charAt(pos);
+        if (cur == '\n' || cur == '\r') continue;
+        pos++;
+        if (pos >= myBufferEndOffset) return myBufferEndOffset;
+        cur = myBufferArray != null ? myBufferArray[pos] : myBuffer.charAt(pos);
+      }
+      else if (cur == c) {
+        break;
+      }
+      else {
+        pos--;
+        break;
+      }
+    }
+    return pos + 1;
+  }
+  private int getClosingComment(int offset) {
+    int pos = offset;
+    while (pos < myBufferEndOffset - 1) {
+      char c = myBufferArray != null ? myBufferArray[pos] : myBuffer.charAt(pos);
+      if (c == '*' && (myBufferArray != null ? myBufferArray[pos + 1] : myBuffer.charAt(pos + 1)) == '/') {
+        break;
+      }
+      pos++;
+    }
+    return pos + 2;
+  }
+  private int getLineTerminator(int offset) {
+    int pos = offset;
+    while (pos < myBufferEndOffset) {
+      char c = myBufferArray != null ? myBufferArray[pos] : myBuffer.charAt(pos);
+      if (c == '\r' || c == '\n') break;
+      pos++;
+    }
+    return pos;
+  }
+  @NotNull
+  @Override
+  public CharSequence getBufferSequence() {
+    return myBuffer;
+  }
+  @Override
+  public final int getBufferEnd() {
+    return myBufferEndOffset;
+  }
+}",class,
+"  public static boolean isKeyword(String id, @NotNull LanguageLevel level) {
+    return KEYWORDS.contains(id) ||
+           level.isAtLeast(LanguageLevel.JDK_1_4) && ASSERT.equals(id) ||
+           level.isAtLeast(LanguageLevel.JDK_1_5) && ENUM.equals(id);
+  }",method,
+"  public static boolean isSoftKeyword(CharSequence id, @NotNull LanguageLevel level) {
+    return id != null &&
+           (level.isAtLeast(LanguageLevel.JDK_1_9) && JAVA9_KEYWORDS.contains(id) ||
+            level.isAtLeast(LanguageLevel.JDK_X) && VAR.contentEquals(id));
+  }",method,
+"  public JavaLexer(@NotNull LanguageLevel level) {
+    myFlexLexer = new _JavaLexer(level);
+  }",method,
+"  @Override
+  public final void start(@NotNull CharSequence buffer, int startOffset, int endOffset, int initialState) {
+    myBuffer = buffer;
+    myBufferArray = CharArrayUtil.fromSequenceWithoutCopying(buffer);
+    myBufferIndex = startOffset;
+    myBufferEndOffset = endOffset;
+    myTokenType = null;
+    myTokenEndOffset = startOffset;
+    myFlexLexer.reset(myBuffer, startOffset, endOffset, 0);
+  }",method,
+"  @Override
+  public int getState() {
+    return 0;
+  }",method,
+"  @Override
+  public final IElementType getTokenType() {
+    if (myTokenType == null) _locateToken();
+    return myTokenType;
+  }",method,
+"  @Override
+  public final int getTokenStart() {
+    return myBufferIndex;
+  }",method,
+"  @Override
+  public final int getTokenEnd() {
+    if (myTokenType == null) _locateToken();
+    return myTokenEndOffset;
+  }",method,
+"  @Override
+  public final void advance() {
+    if (myTokenType == null) _locateToken();
+    myTokenType = null;
+  }",method,
+"  private void _locateToken() {
+    if (myTokenEndOffset == myBufferEndOffset) {
+      myTokenType = null;
+      myBufferIndex = myBufferEndOffset;
+      return;
+    }
+    myBufferIndex = myTokenEndOffset;
+    char c = myBufferArray != null ? myBufferArray[myBufferIndex] : myBuffer.charAt(myBufferIndex);
+    switch (c) {
+      case ' ':
+      case '\t':
+      case '\n':
+      case '\r':
+      case '\f':
+        myTokenType = TokenType.WHITE_SPACE;
+        myTokenEndOffset = getWhitespaces(myBufferIndex + 1);
+        break;
+      case '/':
+        if (myBufferIndex + 1 >= myBufferEndOffset) {
+          myTokenType = JavaTokenType.DIV;
+          myTokenEndOffset = myBufferEndOffset;
+        }
+        else {
+          char nextChar = myBufferArray != null ? myBufferArray[myBufferIndex + 1] : myBuffer.charAt(myBufferIndex + 1);
+          if (nextChar == '/') {
+            myTokenType = JavaTokenType.END_OF_LINE_COMMENT;
+            myTokenEndOffset = getLineTerminator(myBufferIndex + 2);
+          }
+          else if (nextChar == '*') {
+            if (myBufferIndex + 2 >= myBufferEndOffset ||
+                (myBufferArray != null ? myBufferArray[myBufferIndex + 2] : myBuffer.charAt(myBufferIndex + 2)) != '*' ||
+                (myBufferIndex + 3 < myBufferEndOffset &&
+                 (myBufferArray != null ? myBufferArray[myBufferIndex + 3] : myBuffer.charAt(myBufferIndex + 3)) == '/')) {
+              myTokenType = JavaTokenType.C_STYLE_COMMENT;
+              myTokenEndOffset = getClosingComment(myBufferIndex + 2);
+            }
+            else {
+              myTokenType = JavaDocElementType.DOC_COMMENT;
+              myTokenEndOffset = getClosingComment(myBufferIndex + 3);
+            }
+          }
+          else {
+            flexLocateToken();
+          }
+        }
+        break;
+      case '""':
+      case '\'':
+        myTokenType = c == '""' ? JavaTokenType.STRING_LITERAL : JavaTokenType.CHARACTER_LITERAL;
+        myTokenEndOffset = getClosingParenthesis(myBufferIndex + 1, c);
+        break;
+      default:
+        flexLocateToken();
+    }
+    if (myTokenEndOffset > myBufferEndOffset) {
+      myTokenEndOffset = myBufferEndOffset;
+    }
+  }",method,
+"    if (myTokenEndOffset == myBufferEndOffset) {
+      myTokenType = null;
+      myBufferIndex = myBufferEndOffset;
+      return;
+    }",method,
+"    switch (c) {
+      case ' ':
+      case '\t':
+      case '\n':
+      case '\r':
+      case '\f':
+        myTokenType = TokenType.WHITE_SPACE;
+        myTokenEndOffset = getWhitespaces(myBufferIndex + 1);
+        break;
+      case '/':
+        if (myBufferIndex + 1 >= myBufferEndOffset) {
+          myTokenType = JavaTokenType.DIV;
+          myTokenEndOffset = myBufferEndOffset;
+        }
+        else {
+          char nextChar = myBufferArray != null ? myBufferArray[myBufferIndex + 1] : myBuffer.charAt(myBufferIndex + 1);
+          if (nextChar == '/') {
+            myTokenType = JavaTokenType.END_OF_LINE_COMMENT;
+            myTokenEndOffset = getLineTerminator(myBufferIndex + 2);
+          }
+          else if (nextChar == '*') {
+            if (myBufferIndex + 2 >= myBufferEndOffset ||
+                (myBufferArray != null ? myBufferArray[myBufferIndex + 2] : myBuffer.charAt(myBufferIndex + 2)) != '*' ||
+                (myBufferIndex + 3 < myBufferEndOffset &&
+                 (myBufferArray != null ? myBufferArray[myBufferIndex + 3] : myBuffer.charAt(myBufferIndex + 3)) == '/')) {
+              myTokenType = JavaTokenType.C_STYLE_COMMENT;
+              myTokenEndOffset = getClosingComment(myBufferIndex + 2);
+            }
+            else {
+              myTokenType = JavaDocElementType.DOC_COMMENT;
+              myTokenEndOffset = getClosingComment(myBufferIndex + 3);
+            }
+          }
+          else {
+            flexLocateToken();
+          }
+        }
+        break;
+      case '""':
+      case '\'':
+        myTokenType = c == '""' ? JavaTokenType.STRING_LITERAL : JavaTokenType.CHARACTER_LITERAL;
+        myTokenEndOffset = getClosingParenthesis(myBufferIndex + 1, c);
+        break;
+      default:
+        flexLocateToken();
+    }",method,
+"        if (myBufferIndex + 1 >= myBufferEndOffset) {
+          myTokenType = JavaTokenType.DIV;
+          myTokenEndOffset = myBufferEndOffset;
+        }",method,
+"          if (nextChar == '/') {
+            myTokenType = JavaTokenType.END_OF_LINE_COMMENT;
+            myTokenEndOffset = getLineTerminator(myBufferIndex + 2);
+          }",method,
+"          else if (nextChar == '*') {
+            if (myBufferIndex + 2 >= myBufferEndOffset ||
+                (myBufferArray != null ? myBufferArray[myBufferIndex + 2] : myBuffer.charAt(myBufferIndex + 2)) != '*' ||
+                (myBufferIndex + 3 < myBufferEndOffset &&
+                 (myBufferArray != null ? myBufferArray[myBufferIndex + 3] : myBuffer.charAt(myBufferIndex + 3)) == '/')) {
+              myTokenType = JavaTokenType.C_STYLE_COMMENT;
+              myTokenEndOffset = getClosingComment(myBufferIndex + 2);
+            }
+            else {
+              myTokenType = JavaDocElementType.DOC_COMMENT;
+              myTokenEndOffset = getClosingComment(myBufferIndex + 3);
+            }
+          }",method,
+"    if (myTokenEndOffset > myBufferEndOffset) {
+      myTokenEndOffset = myBufferEndOffset;
+    }",method,
+"  private int getWhitespaces(int offset) {
+    if (offset >= myBufferEndOffset) {
+      return myBufferEndOffset;
+    }
+    int pos = offset;
+    char c = myBufferArray != null ? myBufferArray[pos] : myBuffer.charAt(pos);
+    while (c == ' ' || c == '\t' || c == '\n' || c == '\r' || c == '\f') {
+      pos++;
+      if (pos == myBufferEndOffset) return pos;
+      c = myBufferArray != null ? myBufferArray[pos] : myBuffer.charAt(pos);
+    }
+    return pos;
+  }",method,
+"    if (offset >= myBufferEndOffset) {
+      return myBufferEndOffset;
+    }",method,
+"    while (c == ' ' || c == '\t' || c == '\n' || c == '\r' || c == '\f') {
+      pos++;
+      if (pos == myBufferEndOffset) return pos;
+      c = myBufferArray != null ? myBufferArray[pos] : myBuffer.charAt(pos);
+    }",method,
+"  private void flexLocateToken() {
+    try {
+      myFlexLexer.goTo(myBufferIndex);
+      myTokenType = myFlexLexer.advance();
+      myTokenEndOffset = myFlexLexer.getTokenEnd();
+    }
+    catch (IOException e) {  }
+  }",method,
+    catch (IOException e) {  },method,
+"  private int getClosingParenthesis(int offset, char c) {
+    if (offset >= myBufferEndOffset) {
+      return myBufferEndOffset;
+    }
+    int pos = offset;
+    char cur = myBufferArray != null ? myBufferArray[pos] : myBuffer.charAt(pos);
+    while (true) {
+      while (cur != c && cur != '\n' && cur != '\r' && cur != '\\') {
+        pos++;
+        if (pos >= myBufferEndOffset) return myBufferEndOffset;
+        cur = myBufferArray != null ? myBufferArray[pos] : myBuffer.charAt(pos);
+      }
+      if (cur == '\\') {
+        pos++;
+        if (pos >= myBufferEndOffset) return myBufferEndOffset;
+        cur = myBufferArray != null ? myBufferArray[pos] : myBuffer.charAt(pos);
+        if (cur == '\n' || cur == '\r') continue;
+        pos++;
+        if (pos >= myBufferEndOffset) return myBufferEndOffset;
+        cur = myBufferArray != null ? myBufferArray[pos] : myBuffer.charAt(pos);
+      }
+      else if (cur == c) {
+        break;
+      }
+      else {
+        pos--;
+        break;
+      }
+    }
+    return pos + 1;
+  }",method,
+"    if (offset >= myBufferEndOffset) {
+      return myBufferEndOffset;
+    }",method,
+"    while (true) {
+      while (cur != c && cur != '\n' && cur != '\r' && cur != '\\') {
+        pos++;
+        if (pos >= myBufferEndOffset) return myBufferEndOffset;
+        cur = myBufferArray != null ? myBufferArray[pos] : myBuffer.charAt(pos);
+      }
+      if (cur == '\\') {
+        pos++;
+        if (pos >= myBufferEndOffset) return myBufferEndOffset;
+        cur = myBufferArray != null ? myBufferArray[pos] : myBuffer.charAt(pos);
+        if (cur == '\n' || cur == '\r') continue;
+        pos++;
+        if (pos >= myBufferEndOffset) return myBufferEndOffset;
+        cur = myBufferArray != null ? myBufferArray[pos] : myBuffer.charAt(pos);
+      }
+      else if (cur == c) {
+        break;
+      }
+      else {
+        pos--;
+        break;
+      }
+    }",method,
+"      while (cur != c && cur != '\n' && cur != '\r' && cur != '\\') {
+        pos++;
+        if (pos >= myBufferEndOffset) return myBufferEndOffset;
+        cur = myBufferArray != null ? myBufferArray[pos] : myBuffer.charAt(pos);
+      }",method,
+"      if (cur == '\\') {
+        pos++;
+        if (pos >= myBufferEndOffset) return myBufferEndOffset;
+        cur = myBufferArray != null ? myBufferArray[pos] : myBuffer.charAt(pos);
+        if (cur == '\n' || cur == '\r') continue;
+        pos++;
+        if (pos >= myBufferEndOffset) return myBufferEndOffset;
+        cur = myBufferArray != null ? myBufferArray[pos] : myBuffer.charAt(pos);
+      }",method,
+"      else if (cur == c) {
+        break;
+      }",method,
+"  private int getClosingComment(int offset) {
+    int pos = offset;
+    while (pos < myBufferEndOffset - 1) {
+      char c = myBufferArray != null ? myBufferArray[pos] : myBuffer.charAt(pos);
+      if (c == '*' && (myBufferArray != null ? myBufferArray[pos + 1] : myBuffer.charAt(pos + 1)) == '/') {
+        break;
+      }
+      pos++;
+    }
+    return pos + 2;
+  }",method,
+"    while (pos < myBufferEndOffset - 1) {
+      char c = myBufferArray != null ? myBufferArray[pos] : myBuffer.charAt(pos);
+      if (c == '*' && (myBufferArray != null ? myBufferArray[pos + 1] : myBuffer.charAt(pos + 1)) == '/') {
+        break;
+      }
+      pos++;
+    }",method,
+"  private int getLineTerminator(int offset) {
+    int pos = offset;
+    while (pos < myBufferEndOffset) {
+      char c = myBufferArray != null ? myBufferArray[pos] : myBuffer.charAt(pos);
+      if (c == '\r' || c == '\n') break;
+      pos++;
+    }
+    return pos;
+  }",method,
+"    while (pos < myBufferEndOffset) {
+      char c = myBufferArray != null ? myBufferArray[pos] : myBuffer.charAt(pos);
+      if (c == '\r' || c == '\n') break;
+      pos++;
+    }",method,
+"  @NotNull
+  @Override
+  public CharSequence getBufferSequence() {
+    return myBuffer;
+  }",method,
+"  @Override
+  public final int getBufferEnd() {
+    return myBufferEndOffset;
+  }",method,
+"public abstract class NonStaticAuthenticator {
+  private String requestingHost;
+  private InetAddress requestingSite;
+  private int requestingPort;
+  private String requestingProtocol;
+  private String requestingPrompt;
+  private String requestingScheme;
+  private URL requestingURL;
+  private Authenticator.RequestorType requestingAuthType;
+  public abstract PasswordAuthentication getPasswordAuthentication();
+  protected String getRequestingHost() {
+    return requestingHost;
+  }
+  protected void setRequestingHost(String requestingHost) {
+    this.requestingHost = requestingHost;
+  }
+  protected InetAddress getRequestingSite() {
+    return requestingSite;
+  }
+  protected void setRequestingSite(InetAddress requestingSite) {
+    this.requestingSite = requestingSite;
+  }
+  protected int getRequestingPort() {
+    return requestingPort;
+  }
+  protected void setRequestingPort(int requestingPort) {
+    this.requestingPort = requestingPort;
+  }
+  protected String getRequestingProtocol() {
+    return requestingProtocol;
+  }
+  protected void setRequestingProtocol(String requestingProtocol) {
+    this.requestingProtocol = requestingProtocol;
+  }
+  protected String getRequestingPrompt() {
+    return requestingPrompt;
+  }
+  protected void setRequestingPrompt(String requestingPrompt) {
+    this.requestingPrompt = requestingPrompt;
+  }
+  protected String getRequestingScheme() {
+    return requestingScheme;
+  }
+  protected void setRequestingScheme(String requestingScheme) {
+    this.requestingScheme = requestingScheme;
+  }
+  protected URL getRequestingURL() {
+    return requestingURL;
+  }
+  protected void setRequestingURL(URL requestingURL) {
+    this.requestingURL = requestingURL;
+  }
+  protected Authenticator.RequestorType getRequestorType() {
+    return requestingAuthType;
+  }
+  protected void setRequestorType(Authenticator.RequestorType requestingAuthType) {
+    this.requestingAuthType = requestingAuthType;
+  }
+}",class,
+"  protected String getRequestingHost() {
+    return requestingHost;
+  }",method,
+"  protected void setRequestingHost(String requestingHost) {
+    this.requestingHost = requestingHost;
+  }",method,
+"  protected InetAddress getRequestingSite() {
+    return requestingSite;
+  }",method,
+"  protected void setRequestingSite(InetAddress requestingSite) {
+    this.requestingSite = requestingSite;
+  }",method,
+"  protected int getRequestingPort() {
+    return requestingPort;
+  }",method,
+"  protected void setRequestingPort(int requestingPort) {
+    this.requestingPort = requestingPort;
+  }",method,
+"  protected String getRequestingProtocol() {
+    return requestingProtocol;
+  }",method,
+"  protected void setRequestingProtocol(String requestingProtocol) {
+    this.requestingProtocol = requestingProtocol;
+  }",method,
+"  protected String getRequestingPrompt() {
+    return requestingPrompt;
+  }",method,
+"  protected void setRequestingPrompt(String requestingPrompt) {
+    this.requestingPrompt = requestingPrompt;
+  }",method,
+"  protected String getRequestingScheme() {
+    return requestingScheme;
+  }",method,
+"  protected void setRequestingScheme(String requestingScheme) {
+    this.requestingScheme = requestingScheme;
+  }",method,
+"  protected URL getRequestingURL() {
+    return requestingURL;
+  }",method,
+"  protected void setRequestingURL(URL requestingURL) {
+    this.requestingURL = requestingURL;
+  }",method,
+"  protected Authenticator.RequestorType getRequestorType() {
+    return requestingAuthType;
+  }",method,
+"  protected void setRequestorType(Authenticator.RequestorType requestingAuthType) {
+    this.requestingAuthType = requestingAuthType;
+  }",method,
+"public class AsciiBenchmark {
+  private static final String ALPHA =
+      ""ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz"";
+  private static final String NONALPHA =
+      ""0123456789`~-_=+[]{}|;:',.<>/?!@#$%^&*()\""\\"";
+  @Param({""20"", ""2000""}) int size;
+  @Param({""2"", ""20""}) int nonAlphaRatio; // one non-alpha char per this many chars
+  @Param boolean noWorkToDo;
+  Random random;
+  String testString;
+  @BeforeExperiment void setUp() {
+    random = new Random(0xdeadbeef);  // fix the seed so results are comparable across runs
+    int nonAlpha = size / nonAlphaRatio;
+    int alpha = size - nonAlpha;
+    List<Character> chars = Lists.newArrayListWithCapacity(size);
+    for (int i = 0; i < alpha; i++) {
+      chars.add(randomAlpha());
+    }
+    for (int i = 0; i < nonAlpha; i++) {
+      chars.add(randomNonAlpha());
+    }
+    Collections.shuffle(chars, random);
+    char[] array = Chars.toArray(chars);
+    this.testString = new String(array);
+  }
+  private char randomAlpha() {
+    return ALPHA.charAt(random.nextInt(ALPHA.length()));
+  }
+  private char randomNonAlpha() {
+    return NONALPHA.charAt(random.nextInt(NONALPHA.length()));
+  }
+  @Benchmark int asciiStringToUpperCase(int reps) {
+    String string = noWorkToDo
+        ? Ascii.toUpperCase(testString)
+        : testString;
+    int dummy = 0;
+    for (int i = 0; i < reps; i++) {
+      dummy += Ascii.toUpperCase(string).length();
+    }
+    return dummy;
+  }
+  @Benchmark int asciiCharSequenceToUpperCase(int reps) {
+    String string = noWorkToDo
+        ? charSequenceToUpperCase(testString)
+        : testString;
+    int dummy = 0;
+    for (int i = 0; i < reps; i++) {
+      dummy += charSequenceToUpperCase(string).length();
+    }
+    return dummy;
+  }
+  @Benchmark int stringToUpperCase(int reps) {
+    String string = noWorkToDo
+        ? testString.toUpperCase(Locale.US)
+        : testString;
+    int dummy = 0;
+    for (int i = 0; i < reps; i++) {
+      dummy += string.toUpperCase(Locale.US).length();
+    }
+    return dummy;
+  }
+  @Benchmark boolean equalsIgnoreCaseCharSequence(int reps) {
+    // This benchmark has no concept of ""noWorkToDo"".
+    String upperString = testString.toUpperCase();
+    CharSequence testSeq = new StringBuilder(testString);
+    CharSequence upperSeq = new StringBuilder(upperString);
+    CharSequence[] lhs = new CharSequence[] { testString, testSeq, testString, testSeq };
+    CharSequence[] rhs = new CharSequence[] { upperString, upperString, upperSeq, upperSeq };
+    boolean dummy = false;
+    for (int i = 0; i < reps; i++) {
+      dummy ^= Ascii.equalsIgnoreCase(lhs[i & 0x3], rhs[i & 0x3]);
+    }
+    return dummy;
+  }
+  @Benchmark boolean equalsIgnoreCaseStringOnly(int reps) {
+    // This benchmark has no concept of ""noWorkToDo"".
+    String lhs = testString;
+    String rhs = testString.toUpperCase();
+    boolean dummy = false;
+    for (int i = 0; i < reps; i++) {
+      dummy ^= Ascii.equalsIgnoreCase(lhs, rhs);
+    }
+    return dummy;
+  }
+  @Benchmark boolean equalsIgnoreCaseJDK(int reps) {
+    // This benchmark has no concept of ""noWorkToDo"".
+    String lhs = testString;
+    String rhs = testString.toUpperCase();
+    boolean dummy = false;
+    for (int i = 0; i < reps; i++) {
+        dummy ^= lhs.equalsIgnoreCase(rhs);
+    }
+    return dummy;
+  }
+  @Benchmark boolean isUpperCase(int reps) {
+    // This benchmark has no concept of ""noWorkToDo"".
+    char[] chars = testString.toCharArray();
+    boolean dummy = false;
+    for (int i = 0; i < reps; i++) {
+      for (int n = 0; n < chars.length; n++) {
+        dummy ^= Ascii.isUpperCase(chars[n]);
+      }
+    }
+    return dummy;
+  }
+  static String charSequenceToUpperCase(CharSequence chars) {
+    char[] newChars = new char[chars.length()];
+    for (int i = 0; i < newChars.length; i++) {
+      newChars[i] = Ascii.toUpperCase(chars.charAt(i));
+    }
+    return String.valueOf(newChars);
+  }
+}",class,
+"    for (int i = 0; i < alpha; i++) {
+      chars.add(randomAlpha());
+    }",method,
+"    for (int i = 0; i < nonAlpha; i++) {
+      chars.add(randomNonAlpha());
+    }",method,
+"  private char randomAlpha() {
+    return ALPHA.charAt(random.nextInt(ALPHA.length()));
+  }",method,
+"  private char randomNonAlpha() {
+    return NONALPHA.charAt(random.nextInt(NONALPHA.length()));
+  }",method,
+"    for (int i = 0; i < reps; i++) {
+      dummy += Ascii.toUpperCase(string).length();
+    }",method,
+"    for (int i = 0; i < reps; i++) {
+      dummy += charSequenceToUpperCase(string).length();
+    }",method,
+"    for (int i = 0; i < reps; i++) {
+      dummy += string.toUpperCase(Locale.US).length();
+    }",method,
+"    for (int i = 0; i < reps; i++) {
+      dummy ^= Ascii.equalsIgnoreCase(lhs[i & 0x3], rhs[i & 0x3]);
+    }",method,
+"    for (int i = 0; i < reps; i++) {
+      dummy ^= Ascii.equalsIgnoreCase(lhs, rhs);
+    }",method,
+"    for (int i = 0; i < reps; i++) {
+        dummy ^= lhs.equalsIgnoreCase(rhs);
+    }",method,
+"    for (int i = 0; i < reps; i++) {
+      for (int n = 0; n < chars.length; n++) {
+        dummy ^= Ascii.isUpperCase(chars[n]);
+      }
+    }",method,
+"      for (int n = 0; n < chars.length; n++) {
+        dummy ^= Ascii.isUpperCase(chars[n]);
+      }",method,
+"  static String charSequenceToUpperCase(CharSequence chars) {
+    char[] newChars = new char[chars.length()];
+    for (int i = 0; i < newChars.length; i++) {
+      newChars[i] = Ascii.toUpperCase(chars.charAt(i));
+    }
+    return String.valueOf(newChars);
+  }",method,
+"    for (int i = 0; i < newChars.length; i++) {
+      newChars[i] = Ascii.toUpperCase(chars.charAt(i));
+    }",method,
+"public class ProcessorUtils {
+  static AnnotationMirror getAnnotation(
+      Elements elementUtils,
+      Types typeUtils,
+      Element element,
+      Class<? extends Annotation> annotation)
+      throws OptionProcessorException {
+    TypeElement annotationElement = elementUtils.getTypeElement(annotation.getCanonicalName());
+    if (annotationElement == null) {
+      // This can happen if the annotation is on the -processorpath but not on the -classpath.
+      throw new OptionProcessorException(
+          element, ""Unable to find the type of annotation %s."", annotation);
+    }
+    TypeMirror annotationMirror = annotationElement.asType();
+    for (AnnotationMirror annot : element.getAnnotationMirrors()) {
+      if (typeUtils.isSameType(annot.getAnnotationType(), annotationMirror)) {
+        return annot;
+      }
+    }
+    // No annotation of this requested type found.
+    throw new OptionProcessorException(
+        element, ""No annotation %s found for this element."", annotation);
+  }
+  static TypeElement getClassTypeFromAnnotationField(
+      Elements elementUtils, AnnotationMirror annotation, String fieldName)
+      throws OptionProcessorException {
+    for (Map.Entry<? extends ExecutableElement, ? extends AnnotationValue> entry :
+        elementUtils.getElementValuesWithDefaults(annotation).entrySet()) {
+      if (entry.getKey().getSimpleName().contentEquals(fieldName)) {
+        Object annotationField = entry.getValue().getValue();
+        if (!(annotationField instanceof DeclaredType)) {
+          throw new IllegalStateException(
+              String.format(
+                  ""The fieldName provided should only apply to Class<> type annotation fields, ""
+                      + ""but the field's value (%s) couldn't get cast to a DeclaredType"",
+                  entry));
+        }
+        String qualifiedName =
+            ((TypeElement) ((DeclaredType) annotationField).asElement())
+                .getQualifiedName()
+                .toString();
+        return elementUtils.getTypeElement(qualifiedName);
+      }
+    }
+    // Annotation missing the requested field.
+    throw new OptionProcessorException(
+        null, ""No member %s of the %s annotation found for element."", fieldName, annotation);
+  }
+}",class,
+"  static AnnotationMirror getAnnotation(
+      Elements elementUtils,
+      Types typeUtils,
+      Element element,
+      Class<? extends Annotation> annotation)
+      throws OptionProcessorException {
+    TypeElement annotationElement = elementUtils.getTypeElement(annotation.getCanonicalName());
+    if (annotationElement == null) {
+      // This can happen if the annotation is on the -processorpath but not on the -classpath.
+      throw new OptionProcessorException(
+          element, ""Unable to find the type of annotation %s."", annotation);
+    }
+    TypeMirror annotationMirror = annotationElement.asType();
+    for (AnnotationMirror annot : element.getAnnotationMirrors()) {
+      if (typeUtils.isSameType(annot.getAnnotationType(), annotationMirror)) {
+        return annot;
+      }
+    }
+    // No annotation of this requested type found.
+    throw new OptionProcessorException(
+        element, ""No annotation %s found for this element."", annotation);
+  }",method,
+"    if (annotationElement == null) {
+      // This can happen if the annotation is on the -processorpath but not on the -classpath.
+      throw new OptionProcessorException(
+          element, ""Unable to find the type of annotation %s."", annotation);
+    }",method,
+"  static TypeElement getClassTypeFromAnnotationField(
+      Elements elementUtils, AnnotationMirror annotation, String fieldName)
+      throws OptionProcessorException {
+    for (Map.Entry<? extends ExecutableElement, ? extends AnnotationValue> entry :
+        elementUtils.getElementValuesWithDefaults(annotation).entrySet()) {
+      if (entry.getKey().getSimpleName().contentEquals(fieldName)) {
+        Object annotationField = entry.getValue().getValue();
+        if (!(annotationField instanceof DeclaredType)) {
+          throw new IllegalStateException(
+              String.format(
+                  ""The fieldName provided should only apply to Class<> type annotation fields, ""
+                      + ""but the field's value (%s) couldn't get cast to a DeclaredType"",
+                  entry));
+        }
+        String qualifiedName =
+            ((TypeElement) ((DeclaredType) annotationField).asElement())
+                .getQualifiedName()
+                .toString();
+        return elementUtils.getTypeElement(qualifiedName);
+      }
+    }
+    // Annotation missing the requested field.
+    throw new OptionProcessorException(
+        null, ""No member %s of the %s annotation found for element."", fieldName, annotation);
+  }",method,
+"public class CandleStickChartActivity extends DemoBase implements OnSeekBarChangeListener {
+    private CandleStickChart mChart;
+    private SeekBar mSeekBarX, mSeekBarY;
+    private TextView tvX, tvY;
+    @Override
+    protected void onCreate(Bundle savedInstanceState) {
+        super.onCreate(savedInstanceState);
+        getWindow().setFlags(WindowManager.LayoutParams.FLAG_FULLSCREEN,
+                WindowManager.LayoutParams.FLAG_FULLSCREEN);
+        setContentView(R.layout.activity_candlechart);
+        tvX = (TextView) findViewById(R.id.tvXMax);
+        tvY = (TextView) findViewById(R.id.tvYMax);
+        mSeekBarX = (SeekBar) findViewById(R.id.seekBar1);
+        mSeekBarX.setOnSeekBarChangeListener(this);
+        mSeekBarY = (SeekBar) findViewById(R.id.seekBar2);
+        mSeekBarY.setOnSeekBarChangeListener(this);
+        mChart = (CandleStickChart) findViewById(R.id.chart1);
+        mChart.setBackgroundColor(Color.WHITE);
+        mChart.getDescription().setEnabled(false);
+        // if more than 60 entries are displayed in the chart, no values will be
+        // drawn
+        mChart.setMaxVisibleValueCount(60);
+        // scaling can now only be done on x- and y-axis separately
+        mChart.setPinchZoom(false);
+        mChart.setDrawGridBackground(false);
+        XAxis xAxis = mChart.getXAxis();
+        xAxis.setPosition(XAxisPosition.BOTTOM);
+        xAxis.setDrawGridLines(false);
+        YAxis leftAxis = mChart.getAxisLeft();  
+//        leftAxis.setEnabled(false);
+        leftAxis.setLabelCount(7, false);
+        leftAxis.setDrawGridLines(false);
+        leftAxis.setDrawAxisLine(false);
+        YAxis rightAxis = mChart.getAxisRight();
+        rightAxis.setEnabled(false);
+//        rightAxis.setStartAtZero(false);
+        // setting data
+        mSeekBarX.setProgress(40);
+        mSeekBarY.setProgress(100);
+        mChart.getLegend().setEnabled(false);
+    }
+    @Override
+    public boolean onCreateOptionsMenu(Menu menu) {
+        getMenuInflater().inflate(R.menu.candle, menu);
+        return true;
+    }
+    @Override
+    public boolean onOptionsItemSelected(MenuItem item) {
+        switch (item.getItemId()) {
+            case R.id.actionToggleValues: {
+                for (IDataSet set : mChart.getData().getDataSets())
+                    set.setDrawValues(!set.isDrawValuesEnabled());
+                mChart.invalidate();
+                break;
+            }
+            case R.id.actionToggleIcons: {
+                for (IDataSet set : mChart.getData().getDataSets())
+                    set.setDrawIcons(!set.isDrawIconsEnabled());
+                mChart.invalidate();
+                break;
+            }
+            case R.id.actionToggleHighlight: {
+                if(mChart.getData() != null) {
+                    mChart.getData().setHighlightEnabled(!mChart.getData().isHighlightEnabled());
+                    mChart.invalidate();
+                }
+                break;
+            }
+            case R.id.actionTogglePinch: {
+                if (mChart.isPinchZoomEnabled())
+                    mChart.setPinchZoom(false);
+                else
+                    mChart.setPinchZoom(true);
+                mChart.invalidate();
+                break;
+            }
+            case R.id.actionToggleAutoScaleMinMax: {
+                mChart.setAutoScaleMinMaxEnabled(!mChart.isAutoScaleMinMaxEnabled());
+                mChart.notifyDataSetChanged();
+                break;
+            }
+            case R.id.actionToggleMakeShadowSameColorAsCandle: {
+                for (ICandleDataSet set : mChart.getData().getDataSets()) {
+                   //TODO: set.setShadowColorSameAsCandle(!set.getShadowColorSameAsCandle());
+                }
+                mChart.invalidate();
+                break;
+            }
+            case R.id.animateX: {
+                mChart.animateX(3000);
+                break;
+            }
+            case R.id.animateY: {
+                mChart.animateY(3000);
+                break;
+            }
+            case R.id.animateXY: {
+                mChart.animateXY(3000, 3000);
+                break;
+            }
+            case R.id.actionSave: {
+                if (mChart.saveToGallery(""title"" + System.currentTimeMillis(), 50)) {
+                    Toast.makeText(getApplicationContext(), ""Saving SUCCESSFUL!"",
+                            Toast.LENGTH_SHORT).show();
+                } else
+                    Toast.makeText(getApplicationContext(), ""Saving FAILED!"", Toast.LENGTH_SHORT)
+                            .show();
+                break;
+            }
+        }
+        return true;
+    }
+    @Override
+    public void onProgressChanged(SeekBar seekBar, int progress, boolean fromUser) {
+        int prog = (mSeekBarX.getProgress() + 1);
+        tvX.setText("""" + prog);
+        tvY.setText("""" + (mSeekBarY.getProgress()));
+        mChart.resetTracking();
+        ArrayList<CandleEntry> yVals1 = new ArrayList<CandleEntry>();
+        for (int i = 0; i < prog; i++) {
+            float mult = (mSeekBarY.getProgress() + 1);
+            float val = (float) (Math.random() * 40) + mult;
+            float high = (float) (Math.random() * 9) + 8f;
+            float low = (float) (Math.random() * 9) + 8f;
+            float open = (float) (Math.random() * 6) + 1f;
+            float close = (float) (Math.random() * 6) + 1f;
+            boolean even = i % 2 == 0;
+            yVals1.add(new CandleEntry(
+                    i, val + high,
+                    val - low,
+                    even ? val + open : val - open,
+                    even ? val - close : val + close,
+                    getResources().getDrawable(R.drawable.star)
+            ));
+        }
+        CandleDataSet set1 = new CandleDataSet(yVals1, ""Data Set"");
+        set1.setDrawIcons(false);
+        set1.setAxisDependency(AxisDependency.LEFT);
+//        set1.setColor(Color.rgb(80, 80, 80));
+        set1.setShadowColor(Color.DKGRAY);
+        set1.setShadowWidth(0.7f);
+        set1.setDecreasingColor(Color.RED);
+        set1.setDecreasingPaintStyle(Paint.Style.FILL);
+        set1.setIncreasingColor(Color.rgb(122, 242, 84));
+        set1.setIncreasingPaintStyle(Paint.Style.STROKE);
+        set1.setNeutralColor(Color.BLUE);
+        //set1.setHighlightLineWidth(1f);
+        CandleData data = new CandleData(set1);
+        mChart.setData(data);
+        mChart.invalidate();
+    }
+    @Override
+    public void onStartTrackingTouch(SeekBar seekBar) {
+        // TODO Auto-generated method stub
+    }
+    @Override
+    public void onStopTrackingTouch(SeekBar seekBar) {
+        // TODO Auto-generated method stub
+    }
+}",class,
+"    @Override
+    protected void onCreate(Bundle savedInstanceState) {
+        super.onCreate(savedInstanceState);
+        getWindow().setFlags(WindowManager.LayoutParams.FLAG_FULLSCREEN,
+                WindowManager.LayoutParams.FLAG_FULLSCREEN);
+        setContentView(R.layout.activity_candlechart);
+        tvX = (TextView) findViewById(R.id.tvXMax);
+        tvY = (TextView) findViewById(R.id.tvYMax);
+        mSeekBarX = (SeekBar) findViewById(R.id.seekBar1);
+        mSeekBarX.setOnSeekBarChangeListener(this);
+        mSeekBarY = (SeekBar) findViewById(R.id.seekBar2);
+        mSeekBarY.setOnSeekBarChangeListener(this);
+        mChart = (CandleStickChart) findViewById(R.id.chart1);
+        mChart.setBackgroundColor(Color.WHITE);
+        mChart.getDescription().setEnabled(false);
+        // if more than 60 entries are displayed in the chart, no values will be
+        // drawn
+        mChart.setMaxVisibleValueCount(60);
+        // scaling can now only be done on x- and y-axis separately
+        mChart.setPinchZoom(false);
+        mChart.setDrawGridBackground(false);
+        XAxis xAxis = mChart.getXAxis();
+        xAxis.setPosition(XAxisPosition.BOTTOM);
+        xAxis.setDrawGridLines(false);
+        YAxis leftAxis = mChart.getAxisLeft();  
+//        leftAxis.setEnabled(false);
+        leftAxis.setLabelCount(7, false);
+        leftAxis.setDrawGridLines(false);
+        leftAxis.setDrawAxisLine(false);
+        YAxis rightAxis = mChart.getAxisRight();
+        rightAxis.setEnabled(false);
+//        rightAxis.setStartAtZero(false);
+        // setting data
+        mSeekBarX.setProgress(40);
+        mSeekBarY.setProgress(100);
+        mChart.getLegend().setEnabled(false);
+    }",method,
+"    @Override
+    public boolean onCreateOptionsMenu(Menu menu) {
+        getMenuInflater().inflate(R.menu.candle, menu);
+        return true;
+    }",method,
+"    @Override
+    public boolean onOptionsItemSelected(MenuItem item) {
+        switch (item.getItemId()) {
+            case R.id.actionToggleValues: {
+                for (IDataSet set : mChart.getData().getDataSets())
+                    set.setDrawValues(!set.isDrawValuesEnabled());
+                mChart.invalidate();
+                break;
+            }
+            case R.id.actionToggleIcons: {
+                for (IDataSet set : mChart.getData().getDataSets())
+                    set.setDrawIcons(!set.isDrawIconsEnabled());
+                mChart.invalidate();
+                break;
+            }
+            case R.id.actionToggleHighlight: {
+                if(mChart.getData() != null) {
+                    mChart.getData().setHighlightEnabled(!mChart.getData().isHighlightEnabled());
+                    mChart.invalidate();
+                }
+                break;
+            }
+            case R.id.actionTogglePinch: {
+                if (mChart.isPinchZoomEnabled())
+                    mChart.setPinchZoom(false);
+                else
+                    mChart.setPinchZoom(true);
+                mChart.invalidate();
+                break;
+            }
+            case R.id.actionToggleAutoScaleMinMax: {
+                mChart.setAutoScaleMinMaxEnabled(!mChart.isAutoScaleMinMaxEnabled());
+                mChart.notifyDataSetChanged();
+                break;
+            }
+            case R.id.actionToggleMakeShadowSameColorAsCandle: {
+                for (ICandleDataSet set : mChart.getData().getDataSets()) {
+                   //TODO: set.setShadowColorSameAsCandle(!set.getShadowColorSameAsCandle());
+                }
+                mChart.invalidate();
+                break;
+            }
+            case R.id.animateX: {
+                mChart.animateX(3000);
+                break;
+            }
+            case R.id.animateY: {
+                mChart.animateY(3000);
+                break;
+            }
+            case R.id.animateXY: {
+                mChart.animateXY(3000, 3000);
+                break;
+            }
+            case R.id.actionSave: {
+                if (mChart.saveToGallery(""title"" + System.currentTimeMillis(), 50)) {
+                    Toast.makeText(getApplicationContext(), ""Saving SUCCESSFUL!"",
+                            Toast.LENGTH_SHORT).show();
+                } else
+                    Toast.makeText(getApplicationContext(), ""Saving FAILED!"", Toast.LENGTH_SHORT)
+                            .show();
+                break;
+            }
+        }
+        return true;
+    }",method,
+"    @Override
+    public void onProgressChanged(SeekBar seekBar, int progress, boolean fromUser) {
+        int prog = (mSeekBarX.getProgress() + 1);
+        tvX.setText("""" + prog);
+        tvY.setText("""" + (mSeekBarY.getProgress()));
+        mChart.resetTracking();
+        ArrayList<CandleEntry> yVals1 = new ArrayList<CandleEntry>();
+        for (int i = 0; i < prog; i++) {
+            float mult = (mSeekBarY.getProgress() + 1);
+            float val = (float) (Math.random() * 40) + mult;
+            float high = (float) (Math.random() * 9) + 8f;
+            float low = (float) (Math.random() * 9) + 8f;
+            float open = (float) (Math.random() * 6) + 1f;
+            float close = (float) (Math.random() * 6) + 1f;
+            boolean even = i % 2 == 0;
+            yVals1.add(new CandleEntry(
+                    i, val + high,
+                    val - low,
+                    even ? val + open : val - open,
+                    even ? val - close : val + close,
+                    getResources().getDrawable(R.drawable.star)
+            ));
+        }
+        CandleDataSet set1 = new CandleDataSet(yVals1, ""Data Set"");
+        set1.setDrawIcons(false);
+        set1.setAxisDependency(AxisDependency.LEFT);
+//        set1.setColor(Color.rgb(80, 80, 80));
+        set1.setShadowColor(Color.DKGRAY);
+        set1.setShadowWidth(0.7f);
+        set1.setDecreasingColor(Color.RED);
+        set1.setDecreasingPaintStyle(Paint.Style.FILL);
+        set1.setIncreasingColor(Color.rgb(122, 242, 84));
+        set1.setIncreasingPaintStyle(Paint.Style.STROKE);
+        set1.setNeutralColor(Color.BLUE);
+        //set1.setHighlightLineWidth(1f);
+        CandleData data = new CandleData(set1);
+        mChart.setData(data);
+        mChart.invalidate();
+    }",method,
+"        for (int i = 0; i < prog; i++) {
+            float mult = (mSeekBarY.getProgress() + 1);
+            float val = (float) (Math.random() * 40) + mult;
+            float high = (float) (Math.random() * 9) + 8f;
+            float low = (float) (Math.random() * 9) + 8f;
+            float open = (float) (Math.random() * 6) + 1f;
+            float close = (float) (Math.random() * 6) + 1f;
+            boolean even = i % 2 == 0;
+            yVals1.add(new CandleEntry(
+                    i, val + high,
+                    val - low,
+                    even ? val + open : val - open,
+                    even ? val - close : val + close,
+                    getResources().getDrawable(R.drawable.star)
+            ));
+        }",method,
+"    @Override
+    public void onStartTrackingTouch(SeekBar seekBar) {
+        // TODO Auto-generated method stub
+    }",method,
+"    @Override
+    public void onStopTrackingTouch(SeekBar seekBar) {
+        // TODO Auto-generated method stub
+    }",method,
+"public class LocalTaskExecutorThreadPool implements ThreadPool {
+	protected final Log logger = LogFactory.getLog(getClass());
+	@Nullable
+	private Executor taskExecutor;
+	@Override
+	public void setInstanceId(String schedInstId) {
+	}
+	@Override
+	public void setInstanceName(String schedName) {
+	}
+	@Override
+	public void initialize() throws SchedulerConfigException {
+		// Absolutely needs thread-bound TaskExecutor to initialize.
+		this.taskExecutor = SchedulerFactoryBean.getConfigTimeTaskExecutor();
+		if (this.taskExecutor == null) {
+			throw new SchedulerConfigException(
+				""No local TaskExecutor found for configuration - "" +
+				""'taskExecutor' property must be set on SchedulerFactoryBean"");
+		}
+	}
+	@Override
+	public void shutdown(boolean waitForJobsToComplete) {
+	}
+	@Override
+	public int getPoolSize() {
+		return -1;
+	}
+	@Override
+	public boolean runInThread(Runnable runnable) {
+		Assert.state(this.taskExecutor != null, ""No TaskExecutor available"");
+		try {
+			this.taskExecutor.execute(runnable);
+			return true;
+		}
+		catch (RejectedExecutionException ex) {
+			logger.error(""Task has been rejected by TaskExecutor"", ex);
+			return false;
+		}
+	}
+	@Override
+	public int blockForAvailableThreads() {
+		// The present implementation always returns 1, making Quartz
+		// always schedule any tasks that it feels like scheduling.
+		// This could be made smarter for specific TaskExecutors,
+		// for example calling {@code getMaximumPoolSize() - getActiveCount()}
+		// on a {@code java.util.concurrent.ThreadPoolExecutor}.
+		return 1;
+	}
+}",class,
+"	@Override
+	public void setInstanceId(String schedInstId) {
+	}",method,
+"	@Override
+	public void setInstanceName(String schedName) {
+	}",method,
+"	@Override
+	public void initialize() throws SchedulerConfigException {
+		// Absolutely needs thread-bound TaskExecutor to initialize.
+		this.taskExecutor = SchedulerFactoryBean.getConfigTimeTaskExecutor();
+		if (this.taskExecutor == null) {
+			throw new SchedulerConfigException(
+				""No local TaskExecutor found for configuration - "" +
+				""'taskExecutor' property must be set on SchedulerFactoryBean"");
+		}
+	}",method,
+"		if (this.taskExecutor == null) {
+			throw new SchedulerConfigException(
+				""No local TaskExecutor found for configuration - "" +
+				""'taskExecutor' property must be set on SchedulerFactoryBean"");
+		}",method,

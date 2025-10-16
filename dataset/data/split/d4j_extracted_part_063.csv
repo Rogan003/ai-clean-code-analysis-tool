@@ -1,0 +1,1450 @@
+code_snippet,type,score
+"    public static class A {
+        private int id;
+        public int getId() {
+            return id;
+        }
+        public void setId(int id) {
+            this.id = id;
+        }
+    }",class,
+"    public void test_0() throws Exception {
+        VO vo = (VO) JSON.parseObject(""{\""@type\"":\""com.alibaba.json.bvt.parser.JSONLexerTest_2$VO\""}"", VO.class);
+        Assert.assertNotNull(vo);
+    }",method,
+"    public void test_1() throws Exception {
+        Exception error = null;
+        try {
+            JSON.parseObject(""{\""@type\"":\""com.alibaba.json.bvt.parser.JSONLexerTest_2$VO1\""}"", VO.class);
+        } catch (JSONException ex) {
+            error = ex;
+        }
+        Assert.assertNotNull(error);
+    }",method,
+"    public void test_2() throws Exception {
+        Exception error = null;
+        try {
+            JSON.parseObject(""{\""@type\"":\""com.alibaba.json.bvt.parser.JSONLexerTest_2$A\""}"", VO.class);
+        } catch (JSONException ex) {
+            error = ex;
+        }
+        Assert.assertNotNull(error);
+    }",method,
+"    public void test_a() throws Exception {
+        P a = JSON.parseObject(""{\""vo\"":{\""@type\"":\""com.alibaba.json.bvt.parser.JSONLexerTest_2$VO\""}}"", P.class);
+        Assert.assertNotNull(a);
+    }",method,
+"    public void test_list() throws Exception {
+        List<VO> list = JSON.parseObject(""[{\""@type\"":\""com.alibaba.json.bvt.parser.JSONLexerTest_2$VO\""}]"",
+                                         new TypeReference<List<VO>>() {
+                                         });
+        Assert.assertNotNull(list);
+        Assert.assertNotNull(list.get(0));
+    }",method,
+"    public void test_list_2() throws Exception {
+        List<VO> list = JSON.parseObject(""[{\""@type\"":\""com.alibaba.json.bvt.parser.JSONLexerTest_2$VO\""},{}]"",
+                                         new TypeReference<List<VO>>() {
+                                         });
+        Assert.assertNotNull(list);
+        Assert.assertEquals(2, list.size());
+        Assert.assertNotNull(list.get(0));
+        Assert.assertNotNull(list.get(1));
+    }",method,
+"    public void test_error() throws Exception {
+        Exception error = null;
+        try {
+            JSON.parseObject(""[{\""@type\"":\""com.alibaba.json.bvt.parser.JSONLexerTest_2$VO\""}[]"",
+                             new TypeReference<List<VO>>() {
+                             });
+        } catch (Exception ex) {
+            error = ex;
+        }
+        Assert.assertNotNull(error);
+    }",method,
+"            JSON.parseObject(""[{\""@type\"":\""com.alibaba.json.bvt.parser.JSONLexerTest_2$VO\""}[]"",
+                             new TypeReference<List<VO>>() {
+                             }",method,
+"        public VO getVo() {
+            return vo;
+        }",method,
+"        public void setVo(VO vo) {
+            this.vo = vo;
+        }",method,
+"        public int getId() {
+            return id;
+        }",method,
+"        public void setId(int id) {
+            this.id = id;
+        }",method,
+"        public int getId() {
+            return id;
+        }",method,
+"        public void setId(int id) {
+            this.id = id;
+        }",method,
+"        public int getId() {
+            return id;
+        }",method,
+"        public void setId(int id) {
+            this.id = id;
+        }",method,
+"final class SequentialExecutor implements Executor {
+  private static final Logger log = Logger.getLogger(SequentialExecutor.class.getName());
+  private final Executor executor;
+  @GuardedBy(""queue"")
+  private final Queue<Runnable> queue = new ArrayDeque<>();
+  @GuardedBy(""queue"")
+  private boolean isWorkerRunning = false;
+  private final QueueWorker worker = new QueueWorker();
+  SequentialExecutor(Executor executor) {
+    this.executor = Preconditions.checkNotNull(executor);
+  }
+  @Override
+  public void execute(Runnable task) {
+    synchronized (queue) {
+      queue.add(task);
+      if (isWorkerRunning) {
+        return;
+      }
+      isWorkerRunning = true;
+    }
+    startQueueWorker();
+  }
+  private void startQueueWorker() {
+    boolean executionRejected = true;
+    try {
+      executor.execute(worker);
+      executionRejected = false;
+    } finally {
+      if (executionRejected) {
+        // The best we can do is to stop executing the queue, but reset the state so that
+        // execution can be resumed later if the caller so wishes.
+        synchronized (queue) {
+          isWorkerRunning = false;
+        }
+      }
+    }
+  }
+  @WeakOuter
+  private final class QueueWorker implements Runnable {
+    @Override
+    public void run() {
+      try {
+        workOnQueue();
+      } catch (Error e) {
+        synchronized (queue) {
+          isWorkerRunning = false;
+        }
+        throw e;
+        // The execution of a task has ended abnormally.
+        // We could have tasks left in the queue, so should perhaps try to restart a worker,
+        // but then the Error will get delayed if we are using a direct (same thread) executor.
+      }
+    }
+    private void workOnQueue() {
+      while (true) {
+        Runnable task = null;
+        synchronized (queue) {
+          // TODO(user): How should we handle interrupts and shutdowns?
+          task = queue.poll();
+          if (task == null) {
+            isWorkerRunning = false;
+            return;
+          }
+        }
+        try {
+          task.run();
+        } catch (RuntimeException e) {
+          log.log(Level.SEVERE, ""Exception while executing runnable "" + task, e);
+        }
+      }
+    }
+  }
+}",class,
+"  private final class QueueWorker implements Runnable {
+    @Override
+    public void run() {
+      try {
+        workOnQueue();
+      } catch (Error e) {
+        synchronized (queue) {
+          isWorkerRunning = false;
+        }
+        throw e;
+        // The execution of a task has ended abnormally.
+        // We could have tasks left in the queue, so should perhaps try to restart a worker,
+        // but then the Error will get delayed if we are using a direct (same thread) executor.
+      }
+    }
+    private void workOnQueue() {
+      while (true) {
+        Runnable task = null;
+        synchronized (queue) {
+          // TODO(user): How should we handle interrupts and shutdowns?
+          task = queue.poll();
+          if (task == null) {
+            isWorkerRunning = false;
+            return;
+          }
+        }
+        try {
+          task.run();
+        } catch (RuntimeException e) {
+          log.log(Level.SEVERE, ""Exception while executing runnable "" + task, e);
+        }
+      }
+    }
+  }",class,
+"  SequentialExecutor(Executor executor) {
+    this.executor = Preconditions.checkNotNull(executor);
+  }",method,
+"  @Override
+  public void execute(Runnable task) {
+    synchronized (queue) {
+      queue.add(task);
+      if (isWorkerRunning) {
+        return;
+      }
+      isWorkerRunning = true;
+    }
+    startQueueWorker();
+  }",method,
+"    synchronized (queue) {
+      queue.add(task);
+      if (isWorkerRunning) {
+        return;
+      }
+      isWorkerRunning = true;
+    }",method,
+"      if (isWorkerRunning) {
+        return;
+      }",method,
+"  private void startQueueWorker() {
+    boolean executionRejected = true;
+    try {
+      executor.execute(worker);
+      executionRejected = false;
+    } finally {
+      if (executionRejected) {
+        // The best we can do is to stop executing the queue, but reset the state so that
+        // execution can be resumed later if the caller so wishes.
+        synchronized (queue) {
+          isWorkerRunning = false;
+        }
+      }
+    }
+  }",method,
+"      if (executionRejected) {
+        // The best we can do is to stop executing the queue, but reset the state so that
+        // execution can be resumed later if the caller so wishes.
+        synchronized (queue) {
+          isWorkerRunning = false;
+        }
+      }",method,
+"        synchronized (queue) {
+          isWorkerRunning = false;
+        }",method,
+"    @Override
+    public void run() {
+      try {
+        workOnQueue();
+      } catch (Error e) {
+        synchronized (queue) {
+          isWorkerRunning = false;
+        }
+        throw e;
+        // The execution of a task has ended abnormally.
+        // We could have tasks left in the queue, so should perhaps try to restart a worker,
+        // but then the Error will get delayed if we are using a direct (same thread) executor.
+      }
+    }",method,
+"        synchronized (queue) {
+          isWorkerRunning = false;
+        }",method,
+"    private void workOnQueue() {
+      while (true) {
+        Runnable task = null;
+        synchronized (queue) {
+          // TODO(user): How should we handle interrupts and shutdowns?
+          task = queue.poll();
+          if (task == null) {
+            isWorkerRunning = false;
+            return;
+          }
+        }
+        try {
+          task.run();
+        } catch (RuntimeException e) {
+          log.log(Level.SEVERE, ""Exception while executing runnable "" + task, e);
+        }
+      }
+    }",method,
+"      while (true) {
+        Runnable task = null;
+        synchronized (queue) {
+          // TODO(user): How should we handle interrupts and shutdowns?
+          task = queue.poll();
+          if (task == null) {
+            isWorkerRunning = false;
+            return;
+          }
+        }
+        try {
+          task.run();
+        } catch (RuntimeException e) {
+          log.log(Level.SEVERE, ""Exception while executing runnable "" + task, e);
+        }
+      }",method,
+"        synchronized (queue) {
+          // TODO(user): How should we handle interrupts and shutdowns?
+          task = queue.poll();
+          if (task == null) {
+            isWorkerRunning = false;
+            return;
+          }
+        }",method,
+"          if (task == null) {
+            isWorkerRunning = false;
+            return;
+          }",method,
+"public class Hardware {
+    // The context.
+    static Context context;
+    static View view;
+    public static void vibrate(double s) {
+        Vibrator v = (Vibrator) context.getSystemService(Context.VIBRATOR_SERVICE);
+        if (v != null) {
+            v.vibrate((int) (1000 * s));
+        }
+    }
+    public static String getHardwareSensors() {
+        SensorManager sm = (SensorManager) context.getSystemService(Context.SENSOR_SERVICE);
+        List<Sensor> allSensors = sm.getSensorList(Sensor.TYPE_ALL);
+        if (allSensors != null) {
+            String resultString = """";
+            for (Sensor s : allSensors) {
+                resultString += String.format(""Name="" + s.getName());
+                resultString += String.format("",Vendor="" + s.getVendor());
+                resultString += String.format("",Version="" + s.getVersion());
+                resultString += String.format("",MaximumRange="" + s.getMaximumRange());
+                // XXX MinDelay is not in the 2.2
+                //resultString += String.format("",MinDelay="" + s.getMinDelay());
+                resultString += String.format("",Power="" + s.getPower());
+                resultString += String.format("",Type="" + s.getType() + ""\n"");
+            }
+            return resultString;
+        }
+        return """";
+    }
+    public static class generic3AxisSensor implements SensorEventListener {
+        private final SensorManager sSensorManager;
+        private final Sensor sSensor;
+        private final int sSensorType;
+        SensorEvent sSensorEvent;
+        public generic3AxisSensor(int sensorType) {
+            sSensorType = sensorType;
+            sSensorManager = (SensorManager)context.getSystemService(Context.SENSOR_SERVICE);
+            sSensor = sSensorManager.getDefaultSensor(sSensorType);
+        }
+        public void onAccuracyChanged(Sensor sensor, int accuracy) {
+        }
+        public void onSensorChanged(SensorEvent event) {
+            sSensorEvent = event;
+        }
+        public void changeStatus(boolean enable) {
+            if (enable) {
+                sSensorManager.registerListener(this, sSensor, SensorManager.SENSOR_DELAY_NORMAL);
+            } else {
+                sSensorManager.unregisterListener(this, sSensor);
+            }
+        }
+        public float[] readSensor() {
+            if (sSensorEvent != null) {
+                return sSensorEvent.values;
+            } else {
+                float rv[] = { 0f, 0f, 0f };
+                return rv;
+            }
+        }
+    }
+    public static generic3AxisSensor accelerometerSensor = null;
+    public static generic3AxisSensor orientationSensor = null;
+    public static generic3AxisSensor magneticFieldSensor = null;
+    public static void accelerometerEnable(boolean enable) {
+        if ( accelerometerSensor == null )
+            accelerometerSensor = new generic3AxisSensor(Sensor.TYPE_ACCELEROMETER);
+        accelerometerSensor.changeStatus(enable);
+    }
+    public static float[] accelerometerReading() {
+        float rv[] = { 0f, 0f, 0f };
+        if ( accelerometerSensor == null )
+            return rv;
+        return (float[]) accelerometerSensor.readSensor();
+    }
+    public static void orientationSensorEnable(boolean enable) {
+        if ( orientationSensor == null )
+            orientationSensor = new generic3AxisSensor(Sensor.TYPE_ORIENTATION);
+        orientationSensor.changeStatus(enable);
+    }
+    public static float[] orientationSensorReading() {
+        float rv[] = { 0f, 0f, 0f };
+        if ( orientationSensor == null )
+            return rv;
+        return (float[]) orientationSensor.readSensor();
+    }
+    public static void magneticFieldSensorEnable(boolean enable) {
+        if ( magneticFieldSensor == null )
+            magneticFieldSensor = new generic3AxisSensor(Sensor.TYPE_MAGNETIC_FIELD);
+        magneticFieldSensor.changeStatus(enable);
+    }
+    public static float[] magneticFieldSensorReading() {
+        float rv[] = { 0f, 0f, 0f };
+        if ( magneticFieldSensor == null )
+            return rv;
+        return (float[]) magneticFieldSensor.readSensor();
+    }
+    static public DisplayMetrics metrics = new DisplayMetrics();
+    public static int getDPI() {
+        // AND: Shouldn't have to get the metrics like this every time...
+        PythonActivity.mActivity.getWindowManager().getDefaultDisplay().getMetrics(metrics);
+        return metrics.densityDpi;
+    }
+    // 
+    // public static void showKeyboard(int input_type) {
+    //     //Log.i(""python"", ""hardware.Java show_keyword  "" input_type);
+    //     InputMethodManager imm = (InputMethodManager) context.getSystemService(Context.INPUT_METHOD_SERVICE);
+    //     SDLSurfaceView vw = (SDLSurfaceView) view;
+    //     int inputType = input_type;
+    //     if (vw.inputType != inputType){
+    //         vw.inputType = inputType;
+    //         imm.restartInput(view);
+    //         }
+    //     imm.showSoftInput(view, InputMethodManager.SHOW_FORCED);
+    // }
+    public static void hideKeyboard() {
+        InputMethodManager imm = (InputMethodManager) context.getSystemService(Context.INPUT_METHOD_SERVICE);
+        imm.hideSoftInputFromWindow(view.getWindowToken(), 0);
+    }
+    static List<ScanResult> latestResult;
+    public static void enableWifiScanner()
+    {
+        IntentFilter i = new IntentFilter();
+        i.addAction(WifiManager.SCAN_RESULTS_AVAILABLE_ACTION);
+        context.registerReceiver(new BroadcastReceiver() {
+            @Override
+            public void onReceive(Context c, Intent i) {
+                // Code to execute when SCAN_RESULTS_AVAILABLE_ACTION event occurs
+                WifiManager w = (WifiManager) c.getSystemService(Context.WIFI_SERVICE);
+                latestResult = w.getScanResults(); // Returns a <list> of scanResults
+            }
+        }, i);
+    }
+    public static String scanWifi() {
+        // Now you can call this and it should execute the broadcastReceiver's
+        // onReceive()
+        WifiManager wm = (WifiManager) context.getSystemService(Context.WIFI_SERVICE);
+        boolean a = wm.startScan();
+        if (latestResult != null){
+            String latestResultString = """";
+            for (ScanResult result : latestResult)
+            {
+                latestResultString += String.format(""%s\t%s\t%d\n"", result.SSID, result.BSSID, result.level);
+            }
+            return latestResultString;
+        }
+        return """";
+    }
+    public static boolean network_state = false;
+    public static boolean checkNetwork()
+    {
+        boolean state = false;
+        final ConnectivityManager conMgr =  (ConnectivityManager) context.getSystemService(Context.CONNECTIVITY_SERVICE);
+        final NetworkInfo activeNetwork = conMgr.getActiveNetworkInfo();
+        if (activeNetwork != null && activeNetwork.isConnected()) {
+            state = true;
+        } else {
+            state = false;
+        }
+        return state;
+    }
+    public static void registerNetworkCheck()
+    {
+        IntentFilter i = new IntentFilter();
+        i.addAction(ConnectivityManager.CONNECTIVITY_ACTION);
+        context.registerReceiver(new BroadcastReceiver() {
+            @Override
+            public void onReceive(Context c, Intent i) {
+                network_state = checkNetwork();
+            }
+        }, i);
+    }
+}",class,
+"    public static class generic3AxisSensor implements SensorEventListener {
+        private final SensorManager sSensorManager;
+        private final Sensor sSensor;
+        private final int sSensorType;
+        SensorEvent sSensorEvent;
+        public generic3AxisSensor(int sensorType) {
+            sSensorType = sensorType;
+            sSensorManager = (SensorManager)context.getSystemService(Context.SENSOR_SERVICE);
+            sSensor = sSensorManager.getDefaultSensor(sSensorType);
+        }
+        public void onAccuracyChanged(Sensor sensor, int accuracy) {
+        }
+        public void onSensorChanged(SensorEvent event) {
+            sSensorEvent = event;
+        }
+        public void changeStatus(boolean enable) {
+            if (enable) {
+                sSensorManager.registerListener(this, sSensor, SensorManager.SENSOR_DELAY_NORMAL);
+            } else {
+                sSensorManager.unregisterListener(this, sSensor);
+            }
+        }
+        public float[] readSensor() {
+            if (sSensorEvent != null) {
+                return sSensorEvent.values;
+            } else {
+                float rv[] = { 0f, 0f, 0f };
+                return rv;
+            }
+        }
+    }",class,
+"    public static void vibrate(double s) {
+        Vibrator v = (Vibrator) context.getSystemService(Context.VIBRATOR_SERVICE);
+        if (v != null) {
+            v.vibrate((int) (1000 * s));
+        }
+    }",method,
+"        if (v != null) {
+            v.vibrate((int) (1000 * s));
+        }",method,
+"    public static String getHardwareSensors() {
+        SensorManager sm = (SensorManager) context.getSystemService(Context.SENSOR_SERVICE);
+        List<Sensor> allSensors = sm.getSensorList(Sensor.TYPE_ALL);
+        if (allSensors != null) {
+            String resultString = """";
+            for (Sensor s : allSensors) {
+                resultString += String.format(""Name="" + s.getName());
+                resultString += String.format("",Vendor="" + s.getVendor());
+                resultString += String.format("",Version="" + s.getVersion());
+                resultString += String.format("",MaximumRange="" + s.getMaximumRange());
+                // XXX MinDelay is not in the 2.2
+                //resultString += String.format("",MinDelay="" + s.getMinDelay());
+                resultString += String.format("",Power="" + s.getPower());
+                resultString += String.format("",Type="" + s.getType() + ""\n"");
+            }
+            return resultString;
+        }
+        return """";
+    }",method,
+"        if (allSensors != null) {
+            String resultString = """";
+            for (Sensor s : allSensors) {
+                resultString += String.format(""Name="" + s.getName());
+                resultString += String.format("",Vendor="" + s.getVendor());
+                resultString += String.format("",Version="" + s.getVersion());
+                resultString += String.format("",MaximumRange="" + s.getMaximumRange());
+                // XXX MinDelay is not in the 2.2
+                //resultString += String.format("",MinDelay="" + s.getMinDelay());
+                resultString += String.format("",Power="" + s.getPower());
+                resultString += String.format("",Type="" + s.getType() + ""\n"");
+            }
+            return resultString;
+        }",method,
+"            for (Sensor s : allSensors) {
+                resultString += String.format(""Name="" + s.getName());
+                resultString += String.format("",Vendor="" + s.getVendor());
+                resultString += String.format("",Version="" + s.getVersion());
+                resultString += String.format("",MaximumRange="" + s.getMaximumRange());
+                // XXX MinDelay is not in the 2.2
+                //resultString += String.format("",MinDelay="" + s.getMinDelay());
+                resultString += String.format("",Power="" + s.getPower());
+                resultString += String.format("",Type="" + s.getType() + ""\n"");
+            }",method,
+"        public generic3AxisSensor(int sensorType) {
+            sSensorType = sensorType;
+            sSensorManager = (SensorManager)context.getSystemService(Context.SENSOR_SERVICE);
+            sSensor = sSensorManager.getDefaultSensor(sSensorType);
+        }",method,
+"        public void onAccuracyChanged(Sensor sensor, int accuracy) {
+        }",method,
+"        public void onSensorChanged(SensorEvent event) {
+            sSensorEvent = event;
+        }",method,
+"        public void changeStatus(boolean enable) {
+            if (enable) {
+                sSensorManager.registerListener(this, sSensor, SensorManager.SENSOR_DELAY_NORMAL);
+            } else {
+                sSensorManager.unregisterListener(this, sSensor);
+            }
+        }",method,
+"            if (enable) {
+                sSensorManager.registerListener(this, sSensor, SensorManager.SENSOR_DELAY_NORMAL);
+            }",method,
+"        public float[] readSensor() {
+            if (sSensorEvent != null) {
+                return sSensorEvent.values;
+            } else {
+                float rv[] = { 0f, 0f, 0f };
+                return rv;
+            }
+        }",method,
+"            if (sSensorEvent != null) {
+                return sSensorEvent.values;
+            }",method,
+"    public static void accelerometerEnable(boolean enable) {
+        if ( accelerometerSensor == null )
+            accelerometerSensor = new generic3AxisSensor(Sensor.TYPE_ACCELEROMETER);
+        accelerometerSensor.changeStatus(enable);
+    }",method,
+"    public static float[] accelerometerReading() {
+        float rv[] = { 0f, 0f, 0f };
+        if ( accelerometerSensor == null )
+            return rv;
+        return (float[]) accelerometerSensor.readSensor();
+    }",method,
+"    public static void orientationSensorEnable(boolean enable) {
+        if ( orientationSensor == null )
+            orientationSensor = new generic3AxisSensor(Sensor.TYPE_ORIENTATION);
+        orientationSensor.changeStatus(enable);
+    }",method,
+"    public static float[] orientationSensorReading() {
+        float rv[] = { 0f, 0f, 0f };
+        if ( orientationSensor == null )
+            return rv;
+        return (float[]) orientationSensor.readSensor();
+    }",method,
+"    public static void magneticFieldSensorEnable(boolean enable) {
+        if ( magneticFieldSensor == null )
+            magneticFieldSensor = new generic3AxisSensor(Sensor.TYPE_MAGNETIC_FIELD);
+        magneticFieldSensor.changeStatus(enable);
+    }",method,
+"    public static float[] magneticFieldSensorReading() {
+        float rv[] = { 0f, 0f, 0f };
+        if ( magneticFieldSensor == null )
+            return rv;
+        return (float[]) magneticFieldSensor.readSensor();
+    }",method,
+"    public static int getDPI() {
+        // AND: Shouldn't have to get the metrics like this every time...
+        PythonActivity.mActivity.getWindowManager().getDefaultDisplay().getMetrics(metrics);
+        return metrics.densityDpi;
+    }",method,
+"    public static void hideKeyboard() {
+        InputMethodManager imm = (InputMethodManager) context.getSystemService(Context.INPUT_METHOD_SERVICE);
+        imm.hideSoftInputFromWindow(view.getWindowToken(), 0);
+    }",method,
+"    public static void enableWifiScanner()
+    {
+        IntentFilter i = new IntentFilter();
+        i.addAction(WifiManager.SCAN_RESULTS_AVAILABLE_ACTION);
+        context.registerReceiver(new BroadcastReceiver() {
+            @Override
+            public void onReceive(Context c, Intent i) {
+                // Code to execute when SCAN_RESULTS_AVAILABLE_ACTION event occurs
+                WifiManager w = (WifiManager) c.getSystemService(Context.WIFI_SERVICE);
+                latestResult = w.getScanResults(); // Returns a <list> of scanResults
+            }
+        }, i);
+    }",method,
+"        context.registerReceiver(new BroadcastReceiver() {
+            @Override
+            public void onReceive(Context c, Intent i) {
+                // Code to execute when SCAN_RESULTS_AVAILABLE_ACTION event occurs
+                WifiManager w = (WifiManager) c.getSystemService(Context.WIFI_SERVICE);
+                latestResult = w.getScanResults(); // Returns a <list> of scanResults
+            }
+        }",method,
+"            @Override
+            public void onReceive(Context c, Intent i) {
+                // Code to execute when SCAN_RESULTS_AVAILABLE_ACTION event occurs
+                WifiManager w = (WifiManager) c.getSystemService(Context.WIFI_SERVICE);
+                latestResult = w.getScanResults(); // Returns a <list> of scanResults
+            }",method,
+"    public static String scanWifi() {
+        // Now you can call this and it should execute the broadcastReceiver's
+        // onReceive()
+        WifiManager wm = (WifiManager) context.getSystemService(Context.WIFI_SERVICE);
+        boolean a = wm.startScan();
+        if (latestResult != null){
+            String latestResultString = """";
+            for (ScanResult result : latestResult)
+            {
+                latestResultString += String.format(""%s\t%s\t%d\n"", result.SSID, result.BSSID, result.level);
+            }
+            return latestResultString;
+        }
+        return """";
+    }",method,
+"        if (latestResult != null){
+            String latestResultString = """";
+            for (ScanResult result : latestResult)
+            {
+                latestResultString += String.format(""%s\t%s\t%d\n"", result.SSID, result.BSSID, result.level);
+            }
+            return latestResultString;
+        }",method,
+"            for (ScanResult result : latestResult)
+            {
+                latestResultString += String.format(""%s\t%s\t%d\n"", result.SSID, result.BSSID, result.level);
+            }",method,
+"    public static boolean checkNetwork()
+    {
+        boolean state = false;
+        final ConnectivityManager conMgr =  (ConnectivityManager) context.getSystemService(Context.CONNECTIVITY_SERVICE);
+        final NetworkInfo activeNetwork = conMgr.getActiveNetworkInfo();
+        if (activeNetwork != null && activeNetwork.isConnected()) {
+            state = true;
+        } else {
+            state = false;
+        }
+        return state;
+    }",method,
+"    public static void registerNetworkCheck()
+    {
+        IntentFilter i = new IntentFilter();
+        i.addAction(ConnectivityManager.CONNECTIVITY_ACTION);
+        context.registerReceiver(new BroadcastReceiver() {
+            @Override
+            public void onReceive(Context c, Intent i) {
+                network_state = checkNetwork();
+            }
+        }, i);
+    }",method,
+"        context.registerReceiver(new BroadcastReceiver() {
+            @Override
+            public void onReceive(Context c, Intent i) {
+                network_state = checkNetwork();
+            }
+        }",method,
+"            @Override
+            public void onReceive(Context c, Intent i) {
+                network_state = checkNetwork();
+            }",method,
+"public class ArtifactFile {
+    private String name;
+    private String classifier;
+    private String extension;
+    public ArtifactFile(File file, String version) {
+        this(file.getName(), version);
+    }
+    public ArtifactFile(String fileBaseName, String version) {
+        name = fileBaseName;
+        extension = """";
+        classifier = """";
+        boolean done = false;
+        int startVersion = StringUtils.lastIndexOf(name, ""-"" + version);
+        if (startVersion >= 0) {
+            int endVersion = startVersion + version.length() + 1;
+            if (endVersion == name.length()) {
+                name = name.substring(0, startVersion);
+                done = true;
+            } else if (endVersion < name.length() && name.charAt(endVersion) == '-') {
+                String tail = name.substring(endVersion + 1);
+                name = name.substring(0, startVersion);
+                classifier = StringUtils.substringBeforeLast(tail, ""."");
+                extension = StringUtils.substringAfterLast(tail, ""."");
+                done = true;
+            } else if (endVersion < name.length() && StringUtils.lastIndexOf(name, ""."") == endVersion) {
+                extension = name.substring(endVersion + 1);
+                name = name.substring(0, startVersion);
+                done = true;
+            }
+        }
+        if (!done) {
+            extension = StringUtils.substringAfterLast(name, ""."");
+            name = StringUtils.substringBeforeLast(name, ""."");
+        }
+        if (classifier.length() == 0) {
+            classifier = null;
+        }
+    }
+    public String getName() {
+        return name;
+    }
+    public String getClassifier() {
+        return classifier;
+    }
+    public String getExtension() {
+        return extension;
+    }
+}",class,
+"    public ArtifactFile(File file, String version) {
+        this(file.getName(), version);
+    }",method,
+"    public ArtifactFile(String fileBaseName, String version) {
+        name = fileBaseName;
+        extension = """";
+        classifier = """";
+        boolean done = false;
+        int startVersion = StringUtils.lastIndexOf(name, ""-"" + version);
+        if (startVersion >= 0) {
+            int endVersion = startVersion + version.length() + 1;
+            if (endVersion == name.length()) {
+                name = name.substring(0, startVersion);
+                done = true;
+            } else if (endVersion < name.length() && name.charAt(endVersion) == '-') {
+                String tail = name.substring(endVersion + 1);
+                name = name.substring(0, startVersion);
+                classifier = StringUtils.substringBeforeLast(tail, ""."");
+                extension = StringUtils.substringAfterLast(tail, ""."");
+                done = true;
+            } else if (endVersion < name.length() && StringUtils.lastIndexOf(name, ""."") == endVersion) {
+                extension = name.substring(endVersion + 1);
+                name = name.substring(0, startVersion);
+                done = true;
+            }
+        }
+        if (!done) {
+            extension = StringUtils.substringAfterLast(name, ""."");
+            name = StringUtils.substringBeforeLast(name, ""."");
+        }
+        if (classifier.length() == 0) {
+            classifier = null;
+        }
+    }",method,
+"        if (startVersion >= 0) {
+            int endVersion = startVersion + version.length() + 1;
+            if (endVersion == name.length()) {
+                name = name.substring(0, startVersion);
+                done = true;
+            } else if (endVersion < name.length() && name.charAt(endVersion) == '-') {
+                String tail = name.substring(endVersion + 1);
+                name = name.substring(0, startVersion);
+                classifier = StringUtils.substringBeforeLast(tail, ""."");
+                extension = StringUtils.substringAfterLast(tail, ""."");
+                done = true;
+            } else if (endVersion < name.length() && StringUtils.lastIndexOf(name, ""."") == endVersion) {
+                extension = name.substring(endVersion + 1);
+                name = name.substring(0, startVersion);
+                done = true;
+            }
+        }",method,
+"        if (!done) {
+            extension = StringUtils.substringAfterLast(name, ""."");
+            name = StringUtils.substringBeforeLast(name, ""."");
+        }",method,
+"    public String getName() {
+        return name;
+    }",method,
+"    public String getClassifier() {
+        return classifier;
+    }",method,
+"    public String getExtension() {
+        return extension;
+    }",method,
+"public final class ModifiedFileSet {
+  public static final ModifiedFileSet EVERYTHING_MODIFIED = new ModifiedFileSet(null);
+  public static final ModifiedFileSet NOTHING_MODIFIED = new ModifiedFileSet(
+      ImmutableSet.<PathFragment>of());
+  @Nullable private final ImmutableSet<PathFragment> modified;
+  public boolean treatEverythingAsModified() {
+    return modified == null;
+  }
+  public ImmutableSet<PathFragment> modifiedSourceFiles() {
+    if (treatEverythingAsModified()) {
+      throw new IllegalStateException();
+    }
+    return modified;
+  }
+  @Override
+  public boolean equals(Object o) {
+    if (o == this) {
+      return true;
+    }
+    if (!(o instanceof ModifiedFileSet)) {
+      return false;
+    }
+    ModifiedFileSet other = (ModifiedFileSet) o;
+    return Objects.equals(modified, other.modified);
+  }
+  @Override
+  public int hashCode() {
+    return Objects.hashCode(modified);
+  }
+  @Override
+  public String toString() {
+    if (this.equals(EVERYTHING_MODIFIED)) {
+      return ""EVERYTHING_MODIFIED"";
+    } else if (this.equals(NOTHING_MODIFIED)) {
+      return ""NOTHING_MODIFIED"";
+    } else {
+      return modified.toString();
+    }
+  }
+  private ModifiedFileSet(ImmutableSet<PathFragment> modified) {
+    this.modified = modified;
+  }
+  public static class Builder {
+    private final ImmutableSet.Builder<PathFragment> setBuilder =
+        ImmutableSet.<PathFragment>builder();
+    public ModifiedFileSet build() {
+      ImmutableSet<PathFragment> modified = setBuilder.build();
+      return modified.isEmpty() ? NOTHING_MODIFIED : new ModifiedFileSet(modified);
+    }
+    public Builder modify(PathFragment pathFragment) {
+      setBuilder.add(pathFragment);
+      return this;
+    }
+    public Builder modifyAll(Iterable<PathFragment> pathFragments) {
+      setBuilder.addAll(pathFragments);
+      return this;
+    }
+  }
+  public static Builder builder() {
+    return new Builder();
+  }
+  public static ModifiedFileSet union(ModifiedFileSet mfs1, ModifiedFileSet mfs2) {
+    if (mfs1.treatEverythingAsModified() || mfs2.treatEverythingAsModified()) {
+      return ModifiedFileSet.EVERYTHING_MODIFIED;
+    }
+    if (mfs1.equals(ModifiedFileSet.NOTHING_MODIFIED)) {
+      return mfs2;
+    }
+    if (mfs2.equals(ModifiedFileSet.NOTHING_MODIFIED)) {
+      return mfs1;
+    }
+    return ModifiedFileSet.builder()
+        .modifyAll(mfs1.modifiedSourceFiles())
+        .modifyAll(mfs2.modifiedSourceFiles())
+        .build();
+  }
+}",class,
+"  public static class Builder {
+    private final ImmutableSet.Builder<PathFragment> setBuilder =
+        ImmutableSet.<PathFragment>builder();
+    public ModifiedFileSet build() {
+      ImmutableSet<PathFragment> modified = setBuilder.build();
+      return modified.isEmpty() ? NOTHING_MODIFIED : new ModifiedFileSet(modified);
+    }
+    public Builder modify(PathFragment pathFragment) {
+      setBuilder.add(pathFragment);
+      return this;
+    }
+    public Builder modifyAll(Iterable<PathFragment> pathFragments) {
+      setBuilder.addAll(pathFragments);
+      return this;
+    }
+  }",class,
+"  @Nullable private final ImmutableSet<PathFragment> modified;
+  public boolean treatEverythingAsModified() {
+    return modified == null;
+  }",method,
+"  public ImmutableSet<PathFragment> modifiedSourceFiles() {
+    if (treatEverythingAsModified()) {
+      throw new IllegalStateException();
+    }
+    return modified;
+  }",method,
+"  @Override
+  public boolean equals(Object o) {
+    if (o == this) {
+      return true;
+    }
+    if (!(o instanceof ModifiedFileSet)) {
+      return false;
+    }
+    ModifiedFileSet other = (ModifiedFileSet) o;
+    return Objects.equals(modified, other.modified);
+  }",method,
+"    if (o == this) {
+      return true;
+    }",method,
+"  @Override
+  public int hashCode() {
+    return Objects.hashCode(modified);
+  }",method,
+"  @Override
+  public String toString() {
+    if (this.equals(EVERYTHING_MODIFIED)) {
+      return ""EVERYTHING_MODIFIED"";
+    } else if (this.equals(NOTHING_MODIFIED)) {
+      return ""NOTHING_MODIFIED"";
+    } else {
+      return modified.toString();
+    }
+  }",method,
+"  private ModifiedFileSet(ImmutableSet<PathFragment> modified) {
+    this.modified = modified;
+  }",method,
+"    public ModifiedFileSet build() {
+      ImmutableSet<PathFragment> modified = setBuilder.build();
+      return modified.isEmpty() ? NOTHING_MODIFIED : new ModifiedFileSet(modified);
+    }",method,
+"    public Builder modify(PathFragment pathFragment) {
+      setBuilder.add(pathFragment);
+      return this;
+    }",method,
+"    public Builder modifyAll(Iterable<PathFragment> pathFragments) {
+      setBuilder.addAll(pathFragments);
+      return this;
+    }",method,
+"  public static Builder builder() {
+    return new Builder();
+  }",method,
+"  public static ModifiedFileSet union(ModifiedFileSet mfs1, ModifiedFileSet mfs2) {
+    if (mfs1.treatEverythingAsModified() || mfs2.treatEverythingAsModified()) {
+      return ModifiedFileSet.EVERYTHING_MODIFIED;
+    }
+    if (mfs1.equals(ModifiedFileSet.NOTHING_MODIFIED)) {
+      return mfs2;
+    }
+    if (mfs2.equals(ModifiedFileSet.NOTHING_MODIFIED)) {
+      return mfs1;
+    }
+    return ModifiedFileSet.builder()
+        .modifyAll(mfs1.modifiedSourceFiles())
+        .modifyAll(mfs2.modifiedSourceFiles())
+        .build();
+  }",method,
+"public class RangeTest {
+    @Test(expected = IllegalArgumentException.class)
+    public void testIllegalConstruction() {
+        new Range<Integer>(10, 9);
+    }
+    @Test
+    public void testInside() {
+        Range<Integer> r = new Range<Integer>(10, 100);
+        assertEquals(Integer.valueOf(10), r.start());
+        assertEquals(Integer.valueOf(100), r.end());
+        assertFalse(r.isInside(1));
+        assertFalse(r.isInside(110));
+        assertTrue(r.isInside(15));
+        assertTrue(r.isInside(10));
+        assertTrue(r.isInside(100));
+    }
+    @Test
+    public void testInsideWithNullBounds() {
+        Range<Integer> r = new Range<Integer>(100, null);
+        Assert.assertTrue(r.isInside(101));
+        Assert.assertTrue(r.isInside(123123));
+        Assert.assertFalse(r.isInside(99));
+        r = new Range<Integer>(null, 100);
+        Assert.assertTrue(r.isInside(1));
+        Assert.assertTrue(r.isInside(99));
+        Assert.assertFalse(r.isInside(101));
+    }
+    @Test
+    public void testEquals() {
+        Range<Integer> r1 = new Range<Integer>(10, 100);
+        Range<Integer> r2 = new Range<Integer>(10, 100);
+        Range<Integer> r3 = new Range<Integer>(10, 103);
+        assertEquals(r1, r2);
+        assertEquals(r1, r1);
+        assertEquals(r2, r1);
+        assertNotSame(r1, r3);
+    }
+}",class,
+"    @Test(expected = IllegalArgumentException.class)
+    public void testIllegalConstruction() {
+        new Range<Integer>(10, 9);
+    }",method,
+"    @Test
+    public void testInside() {
+        Range<Integer> r = new Range<Integer>(10, 100);
+        assertEquals(Integer.valueOf(10), r.start());
+        assertEquals(Integer.valueOf(100), r.end());
+        assertFalse(r.isInside(1));
+        assertFalse(r.isInside(110));
+        assertTrue(r.isInside(15));
+        assertTrue(r.isInside(10));
+        assertTrue(r.isInside(100));
+    }",method,
+"    @Test
+    public void testInsideWithNullBounds() {
+        Range<Integer> r = new Range<Integer>(100, null);
+        Assert.assertTrue(r.isInside(101));
+        Assert.assertTrue(r.isInside(123123));
+        Assert.assertFalse(r.isInside(99));
+        r = new Range<Integer>(null, 100);
+        Assert.assertTrue(r.isInside(1));
+        Assert.assertTrue(r.isInside(99));
+        Assert.assertFalse(r.isInside(101));
+    }",method,
+"    @Test
+    public void testEquals() {
+        Range<Integer> r1 = new Range<Integer>(10, 100);
+        Range<Integer> r2 = new Range<Integer>(10, 100);
+        Range<Integer> r3 = new Range<Integer>(10, 103);
+        assertEquals(r1, r2);
+        assertEquals(r1, r1);
+        assertEquals(r2, r1);
+        assertNotSame(r1, r3);
+    }",method,
+"public class MySqlSelectTest_80_hints extends MysqlTest {
+    public void test_0() throws Exception {
+        String sql =  ""select 1 , 2 ;"";
+        System.out.println(sql);
+        SQLStatementParser parser = SQLParserUtils.createSQLStatementParser(sql, JdbcConstants.MYSQL, SQLParserFeature.OptimizedForParameterized);
+        List<SQLStatement> statementList = parser.parseStatementList();
+        SQLStatement stmt = statementList.get(0);
+        assertEquals(1, statementList.size());
+        SchemaStatVisitor visitor = SQLUtils.createSchemaStatVisitor(JdbcConstants.MYSQL);
+        stmt.accept(visitor);
+        {
+            String output = SQLUtils.toMySqlString(stmt);
+            assertEquals(""SELECT 1 \n"" +
+                            ""\t, 2 ;"", //
+                                output);
+        }
+        {
+            String output = SQLUtils.toMySqlString(stmt, SQLUtils.DEFAULT_LCASE_FORMAT_OPTION);
+            assertEquals(""select 1 \n"" +
+                            ""\t, 2 ;"", //
+                                output);
+        }
+        {
+            String output = SQLUtils.toMySqlString(stmt, new SQLUtils.FormatOption(true, true, true));
+            assertEquals(""SELECT ? \n"" +
+                            ""\t, ? ;"", //
+                    output);
+        }
+    }
+}",class,
+"    public void test_0() throws Exception {
+        String sql =  ""select 1 , 2 ;"";
+        System.out.println(sql);
+        SQLStatementParser parser = SQLParserUtils.createSQLStatementParser(sql, JdbcConstants.MYSQL, SQLParserFeature.OptimizedForParameterized);
+        List<SQLStatement> statementList = parser.parseStatementList();
+        SQLStatement stmt = statementList.get(0);
+        assertEquals(1, statementList.size());
+        SchemaStatVisitor visitor = SQLUtils.createSchemaStatVisitor(JdbcConstants.MYSQL);
+        stmt.accept(visitor);
+        {
+            String output = SQLUtils.toMySqlString(stmt);
+            assertEquals(""SELECT 1 \n"" +
+                            ""\t, 2 ;"", //
+                                output);
+        }
+        {
+            String output = SQLUtils.toMySqlString(stmt, SQLUtils.DEFAULT_LCASE_FORMAT_OPTION);
+            assertEquals(""select 1 \n"" +
+                            ""\t, 2 ;"", //
+                                output);
+        }
+        {
+            String output = SQLUtils.toMySqlString(stmt, new SQLUtils.FormatOption(true, true, true));
+            assertEquals(""SELECT ? \n"" +
+                            ""\t, ? ;"", //
+                    output);
+        }
+    }",method,
+"public class TreePruner {
+  static void prune(Context context, JCTree tree) {
+    tree.accept(new PruningVisitor(context));
+  }
+  private static class PruningVisitor extends TreeScanner {
+    private final TreeMaker make;
+    private final Symtab symtab;
+    PruningVisitor(Context context) {
+      this.make = TreeMaker.instance(context);
+      this.symtab = Symtab.instance(context);
+    }
+    JCClassDecl enclClass = null;
+    @Override
+    public void visitClassDef(JCClassDecl tree) {
+      JCClassDecl prev = enclClass;
+      enclClass = tree;
+      try {
+        super.visitClassDef(tree);
+      } finally {
+        enclClass = prev;
+      }
+    }
+    @Override
+    public void visitMethodDef(JCMethodDecl tree) {
+      if (tree.body == null) {
+        return;
+      }
+      if (tree.getReturnType() == null && delegatingConstructor(tree.body.stats)) {
+        // if the first statement of a constructor declaration delegates to another
+        // constructor, it needs to be preserved to satisfy checks in Resolve
+        tree.body.stats = com.sun.tools.javac.util.List.of(tree.body.stats.get(0));
+        return;
+      }
+      tree.body.stats = com.sun.tools.javac.util.List.nil();
+    }
+    @Override
+    public void visitLambda(JCLambda tree) {
+      if (tree.getBodyKind() == BodyKind.STATEMENT) {
+        JCExpression ident = make.at(tree).QualIdent(symtab.assertionErrorType.tsym);
+        JCThrow throwTree = make.Throw(make.NewClass(null, List.nil(), ident, List.nil(), null));
+        tree.body = make.Block(0, List.of(throwTree));
+      }
+    }
+    @Override
+    public void visitBlock(JCBlock tree) {
+      tree.stats = List.nil();
+    }
+    @Override
+    public void visitVarDef(JCVariableDecl tree) {
+      if ((tree.mods.flags & Flags.ENUM) == Flags.ENUM) {
+        // javac desugars enum constants into fields during parsing
+        super.visitVarDef(tree);
+        return;
+      }
+      // drop field initializers unless the field looks like a JLS §4.12.4 constant variable
+      if (isConstantVariable(enclClass, tree)) {
+        return;
+      }
+      tree.init = null;
+    }
+  }
+  private static boolean delegatingConstructor(List<JCStatement> stats) {
+    if (stats.isEmpty()) {
+      return false;
+    }
+    JCStatement stat = stats.get(0);
+    if (stat.getKind() != Kind.EXPRESSION_STATEMENT) {
+      return false;
+    }
+    JCExpression expr = ((JCExpressionStatement) stat).getExpression();
+    if (expr.getKind() != Kind.METHOD_INVOCATION) {
+      return false;
+    }
+    JCExpression method = ((JCMethodInvocation) expr).getMethodSelect();
+    Name name;
+    switch (method.getKind()) {
+      case IDENTIFIER:
+        name = ((JCIdent) method).getName();
+        break;
+      case MEMBER_SELECT:
+        name = ((JCFieldAccess) method).getIdentifier();
+        break;
+      default:
+        return false;
+    }
+    return name.contentEquals(""this"") || name.contentEquals(""super"");
+  }
+  private static boolean isFinal(JCClassDecl enclClass, JCVariableDecl tree) {
+    if ((tree.mods.flags & Flags.FINAL) == Flags.FINAL) {
+      return true;
+    }
+    if (enclClass != null && (enclClass.mods.flags & (Flags.ANNOTATION | Flags.INTERFACE)) != 0) {
+      // Fields in annotation declarations and interfaces are implicitly final
+      return true;
+    }
+    return false;
+  }
+  private static boolean isConstantVariable(JCClassDecl enclClass, JCVariableDecl tree) {
+    if (!isFinal(enclClass, tree)) {
+      return false;
+    }
+    if (!constantType(tree.getType())) {
+      return false;
+    }
+    if (tree.getInitializer() != null) {
+      Boolean result = tree.getInitializer().accept(CONSTANT_VISITOR, null);
+      if (result == null || !result) {
+        return false;
+      }
+    }
+    return true;
+  }
+  private static boolean constantType(JCTree tree) {
+    switch (tree.getKind()) {
+      case PRIMITIVE_TYPE:
+        return true;
+      case IDENTIFIER:
+        return tree.toString().contentEquals(""String"");
+      case MEMBER_SELECT:
+        return tree.toString().contentEquals(""java.lang.String"");
+      default:
+        return false;
+    }
+  }
+  private static final SimpleTreeVisitor<Boolean, Void> CONSTANT_VISITOR =
+      new SimpleTreeVisitor<Boolean, Void>(false) {
+        @Override
+        public Boolean visitConditionalExpression(ConditionalExpressionTree node, Void p) {
+          return reduce(
+              node.getCondition().accept(this, null),
+              node.getTrueExpression().accept(this, null),
+              node.getFalseExpression().accept(this, null));
+        }
+        @Override
+        public Boolean visitParenthesized(ParenthesizedTree node, Void p) {
+          return node.getExpression().accept(this, null);
+        }
+        @Override
+        public Boolean visitUnary(UnaryTree node, Void p) {
+          switch (node.getKind()) {
+            case UNARY_PLUS:
+            case UNARY_MINUS:
+            case BITWISE_COMPLEMENT:
+            case LOGICAL_COMPLEMENT:
+              break;
+            default:
+              // non-constant unary expression
+              return false;
+          }
+          return node.getExpression().accept(this, null);
+        }
+        @Override
+        public Boolean visitBinary(BinaryTree node, Void p) {
+          switch (node.getKind()) {
+            case MULTIPLY:
+            case DIVIDE:
+            case REMAINDER:
+            case PLUS:
+            case MINUS:
+            case LEFT_SHIFT:
+            case RIGHT_SHIFT:
+            case UNSIGNED_RIGHT_SHIFT:
+            case LESS_THAN:
+            case LESS_THAN_EQUAL:
+            case GREATER_THAN:
+            case GREATER_THAN_EQUAL:
+            case AND:
+            case XOR:
+            case OR:
+            case CONDITIONAL_AND:
+            case CONDITIONAL_OR:
+            case EQUAL_TO:
+            case NOT_EQUAL_TO:
+              break;
+            default:
+              // non-constant binary expression
+              return false;
+          }
+          return reduce(
+              node.getLeftOperand().accept(this, null), node.getRightOperand().accept(this, null));
+        }
+        @Override
+        public Boolean visitTypeCast(TypeCastTree node, Void p) {
+          return reduce(
+              constantType((JCTree) node.getType()), node.getExpression().accept(this, null));
+        }
+        @Override
+        public Boolean visitMemberSelect(MemberSelectTree node, Void p) {
+          return node.getExpression().accept(this, null);
+        }
+        @Override
+        public Boolean visitIdentifier(IdentifierTree node, Void p) {
+          // Assume all variables are constant variables. This is a conservative assumption, but
+          // it's the best we can do with only syntactic information.
+          return true;
+        }
+        @Override
+        public Boolean visitLiteral(LiteralTree node, Void unused) {
+          switch (node.getKind()) {
+            case STRING_LITERAL:
+            case INT_LITERAL:
+            case LONG_LITERAL:
+            case FLOAT_LITERAL:
+            case DOUBLE_LITERAL:
+            case BOOLEAN_LITERAL:
+            case CHAR_LITERAL:
+              return true;
+            default:
+              return false;
+          }
+        }
+        public boolean reduce(Boolean... bx) {
+          boolean r = true;
+          for (Boolean b : bx) {
+            r &= firstNonNull(b, false);
+          }
+          return r;
+        }
+      };
+}",class,
+"  private static class PruningVisitor extends TreeScanner {
+    private final TreeMaker make;
+    private final Symtab symtab;
+    PruningVisitor(Context context) {
+      this.make = TreeMaker.instance(context);
+      this.symtab = Symtab.instance(context);
+    }
+    JCClassDecl enclClass = null;
+    @Override
+    public void visitClassDef(JCClassDecl tree) {
+      JCClassDecl prev = enclClass;
+      enclClass = tree;
+      try {
+        super.visitClassDef(tree);
+      } finally {
+        enclClass = prev;
+      }
+    }
+    @Override
+    public void visitMethodDef(JCMethodDecl tree) {
+      if (tree.body == null) {
+        return;
+      }
+      if (tree.getReturnType() == null && delegatingConstructor(tree.body.stats)) {
+        // if the first statement of a constructor declaration delegates to another
+        // constructor, it needs to be preserved to satisfy checks in Resolve
+        tree.body.stats = com.sun.tools.javac.util.List.of(tree.body.stats.get(0));
+        return;
+      }
+      tree.body.stats = com.sun.tools.javac.util.List.nil();
+    }
+    @Override
+    public void visitLambda(JCLambda tree) {
+      if (tree.getBodyKind() == BodyKind.STATEMENT) {
+        JCExpression ident = make.at(tree).QualIdent(symtab.assertionErrorType.tsym);
+        JCThrow throwTree = make.Throw(make.NewClass(null, List.nil(), ident, List.nil(), null));
+        tree.body = make.Block(0, List.of(throwTree));
+      }
+    }
+    @Override
+    public void visitBlock(JCBlock tree) {
+      tree.stats = List.nil();
+    }
+    @Override
+    public void visitVarDef(JCVariableDecl tree) {
+      if ((tree.mods.flags & Flags.ENUM) == Flags.ENUM) {
+        // javac desugars enum constants into fields during parsing
+        super.visitVarDef(tree);
+        return;
+      }
+      // drop field initializers unless the field looks like a JLS §4.12.4 constant variable
+      if (isConstantVariable(enclClass, tree)) {
+        return;
+      }
+      tree.init = null;
+    }
+  }",class,
+"  static void prune(Context context, JCTree tree) {
+    tree.accept(new PruningVisitor(context));
+  }",method,
+"    PruningVisitor(Context context) {
+      this.make = TreeMaker.instance(context);
+      this.symtab = Symtab.instance(context);
+    }",method,
+"    @Override
+    public void visitClassDef(JCClassDecl tree) {
+      JCClassDecl prev = enclClass;
+      enclClass = tree;
+      try {
+        super.visitClassDef(tree);
+      } finally {
+        enclClass = prev;
+      }
+    }",method,
+"    @Override
+    public void visitMethodDef(JCMethodDecl tree) {
+      if (tree.body == null) {
+        return;
+      }
+      if (tree.getReturnType() == null && delegatingConstructor(tree.body.stats)) {
+        // if the first statement of a constructor declaration delegates to another
+        // constructor, it needs to be preserved to satisfy checks in Resolve
+        tree.body.stats = com.sun.tools.javac.util.List.of(tree.body.stats.get(0));
+        return;
+      }
+      tree.body.stats = com.sun.tools.javac.util.List.nil();
+    }",method,
+"      if (tree.body == null) {
+        return;
+      }",method,
+"    @Override
+    public void visitLambda(JCLambda tree) {
+      if (tree.getBodyKind() == BodyKind.STATEMENT) {
+        JCExpression ident = make.at(tree).QualIdent(symtab.assertionErrorType.tsym);
+        JCThrow throwTree = make.Throw(make.NewClass(null, List.nil(), ident, List.nil(), null));
+        tree.body = make.Block(0, List.of(throwTree));
+      }
+    }",method,

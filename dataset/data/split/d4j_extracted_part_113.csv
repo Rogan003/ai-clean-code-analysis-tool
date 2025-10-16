@@ -1,0 +1,1300 @@
+code_snippet,type,score
+"    private void callSetAndWait(long timeoutMills) {
+        try {
+            mAlarmService.setAlarmAndWait(timeoutMills);
+        } catch (RemoteException e) {
+            errorFinish(""RemoteExeption in setAlarmAndWait()"");
+        } finally {
+            getContext().unbindService(mConn);
+        }
+    }",method,
+"public class JmsListenerEndpointRegistry implements DisposableBean, SmartLifecycle,
+		ApplicationContextAware, ApplicationListener<ContextRefreshedEvent> {
+	protected final Log logger = LogFactory.getLog(getClass());
+	private final Map<String, MessageListenerContainer> listenerContainers =
+			new ConcurrentHashMap<>();
+	private int phase = Integer.MAX_VALUE;
+	@Nullable
+	private ApplicationContext applicationContext;
+	private boolean contextRefreshed;
+	@Override
+	public void setApplicationContext(ApplicationContext applicationContext) {
+		this.applicationContext = applicationContext;
+	}
+	@Override
+	public void onApplicationEvent(ContextRefreshedEvent event) {
+		if (event.getApplicationContext() == this.applicationContext) {
+			this.contextRefreshed = true;
+		}
+	}
+	@Nullable
+	public MessageListenerContainer getListenerContainer(String id) {
+		Assert.notNull(id, ""Container identifier must not be null"");
+		return this.listenerContainers.get(id);
+	}
+	public Set<String> getListenerContainerIds() {
+		return Collections.unmodifiableSet(this.listenerContainers.keySet());
+	}
+	public Collection<MessageListenerContainer> getListenerContainers() {
+		return Collections.unmodifiableCollection(this.listenerContainers.values());
+	}
+	public void registerListenerContainer(JmsListenerEndpoint endpoint, JmsListenerContainerFactory<?> factory,
+			boolean startImmediately) {
+		Assert.notNull(endpoint, ""Endpoint must not be null"");
+		Assert.notNull(factory, ""Factory must not be null"");
+		String id = endpoint.getId();
+		Assert.hasText(id, ""Endpoint id must be set"");
+		synchronized (this.listenerContainers) {
+			if (this.listenerContainers.containsKey(id)) {
+				throw new IllegalStateException(""Another endpoint is already registered with id '"" + id + ""'"");
+			}
+			MessageListenerContainer container = createListenerContainer(endpoint, factory);
+			this.listenerContainers.put(id, container);
+			if (startImmediately) {
+				startIfNecessary(container);
+			}
+		}
+	}
+	public void registerListenerContainer(JmsListenerEndpoint endpoint, JmsListenerContainerFactory<?> factory) {
+		registerListenerContainer(endpoint, factory, false);
+	}
+	protected MessageListenerContainer createListenerContainer(JmsListenerEndpoint endpoint,
+			JmsListenerContainerFactory<?> factory) {
+		MessageListenerContainer listenerContainer = factory.createListenerContainer(endpoint);
+		if (listenerContainer instanceof InitializingBean) {
+			try {
+				((InitializingBean) listenerContainer).afterPropertiesSet();
+			}
+			catch (Exception ex) {
+				throw new BeanInitializationException(""Failed to initialize message listener container"", ex);
+			}
+		}
+		int containerPhase = listenerContainer.getPhase();
+		if (containerPhase < Integer.MAX_VALUE) {  // a custom phase value
+			if (this.phase < Integer.MAX_VALUE && this.phase != containerPhase) {
+				throw new IllegalStateException(""Encountered phase mismatch between container factory definitions: "" +
+						this.phase + "" vs "" + containerPhase);
+			}
+			this.phase = listenerContainer.getPhase();
+		}
+		return listenerContainer;
+	}
+	// Delegating implementation of SmartLifecycle
+	@Override
+	public int getPhase() {
+		return this.phase;
+	}
+	@Override
+	public boolean isAutoStartup() {
+		return true;
+	}
+	@Override
+	public void start() {
+		for (MessageListenerContainer listenerContainer : getListenerContainers()) {
+			startIfNecessary(listenerContainer);
+		}
+	}
+	@Override
+	public void stop() {
+		for (MessageListenerContainer listenerContainer : getListenerContainers()) {
+			listenerContainer.stop();
+		}
+	}
+	@Override
+	public void stop(Runnable callback) {
+		Collection<MessageListenerContainer> listenerContainers = getListenerContainers();
+		AggregatingCallback aggregatingCallback = new AggregatingCallback(listenerContainers.size(), callback);
+		for (MessageListenerContainer listenerContainer : listenerContainers) {
+			listenerContainer.stop(aggregatingCallback);
+		}
+	}
+	@Override
+	public boolean isRunning() {
+		for (MessageListenerContainer listenerContainer : getListenerContainers()) {
+			if (listenerContainer.isRunning()) {
+				return true;
+			}
+		}
+		return false;
+	}
+	private void startIfNecessary(MessageListenerContainer listenerContainer) {
+		if (this.contextRefreshed || listenerContainer.isAutoStartup()) {
+			listenerContainer.start();
+		}
+	}
+	@Override
+	public void destroy() {
+		for (MessageListenerContainer listenerContainer : getListenerContainers()) {
+			if (listenerContainer instanceof DisposableBean) {
+				try {
+					((DisposableBean) listenerContainer).destroy();
+				}
+				catch (Throwable ex) {
+					logger.warn(""Failed to destroy message listener container"", ex);
+				}
+			}
+		}
+	}
+	private static class AggregatingCallback implements Runnable {
+		private final AtomicInteger count;
+		private final Runnable finishCallback;
+		public AggregatingCallback(int count, Runnable finishCallback) {
+			this.count = new AtomicInteger(count);
+			this.finishCallback = finishCallback;
+		}
+		@Override
+		public void run() {
+			if (this.count.decrementAndGet() == 0) {
+				this.finishCallback.run();
+			}
+		}
+	}
+}",class,
+"	private static class AggregatingCallback implements Runnable {
+		private final AtomicInteger count;
+		private final Runnable finishCallback;
+		public AggregatingCallback(int count, Runnable finishCallback) {
+			this.count = new AtomicInteger(count);
+			this.finishCallback = finishCallback;
+		}
+		@Override
+		public void run() {
+			if (this.count.decrementAndGet() == 0) {
+				this.finishCallback.run();
+			}
+		}
+	}",class,
+"	@Override
+	public void setApplicationContext(ApplicationContext applicationContext) {
+		this.applicationContext = applicationContext;
+	}",method,
+"	@Override
+	public void onApplicationEvent(ContextRefreshedEvent event) {
+		if (event.getApplicationContext() == this.applicationContext) {
+			this.contextRefreshed = true;
+		}
+	}",method,
+"	@Nullable
+	public MessageListenerContainer getListenerContainer(String id) {
+		Assert.notNull(id, ""Container identifier must not be null"");
+		return this.listenerContainers.get(id);
+	}",method,
+"	public Set<String> getListenerContainerIds() {
+		return Collections.unmodifiableSet(this.listenerContainers.keySet());
+	}",method,
+"	public Collection<MessageListenerContainer> getListenerContainers() {
+		return Collections.unmodifiableCollection(this.listenerContainers.values());
+	}",method,
+"	public void registerListenerContainer(JmsListenerEndpoint endpoint, JmsListenerContainerFactory<?> factory,
+			boolean startImmediately) {
+		Assert.notNull(endpoint, ""Endpoint must not be null"");
+		Assert.notNull(factory, ""Factory must not be null"");
+		String id = endpoint.getId();
+		Assert.hasText(id, ""Endpoint id must be set"");
+		synchronized (this.listenerContainers) {
+			if (this.listenerContainers.containsKey(id)) {
+				throw new IllegalStateException(""Another endpoint is already registered with id '"" + id + ""'"");
+			}
+			MessageListenerContainer container = createListenerContainer(endpoint, factory);
+			this.listenerContainers.put(id, container);
+			if (startImmediately) {
+				startIfNecessary(container);
+			}
+		}
+	}",method,
+"		synchronized (this.listenerContainers) {
+			if (this.listenerContainers.containsKey(id)) {
+				throw new IllegalStateException(""Another endpoint is already registered with id '"" + id + ""'"");
+			}
+			MessageListenerContainer container = createListenerContainer(endpoint, factory);
+			this.listenerContainers.put(id, container);
+			if (startImmediately) {
+				startIfNecessary(container);
+			}
+		}",method,
+"			if (startImmediately) {
+				startIfNecessary(container);
+			}",method,
+"	public void registerListenerContainer(JmsListenerEndpoint endpoint, JmsListenerContainerFactory<?> factory) {
+		registerListenerContainer(endpoint, factory, false);
+	}",method,
+"	protected MessageListenerContainer createListenerContainer(JmsListenerEndpoint endpoint,
+			JmsListenerContainerFactory<?> factory) {
+		MessageListenerContainer listenerContainer = factory.createListenerContainer(endpoint);
+		if (listenerContainer instanceof InitializingBean) {
+			try {
+				((InitializingBean) listenerContainer).afterPropertiesSet();
+			}
+			catch (Exception ex) {
+				throw new BeanInitializationException(""Failed to initialize message listener container"", ex);
+			}
+		}
+		int containerPhase = listenerContainer.getPhase();
+		if (containerPhase < Integer.MAX_VALUE) {  // a custom phase value
+			if (this.phase < Integer.MAX_VALUE && this.phase != containerPhase) {
+				throw new IllegalStateException(""Encountered phase mismatch between container factory definitions: "" +
+						this.phase + "" vs "" + containerPhase);
+			}
+			this.phase = listenerContainer.getPhase();
+		}
+		return listenerContainer;
+	}",method,
+"		if (listenerContainer instanceof InitializingBean) {
+			try {
+				((InitializingBean) listenerContainer).afterPropertiesSet();
+			}
+			catch (Exception ex) {
+				throw new BeanInitializationException(""Failed to initialize message listener container"", ex);
+			}
+		}",method,
+"			catch (Exception ex) {
+				throw new BeanInitializationException(""Failed to initialize message listener container"", ex);
+			}",method,
+"		if (containerPhase < Integer.MAX_VALUE) {  // a custom phase value
+			if (this.phase < Integer.MAX_VALUE && this.phase != containerPhase) {
+				throw new IllegalStateException(""Encountered phase mismatch between container factory definitions: "" +
+						this.phase + "" vs "" + containerPhase);
+			}
+			this.phase = listenerContainer.getPhase();
+		}",method,
+"			if (this.phase < Integer.MAX_VALUE && this.phase != containerPhase) {
+				throw new IllegalStateException(""Encountered phase mismatch between container factory definitions: "" +
+						this.phase + "" vs "" + containerPhase);
+			}",method,
+"	@Override
+	public int getPhase() {
+		return this.phase;
+	}",method,
+"	@Override
+	public boolean isAutoStartup() {
+		return true;
+	}",method,
+"	@Override
+	public void start() {
+		for (MessageListenerContainer listenerContainer : getListenerContainers()) {
+			startIfNecessary(listenerContainer);
+		}
+	}",method,
+"	@Override
+	public void stop() {
+		for (MessageListenerContainer listenerContainer : getListenerContainers()) {
+			listenerContainer.stop();
+		}
+	}",method,
+"	@Override
+	public void stop(Runnable callback) {
+		Collection<MessageListenerContainer> listenerContainers = getListenerContainers();
+		AggregatingCallback aggregatingCallback = new AggregatingCallback(listenerContainers.size(), callback);
+		for (MessageListenerContainer listenerContainer : listenerContainers) {
+			listenerContainer.stop(aggregatingCallback);
+		}
+	}",method,
+"		for (MessageListenerContainer listenerContainer : listenerContainers) {
+			listenerContainer.stop(aggregatingCallback);
+		}",method,
+"	@Override
+	public boolean isRunning() {
+		for (MessageListenerContainer listenerContainer : getListenerContainers()) {
+			if (listenerContainer.isRunning()) {
+				return true;
+			}
+		}
+		return false;
+	}",method,
+"	private void startIfNecessary(MessageListenerContainer listenerContainer) {
+		if (this.contextRefreshed || listenerContainer.isAutoStartup()) {
+			listenerContainer.start();
+		}
+	}",method,
+"	@Override
+	public void destroy() {
+		for (MessageListenerContainer listenerContainer : getListenerContainers()) {
+			if (listenerContainer instanceof DisposableBean) {
+				try {
+					((DisposableBean) listenerContainer).destroy();
+				}
+				catch (Throwable ex) {
+					logger.warn(""Failed to destroy message listener container"", ex);
+				}
+			}
+		}
+	}",method,
+"			if (listenerContainer instanceof DisposableBean) {
+				try {
+					((DisposableBean) listenerContainer).destroy();
+				}
+				catch (Throwable ex) {
+					logger.warn(""Failed to destroy message listener container"", ex);
+				}
+			}",method,
+"				catch (Throwable ex) {
+					logger.warn(""Failed to destroy message listener container"", ex);
+				}",method,
+"		public AggregatingCallback(int count, Runnable finishCallback) {
+			this.count = new AtomicInteger(count);
+			this.finishCallback = finishCallback;
+		}",method,
+"		@Override
+		public void run() {
+			if (this.count.decrementAndGet() == 0) {
+				this.finishCallback.run();
+			}
+		}",method,
+"public class GLES3JNIActivity extends Activity {
+    GLES3JNIView mView;
+    @Override protected void onCreate(Bundle icicle) {
+        super.onCreate(icicle);
+        mView = new GLES3JNIView(getApplication());
+        setContentView(mView);
+    }
+    @Override protected void onPause() {
+        super.onPause();
+        mView.onPause();
+    }
+    @Override protected void onResume() {
+        super.onResume();
+        mView.onResume();
+    }
+}",class,
+"public class GLES3JNILib {
+     static {
+          System.loadLibrary(""gles3jni"");
+     }
+     public static native void init();
+     public static native void resize(int width, int height);
+     public static native void step();
+}",class,
+"public class BuilderParamInfoTest {
+  @Test
+  public void optionalsForAbstractClass() throws Exception {
+    for (ParamInfo param :
+        CoercedTypeCache.INSTANCE
+            .getAllParamInfo(new DefaultTypeCoercerFactory(), DtoWithOptionals.class)
+            .values()) {
+      assertTrue(""Expected param "" + param.getName() + "" to be optional"", param.isOptional());
+    }
+  }
+  @Test
+  public void optionalsForInterface() throws Exception {
+    for (ParamInfo param :
+        CoercedTypeCache.INSTANCE
+            .getAllParamInfo(new DefaultTypeCoercerFactory(), DtoWithOptionalsFromInterface.class)
+            .values()) {
+      assertTrue(""Expected param "" + param.getName() + "" to be optional"", param.isOptional());
+    }
+  }
+  @Test
+  public void set() throws Exception {
+    DtoWithOneParameter.Builder builder = DtoWithOneParameter.builder();
+    FakeProjectFilesystem filesystem = new FakeProjectFilesystem();
+    getParamInfo()
+        .set(
+            TestCellPathResolver.get(filesystem),
+            filesystem,
+            Paths.get(""/doesnotexist""),
+            builder,
+            ""foo"");
+    assertEquals(""foo"", builder.build().getSomeString());
+  }
+  @Test
+  public void get() throws Exception {
+    assertEquals(
+        ""foo"", getParamInfo().get(DtoWithOneParameter.builder().setSomeString(""foo"").build()));
+  }
+  @Test
+  public void getName() throws Exception {
+    assertEquals(""someString"", getParamInfo().getName());
+  }
+  @Test
+  public void getPythonName() throws Exception {
+    assertEquals(""some_string"", getParamInfo().getPythonName());
+  }
+  private ParamInfo getParamInfo() {
+    return Iterables.getOnlyElement(
+        CoercedTypeCache.INSTANCE
+            .getAllParamInfo(new DefaultTypeCoercerFactory(), DtoWithOneParameter.class)
+            .values());
+  }
+  @BuckStyleImmutable
+  @Value.Immutable
+  abstract static class AbstractDtoWithOptionals {
+    abstract Optional<String> getOptional();
+    abstract Optional<ImmutableSet<String>> getOptionalImmutableSet();
+    abstract Set<String> getSet();
+    abstract ImmutableSet<String> getImmutableSet();
+    abstract SortedSet<String> getSortedSet();
+    abstract ImmutableSortedSet<String> getImmutableSortedSet();
+    abstract List<String> getList();
+    abstract ImmutableList<String> getImmutableList();
+    abstract Map<String, String> getMap();
+    abstract ImmutableMap<String, String> getImmutableMap();
+  }
+  @BuckStyleImmutable
+  @Value.Immutable
+  interface AbstractDtoWithOptionalsFromInterface {
+    Optional<String> getOptional();
+    Optional<ImmutableSet<String>> getOptionalImmutableSet();
+    Set<String> getSet();
+    ImmutableSet<String> getImmutableSet();
+    SortedSet<String> getSortedSet();
+    ImmutableSortedSet<String> getImmutableSortedSet();
+    List<String> getList();
+    ImmutableList<String> getImmutableList();
+    Map<String, String> getMap();
+    ImmutableMap<String, String> getImmutableMap();
+  }
+  @BuckStyleImmutable
+  @Value.Immutable
+  abstract static class AbstractDtoWithOneParameter {
+    abstract String getSomeString();
+  }
+}",class,
+"  abstract static class AbstractDtoWithOptionals {
+    abstract Optional<String> getOptional();
+    abstract Optional<ImmutableSet<String>> getOptionalImmutableSet();
+    abstract Set<String> getSet();
+    abstract ImmutableSet<String> getImmutableSet();
+    abstract SortedSet<String> getSortedSet();
+    abstract ImmutableSortedSet<String> getImmutableSortedSet();
+    abstract List<String> getList();
+    abstract ImmutableList<String> getImmutableList();
+    abstract Map<String, String> getMap();
+    abstract ImmutableMap<String, String> getImmutableMap();
+  }",class,
+"  abstract static class AbstractDtoWithOneParameter {
+    abstract String getSomeString();
+  }",class,
+"  @Test
+  public void optionalsForAbstractClass() throws Exception {
+    for (ParamInfo param :
+        CoercedTypeCache.INSTANCE
+            .getAllParamInfo(new DefaultTypeCoercerFactory(), DtoWithOptionals.class)
+            .values()) {
+      assertTrue(""Expected param "" + param.getName() + "" to be optional"", param.isOptional());
+    }
+  }",method,
+"  @Test
+  public void optionalsForInterface() throws Exception {
+    for (ParamInfo param :
+        CoercedTypeCache.INSTANCE
+            .getAllParamInfo(new DefaultTypeCoercerFactory(), DtoWithOptionalsFromInterface.class)
+            .values()) {
+      assertTrue(""Expected param "" + param.getName() + "" to be optional"", param.isOptional());
+    }
+  }",method,
+"  @Test
+  public void set() throws Exception {
+    DtoWithOneParameter.Builder builder = DtoWithOneParameter.builder();
+    FakeProjectFilesystem filesystem = new FakeProjectFilesystem();
+    getParamInfo()
+        .set(
+            TestCellPathResolver.get(filesystem),
+            filesystem,
+            Paths.get(""/doesnotexist""),
+            builder,
+            ""foo"");
+    assertEquals(""foo"", builder.build().getSomeString());
+  }",method,
+"  @Test
+  public void get() throws Exception {
+    assertEquals(
+        ""foo"", getParamInfo().get(DtoWithOneParameter.builder().setSomeString(""foo"").build()));
+  }",method,
+"  @Test
+  public void getName() throws Exception {
+    assertEquals(""someString"", getParamInfo().getName());
+  }",method,
+"  @Test
+  public void getPythonName() throws Exception {
+    assertEquals(""some_string"", getParamInfo().getPythonName());
+  }",method,
+"  private ParamInfo getParamInfo() {
+    return Iterables.getOnlyElement(
+        CoercedTypeCache.INSTANCE
+            .getAllParamInfo(new DefaultTypeCoercerFactory(), DtoWithOneParameter.class)
+            .values());
+  }",method,
+"import java.util.Objects;
+class MatrixStatsResults implements Writeable {
+    protected final RunningStats results;
+    protected final Map<String, HashMap<String, Double>> correlation;
+    MatrixStatsResults() {
+        results = new RunningStats();
+        this.correlation = new HashMap<>();
+    }
+    MatrixStatsResults(RunningStats stats) {
+        this.results = stats.clone();
+        this.correlation = new HashMap<>();
+        this.compute();
+    }
+    @SuppressWarnings(""unchecked"")
+    protected MatrixStatsResults(StreamInput in) {
+        try {
+            results = new RunningStats(in);
+            correlation = (Map<String, HashMap<String, Double>>) in.readGenericValue();
+        } catch (IOException e) {
+            throw new ElasticsearchException(""Error trying to create multifield_stats results from stream input"", e);
+        }
+    }
+    @Override
+    public void writeTo(StreamOutput out) throws IOException {
+        // marshall results
+        results.writeTo(out);
+        // marshall correlation
+        out.writeGenericValue(correlation);
+    }
+    public final long getDocCount() {
+        return results.docCount;
+    }
+    protected Map<String, Long> getFieldCounts() {
+        return Collections.unmodifiableMap(results.counts);
+    }
+    public long getFieldCount(String field) {
+        if (results.counts.containsKey(field) == false) {
+            return 0;
+        }
+        return results.counts.get(field);
+    }
+    protected Map<String, Double> getMeans() {
+        return Collections.unmodifiableMap(results.means);
+    }
+    public double getMean(String field) {
+        checkField(field, results.means);
+        return results.means.get(field);
+    }
+    protected Map<String, Double> getVariances() {
+        return Collections.unmodifiableMap(results.variances);
+    }
+    public double getVariance(String field) {
+        checkField(field, results.variances);
+        return results.variances.get(field);
+    }
+    protected Map<String, Double> getSkewness() {
+        return Collections.unmodifiableMap(results.skewness);
+    }
+    public double getSkewness(String field) {
+        checkField(field, results.skewness);
+        return results.skewness.get(field);
+    }
+    protected Map<String, Double> getKurtosis() {
+        return Collections.unmodifiableMap(results.kurtosis);
+    }
+    public double getKurtosis(String field) {
+        checkField(field, results.kurtosis);
+        return results.kurtosis.get(field);
+    }
+    protected Map<String, HashMap<String, Double>> getCovariances() {
+        return Collections.unmodifiableMap(results.covariances);
+    }
+    public double getCovariance(String fieldX, String fieldY) {
+        if (fieldX.equals(fieldY)) {
+            checkField(fieldX, results.variances);
+            return results.variances.get(fieldX);
+        }
+        return getValFromUpperTriangularMatrix(results.covariances, fieldX, fieldY);
+    }
+    protected Map<String, HashMap<String, Double>> getCorrelations() {
+        return Collections.unmodifiableMap(correlation);
+    }
+    public Double getCorrelation(String fieldX, String fieldY) {
+        if (fieldX.equals(fieldY)) {
+            return 1.0;
+        }
+        return getValFromUpperTriangularMatrix(correlation, fieldX, fieldY);
+    }
+    static <M extends Map<String, Double>> double getValFromUpperTriangularMatrix(Map<String, M> map, String fieldX, String fieldY) {
+        // for the co-value to exist, one of the two (or both) fields has to be a row key
+        if (map.containsKey(fieldX) == false && map.containsKey(fieldY) == false) {
+            throw new IllegalArgumentException(""neither field "" + fieldX + "" nor "" + fieldY + "" exist"");
+        } else if (map.containsKey(fieldX)) {
+            // fieldX exists as a row key
+            if (map.get(fieldX).containsKey(fieldY)) {
+                // fieldY exists as a col key to fieldX
+                return map.get(fieldX).get(fieldY);
+            } else {
+                // otherwise fieldX is the col key to fieldY
+                return map.get(fieldY).get(fieldX);
+            }
+        } else if (map.containsKey(fieldY)) {
+            // fieldX did not exist as a row key, it must be a col key
+            return map.get(fieldY).get(fieldX);
+        }
+        throw new IllegalArgumentException(""Coefficient not computed between fields: "" + fieldX + "" and "" + fieldY);
+    }
+    private void checkField(String field, Map<String, ?> map) {
+        if (field == null) {
+            throw new IllegalArgumentException(""field name cannot be null"");
+        }
+        if (map.containsKey(field) == false) {
+            throw new IllegalArgumentException(""field "" + field + "" does not exist"");
+        }
+    }
+    private void compute() {
+        final double nM1 = results.docCount - 1D;
+        // compute final skewness and kurtosis
+        for (String fieldName : results.means.keySet()) {
+            final double var = results.variances.get(fieldName);
+            // update skewness
+            results.skewness.put(fieldName, Math.sqrt(results.docCount) * results.skewness.get(fieldName) / Math.pow(var, 1.5D));
+            // update kurtosis
+            results.kurtosis.put(fieldName, (double)results.docCount * results.kurtosis.get(fieldName) / (var * var));
+            // update variances
+            results.variances.put(fieldName, results.variances.get(fieldName) / nM1);
+        }
+        // compute final covariances and correlation
+        double cor;
+        for (Map.Entry<String, HashMap<String, Double>> row : results.covariances.entrySet()) {
+            final String rowName = row.getKey();
+            final HashMap<String, Double> covRow = row.getValue();
+            final HashMap<String, Double> corRow = new HashMap<>();
+            for (Map.Entry<String, Double> col : covRow.entrySet()) {
+                final String colName = col.getKey();
+                // update covariance
+                covRow.put(colName, covRow.get(colName) / nM1);
+                // update correlation
+                // if there is no variance in the data then correlation is NaN
+                if (results.variances.get(rowName) == 0d || results.variances.get(colName) == 0d) {
+                    cor = Double.NaN;
+                } else {
+                    final double corDen = Math.sqrt(results.variances.get(rowName)) * Math.sqrt(results.variances.get(colName));
+                    cor = covRow.get(colName) / corDen;
+                }
+                corRow.put(colName, cor);
+            }
+            results.covariances.put(rowName, covRow);
+            correlation.put(rowName, corRow);
+        }
+    }
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (o == null || getClass() != o.getClass()) return false;
+        MatrixStatsResults that = (MatrixStatsResults) o;
+        return Objects.equals(results, that.results) &&
+            Objects.equals(correlation, that.correlation);
+    }
+    @Override
+    public int hashCode() {
+        return Objects.hash(results, correlation);
+    }
+}",class,
+"    MatrixStatsResults() {
+        results = new RunningStats();
+        this.correlation = new HashMap<>();
+    }",method,
+"    MatrixStatsResults(RunningStats stats) {
+        this.results = stats.clone();
+        this.correlation = new HashMap<>();
+        this.compute();
+    }",method,
+"    @SuppressWarnings(""unchecked"")
+    protected MatrixStatsResults(StreamInput in) {
+        try {
+            results = new RunningStats(in);
+            correlation = (Map<String, HashMap<String, Double>>) in.readGenericValue();
+        } catch (IOException e) {
+            throw new ElasticsearchException(""Error trying to create multifield_stats results from stream input"", e);
+        }
+    }",method,
+"    @Override
+    public void writeTo(StreamOutput out) throws IOException {
+        // marshall results
+        results.writeTo(out);
+        // marshall correlation
+        out.writeGenericValue(correlation);
+    }",method,
+"    public final long getDocCount() {
+        return results.docCount;
+    }",method,
+"    protected Map<String, Long> getFieldCounts() {
+        return Collections.unmodifiableMap(results.counts);
+    }",method,
+"    public long getFieldCount(String field) {
+        if (results.counts.containsKey(field) == false) {
+            return 0;
+        }
+        return results.counts.get(field);
+    }",method,
+"    protected Map<String, Double> getMeans() {
+        return Collections.unmodifiableMap(results.means);
+    }",method,
+"    public double getMean(String field) {
+        checkField(field, results.means);
+        return results.means.get(field);
+    }",method,
+"    protected Map<String, Double> getVariances() {
+        return Collections.unmodifiableMap(results.variances);
+    }",method,
+"    public double getVariance(String field) {
+        checkField(field, results.variances);
+        return results.variances.get(field);
+    }",method,
+"    protected Map<String, Double> getSkewness() {
+        return Collections.unmodifiableMap(results.skewness);
+    }",method,
+"    public double getSkewness(String field) {
+        checkField(field, results.skewness);
+        return results.skewness.get(field);
+    }",method,
+"    protected Map<String, Double> getKurtosis() {
+        return Collections.unmodifiableMap(results.kurtosis);
+    }",method,
+"    public double getKurtosis(String field) {
+        checkField(field, results.kurtosis);
+        return results.kurtosis.get(field);
+    }",method,
+"    protected Map<String, HashMap<String, Double>> getCovariances() {
+        return Collections.unmodifiableMap(results.covariances);
+    }",method,
+"    public double getCovariance(String fieldX, String fieldY) {
+        if (fieldX.equals(fieldY)) {
+            checkField(fieldX, results.variances);
+            return results.variances.get(fieldX);
+        }
+        return getValFromUpperTriangularMatrix(results.covariances, fieldX, fieldY);
+    }",method,
+"    protected Map<String, HashMap<String, Double>> getCorrelations() {
+        return Collections.unmodifiableMap(correlation);
+    }",method,
+"    public Double getCorrelation(String fieldX, String fieldY) {
+        if (fieldX.equals(fieldY)) {
+            return 1.0;
+        }
+        return getValFromUpperTriangularMatrix(correlation, fieldX, fieldY);
+    }",method,
+"    static <M extends Map<String, Double>> double getValFromUpperTriangularMatrix(Map<String, M> map, String fieldX, String fieldY) {
+        // for the co-value to exist, one of the two (or both) fields has to be a row key
+        if (map.containsKey(fieldX) == false && map.containsKey(fieldY) == false) {
+            throw new IllegalArgumentException(""neither field "" + fieldX + "" nor "" + fieldY + "" exist"");
+        } else if (map.containsKey(fieldX)) {
+            // fieldX exists as a row key
+            if (map.get(fieldX).containsKey(fieldY)) {
+                // fieldY exists as a col key to fieldX
+                return map.get(fieldX).get(fieldY);
+            } else {
+                // otherwise fieldX is the col key to fieldY
+                return map.get(fieldY).get(fieldX);
+            }
+        } else if (map.containsKey(fieldY)) {
+            // fieldX did not exist as a row key, it must be a col key
+            return map.get(fieldY).get(fieldX);
+        }
+        throw new IllegalArgumentException(""Coefficient not computed between fields: "" + fieldX + "" and "" + fieldY);
+    }",method,
+"    private void checkField(String field, Map<String, ?> map) {
+        if (field == null) {
+            throw new IllegalArgumentException(""field name cannot be null"");
+        }
+        if (map.containsKey(field) == false) {
+            throw new IllegalArgumentException(""field "" + field + "" does not exist"");
+        }
+    }",method,
+"        if (field == null) {
+            throw new IllegalArgumentException(""field name cannot be null"");
+        }",method,
+"    private void compute() {
+        final double nM1 = results.docCount - 1D;
+        // compute final skewness and kurtosis
+        for (String fieldName : results.means.keySet()) {
+            final double var = results.variances.get(fieldName);
+            // update skewness
+            results.skewness.put(fieldName, Math.sqrt(results.docCount) * results.skewness.get(fieldName) / Math.pow(var, 1.5D));
+            // update kurtosis
+            results.kurtosis.put(fieldName, (double)results.docCount * results.kurtosis.get(fieldName) / (var * var));
+            // update variances
+            results.variances.put(fieldName, results.variances.get(fieldName) / nM1);
+        }
+        // compute final covariances and correlation
+        double cor;
+        for (Map.Entry<String, HashMap<String, Double>> row : results.covariances.entrySet()) {
+            final String rowName = row.getKey();
+            final HashMap<String, Double> covRow = row.getValue();
+            final HashMap<String, Double> corRow = new HashMap<>();
+            for (Map.Entry<String, Double> col : covRow.entrySet()) {
+                final String colName = col.getKey();
+                // update covariance
+                covRow.put(colName, covRow.get(colName) / nM1);
+                // update correlation
+                // if there is no variance in the data then correlation is NaN
+                if (results.variances.get(rowName) == 0d || results.variances.get(colName) == 0d) {
+                    cor = Double.NaN;
+                } else {
+                    final double corDen = Math.sqrt(results.variances.get(rowName)) * Math.sqrt(results.variances.get(colName));
+                    cor = covRow.get(colName) / corDen;
+                }
+                corRow.put(colName, cor);
+            }
+            results.covariances.put(rowName, covRow);
+            correlation.put(rowName, corRow);
+        }
+    }",method,
+"    @Override
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (o == null || getClass() != o.getClass()) return false;
+        MatrixStatsResults that = (MatrixStatsResults) o;
+        return Objects.equals(results, that.results) &&
+            Objects.equals(correlation, that.correlation);
+    }",method,
+"    @Override
+    public int hashCode() {
+        return Objects.hash(results, correlation);
+    }",method,
+"public class TaskWithSubtasksChecker extends StudyTaskChecker<TaskWithSubtasks> {
+  private StudyTaskChecker<PyCharmTask> myPyCharmTaskChecker;
+  public TaskWithSubtasksChecker(@NotNull TaskWithSubtasks task,
+                                 @NotNull Project project) {
+    super(task, project);
+    EduPluginConfigurator configurator = EduPluginConfigurator.INSTANCE.forLanguage(myTask.getLesson().getCourse().getLanguageById());
+    if (configurator != null) {
+      myPyCharmTaskChecker  = configurator.getPyCharmTaskChecker(task, project);
+    }
+  }
+  @Override
+  public StudyCheckResult check() {
+    if (myPyCharmTaskChecker != null) {
+      return myPyCharmTaskChecker.check();
+    }
+    return super.check();
+  }
+  @Override
+  public StudyCheckResult checkOnRemote(@Nullable StepicUser user) {
+    if (myPyCharmTaskChecker != null) {
+      return myPyCharmTaskChecker.checkOnRemote(user);
+    }
+    return super.checkOnRemote(user);
+  }
+  @Override
+  public void onTaskSolved(@NotNull String message) {
+    boolean hasMoreSubtasks = myTask.activeSubtaskNotLast();
+    final int activeSubtaskIndex = myTask.getActiveSubtaskIndex();
+    int visibleSubtaskIndex = activeSubtaskIndex + 1;
+    ApplicationManager.getApplication().invokeLater(() -> {
+      int subtaskSize = myTask.getLastSubtaskIndex() + 1;
+      String resultMessage = !hasMoreSubtasks ? message : ""Subtask "" + visibleSubtaskIndex + ""/"" + subtaskSize + "" solved"";
+      StudyCheckUtils.showTestResultPopUp(resultMessage, MessageType.INFO.getPopupBackground(), myProject);
+      if (hasMoreSubtasks) {
+        int nextSubtaskIndex = activeSubtaskIndex + 1;
+        StudySubtaskUtils.switchStep(myProject, myTask, nextSubtaskIndex);
+        rememberAnswers(nextSubtaskIndex, myTask);
+      }
+    });
+  }
+  private void rememberAnswers(int nextSubtaskIndex, @NotNull TaskWithSubtasks task) {
+    VirtualFile taskDir = task.getTaskDir(myProject);
+    if (taskDir == null) {
+      return;
+    }
+    VirtualFile srcDir = taskDir.findChild(EduNames.SRC);
+    if (srcDir != null) {
+      taskDir = srcDir;
+    }
+    for (Map.Entry<String, TaskFile> entry : task.getTaskFiles().entrySet()) {
+      TaskFile taskFile = entry.getValue();
+      VirtualFile virtualFile = taskDir.findFileByRelativePath(entry.getKey());
+      if (virtualFile == null) {
+        continue;
+      }
+      Document document = FileDocumentManager.getInstance().getDocument(virtualFile);
+      if (document == null) {
+        continue;
+      }
+      for (AnswerPlaceholder placeholder : taskFile.getActivePlaceholders()) {
+        if (placeholder.getSubtaskInfos().containsKey(nextSubtaskIndex - 1)) {
+          int offset = placeholder.getOffset();
+          String answer = document.getText(TextRange.create(offset, offset + placeholder.getRealLength()));
+          placeholder.getSubtaskInfos().get(nextSubtaskIndex - 1).setAnswer(answer);
+        }
+      }
+    }
+  }
+}",class,
+"  public TaskWithSubtasksChecker(@NotNull TaskWithSubtasks task,
+                                 @NotNull Project project) {
+    super(task, project);
+    EduPluginConfigurator configurator = EduPluginConfigurator.INSTANCE.forLanguage(myTask.getLesson().getCourse().getLanguageById());
+    if (configurator != null) {
+      myPyCharmTaskChecker  = configurator.getPyCharmTaskChecker(task, project);
+    }
+  }",method,
+"    if (configurator != null) {
+      myPyCharmTaskChecker  = configurator.getPyCharmTaskChecker(task, project);
+    }",method,
+"  @Override
+  public StudyCheckResult check() {
+    if (myPyCharmTaskChecker != null) {
+      return myPyCharmTaskChecker.check();
+    }
+    return super.check();
+  }",method,
+"    if (myPyCharmTaskChecker != null) {
+      return myPyCharmTaskChecker.check();
+    }",method,
+"  @Override
+  public StudyCheckResult checkOnRemote(@Nullable StepicUser user) {
+    if (myPyCharmTaskChecker != null) {
+      return myPyCharmTaskChecker.checkOnRemote(user);
+    }
+    return super.checkOnRemote(user);
+  }",method,
+"    if (myPyCharmTaskChecker != null) {
+      return myPyCharmTaskChecker.checkOnRemote(user);
+    }",method,
+"  @Override
+  public void onTaskSolved(@NotNull String message) {
+    boolean hasMoreSubtasks = myTask.activeSubtaskNotLast();
+    final int activeSubtaskIndex = myTask.getActiveSubtaskIndex();
+    int visibleSubtaskIndex = activeSubtaskIndex + 1;
+    ApplicationManager.getApplication().invokeLater(() -> {
+      int subtaskSize = myTask.getLastSubtaskIndex() + 1;
+      String resultMessage = !hasMoreSubtasks ? message : ""Subtask "" + visibleSubtaskIndex + ""/"" + subtaskSize + "" solved"";
+      StudyCheckUtils.showTestResultPopUp(resultMessage, MessageType.INFO.getPopupBackground(), myProject);
+      if (hasMoreSubtasks) {
+        int nextSubtaskIndex = activeSubtaskIndex + 1;
+        StudySubtaskUtils.switchStep(myProject, myTask, nextSubtaskIndex);
+        rememberAnswers(nextSubtaskIndex, myTask);
+      }
+    });
+  }",method,
+"      if (hasMoreSubtasks) {
+        int nextSubtaskIndex = activeSubtaskIndex + 1;
+        StudySubtaskUtils.switchStep(myProject, myTask, nextSubtaskIndex);
+        rememberAnswers(nextSubtaskIndex, myTask);
+      }",method,
+"  private void rememberAnswers(int nextSubtaskIndex, @NotNull TaskWithSubtasks task) {
+    VirtualFile taskDir = task.getTaskDir(myProject);
+    if (taskDir == null) {
+      return;
+    }
+    VirtualFile srcDir = taskDir.findChild(EduNames.SRC);
+    if (srcDir != null) {
+      taskDir = srcDir;
+    }
+    for (Map.Entry<String, TaskFile> entry : task.getTaskFiles().entrySet()) {
+      TaskFile taskFile = entry.getValue();
+      VirtualFile virtualFile = taskDir.findFileByRelativePath(entry.getKey());
+      if (virtualFile == null) {
+        continue;
+      }
+      Document document = FileDocumentManager.getInstance().getDocument(virtualFile);
+      if (document == null) {
+        continue;
+      }
+      for (AnswerPlaceholder placeholder : taskFile.getActivePlaceholders()) {
+        if (placeholder.getSubtaskInfos().containsKey(nextSubtaskIndex - 1)) {
+          int offset = placeholder.getOffset();
+          String answer = document.getText(TextRange.create(offset, offset + placeholder.getRealLength()));
+          placeholder.getSubtaskInfos().get(nextSubtaskIndex - 1).setAnswer(answer);
+        }
+      }
+    }
+  }",method,
+"    if (taskDir == null) {
+      return;
+    }",method,
+"    if (srcDir != null) {
+      taskDir = srcDir;
+    }",method,
+"      if (virtualFile == null) {
+        continue;
+      }",method,
+"      if (document == null) {
+        continue;
+      }",method,
+"public class Trie implements ITrie {
+	// ===========================================================
+	// Constants
+	// ===========================================================
+	private static final int CHILDREN_SIZE_DEFAULT = 'Z' - 'A' + 1;
+	// ===========================================================
+	// Fields
+	// ===========================================================
+	private final TrieNode mRoot = new TrieNode();
+	// ===========================================================
+	// Constructors
+	// ===========================================================
+	// ===========================================================
+	// Getter & Setter
+	// ===========================================================
+	// ===========================================================
+	// Methods for/from SuperClass/Interfaces
+	// ===========================================================
+	@Override
+	public void add(final CharSequence pCharSequence) {
+		this.mRoot.add(pCharSequence);
+	}
+	@Override
+	public void add(final CharSequence pCharSequence, final int pStart, final int pEnd) {
+		this.mRoot.add(pCharSequence, pStart, pEnd);
+	}
+	@Override
+	public boolean contains(final CharSequence pCharSequence) {
+		return this.mRoot.contains(pCharSequence);
+	}
+	@Override
+	public boolean contains(final CharSequence pCharSequence, final int pStart, final int pEnd) {
+		return this.mRoot.contains(pCharSequence, pStart, pEnd);
+	}
+	// ===========================================================
+	// Methods
+	// ===========================================================
+	// ===========================================================
+	// Inner and Anonymous Classes
+	// ===========================================================
+	public static class TrieNode implements ITrie {
+		// ===========================================================
+		// Constants
+		// ===========================================================
+		// ===========================================================
+		// Fields
+		// ===========================================================
+		private SparseArray<TrieNode> mChildren;
+		private boolean mWordEndFlag;
+		// ===========================================================
+		// Constructors
+		// ===========================================================
+		public TrieNode() {
+			this(false);
+		}
+		public TrieNode(final boolean pWordEndFlag) {
+			this.mWordEndFlag = pWordEndFlag;
+		}
+		// ===========================================================
+		// Getter & Setter
+		// ===========================================================
+		// ===========================================================
+		// Methods for/from SuperClass/Interfaces
+		// ===========================================================
+		// ===========================================================
+		// Methods
+		// ===========================================================
+		@Override
+		public void add(final CharSequence pCharSequence) {
+			final int length = pCharSequence.length();
+			if(length == 0) {
+				return;
+			}
+			this.add(pCharSequence, 0, length);
+		}
+		@Override
+		public void add(final CharSequence pCharSequence, final int pStart, final int pEnd) {
+			if(this.mChildren == null) {
+				this.mChildren = new SparseArray<Trie.TrieNode>(Trie.CHILDREN_SIZE_DEFAULT);
+			}
+			final char character = pCharSequence.charAt(pStart);
+			TrieNode child = this.mChildren.get(character);
+			if(child == null) {
+				child = new TrieNode();
+				this.mChildren.put(character, child);
+			}
+			if(pStart < pEnd - 1) {
+				child.add(pCharSequence, pStart + 1, pEnd);
+			} else {
+				child.mWordEndFlag = true;
+			}
+		}
+		@Override
+		public boolean contains(final CharSequence pCharSequence) {
+			final int length = pCharSequence.length();
+			if(length == 0) {
+				throw new IllegalArgumentException();
+			}
+			return this.contains(pCharSequence, 0, length);
+		}
+		@Override
+		public boolean contains(final CharSequence pCharSequence, final int pStart, final int pEnd) {
+			if(this.mChildren == null) {
+				return false;
+			}
+			final char character = pCharSequence.charAt(pStart);
+			final TrieNode child = this.mChildren.get(character);
+			if(child == null) {
+				return false;
+			} else {
+				if(pStart < pEnd - 1) {
+					return child.contains(pCharSequence, pStart + 1, pEnd);
+				} else {
+					return child.mWordEndFlag;
+				}
+			}
+		}
+		// ===========================================================
+		// Inner and Anonymous Classes
+		// ===========================================================
+	}
+}",class,
+"	public static class TrieNode implements ITrie {
+		// ===========================================================
+		// Constants
+		// ===========================================================
+		// ===========================================================
+		// Fields
+		// ===========================================================
+		private SparseArray<TrieNode> mChildren;
+		private boolean mWordEndFlag;
+		// ===========================================================
+		// Constructors
+		// ===========================================================
+		public TrieNode() {
+			this(false);
+		}
+		public TrieNode(final boolean pWordEndFlag) {
+			this.mWordEndFlag = pWordEndFlag;
+		}
+		// ===========================================================
+		// Getter & Setter
+		// ===========================================================
+		// ===========================================================
+		// Methods for/from SuperClass/Interfaces
+		// ===========================================================
+		// ===========================================================
+		// Methods
+		// ===========================================================
+		@Override
+		public void add(final CharSequence pCharSequence) {
+			final int length = pCharSequence.length();
+			if(length == 0) {
+				return;
+			}
+			this.add(pCharSequence, 0, length);
+		}
+		@Override
+		public void add(final CharSequence pCharSequence, final int pStart, final int pEnd) {
+			if(this.mChildren == null) {
+				this.mChildren = new SparseArray<Trie.TrieNode>(Trie.CHILDREN_SIZE_DEFAULT);
+			}
+			final char character = pCharSequence.charAt(pStart);
+			TrieNode child = this.mChildren.get(character);
+			if(child == null) {
+				child = new TrieNode();
+				this.mChildren.put(character, child);
+			}
+			if(pStart < pEnd - 1) {
+				child.add(pCharSequence, pStart + 1, pEnd);
+			} else {
+				child.mWordEndFlag = true;
+			}
+		}
+		@Override
+		public boolean contains(final CharSequence pCharSequence) {
+			final int length = pCharSequence.length();
+			if(length == 0) {
+				throw new IllegalArgumentException();
+			}
+			return this.contains(pCharSequence, 0, length);
+		}
+		@Override
+		public boolean contains(final CharSequence pCharSequence, final int pStart, final int pEnd) {
+			if(this.mChildren == null) {
+				return false;
+			}
+			final char character = pCharSequence.charAt(pStart);
+			final TrieNode child = this.mChildren.get(character);
+			if(child == null) {
+				return false;
+			} else {
+				if(pStart < pEnd - 1) {
+					return child.contains(pCharSequence, pStart + 1, pEnd);
+				} else {
+					return child.mWordEndFlag;
+				}
+			}
+		}
+		// ===========================================================
+		// Inner and Anonymous Classes
+		// ===========================================================
+	}",class,
+"	@Override
+	public void add(final CharSequence pCharSequence) {
+		this.mRoot.add(pCharSequence);
+	}",method,
+"	@Override
+	public void add(final CharSequence pCharSequence, final int pStart, final int pEnd) {
+		this.mRoot.add(pCharSequence, pStart, pEnd);
+	}",method,
+"	@Override
+	public boolean contains(final CharSequence pCharSequence) {
+		return this.mRoot.contains(pCharSequence);
+	}",method,
+"	@Override
+	public boolean contains(final CharSequence pCharSequence, final int pStart, final int pEnd) {
+		return this.mRoot.contains(pCharSequence, pStart, pEnd);
+	}",method,
+"		public TrieNode() {
+			this(false);
+		}",method,
+"		public TrieNode(final boolean pWordEndFlag) {
+			this.mWordEndFlag = pWordEndFlag;
+		}",method,
+"		@Override
+		public void add(final CharSequence pCharSequence) {
+			final int length = pCharSequence.length();
+			if(length == 0) {
+				return;
+			}
+			this.add(pCharSequence, 0, length);
+		}",method,
+"			if(length == 0) {
+				return;
+			}",method,
+"		@Override
+		public void add(final CharSequence pCharSequence, final int pStart, final int pEnd) {
+			if(this.mChildren == null) {
+				this.mChildren = new SparseArray<Trie.TrieNode>(Trie.CHILDREN_SIZE_DEFAULT);
+			}
+			final char character = pCharSequence.charAt(pStart);
+			TrieNode child = this.mChildren.get(character);
+			if(child == null) {
+				child = new TrieNode();
+				this.mChildren.put(character, child);
+			}
+			if(pStart < pEnd - 1) {
+				child.add(pCharSequence, pStart + 1, pEnd);
+			} else {
+				child.mWordEndFlag = true;
+			}
+		}",method,
+"			if(this.mChildren == null) {
+				this.mChildren = new SparseArray<Trie.TrieNode>(Trie.CHILDREN_SIZE_DEFAULT);
+			}",method,
+"			if(child == null) {
+				child = new TrieNode();
+				this.mChildren.put(character, child);
+			}",method,
+"			if(pStart < pEnd - 1) {
+				child.add(pCharSequence, pStart + 1, pEnd);
+			}",method,
+"		@Override
+		public boolean contains(final CharSequence pCharSequence) {
+			final int length = pCharSequence.length();
+			if(length == 0) {
+				throw new IllegalArgumentException();
+			}
+			return this.contains(pCharSequence, 0, length);
+		}",method,
+"			if(length == 0) {
+				throw new IllegalArgumentException();
+			}",method,
+"		@Override
+		public boolean contains(final CharSequence pCharSequence, final int pStart, final int pEnd) {
+			if(this.mChildren == null) {
+				return false;
+			}
+			final char character = pCharSequence.charAt(pStart);
+			final TrieNode child = this.mChildren.get(character);
+			if(child == null) {
+				return false;
+			} else {
+				if(pStart < pEnd - 1) {
+					return child.contains(pCharSequence, pStart + 1, pEnd);
+				} else {
+					return child.mWordEndFlag;
+				}
+			}
+		}",method,
+"			if(this.mChildren == null) {
+				return false;
+			}",method,
+"			if(child == null) {
+				return false;
+			}",method,

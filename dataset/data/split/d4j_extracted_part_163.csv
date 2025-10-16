@@ -1,0 +1,1304 @@
+code_snippet,type,score
+"  @Override
+  public void actuallyPutNextEntry(ZipEntry entry) throws IOException {
+    if (throwExceptionsOnDuplicate && !seenNames.add(entry.getName())) {
+      // Same exception as ZipOutputStream.
+      throw new ZipException(""duplicate entry: "" + entry.getName());
+    }
+    currentEntry = new EntryAccounting(clock, entry, currentOffset);
+    entries.add(currentEntry);
+    currentOffset += currentEntry.writeLocalFileHeader(delegate);
+  }",method,
+"  @Override
+  public void actuallyCloseEntry() throws IOException {
+    if (currentEntry == null) {
+      return; // no-op
+    }
+    currentOffset += currentEntry.finish(delegate);
+    currentEntry = null;
+  }",method,
+"    if (currentEntry == null) {
+      return; // no-op
+    }",method,
+"  @Override
+  public void actuallyClose() throws IOException {
+    new CentralDirectory().writeCentralDirectory(delegate, currentOffset, entries);
+    delegate.close();
+  }",method,
+"public abstract class ItemStore {
+    private static class ItemReference<V> extends WeakReference<V> {
+        private Object id;
+        public ItemReference(V item, Object id, ReferenceQueue<? super V> queue) {
+            super(item, queue);
+            this.id = id;
+        }
+    }
+    protected static class ItemReferences<V> {
+        private final ReferenceQueue<V> queue;
+        private final Map<Object, ItemReference<V>> items;
+        public ItemReferences() {
+            queue = new ReferenceQueue<>();
+            items = new ConcurrentHashMap<>();
+        }
+        @SuppressWarnings(""rawtypes"")
+        private void expungeEntries() {
+            ItemReference ref;
+            while ((ref = (ItemReference) queue.poll()) != null) {
+                items.remove(ref.id);
+            }
+        }
+        public V get(final Object id) {
+            expungeEntries();
+            WeakReference<V> ref = items.get(id);
+            return ref != null ? ref.get() : null;
+        }
+        public void put(Object id, V item) {
+            expungeEntries();
+            items.put(id, new ItemReference<>(item, id, queue));
+        }
+    }
+}",class,
+"    private static class ItemReference<V> extends WeakReference<V> {
+        private Object id;
+        public ItemReference(V item, Object id, ReferenceQueue<? super V> queue) {
+            super(item, queue);
+            this.id = id;
+        }
+    }",class,
+"    protected static class ItemReferences<V> {
+        private final ReferenceQueue<V> queue;
+        private final Map<Object, ItemReference<V>> items;
+        public ItemReferences() {
+            queue = new ReferenceQueue<>();
+            items = new ConcurrentHashMap<>();
+        }
+        @SuppressWarnings(""rawtypes"")
+        private void expungeEntries() {
+            ItemReference ref;
+            while ((ref = (ItemReference) queue.poll()) != null) {
+                items.remove(ref.id);
+            }
+        }
+        public V get(final Object id) {
+            expungeEntries();
+            WeakReference<V> ref = items.get(id);
+            return ref != null ? ref.get() : null;
+        }
+        public void put(Object id, V item) {
+            expungeEntries();
+            items.put(id, new ItemReference<>(item, id, queue));
+        }
+    }",class,
+"        public ItemReference(V item, Object id, ReferenceQueue<? super V> queue) {
+            super(item, queue);
+            this.id = id;
+        }",method,
+"        public ItemReferences() {
+            queue = new ReferenceQueue<>();
+            items = new ConcurrentHashMap<>();
+        }",method,
+"        @SuppressWarnings(""rawtypes"")
+        private void expungeEntries() {
+            ItemReference ref;
+            while ((ref = (ItemReference) queue.poll()) != null) {
+                items.remove(ref.id);
+            }
+        }",method,
+"        public V get(final Object id) {
+            expungeEntries();
+            WeakReference<V> ref = items.get(id);
+            return ref != null ? ref.get() : null;
+        }",method,
+"        public void put(Object id, V item) {
+            expungeEntries();
+            items.put(id, new ItemReference<>(item, id, queue));
+        }",method,
+"public class WaitResult implements Parcelable {
+    public int result;
+    public boolean timeout;
+    public ComponentName who;
+    public long thisTime;
+    public long totalTime;
+    public WaitResult() {
+    }
+    @Override
+    public int describeContents() {
+        return 0;
+    }
+    @Override
+    public void writeToParcel(Parcel dest, int flags) {
+        dest.writeInt(result);
+        dest.writeInt(timeout ? 1 : 0);
+        ComponentName.writeToParcel(who, dest);
+        dest.writeLong(thisTime);
+        dest.writeLong(totalTime);
+    }
+    public static final Parcelable.Creator<WaitResult> CREATOR
+            = new Parcelable.Creator<WaitResult>() {
+        @Override
+        public WaitResult createFromParcel(Parcel source) {
+            return new WaitResult(source);
+        }
+        @Override
+        public WaitResult[] newArray(int size) {
+            return new WaitResult[size];
+        }
+    };
+    private WaitResult(Parcel source) {
+        result = source.readInt();
+        timeout = source.readInt() != 0;
+        who = ComponentName.readFromParcel(source);
+        thisTime = source.readLong();
+        totalTime = source.readLong();
+    }
+    public void dump(PrintWriter pw, String prefix) {
+        pw.println(prefix + ""WaitResult:"");
+        pw.println(prefix + ""  result="" + result);
+        pw.println(prefix + ""  timeout="" + timeout);
+        pw.println(prefix + ""  who="" + who);
+        pw.println(prefix + ""  thisTime="" + thisTime);
+        pw.println(prefix + ""  totalTime="" + totalTime);
+    }
+}",class,
+"    public WaitResult() {
+    }",method,
+"    @Override
+    public int describeContents() {
+        return 0;
+    }",method,
+"    @Override
+    public void writeToParcel(Parcel dest, int flags) {
+        dest.writeInt(result);
+        dest.writeInt(timeout ? 1 : 0);
+        ComponentName.writeToParcel(who, dest);
+        dest.writeLong(thisTime);
+        dest.writeLong(totalTime);
+    }",method,
+"        @Override
+        public WaitResult createFromParcel(Parcel source) {
+            return new WaitResult(source);
+        }",method,
+"        @Override
+        public WaitResult[] newArray(int size) {
+            return new WaitResult[size];
+        }",method,
+"    private WaitResult(Parcel source) {
+        result = source.readInt();
+        timeout = source.readInt() != 0;
+        who = ComponentName.readFromParcel(source);
+        thisTime = source.readLong();
+        totalTime = source.readLong();
+    }",method,
+"    public void dump(PrintWriter pw, String prefix) {
+        pw.println(prefix + ""WaitResult:"");
+        pw.println(prefix + ""  result="" + result);
+        pw.println(prefix + ""  timeout="" + timeout);
+        pw.println(prefix + ""  who="" + who);
+        pw.println(prefix + ""  thisTime="" + thisTime);
+        pw.println(prefix + ""  totalTime="" + totalTime);
+    }",method,
+"public class PersistentIndexedCacheParameters<K, V> {
+    private static final BaseSerializerFactory SERIALIZER_FACTORY = new BaseSerializerFactory();
+    private final String cacheName;
+    private final Serializer<K> keySerializer;
+    private final Serializer<V> valueSerializer;
+    private CacheDecorator cacheDecorator;
+    public PersistentIndexedCacheParameters(String cacheName, Serializer<K> keySerializer, Serializer<V> valueSerializer) {
+        this.cacheName = cacheName;
+        this.keySerializer = keySerializer;
+        this.valueSerializer = valueSerializer;
+    }
+    public static <K, V> PersistentIndexedCacheParameters<K, V> of(String cacheName, Serializer<K> keySerializer, Serializer<V> valueSerializer) {
+        return new PersistentIndexedCacheParameters<K, V>(cacheName, keySerializer, valueSerializer);
+    }
+    public PersistentIndexedCacheParameters(String cacheName, Class<K> keyType, Serializer<V> valueSerializer) {
+        this(cacheName, SERIALIZER_FACTORY.getSerializerFor(keyType), valueSerializer);
+    }
+    public PersistentIndexedCacheParameters(String cacheName, Class<K> keyType, Class<V> valueType) {
+        this(cacheName, keyType, SERIALIZER_FACTORY.getSerializerFor(valueType));
+    }
+    public String getCacheName() {
+        return cacheName;
+    }
+    public Serializer<K> getKeySerializer() {
+        return keySerializer;
+    }
+    public Serializer<V> getValueSerializer() {
+        return valueSerializer;
+    }
+    @Nullable
+    public CacheDecorator getCacheDecorator() {
+        return cacheDecorator;
+    }
+    public PersistentIndexedCacheParameters<K, V> cacheDecorator(CacheDecorator cacheDecorator) {
+        assert cacheDecorator != null;
+        this.cacheDecorator = cacheDecorator;
+        return this;
+    }
+}",class,
+"    public PersistentIndexedCacheParameters(String cacheName, Serializer<K> keySerializer, Serializer<V> valueSerializer) {
+        this.cacheName = cacheName;
+        this.keySerializer = keySerializer;
+        this.valueSerializer = valueSerializer;
+    }",method,
+"    public static <K, V> PersistentIndexedCacheParameters<K, V> of(String cacheName, Serializer<K> keySerializer, Serializer<V> valueSerializer) {
+        return new PersistentIndexedCacheParameters<K, V>(cacheName, keySerializer, valueSerializer);
+    }",method,
+"    public PersistentIndexedCacheParameters(String cacheName, Class<K> keyType, Serializer<V> valueSerializer) {
+        this(cacheName, SERIALIZER_FACTORY.getSerializerFor(keyType), valueSerializer);
+    }",method,
+"    public PersistentIndexedCacheParameters(String cacheName, Class<K> keyType, Class<V> valueType) {
+        this(cacheName, keyType, SERIALIZER_FACTORY.getSerializerFor(valueType));
+    }",method,
+"    public String getCacheName() {
+        return cacheName;
+    }",method,
+"    public Serializer<K> getKeySerializer() {
+        return keySerializer;
+    }",method,
+"    public Serializer<V> getValueSerializer() {
+        return valueSerializer;
+    }",method,
+"    @Nullable
+    public CacheDecorator getCacheDecorator() {
+        return cacheDecorator;
+    }",method,
+"    public PersistentIndexedCacheParameters<K, V> cacheDecorator(CacheDecorator cacheDecorator) {
+        assert cacheDecorator != null;
+        this.cacheDecorator = cacheDecorator;
+        return this;
+    }",method,
+"public class KryoPoolBenchmarkTest {
+	private static final int WARMUP_ITERATIONS = 10000;
+	private static final int RUN_CNT = 10;
+// private static final int ITER_CNT = 200000;
+	private static final int ITER_CNT = 10000;
+	private static final int SLEEP_BETWEEN_RUNS = 100;
+	// not private to prevent the synthetic accessor method
+	static KryoFactory factory = new KryoFactory() {
+		@Override
+		public Kryo create () {
+			Kryo kryo = new Kryo();
+			kryo.register(DefaultTypes.class);
+			kryo.register(SampleObject.class);
+			return kryo;
+		}
+	};
+	@Test
+	public void testWithoutPool () throws Exception {
+		// Warm-up phase: Perform 100000 iterations
+		runWithoutPool(1, WARMUP_ITERATIONS, false);
+		runWithoutPool(RUN_CNT, ITER_CNT, true);
+	}
+	@Test
+	public void testWithPool () throws Exception {
+		KryoPool.Builder builder = new KryoPool.Builder(factory);
+		// Warm-up phase: Perform 100000 iterations
+		runWithPool(builder, 1, WARMUP_ITERATIONS, false);
+		runWithPool(builder, RUN_CNT, ITER_CNT, true);
+	}
+	@Test
+	public void testWithPoolWithSoftReferences () throws Exception {
+		KryoPool.Builder builder = new KryoPool.Builder(factory).softReferences();
+		// Warm-up phase: Perform 100000 iterations
+		runWithPool(builder, 1, WARMUP_ITERATIONS, false);
+		runWithPool(builder, RUN_CNT, ITER_CNT, true);
+	}
+	private void run (String description, Runnable runnable, final int runCount, final int iterCount, boolean outputResults)
+		throws Exception {
+		long avgDur = 0;
+		long bestTime = Long.MAX_VALUE;
+		for (int i = 0; i < runCount; i++) {
+			long start = System.nanoTime();
+			for (int j = 0; j < iterCount; j++) {
+				runnable.run();
+			}
+			long dur = System.nanoTime() - start;
+			dur = TimeUnit.NANOSECONDS.toMillis(dur);
+			if (outputResults) System.out.format("">>> %s (run %d): %,d ms\n"", description, i + 1, dur);
+			avgDur += dur;
+			bestTime = Math.min(bestTime, dur);
+			systemCleanupAfterRun();
+		}
+		avgDur /= runCount;
+		if (outputResults) {
+			System.out.format(""\n>>> %s (average): %,d ms"", description, avgDur);
+			System.out.format(""\n>>> %s (best time): %,d ms\n\n"", description, bestTime);
+		}
+	}
+	private void runWithoutPool (final int runCount, final int iterCount, boolean outputResults) throws Exception {
+		run(""Without pool"", new Runnable() {
+			@Override
+			public void run () {
+				factory.create();
+			}
+		}, runCount, iterCount, outputResults);
+	}
+	private void runWithPool (final KryoPool.Builder builder, final int runCount, final int iterCount, boolean outputResults)
+		throws Exception {
+		final KryoPool pool = builder.build();
+		run(""With pool "" + builder.toString(), new Runnable() {
+			@Override
+			public void run () {
+				Kryo kryo = pool.borrow();
+				pool.release(kryo);
+			}
+		}, runCount, iterCount, outputResults);
+	}
+	private void systemCleanupAfterRun () throws InterruptedException {
+		System.gc();
+		Thread.sleep(SLEEP_BETWEEN_RUNS);
+		System.gc();
+	}
+	private static class SampleObject {
+		private int intVal;
+		private float floatVal;
+		private Short shortVal;
+		private long[] longArr;
+		private double[] dblArr;
+		private String str;
+		public SampleObject () {
+		}
+		SampleObject (int intVal, float floatVal, Short shortVal, long[] longArr, double[] dblArr, String str) {
+			this.intVal = intVal;
+			this.floatVal = floatVal;
+			this.shortVal = shortVal;
+			this.longArr = longArr;
+			this.dblArr = dblArr;
+			this.str = str;
+		}
+		@Override
+		public boolean equals (Object other) {
+			if (this == other) return true;
+			if (other == null || getClass() != other.getClass()) return false;
+			SampleObject obj = (SampleObject)other;
+			return intVal == obj.intVal && floatVal == obj.floatVal && shortVal.equals(obj.shortVal)
+				&& Arrays.equals(dblArr, obj.dblArr) && Arrays.equals(longArr, obj.longArr)
+				&& (str == null ? obj.str == null : str.equals(obj.str));
+		}
+	}
+}",class,
+"	private static class SampleObject {
+		private int intVal;
+		private float floatVal;
+		private Short shortVal;
+		private long[] longArr;
+		private double[] dblArr;
+		private String str;
+		public SampleObject () {
+		}
+		SampleObject (int intVal, float floatVal, Short shortVal, long[] longArr, double[] dblArr, String str) {
+			this.intVal = intVal;
+			this.floatVal = floatVal;
+			this.shortVal = shortVal;
+			this.longArr = longArr;
+			this.dblArr = dblArr;
+			this.str = str;
+		}
+		@Override
+		public boolean equals (Object other) {
+			if (this == other) return true;
+			if (other == null || getClass() != other.getClass()) return false;
+			SampleObject obj = (SampleObject)other;
+			return intVal == obj.intVal && floatVal == obj.floatVal && shortVal.equals(obj.shortVal)
+				&& Arrays.equals(dblArr, obj.dblArr) && Arrays.equals(longArr, obj.longArr)
+				&& (str == null ? obj.str == null : str.equals(obj.str));
+		}
+	}",class,
+"		@Override
+		public Kryo create () {
+			Kryo kryo = new Kryo();
+			kryo.register(DefaultTypes.class);
+			kryo.register(SampleObject.class);
+			return kryo;
+		}",method,
+"	@Test
+	public void testWithoutPool () throws Exception {
+		// Warm-up phase: Perform 100000 iterations
+		runWithoutPool(1, WARMUP_ITERATIONS, false);
+		runWithoutPool(RUN_CNT, ITER_CNT, true);
+	}",method,
+"	@Test
+	public void testWithPool () throws Exception {
+		KryoPool.Builder builder = new KryoPool.Builder(factory);
+		// Warm-up phase: Perform 100000 iterations
+		runWithPool(builder, 1, WARMUP_ITERATIONS, false);
+		runWithPool(builder, RUN_CNT, ITER_CNT, true);
+	}",method,
+"	@Test
+	public void testWithPoolWithSoftReferences () throws Exception {
+		KryoPool.Builder builder = new KryoPool.Builder(factory).softReferences();
+		// Warm-up phase: Perform 100000 iterations
+		runWithPool(builder, 1, WARMUP_ITERATIONS, false);
+		runWithPool(builder, RUN_CNT, ITER_CNT, true);
+	}",method,
+"	private void run (String description, Runnable runnable, final int runCount, final int iterCount, boolean outputResults)
+		throws Exception {
+		long avgDur = 0;
+		long bestTime = Long.MAX_VALUE;
+		for (int i = 0; i < runCount; i++) {
+			long start = System.nanoTime();
+			for (int j = 0; j < iterCount; j++) {
+				runnable.run();
+			}
+			long dur = System.nanoTime() - start;
+			dur = TimeUnit.NANOSECONDS.toMillis(dur);
+			if (outputResults) System.out.format("">>> %s (run %d): %,d ms\n"", description, i + 1, dur);
+			avgDur += dur;
+			bestTime = Math.min(bestTime, dur);
+			systemCleanupAfterRun();
+		}
+		avgDur /= runCount;
+		if (outputResults) {
+			System.out.format(""\n>>> %s (average): %,d ms"", description, avgDur);
+			System.out.format(""\n>>> %s (best time): %,d ms\n\n"", description, bestTime);
+		}
+	}",method,
+"		for (int i = 0; i < runCount; i++) {
+			long start = System.nanoTime();
+			for (int j = 0; j < iterCount; j++) {
+				runnable.run();
+			}
+			long dur = System.nanoTime() - start;
+			dur = TimeUnit.NANOSECONDS.toMillis(dur);
+			if (outputResults) System.out.format("">>> %s (run %d): %,d ms\n"", description, i + 1, dur);
+			avgDur += dur;
+			bestTime = Math.min(bestTime, dur);
+			systemCleanupAfterRun();
+		}",method,
+"			for (int j = 0; j < iterCount; j++) {
+				runnable.run();
+			}",method,
+"		if (outputResults) {
+			System.out.format(""\n>>> %s (average): %,d ms"", description, avgDur);
+			System.out.format(""\n>>> %s (best time): %,d ms\n\n"", description, bestTime);
+		}",method,
+"	private void runWithoutPool (final int runCount, final int iterCount, boolean outputResults) throws Exception {
+		run(""Without pool"", new Runnable() {
+			@Override
+			public void run () {
+				factory.create();
+			}
+		}, runCount, iterCount, outputResults);
+	}",method,
+"		run(""Without pool"", new Runnable() {
+			@Override
+			public void run () {
+				factory.create();
+			}
+		}",method,
+"			@Override
+			public void run () {
+				factory.create();
+			}",method,
+"	private void runWithPool (final KryoPool.Builder builder, final int runCount, final int iterCount, boolean outputResults)
+		throws Exception {
+		final KryoPool pool = builder.build();
+		run(""With pool "" + builder.toString(), new Runnable() {
+			@Override
+			public void run () {
+				Kryo kryo = pool.borrow();
+				pool.release(kryo);
+			}
+		}, runCount, iterCount, outputResults);
+	}",method,
+"			@Override
+			public void run () {
+				Kryo kryo = pool.borrow();
+				pool.release(kryo);
+			}",method,
+"	private void systemCleanupAfterRun () throws InterruptedException {
+		System.gc();
+		Thread.sleep(SLEEP_BETWEEN_RUNS);
+		System.gc();
+	}",method,
+"		public SampleObject () {
+		}",method,
+"		SampleObject (int intVal, float floatVal, Short shortVal, long[] longArr, double[] dblArr, String str) {
+			this.intVal = intVal;
+			this.floatVal = floatVal;
+			this.shortVal = shortVal;
+			this.longArr = longArr;
+			this.dblArr = dblArr;
+			this.str = str;
+		}",method,
+"		@Override
+		public boolean equals (Object other) {
+			if (this == other) return true;
+			if (other == null || getClass() != other.getClass()) return false;
+			SampleObject obj = (SampleObject)other;
+			return intVal == obj.intVal && floatVal == obj.floatVal && shortVal.equals(obj.shortVal)
+				&& Arrays.equals(dblArr, obj.dblArr) && Arrays.equals(longArr, obj.longArr)
+				&& (str == null ? obj.str == null : str.equals(obj.str));
+		}",method,
+"public class GroovyCreateFieldFromUsageHelper extends CreateFieldFromUsageHelper {
+  @Override
+  public Template setupTemplateImpl(PsiField f,
+                                    Object expectedTypes,
+                                    PsiClass targetClass,
+                                    Editor editor,
+                                    PsiElement context,
+                                    boolean createConstantField,
+                                    @NotNull PsiSubstitutor substitutor) {
+    GrVariableDeclaration fieldDecl = (GrVariableDeclaration)f.getParent();
+    GrField field = (GrField)fieldDecl.getVariables()[0];
+    TemplateBuilderImpl builder = new TemplateBuilderImpl(fieldDecl);
+    Project project = context.getProject();
+    GroovyPsiElementFactory factory = GroovyPsiElementFactory.getInstance(project);
+    if (expectedTypes instanceof TypeConstraint[]) {
+      GrTypeElement typeElement = fieldDecl.getTypeElementGroovy();
+      assert typeElement != null;
+      ChooseTypeExpression expr = new ChooseTypeExpression((TypeConstraint[])expectedTypes, PsiManager.getInstance(project),
+                                                           typeElement.getResolveScope());
+      builder.replaceElement(typeElement, expr);
+    }
+    else if (expectedTypes instanceof ExpectedTypeInfo[]) {
+      new GuessTypeParameters(project, factory, builder, substitutor).setupTypeElement(field.getTypeElement(), (ExpectedTypeInfo[])expectedTypes,
+                                                                                       context, targetClass);
+    }
+    if (createConstantField) {
+      field.setInitializerGroovy(factory.createExpressionFromText(""0"", null));
+      builder.replaceElement(field.getInitializerGroovy(), new EmptyExpression());
+    }
+    fieldDecl = CodeInsightUtilCore.forcePsiPostprocessAndRestoreElement(fieldDecl);
+    Template template = builder.buildTemplate();
+    TextRange range = fieldDecl.getTextRange();
+    editor.getDocument().deleteString(range.getStartOffset(), range.getEndOffset());
+    if (expectedTypes instanceof ExpectedTypeInfo[]) {
+      if (!Registry.is(""ide.create.field.enable.shortening"") && ((ExpectedTypeInfo[])expectedTypes).length > 1) {
+        template.setToShortenLongNames(false);
+      }
+    }
+    return template;
+  }
+  @Override
+  public PsiField insertFieldImpl(@NotNull PsiClass targetClass, @NotNull PsiField field, @NotNull PsiElement place) {
+    if (targetClass instanceof GroovyScriptClass) {
+      PsiElement added = targetClass.getContainingFile().add(field.getParent());
+      return (PsiField)((GrVariableDeclaration)added).getVariables()[0];
+    }
+    else {
+      return (PsiField)targetClass.add(field);
+    }
+  }
+}",class,
+"  @Override
+  public Template setupTemplateImpl(PsiField f,
+                                    Object expectedTypes,
+                                    PsiClass targetClass,
+                                    Editor editor,
+                                    PsiElement context,
+                                    boolean createConstantField,
+                                    @NotNull PsiSubstitutor substitutor) {
+    GrVariableDeclaration fieldDecl = (GrVariableDeclaration)f.getParent();
+    GrField field = (GrField)fieldDecl.getVariables()[0];
+    TemplateBuilderImpl builder = new TemplateBuilderImpl(fieldDecl);
+    Project project = context.getProject();
+    GroovyPsiElementFactory factory = GroovyPsiElementFactory.getInstance(project);
+    if (expectedTypes instanceof TypeConstraint[]) {
+      GrTypeElement typeElement = fieldDecl.getTypeElementGroovy();
+      assert typeElement != null;
+      ChooseTypeExpression expr = new ChooseTypeExpression((TypeConstraint[])expectedTypes, PsiManager.getInstance(project),
+                                                           typeElement.getResolveScope());
+      builder.replaceElement(typeElement, expr);
+    }
+    else if (expectedTypes instanceof ExpectedTypeInfo[]) {
+      new GuessTypeParameters(project, factory, builder, substitutor).setupTypeElement(field.getTypeElement(), (ExpectedTypeInfo[])expectedTypes,
+                                                                                       context, targetClass);
+    }
+    if (createConstantField) {
+      field.setInitializerGroovy(factory.createExpressionFromText(""0"", null));
+      builder.replaceElement(field.getInitializerGroovy(), new EmptyExpression());
+    }
+    fieldDecl = CodeInsightUtilCore.forcePsiPostprocessAndRestoreElement(fieldDecl);
+    Template template = builder.buildTemplate();
+    TextRange range = fieldDecl.getTextRange();
+    editor.getDocument().deleteString(range.getStartOffset(), range.getEndOffset());
+    if (expectedTypes instanceof ExpectedTypeInfo[]) {
+      if (!Registry.is(""ide.create.field.enable.shortening"") && ((ExpectedTypeInfo[])expectedTypes).length > 1) {
+        template.setToShortenLongNames(false);
+      }
+    }
+    return template;
+  }",method,
+"    if (expectedTypes instanceof TypeConstraint[]) {
+      GrTypeElement typeElement = fieldDecl.getTypeElementGroovy();
+      assert typeElement != null;
+      ChooseTypeExpression expr = new ChooseTypeExpression((TypeConstraint[])expectedTypes, PsiManager.getInstance(project),
+                                                           typeElement.getResolveScope());
+      builder.replaceElement(typeElement, expr);
+    }",method,
+"    else if (expectedTypes instanceof ExpectedTypeInfo[]) {
+      new GuessTypeParameters(project, factory, builder, substitutor).setupTypeElement(field.getTypeElement(), (ExpectedTypeInfo[])expectedTypes,
+                                                                                       context, targetClass);
+    }",method,
+"    if (createConstantField) {
+      field.setInitializerGroovy(factory.createExpressionFromText(""0"", null));
+      builder.replaceElement(field.getInitializerGroovy(), new EmptyExpression());
+    }",method,
+"    if (expectedTypes instanceof ExpectedTypeInfo[]) {
+      if (!Registry.is(""ide.create.field.enable.shortening"") && ((ExpectedTypeInfo[])expectedTypes).length > 1) {
+        template.setToShortenLongNames(false);
+      }
+    }",method,
+"  @Override
+  public PsiField insertFieldImpl(@NotNull PsiClass targetClass, @NotNull PsiField field, @NotNull PsiElement place) {
+    if (targetClass instanceof GroovyScriptClass) {
+      PsiElement added = targetClass.getContainingFile().add(field.getParent());
+      return (PsiField)((GrVariableDeclaration)added).getVariables()[0];
+    }
+    else {
+      return (PsiField)targetClass.add(field);
+    }
+  }",method,
+"    if (targetClass instanceof GroovyScriptClass) {
+      PsiElement added = targetClass.getContainingFile().add(field.getParent());
+      return (PsiField)((GrVariableDeclaration)added).getVariables()[0];
+    }",method,
+"public class TestUtils {
+  public static final String RUN_WITH = ""org.junit.runner.RunWith"";
+  private static final CallMatcher ASSERT_THROWS =
+    CallMatcher.staticCall(JUnitCommonClassNames.ORG_JUNIT_JUPITER_API_ASSERTIONS, ""assertThrows"");
+  private TestUtils() {
+  }
+  public static boolean isInTestSourceContent(@Nullable PsiElement element) {
+    if (element == null) {
+      return false;
+    }
+    final PsiFile file = element.getContainingFile();
+    final VirtualFile virtualFile = file == null ? null : file.getVirtualFile();
+    return virtualFile != null && ProjectRootManager.getInstance(file.getProject()).getFileIndex().isInTestSourceContent(virtualFile);
+  }
+  public static boolean isPartOfJUnitTestMethod(@NotNull PsiElement element) {
+    final PsiMethod method = PsiTreeUtil.getParentOfType(element, PsiMethod.class, false);
+    return method != null && isJUnitTestMethod(method);
+  }
+  public static boolean isJUnit4BeforeOrAfterMethod(
+    @NotNull PsiMethod method) {
+    return AnnotationUtil.isAnnotated(method, ""org.junit.Before"", true) ||
+           AnnotationUtil.isAnnotated(method, ""org.junit.After"", true);
+  }
+  public static boolean isJUnit4BeforeClassOrAfterClassMethod(
+    @NotNull PsiMethod method) {
+    return AnnotationUtil.isAnnotated(method, ""org.junit.BeforeClass"", true) ||
+           AnnotationUtil.isAnnotated(method, ""org.junit.AfterClass"", true);
+  }
+  public static boolean isJUnitTestMethod(@Nullable PsiMethod method) {
+    if (method == null) return false;
+    final PsiClass containingClass = method.getContainingClass();
+    if (containingClass == null) return false;
+    final Set<TestFramework> frameworks = TestFrameworks.detectApplicableFrameworks(containingClass);
+    return frameworks.stream().anyMatch(framework -> framework.getName().startsWith(""JUnit"") && framework.isTestMethod(method, false));
+  }
+  public static boolean isRunnable(PsiMethod method) {
+    if (method == null) {
+      return false;
+    }
+    if (method.hasModifierProperty(PsiModifier.ABSTRACT) ||
+        method.hasModifierProperty(PsiModifier.STATIC) ||
+        !method.hasModifierProperty(PsiModifier.PUBLIC)) {
+      return false;
+    }
+    final PsiType returnType = method.getReturnType();
+    if (!PsiType.VOID.equals(returnType)) {
+      return false;
+    }
+    final PsiParameterList parameterList = method.getParameterList();
+    return parameterList.getParametersCount() == 0;
+  }
+  public static boolean isJUnit3TestMethod(@Nullable PsiMethod method) {
+    if (method == null) {
+      return false;
+    }
+    final String methodName = method.getName();
+    @NonNls final String test = ""test"";
+    if (!methodName.startsWith(test) || 
+        !method.hasModifierProperty(PsiModifier.PUBLIC) && method.getParameterList().getParametersCount() > 0) {
+      return false;
+    }
+    final PsiClass containingClass = method.getContainingClass();
+    return isJUnitTestClass(containingClass);
+  }
+  public static boolean isJUnit4TestMethod(@Nullable PsiMethod method) {
+    return method != null && AnnotationUtil.isAnnotated(method, JUnitCommonClassNames.ORG_JUNIT_TEST, true);
+  }
+  public static boolean isAnnotatedTestMethod(@Nullable PsiMethod method) {
+    if (method == null) return false;
+    final PsiClass containingClass = method.getContainingClass();
+    if (containingClass == null) return false;
+    final TestFramework testFramework = TestFrameworks.detectFramework(containingClass);
+    if (testFramework == null) return false;
+    if (testFramework.isTestMethod(method, false)) {
+      final String testFrameworkName = testFramework.getName();
+      return testFrameworkName.equals(""JUnit4"") || testFrameworkName.equals(""JUnit5"");
+    }
+    return false;
+  }
+  public static boolean isJUnitTestClass(@Nullable PsiClass targetClass) {
+    return targetClass != null && InheritanceUtil.isInheritor(targetClass, JUnitCommonClassNames.JUNIT_FRAMEWORK_TEST_CASE);
+  }
+  public static boolean isJUnit4TestClass(@Nullable PsiClass aClass, boolean runWithIsTestClass) {
+    if (aClass == null) return false;
+    if (AnnotationUtil.isAnnotated(aClass, RUN_WITH, true)) return runWithIsTestClass;
+    for (final PsiMethod method : aClass.getAllMethods()) {
+      if (isJUnit4TestMethod(method)) return true;
+    }
+    return false;
+  }
+  public static boolean isInTestCode(PsiElement element) {
+    if (isPartOfJUnitTestMethod(element)) {
+      return true;
+    }
+    final PsiClass containingClass = PsiTreeUtil.getParentOfType(element, PsiClass.class);
+    if (containingClass != null && TestFrameworks.getInstance().isTestOrConfig(containingClass)) {
+      return true;
+    }
+    return isInTestSourceContent(element);
+  }
+  public static boolean testInstancePerClass(@NotNull PsiClass containingClass) {
+    PsiAnnotation annotation = AnnotationUtil.findAnnotation(containingClass, JUnitCommonClassNames.ORG_JUNIT_JUPITER_API_TEST_INSTANCE); 
+    if (annotation != null) {
+      PsiAnnotationMemberValue value = annotation.findDeclaredAttributeValue(PsiAnnotation.DEFAULT_REFERENCED_METHOD_NAME);
+      if (value != null && value.getText().contains(""PER_CLASS"")) {
+        return true;
+      }
+    }
+    return false;
+  }
+  public static boolean isExceptionExpected(PsiElement element) {
+    if (!isInTestSourceContent(element)) return false;
+    for(; element != null && !(element instanceof PsiFile); element = element.getParent()) {
+      if (element instanceof PsiMethod) {
+        return hasExpectedExceptionAnnotation((PsiMethod)element);
+      }
+      if (element instanceof PsiLambdaExpression) {
+        PsiExpressionList expressionList =
+          ObjectUtils.tryCast(PsiUtil.skipParenthesizedExprUp(element.getParent()), PsiExpressionList.class);
+        if (expressionList != null) {
+          PsiElement parent = expressionList.getParent();
+          if (parent instanceof PsiMethodCallExpression && ASSERT_THROWS.test((PsiMethodCallExpression)parent)) return true;
+        }
+      }
+      if (element instanceof PsiTryStatement && ((PsiTryStatement)element).getCatchBlocks().length > 0) {
+        return true;
+      }
+    }
+    return false;
+  }
+  public static boolean hasExpectedExceptionAnnotation(PsiMethod method) {
+    final PsiModifierList modifierList = method.getModifierList();
+    return hasAnnotationWithParameter(modifierList, ""org.junit.Test"", ""expected"") ||
+           hasAnnotationWithParameter(modifierList, ""org.testng.annotations.Test"", ""expectedExceptions"");
+  }
+  private static boolean hasAnnotationWithParameter(PsiModifierList modifierList, String annotationName, String expectedParameterName) {
+    final PsiAnnotation testAnnotation = modifierList.findAnnotation(annotationName);
+    if (testAnnotation == null) {
+      return false;
+    }
+    final PsiAnnotationParameterList parameterList = testAnnotation.getParameterList();
+    final PsiNameValuePair[] nameValuePairs = parameterList.getAttributes();
+    for (PsiNameValuePair nameValuePair : nameValuePairs) {
+      @NonNls final String parameterName = nameValuePair.getName();
+      if (expectedParameterName.equals(parameterName)) {
+        return true;
+      }
+    }
+    return false;
+  }
+}",class,
+"  private TestUtils() {
+  }",method,
+"  public static boolean isInTestSourceContent(@Nullable PsiElement element) {
+    if (element == null) {
+      return false;
+    }
+    final PsiFile file = element.getContainingFile();
+    final VirtualFile virtualFile = file == null ? null : file.getVirtualFile();
+    return virtualFile != null && ProjectRootManager.getInstance(file.getProject()).getFileIndex().isInTestSourceContent(virtualFile);
+  }",method,
+"    if (element == null) {
+      return false;
+    }",method,
+"  public static boolean isPartOfJUnitTestMethod(@NotNull PsiElement element) {
+    final PsiMethod method = PsiTreeUtil.getParentOfType(element, PsiMethod.class, false);
+    return method != null && isJUnitTestMethod(method);
+  }",method,
+"  public static boolean isJUnit4BeforeOrAfterMethod(
+    @NotNull PsiMethod method) {
+    return AnnotationUtil.isAnnotated(method, ""org.junit.Before"", true) ||
+           AnnotationUtil.isAnnotated(method, ""org.junit.After"", true);
+  }",method,
+"  public static boolean isJUnit4BeforeClassOrAfterClassMethod(
+    @NotNull PsiMethod method) {
+    return AnnotationUtil.isAnnotated(method, ""org.junit.BeforeClass"", true) ||
+           AnnotationUtil.isAnnotated(method, ""org.junit.AfterClass"", true);
+  }",method,
+"  public static boolean isJUnitTestMethod(@Nullable PsiMethod method) {
+    if (method == null) return false;
+    final PsiClass containingClass = method.getContainingClass();
+    if (containingClass == null) return false;
+    final Set<TestFramework> frameworks = TestFrameworks.detectApplicableFrameworks(containingClass);
+    return frameworks.stream().anyMatch(framework -> framework.getName().startsWith(""JUnit"") && framework.isTestMethod(method, false));
+  }",method,
+"  public static boolean isRunnable(PsiMethod method) {
+    if (method == null) {
+      return false;
+    }
+    if (method.hasModifierProperty(PsiModifier.ABSTRACT) ||
+        method.hasModifierProperty(PsiModifier.STATIC) ||
+        !method.hasModifierProperty(PsiModifier.PUBLIC)) {
+      return false;
+    }
+    final PsiType returnType = method.getReturnType();
+    if (!PsiType.VOID.equals(returnType)) {
+      return false;
+    }
+    final PsiParameterList parameterList = method.getParameterList();
+    return parameterList.getParametersCount() == 0;
+  }",method,
+"    if (method == null) {
+      return false;
+    }",method,
+"  public static boolean isJUnit3TestMethod(@Nullable PsiMethod method) {
+    if (method == null) {
+      return false;
+    }
+    final String methodName = method.getName();
+    @NonNls final String test = ""test"";
+    if (!methodName.startsWith(test) || 
+        !method.hasModifierProperty(PsiModifier.PUBLIC) && method.getParameterList().getParametersCount() > 0) {
+      return false;
+    }
+    final PsiClass containingClass = method.getContainingClass();
+    return isJUnitTestClass(containingClass);
+  }",method,
+"    if (method == null) {
+      return false;
+    }",method,
+"  public static boolean isJUnit4TestMethod(@Nullable PsiMethod method) {
+    return method != null && AnnotationUtil.isAnnotated(method, JUnitCommonClassNames.ORG_JUNIT_TEST, true);
+  }",method,
+"  public static boolean isAnnotatedTestMethod(@Nullable PsiMethod method) {
+    if (method == null) return false;
+    final PsiClass containingClass = method.getContainingClass();
+    if (containingClass == null) return false;
+    final TestFramework testFramework = TestFrameworks.detectFramework(containingClass);
+    if (testFramework == null) return false;
+    if (testFramework.isTestMethod(method, false)) {
+      final String testFrameworkName = testFramework.getName();
+      return testFrameworkName.equals(""JUnit4"") || testFrameworkName.equals(""JUnit5"");
+    }
+    return false;
+  }",method,
+"  public static boolean isJUnitTestClass(@Nullable PsiClass targetClass) {
+    return targetClass != null && InheritanceUtil.isInheritor(targetClass, JUnitCommonClassNames.JUNIT_FRAMEWORK_TEST_CASE);
+  }",method,
+"  public static boolean isJUnit4TestClass(@Nullable PsiClass aClass, boolean runWithIsTestClass) {
+    if (aClass == null) return false;
+    if (AnnotationUtil.isAnnotated(aClass, RUN_WITH, true)) return runWithIsTestClass;
+    for (final PsiMethod method : aClass.getAllMethods()) {
+      if (isJUnit4TestMethod(method)) return true;
+    }
+    return false;
+  }",method,
+"  public static boolean isInTestCode(PsiElement element) {
+    if (isPartOfJUnitTestMethod(element)) {
+      return true;
+    }
+    final PsiClass containingClass = PsiTreeUtil.getParentOfType(element, PsiClass.class);
+    if (containingClass != null && TestFrameworks.getInstance().isTestOrConfig(containingClass)) {
+      return true;
+    }
+    return isInTestSourceContent(element);
+  }",method,
+"  public static boolean testInstancePerClass(@NotNull PsiClass containingClass) {
+    PsiAnnotation annotation = AnnotationUtil.findAnnotation(containingClass, JUnitCommonClassNames.ORG_JUNIT_JUPITER_API_TEST_INSTANCE); 
+    if (annotation != null) {
+      PsiAnnotationMemberValue value = annotation.findDeclaredAttributeValue(PsiAnnotation.DEFAULT_REFERENCED_METHOD_NAME);
+      if (value != null && value.getText().contains(""PER_CLASS"")) {
+        return true;
+      }
+    }
+    return false;
+  }",method,
+"    if (annotation != null) {
+      PsiAnnotationMemberValue value = annotation.findDeclaredAttributeValue(PsiAnnotation.DEFAULT_REFERENCED_METHOD_NAME);
+      if (value != null && value.getText().contains(""PER_CLASS"")) {
+        return true;
+      }
+    }",method,
+"  public static boolean isExceptionExpected(PsiElement element) {
+    if (!isInTestSourceContent(element)) return false;
+    for(; element != null && !(element instanceof PsiFile); element = element.getParent()) {
+      if (element instanceof PsiMethod) {
+        return hasExpectedExceptionAnnotation((PsiMethod)element);
+      }
+      if (element instanceof PsiLambdaExpression) {
+        PsiExpressionList expressionList =
+          ObjectUtils.tryCast(PsiUtil.skipParenthesizedExprUp(element.getParent()), PsiExpressionList.class);
+        if (expressionList != null) {
+          PsiElement parent = expressionList.getParent();
+          if (parent instanceof PsiMethodCallExpression && ASSERT_THROWS.test((PsiMethodCallExpression)parent)) return true;
+        }
+      }
+      if (element instanceof PsiTryStatement && ((PsiTryStatement)element).getCatchBlocks().length > 0) {
+        return true;
+      }
+    }
+    return false;
+  }",method,
+"      if (element instanceof PsiMethod) {
+        return hasExpectedExceptionAnnotation((PsiMethod)element);
+      }",method,
+"      if (element instanceof PsiLambdaExpression) {
+        PsiExpressionList expressionList =
+          ObjectUtils.tryCast(PsiUtil.skipParenthesizedExprUp(element.getParent()), PsiExpressionList.class);
+        if (expressionList != null) {
+          PsiElement parent = expressionList.getParent();
+          if (parent instanceof PsiMethodCallExpression && ASSERT_THROWS.test((PsiMethodCallExpression)parent)) return true;
+        }
+      }",method,
+"        if (expressionList != null) {
+          PsiElement parent = expressionList.getParent();
+          if (parent instanceof PsiMethodCallExpression && ASSERT_THROWS.test((PsiMethodCallExpression)parent)) return true;
+        }",method,
+"  public static boolean hasExpectedExceptionAnnotation(PsiMethod method) {
+    final PsiModifierList modifierList = method.getModifierList();
+    return hasAnnotationWithParameter(modifierList, ""org.junit.Test"", ""expected"") ||
+           hasAnnotationWithParameter(modifierList, ""org.testng.annotations.Test"", ""expectedExceptions"");
+  }",method,
+"  private static boolean hasAnnotationWithParameter(PsiModifierList modifierList, String annotationName, String expectedParameterName) {
+    final PsiAnnotation testAnnotation = modifierList.findAnnotation(annotationName);
+    if (testAnnotation == null) {
+      return false;
+    }
+    final PsiAnnotationParameterList parameterList = testAnnotation.getParameterList();
+    final PsiNameValuePair[] nameValuePairs = parameterList.getAttributes();
+    for (PsiNameValuePair nameValuePair : nameValuePairs) {
+      @NonNls final String parameterName = nameValuePair.getName();
+      if (expectedParameterName.equals(parameterName)) {
+        return true;
+      }
+    }
+    return false;
+  }",method,
+"    if (testAnnotation == null) {
+      return false;
+    }",method,
+"    for (PsiNameValuePair nameValuePair : nameValuePairs) {
+      @NonNls final String parameterName = nameValuePair.getName();
+      if (expectedParameterName.equals(parameterName)) {
+        return true;
+      }
+    }",method,
+"public abstract class BaseFragmentTest {
+    private static final int VIEW_ID = 42;
+    private final Class<? extends Fragment> mCls;
+    private Handler mHandler;
+    protected FrameLayout mView;
+    protected FragmentController mFragments;
+    protected Fragment mFragment;
+    @Rule
+    public final TestableContext mContext = getContext();
+    public BaseFragmentTest(Class<? extends Fragment> cls) {
+        mCls = cls;
+    }
+    protected void createRootView() {
+        mView = new FrameLayout(mContext);
+    }
+    @Before
+    public void setupFragment() throws Exception {
+        createRootView();
+        mView.setId(VIEW_ID);
+        assertNotNull(""BaseFragmentTest must be tagged with @RunWithLooper"",
+                TestableLooper.get(this));
+        TestableLooper.get(this).runWithLooper(() -> {
+            mHandler = new Handler();
+            mFragment = mCls.newInstance();
+            mFragments = FragmentController.createController(new HostCallbacks());
+            mFragments.attachHost(null);
+            mFragments.getFragmentManager().beginTransaction()
+                    .replace(VIEW_ID, mFragment)
+                    .commit();
+        });
+    }
+    protected TestableContext getContext() {
+        return new TestableContext(InstrumentationRegistry.getContext());
+    }
+    @After
+    public void tearDown() throws Exception {
+        if (mFragments != null) {
+            // Set mFragments to null to let it know not to destroy.
+            TestableLooper.get(this).runWithLooper(() -> mFragments.dispatchDestroy());
+        }
+    }
+    @Test
+    public void testCreateDestroy() {
+        mFragments.dispatchCreate();
+        processAllMessages();
+        destroyFragments();
+    }
+    @Test
+    public void testStartStop() {
+        mFragments.dispatchStart();
+        processAllMessages();
+        mFragments.dispatchStop();
+        processAllMessages();
+    }
+    @Test
+    public void testResumePause() {
+        mFragments.dispatchResume();
+        processAllMessages();
+        mFragments.dispatchPause();
+        processAllMessages();
+    }
+    @Test
+    public void testAttachDetach() {
+        WindowManager.LayoutParams lp = new WindowManager.LayoutParams(
+                LayoutParams.MATCH_PARENT, LayoutParams.MATCH_PARENT,
+                LayoutParams.TYPE_SYSTEM_ALERT,
+                0, PixelFormat.TRANSLUCENT);
+        mFragments.dispatchResume();
+        processAllMessages();
+        attachFragmentToWindow();
+        detachFragmentToWindow();
+        mFragments.dispatchPause();
+        processAllMessages();
+    }
+    @Test
+    public void testRecreate() {
+        mFragments.dispatchResume();
+        processAllMessages();
+        recreateFragment();
+        processAllMessages();
+    }
+    @Test
+    public void testMultipleResumes() {
+        mFragments.dispatchResume();
+        processAllMessages();
+        mFragments.dispatchStop();
+        processAllMessages();
+        mFragments.dispatchResume();
+        processAllMessages();
+    }
+    protected void recreateFragment() {
+        mFragments.dispatchPause();
+        Parcelable p = mFragments.saveAllState();
+        mFragments.dispatchDestroy();
+        mFragments = FragmentController.createController(new HostCallbacks());
+        mFragments.attachHost(null);
+        mFragments.restoreAllState(p, (FragmentManagerNonConfig) null);
+        mFragments.dispatchResume();
+        mFragment = mFragments.getFragmentManager().findFragmentById(VIEW_ID);
+    }
+    protected void attachFragmentToWindow() {
+        ViewUtils.attachView(mView);
+        TestableLooper.get(this).processAllMessages();
+    }
+    protected void detachFragmentToWindow() {
+        ViewUtils.detachView(mView);
+        TestableLooper.get(this).processAllMessages();
+    }
+    protected void destroyFragments() {
+        mFragments.dispatchDestroy();
+        processAllMessages();
+        mFragments = null;
+    }
+    protected void processAllMessages() {
+        TestableLooper.get(this).processAllMessages();
+    }
+    private View findViewById(int id) {
+        return mView.findViewById(id);
+    }
+    private class HostCallbacks extends FragmentHostCallback<BaseFragmentTest> {
+        public HostCallbacks() {
+            super(mContext, BaseFragmentTest.this.mHandler, 0);
+        }
+        @Override
+        public BaseFragmentTest onGetHost() {
+            return BaseFragmentTest.this;
+        }
+        @Override
+        public void onDump(String prefix, FileDescriptor fd, PrintWriter writer, String[] args) {
+        }
+        @Override
+        public boolean onShouldSaveFragmentState(Fragment fragment) {
+            return true; // True for now.
+        }
+        @Override
+        public LayoutInflater onGetLayoutInflater() {
+            return LayoutInflater.from(mContext);
+        }
+        @Override
+        public boolean onUseFragmentManagerInflaterFactory() {
+            return true;
+        }
+        @Override
+        public boolean onHasWindowAnimations() {
+            return false;
+        }
+        @Override
+        public int onGetWindowAnimations() {
+            return 0;
+        }
+        @Override
+        public void onAttachFragment(Fragment fragment) {
+        }
+        @Nullable
+        @Override
+        public View onFindViewById(int id) {
+            return BaseFragmentTest.this.findViewById(id);
+        }
+        @Override
+        public boolean onHasView() {
+            return true;
+        }
+    }
+}",class,
+"    private class HostCallbacks extends FragmentHostCallback<BaseFragmentTest> {
+        public HostCallbacks() {
+            super(mContext, BaseFragmentTest.this.mHandler, 0);
+        }
+        @Override
+        public BaseFragmentTest onGetHost() {
+            return BaseFragmentTest.this;
+        }
+        @Override
+        public void onDump(String prefix, FileDescriptor fd, PrintWriter writer, String[] args) {
+        }
+        @Override
+        public boolean onShouldSaveFragmentState(Fragment fragment) {
+            return true; // True for now.
+        }
+        @Override
+        public LayoutInflater onGetLayoutInflater() {
+            return LayoutInflater.from(mContext);
+        }
+        @Override
+        public boolean onUseFragmentManagerInflaterFactory() {
+            return true;
+        }
+        @Override
+        public boolean onHasWindowAnimations() {
+            return false;
+        }
+        @Override
+        public int onGetWindowAnimations() {
+            return 0;
+        }
+        @Override
+        public void onAttachFragment(Fragment fragment) {
+        }
+        @Nullable
+        @Override
+        public View onFindViewById(int id) {
+            return BaseFragmentTest.this.findViewById(id);
+        }
+        @Override
+        public boolean onHasView() {
+            return true;
+        }
+    }",class,
+"    public BaseFragmentTest(Class<? extends Fragment> cls) {
+        mCls = cls;
+    }",method,
+"    protected void createRootView() {
+        mView = new FrameLayout(mContext);
+    }",method,
+"    @Before
+    public void setupFragment() throws Exception {
+        createRootView();
+        mView.setId(VIEW_ID);
+        assertNotNull(""BaseFragmentTest must be tagged with @RunWithLooper"",
+                TestableLooper.get(this));
+        TestableLooper.get(this).runWithLooper(() -> {
+            mHandler = new Handler();
+            mFragment = mCls.newInstance();
+            mFragments = FragmentController.createController(new HostCallbacks());
+            mFragments.attachHost(null);
+            mFragments.getFragmentManager().beginTransaction()
+                    .replace(VIEW_ID, mFragment)
+                    .commit();
+        });
+    }",method,
+"    protected TestableContext getContext() {
+        return new TestableContext(InstrumentationRegistry.getContext());
+    }",method,
+"    @After
+    public void tearDown() throws Exception {
+        if (mFragments != null) {
+            // Set mFragments to null to let it know not to destroy.
+            TestableLooper.get(this).runWithLooper(() -> mFragments.dispatchDestroy());
+        }
+    }",method,
+"        if (mFragments != null) {
+            // Set mFragments to null to let it know not to destroy.
+            TestableLooper.get(this).runWithLooper(() -> mFragments.dispatchDestroy());
+        }",method,
+"    @Test
+    public void testCreateDestroy() {
+        mFragments.dispatchCreate();
+        processAllMessages();
+        destroyFragments();
+    }",method,
+"    @Test
+    public void testStartStop() {
+        mFragments.dispatchStart();
+        processAllMessages();
+        mFragments.dispatchStop();
+        processAllMessages();
+    }",method,
+"    @Test
+    public void testResumePause() {
+        mFragments.dispatchResume();
+        processAllMessages();
+        mFragments.dispatchPause();
+        processAllMessages();
+    }",method,
+"    @Test
+    public void testAttachDetach() {
+        WindowManager.LayoutParams lp = new WindowManager.LayoutParams(
+                LayoutParams.MATCH_PARENT, LayoutParams.MATCH_PARENT,
+                LayoutParams.TYPE_SYSTEM_ALERT,
+                0, PixelFormat.TRANSLUCENT);
+        mFragments.dispatchResume();
+        processAllMessages();
+        attachFragmentToWindow();
+        detachFragmentToWindow();
+        mFragments.dispatchPause();
+        processAllMessages();
+    }",method,
+"    @Test
+    public void testRecreate() {
+        mFragments.dispatchResume();
+        processAllMessages();
+        recreateFragment();
+        processAllMessages();
+    }",method,
+"    @Test
+    public void testMultipleResumes() {
+        mFragments.dispatchResume();
+        processAllMessages();
+        mFragments.dispatchStop();
+        processAllMessages();
+        mFragments.dispatchResume();
+        processAllMessages();
+    }",method,
+"    protected void recreateFragment() {
+        mFragments.dispatchPause();
+        Parcelable p = mFragments.saveAllState();
+        mFragments.dispatchDestroy();
+        mFragments = FragmentController.createController(new HostCallbacks());
+        mFragments.attachHost(null);
+        mFragments.restoreAllState(p, (FragmentManagerNonConfig) null);
+        mFragments.dispatchResume();
+        mFragment = mFragments.getFragmentManager().findFragmentById(VIEW_ID);
+    }",method,
+"    protected void attachFragmentToWindow() {
+        ViewUtils.attachView(mView);
+        TestableLooper.get(this).processAllMessages();
+    }",method,
+"    protected void detachFragmentToWindow() {
+        ViewUtils.detachView(mView);
+        TestableLooper.get(this).processAllMessages();
+    }",method,

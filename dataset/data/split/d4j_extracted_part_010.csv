@@ -1,0 +1,1292 @@
+code_snippet,type,score
+"    public Identifier getTarget()
+    {
+        return target;
+    }",method,good
+"    @Override
+    public <R, C> R accept(AstVisitor<R, C> visitor, C context)
+    {
+        return visitor.visitRenameSchema(this, context);
+    }",method,good
+"    @Override
+    public List<Node> getChildren()
+    {
+        return ImmutableList.of();
+    }",method,good
+"    @Override
+    public int hashCode()
+    {
+        return Objects.hash(source, target);
+    }",method,good
+"    @Override
+    public boolean equals(Object obj)
+    {
+        if (this == obj) {
+            return true;
+        }
+        if ((obj == null) || (getClass() != obj.getClass())) {
+            return false;
+        }
+        RenameSchema o = (RenameSchema) obj;
+        return Objects.equals(source, o.source) &&
+                Objects.equals(target, o.target);
+    }",method,good
+"        if (this == obj) {
+            return true;
+        }",method,good
+"    @Override
+    public String toString()
+    {
+        return toStringHelper(this)
+                .add(""source"", source)
+                .add(""target"", target)
+                .toString();
+    }",method,good
+"public class MethodNameUtils {
+    private MethodNameUtils() {}
+    public final static String[] RESERVED_METHOD_NAMES = new String[]{
+        ""title"",
+        ""iconName"",
+        ""creating"",
+        ""created"",
+        ""loading"",
+        ""loaded"",
+        ""updating"",
+        ""updated"",
+        ""deleting"",
+        ""deleted"",
+        ""validate"",
+    };
+    public static String asReservedMethodName(MethodDeclaration methodDeclaration) {
+        if (!MethodUtils.isPublic(methodDeclaration)) {
+            return null;
+        }
+        int numParameters = methodDeclaration.parameters().size();
+        if (numParameters != 0) {
+            return null;
+        }
+        String methodName = methodDeclaration.getName().getFullyQualifiedName();
+        for(String reservedMethodName: RESERVED_METHOD_NAMES) {
+            if (reservedMethodName.equals(methodName)) {
+                return methodName;
+            }
+        }
+        return null;
+    }
+    public static String asPropertyName(MethodDeclaration methodDeclaration) {
+    	SimpleName name = methodDeclaration.getName();
+    	String methodName = name.getFullyQualifiedName();
+    	// determine if accessor for a property or collection
+    	String candidatePropertyName = MethodUtils.unprefixed(methodName, Constants.PREFIX_GET);
+    	if (candidatePropertyName == null) {
+    		return null;
+    	}
+        // check is public
+        if (!MethodUtils.isPublic(methodDeclaration)) {
+            return null;
+        }
+        // check has no parameters
+        if (methodDeclaration.parameters().size() > 0) {
+            return null;
+        }
+        // check not actually a collection
+        if (MethodNameUtils.asCollectionName(methodDeclaration) != null) {
+            return null;
+        }
+        // check not a log4j logger either
+        if (MethodNameUtils.isLog4jLogger(methodDeclaration)) {
+            return null;
+        }
+        // after lobbying, we no longer care if the object is an @Entity or @Value etc.  
+        // show it anyway.
+    	return candidatePropertyName;
+    }
+    public static String asCollectionName(MethodDeclaration methodDeclaration) {
+    	IMethodBinding methodBinding = methodDeclaration.resolveBinding();
+    	if (methodBinding == null) {
+    		return """";
+    	}
+    	String methodName = methodBinding.getName();
+    	// determine if accessor for a property or collection
+    	String candidateCollectionName = MethodUtils.unprefixed(methodName, Constants.PREFIX_GET);
+    	if (candidateCollectionName == null) {
+    		return null;
+    	}
+        // check is public
+        if (!MethodUtils.isPublic(methodDeclaration)) {
+            return null;
+        }
+        // check has no parameters
+        if (methodDeclaration.parameters().size() > 0) {
+            return null;
+        }
+    	// check the return type is a collection...
+    	ITypeBinding returnType = methodBinding.getReturnType();
+    	ITypeBinding accessorReturnCollectionType = returnType.getTypeDeclaration();
+    	String qualifiedName = accessorReturnCollectionType.getQualifiedName();
+        if (!MethodUtils.isCollectionType(qualifiedName)) {
+    		return null;
+    	}
+        // ... and that has a single parameter
+        // we no longer check that type is an @Entity
+        // (might reintroduce as an option later)
+//        ITypeBinding[] typeArguments = returnType.getTypeArguments();
+//        switch (typeArguments.length) {
+//        case 0:
+//            // no check
+//            break;
+//        case 1:
+//            ITypeBinding typeArgument = typeArguments[0];
+//            if (!TypeUtils.isEntityType(typeArgument)) {
+//                return null;
+//            }
+//            break;
+//        default:
+//            // cannot have 2 arguments.
+//            return null;    
+//        }
+    	return candidateCollectionName;
+    }
+    public static String asActionName(MethodDeclaration methodDeclaration) {
+        // check is public
+        if (!MethodUtils.isPublic(methodDeclaration)) {
+            return null;
+        }
+    	String methodName = methodDeclaration.getName().getFullyQualifiedName();
+    	// determine if accessor for a property or collection
+    	String anyPrefix = MethodUtils.getPrefix(methodName);
+    	if (anyPrefix != null) {
+    		return null;
+    	}
+        // check not reserved name
+        if (asReservedMethodName(methodDeclaration) != null) {
+            return null;
+        }
+    	return methodName;
+    }
+    public static boolean isLog4jLogger(MethodDeclaration methodDeclaration) {
+        IMethodBinding methodBinding = methodDeclaration.resolveBinding();
+        if (methodBinding == null) {
+            return false;
+        }
+        // check the return type
+        ITypeBinding returnType = methodBinding.getReturnType();
+        String qualifiedName = returnType.getQualifiedName();
+        return ""org.apache.log4j.Logger"".equals(qualifiedName);
+    }
+}",class,changes_recommended
+    private MethodNameUtils() {},method,good
+"    public static String asReservedMethodName(MethodDeclaration methodDeclaration) {
+        if (!MethodUtils.isPublic(methodDeclaration)) {
+            return null;
+        }
+        int numParameters = methodDeclaration.parameters().size();
+        if (numParameters != 0) {
+            return null;
+        }
+        String methodName = methodDeclaration.getName().getFullyQualifiedName();
+        for(String reservedMethodName: RESERVED_METHOD_NAMES) {
+            if (reservedMethodName.equals(methodName)) {
+                return methodName;
+            }
+        }
+        return null;
+    }",method,good
+"        if (numParameters != 0) {
+            return null;
+        }",method,good
+"        for(String reservedMethodName: RESERVED_METHOD_NAMES) {
+            if (reservedMethodName.equals(methodName)) {
+                return methodName;
+            }
+        }",method,good
+"    public static String asPropertyName(MethodDeclaration methodDeclaration) {
+    	SimpleName name = methodDeclaration.getName();
+    	String methodName = name.getFullyQualifiedName();
+    	// determine if accessor for a property or collection
+    	String candidatePropertyName = MethodUtils.unprefixed(methodName, Constants.PREFIX_GET);
+    	if (candidatePropertyName == null) {
+    		return null;
+    	}
+        // check is public
+        if (!MethodUtils.isPublic(methodDeclaration)) {
+            return null;
+        }
+        // check has no parameters
+        if (methodDeclaration.parameters().size() > 0) {
+            return null;
+        }
+        // check not actually a collection
+        if (MethodNameUtils.asCollectionName(methodDeclaration) != null) {
+            return null;
+        }
+        // check not a log4j logger either
+        if (MethodNameUtils.isLog4jLogger(methodDeclaration)) {
+            return null;
+        }
+        // after lobbying, we no longer care if the object is an @Entity or @Value etc.  
+        // show it anyway.
+    	return candidatePropertyName;
+    }",method,good
+"    	if (candidatePropertyName == null) {
+    		return null;
+    	}",method,good
+"    public static String asCollectionName(MethodDeclaration methodDeclaration) {
+    	IMethodBinding methodBinding = methodDeclaration.resolveBinding();
+    	if (methodBinding == null) {
+    		return """";
+    	}
+    	String methodName = methodBinding.getName();
+    	// determine if accessor for a property or collection
+    	String candidateCollectionName = MethodUtils.unprefixed(methodName, Constants.PREFIX_GET);
+    	if (candidateCollectionName == null) {
+    		return null;
+    	}
+        // check is public
+        if (!MethodUtils.isPublic(methodDeclaration)) {
+            return null;
+        }
+        // check has no parameters
+        if (methodDeclaration.parameters().size() > 0) {
+            return null;
+        }
+    	// check the return type is a collection...
+    	ITypeBinding returnType = methodBinding.getReturnType();
+    	ITypeBinding accessorReturnCollectionType = returnType.getTypeDeclaration();
+    	String qualifiedName = accessorReturnCollectionType.getQualifiedName();
+        if (!MethodUtils.isCollectionType(qualifiedName)) {
+    		return null;
+    	}
+        // ... and that has a single parameter
+        // we no longer check that type is an @Entity
+        // (might reintroduce as an option later)
+//        ITypeBinding[] typeArguments = returnType.getTypeArguments();
+//        switch (typeArguments.length) {
+//        case 0:
+//            // no check
+//            break;
+//        case 1:
+//            ITypeBinding typeArgument = typeArguments[0];
+//            if (!TypeUtils.isEntityType(typeArgument)) {
+//                return null;
+//            }
+//            break;
+//        default:
+//            // cannot have 2 arguments.
+//            return null;    
+//        }
+    	return candidateCollectionName;
+    }",method,good
+"    	if (methodBinding == null) {
+    		return """";
+    	}",method,good
+"    	if (candidateCollectionName == null) {
+    		return null;
+    	}",method,good
+"    public static String asActionName(MethodDeclaration methodDeclaration) {
+        // check is public
+        if (!MethodUtils.isPublic(methodDeclaration)) {
+            return null;
+        }
+    	String methodName = methodDeclaration.getName().getFullyQualifiedName();
+    	// determine if accessor for a property or collection
+    	String anyPrefix = MethodUtils.getPrefix(methodName);
+    	if (anyPrefix != null) {
+    		return null;
+    	}
+        // check not reserved name
+        if (asReservedMethodName(methodDeclaration) != null) {
+            return null;
+        }
+    	return methodName;
+    }",method,good
+"    	if (anyPrefix != null) {
+    		return null;
+    	}",method,good
+"    public static boolean isLog4jLogger(MethodDeclaration methodDeclaration) {
+        IMethodBinding methodBinding = methodDeclaration.resolveBinding();
+        if (methodBinding == null) {
+            return false;
+        }
+        // check the return type
+        ITypeBinding returnType = methodBinding.getReturnType();
+        String qualifiedName = returnType.getQualifiedName();
+        return ""org.apache.log4j.Logger"".equals(qualifiedName);
+    }",method,good
+"        if (methodBinding == null) {
+            return false;
+        }",method,good
+"public class ObjectFactoryCreatingFactoryBeanTests {
+	private static final Resource CONTEXT =
+		qualifiedResource(ObjectFactoryCreatingFactoryBeanTests.class, ""context.xml"");
+	private DefaultListableBeanFactory beanFactory;
+	@Before
+	public void setUp() {
+		this.beanFactory = new DefaultListableBeanFactory();
+		new XmlBeanDefinitionReader(this.beanFactory).loadBeanDefinitions(CONTEXT);
+		this.beanFactory.setSerializationId(""test"");
+	}
+	@After
+	public void tearDown() {
+		this.beanFactory.setSerializationId(null);
+	}
+	@Test
+	public void testFactoryOperation() throws Exception {
+		FactoryTestBean testBean = beanFactory.getBean(""factoryTestBean"", FactoryTestBean.class);
+		ObjectFactory<?> objectFactory = testBean.getObjectFactory();
+		Date date1 = (Date) objectFactory.getObject();
+		Date date2 = (Date) objectFactory.getObject();
+		assertTrue(date1 != date2);
+	}
+	@Test
+	public void testFactorySerialization() throws Exception {
+		FactoryTestBean testBean = beanFactory.getBean(""factoryTestBean"", FactoryTestBean.class);
+		ObjectFactory<?> objectFactory = testBean.getObjectFactory();
+		objectFactory = (ObjectFactory) SerializationTestUtils.serializeAndDeserialize(objectFactory);
+		Date date1 = (Date) objectFactory.getObject();
+		Date date2 = (Date) objectFactory.getObject();
+		assertTrue(date1 != date2);
+	}
+	@Test
+	public void testProviderOperation() throws Exception {
+		ProviderTestBean testBean = beanFactory.getBean(""providerTestBean"", ProviderTestBean.class);
+		Provider<?> provider = testBean.getProvider();
+		Date date1 = (Date) provider.get();
+		Date date2 = (Date) provider.get();
+		assertTrue(date1 != date2);
+	}
+	@Test
+	public void testProviderSerialization() throws Exception {
+		ProviderTestBean testBean = beanFactory.getBean(""providerTestBean"", ProviderTestBean.class);
+		Provider<?> provider = testBean.getProvider();
+		provider = (Provider) SerializationTestUtils.serializeAndDeserialize(provider);
+		Date date1 = (Date) provider.get();
+		Date date2 = (Date) provider.get();
+		assertTrue(date1 != date2);
+	}
+	@Test
+	public void testDoesNotComplainWhenTargetBeanNameRefersToSingleton() throws Exception {
+		final String targetBeanName = ""singleton"";
+		final String expectedSingleton = ""Alicia Keys"";
+		BeanFactory beanFactory = mock(BeanFactory.class);
+		given(beanFactory.getBean(targetBeanName)).willReturn(expectedSingleton);
+		ObjectFactoryCreatingFactoryBean factory = new ObjectFactoryCreatingFactoryBean();
+		factory.setTargetBeanName(targetBeanName);
+		factory.setBeanFactory(beanFactory);
+		factory.afterPropertiesSet();
+		ObjectFactory<?> objectFactory = factory.getObject();
+		Object actualSingleton = objectFactory.getObject();
+		assertSame(expectedSingleton, actualSingleton);
+	}
+	@Test
+	public void testWhenTargetBeanNameIsNull() throws Exception {
+		try {
+			new ObjectFactoryCreatingFactoryBean().afterPropertiesSet();
+			fail(""Must have thrown an IllegalArgumentException; 'targetBeanName' property not set."");
+		}
+		catch (IllegalArgumentException expected) {}
+	}
+	@Test
+	public void testWhenTargetBeanNameIsEmptyString() throws Exception {
+		try {
+			ObjectFactoryCreatingFactoryBean factory = new ObjectFactoryCreatingFactoryBean();
+			factory.setTargetBeanName("""");
+			factory.afterPropertiesSet();
+			fail(""Must have thrown an IllegalArgumentException; 'targetBeanName' property set to (invalid) empty string."");
+		}
+		catch (IllegalArgumentException expected) {}
+	}
+	@Test
+	public void testWhenTargetBeanNameIsWhitespacedString() throws Exception {
+		try {
+			ObjectFactoryCreatingFactoryBean factory = new ObjectFactoryCreatingFactoryBean();
+			factory.setTargetBeanName(""  \t"");
+			factory.afterPropertiesSet();
+			fail(""Must have thrown an IllegalArgumentException; 'targetBeanName' property set to (invalid) only-whitespace string."");
+		}
+		catch (IllegalArgumentException expected) {}
+	}
+	@Test
+	public void testEnsureOFBFBReportsThatItActuallyCreatesObjectFactoryInstances() throws Exception {
+		assertEquals(""Must be reporting that it creates ObjectFactory instances (as per class contract)."",
+			ObjectFactory.class, new ObjectFactoryCreatingFactoryBean().getObjectType());
+	}
+	public static class FactoryTestBean {
+		private ObjectFactory<?> objectFactory;
+		public ObjectFactory<?> getObjectFactory() {
+			return objectFactory;
+		}
+		public void setObjectFactory(ObjectFactory<?> objectFactory) {
+			this.objectFactory = objectFactory;
+		}
+	}
+	public static class ProviderTestBean {
+		private Provider<?> provider;
+		public Provider<?> getProvider() {
+			return provider;
+		}
+		public void setProvider(Provider<?> provider) {
+			this.provider = provider;
+		}
+	}
+}",class,changes_recommended
+"		assertEquals(""Must be reporting that it creates ObjectFactory instances (as per class contract)."",
+			ObjectFactory.class, new ObjectFactoryCreatingFactoryBean().getObjectType());
+	}
+	public static class FactoryTestBean {
+		private ObjectFactory<?> objectFactory;
+		public ObjectFactory<?> getObjectFactory() {
+			return objectFactory;
+		}
+		public void setObjectFactory(ObjectFactory<?> objectFactory) {
+			this.objectFactory = objectFactory;
+		}
+	}",class,good
+"	public static class ProviderTestBean {
+		private Provider<?> provider;
+		public Provider<?> getProvider() {
+			return provider;
+		}
+		public void setProvider(Provider<?> provider) {
+			this.provider = provider;
+		}
+	}",class,good
+"	@Before
+	public void setUp() {
+		this.beanFactory = new DefaultListableBeanFactory();
+		new XmlBeanDefinitionReader(this.beanFactory).loadBeanDefinitions(CONTEXT);
+		this.beanFactory.setSerializationId(""test"");
+	}",method,good
+"	@After
+	public void tearDown() {
+		this.beanFactory.setSerializationId(null);
+	}",method,good
+"	@Test
+	public void testFactoryOperation() throws Exception {
+		FactoryTestBean testBean = beanFactory.getBean(""factoryTestBean"", FactoryTestBean.class);
+		ObjectFactory<?> objectFactory = testBean.getObjectFactory();
+		Date date1 = (Date) objectFactory.getObject();
+		Date date2 = (Date) objectFactory.getObject();
+		assertTrue(date1 != date2);
+	}",method,good
+"	@Test
+	public void testFactorySerialization() throws Exception {
+		FactoryTestBean testBean = beanFactory.getBean(""factoryTestBean"", FactoryTestBean.class);
+		ObjectFactory<?> objectFactory = testBean.getObjectFactory();
+		objectFactory = (ObjectFactory) SerializationTestUtils.serializeAndDeserialize(objectFactory);
+		Date date1 = (Date) objectFactory.getObject();
+		Date date2 = (Date) objectFactory.getObject();
+		assertTrue(date1 != date2);
+	}",method,good
+"	@Test
+	public void testProviderOperation() throws Exception {
+		ProviderTestBean testBean = beanFactory.getBean(""providerTestBean"", ProviderTestBean.class);
+		Provider<?> provider = testBean.getProvider();
+		Date date1 = (Date) provider.get();
+		Date date2 = (Date) provider.get();
+		assertTrue(date1 != date2);
+	}",method,good
+"	@Test
+	public void testProviderSerialization() throws Exception {
+		ProviderTestBean testBean = beanFactory.getBean(""providerTestBean"", ProviderTestBean.class);
+		Provider<?> provider = testBean.getProvider();
+		provider = (Provider) SerializationTestUtils.serializeAndDeserialize(provider);
+		Date date1 = (Date) provider.get();
+		Date date2 = (Date) provider.get();
+		assertTrue(date1 != date2);
+	}",method,good
+"	@Test
+	public void testDoesNotComplainWhenTargetBeanNameRefersToSingleton() throws Exception {
+		final String targetBeanName = ""singleton"";
+		final String expectedSingleton = ""Alicia Keys"";
+		BeanFactory beanFactory = mock(BeanFactory.class);
+		given(beanFactory.getBean(targetBeanName)).willReturn(expectedSingleton);
+		ObjectFactoryCreatingFactoryBean factory = new ObjectFactoryCreatingFactoryBean();
+		factory.setTargetBeanName(targetBeanName);
+		factory.setBeanFactory(beanFactory);
+		factory.afterPropertiesSet();
+		ObjectFactory<?> objectFactory = factory.getObject();
+		Object actualSingleton = objectFactory.getObject();
+		assertSame(expectedSingleton, actualSingleton);
+	}",method,good
+"	@Test
+	public void testWhenTargetBeanNameIsNull() throws Exception {
+		try {
+			new ObjectFactoryCreatingFactoryBean().afterPropertiesSet();
+			fail(""Must have thrown an IllegalArgumentException; 'targetBeanName' property not set."");
+		}
+		catch (IllegalArgumentException expected) {}
+	}",method,good
+		catch (IllegalArgumentException expected) {},method,good
+"	@Test
+	public void testWhenTargetBeanNameIsEmptyString() throws Exception {
+		try {
+			ObjectFactoryCreatingFactoryBean factory = new ObjectFactoryCreatingFactoryBean();
+			factory.setTargetBeanName("""");
+			factory.afterPropertiesSet();
+			fail(""Must have thrown an IllegalArgumentException; 'targetBeanName' property set to (invalid) empty string."");
+		}
+		catch (IllegalArgumentException expected) {}
+	}",method,good
+		catch (IllegalArgumentException expected) {},method,good
+"	@Test
+	public void testWhenTargetBeanNameIsWhitespacedString() throws Exception {
+		try {
+			ObjectFactoryCreatingFactoryBean factory = new ObjectFactoryCreatingFactoryBean();
+			factory.setTargetBeanName(""  \t"");
+			factory.afterPropertiesSet();
+			fail(""Must have thrown an IllegalArgumentException; 'targetBeanName' property set to (invalid) only-whitespace string."");
+		}
+		catch (IllegalArgumentException expected) {}
+	}",method,good
+		catch (IllegalArgumentException expected) {},method,good
+"	@Test
+	public void testEnsureOFBFBReportsThatItActuallyCreatesObjectFactoryInstances() throws Exception {
+		assertEquals(""Must be reporting that it creates ObjectFactory instances (as per class contract)."",
+			ObjectFactory.class, new ObjectFactoryCreatingFactoryBean().getObjectType());
+	}",method,good
+"		public ObjectFactory<?> getObjectFactory() {
+			return objectFactory;
+		}",method,good
+"		public void setObjectFactory(ObjectFactory<?> objectFactory) {
+			this.objectFactory = objectFactory;
+		}",method,good
+"		public Provider<?> getProvider() {
+			return provider;
+		}",method,good
+"		public void setProvider(Provider<?> provider) {
+			this.provider = provider;
+		}",method,good
+"public class MobileLinkQualityInfo extends LinkQualityInfo {
+    // Represents TelephonyManager.NetworkType
+    private int mMobileNetworkType = UNKNOWN_INT;
+    private int mRssi = UNKNOWN_INT;
+    private int mGsmErrorRate = UNKNOWN_INT;
+    private int mCdmaDbm = UNKNOWN_INT;
+    private int mCdmaEcio = UNKNOWN_INT;
+    private int mEvdoDbm = UNKNOWN_INT;
+    private int mEvdoEcio = UNKNOWN_INT;
+    private int mEvdoSnr = UNKNOWN_INT;
+    private int mLteSignalStrength = UNKNOWN_INT;
+    private int mLteRsrp = UNKNOWN_INT;
+    private int mLteRsrq = UNKNOWN_INT;
+    private int mLteRssnr = UNKNOWN_INT;
+    private int mLteCqi = UNKNOWN_INT;
+    @Override
+    public void writeToParcel(Parcel dest, int flags) {
+        super.writeToParcel(dest, flags, OBJECT_TYPE_MOBILE_LINK_QUALITY_INFO);
+        dest.writeInt(mMobileNetworkType);
+        dest.writeInt(mRssi);
+        dest.writeInt(mGsmErrorRate);
+        dest.writeInt(mCdmaDbm);
+        dest.writeInt(mCdmaEcio);
+        dest.writeInt(mEvdoDbm);
+        dest.writeInt(mEvdoEcio);
+        dest.writeInt(mEvdoSnr);
+        dest.writeInt(mLteSignalStrength);
+        dest.writeInt(mLteRsrp);
+        dest.writeInt(mLteRsrq);
+        dest.writeInt(mLteRssnr);
+        dest.writeInt(mLteCqi);
+    }
+    public static MobileLinkQualityInfo createFromParcelBody(Parcel in) {
+        MobileLinkQualityInfo li = new MobileLinkQualityInfo();
+        li.initializeFromParcel(in);
+        li.mMobileNetworkType = in.readInt();
+        li.mRssi = in.readInt();
+        li.mGsmErrorRate = in.readInt();
+        li.mCdmaDbm = in.readInt();
+        li.mCdmaEcio = in.readInt();
+        li.mEvdoDbm = in.readInt();
+        li.mEvdoEcio = in.readInt();
+        li.mEvdoSnr = in.readInt();
+        li.mLteSignalStrength = in.readInt();
+        li.mLteRsrp = in.readInt();
+        li.mLteRsrq = in.readInt();
+        li.mLteRssnr = in.readInt();
+        li.mLteCqi = in.readInt();
+        return li;
+    }
+    public int getMobileNetworkType() {
+        return mMobileNetworkType;
+    }
+    public void setMobileNetworkType(int mobileNetworkType) {
+        mMobileNetworkType = mobileNetworkType;
+    }
+    public int getRssi() {
+        return mRssi;
+    }
+    public void setRssi(int Rssi) {
+        mRssi = Rssi;
+    }
+    public int getGsmErrorRate() {
+        return mGsmErrorRate;
+    }
+    public void setGsmErrorRate(int gsmErrorRate) {
+        mGsmErrorRate = gsmErrorRate;
+    }
+    public int getCdmaDbm() {
+        return mCdmaDbm;
+    }
+    public void setCdmaDbm(int cdmaDbm) {
+        mCdmaDbm = cdmaDbm;
+    }
+    public int getCdmaEcio() {
+        return mCdmaEcio;
+    }
+    public void setCdmaEcio(int cdmaEcio) {
+        mCdmaEcio = cdmaEcio;
+    }
+    public int getEvdoDbm() {
+        return mEvdoDbm;
+    }
+    public void setEvdoDbm(int evdoDbm) {
+        mEvdoDbm = evdoDbm;
+    }
+    public int getEvdoEcio() {
+        return mEvdoEcio;
+    }
+    public void setEvdoEcio(int evdoEcio) {
+        mEvdoEcio = evdoEcio;
+    }
+    public int getEvdoSnr() {
+        return mEvdoSnr;
+    }
+    public void setEvdoSnr(int evdoSnr) {
+        mEvdoSnr = evdoSnr;
+    }
+    public int getLteSignalStrength() {
+        return mLteSignalStrength;
+    }
+    public void setLteSignalStrength(int lteSignalStrength) {
+        mLteSignalStrength = lteSignalStrength;
+    }
+    public int getLteRsrp() {
+        return mLteRsrp;
+    }
+    public void setLteRsrp(int lteRsrp) {
+        mLteRsrp = lteRsrp;
+    }
+    public int getLteRsrq() {
+        return mLteRsrq;
+    }
+    public void setLteRsrq(int lteRsrq) {
+        mLteRsrq = lteRsrq;
+    }
+    public int getLteRssnr() {
+        return mLteRssnr;
+    }
+    public void setLteRssnr(int lteRssnr) {
+        mLteRssnr = lteRssnr;
+    }
+    public int getLteCqi() {
+        return mLteCqi;
+    }
+    public void setLteCqi(int lteCqi) {
+        mLteCqi = lteCqi;
+    }
+}",class,good
+"    @Override
+    public void writeToParcel(Parcel dest, int flags) {
+        super.writeToParcel(dest, flags, OBJECT_TYPE_MOBILE_LINK_QUALITY_INFO);
+        dest.writeInt(mMobileNetworkType);
+        dest.writeInt(mRssi);
+        dest.writeInt(mGsmErrorRate);
+        dest.writeInt(mCdmaDbm);
+        dest.writeInt(mCdmaEcio);
+        dest.writeInt(mEvdoDbm);
+        dest.writeInt(mEvdoEcio);
+        dest.writeInt(mEvdoSnr);
+        dest.writeInt(mLteSignalStrength);
+        dest.writeInt(mLteRsrp);
+        dest.writeInt(mLteRsrq);
+        dest.writeInt(mLteRssnr);
+        dest.writeInt(mLteCqi);
+    }",method,good
+"    public static MobileLinkQualityInfo createFromParcelBody(Parcel in) {
+        MobileLinkQualityInfo li = new MobileLinkQualityInfo();
+        li.initializeFromParcel(in);
+        li.mMobileNetworkType = in.readInt();
+        li.mRssi = in.readInt();
+        li.mGsmErrorRate = in.readInt();
+        li.mCdmaDbm = in.readInt();
+        li.mCdmaEcio = in.readInt();
+        li.mEvdoDbm = in.readInt();
+        li.mEvdoEcio = in.readInt();
+        li.mEvdoSnr = in.readInt();
+        li.mLteSignalStrength = in.readInt();
+        li.mLteRsrp = in.readInt();
+        li.mLteRsrq = in.readInt();
+        li.mLteRssnr = in.readInt();
+        li.mLteCqi = in.readInt();
+        return li;
+    }",method,good
+"    public int getMobileNetworkType() {
+        return mMobileNetworkType;
+    }",method,good
+"    public void setMobileNetworkType(int mobileNetworkType) {
+        mMobileNetworkType = mobileNetworkType;
+    }",method,good
+"    public int getRssi() {
+        return mRssi;
+    }",method,good
+"    public void setRssi(int Rssi) {
+        mRssi = Rssi;
+    }",method,good
+"    public int getGsmErrorRate() {
+        return mGsmErrorRate;
+    }",method,good
+"    public void setGsmErrorRate(int gsmErrorRate) {
+        mGsmErrorRate = gsmErrorRate;
+    }",method,good
+"    public int getCdmaDbm() {
+        return mCdmaDbm;
+    }",method,good
+"    public void setCdmaDbm(int cdmaDbm) {
+        mCdmaDbm = cdmaDbm;
+    }",method,good
+"    public int getCdmaEcio() {
+        return mCdmaEcio;
+    }",method,good
+"    public void setCdmaEcio(int cdmaEcio) {
+        mCdmaEcio = cdmaEcio;
+    }",method,good
+"    public int getEvdoDbm() {
+        return mEvdoDbm;
+    }",method,good
+"    public void setEvdoDbm(int evdoDbm) {
+        mEvdoDbm = evdoDbm;
+    }",method,good
+"    public int getEvdoEcio() {
+        return mEvdoEcio;
+    }",method,good
+"    public void setEvdoEcio(int evdoEcio) {
+        mEvdoEcio = evdoEcio;
+    }",method,good
+"    public int getEvdoSnr() {
+        return mEvdoSnr;
+    }",method,good
+"    public void setEvdoSnr(int evdoSnr) {
+        mEvdoSnr = evdoSnr;
+    }",method,good
+"    public int getLteSignalStrength() {
+        return mLteSignalStrength;
+    }",method,good
+"    public void setLteSignalStrength(int lteSignalStrength) {
+        mLteSignalStrength = lteSignalStrength;
+    }",method,good
+"    public int getLteRsrp() {
+        return mLteRsrp;
+    }",method,good
+"    public void setLteRsrp(int lteRsrp) {
+        mLteRsrp = lteRsrp;
+    }",method,good
+"    public int getLteRsrq() {
+        return mLteRsrq;
+    }",method,good
+"    public void setLteRsrq(int lteRsrq) {
+        mLteRsrq = lteRsrq;
+    }",method,good
+"    public int getLteRssnr() {
+        return mLteRssnr;
+    }",method,good
+"    public void setLteRssnr(int lteRssnr) {
+        mLteRssnr = lteRssnr;
+    }",method,good
+"    public int getLteCqi() {
+        return mLteCqi;
+    }",method,good
+"    public void setLteCqi(int lteCqi) {
+        mLteCqi = lteCqi;
+    }",method,good
+"public class SameParameterValueInspection extends SameParameterValueInspectionBase {
+  private static final Logger LOG = Logger.getInstance(SameParameterValueInspectionBase.class);
+  @Nullable
+  @Override
+  public JComponent createOptionsPanel() {
+    LabeledComponent<VisibilityModifierChooser> component = LabeledComponent.create(new VisibilityModifierChooser(() -> true,
+                                                                                                                  highestModifier,
+                                                                                                                  (newModifier) -> highestModifier = newModifier),
+                                                                                    ""Methods to report:"",
+                                                                                    BorderLayout.WEST);
+    JPanel panel = new JPanel(new GridBagLayout());
+    panel.add(component, new GridBagConstraints(0, 0, 1, 1, 1.0, 1.0, GridBagConstraints.FIRST_LINE_START, GridBagConstraints.NORTHEAST, JBUI.emptyInsets(), 0, 0));
+    return panel;
+  }
+  protected LocalQuickFix createFix(String paramName, String value) {
+    return new InlineParameterValueFix(paramName, value);
+  }
+  public static class InlineParameterValueFix implements LocalQuickFix {
+    private final String myValue;
+    private final String myParameterName;
+    private InlineParameterValueFix(final String parameterName, final String value) {
+      myValue = value;
+      myParameterName = parameterName;
+    }
+    @Override
+    public String toString() {
+      return getParamName() + "" "" + getValue();
+    }
+    @Override
+    @NotNull
+    public String getName() {
+      return InspectionsBundle.message(""inspection.same.parameter.fix.name"", myParameterName, StringUtil.unquoteString(myValue));
+    }
+    @Override
+    @NotNull
+    public String getFamilyName() {
+      return InspectionsBundle.message(""inspection.same.parameter.fix.family.name"");
+    }
+    @Override
+    public void applyFix(@NotNull final Project project, @NotNull ProblemDescriptor descriptor) {
+      final PsiElement element = descriptor.getPsiElement();
+      final PsiMethod method = PsiTreeUtil.getParentOfType(element, PsiMethod.class);
+      if (method == null) return;
+      PsiParameter parameter = PsiTreeUtil.getParentOfType(element, PsiParameter.class, false);
+      if (parameter == null) {
+        final PsiParameter[] parameters = method.getParameterList().getParameters();
+        for (PsiParameter psiParameter : parameters) {
+          if (Comparing.strEqual(psiParameter.getName(), myParameterName)) {
+            parameter = psiParameter;
+            break;
+          }
+        }
+      }
+      if (parameter == null) return;
+      if (!CommonRefactoringUtil.checkReadOnlyStatus(project, parameter)) return;
+      final PsiExpression defToInline;
+      try {
+        defToInline = JavaPsiFacade.getInstance(project).getElementFactory().createExpressionFromText(myValue, parameter);
+      }
+      catch (IncorrectOperationException e) {
+        return;
+      }
+      final PsiParameter parameterToInline = parameter;
+      inlineSameParameterValue(method, parameterToInline, defToInline);
+    }
+    @Override
+    public boolean startInWriteAction() {
+      return false;
+    }
+    public static void inlineSameParameterValue(final PsiMethod method, final PsiParameter parameter, final PsiExpression defToInline) {
+      final MultiMap<PsiElement, String> conflicts = new MultiMap<>();
+      JavaSafeDeleteProcessor.collectMethodConflicts(conflicts, method, parameter);
+      if (!conflicts.isEmpty()) {
+        if (ApplicationManager.getApplication().isUnitTestMode()) {
+          if (!BaseRefactoringProcessor.ConflictsInTestsException.isTestIgnore()) {
+            throw new BaseRefactoringProcessor.ConflictsInTestsException(conflicts.values());
+          }
+        }
+        else if (!new ConflictsDialog(parameter.getProject(), conflicts).showAndGet()) {
+          return;
+        }
+      }
+      final Collection<PsiReference> refsToInline = ReferencesSearch.search(parameter).findAll();
+      ApplicationManager.getApplication().runWriteAction(() -> {
+        try {
+          PsiExpression[] exprs = new PsiExpression[refsToInline.size()];
+          int idx = 0;
+          for (PsiReference reference : refsToInline) {
+            if (reference instanceof PsiJavaCodeReferenceElement) {
+              exprs[idx++] = InlineUtil.inlineVariable(parameter, defToInline, (PsiJavaCodeReferenceElement)reference);
+            }
+          }
+          for (final PsiExpression expr : exprs) {
+            if (expr != null) InlineUtil.tryToInlineArrayCreationForVarargs(expr);
+          }
+        }
+        catch (IncorrectOperationException e) {
+          LOG.error(e);
+        }
+      });
+      removeParameter(method, parameter);
+    }
+    public static void removeParameter(final PsiMethod method, final PsiParameter parameter) {
+      final PsiParameter[] parameters = method.getParameterList().getParameters();
+      final List<ParameterInfoImpl> psiParameters = new ArrayList<>();
+      int paramIdx = 0;
+      final String paramName = parameter.getName();
+      for (PsiParameter param : parameters) {
+        if (!Comparing.strEqual(paramName, param.getName())) {
+          psiParameters.add(new ParameterInfoImpl(paramIdx, param.getName(), param.getType()));
+        }
+        paramIdx++;
+      }
+      new ChangeSignatureProcessor(method.getProject(), method, false, null, method.getName(), method.getReturnType(),
+                                   psiParameters.toArray(new ParameterInfoImpl[psiParameters.size()])).run();
+    }
+    public String getValue() {
+      return myValue;
+    }
+    public String getParamName() {
+      return myParameterName;
+    }
+  }
+}",class,changes_required
+"  public static class InlineParameterValueFix implements LocalQuickFix {
+    private final String myValue;
+    private final String myParameterName;
+    private InlineParameterValueFix(final String parameterName, final String value) {
+      myValue = value;
+      myParameterName = parameterName;
+    }
+    @Override
+    public String toString() {
+      return getParamName() + "" "" + getValue();
+    }
+    @Override
+    @NotNull
+    public String getName() {
+      return InspectionsBundle.message(""inspection.same.parameter.fix.name"", myParameterName, StringUtil.unquoteString(myValue));
+    }
+    @Override
+    @NotNull
+    public String getFamilyName() {
+      return InspectionsBundle.message(""inspection.same.parameter.fix.family.name"");
+    }
+    @Override
+    public void applyFix(@NotNull final Project project, @NotNull ProblemDescriptor descriptor) {
+      final PsiElement element = descriptor.getPsiElement();
+      final PsiMethod method = PsiTreeUtil.getParentOfType(element, PsiMethod.class);
+      if (method == null) return;
+      PsiParameter parameter = PsiTreeUtil.getParentOfType(element, PsiParameter.class, false);
+      if (parameter == null) {
+        final PsiParameter[] parameters = method.getParameterList().getParameters();
+        for (PsiParameter psiParameter : parameters) {
+          if (Comparing.strEqual(psiParameter.getName(), myParameterName)) {
+            parameter = psiParameter;
+            break;
+          }
+        }
+      }
+      if (parameter == null) return;
+      if (!CommonRefactoringUtil.checkReadOnlyStatus(project, parameter)) return;
+      final PsiExpression defToInline;
+      try {
+        defToInline = JavaPsiFacade.getInstance(project).getElementFactory().createExpressionFromText(myValue, parameter);
+      }
+      catch (IncorrectOperationException e) {
+        return;
+      }
+      final PsiParameter parameterToInline = parameter;
+      inlineSameParameterValue(method, parameterToInline, defToInline);
+    }
+    @Override
+    public boolean startInWriteAction() {
+      return false;
+    }
+    public static void inlineSameParameterValue(final PsiMethod method, final PsiParameter parameter, final PsiExpression defToInline) {
+      final MultiMap<PsiElement, String> conflicts = new MultiMap<>();
+      JavaSafeDeleteProcessor.collectMethodConflicts(conflicts, method, parameter);
+      if (!conflicts.isEmpty()) {
+        if (ApplicationManager.getApplication().isUnitTestMode()) {
+          if (!BaseRefactoringProcessor.ConflictsInTestsException.isTestIgnore()) {
+            throw new BaseRefactoringProcessor.ConflictsInTestsException(conflicts.values());
+          }
+        }
+        else if (!new ConflictsDialog(parameter.getProject(), conflicts).showAndGet()) {
+          return;
+        }
+      }
+      final Collection<PsiReference> refsToInline = ReferencesSearch.search(parameter).findAll();
+      ApplicationManager.getApplication().runWriteAction(() -> {
+        try {
+          PsiExpression[] exprs = new PsiExpression[refsToInline.size()];
+          int idx = 0;
+          for (PsiReference reference : refsToInline) {
+            if (reference instanceof PsiJavaCodeReferenceElement) {
+              exprs[idx++] = InlineUtil.inlineVariable(parameter, defToInline, (PsiJavaCodeReferenceElement)reference);
+            }
+          }
+          for (final PsiExpression expr : exprs) {
+            if (expr != null) InlineUtil.tryToInlineArrayCreationForVarargs(expr);
+          }
+        }
+        catch (IncorrectOperationException e) {
+          LOG.error(e);
+        }
+      });
+      removeParameter(method, parameter);
+    }
+    public static void removeParameter(final PsiMethod method, final PsiParameter parameter) {
+      final PsiParameter[] parameters = method.getParameterList().getParameters();
+      final List<ParameterInfoImpl> psiParameters = new ArrayList<>();
+      int paramIdx = 0;
+      final String paramName = parameter.getName();
+      for (PsiParameter param : parameters) {
+        if (!Comparing.strEqual(paramName, param.getName())) {
+          psiParameters.add(new ParameterInfoImpl(paramIdx, param.getName(), param.getType()));
+        }
+        paramIdx++;
+      }
+      new ChangeSignatureProcessor(method.getProject(), method, false, null, method.getName(), method.getReturnType(),
+                                   psiParameters.toArray(new ParameterInfoImpl[psiParameters.size()])).run();
+    }
+    public String getValue() {
+      return myValue;
+    }
+    public String getParamName() {
+      return myParameterName;
+    }
+  }",class,changes_required
+"  @Nullable
+  @Override
+  public JComponent createOptionsPanel() {
+    LabeledComponent<VisibilityModifierChooser> component = LabeledComponent.create(new VisibilityModifierChooser(() -> true,
+                                                                                                                  highestModifier,
+                                                                                                                  (newModifier) -> highestModifier = newModifier),
+                                                                                    ""Methods to report:"",
+                                                                                    BorderLayout.WEST);
+    JPanel panel = new JPanel(new GridBagLayout());
+    panel.add(component, new GridBagConstraints(0, 0, 1, 1, 1.0, 1.0, GridBagConstraints.FIRST_LINE_START, GridBagConstraints.NORTHEAST, JBUI.emptyInsets(), 0, 0));
+    return panel;
+  }",method,changes_recommended
+"  protected LocalQuickFix createFix(String paramName, String value) {
+    return new InlineParameterValueFix(paramName, value);
+  }",method,good
+"    private InlineParameterValueFix(final String parameterName, final String value) {
+      myValue = value;
+      myParameterName = parameterName;
+    }",method,good
+"    @Override
+    public String toString() {
+      return getParamName() + "" "" + getValue();
+    }",method,good
+"    @Override
+    @NotNull
+    public String getName() {
+      return InspectionsBundle.message(""inspection.same.parameter.fix.name"", myParameterName, StringUtil.unquoteString(myValue));
+    }",method,good
+"    @Override
+    @NotNull
+    public String getFamilyName() {
+      return InspectionsBundle.message(""inspection.same.parameter.fix.family.name"");
+    }",method,good
+"    @Override
+    public void applyFix(@NotNull final Project project, @NotNull ProblemDescriptor descriptor) {
+      final PsiElement element = descriptor.getPsiElement();
+      final PsiMethod method = PsiTreeUtil.getParentOfType(element, PsiMethod.class);
+      if (method == null) return;
+      PsiParameter parameter = PsiTreeUtil.getParentOfType(element, PsiParameter.class, false);
+      if (parameter == null) {
+        final PsiParameter[] parameters = method.getParameterList().getParameters();
+        for (PsiParameter psiParameter : parameters) {
+          if (Comparing.strEqual(psiParameter.getName(), myParameterName)) {
+            parameter = psiParameter;
+            break;
+          }
+        }
+      }
+      if (parameter == null) return;
+      if (!CommonRefactoringUtil.checkReadOnlyStatus(project, parameter)) return;
+      final PsiExpression defToInline;
+      try {
+        defToInline = JavaPsiFacade.getInstance(project).getElementFactory().createExpressionFromText(myValue, parameter);
+      }
+      catch (IncorrectOperationException e) {
+        return;
+      }
+      final PsiParameter parameterToInline = parameter;
+      inlineSameParameterValue(method, parameterToInline, defToInline);
+    }",method,good
+"      if (parameter == null) {
+        final PsiParameter[] parameters = method.getParameterList().getParameters();
+        for (PsiParameter psiParameter : parameters) {
+          if (Comparing.strEqual(psiParameter.getName(), myParameterName)) {
+            parameter = psiParameter;
+            break;
+          }
+        }
+      }",method,good
+"        for (PsiParameter psiParameter : parameters) {
+          if (Comparing.strEqual(psiParameter.getName(), myParameterName)) {
+            parameter = psiParameter;
+            break;
+          }
+        }",method,good
+"      catch (IncorrectOperationException e) {
+        return;
+      }",method,good
+"    @Override
+    public boolean startInWriteAction() {
+      return false;
+    }",method,good
+"    public static void inlineSameParameterValue(final PsiMethod method, final PsiParameter parameter, final PsiExpression defToInline) {
+      final MultiMap<PsiElement, String> conflicts = new MultiMap<>();
+      JavaSafeDeleteProcessor.collectMethodConflicts(conflicts, method, parameter);
+      if (!conflicts.isEmpty()) {
+        if (ApplicationManager.getApplication().isUnitTestMode()) {
+          if (!BaseRefactoringProcessor.ConflictsInTestsException.isTestIgnore()) {
+            throw new BaseRefactoringProcessor.ConflictsInTestsException(conflicts.values());
+          }
+        }
+        else if (!new ConflictsDialog(parameter.getProject(), conflicts).showAndGet()) {
+          return;
+        }
+      }
+      final Collection<PsiReference> refsToInline = ReferencesSearch.search(parameter).findAll();
+      ApplicationManager.getApplication().runWriteAction(() -> {
+        try {
+          PsiExpression[] exprs = new PsiExpression[refsToInline.size()];
+          int idx = 0;
+          for (PsiReference reference : refsToInline) {
+            if (reference instanceof PsiJavaCodeReferenceElement) {
+              exprs[idx++] = InlineUtil.inlineVariable(parameter, defToInline, (PsiJavaCodeReferenceElement)reference);
+            }
+          }
+          for (final PsiExpression expr : exprs) {
+            if (expr != null) InlineUtil.tryToInlineArrayCreationForVarargs(expr);
+          }
+        }
+        catch (IncorrectOperationException e) {
+          LOG.error(e);
+        }
+      });
+      removeParameter(method, parameter);
+    }",method,good
+"          for (PsiReference reference : refsToInline) {
+            if (reference instanceof PsiJavaCodeReferenceElement) {
+              exprs[idx++] = InlineUtil.inlineVariable(parameter, defToInline, (PsiJavaCodeReferenceElement)reference);
+            }
+          }",method,good
+"            if (reference instanceof PsiJavaCodeReferenceElement) {
+              exprs[idx++] = InlineUtil.inlineVariable(parameter, defToInline, (PsiJavaCodeReferenceElement)reference);
+            }",method,good
+"          for (final PsiExpression expr : exprs) {
+            if (expr != null) InlineUtil.tryToInlineArrayCreationForVarargs(expr);
+          }",method,good
+"        catch (IncorrectOperationException e) {
+          LOG.error(e);
+        }",method,good
+"    public static void removeParameter(final PsiMethod method, final PsiParameter parameter) {
+      final PsiParameter[] parameters = method.getParameterList().getParameters();
+      final List<ParameterInfoImpl> psiParameters = new ArrayList<>();
+      int paramIdx = 0;
+      final String paramName = parameter.getName();
+      for (PsiParameter param : parameters) {
+        if (!Comparing.strEqual(paramName, param.getName())) {
+          psiParameters.add(new ParameterInfoImpl(paramIdx, param.getName(), param.getType()));
+        }
+        paramIdx++;
+      }
+      new ChangeSignatureProcessor(method.getProject(), method, false, null, method.getName(), method.getReturnType(),
+                                   psiParameters.toArray(new ParameterInfoImpl[psiParameters.size()])).run();
+    }",method,good
+"      for (PsiParameter param : parameters) {
+        if (!Comparing.strEqual(paramName, param.getName())) {
+          psiParameters.add(new ParameterInfoImpl(paramIdx, param.getName(), param.getType()));
+        }
+        paramIdx++;
+      }",method,good
+"    public String getValue() {
+      return myValue;
+    }",method,
+"    public String getParamName() {
+      return myParameterName;
+    }",method,
+"public class LambdaSmartStepTarget extends SmartStepTarget{
+  private final PsiLambdaExpression myLambda;
+  private final int myOrdinal;
+  private final boolean myAsync;
+  public LambdaSmartStepTarget(@NotNull PsiLambdaExpression lambda,
+                               @Nullable String label,
+                               @Nullable PsiElement highlightElement,
+                               int ordinal,
+                               Range<Integer> lines,
+                               boolean async) {
+    super(label, highlightElement, true, lines);
+    myLambda = lambda;
+    myOrdinal = ordinal;
+    myAsync = async;
+  }
+  public PsiLambdaExpression getLambda() {
+    return myLambda;
+  }
+  public int getOrdinal() {
+    return myOrdinal;
+  }
+  public boolean isAsync() {
+    return myAsync;
+  }
+  @Nullable
+  @Override
+  public Icon getIcon() {
+    return myLambda.getIcon(0);
+  }
+  @NotNull
+  @Override
+  public String getPresentation() {
+    String typeText = PsiFormatUtil.formatType(myLambda.getType(), 0, PsiSubstitutor.EMPTY);
+    String label = getLabel();
+    return label != null ? label + typeText : typeText;
+  }
+  public boolean equals(Object o) {
+    if (this == o) {
+      return true;
+    }
+    if (o == null || getClass() != o.getClass()) {
+      return false;
+    }
+    final LambdaSmartStepTarget that = (LambdaSmartStepTarget)o;
+    if (myOrdinal != that.myOrdinal) {
+      return false;
+    }
+    if (!myLambda.equals(that.myLambda)) {
+      return false;
+    }
+    return true;
+  }
+  public int hashCode() {
+    int result = myLambda.hashCode();
+    result = 31 * result + myOrdinal;
+    return result;
+  }
+}",class,
+"  public LambdaSmartStepTarget(@NotNull PsiLambdaExpression lambda,
+                               @Nullable String label,
+                               @Nullable PsiElement highlightElement,
+                               int ordinal,
+                               Range<Integer> lines,
+                               boolean async) {
+    super(label, highlightElement, true, lines);
+    myLambda = lambda;
+    myOrdinal = ordinal;
+    myAsync = async;
+  }",method,
+"  public PsiLambdaExpression getLambda() {
+    return myLambda;
+  }",method,
+"  public int getOrdinal() {
+    return myOrdinal;
+  }",method,
+"  public boolean isAsync() {
+    return myAsync;
+  }",method,
+"  @Nullable
+  @Override
+  public Icon getIcon() {
+    return myLambda.getIcon(0);
+  }",method,
+"  @NotNull
+  @Override
+  public String getPresentation() {
+    String typeText = PsiFormatUtil.formatType(myLambda.getType(), 0, PsiSubstitutor.EMPTY);
+    String label = getLabel();
+    return label != null ? label + typeText : typeText;
+  }",method,
+"  public boolean equals(Object o) {
+    if (this == o) {
+      return true;
+    }
+    if (o == null || getClass() != o.getClass()) {
+      return false;
+    }
+    final LambdaSmartStepTarget that = (LambdaSmartStepTarget)o;
+    if (myOrdinal != that.myOrdinal) {
+      return false;
+    }
+    if (!myLambda.equals(that.myLambda)) {
+      return false;
+    }
+    return true;
+  }",method,

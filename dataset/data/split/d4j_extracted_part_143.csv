@@ -1,0 +1,1273 @@
+code_snippet,type,score
+"      if (range != null) {
+        editor.getCaretModel().moveToOffset(range.getEndOffset());
+      }",method,
+"      if (guide != null) {
+        editor.getCaretModel().moveToLogicalPosition(new LogicalPosition(guide.endLine, guide.indentLevel));
+      }",method,
+"        if (endOffset != -1) {
+          editor.getCaretModel().moveToOffset(endOffset);
+        }",method,
+"    if (isWithSelection) {
+      editor.getSelectionModel().setSelection(selectionStart, editor.getCaretModel().getOffset());
+    }",method,
+"  public static void moveCaretToCodeBlockStart(Project project, Editor editor, boolean isWithSelection) {
+    Document document = editor.getDocument();
+    PsiFile file = PsiDocumentManager.getInstance(project).getPsiFile(document);
+    int selectionStart = editor.getSelectionModel().getLeadSelectionOffset();
+    if (file == null) return;
+    IdeDocumentHistory.getInstance(project).includeCurrentCommandAsNavigation();
+    final CodeBlockProvider provider = CodeBlockProviders.INSTANCE.forLanguage(file.getLanguage());
+    if (provider != null) {
+      final TextRange range = provider.getCodeBlockRange(editor, file);
+      if (range != null) {
+        editor.getCaretModel().moveToOffset(range.getStartOffset());
+      }
+    }
+    else {
+      final IndentGuideDescriptor guide = editor.getIndentsModel().getCaretIndentGuide();
+      if (guide != null && guide.startLine != editor.getCaretModel().getLogicalPosition().line) {
+        editor.getCaretModel().moveToLogicalPosition(new LogicalPosition(guide.startLine, guide.indentLevel));
+      }
+      else {
+        int start = calcBlockStartOffset(editor, file);
+        if (start < 0) return;
+        editor.getCaretModel().moveToOffset(start);
+      }
+    }
+    editor.getScrollingModel().scrollToCaret(ScrollType.RELATIVE);
+    if (isWithSelection) {
+      editor.getSelectionModel().setSelection(selectionStart, editor.getCaretModel().getOffset());
+    }
+    else {
+      editor.getSelectionModel().removeSelection();
+    }
+  }",method,
+"    if (provider != null) {
+      final TextRange range = provider.getCodeBlockRange(editor, file);
+      if (range != null) {
+        editor.getCaretModel().moveToOffset(range.getStartOffset());
+      }
+    }",method,
+"      if (range != null) {
+        editor.getCaretModel().moveToOffset(range.getStartOffset());
+      }",method,
+"    if (isWithSelection) {
+      editor.getSelectionModel().setSelection(selectionStart, editor.getCaretModel().getOffset());
+    }",method,
+"  private static int calcBlockEndOffset(Editor editor, PsiFile file) {
+    Document document = editor.getDocument();
+    int offset = editor.getCaretModel().getOffset();
+    final FileType fileType = file.getFileType();
+    HighlighterIterator iterator = ((EditorEx)editor).getHighlighter().createIterator(offset);
+    if (iterator.atEnd()) return -1;
+    int depth = 0;
+    Language braceType;
+    boolean isBeforeLBrace = false;
+    if (isLStructuralBrace(fileType, iterator, document.getCharsSequence())) {
+      isBeforeLBrace = true;
+      depth = -1;
+      braceType = getBraceType(iterator);
+    } else {
+      braceType = null;
+    }
+    boolean moved = false;
+    while (true) {
+      if (iterator.atEnd()) return -1;
+      if (isRStructuralBrace(fileType, iterator,document.getCharsSequence()) &&
+          ( braceType == getBraceType(iterator) ||
+            braceType == null
+          )
+          ) {
+        if (moved) {
+          if (depth == 0) break;
+          depth--;
+        }
+        if (braceType == null) {
+          braceType = getBraceType(iterator);
+        }
+      }
+      else if (isLStructuralBrace(fileType, iterator,document.getCharsSequence()) &&
+               ( braceType == getBraceType(iterator) ||
+                 braceType == null
+               )
+              ) {
+        if (braceType == null) {
+          braceType = getBraceType(iterator);
+        }
+        depth++;
+      }
+      moved = true;
+      iterator.advance();
+    }
+    return isBeforeLBrace? iterator.getEnd() : iterator.getStart();
+  }",method,
+"    while (true) {
+      if (iterator.atEnd()) return -1;
+      if (isRStructuralBrace(fileType, iterator,document.getCharsSequence()) &&
+          ( braceType == getBraceType(iterator) ||
+            braceType == null
+          )
+          ) {
+        if (moved) {
+          if (depth == 0) break;
+          depth--;
+        }
+        if (braceType == null) {
+          braceType = getBraceType(iterator);
+        }
+      }
+      else if (isLStructuralBrace(fileType, iterator,document.getCharsSequence()) &&
+               ( braceType == getBraceType(iterator) ||
+                 braceType == null
+               )
+              ) {
+        if (braceType == null) {
+          braceType = getBraceType(iterator);
+        }
+        depth++;
+      }
+      moved = true;
+      iterator.advance();
+    }",method,
+"        if (moved) {
+          if (depth == 0) break;
+          depth--;
+        }",method,
+"        if (braceType == null) {
+          braceType = getBraceType(iterator);
+        }",method,
+"        if (braceType == null) {
+          braceType = getBraceType(iterator);
+        }",method,
+"  private static int calcBlockStartOffset(Editor editor, PsiFile file) {
+    int offset = editor.getCaretModel().getOffset() - 1;
+    if (offset < 0) return -1;
+    Document document = editor.getDocument();
+    final FileType fileType = file.getFileType();
+    HighlighterIterator iterator = ((EditorEx)editor).getHighlighter().createIterator(offset);
+    int depth = 0;
+    Language braceType;
+    boolean isAfterRBrace = false;
+    if (isRStructuralBrace(fileType, iterator, document.getCharsSequence())) {
+      isAfterRBrace = true;
+      depth = -1;
+      braceType = getBraceType(iterator);
+    }
+    else {
+      braceType = null;
+    }
+    boolean moved = false;
+    while (true) {
+      if (iterator.atEnd()) return -1;
+      if (isLStructuralBrace(fileType, iterator, document.getCharsSequence()) &&
+          (braceType == getBraceType(iterator) || braceType == null)) {
+        if (braceType == null) {
+          braceType = getBraceType(iterator);
+        }
+        if (moved) {
+          if (depth == 0) break;
+          depth--;
+        }
+      }
+      else if (isRStructuralBrace(fileType, iterator, document.getCharsSequence()) &&
+               (braceType == getBraceType(iterator) || braceType == null)) {
+        if (braceType == null) {
+          braceType = getBraceType(iterator);
+        }
+        depth++;
+      }
+      moved = true;
+      iterator.retreat();
+    }
+    return isAfterRBrace ? iterator.getStart() : iterator.getEnd();
+  }",method,
+"    while (true) {
+      if (iterator.atEnd()) return -1;
+      if (isLStructuralBrace(fileType, iterator, document.getCharsSequence()) &&
+          (braceType == getBraceType(iterator) || braceType == null)) {
+        if (braceType == null) {
+          braceType = getBraceType(iterator);
+        }
+        if (moved) {
+          if (depth == 0) break;
+          depth--;
+        }
+      }
+      else if (isRStructuralBrace(fileType, iterator, document.getCharsSequence()) &&
+               (braceType == getBraceType(iterator) || braceType == null)) {
+        if (braceType == null) {
+          braceType = getBraceType(iterator);
+        }
+        depth++;
+      }
+      moved = true;
+      iterator.retreat();
+    }",method,
+"        if (braceType == null) {
+          braceType = getBraceType(iterator);
+        }",method,
+"        if (moved) {
+          if (depth == 0) break;
+          depth--;
+        }",method,
+"        if (braceType == null) {
+          braceType = getBraceType(iterator);
+        }",method,
+"  private static boolean isLStructuralBrace(final FileType fileType, HighlighterIterator iterator, CharSequence fileText) {
+    return BraceMatchingUtil.isLBraceToken(iterator, fileText, fileType) && BraceMatchingUtil.isStructuralBraceToken(fileType, iterator,fileText);
+  }",method,
+"  private static boolean isRStructuralBrace(final FileType fileType, HighlighterIterator iterator, CharSequence fileText) {
+    return BraceMatchingUtil.isRBraceToken(iterator, fileText, fileType) && BraceMatchingUtil.isStructuralBraceToken(fileType, iterator,fileText);
+  }",method,
+"public abstract class PointFilter extends AbstractBufferedImageOp {
+	protected boolean canFilterIndexColorModel = false;
+    public BufferedImage filter( BufferedImage src, BufferedImage dst ) {
+        int width = src.getWidth();
+        int height = src.getHeight();
+		int type = src.getType();
+		WritableRaster srcRaster = src.getRaster();
+        if ( dst == null )
+            dst = createCompatibleDestImage( src, null );
+		WritableRaster dstRaster = dst.getRaster();
+        setDimensions( width, height);
+		int[] inPixels = new int[width];
+        for ( int y = 0; y < height; y++ ) {
+			// We try to avoid calling getRGB on images as it causes them to become unmanaged, causing horrible performance problems.
+			if ( type == BufferedImage.TYPE_INT_ARGB ) {
+				srcRaster.getDataElements( 0, y, width, 1, inPixels );
+				for ( int x = 0; x < width; x++ )
+					inPixels[x] = filterRGB( x, y, inPixels[x] );
+				dstRaster.setDataElements( 0, y, width, 1, inPixels );
+			} else {
+				src.getRGB( 0, y, width, 1, inPixels, 0, width );
+				for ( int x = 0; x < width; x++ )
+					inPixels[x] = filterRGB( x, y, inPixels[x] );
+				dst.setRGB( 0, y, width, 1, inPixels, 0, width );
+			}
+        }
+        return dst;
+    }
+	public void setDimensions(int width, int height) {
+	}
+	public abstract int filterRGB(int x, int y, int rgb);
+}",class,
+"public class PointillizeFilter extends CellularFilter {
+    private float edgeThickness = 0.4f;
+    private boolean fadeEdges = false;
+    private int edgeColor = 0xff000000;
+    private float fuzziness = 0.1f;
+    public PointillizeFilter() {
+        setScale(16);
+        setRandomness(0.0f);
+    }
+    public void setEdgeThickness(float edgeThickness) {
+        this.edgeThickness = edgeThickness;
+    }
+    public float getEdgeThickness() {
+        return edgeThickness;
+    }
+    public void setFadeEdges(boolean fadeEdges) {
+        this.fadeEdges = fadeEdges;
+    }
+    public boolean getFadeEdges() {
+        return fadeEdges;
+    }
+    public void setEdgeColor(int edgeColor) {
+        this.edgeColor = edgeColor;
+    }
+    public int getEdgeColor() {
+        return edgeColor;
+    }
+    public void setFuzziness(float fuzziness) {
+        this.fuzziness = fuzziness;
+    }
+    public float getFuzziness() {
+        return fuzziness;
+    }
+    public int getPixel(int x, int y, int[] inPixels, int width, int height) {
+        float nx = m00 * x + m01 * y;
+        float ny = m10 * x + m11 * y;
+        nx /= scale;
+        ny /= scale * stretch;
+        nx += 1000;
+        ny += 1000;    // Reduce artifacts around 0,0
+        float f = evaluate(nx, ny);
+        float f1 = results[0].distance;
+        int srcx = ImageMath.clamp((int) ((results[0].x - 1000) * scale), 0, width - 1);
+        int srcy = ImageMath.clamp((int) ((results[0].y - 1000) * scale), 0, height - 1);
+        int v = inPixels[srcy * width + srcx];
+        if (fadeEdges) {
+            float f2 = results[1].distance;
+            srcx = ImageMath.clamp((int) ((results[1].x - 1000) * scale), 0, width - 1);
+            srcy = ImageMath.clamp((int) ((results[1].y - 1000) * scale), 0, height - 1);
+            int v2 = inPixels[srcy * width + srcx];
+            v = ImageMath.mixColors(0.5f * f1 / f2, v, v2);
+        } else {
+            f = 1 - ImageMath.smoothStep(edgeThickness, edgeThickness + fuzziness, f1);
+            v = ImageMath.mixColors(f, edgeColor, v);
+        }
+        return v;
+    }
+    public String toString() {
+        return ""Pixellate/Pointillize..."";
+    }
+}",class,
+"public class PosterizeFilter extends PointFilter {
+	private int numLevels;
+	private int[] levels;
+    private boolean initialized = false;
+	public PosterizeFilter() {
+		setNumLevels(6);
+	}
+    public void setNumLevels(int numLevels) {
+		this.numLevels = numLevels;
+		initialized = false;
+	}
+	public int getNumLevels() {
+		return numLevels;
+	}
+    protected void initialize() {
+		levels = new int[256];
+		if (numLevels != 1)
+			for (int i = 0; i < 256; i++)
+				levels[i] = 255 * (numLevels*i / 256) / (numLevels-1);
+	}
+	public int filterRGB(int x, int y, int rgb) {
+		if (!initialized) {
+			initialized = true;
+			initialize();
+		}
+		int a = rgb & 0xff000000;
+		int r = (rgb >> 16) & 0xff;
+		int g = (rgb >> 8) & 0xff;
+		int b = rgb & 0xff;
+		r = levels[r];
+		g = levels[g];
+		b = levels[b];
+		return a | (r << 16) | (g << 8) | b;
+	}
+	public String toString() {
+		return ""Colors/Posterize..."";
+	}
+}",class,
+"public class PremultiplyFilter extends PointFilter {
+	public PremultiplyFilter() {
+	}
+	public int filterRGB(int x, int y, int rgb) {
+		int a = (rgb >> 24) & 0xff;
+		int r = (rgb >> 16) & 0xff;
+		int g = (rgb >> 8) & 0xff;
+		int b = rgb & 0xff;
+		float f = a * (1.0f / 255.0f);
+		r *= f;
+		g *= f;
+		b *= f;
+		return (a << 24) | (r << 16) | (g << 8) | b;
+	}
+	public String toString() {
+		return ""Alpha/Premultiply"";
+	}
+}",class,
+"    public BufferedImage filter( BufferedImage src, BufferedImage dst ) {
+        int width = src.getWidth();
+        int height = src.getHeight();
+		int type = src.getType();
+		WritableRaster srcRaster = src.getRaster();
+        if ( dst == null )
+            dst = createCompatibleDestImage( src, null );
+		WritableRaster dstRaster = dst.getRaster();
+        setDimensions( width, height);
+		int[] inPixels = new int[width];
+        for ( int y = 0; y < height; y++ ) {
+			// We try to avoid calling getRGB on images as it causes them to become unmanaged, causing horrible performance problems.
+			if ( type == BufferedImage.TYPE_INT_ARGB ) {
+				srcRaster.getDataElements( 0, y, width, 1, inPixels );
+				for ( int x = 0; x < width; x++ )
+					inPixels[x] = filterRGB( x, y, inPixels[x] );
+				dstRaster.setDataElements( 0, y, width, 1, inPixels );
+			} else {
+				src.getRGB( 0, y, width, 1, inPixels, 0, width );
+				for ( int x = 0; x < width; x++ )
+					inPixels[x] = filterRGB( x, y, inPixels[x] );
+				dst.setRGB( 0, y, width, 1, inPixels, 0, width );
+			}
+        }
+        return dst;
+    }",method,
+"        for ( int y = 0; y < height; y++ ) {
+			// We try to avoid calling getRGB on images as it causes them to become unmanaged, causing horrible performance problems.
+			if ( type == BufferedImage.TYPE_INT_ARGB ) {
+				srcRaster.getDataElements( 0, y, width, 1, inPixels );
+				for ( int x = 0; x < width; x++ )
+					inPixels[x] = filterRGB( x, y, inPixels[x] );
+				dstRaster.setDataElements( 0, y, width, 1, inPixels );
+			} else {
+				src.getRGB( 0, y, width, 1, inPixels, 0, width );
+				for ( int x = 0; x < width; x++ )
+					inPixels[x] = filterRGB( x, y, inPixels[x] );
+				dst.setRGB( 0, y, width, 1, inPixels, 0, width );
+			}
+        }",method,
+"			if ( type == BufferedImage.TYPE_INT_ARGB ) {
+				srcRaster.getDataElements( 0, y, width, 1, inPixels );
+				for ( int x = 0; x < width; x++ )
+					inPixels[x] = filterRGB( x, y, inPixels[x] );
+				dstRaster.setDataElements( 0, y, width, 1, inPixels );
+			}",method,
+"	public void setDimensions(int width, int height) {
+	}",method,
+"    public PointillizeFilter() {
+        setScale(16);
+        setRandomness(0.0f);
+    }",method,
+"    public void setEdgeThickness(float edgeThickness) {
+        this.edgeThickness = edgeThickness;
+    }",method,
+"    public float getEdgeThickness() {
+        return edgeThickness;
+    }",method,
+"    public void setFadeEdges(boolean fadeEdges) {
+        this.fadeEdges = fadeEdges;
+    }",method,
+"    public boolean getFadeEdges() {
+        return fadeEdges;
+    }",method,
+"    public void setEdgeColor(int edgeColor) {
+        this.edgeColor = edgeColor;
+    }",method,
+"    public int getEdgeColor() {
+        return edgeColor;
+    }",method,
+"    public void setFuzziness(float fuzziness) {
+        this.fuzziness = fuzziness;
+    }",method,
+"    public float getFuzziness() {
+        return fuzziness;
+    }",method,
+"    public int getPixel(int x, int y, int[] inPixels, int width, int height) {
+        float nx = m00 * x + m01 * y;
+        float ny = m10 * x + m11 * y;
+        nx /= scale;
+        ny /= scale * stretch;
+        nx += 1000;
+        ny += 1000;    // Reduce artifacts around 0,0
+        float f = evaluate(nx, ny);
+        float f1 = results[0].distance;
+        int srcx = ImageMath.clamp((int) ((results[0].x - 1000) * scale), 0, width - 1);
+        int srcy = ImageMath.clamp((int) ((results[0].y - 1000) * scale), 0, height - 1);
+        int v = inPixels[srcy * width + srcx];
+        if (fadeEdges) {
+            float f2 = results[1].distance;
+            srcx = ImageMath.clamp((int) ((results[1].x - 1000) * scale), 0, width - 1);
+            srcy = ImageMath.clamp((int) ((results[1].y - 1000) * scale), 0, height - 1);
+            int v2 = inPixels[srcy * width + srcx];
+            v = ImageMath.mixColors(0.5f * f1 / f2, v, v2);
+        } else {
+            f = 1 - ImageMath.smoothStep(edgeThickness, edgeThickness + fuzziness, f1);
+            v = ImageMath.mixColors(f, edgeColor, v);
+        }
+        return v;
+    }",method,
+"        if (fadeEdges) {
+            float f2 = results[1].distance;
+            srcx = ImageMath.clamp((int) ((results[1].x - 1000) * scale), 0, width - 1);
+            srcy = ImageMath.clamp((int) ((results[1].y - 1000) * scale), 0, height - 1);
+            int v2 = inPixels[srcy * width + srcx];
+            v = ImageMath.mixColors(0.5f * f1 / f2, v, v2);
+        }",method,
+"    public String toString() {
+        return ""Pixellate/Pointillize..."";
+    }",method,
+"	public PosterizeFilter() {
+		setNumLevels(6);
+	}",method,
+"    public void setNumLevels(int numLevels) {
+		this.numLevels = numLevels;
+		initialized = false;
+	}",method,
+"	public int getNumLevels() {
+		return numLevels;
+	}",method,
+"    protected void initialize() {
+		levels = new int[256];
+		if (numLevels != 1)
+			for (int i = 0; i < 256; i++)
+				levels[i] = 255 * (numLevels*i / 256) / (numLevels-1);
+	}",method,
+"	public int filterRGB(int x, int y, int rgb) {
+		if (!initialized) {
+			initialized = true;
+			initialize();
+		}
+		int a = rgb & 0xff000000;
+		int r = (rgb >> 16) & 0xff;
+		int g = (rgb >> 8) & 0xff;
+		int b = rgb & 0xff;
+		r = levels[r];
+		g = levels[g];
+		b = levels[b];
+		return a | (r << 16) | (g << 8) | b;
+	}",method,
+"		if (!initialized) {
+			initialized = true;
+			initialize();
+		}",method,
+"	public String toString() {
+		return ""Colors/Posterize..."";
+	}",method,
+"	public PremultiplyFilter() {
+	}",method,
+"	public int filterRGB(int x, int y, int rgb) {
+		int a = (rgb >> 24) & 0xff;
+		int r = (rgb >> 16) & 0xff;
+		int g = (rgb >> 8) & 0xff;
+		int b = rgb & 0xff;
+		float f = a * (1.0f / 255.0f);
+		r *= f;
+		g *= f;
+		b *= f;
+		return (a << 24) | (r << 16) | (g << 8) | b;
+	}",method,
+"	public String toString() {
+		return ""Alpha/Premultiply"";
+	}",method,
+"public class CertificateValidity implements CertAttrSet<String> {
+    public static final String IDENT = ""x509.info.validity"";
+    public static final String NAME = ""validity"";
+    public static final String NOT_BEFORE = ""notBefore"";
+    public static final String NOT_AFTER = ""notAfter"";
+    private static final long YR_2050 = 2524636800000L;
+    // Private data members
+    private Date        notBefore;
+    private Date        notAfter;
+    // Returns the first time the certificate is valid.
+    private Date getNotBefore() {
+        return (new Date(notBefore.getTime()));
+    }
+    // Returns the last time the certificate is valid.
+    private Date getNotAfter() {
+       return (new Date(notAfter.getTime()));
+    }
+    // Construct the class from the DerValue
+    private void construct(DerValue derVal) throws IOException {
+        if (derVal.tag != DerValue.tag_Sequence) {
+            throw new IOException(""Invalid encoded CertificateValidity, "" +
+                                  ""starting sequence tag missing."");
+        }
+        // check if UTCTime encoded or GeneralizedTime
+        if (derVal.data.available() == 0)
+            throw new IOException(""No data encoded for CertificateValidity"");
+        DerInputStream derIn = new DerInputStream(derVal.toByteArray());
+        DerValue[] seq = derIn.getSequence(2);
+        if (seq.length != 2)
+            throw new IOException(""Invalid encoding for CertificateValidity"");
+        if (seq[0].tag == DerValue.tag_UtcTime) {
+            notBefore = derVal.data.getUTCTime();
+        } else if (seq[0].tag == DerValue.tag_GeneralizedTime) {
+            notBefore = derVal.data.getGeneralizedTime();
+        } else {
+            throw new IOException(""Invalid encoding for CertificateValidity"");
+        }
+        if (seq[1].tag == DerValue.tag_UtcTime) {
+            notAfter = derVal.data.getUTCTime();
+        } else if (seq[1].tag == DerValue.tag_GeneralizedTime) {
+            notAfter = derVal.data.getGeneralizedTime();
+        } else {
+            throw new IOException(""Invalid encoding for CertificateValidity"");
+        }
+    }
+    public CertificateValidity() { }
+    public CertificateValidity(Date notBefore, Date notAfter) {
+        this.notBefore = notBefore;
+        this.notAfter = notAfter;
+    }
+    public CertificateValidity(DerInputStream in) throws IOException {
+        DerValue derVal = in.getDerValue();
+        construct(derVal);
+    }
+    public String toString() {
+        if (notBefore == null || notAfter == null)
+            return """";
+        return (""Validity: [From: "" + notBefore.toString() +
+             "",\n               To: "" + notAfter.toString() + ""]"");
+    }
+    public void encode(OutputStream out) throws IOException {
+        // in cases where default constructor is used check for
+        // null values
+        if (notBefore == null || notAfter == null) {
+            throw new IOException(""CertAttrSet:CertificateValidity:"" +
+                                  "" null values to encode.\n"");
+        }
+        DerOutputStream pair = new DerOutputStream();
+        if (notBefore.getTime() < YR_2050) {
+            pair.putUTCTime(notBefore);
+        } else
+            pair.putGeneralizedTime(notBefore);
+        if (notAfter.getTime() < YR_2050) {
+            pair.putUTCTime(notAfter);
+        } else {
+            pair.putGeneralizedTime(notAfter);
+        }
+        DerOutputStream seq = new DerOutputStream();
+        seq.write(DerValue.tag_Sequence, pair);
+        out.write(seq.toByteArray());
+    }
+    public void set(String name, Object obj) throws IOException {
+        if (!(obj instanceof Date)) {
+            throw new IOException(""Attribute must be of type Date."");
+        }
+        if (name.equalsIgnoreCase(NOT_BEFORE)) {
+            notBefore = (Date)obj;
+        } else if (name.equalsIgnoreCase(NOT_AFTER)) {
+            notAfter = (Date)obj;
+        } else {
+            throw new IOException(""Attribute name not recognized by "" +
+                            ""CertAttrSet: CertificateValidity."");
+        }
+    }
+    public Object get(String name) throws IOException {
+        if (name.equalsIgnoreCase(NOT_BEFORE)) {
+            return (getNotBefore());
+        } else if (name.equalsIgnoreCase(NOT_AFTER)) {
+            return (getNotAfter());
+        } else {
+            throw new IOException(""Attribute name not recognized by "" +
+                            ""CertAttrSet: CertificateValidity."");
+        }
+    }
+    public void delete(String name) throws IOException {
+        if (name.equalsIgnoreCase(NOT_BEFORE)) {
+            notBefore = null;
+        } else if (name.equalsIgnoreCase(NOT_AFTER)) {
+            notAfter = null;
+        } else {
+            throw new IOException(""Attribute name not recognized by "" +
+                            ""CertAttrSet: CertificateValidity."");
+        }
+    }
+    public Enumeration<String> getElements() {
+        AttributeNameEnumeration elements = new AttributeNameEnumeration();
+        elements.addElement(NOT_BEFORE);
+        elements.addElement(NOT_AFTER);
+        return (elements.elements());
+    }
+    public String getName() {
+        return (NAME);
+    }
+    public void valid()
+    throws CertificateNotYetValidException, CertificateExpiredException {
+        Date now = new Date();
+        valid(now);
+    }
+    public void valid(Date now)
+    throws CertificateNotYetValidException, CertificateExpiredException {
+        if (notBefore.after(now)) {
+            throw new CertificateNotYetValidException(""NotBefore: "" +
+                                                      notBefore.toString());
+        }
+        if (notAfter.before(now)) {
+            throw new CertificateExpiredException(""NotAfter: "" +
+                                                  notAfter.toString());
+        }
+    }
+}",class,
+"    // Construct the class from the DerValue
+    private void construct(DerValue derVal) throws IOException {
+        if (derVal.tag != DerValue.tag_Sequence) {
+            throw new IOException(""Invalid encoded CertificateValidity, "" +
+                                  ""starting sequence tag missing."");
+        }
+        // check if UTCTime encoded or GeneralizedTime
+        if (derVal.data.available() == 0)
+            throw new IOException(""No data encoded for CertificateValidity"");
+        DerInputStream derIn = new DerInputStream(derVal.toByteArray());
+        DerValue[] seq = derIn.getSequence(2);
+        if (seq.length != 2)
+            throw new IOException(""Invalid encoding for CertificateValidity"");
+        if (seq[0].tag == DerValue.tag_UtcTime) {
+            notBefore = derVal.data.getUTCTime();
+        } else if (seq[0].tag == DerValue.tag_GeneralizedTime) {
+            notBefore = derVal.data.getGeneralizedTime();
+        } else {
+            throw new IOException(""Invalid encoding for CertificateValidity"");
+        }
+        if (seq[1].tag == DerValue.tag_UtcTime) {
+            notAfter = derVal.data.getUTCTime();
+        } else if (seq[1].tag == DerValue.tag_GeneralizedTime) {
+            notAfter = derVal.data.getGeneralizedTime();
+        } else {
+            throw new IOException(""Invalid encoding for CertificateValidity"");
+        }
+    }",class,
+"    private Date getNotBefore() {
+        return (new Date(notBefore.getTime()));
+    }",method,
+"    private Date getNotAfter() {
+       return (new Date(notAfter.getTime()));
+    }",method,
+"    private void construct(DerValue derVal) throws IOException {
+        if (derVal.tag != DerValue.tag_Sequence) {
+            throw new IOException(""Invalid encoded CertificateValidity, "" +
+                                  ""starting sequence tag missing."");
+        }
+        // check if UTCTime encoded or GeneralizedTime
+        if (derVal.data.available() == 0)
+            throw new IOException(""No data encoded for CertificateValidity"");
+        DerInputStream derIn = new DerInputStream(derVal.toByteArray());
+        DerValue[] seq = derIn.getSequence(2);
+        if (seq.length != 2)
+            throw new IOException(""Invalid encoding for CertificateValidity"");
+        if (seq[0].tag == DerValue.tag_UtcTime) {
+            notBefore = derVal.data.getUTCTime();
+        } else if (seq[0].tag == DerValue.tag_GeneralizedTime) {
+            notBefore = derVal.data.getGeneralizedTime();
+        } else {
+            throw new IOException(""Invalid encoding for CertificateValidity"");
+        }
+        if (seq[1].tag == DerValue.tag_UtcTime) {
+            notAfter = derVal.data.getUTCTime();
+        } else if (seq[1].tag == DerValue.tag_GeneralizedTime) {
+            notAfter = derVal.data.getGeneralizedTime();
+        } else {
+            throw new IOException(""Invalid encoding for CertificateValidity"");
+        }
+    }",method,
+"        if (derVal.tag != DerValue.tag_Sequence) {
+            throw new IOException(""Invalid encoded CertificateValidity, "" +
+                                  ""starting sequence tag missing."");
+        }",method,
+"        if (seq[0].tag == DerValue.tag_UtcTime) {
+            notBefore = derVal.data.getUTCTime();
+        }",method,
+"        if (seq[1].tag == DerValue.tag_UtcTime) {
+            notAfter = derVal.data.getUTCTime();
+        }",method,
+    public CertificateValidity() { },method,
+"    public CertificateValidity(Date notBefore, Date notAfter) {
+        this.notBefore = notBefore;
+        this.notAfter = notAfter;
+    }",method,
+"    public CertificateValidity(DerInputStream in) throws IOException {
+        DerValue derVal = in.getDerValue();
+        construct(derVal);
+    }",method,
+"    public String toString() {
+        if (notBefore == null || notAfter == null)
+            return """";
+        return (""Validity: [From: "" + notBefore.toString() +
+             "",\n               To: "" + notAfter.toString() + ""]"");
+    }",method,
+"    public void encode(OutputStream out) throws IOException {
+        // in cases where default constructor is used check for
+        // null values
+        if (notBefore == null || notAfter == null) {
+            throw new IOException(""CertAttrSet:CertificateValidity:"" +
+                                  "" null values to encode.\n"");
+        }
+        DerOutputStream pair = new DerOutputStream();
+        if (notBefore.getTime() < YR_2050) {
+            pair.putUTCTime(notBefore);
+        } else
+            pair.putGeneralizedTime(notBefore);
+        if (notAfter.getTime() < YR_2050) {
+            pair.putUTCTime(notAfter);
+        } else {
+            pair.putGeneralizedTime(notAfter);
+        }
+        DerOutputStream seq = new DerOutputStream();
+        seq.write(DerValue.tag_Sequence, pair);
+        out.write(seq.toByteArray());
+    }",method,
+"        if (notBefore == null || notAfter == null) {
+            throw new IOException(""CertAttrSet:CertificateValidity:"" +
+                                  "" null values to encode.\n"");
+        }",method,
+"    public void set(String name, Object obj) throws IOException {
+        if (!(obj instanceof Date)) {
+            throw new IOException(""Attribute must be of type Date."");
+        }
+        if (name.equalsIgnoreCase(NOT_BEFORE)) {
+            notBefore = (Date)obj;
+        } else if (name.equalsIgnoreCase(NOT_AFTER)) {
+            notAfter = (Date)obj;
+        } else {
+            throw new IOException(""Attribute name not recognized by "" +
+                            ""CertAttrSet: CertificateValidity."");
+        }
+    }",method,
+"    public Object get(String name) throws IOException {
+        if (name.equalsIgnoreCase(NOT_BEFORE)) {
+            return (getNotBefore());
+        } else if (name.equalsIgnoreCase(NOT_AFTER)) {
+            return (getNotAfter());
+        } else {
+            throw new IOException(""Attribute name not recognized by "" +
+                            ""CertAttrSet: CertificateValidity."");
+        }
+    }",method,
+"    public void delete(String name) throws IOException {
+        if (name.equalsIgnoreCase(NOT_BEFORE)) {
+            notBefore = null;
+        } else if (name.equalsIgnoreCase(NOT_AFTER)) {
+            notAfter = null;
+        } else {
+            throw new IOException(""Attribute name not recognized by "" +
+                            ""CertAttrSet: CertificateValidity."");
+        }
+    }",method,
+"    public Enumeration<String> getElements() {
+        AttributeNameEnumeration elements = new AttributeNameEnumeration();
+        elements.addElement(NOT_BEFORE);
+        elements.addElement(NOT_AFTER);
+        return (elements.elements());
+    }",method,
+"    public String getName() {
+        return (NAME);
+    }",method,
+"    public void valid()
+    throws CertificateNotYetValidException, CertificateExpiredException {
+        Date now = new Date();
+        valid(now);
+    }",method,
+"    public void valid(Date now)
+    throws CertificateNotYetValidException, CertificateExpiredException {
+        if (notBefore.after(now)) {
+            throw new CertificateNotYetValidException(""NotBefore: "" +
+                                                      notBefore.toString());
+        }
+        if (notAfter.before(now)) {
+            throw new CertificateExpiredException(""NotAfter: "" +
+                                                  notAfter.toString());
+        }
+    }",method,
+"	default RequestPredicate and(RequestPredicate other) {
+		Assert.notNull(other, ""'other' must not be null"");
+		return new RequestPredicates.AndRequestPredicate(this, other);
+	}",method,
+"	default RequestPredicate negate() {
+		return (t) -> !test(t);
+	}",method,
+"	default RequestPredicate or(RequestPredicate other) {
+		Assert.notNull(other, ""'other' must not be null"");
+		return new RequestPredicates.OrRequestPredicate(this, other);
+	}",method,
+"	default Optional<ServerRequest> nest(ServerRequest request) {
+		return (test(request) ? Optional.of(request) : Optional.empty());
+	}",method,
+"public class ByteProcessorTest {
+    @Test
+    public void testForward() {
+        final ByteBuf buf =
+                Unpooled.copiedBuffer(""abc\r\n\ndef\r\rghi\n\njkl\0\0mno  \t\tx"", CharsetUtil.ISO_8859_1);
+        final int length = buf.readableBytes();
+        assertEquals(3,  buf.forEachByte(0,  length, ByteProcessor.FIND_CRLF));
+        assertEquals(6,  buf.forEachByte(3,  length - 3, ByteProcessor.FIND_NON_CRLF));
+        assertEquals(9,  buf.forEachByte(6,  length - 6, ByteProcessor.FIND_CR));
+        assertEquals(11, buf.forEachByte(9,  length - 9, ByteProcessor.FIND_NON_CR));
+        assertEquals(14, buf.forEachByte(11, length - 11, ByteProcessor.FIND_LF));
+        assertEquals(16, buf.forEachByte(14, length - 14, ByteProcessor.FIND_NON_LF));
+        assertEquals(19, buf.forEachByte(16, length - 16, ByteProcessor.FIND_NUL));
+        assertEquals(21, buf.forEachByte(19, length - 19, ByteProcessor.FIND_NON_NUL));
+        assertEquals(24, buf.forEachByte(21, length - 21, ByteProcessor.FIND_LINEAR_WHITESPACE));
+        assertEquals(28, buf.forEachByte(24, length - 24, ByteProcessor.FIND_NON_LINEAR_WHITESPACE));
+        assertEquals(-1, buf.forEachByte(28, length - 28, ByteProcessor.FIND_LINEAR_WHITESPACE));
+        buf.release();
+    }
+    @Test
+    public void testBackward() {
+        final ByteBuf buf =
+                Unpooled.copiedBuffer(""abc\r\n\ndef\r\rghi\n\njkl\0\0mno  \t\tx"", CharsetUtil.ISO_8859_1);
+        final int length = buf.readableBytes();
+        assertEquals(27, buf.forEachByteDesc(0, length, ByteProcessor.FIND_LINEAR_WHITESPACE));
+        assertEquals(23, buf.forEachByteDesc(0, 28, ByteProcessor.FIND_NON_LINEAR_WHITESPACE));
+        assertEquals(20, buf.forEachByteDesc(0, 24, ByteProcessor.FIND_NUL));
+        assertEquals(18, buf.forEachByteDesc(0, 21, ByteProcessor.FIND_NON_NUL));
+        assertEquals(15, buf.forEachByteDesc(0, 19, ByteProcessor.FIND_LF));
+        assertEquals(13, buf.forEachByteDesc(0, 16, ByteProcessor.FIND_NON_LF));
+        assertEquals(10, buf.forEachByteDesc(0, 14, ByteProcessor.FIND_CR));
+        assertEquals(8,  buf.forEachByteDesc(0, 11, ByteProcessor.FIND_NON_CR));
+        assertEquals(5,  buf.forEachByteDesc(0, 9, ByteProcessor.FIND_CRLF));
+        assertEquals(2,  buf.forEachByteDesc(0, 6, ByteProcessor.FIND_NON_CRLF));
+        assertEquals(-1, buf.forEachByteDesc(0, 3, ByteProcessor.FIND_CRLF));
+        buf.release();
+    }
+}",class,
+"    @Test
+    public void testForward() {
+        final ByteBuf buf =
+                Unpooled.copiedBuffer(""abc\r\n\ndef\r\rghi\n\njkl\0\0mno  \t\tx"", CharsetUtil.ISO_8859_1);
+        final int length = buf.readableBytes();
+        assertEquals(3,  buf.forEachByte(0,  length, ByteProcessor.FIND_CRLF));
+        assertEquals(6,  buf.forEachByte(3,  length - 3, ByteProcessor.FIND_NON_CRLF));
+        assertEquals(9,  buf.forEachByte(6,  length - 6, ByteProcessor.FIND_CR));
+        assertEquals(11, buf.forEachByte(9,  length - 9, ByteProcessor.FIND_NON_CR));
+        assertEquals(14, buf.forEachByte(11, length - 11, ByteProcessor.FIND_LF));
+        assertEquals(16, buf.forEachByte(14, length - 14, ByteProcessor.FIND_NON_LF));
+        assertEquals(19, buf.forEachByte(16, length - 16, ByteProcessor.FIND_NUL));
+        assertEquals(21, buf.forEachByte(19, length - 19, ByteProcessor.FIND_NON_NUL));
+        assertEquals(24, buf.forEachByte(21, length - 21, ByteProcessor.FIND_LINEAR_WHITESPACE));
+        assertEquals(28, buf.forEachByte(24, length - 24, ByteProcessor.FIND_NON_LINEAR_WHITESPACE));
+        assertEquals(-1, buf.forEachByte(28, length - 28, ByteProcessor.FIND_LINEAR_WHITESPACE));
+        buf.release();
+    }",method,
+"    @Test
+    public void testBackward() {
+        final ByteBuf buf =
+                Unpooled.copiedBuffer(""abc\r\n\ndef\r\rghi\n\njkl\0\0mno  \t\tx"", CharsetUtil.ISO_8859_1);
+        final int length = buf.readableBytes();
+        assertEquals(27, buf.forEachByteDesc(0, length, ByteProcessor.FIND_LINEAR_WHITESPACE));
+        assertEquals(23, buf.forEachByteDesc(0, 28, ByteProcessor.FIND_NON_LINEAR_WHITESPACE));
+        assertEquals(20, buf.forEachByteDesc(0, 24, ByteProcessor.FIND_NUL));
+        assertEquals(18, buf.forEachByteDesc(0, 21, ByteProcessor.FIND_NON_NUL));
+        assertEquals(15, buf.forEachByteDesc(0, 19, ByteProcessor.FIND_LF));
+        assertEquals(13, buf.forEachByteDesc(0, 16, ByteProcessor.FIND_NON_LF));
+        assertEquals(10, buf.forEachByteDesc(0, 14, ByteProcessor.FIND_CR));
+        assertEquals(8,  buf.forEachByteDesc(0, 11, ByteProcessor.FIND_NON_CR));
+        assertEquals(5,  buf.forEachByteDesc(0, 9, ByteProcessor.FIND_CRLF));
+        assertEquals(2,  buf.forEachByteDesc(0, 6, ByteProcessor.FIND_NON_CRLF));
+        assertEquals(-1, buf.forEachByteDesc(0, 3, ByteProcessor.FIND_CRLF));
+        buf.release();
+    }",method,
+"public class CodeInspectionOnEditorAction extends AnAction {
+  @Override
+  public void actionPerformed(AnActionEvent e) {
+    final DataContext dataContext = e.getDataContext();
+    Project project = CommonDataKeys.PROJECT.getData(dataContext);
+    if (project == null){
+      return;
+    }
+    PsiFile psiFile = CommonDataKeys.PSI_FILE.getData(dataContext);
+    if (psiFile != null){
+      analyze(project, psiFile);
+    }
+  }
+  protected static void analyze(Project project, PsiFile psiFile) {
+    FileDocumentManager.getInstance().saveAllDocuments();
+    final InspectionManagerEx inspectionManagerEx = (InspectionManagerEx)InspectionManager.getInstance(project);
+    final AnalysisScope scope = new AnalysisScope(psiFile);
+    final GlobalInspectionContextImpl inspectionContext = inspectionManagerEx.createNewGlobalContext(false);
+    inspectionContext.setCurrentScope(scope);
+    inspectionContext.setExternalProfile(InspectionProjectProfileManager.getInstance(project).getCurrentProfile());
+    inspectionContext.doInspections(scope);
+  }
+  @Override
+  public void update(AnActionEvent e) {
+    final DataContext dataContext = e.getDataContext();
+    final Project project = CommonDataKeys.PROJECT.getData(dataContext);
+    final PsiFile psiFile = CommonDataKeys.PSI_FILE.getData(dataContext);
+    e.getPresentation().setEnabled(project != null && psiFile != null  && DaemonCodeAnalyzer.getInstance(project).isHighlightingAvailable(psiFile));
+  }
+}",class,
+"  @Override
+  public void actionPerformed(AnActionEvent e) {
+    final DataContext dataContext = e.getDataContext();
+    Project project = CommonDataKeys.PROJECT.getData(dataContext);
+    if (project == null){
+      return;
+    }
+    PsiFile psiFile = CommonDataKeys.PSI_FILE.getData(dataContext);
+    if (psiFile != null){
+      analyze(project, psiFile);
+    }
+  }",method,
+"    if (project == null){
+      return;
+    }",method,
+"    if (psiFile != null){
+      analyze(project, psiFile);
+    }",method,
+"  protected static void analyze(Project project, PsiFile psiFile) {
+    FileDocumentManager.getInstance().saveAllDocuments();
+    final InspectionManagerEx inspectionManagerEx = (InspectionManagerEx)InspectionManager.getInstance(project);
+    final AnalysisScope scope = new AnalysisScope(psiFile);
+    final GlobalInspectionContextImpl inspectionContext = inspectionManagerEx.createNewGlobalContext(false);
+    inspectionContext.setCurrentScope(scope);
+    inspectionContext.setExternalProfile(InspectionProjectProfileManager.getInstance(project).getCurrentProfile());
+    inspectionContext.doInspections(scope);
+  }",method,
+"  @Override
+  public void update(AnActionEvent e) {
+    final DataContext dataContext = e.getDataContext();
+    final Project project = CommonDataKeys.PROJECT.getData(dataContext);
+    final PsiFile psiFile = CommonDataKeys.PSI_FILE.getData(dataContext);
+    e.getPresentation().setEnabled(project != null && psiFile != null  && DaemonCodeAnalyzer.getInstance(project).isHighlightingAvailable(psiFile));
+  }",method,
+"public class WakeWordIPCSocket extends WakeWordIPC implements Runnable {
+    private ServerSocket serverSocket = null;
+    private Thread ipcThread = null;
+    private final Set<WakeWordIPCConnectedClient> connectedClients = new HashSet<>();
+    private static final Logger log = LoggerFactory.getLogger(WakeWordIPCSocket.class);
+    public WakeWordIPCSocket(WakeWordDetectedHandler handler, int portNumber) throws IOException {
+        super(handler);
+        serverSocket = new ServerSocket(portNumber, 0, InetAddress.getByName(null));
+    }
+    public void init() {
+        if (ipcThread == null) {
+            ipcThread = new Thread(this);
+            ipcThread.start();
+        }
+    }
+    @Override
+    public void run() {
+        while (true) {
+            try {
+                Socket clientSocket = serverSocket.accept();
+                WakeWordIPCConnectedClient newConnectedClient =
+                        new WakeWordIPCConnectedClient(clientSocket, this);
+                newConnectedClient.init();
+                registerClient(newConnectedClient);
+            } catch (Exception e) {
+                log.warn(""Could not accept/connect IPC client"", e);
+            }
+        }
+    }
+    public synchronized void registerClient(WakeWordIPCConnectedClient newClient) {
+        connectedClients.add(newClient);
+        log.info(""New IPC client was accepted, current of current clients is ""
+                + connectedClients.size());
+    }
+    public synchronized void unregisterClient(WakeWordIPCConnectedClient oldClient) {
+        connectedClients.remove(oldClient);
+        log.info(
+                ""IPC client was removed, current of current clients is "" + connectedClients.size());
+    }
+    @Override
+    public synchronized void sendCommand(IPCCommand command) throws IOException {
+        log.debug(""Sending command "" + command + "" to all connected clients"");
+        for (WakeWordIPCConnectedClient client : connectedClients) {
+            client.send(command);
+        }
+    }
+    public void processWakeWordDetected() {
+        log.info(""Wake Word Detected ......"");
+        (new Thread() {
+            @Override
+            public void run() {
+                wakeWordDetected();
+            }
+        }).start();
+    }
+}",class,
+"    public WakeWordIPCSocket(WakeWordDetectedHandler handler, int portNumber) throws IOException {
+        super(handler);
+        serverSocket = new ServerSocket(portNumber, 0, InetAddress.getByName(null));
+    }",method,
+"    public void init() {
+        if (ipcThread == null) {
+            ipcThread = new Thread(this);
+            ipcThread.start();
+        }
+    }",method,
+"        if (ipcThread == null) {
+            ipcThread = new Thread(this);
+            ipcThread.start();
+        }",method,
+"    @Override
+    public void run() {
+        while (true) {
+            try {
+                Socket clientSocket = serverSocket.accept();
+                WakeWordIPCConnectedClient newConnectedClient =
+                        new WakeWordIPCConnectedClient(clientSocket, this);
+                newConnectedClient.init();
+                registerClient(newConnectedClient);
+            } catch (Exception e) {
+                log.warn(""Could not accept/connect IPC client"", e);
+            }
+        }
+    }",method,
+"        while (true) {
+            try {
+                Socket clientSocket = serverSocket.accept();
+                WakeWordIPCConnectedClient newConnectedClient =
+                        new WakeWordIPCConnectedClient(clientSocket, this);
+                newConnectedClient.init();
+                registerClient(newConnectedClient);
+            } catch (Exception e) {
+                log.warn(""Could not accept/connect IPC client"", e);
+            }
+        }",method,
+"    public synchronized void registerClient(WakeWordIPCConnectedClient newClient) {
+        connectedClients.add(newClient);
+        log.info(""New IPC client was accepted, current of current clients is ""
+                + connectedClients.size());
+    }",method,
+"    public synchronized void unregisterClient(WakeWordIPCConnectedClient oldClient) {
+        connectedClients.remove(oldClient);
+        log.info(
+                ""IPC client was removed, current of current clients is "" + connectedClients.size());
+    }",method,
+"    @Override
+    public synchronized void sendCommand(IPCCommand command) throws IOException {
+        log.debug(""Sending command "" + command + "" to all connected clients"");
+        for (WakeWordIPCConnectedClient client : connectedClients) {
+            client.send(command);
+        }
+    }",method,
+"        for (WakeWordIPCConnectedClient client : connectedClients) {
+            client.send(command);
+        }",method,
+"    public void processWakeWordDetected() {
+        log.info(""Wake Word Detected ......"");
+        (new Thread() {
+            @Override
+            public void run() {
+                wakeWordDetected();
+            }
+        }).start();
+    }",method,
+"            @Override
+            public void run() {
+                wakeWordDetected();
+            }",method,
+"public class MergedChangeDiffRequestProvider implements ChangeDiffRequestProvider {
+  @NotNull
+  @Override
+  public ThreeState isEquals(@NotNull Change change1, @NotNull Change change2) {
+    return ThreeState.UNSURE;
+  }
+  @Override
+  public boolean canCreate(@Nullable Project project, @NotNull Change change) {
+    return change instanceof MergedChange && ((MergedChange)change).getSourceChanges().size() == 2;
+  }
+  @NotNull
+  @Override
+  public DiffRequest process(@NotNull ChangeDiffRequestProducer presentable,
+                             @NotNull UserDataHolder context,
+                             @NotNull ProgressIndicator indicator) throws ProcessCanceledException, DiffRequestProducerException {
+    return new MyProducer(presentable.getProject(), (MergedChange)presentable.getChange()).process(context, indicator);
+  }
+  @NotNull
+  private static SimpleDiffRequest createRequest(@Nullable Project project,
+                                                 @NotNull Change leftChange,
+                                                 @NotNull Change rightChange,
+                                                 @NotNull UserDataHolder context,
+                                                 @NotNull ProgressIndicator indicator)
+    throws DiffRequestProducerException {
+    String requestTitle = getRequestTitle(leftChange);
+    ContentRevision leftRevision = leftChange.getBeforeRevision();
+    ContentRevision centerRevision = leftChange.getAfterRevision();
+    ContentRevision rightRevision = rightChange.getBeforeRevision();
+    if (leftRevision == null) {
+      return createTwoSideRequest(project, centerRevision, rightRevision, requestTitle,
+                                  ChangeDiffRequestProducer.MERGED_VERSION, ChangeDiffRequestProducer.SERVER_VERSION,
+                                  context, indicator);
+    }
+    else if (rightRevision == null) {
+      return createTwoSideRequest(project, leftRevision, centerRevision, requestTitle,
+                                  ChangeDiffRequestProducer.YOUR_VERSION, ChangeDiffRequestProducer.MERGED_VERSION,
+                                  context, indicator);
+    }
+    else if (centerRevision == null) {
+      return createTwoSideRequest(project, leftRevision, rightRevision, requestTitle,
+                                  ChangeDiffRequestProducer.YOUR_VERSION, ChangeDiffRequestProducer.SERVER_VERSION,
+                                  context, indicator);
+    }
+    return new SimpleDiffRequest(requestTitle,
+                                 ChangeDiffRequestProducer.createContent(project, leftRevision, context, indicator),
+                                 ChangeDiffRequestProducer.createContent(project, centerRevision, context, indicator),
+                                 ChangeDiffRequestProducer.createContent(project, rightRevision, context, indicator),
+                                 getRevisionTitle(leftRevision, ChangeDiffRequestProducer.YOUR_VERSION),
+                                 getRevisionTitle(centerRevision, ChangeDiffRequestProducer.MERGED_VERSION),
+                                 getRevisionTitle(rightRevision, ChangeDiffRequestProducer.SERVER_VERSION));
+  }
+  @NotNull
+  private static SimpleDiffRequest createTwoSideRequest(@Nullable Project project,
+                                                        @Nullable ContentRevision leftRevision,
+                                                        @Nullable ContentRevision rightRevision,
+                                                        @NotNull String requestTitle,
+                                                        @NotNull String leftTitle,
+                                                        @NotNull String rightTitle,
+                                                        @NotNull UserDataHolder context,
+                                                        @NotNull ProgressIndicator indicator)
+    throws DiffRequestProducerException {
+    return new SimpleDiffRequest(requestTitle,
+                                 ChangeDiffRequestProducer.createContent(project, leftRevision, context, indicator),
+                                 ChangeDiffRequestProducer.createContent(project, rightRevision, context, indicator),
+                                 getRevisionTitle(leftRevision, leftTitle),
+                                 getRevisionTitle(rightRevision, rightTitle));
+  }
+  public static class MyProducer implements ChangeDiffRequestChain.Producer {
+    @Nullable private final Project myProject;
+    @NotNull private final MergedChange myMergedChange;
+    public MyProducer(@Nullable Project project, @NotNull MergedChange mergedChange) {
+      myProject = project;
+      assert mergedChange.getSourceChanges().size() == 2;
+      myMergedChange = mergedChange;
+    }
+    @NotNull
+    @Override
+    public DiffRequest process(@NotNull UserDataHolder context, @NotNull ProgressIndicator indicator)
+      throws DiffRequestProducerException, ProcessCanceledException {
+      List<Change> sourceChanges = myMergedChange.getSourceChanges();
+      SimpleDiffRequest request = createRequest(myProject, sourceChanges.get(0), sourceChanges.get(1), context, indicator);
+      request.putUserData(DiffUserDataKeys.THREESIDE_DIFF_WITH_RESULT, true);
+      return request;
+    }
+    @NotNull
+    @Override
+    public String getName() {
+      return getRequestTitle(myMergedChange);
+    }
+    @NotNull
+    @Override
+    public FilePath getFilePath() {
+      return ChangesUtil.getFilePath(myMergedChange);
+    }
+    @NotNull
+    @Override
+    public FileStatus getFileStatus() {
+      return myMergedChange.getFileStatus();
+    }
+  }
+}",class,
+"  public static class MyProducer implements ChangeDiffRequestChain.Producer {
+    @Nullable private final Project myProject;
+    @NotNull private final MergedChange myMergedChange;
+    public MyProducer(@Nullable Project project, @NotNull MergedChange mergedChange) {
+      myProject = project;
+      assert mergedChange.getSourceChanges().size() == 2;
+      myMergedChange = mergedChange;
+    }
+    @NotNull
+    @Override
+    public DiffRequest process(@NotNull UserDataHolder context, @NotNull ProgressIndicator indicator)
+      throws DiffRequestProducerException, ProcessCanceledException {
+      List<Change> sourceChanges = myMergedChange.getSourceChanges();
+      SimpleDiffRequest request = createRequest(myProject, sourceChanges.get(0), sourceChanges.get(1), context, indicator);
+      request.putUserData(DiffUserDataKeys.THREESIDE_DIFF_WITH_RESULT, true);
+      return request;
+    }
+    @NotNull
+    @Override
+    public String getName() {
+      return getRequestTitle(myMergedChange);
+    }
+    @NotNull
+    @Override
+    public FilePath getFilePath() {
+      return ChangesUtil.getFilePath(myMergedChange);
+    }
+    @NotNull
+    @Override
+    public FileStatus getFileStatus() {
+      return myMergedChange.getFileStatus();
+    }
+  }",class,
+"  @NotNull
+  @Override
+  public ThreeState isEquals(@NotNull Change change1, @NotNull Change change2) {
+    return ThreeState.UNSURE;
+  }",method,
+"  @Override
+  public boolean canCreate(@Nullable Project project, @NotNull Change change) {
+    return change instanceof MergedChange && ((MergedChange)change).getSourceChanges().size() == 2;
+  }",method,
+"  @NotNull
+  @Override
+  public DiffRequest process(@NotNull ChangeDiffRequestProducer presentable,
+                             @NotNull UserDataHolder context,
+                             @NotNull ProgressIndicator indicator) throws ProcessCanceledException, DiffRequestProducerException {
+    return new MyProducer(presentable.getProject(), (MergedChange)presentable.getChange()).process(context, indicator);
+  }",method,

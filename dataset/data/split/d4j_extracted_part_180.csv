@@ -1,0 +1,1454 @@
+code_snippet,type,score
+"public class ReplaceAddAllArrayToCollectionFix implements IntentionAction {
+  private final PsiMethodCallExpression myMethodCall;
+  public ReplaceAddAllArrayToCollectionFix(@NotNull PsiMethodCallExpression methodCall) {
+    myMethodCall = methodCall;
+  }
+  @Override
+  @NotNull
+  public String getText() {
+    return ""Replace "" + myMethodCall.getText() + "" with "" + getCollectionsMethodCall();
+  }
+  @Override
+  @NotNull
+  public String getFamilyName() {
+    return getText();
+  }
+  @Override
+  public boolean isAvailable(@NotNull final Project project, final Editor editor, final PsiFile file) {
+    if (!myMethodCall.isValid()) return false;
+    final Module module = ModuleUtilCore.findModuleForPsiElement(file);
+    if (module == null) return false;
+    final Sdk jdk = ModuleRootManager.getInstance(module).getSdk();
+    if (jdk == null || !JavaSdk.getInstance().isOfVersionOrHigher(jdk, JavaSdkVersion.JDK_1_5)) return false;
+    final PsiReferenceExpression expression = myMethodCall.getMethodExpression();
+    final PsiElement element = expression.resolve();
+    if (element instanceof PsiMethod) {
+      final PsiMethod method = (PsiMethod)element;
+      final JavaPsiFacade psiFacade = JavaPsiFacade.getInstance(project);
+      final PsiClass collectionsClass = psiFacade.findClass(""java.util.Collection"", GlobalSearchScope.allScope(project));
+      if (collectionsClass != null && InheritanceUtil.isInheritorOrSelf(method.getContainingClass(), collectionsClass, true)) {
+        if (Comparing.strEqual(method.getName(), ""addAll"") && PsiType.BOOLEAN.equals(method.getReturnType())) {
+          final PsiParameter[] psiParameters = method.getParameterList().getParameters();
+          if (psiParameters.length == 1 &&
+              psiParameters[0].getType() instanceof PsiClassType &&
+              InheritanceUtil.isInheritorOrSelf(((PsiClassType)psiParameters[0].getType()).resolve(), collectionsClass, true)) {
+            final PsiExpressionList list = myMethodCall.getArgumentList();
+            final PsiExpression[] expressions = list.getExpressions();
+            if (expressions.length == 1) {
+              if (expressions[0].getType() instanceof PsiArrayType) {
+                return true;
+              }
+            }
+          }
+        }
+      }
+    }
+    return false;
+  }
+  @Override
+  public void invoke(@NotNull final Project project, final Editor editor, final PsiFile file) throws IncorrectOperationException {
+    final PsiElementFactory elementFactory = JavaPsiFacade.getInstance(project).getElementFactory();
+    final PsiExpression toReplace = elementFactory.createExpressionFromText(getCollectionsMethodCall(), myMethodCall);
+    JavaCodeStyleManager.getInstance(project).shortenClassReferences(myMethodCall.replace(toReplace));
+  }
+  @NonNls
+  private String getCollectionsMethodCall() {
+    final PsiExpression qualifierExpression = myMethodCall.getMethodExpression().getQualifierExpression();
+    PsiExpression[] expressions = myMethodCall.getArgumentList().getExpressions();
+    return ""java.util.Collections.addAll("" +
+           (qualifierExpression != null ? qualifierExpression.getText() : ""this"") +
+           "", "" + (expressions.length == 0 ? """" : expressions[0].getText()) + "")"";
+  }
+  @Override
+  public boolean startInWriteAction() {
+    return true;
+  }
+}",class,
+"  public ReplaceAddAllArrayToCollectionFix(@NotNull PsiMethodCallExpression methodCall) {
+    myMethodCall = methodCall;
+  }",method,
+"  @Override
+  @NotNull
+  public String getText() {
+    return ""Replace "" + myMethodCall.getText() + "" with "" + getCollectionsMethodCall();
+  }",method,
+"  @Override
+  @NotNull
+  public String getFamilyName() {
+    return getText();
+  }",method,
+"  @Override
+  public boolean isAvailable(@NotNull final Project project, final Editor editor, final PsiFile file) {
+    if (!myMethodCall.isValid()) return false;
+    final Module module = ModuleUtilCore.findModuleForPsiElement(file);
+    if (module == null) return false;
+    final Sdk jdk = ModuleRootManager.getInstance(module).getSdk();
+    if (jdk == null || !JavaSdk.getInstance().isOfVersionOrHigher(jdk, JavaSdkVersion.JDK_1_5)) return false;
+    final PsiReferenceExpression expression = myMethodCall.getMethodExpression();
+    final PsiElement element = expression.resolve();
+    if (element instanceof PsiMethod) {
+      final PsiMethod method = (PsiMethod)element;
+      final JavaPsiFacade psiFacade = JavaPsiFacade.getInstance(project);
+      final PsiClass collectionsClass = psiFacade.findClass(""java.util.Collection"", GlobalSearchScope.allScope(project));
+      if (collectionsClass != null && InheritanceUtil.isInheritorOrSelf(method.getContainingClass(), collectionsClass, true)) {
+        if (Comparing.strEqual(method.getName(), ""addAll"") && PsiType.BOOLEAN.equals(method.getReturnType())) {
+          final PsiParameter[] psiParameters = method.getParameterList().getParameters();
+          if (psiParameters.length == 1 &&
+              psiParameters[0].getType() instanceof PsiClassType &&
+              InheritanceUtil.isInheritorOrSelf(((PsiClassType)psiParameters[0].getType()).resolve(), collectionsClass, true)) {
+            final PsiExpressionList list = myMethodCall.getArgumentList();
+            final PsiExpression[] expressions = list.getExpressions();
+            if (expressions.length == 1) {
+              if (expressions[0].getType() instanceof PsiArrayType) {
+                return true;
+              }
+            }
+          }
+        }
+      }
+    }
+    return false;
+  }",method,
+"    if (element instanceof PsiMethod) {
+      final PsiMethod method = (PsiMethod)element;
+      final JavaPsiFacade psiFacade = JavaPsiFacade.getInstance(project);
+      final PsiClass collectionsClass = psiFacade.findClass(""java.util.Collection"", GlobalSearchScope.allScope(project));
+      if (collectionsClass != null && InheritanceUtil.isInheritorOrSelf(method.getContainingClass(), collectionsClass, true)) {
+        if (Comparing.strEqual(method.getName(), ""addAll"") && PsiType.BOOLEAN.equals(method.getReturnType())) {
+          final PsiParameter[] psiParameters = method.getParameterList().getParameters();
+          if (psiParameters.length == 1 &&
+              psiParameters[0].getType() instanceof PsiClassType &&
+              InheritanceUtil.isInheritorOrSelf(((PsiClassType)psiParameters[0].getType()).resolve(), collectionsClass, true)) {
+            final PsiExpressionList list = myMethodCall.getArgumentList();
+            final PsiExpression[] expressions = list.getExpressions();
+            if (expressions.length == 1) {
+              if (expressions[0].getType() instanceof PsiArrayType) {
+                return true;
+              }
+            }
+          }
+        }
+      }
+    }",method,
+"            if (expressions.length == 1) {
+              if (expressions[0].getType() instanceof PsiArrayType) {
+                return true;
+              }
+            }",method,
+"  @Override
+  public void invoke(@NotNull final Project project, final Editor editor, final PsiFile file) throws IncorrectOperationException {
+    final PsiElementFactory elementFactory = JavaPsiFacade.getInstance(project).getElementFactory();
+    final PsiExpression toReplace = elementFactory.createExpressionFromText(getCollectionsMethodCall(), myMethodCall);
+    JavaCodeStyleManager.getInstance(project).shortenClassReferences(myMethodCall.replace(toReplace));
+  }",method,
+"  @NonNls
+  private String getCollectionsMethodCall() {
+    final PsiExpression qualifierExpression = myMethodCall.getMethodExpression().getQualifierExpression();
+    PsiExpression[] expressions = myMethodCall.getArgumentList().getExpressions();
+    return ""java.util.Collections.addAll("" +
+           (qualifierExpression != null ? qualifierExpression.getText() : ""this"") +
+           "", "" + (expressions.length == 0 ? """" : expressions[0].getText()) + "")"";
+  }",method,
+"  @Override
+  public boolean startInWriteAction() {
+    return true;
+  }",method,
+"public class ExecSqlImsStatementTest extends CobolTestBase {
+	@Test
+	public void test() throws Exception {
+		final File inputFile = new File(""src/test/resources/io/proleap/cobol/asg/procedure/execsqlims/ExecSqlIms.cbl"");
+		final Program program = new CobolParserRunnerImpl().analyzeFile(inputFile, CobolSourceFormatEnum.TANDEM);
+		final CompilationUnit compilationUnit = program.getCompilationUnit(""ExecSqlIms"");
+		final ProgramUnit programUnit = compilationUnit.getProgramUnit();
+		final ProcedureDivision procedureDivision = programUnit.getProcedureDivision();
+		assertEquals(0, procedureDivision.getParagraphs().size());
+		assertEquals(5, procedureDivision.getStatements().size());
+		{
+			final ExecSqlImsStatement execSqlImsStatement = (ExecSqlImsStatement) procedureDivision.getStatements()
+					.get(0);
+			assertNotNull(execSqlImsStatement);
+			assertEquals(StatementTypeEnum.EXEC_SQLIMS, execSqlImsStatement.getStatementType());
+			{
+				assertNotNull(execSqlImsStatement.getExecSqlImsText());
+				assertEquals(""EXEC SQLIMS DECLARE SOMECUR CURSOR FOR DYSQL END-EXEC"",
+						execSqlImsStatement.getExecSqlImsText());
+			}
+		}
+		{
+			final ExecSqlImsStatement execSqlImsStatement = (ExecSqlImsStatement) procedureDivision.getStatements()
+					.get(1);
+			assertNotNull(execSqlImsStatement);
+			assertEquals(StatementTypeEnum.EXEC_SQLIMS, execSqlImsStatement.getStatementType());
+			{
+				assertNotNull(execSqlImsStatement.getExecSqlImsText());
+				assertEquals(""EXEC SQLIMS OPEN SOMECUR END-EXEC"", execSqlImsStatement.getExecSqlImsText());
+			}
+		}
+		{
+			final ExecSqlImsStatement execSqlImsStatement = (ExecSqlImsStatement) procedureDivision.getStatements()
+					.get(2);
+			assertNotNull(execSqlImsStatement);
+			assertEquals(StatementTypeEnum.EXEC_SQLIMS, execSqlImsStatement.getStatementType());
+			{
+				assertNotNull(execSqlImsStatement.getExecSqlImsText());
+				assertEquals(""EXEC SQLIMS FETCH SOMECUR INTO :SOMECOL1, :SOMECOL2 END-EXEC"",
+						execSqlImsStatement.getExecSqlImsText());
+			}
+		}
+		{
+			final IfStatement ifStatement = (IfStatement) procedureDivision.getStatements().get(3);
+			assertNotNull(ifStatement);
+			assertEquals(StatementTypeEnum.IF, ifStatement.getStatementType());
+		}
+		{
+			final ExecSqlImsStatement execSqlImsStatement = (ExecSqlImsStatement) procedureDivision.getStatements()
+					.get(4);
+			assertNotNull(execSqlImsStatement);
+			assertEquals(StatementTypeEnum.EXEC_SQLIMS, execSqlImsStatement.getStatementType());
+			{
+				assertNotNull(execSqlImsStatement.getExecSqlImsText());
+				assertEquals(""EXEC SQLIMS CLOSE SOMECUR END-EXEC"", execSqlImsStatement.getExecSqlImsText());
+			}
+		}
+	}
+}",class,
+"	@Test
+	public void test() throws Exception {
+		final File inputFile = new File(""src/test/resources/io/proleap/cobol/asg/procedure/execsqlims/ExecSqlIms.cbl"");
+		final Program program = new CobolParserRunnerImpl().analyzeFile(inputFile, CobolSourceFormatEnum.TANDEM);
+		final CompilationUnit compilationUnit = program.getCompilationUnit(""ExecSqlIms"");
+		final ProgramUnit programUnit = compilationUnit.getProgramUnit();
+		final ProcedureDivision procedureDivision = programUnit.getProcedureDivision();
+		assertEquals(0, procedureDivision.getParagraphs().size());
+		assertEquals(5, procedureDivision.getStatements().size());
+		{
+			final ExecSqlImsStatement execSqlImsStatement = (ExecSqlImsStatement) procedureDivision.getStatements()
+					.get(0);
+			assertNotNull(execSqlImsStatement);
+			assertEquals(StatementTypeEnum.EXEC_SQLIMS, execSqlImsStatement.getStatementType());
+			{
+				assertNotNull(execSqlImsStatement.getExecSqlImsText());
+				assertEquals(""EXEC SQLIMS DECLARE SOMECUR CURSOR FOR DYSQL END-EXEC"",
+						execSqlImsStatement.getExecSqlImsText());
+			}
+		}
+		{
+			final ExecSqlImsStatement execSqlImsStatement = (ExecSqlImsStatement) procedureDivision.getStatements()
+					.get(1);
+			assertNotNull(execSqlImsStatement);
+			assertEquals(StatementTypeEnum.EXEC_SQLIMS, execSqlImsStatement.getStatementType());
+			{
+				assertNotNull(execSqlImsStatement.getExecSqlImsText());
+				assertEquals(""EXEC SQLIMS OPEN SOMECUR END-EXEC"", execSqlImsStatement.getExecSqlImsText());
+			}
+		}
+		{
+			final ExecSqlImsStatement execSqlImsStatement = (ExecSqlImsStatement) procedureDivision.getStatements()
+					.get(2);
+			assertNotNull(execSqlImsStatement);
+			assertEquals(StatementTypeEnum.EXEC_SQLIMS, execSqlImsStatement.getStatementType());
+			{
+				assertNotNull(execSqlImsStatement.getExecSqlImsText());
+				assertEquals(""EXEC SQLIMS FETCH SOMECUR INTO :SOMECOL1, :SOMECOL2 END-EXEC"",
+						execSqlImsStatement.getExecSqlImsText());
+			}
+		}
+		{
+			final IfStatement ifStatement = (IfStatement) procedureDivision.getStatements().get(3);
+			assertNotNull(ifStatement);
+			assertEquals(StatementTypeEnum.IF, ifStatement.getStatementType());
+		}
+		{
+			final ExecSqlImsStatement execSqlImsStatement = (ExecSqlImsStatement) procedureDivision.getStatements()
+					.get(4);
+			assertNotNull(execSqlImsStatement);
+			assertEquals(StatementTypeEnum.EXEC_SQLIMS, execSqlImsStatement.getStatementType());
+			{
+				assertNotNull(execSqlImsStatement.getExecSqlImsText());
+				assertEquals(""EXEC SQLIMS CLOSE SOMECUR END-EXEC"", execSqlImsStatement.getExecSqlImsText());
+			}
+		}
+	}",method,
+"public abstract class MutexNodes {
+    @CoreMethod(names = ""__allocate__"", constructor = true, visibility = Visibility.PRIVATE)
+    public abstract static class AllocateNode extends CoreMethodArrayArgumentsNode {
+        @Child private AllocateObjectNode allocateNode = AllocateObjectNode.create();
+        @Specialization
+        public DynamicObject allocate(DynamicObject rubyClass) {
+            return allocateNode.allocate(rubyClass, new ReentrantLock());
+        }
+    }
+    @CoreMethod(names = ""lock"")
+    public abstract static class LockNode extends UnaryCoreMethodNode {
+        @Specialization
+        public DynamicObject lock(VirtualFrame frame, DynamicObject mutex,
+                @Cached(""create()"") GetCurrentRubyThreadNode getCurrentRubyThreadNode) {
+            final ReentrantLock lock = Layouts.MUTEX.getLock(mutex);
+            final DynamicObject thread = getCurrentRubyThreadNode.executeGetRubyThread(frame);
+            MutexOperations.lock(lock, thread, this);
+            return mutex;
+        }
+    }
+    @CoreMethod(names = ""locked?"")
+    public abstract static class IsLockedNode extends UnaryCoreMethodNode {
+        @Specialization
+        public boolean isLocked(DynamicObject mutex) {
+            return Layouts.MUTEX.getLock(mutex).isLocked();
+        }
+    }
+    @CoreMethod(names = ""owned?"")
+    public abstract static class IsOwnedNode extends UnaryCoreMethodNode {
+        @Specialization
+        public boolean isOwned(DynamicObject mutex) {
+            return Layouts.MUTEX.getLock(mutex).isHeldByCurrentThread();
+        }
+    }
+    @CoreMethod(names = ""try_lock"")
+    public abstract static class TryLockNode extends UnaryCoreMethodNode {
+        @Specialization
+        public boolean tryLock(VirtualFrame frame, DynamicObject mutex,
+                @Cached(""create()"") GetCurrentRubyThreadNode getCurrentRubyThreadNode,
+                @Cached(""createBinaryProfile()"") ConditionProfile heldByCurrentThreadProfile) {
+            final ReentrantLock lock = Layouts.MUTEX.getLock(mutex);
+            final DynamicObject thread = getCurrentRubyThreadNode.executeGetRubyThread(frame);
+            if (heldByCurrentThreadProfile.profile(lock.isHeldByCurrentThread())) {
+                return false;
+            } else {
+                return doTryLock(thread, lock);
+            }
+        }
+        @TruffleBoundary
+        private boolean doTryLock(DynamicObject thread, ReentrantLock lock) {
+            if (lock.tryLock()) {
+                Layouts.THREAD.getOwnedLocks(thread).add(lock);
+                return true;
+            } else {
+                return false;
+            }
+        }
+    }
+    @CoreMethod(names = ""unlock"")
+    public abstract static class UnlockNode extends UnaryCoreMethodNode {
+        @Specialization
+        public DynamicObject unlock(VirtualFrame frame, DynamicObject mutex,
+                @Cached(""create()"") GetCurrentRubyThreadNode getCurrentRubyThreadNode) {
+            final ReentrantLock lock = Layouts.MUTEX.getLock(mutex);
+            final DynamicObject thread = getCurrentRubyThreadNode.executeGetRubyThread(frame);
+            MutexOperations.unlock(lock, thread, this);
+            return mutex;
+        }
+    }
+    @NodeChildren({
+            @NodeChild(value = ""mutex"", type = RubyNode.class),
+            @NodeChild(value = ""duration"", type = RubyNode.class)
+    })
+    @CoreMethod(names = ""sleep"", optional = 1)
+    public abstract static class SleepNode extends CoreMethodNode {
+        @CreateCast(""duration"")
+        public RubyNode coerceDuration(RubyNode duration) {
+            return DurationToMillisecondsNodeGen.create(true, duration);
+        }
+        @Specialization
+        public long sleep(VirtualFrame frame, DynamicObject mutex, long durationInMillis,
+                @Cached(""create()"") GetCurrentRubyThreadNode getCurrentRubyThreadNode) {
+            final ReentrantLock lock = Layouts.MUTEX.getLock(mutex);
+            final DynamicObject thread = getCurrentRubyThreadNode.executeGetRubyThread(frame);
+            Layouts.THREAD.getWakeUp(thread).set(false);
+            MutexOperations.unlock(lock, thread, this);
+            try {
+                return KernelNodes.SleepNode.sleepFor(this, getContext(), thread, durationInMillis);
+            } finally {
+                MutexOperations.lockEvenWithExceptions(lock, thread, this);
+            }
+        }
+    }
+}",class,
+"    public abstract static class AllocateNode extends CoreMethodArrayArgumentsNode {
+        @Child private AllocateObjectNode allocateNode = AllocateObjectNode.create();
+        @Specialization
+        public DynamicObject allocate(DynamicObject rubyClass) {
+            return allocateNode.allocate(rubyClass, new ReentrantLock());
+        }
+    }",class,
+"    public abstract static class LockNode extends UnaryCoreMethodNode {
+        @Specialization
+        public DynamicObject lock(VirtualFrame frame, DynamicObject mutex,
+                @Cached(""create()"") GetCurrentRubyThreadNode getCurrentRubyThreadNode) {
+            final ReentrantLock lock = Layouts.MUTEX.getLock(mutex);
+            final DynamicObject thread = getCurrentRubyThreadNode.executeGetRubyThread(frame);
+            MutexOperations.lock(lock, thread, this);
+            return mutex;
+        }
+    }",class,
+"    public abstract static class IsLockedNode extends UnaryCoreMethodNode {
+        @Specialization
+        public boolean isLocked(DynamicObject mutex) {
+            return Layouts.MUTEX.getLock(mutex).isLocked();
+        }
+    }",class,
+"    public abstract static class IsOwnedNode extends UnaryCoreMethodNode {
+        @Specialization
+        public boolean isOwned(DynamicObject mutex) {
+            return Layouts.MUTEX.getLock(mutex).isHeldByCurrentThread();
+        }
+    }",class,
+"    public abstract static class TryLockNode extends UnaryCoreMethodNode {
+        @Specialization
+        public boolean tryLock(VirtualFrame frame, DynamicObject mutex,
+                @Cached(""create()"") GetCurrentRubyThreadNode getCurrentRubyThreadNode,
+                @Cached(""createBinaryProfile()"") ConditionProfile heldByCurrentThreadProfile) {
+            final ReentrantLock lock = Layouts.MUTEX.getLock(mutex);
+            final DynamicObject thread = getCurrentRubyThreadNode.executeGetRubyThread(frame);
+            if (heldByCurrentThreadProfile.profile(lock.isHeldByCurrentThread())) {
+                return false;
+            } else {
+                return doTryLock(thread, lock);
+            }
+        }
+        @TruffleBoundary
+        private boolean doTryLock(DynamicObject thread, ReentrantLock lock) {
+            if (lock.tryLock()) {
+                Layouts.THREAD.getOwnedLocks(thread).add(lock);
+                return true;
+            } else {
+                return false;
+            }
+        }
+    }",class,
+"    public abstract static class UnlockNode extends UnaryCoreMethodNode {
+        @Specialization
+        public DynamicObject unlock(VirtualFrame frame, DynamicObject mutex,
+                @Cached(""create()"") GetCurrentRubyThreadNode getCurrentRubyThreadNode) {
+            final ReentrantLock lock = Layouts.MUTEX.getLock(mutex);
+            final DynamicObject thread = getCurrentRubyThreadNode.executeGetRubyThread(frame);
+            MutexOperations.unlock(lock, thread, this);
+            return mutex;
+        }
+    }",class,
+"    public abstract static class SleepNode extends CoreMethodNode {
+        @CreateCast(""duration"")
+        public RubyNode coerceDuration(RubyNode duration) {
+            return DurationToMillisecondsNodeGen.create(true, duration);
+        }
+        @Specialization
+        public long sleep(VirtualFrame frame, DynamicObject mutex, long durationInMillis,
+                @Cached(""create()"") GetCurrentRubyThreadNode getCurrentRubyThreadNode) {
+            final ReentrantLock lock = Layouts.MUTEX.getLock(mutex);
+            final DynamicObject thread = getCurrentRubyThreadNode.executeGetRubyThread(frame);
+            Layouts.THREAD.getWakeUp(thread).set(false);
+            MutexOperations.unlock(lock, thread, this);
+            try {
+                return KernelNodes.SleepNode.sleepFor(this, getContext(), thread, durationInMillis);
+            } finally {
+                MutexOperations.lockEvenWithExceptions(lock, thread, this);
+            }
+        }
+    }",class,
+"        @Child private AllocateObjectNode allocateNode = AllocateObjectNode.create();
+        @Specialization
+        public DynamicObject allocate(DynamicObject rubyClass) {
+            return allocateNode.allocate(rubyClass, new ReentrantLock());
+        }",method,
+"        @Specialization
+        public boolean isLocked(DynamicObject mutex) {
+            return Layouts.MUTEX.getLock(mutex).isLocked();
+        }",method,
+"        @Specialization
+        public boolean isOwned(DynamicObject mutex) {
+            return Layouts.MUTEX.getLock(mutex).isHeldByCurrentThread();
+        }",method,
+"        @TruffleBoundary
+        private boolean doTryLock(DynamicObject thread, ReentrantLock lock) {
+            if (lock.tryLock()) {
+                Layouts.THREAD.getOwnedLocks(thread).add(lock);
+                return true;
+            } else {
+                return false;
+            }
+        }",method,
+"        @CreateCast(""duration"")
+        public RubyNode coerceDuration(RubyNode duration) {
+            return DurationToMillisecondsNodeGen.create(true, duration);
+        }",method,
+"public final class CodeFragmentLogAdapter extends AbstractLogAdapter
+{
+    private int lineNumberOffset;
+    public CodeFragmentLogAdapter(Logger original, int lineNumberOffset)
+    {
+        super(original);
+        this.lineNumberOffset = lineNumberOffset  - 1;
+    }
+    public void logInfo(String path, int line, String info)
+    {
+        original.logInfo(path, line + lineNumberOffset, info);
+    }
+    public void logDebug(String path, int line, String debug)
+    {
+        original.logDebug(path, line + lineNumberOffset, debug);
+    }
+    public void logWarning(String path, int line, String warning)
+    {
+        original.logWarning(path, line + lineNumberOffset, warning);
+    }
+    public void logWarning(String path, int line, String warning, int errorCode)
+    {
+        original.logWarning(path, line + lineNumberOffset, warning, errorCode);
+    }
+    public void logError(String path, int line, String error)
+    {
+        original.logError(path, line + lineNumberOffset, error);
+    }
+    public void logError(String path, int line, String error, int errorCode)
+    {
+        original.logError(path, line + lineNumberOffset, error, errorCode);
+    }
+    public void logInfo(String path, int line, int col, String info)
+    {
+        original.logInfo(path, line + lineNumberOffset, info);
+    }
+    public void logDebug(String path, int line, int col, String debug)
+    {
+        original.logDebug(path, line + lineNumberOffset, debug);
+    }
+    public void logWarning(String path, int line, int col, String warning)
+    {
+        original.logWarning(path, line + lineNumberOffset, warning);
+    }
+    public void logError(String path, int line, int col, String error)
+    {
+        original.logError(path, line + lineNumberOffset, error);
+    }
+    public void logWarning(String path, int line, int col, String warning, String source)
+    {
+        original.logWarning(path, line + lineNumberOffset, warning);
+    }
+    public void logWarning(String path, int line, int col, String warning, String source, int errorCode)
+    {
+        original.logWarning(path, line + lineNumberOffset, warning, errorCode);
+    }
+    public void logError(String path, int line, int col, String error, String source)
+    {
+        original.logError(path, line + lineNumberOffset, error);
+    }
+    public void logError(String path, int line, int col, String error, String source, int errorCode)
+    {
+        original.logError(path, line + lineNumberOffset, error, errorCode);
+    }
+    public void log(ILocalizableMessage m)
+    {
+        m.setLine(m.getLine() + lineNumberOffset);
+        original.log(m);
+    }
+    public void log(ILocalizableMessage m, String source)
+    {
+        m.setLine(m.getLine() + lineNumberOffset);
+        original.log(m, source);
+    }
+}",class,
+"    public CodeFragmentLogAdapter(Logger original, int lineNumberOffset)
+    {
+        super(original);
+        this.lineNumberOffset = lineNumberOffset  - 1;
+    }",method,
+"    public void logInfo(String path, int line, String info)
+    {
+        original.logInfo(path, line + lineNumberOffset, info);
+    }",method,
+"    public void logDebug(String path, int line, String debug)
+    {
+        original.logDebug(path, line + lineNumberOffset, debug);
+    }",method,
+"    public void logWarning(String path, int line, String warning)
+    {
+        original.logWarning(path, line + lineNumberOffset, warning);
+    }",method,
+"    public void logWarning(String path, int line, String warning, int errorCode)
+    {
+        original.logWarning(path, line + lineNumberOffset, warning, errorCode);
+    }",method,
+"    public void logError(String path, int line, String error)
+    {
+        original.logError(path, line + lineNumberOffset, error);
+    }",method,
+"    public void logError(String path, int line, String error, int errorCode)
+    {
+        original.logError(path, line + lineNumberOffset, error, errorCode);
+    }",method,
+"    public void logInfo(String path, int line, int col, String info)
+    {
+        original.logInfo(path, line + lineNumberOffset, info);
+    }",method,
+"    public void logDebug(String path, int line, int col, String debug)
+    {
+        original.logDebug(path, line + lineNumberOffset, debug);
+    }",method,
+"    public void logWarning(String path, int line, int col, String warning)
+    {
+        original.logWarning(path, line + lineNumberOffset, warning);
+    }",method,
+"    public void logError(String path, int line, int col, String error)
+    {
+        original.logError(path, line + lineNumberOffset, error);
+    }",method,
+"    public void logWarning(String path, int line, int col, String warning, String source)
+    {
+        original.logWarning(path, line + lineNumberOffset, warning);
+    }",method,
+"    public void logWarning(String path, int line, int col, String warning, String source, int errorCode)
+    {
+        original.logWarning(path, line + lineNumberOffset, warning, errorCode);
+    }",method,
+"    public void logError(String path, int line, int col, String error, String source)
+    {
+        original.logError(path, line + lineNumberOffset, error);
+    }",method,
+"    public void logError(String path, int line, int col, String error, String source, int errorCode)
+    {
+        original.logError(path, line + lineNumberOffset, error, errorCode);
+    }",method,
+"    public void log(ILocalizableMessage m)
+    {
+        m.setLine(m.getLine() + lineNumberOffset);
+        original.log(m);
+    }",method,
+"    public void log(ILocalizableMessage m, String source)
+    {
+        m.setLine(m.getLine() + lineNumberOffset);
+        original.log(m, source);
+    }",method,
+"public class FormEnumUsageTest extends PsiTestCase {
+  private VirtualFile myTestProjectRoot;
+  @Override
+  protected void setUp() throws Exception {
+    super.setUp();
+    String root = PluginPathManager.getPluginHomePath(""ui-designer"") + ""/testData/binding/"" + getTestName(true);
+    PsiTestUtil.removeAllRoots(myModule, IdeaTestUtil.getMockJdk17());
+    myTestProjectRoot = PsiTestUtil.createTestProjectStructure(myProject, myModule, root, myFilesToDelete);
+  }
+  @Override protected void tearDown() throws Exception {
+    myTestProjectRoot = null;
+    super.tearDown();
+  }
+  public void testEnumUsage() throws IncorrectOperationException {
+    LanguageLevelProjectExtension.getInstance(myJavaFacade.getProject()).setLanguageLevel(LanguageLevel.JDK_1_5);
+    CommandProcessor.getInstance().executeCommand(myProject, () -> {
+      try {
+        createFile(myModule, myTestProjectRoot, ""PropEnum.java"", ""public enum PropEnum { valueA, valueB }"");
+        createFile(myModule, myTestProjectRoot, ""CustomComponent.java"",
+                   ""public class CustomComponent extends JLabel { private PropEnum e; public PropEnum getE() { return e; } public void setE(E newE) { e = newE; } }"");
+      }
+      catch (Exception e) {
+        fail(e.getMessage());
+      }
+    }, """", null);
+    PsiClass enumClass = myJavaFacade.findClass(""PropEnum"", ProjectScope.getAllScope(myProject));
+    PsiField valueBField = enumClass.findFieldByName(""valueB"", false);
+    assertNotNull(valueBField);
+    assertTrue(valueBField instanceof PsiEnumConstant);
+    final PsiClass componentClass = myJavaFacade.findClass(""CustomComponent"", ProjectScope.getAllScope(myProject));
+    assertNotNull(componentClass);
+    assertEquals(1, ReferencesSearch.search(componentClass).findAll().size());
+    assertEquals(1, ReferencesSearch.search(valueBField).findAll().size());
+  }
+}",class,
+"                   ""public class CustomComponent extends JLabel { private PropEnum e; public PropEnum getE() { return e; } public void setE(E newE) { e = newE; } }"");
+      }
+      catch (Exception e) {
+        fail(e.getMessage());
+      }",class,
+"  @Override
+  protected void setUp() throws Exception {
+    super.setUp();
+    String root = PluginPathManager.getPluginHomePath(""ui-designer"") + ""/testData/binding/"" + getTestName(true);
+    PsiTestUtil.removeAllRoots(myModule, IdeaTestUtil.getMockJdk17());
+    myTestProjectRoot = PsiTestUtil.createTestProjectStructure(myProject, myModule, root, myFilesToDelete);
+  }",method,
+"  public void testEnumUsage() throws IncorrectOperationException {
+    LanguageLevelProjectExtension.getInstance(myJavaFacade.getProject()).setLanguageLevel(LanguageLevel.JDK_1_5);
+    CommandProcessor.getInstance().executeCommand(myProject, () -> {
+      try {
+        createFile(myModule, myTestProjectRoot, ""PropEnum.java"", ""public enum PropEnum { valueA, valueB }"");
+        createFile(myModule, myTestProjectRoot, ""CustomComponent.java"",
+                   ""public class CustomComponent extends JLabel { private PropEnum e; public PropEnum getE() { return e; } public void setE(E newE) { e = newE; } }"");
+      }
+      catch (Exception e) {
+        fail(e.getMessage());
+      }
+    }, """", null);
+    PsiClass enumClass = myJavaFacade.findClass(""PropEnum"", ProjectScope.getAllScope(myProject));
+    PsiField valueBField = enumClass.findFieldByName(""valueB"", false);
+    assertNotNull(valueBField);
+    assertTrue(valueBField instanceof PsiEnumConstant);
+    final PsiClass componentClass = myJavaFacade.findClass(""CustomComponent"", ProjectScope.getAllScope(myProject));
+    assertNotNull(componentClass);
+    assertEquals(1, ReferencesSearch.search(componentClass).findAll().size());
+    assertEquals(1, ReferencesSearch.search(valueBField).findAll().size());
+  }",method,
+"        createFile(myModule, myTestProjectRoot, ""CustomComponent.java"",
+                   ""public class CustomComponent extends JLabel { private PropEnum e; public PropEnum getE() { return e; } public void setE(E newE) { e = newE; } }"");
+      }
+      catch (Exception e) {
+        fail(e.getMessage());
+      }",method,
+"      catch (Exception e) {
+        fail(e.getMessage());
+      }",method,
+"public class PyAssignmentToLoopOrWithParameterInspection extends PyInspection {
+  private static final String NAME = PyBundle.message(""INSP.NAME.assignment.to.loop.or.with.parameter.display.name"");
+  @NotNull
+  @Override
+  public String getDisplayName() {
+    return NAME;
+  }
+  @NotNull
+  @Override
+  public PsiElementVisitor buildVisitor(@NotNull final ProblemsHolder holder,
+                                        final boolean isOnTheFly,
+                                        @NotNull final LocalInspectionToolSession session) {
+    return new Visitor(holder, session);
+  }
+  private static class Visitor extends PyInspectionVisitor {
+    private Visitor(@Nullable final ProblemsHolder holder, @NotNull final LocalInspectionToolSession session) {
+      super(holder, session);
+    }
+    @Override
+    public void visitPyWithStatement(final PyWithStatement node) {
+      checkNotReDeclaringUpperLoopOrStatement(node);
+    }
+    @Override
+    public void visitPyForStatement(final PyForStatement node) {
+      checkNotReDeclaringUpperLoopOrStatement(node);
+    }
+    private void checkNotReDeclaringUpperLoopOrStatement(@NotNull final PsiElement statement) {
+      for (PyExpression declaredVar : getNamedElementsOfForAndWithStatements(statement)) {
+        final Filter filter = new Filter(handleSubscriptionsAndResolveSafely(declaredVar));
+        final PsiElement firstParent = PsiTreeUtil.findFirstParent(statement, true, filter);
+        if ((firstParent != null) && isRequiredStatement(firstParent)) {
+          // If parent is ""for"", we need to check that statement not declared in ""else"": PY-12367
+          if ((firstParent instanceof PyForStatement) && isDeclaredInElse(statement, (PyForStatement)firstParent)) {
+            continue;
+          }
+          registerProblem(declaredVar,
+                          PyBundle.message(""INSP.NAME.assignment.to.loop.or.with.parameter.display.message"", declaredVar.getText()));
+        }
+      }
+    }
+  }
+  private static boolean isDeclaredInElse(@NotNull final PsiElement elementToCheck, @NotNull final PyForStatement forStatement) {
+    final PyElsePart elsePart = forStatement.getElsePart();
+    if (elsePart != null) {
+      if (PsiTreeUtil.isAncestor(elsePart, elementToCheck, false)) {
+        return true;
+      }
+    }
+    return false;
+  }
+  private static class Filter implements Condition<PsiElement> {
+    private final PsiElement myNode;
+    private Filter(final PsiElement node) {
+      this.myNode = node;
+    }
+    @Override
+    public boolean value(final PsiElement psiElement) {
+      if (psiElement instanceof ScopeOwner) {
+        return true; //Do not go any further
+      }
+      if (!isRequiredStatement(psiElement)) {
+        return false; //Parent has wrong type, skip
+      }
+      final List<PyExpression> varsDeclaredInStatement = getNamedElementsOfForAndWithStatements(psiElement);
+      for (PyExpression varDeclaredInStatement : varsDeclaredInStatement) {
+        //For each variable, declared by this parent take first declaration and open subscription list if any
+        final PsiReference reference = handleSubscriptionsAndResolveSafely(varDeclaredInStatement).getReference();
+        if ((reference != null) && reference.isReferenceTo(myNode)) {
+          return true; //One of variables declared by this parent refers to node
+        }
+      }
+      return false;
+    }
+  }
+  @NotNull
+  private static PsiElement handleSubscriptionsAndResolveSafely(@NotNull PyExpression element) {
+    if (element instanceof PySubscriptionExpression) {
+      element = ((PySubscriptionExpression)element).getRootOperand();
+    }
+    return PyUtil.resolveToTheTop(element);
+  }
+  private static boolean isRequiredStatement(final PsiElement element) {
+    assert element != null;
+    return (element instanceof PyWithStatement) || (element instanceof PyForStatement);
+  }
+  @NotNull
+  private static List<PyExpression> getNamedElementsOfForAndWithStatements(@NotNull PsiElement element) {
+    if (element instanceof PyForStatement) {
+      final PyForStatement forStatement = (PyForStatement)element;
+      final PyExpression target = forStatement.getForPart().getTarget();
+      return dropUnderscores(PyUtil.flattenedParensAndStars(target));
+    }
+    else if (element instanceof PyWithStatement) {
+      final PyWithStatement withStatement = (PyWithStatement)element;
+      final List<PyExpression> result = new ArrayList<>();
+      for (PyWithItem item : withStatement.getWithItems()) {
+        final PyExpression target = item.getTarget();
+        if (target != null) {
+          result.addAll(PyUtil.flattenedParensAndTuples(target));
+        }
+      }
+      return dropUnderscores(result);
+    }
+    return Collections.emptyList();
+  }
+  @NotNull
+  private static List<PyExpression> dropUnderscores(@NotNull List<PyExpression> expressions) {
+    return ContainerUtil.filter(expressions,
+                                expression -> !PyNames.UNDERSCORE.equals(expression.getText()));
+  }
+}",class,
+"  private static class Visitor extends PyInspectionVisitor {
+    private Visitor(@Nullable final ProblemsHolder holder, @NotNull final LocalInspectionToolSession session) {
+      super(holder, session);
+    }
+    @Override
+    public void visitPyWithStatement(final PyWithStatement node) {
+      checkNotReDeclaringUpperLoopOrStatement(node);
+    }
+    @Override
+    public void visitPyForStatement(final PyForStatement node) {
+      checkNotReDeclaringUpperLoopOrStatement(node);
+    }
+    private void checkNotReDeclaringUpperLoopOrStatement(@NotNull final PsiElement statement) {
+      for (PyExpression declaredVar : getNamedElementsOfForAndWithStatements(statement)) {
+        final Filter filter = new Filter(handleSubscriptionsAndResolveSafely(declaredVar));
+        final PsiElement firstParent = PsiTreeUtil.findFirstParent(statement, true, filter);
+        if ((firstParent != null) && isRequiredStatement(firstParent)) {
+          // If parent is ""for"", we need to check that statement not declared in ""else"": PY-12367
+          if ((firstParent instanceof PyForStatement) && isDeclaredInElse(statement, (PyForStatement)firstParent)) {
+            continue;
+          }
+          registerProblem(declaredVar,
+                          PyBundle.message(""INSP.NAME.assignment.to.loop.or.with.parameter.display.message"", declaredVar.getText()));
+        }
+      }
+    }
+  }",class,
+"  private static class Filter implements Condition<PsiElement> {
+    private final PsiElement myNode;
+    private Filter(final PsiElement node) {
+      this.myNode = node;
+    }
+    @Override
+    public boolean value(final PsiElement psiElement) {
+      if (psiElement instanceof ScopeOwner) {
+        return true; //Do not go any further
+      }
+      if (!isRequiredStatement(psiElement)) {
+        return false; //Parent has wrong type, skip
+      }
+      final List<PyExpression> varsDeclaredInStatement = getNamedElementsOfForAndWithStatements(psiElement);
+      for (PyExpression varDeclaredInStatement : varsDeclaredInStatement) {
+        //For each variable, declared by this parent take first declaration and open subscription list if any
+        final PsiReference reference = handleSubscriptionsAndResolveSafely(varDeclaredInStatement).getReference();
+        if ((reference != null) && reference.isReferenceTo(myNode)) {
+          return true; //One of variables declared by this parent refers to node
+        }
+      }
+      return false;
+    }
+  }",class,
+"  @NotNull
+  @Override
+  public String getDisplayName() {
+    return NAME;
+  }",method,
+"  @NotNull
+  @Override
+  public PsiElementVisitor buildVisitor(@NotNull final ProblemsHolder holder,
+                                        final boolean isOnTheFly,
+                                        @NotNull final LocalInspectionToolSession session) {
+    return new Visitor(holder, session);
+  }",method,
+"    private Visitor(@Nullable final ProblemsHolder holder, @NotNull final LocalInspectionToolSession session) {
+      super(holder, session);
+    }",method,
+"    @Override
+    public void visitPyWithStatement(final PyWithStatement node) {
+      checkNotReDeclaringUpperLoopOrStatement(node);
+    }",method,
+"    @Override
+    public void visitPyForStatement(final PyForStatement node) {
+      checkNotReDeclaringUpperLoopOrStatement(node);
+    }",method,
+"    private void checkNotReDeclaringUpperLoopOrStatement(@NotNull final PsiElement statement) {
+      for (PyExpression declaredVar : getNamedElementsOfForAndWithStatements(statement)) {
+        final Filter filter = new Filter(handleSubscriptionsAndResolveSafely(declaredVar));
+        final PsiElement firstParent = PsiTreeUtil.findFirstParent(statement, true, filter);
+        if ((firstParent != null) && isRequiredStatement(firstParent)) {
+          // If parent is ""for"", we need to check that statement not declared in ""else"": PY-12367
+          if ((firstParent instanceof PyForStatement) && isDeclaredInElse(statement, (PyForStatement)firstParent)) {
+            continue;
+          }
+          registerProblem(declaredVar,
+                          PyBundle.message(""INSP.NAME.assignment.to.loop.or.with.parameter.display.message"", declaredVar.getText()));
+        }
+      }
+    }",method,
+"  private static boolean isDeclaredInElse(@NotNull final PsiElement elementToCheck, @NotNull final PyForStatement forStatement) {
+    final PyElsePart elsePart = forStatement.getElsePart();
+    if (elsePart != null) {
+      if (PsiTreeUtil.isAncestor(elsePart, elementToCheck, false)) {
+        return true;
+      }
+    }
+    return false;
+  }",method,
+"    if (elsePart != null) {
+      if (PsiTreeUtil.isAncestor(elsePart, elementToCheck, false)) {
+        return true;
+      }
+    }",method,
+"    private Filter(final PsiElement node) {
+      this.myNode = node;
+    }",method,
+"    @Override
+    public boolean value(final PsiElement psiElement) {
+      if (psiElement instanceof ScopeOwner) {
+        return true; //Do not go any further
+      }
+      if (!isRequiredStatement(psiElement)) {
+        return false; //Parent has wrong type, skip
+      }
+      final List<PyExpression> varsDeclaredInStatement = getNamedElementsOfForAndWithStatements(psiElement);
+      for (PyExpression varDeclaredInStatement : varsDeclaredInStatement) {
+        //For each variable, declared by this parent take first declaration and open subscription list if any
+        final PsiReference reference = handleSubscriptionsAndResolveSafely(varDeclaredInStatement).getReference();
+        if ((reference != null) && reference.isReferenceTo(myNode)) {
+          return true; //One of variables declared by this parent refers to node
+        }
+      }
+      return false;
+    }",method,
+"      if (psiElement instanceof ScopeOwner) {
+        return true; //Do not go any further
+      }",method,
+"      for (PyExpression varDeclaredInStatement : varsDeclaredInStatement) {
+        //For each variable, declared by this parent take first declaration and open subscription list if any
+        final PsiReference reference = handleSubscriptionsAndResolveSafely(varDeclaredInStatement).getReference();
+        if ((reference != null) && reference.isReferenceTo(myNode)) {
+          return true; //One of variables declared by this parent refers to node
+        }
+      }",method,
+"  @NotNull
+  private static PsiElement handleSubscriptionsAndResolveSafely(@NotNull PyExpression element) {
+    if (element instanceof PySubscriptionExpression) {
+      element = ((PySubscriptionExpression)element).getRootOperand();
+    }
+    return PyUtil.resolveToTheTop(element);
+  }",method,
+"    if (element instanceof PySubscriptionExpression) {
+      element = ((PySubscriptionExpression)element).getRootOperand();
+    }",method,
+"  private static boolean isRequiredStatement(final PsiElement element) {
+    assert element != null;
+    return (element instanceof PyWithStatement) || (element instanceof PyForStatement);
+  }",method,
+"  @NotNull
+  private static List<PyExpression> getNamedElementsOfForAndWithStatements(@NotNull PsiElement element) {
+    if (element instanceof PyForStatement) {
+      final PyForStatement forStatement = (PyForStatement)element;
+      final PyExpression target = forStatement.getForPart().getTarget();
+      return dropUnderscores(PyUtil.flattenedParensAndStars(target));
+    }
+    else if (element instanceof PyWithStatement) {
+      final PyWithStatement withStatement = (PyWithStatement)element;
+      final List<PyExpression> result = new ArrayList<>();
+      for (PyWithItem item : withStatement.getWithItems()) {
+        final PyExpression target = item.getTarget();
+        if (target != null) {
+          result.addAll(PyUtil.flattenedParensAndTuples(target));
+        }
+      }
+      return dropUnderscores(result);
+    }
+    return Collections.emptyList();
+  }",method,
+"    if (element instanceof PyForStatement) {
+      final PyForStatement forStatement = (PyForStatement)element;
+      final PyExpression target = forStatement.getForPart().getTarget();
+      return dropUnderscores(PyUtil.flattenedParensAndStars(target));
+    }",method,
+"    else if (element instanceof PyWithStatement) {
+      final PyWithStatement withStatement = (PyWithStatement)element;
+      final List<PyExpression> result = new ArrayList<>();
+      for (PyWithItem item : withStatement.getWithItems()) {
+        final PyExpression target = item.getTarget();
+        if (target != null) {
+          result.addAll(PyUtil.flattenedParensAndTuples(target));
+        }
+      }
+      return dropUnderscores(result);
+    }",method,
+"        if (target != null) {
+          result.addAll(PyUtil.flattenedParensAndTuples(target));
+        }",method,
+"  @NotNull
+  private static List<PyExpression> dropUnderscores(@NotNull List<PyExpression> expressions) {
+    return ContainerUtil.filter(expressions,
+                                expression -> !PyNames.UNDERSCORE.equals(expression.getText()));
+  }",method,
+"public class KylinDriverSupportTest {
+    // test config
+    private static final String URL = ""jdbc:kylin://172.168.1.111:7070/jlkBigData"";
+    private static final String USER_NAME = ""ADMIN"";
+    private static final String PASSWORD = ""KYLIN"";
+    private static final String VALIDATION_QUERY = ""select 1"";
+    @Test
+    public void testDriverClassName() throws SQLException {
+        String driverClass = JdbcUtils.getDriverClassName(URL);
+        Assert.assertThat(""check get driverClassName"", driverClass, Is.is(JdbcConstants.KYLIN_DRIVER));
+    }
+    @Test
+    public void testQuery() throws SQLException {
+        DruidDataSource dataSource = new DruidDataSource();
+        try {
+            dataSource = new DruidDataSource();
+            dataSource.setUrl(URL);
+            dataSource.setUsername(USER_NAME);
+            dataSource.setPassword(PASSWORD);
+            dataSource.setValidationQuery(VALIDATION_QUERY);
+            Connection conn = dataSource.getConnection();
+            PreparedStatement state = conn.prepareStatement(VALIDATION_QUERY);
+            ResultSet resultSet = state.executeQuery();
+            Assert.assertThat(""check result"", resultSet, IsNull.notNullValue());
+        }",class,
+"    @Test
+    public void testDriverClassName() throws SQLException {
+        String driverClass = JdbcUtils.getDriverClassName(URL);
+        Assert.assertThat(""check get driverClassName"", driverClass, Is.is(JdbcConstants.KYLIN_DRIVER));
+    }
+    @Test
+    public void testQuery() throws SQLException {
+        DruidDataSource dataSource = new DruidDataSource();
+        try {
+            dataSource = new DruidDataSource();
+            dataSource.setUrl(URL);
+            dataSource.setUsername(USER_NAME);
+            dataSource.setPassword(PASSWORD);
+            dataSource.setValidationQuery(VALIDATION_QUERY);
+            Connection conn = dataSource.getConnection();
+            PreparedStatement state = conn.prepareStatement(VALIDATION_QUERY);
+            ResultSet resultSet = state.executeQuery();
+            Assert.assertThat(""check result"", resultSet, IsNull.notNullValue());
+        } finally {
+            dataSource.close();
+        }",method,
+"    @Test
+    public void testQuery() throws SQLException {
+        DruidDataSource dataSource = new DruidDataSource();
+        try {
+            dataSource = new DruidDataSource();
+            dataSource.setUrl(URL);
+            dataSource.setUsername(USER_NAME);
+            dataSource.setPassword(PASSWORD);
+            dataSource.setValidationQuery(VALIDATION_QUERY);
+            Connection conn = dataSource.getConnection();
+            PreparedStatement state = conn.prepareStatement(VALIDATION_QUERY);
+            ResultSet resultSet = state.executeQuery();
+            Assert.assertThat(""check result"", resultSet, IsNull.notNullValue());
+        } finally {
+            dataSource.close();
+        }",method,
+"public abstract class GLGame extends Activity implements Game, Renderer {
+    enum GLGameState {
+        Initialized,
+        Running,
+        Paused,
+        Finished,
+        Idle
+    }
+    GLSurfaceView glView;    
+    GLGraphics glGraphics;
+    Audio audio;
+    Input input;
+    FileIO fileIO;
+    Screen screen;
+    GLGameState state = GLGameState.Initialized;
+    Object stateChanged = new Object();
+    long startTime = System.nanoTime();
+    WakeLock wakeLock;
+    @Override 
+    public void onCreate(Bundle savedInstanceState) {
+        super.onCreate(savedInstanceState);
+        requestWindowFeature(Window.FEATURE_NO_TITLE);
+        getWindow().setFlags(WindowManager.LayoutParams.FLAG_FULLSCREEN,
+                             WindowManager.LayoutParams.FLAG_FULLSCREEN);
+        glView = new GLSurfaceView(this);
+        glView.setRenderer(this);
+        setContentView(glView);
+        glGraphics = new GLGraphics(glView);
+        fileIO = new AndroidFileIO(getAssets());
+        audio = new AndroidAudio(this);
+        input = new AndroidInput(this, glView, 1, 1);
+        PowerManager powerManager = (PowerManager) getSystemService(Context.POWER_SERVICE);
+        wakeLock = powerManager.newWakeLock(PowerManager.FULL_WAKE_LOCK, ""GLGame"");        
+    }
+    public void onResume() {
+        super.onResume();
+        glView.onResume();
+        wakeLock.acquire();
+    }
+    @Override
+    public void onSurfaceCreated(GL10 gl, EGLConfig config) {        
+        glGraphics.setGL(gl);
+        synchronized(stateChanged) {
+            if(state == GLGameState.Initialized)
+                screen = getStartScreen();
+            state = GLGameState.Running;
+            screen.resume();
+            startTime = System.nanoTime();
+        }        
+    }
+    @Override
+    public void onSurfaceChanged(GL10 gl, int width, int height) {        
+    }
+    @Override
+    public void onDrawFrame(GL10 gl) {                
+        GLGameState state = null;
+        synchronized(stateChanged) {
+            state = this.state;
+        }
+        if(state == GLGameState.Running) {
+            float deltaTime = (System.nanoTime()-startTime) / 1000000000.0f;
+            startTime = System.nanoTime();
+            screen.update(deltaTime);
+            screen.present(deltaTime);
+        }
+        if(state == GLGameState.Paused) {
+            screen.pause();            
+            synchronized(stateChanged) {
+                this.state = GLGameState.Idle;
+                stateChanged.notifyAll();
+            }
+        }
+        if(state == GLGameState.Finished) {
+            screen.pause();
+            screen.dispose();
+            synchronized(stateChanged) {
+                this.state = GLGameState.Idle;
+                stateChanged.notifyAll();
+            }            
+        }
+    }   
+    @Override 
+    public void onPause() {        
+        synchronized(stateChanged) {
+            if(isFinishing())            
+                state = GLGameState.Finished;
+            else
+                state = GLGameState.Paused;
+            while(true) {
+                try {
+                    stateChanged.wait();
+                    break;
+                } catch(InterruptedException e) {         
+                }
+            }
+        }
+        wakeLock.release();
+        glView.onPause();  
+        super.onPause();
+    }    
+    public GLGraphics getGLGraphics() {
+        return glGraphics;
+    }  
+    @Override
+    public Input getInput() {
+        return input;
+    }
+    @Override
+    public FileIO getFileIO() {
+        return fileIO;
+    }
+    @Override
+    public Graphics getGraphics() {
+        throw new IllegalStateException(""We are using OpenGL!"");
+    }
+    @Override
+    public Audio getAudio() {
+        return audio;
+    }
+    @Override
+    public void setScreen(Screen screen) {
+        if (screen == null)
+            throw new IllegalArgumentException(""Screen must not be null"");
+        this.screen.pause();
+        this.screen.dispose();
+        screen.resume();
+        screen.update(0);
+        this.screen = screen;
+    }
+    @Override
+    public Screen getCurrentScreen() {
+        return screen;
+    }
+}",class,
+"    @Override 
+    public void onCreate(Bundle savedInstanceState) {
+        super.onCreate(savedInstanceState);
+        requestWindowFeature(Window.FEATURE_NO_TITLE);
+        getWindow().setFlags(WindowManager.LayoutParams.FLAG_FULLSCREEN,
+                             WindowManager.LayoutParams.FLAG_FULLSCREEN);
+        glView = new GLSurfaceView(this);
+        glView.setRenderer(this);
+        setContentView(glView);
+        glGraphics = new GLGraphics(glView);
+        fileIO = new AndroidFileIO(getAssets());
+        audio = new AndroidAudio(this);
+        input = new AndroidInput(this, glView, 1, 1);
+        PowerManager powerManager = (PowerManager) getSystemService(Context.POWER_SERVICE);
+        wakeLock = powerManager.newWakeLock(PowerManager.FULL_WAKE_LOCK, ""GLGame"");        
+    }",method,
+"    public void onResume() {
+        super.onResume();
+        glView.onResume();
+        wakeLock.acquire();
+    }",method,
+"    @Override
+    public void onSurfaceCreated(GL10 gl, EGLConfig config) {        
+        glGraphics.setGL(gl);
+        synchronized(stateChanged) {
+            if(state == GLGameState.Initialized)
+                screen = getStartScreen();
+            state = GLGameState.Running;
+            screen.resume();
+            startTime = System.nanoTime();
+        }        
+    }",method,
+"        synchronized(stateChanged) {
+            if(state == GLGameState.Initialized)
+                screen = getStartScreen();
+            state = GLGameState.Running;
+            screen.resume();
+            startTime = System.nanoTime();
+        }",method,
+"    @Override
+    public void onSurfaceChanged(GL10 gl, int width, int height) {        
+    }",method,
+"    @Override
+    public void onDrawFrame(GL10 gl) {                
+        GLGameState state = null;
+        synchronized(stateChanged) {
+            state = this.state;
+        }
+        if(state == GLGameState.Running) {
+            float deltaTime = (System.nanoTime()-startTime) / 1000000000.0f;
+            startTime = System.nanoTime();
+            screen.update(deltaTime);
+            screen.present(deltaTime);
+        }
+        if(state == GLGameState.Paused) {
+            screen.pause();            
+            synchronized(stateChanged) {
+                this.state = GLGameState.Idle;
+                stateChanged.notifyAll();
+            }
+        }
+        if(state == GLGameState.Finished) {
+            screen.pause();
+            screen.dispose();
+            synchronized(stateChanged) {
+                this.state = GLGameState.Idle;
+                stateChanged.notifyAll();
+            }            
+        }
+    }",method,
+"        synchronized(stateChanged) {
+            state = this.state;
+        }",method,
+"        if(state == GLGameState.Running) {
+            float deltaTime = (System.nanoTime()-startTime) / 1000000000.0f;
+            startTime = System.nanoTime();
+            screen.update(deltaTime);
+            screen.present(deltaTime);
+        }",method,
+"        if(state == GLGameState.Paused) {
+            screen.pause();            
+            synchronized(stateChanged) {
+                this.state = GLGameState.Idle;
+                stateChanged.notifyAll();
+            }
+        }",method,
+"            synchronized(stateChanged) {
+                this.state = GLGameState.Idle;
+                stateChanged.notifyAll();
+            }",method,
+"        if(state == GLGameState.Finished) {
+            screen.pause();
+            screen.dispose();
+            synchronized(stateChanged) {
+                this.state = GLGameState.Idle;
+                stateChanged.notifyAll();
+            }            
+        }",method,
+"            synchronized(stateChanged) {
+                this.state = GLGameState.Idle;
+                stateChanged.notifyAll();
+            }",method,
+"    @Override 
+    public void onPause() {        
+        synchronized(stateChanged) {
+            if(isFinishing())            
+                state = GLGameState.Finished;
+            else
+                state = GLGameState.Paused;
+            while(true) {
+                try {
+                    stateChanged.wait();
+                    break;
+                } catch(InterruptedException e) {         
+                }
+            }
+        }
+        wakeLock.release();
+        glView.onPause();  
+        super.onPause();
+    }",method,
+"        synchronized(stateChanged) {
+            if(isFinishing())            
+                state = GLGameState.Finished;
+            else
+                state = GLGameState.Paused;
+            while(true) {
+                try {
+                    stateChanged.wait();
+                    break;
+                } catch(InterruptedException e) {         
+                }
+            }
+        }",method,
+"            while(true) {
+                try {
+                    stateChanged.wait();
+                    break;
+                } catch(InterruptedException e) {         
+                }
+            }",method,
+"    public GLGraphics getGLGraphics() {
+        return glGraphics;
+    }",method,
+"    @Override
+    public Input getInput() {
+        return input;
+    }",method,
+"    @Override
+    public FileIO getFileIO() {
+        return fileIO;
+    }",method,
+"    @Override
+    public Graphics getGraphics() {
+        throw new IllegalStateException(""We are using OpenGL!"");
+    }",method,
+"    @Override
+    public Audio getAudio() {
+        return audio;
+    }",method,
+"    @Override
+    public void setScreen(Screen screen) {
+        if (screen == null)
+            throw new IllegalArgumentException(""Screen must not be null"");
+        this.screen.pause();
+        this.screen.dispose();
+        screen.resume();
+        screen.update(0);
+        this.screen = screen;
+    }",method,
+"    @Override
+    public Screen getCurrentScreen() {
+        return screen;
+    }",method,
+"import static com.intellij.patterns.PsiJavaPatterns.psiElement;
+class MethodReturnTypeProvider extends CompletionProvider<CompletionParameters> {
+  protected static final ElementPattern<PsiElement> IN_METHOD_RETURN_TYPE =
+    psiElement().withParents(PsiJavaCodeReferenceElement.class, PsiTypeElement.class, PsiMethod.class)
+      .andNot(JavaKeywordCompletion.AFTER_DOT);
+  @Override
+  protected void addCompletions(@NotNull CompletionParameters parameters,
+                                ProcessingContext context,
+                                @NotNull final CompletionResultSet result) {
+    addProbableReturnTypes(parameters, result);
+  }
+  static void addProbableReturnTypes(@NotNull CompletionParameters parameters, final Consumer<LookupElement> consumer) {
+    final PsiElement position = parameters.getPosition();
+    PsiMethod method = PsiTreeUtil.getParentOfType(position, PsiMethod.class);
+    assert method != null;
+    final PsiTypeVisitor<PsiType> eachProcessor = new PsiTypeVisitor<PsiType>() {
+      private Set<PsiType> myProcessed = ContainerUtil.newHashSet();
+      @Nullable
+      @Override
+      public PsiType visitType(PsiType type) {
+        if (!(type instanceof PsiPrimitiveType) && myProcessed.add(type)) {
+          int priority = type.equalsToText(CommonClassNames.JAVA_LANG_OBJECT) ? 1 : 1000 - myProcessed.size();
+          consumer.consume(PrioritizedLookupElement.withPriority(PsiTypeLookupItem.createLookupItem(type, position), priority));
+        }
+        return type;
+      }
+    };
+    for (PsiType type : getReturnTypeCandidates(method)) {
+      eachProcessor.visitType(type);
+      ExpectedTypesProvider.processAllSuperTypes(type, eachProcessor, position.getProject(), new HashSet<>(), new HashSet<>());
+    }
+  }
+  private static PsiType[] getReturnTypeCandidates(@NotNull PsiMethod method) {
+    PsiType lub = null;
+    boolean hasVoid = false;
+    for (PsiReturnStatement statement : PsiUtil.findReturnStatements(method)) {
+      PsiExpression value = statement.getReturnValue();
+      if (value == null) {
+        hasVoid = true;
+      }
+      else {
+        PsiType type = value.getType();
+        if (lub == null) {
+          lub = type;
+        }
+        else if (type != null) {
+          lub = GenericsUtil.getLeastUpperBound(lub, type, method.getManager());
+        }
+      }
+    }
+    if (hasVoid && lub == null) {
+      lub = PsiType.VOID;
+    }
+    if (lub instanceof PsiIntersectionType) {
+      return ((PsiIntersectionType)lub).getConjuncts();
+    }
+    return lub == null ? PsiType.EMPTY_ARRAY : new PsiType[]{lub};
+  }
+}",class,
+"  @Override
+  protected void addCompletions(@NotNull CompletionParameters parameters,
+                                ProcessingContext context,
+                                @NotNull final CompletionResultSet result) {
+    addProbableReturnTypes(parameters, result);
+  }",method,
+"  static void addProbableReturnTypes(@NotNull CompletionParameters parameters, final Consumer<LookupElement> consumer) {
+    final PsiElement position = parameters.getPosition();
+    PsiMethod method = PsiTreeUtil.getParentOfType(position, PsiMethod.class);
+    assert method != null;
+    final PsiTypeVisitor<PsiType> eachProcessor = new PsiTypeVisitor<PsiType>() {
+      private Set<PsiType> myProcessed = ContainerUtil.newHashSet();
+      @Nullable
+      @Override
+      public PsiType visitType(PsiType type) {
+        if (!(type instanceof PsiPrimitiveType) && myProcessed.add(type)) {
+          int priority = type.equalsToText(CommonClassNames.JAVA_LANG_OBJECT) ? 1 : 1000 - myProcessed.size();
+          consumer.consume(PrioritizedLookupElement.withPriority(PsiTypeLookupItem.createLookupItem(type, position), priority));
+        }
+        return type;
+      }
+    };
+    for (PsiType type : getReturnTypeCandidates(method)) {
+      eachProcessor.visitType(type);
+      ExpectedTypesProvider.processAllSuperTypes(type, eachProcessor, position.getProject(), new HashSet<>(), new HashSet<>());
+    }
+  }",method,

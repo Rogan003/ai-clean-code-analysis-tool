@@ -1,0 +1,1413 @@
+code_snippet,type,score
+"    public boolean equals(Checkpoint other) {
+        if (this == other ) { return true; }
+        return (this.pageNum == other.pageNum && this.firstUnackedPageNum == other.firstUnackedPageNum && this.firstUnackedSeqNum == other.firstUnackedSeqNum && this.minSeqNum == other.minSeqNum && this.elementCount == other.elementCount);
+    }",method,
+        if (this == other ) { return true; },method,
+"public class KotlinBuckConfig {
+  private static final String SECTION = ""kotlin"";
+  private static final Path DEFAULT_KOTLIN_COMPILER = Paths.get(""kotlinc"");
+  private final BuckConfig delegate;
+  private @Nullable Path kotlinHome;
+  public KotlinBuckConfig(BuckConfig delegate) {
+    this.delegate = delegate;
+  }
+  public Kotlinc getKotlinc() {
+    if (isExternalCompilation()) {
+      return new ExternalKotlinc(getPathToCompilerBinary());
+    } else {
+      ImmutableSet<SourcePath> classpathEntries =
+          ImmutableSet.of(
+              delegate.getSourcePath(getPathToStdlibJar()),
+              delegate.getSourcePath(getPathToCompilerJar()));
+      return new JarBackedReflectedKotlinc(classpathEntries);
+    }
+  }
+  Path getPathToCompilerBinary() {
+    Path compilerPath = getKotlinHome().resolve(""kotlinc"");
+    if (!Files.isExecutable(compilerPath)) {
+      compilerPath = getKotlinHome().resolve(Paths.get(""bin"", ""kotlinc""));
+      if (!Files.isExecutable(compilerPath)) {
+        throw new HumanReadableException(""Could not resolve kotlinc location."");
+      }
+    }
+    return new ExecutableFinder().getExecutable(compilerPath, delegate.getEnvironment());
+  }
+  Path getPathToStdlibJar() {
+    Path stdlib = getKotlinHome().resolve(""kotlin-stdlib.jar"");
+    if (Files.isRegularFile(stdlib)) {
+      return stdlib.normalize();
+    }
+    stdlib = getKotlinHome().resolve(Paths.get(""lib"", ""kotlin-stdlib.jar""));
+    if (Files.isRegularFile(stdlib)) {
+      return stdlib.normalize();
+    }
+    stdlib = getKotlinHome().resolve(Paths.get(""libexec"", ""lib"", ""kotlin-stdlib.jar""));
+    if (Files.isRegularFile(stdlib)) {
+      return stdlib.normalize();
+    }
+    // Support for Kotlin < 1.1 ... kotlin-stdlib used to be kotlin-runtime.
+    stdlib = getKotlinHome().resolve(""kotlin-runtime.jar"");
+    if (Files.isRegularFile(stdlib)) {
+      return stdlib.normalize();
+    }
+    stdlib = getKotlinHome().resolve(Paths.get(""lib"", ""kotlin-runtime.jar""));
+    if (Files.isRegularFile(stdlib)) {
+      return stdlib.normalize();
+    }
+    stdlib = getKotlinHome().resolve(Paths.get(""libexec"", ""lib"", ""kotlin-runtime.jar""));
+    if (Files.isRegularFile(stdlib)) {
+      return stdlib.normalize();
+    }
+    throw new HumanReadableException(
+        ""Could not resolve kotlin stdlib JAR location (kotlin home:"" + getKotlinHome() + "")."");
+  }
+  Path getPathToCompilerJar() {
+    Path compiler = getKotlinHome().resolve(""kotlin-compiler.jar"");
+    if (Files.isRegularFile(compiler)) {
+      return compiler.normalize();
+    }
+    compiler = getKotlinHome().resolve(Paths.get(""lib"", ""kotlin-compiler.jar""));
+    if (Files.isRegularFile(compiler)) {
+      return compiler.normalize();
+    }
+    compiler = getKotlinHome().resolve(Paths.get(""libexec"", ""lib"", ""kotlin-compiler.jar""));
+    if (Files.isRegularFile(compiler)) {
+      return compiler.normalize();
+    }
+    throw new HumanReadableException(
+        ""Could not resolve kotlin compiler JAR location (kotlin home:"" + getKotlinHome() + "")."");
+  }
+  private boolean isExternalCompilation() {
+    Optional<Boolean> value = delegate.getBoolean(SECTION, ""external"");
+    return value.orElse(false);
+  }
+  private Path getKotlinHome() {
+    if (kotlinHome != null) {
+      return kotlinHome;
+    }
+    try {
+      // Check the buck configuration for a specified kotlin home
+      Optional<String> value = delegate.getValue(SECTION, ""kotlin_home"");
+      if (value.isPresent()) {
+        boolean isAbsolute = Paths.get(value.get()).isAbsolute();
+        Optional<Path> homePath = delegate.getPath(SECTION, ""kotlin_home"", !isAbsolute);
+        if (homePath.isPresent() && Files.isDirectory(homePath.get())) {
+          return homePath.get().toRealPath().normalize();
+        } else {
+          throw new HumanReadableException(
+              ""Kotlin home directory ("" + homePath + "") specified in .buckconfig was not found."");
+        }
+      } else {
+        // If the KOTLIN_HOME environment variable is specified we trust it
+        String home = delegate.getEnvironment().get(""KOTLIN_HOME"");
+        if (home != null) {
+          return Paths.get(home).normalize();
+        } else {
+          // Lastly, we try to resolve from the system PATH
+          Optional<Path> compiler =
+              new ExecutableFinder()
+                  .getOptionalExecutable(DEFAULT_KOTLIN_COMPILER, delegate.getEnvironment());
+          if (compiler.isPresent()) {
+            kotlinHome = compiler.get().toRealPath().getParent().normalize();
+            if (kotlinHome != null && kotlinHome.endsWith(Paths.get(""bin""))) {
+              kotlinHome = kotlinHome.getParent().normalize();
+            }
+            return kotlinHome;
+          } else {
+            throw new HumanReadableException(
+                ""Could not resolve kotlin home directory, Consider setting KOTLIN_HOME."");
+          }
+        }
+      }
+    } catch (IOException io) {
+      throw new HumanReadableException(
+          ""Could not resolve kotlin home directory, Consider setting KOTLIN_HOME."", io);
+    }
+  }
+}",class,
+"  public KotlinBuckConfig(BuckConfig delegate) {
+    this.delegate = delegate;
+  }",method,
+"  public Kotlinc getKotlinc() {
+    if (isExternalCompilation()) {
+      return new ExternalKotlinc(getPathToCompilerBinary());
+    } else {
+      ImmutableSet<SourcePath> classpathEntries =
+          ImmutableSet.of(
+              delegate.getSourcePath(getPathToStdlibJar()),
+              delegate.getSourcePath(getPathToCompilerJar()));
+      return new JarBackedReflectedKotlinc(classpathEntries);
+    }
+  }",method,
+"  Path getPathToCompilerBinary() {
+    Path compilerPath = getKotlinHome().resolve(""kotlinc"");
+    if (!Files.isExecutable(compilerPath)) {
+      compilerPath = getKotlinHome().resolve(Paths.get(""bin"", ""kotlinc""));
+      if (!Files.isExecutable(compilerPath)) {
+        throw new HumanReadableException(""Could not resolve kotlinc location."");
+      }
+    }
+    return new ExecutableFinder().getExecutable(compilerPath, delegate.getEnvironment());
+  }",method,
+"  Path getPathToStdlibJar() {
+    Path stdlib = getKotlinHome().resolve(""kotlin-stdlib.jar"");
+    if (Files.isRegularFile(stdlib)) {
+      return stdlib.normalize();
+    }
+    stdlib = getKotlinHome().resolve(Paths.get(""lib"", ""kotlin-stdlib.jar""));
+    if (Files.isRegularFile(stdlib)) {
+      return stdlib.normalize();
+    }
+    stdlib = getKotlinHome().resolve(Paths.get(""libexec"", ""lib"", ""kotlin-stdlib.jar""));
+    if (Files.isRegularFile(stdlib)) {
+      return stdlib.normalize();
+    }
+    // Support for Kotlin < 1.1 ... kotlin-stdlib used to be kotlin-runtime.
+    stdlib = getKotlinHome().resolve(""kotlin-runtime.jar"");
+    if (Files.isRegularFile(stdlib)) {
+      return stdlib.normalize();
+    }
+    stdlib = getKotlinHome().resolve(Paths.get(""lib"", ""kotlin-runtime.jar""));
+    if (Files.isRegularFile(stdlib)) {
+      return stdlib.normalize();
+    }
+    stdlib = getKotlinHome().resolve(Paths.get(""libexec"", ""lib"", ""kotlin-runtime.jar""));
+    if (Files.isRegularFile(stdlib)) {
+      return stdlib.normalize();
+    }
+    throw new HumanReadableException(
+        ""Could not resolve kotlin stdlib JAR location (kotlin home:"" + getKotlinHome() + "")."");
+  }",method,
+"  Path getPathToCompilerJar() {
+    Path compiler = getKotlinHome().resolve(""kotlin-compiler.jar"");
+    if (Files.isRegularFile(compiler)) {
+      return compiler.normalize();
+    }
+    compiler = getKotlinHome().resolve(Paths.get(""lib"", ""kotlin-compiler.jar""));
+    if (Files.isRegularFile(compiler)) {
+      return compiler.normalize();
+    }
+    compiler = getKotlinHome().resolve(Paths.get(""libexec"", ""lib"", ""kotlin-compiler.jar""));
+    if (Files.isRegularFile(compiler)) {
+      return compiler.normalize();
+    }
+    throw new HumanReadableException(
+        ""Could not resolve kotlin compiler JAR location (kotlin home:"" + getKotlinHome() + "")."");
+  }",method,
+"  private boolean isExternalCompilation() {
+    Optional<Boolean> value = delegate.getBoolean(SECTION, ""external"");
+    return value.orElse(false);
+  }",method,
+"  private Path getKotlinHome() {
+    if (kotlinHome != null) {
+      return kotlinHome;
+    }
+    try {
+      // Check the buck configuration for a specified kotlin home
+      Optional<String> value = delegate.getValue(SECTION, ""kotlin_home"");
+      if (value.isPresent()) {
+        boolean isAbsolute = Paths.get(value.get()).isAbsolute();
+        Optional<Path> homePath = delegate.getPath(SECTION, ""kotlin_home"", !isAbsolute);
+        if (homePath.isPresent() && Files.isDirectory(homePath.get())) {
+          return homePath.get().toRealPath().normalize();
+        } else {
+          throw new HumanReadableException(
+              ""Kotlin home directory ("" + homePath + "") specified in .buckconfig was not found."");
+        }
+      } else {
+        // If the KOTLIN_HOME environment variable is specified we trust it
+        String home = delegate.getEnvironment().get(""KOTLIN_HOME"");
+        if (home != null) {
+          return Paths.get(home).normalize();
+        } else {
+          // Lastly, we try to resolve from the system PATH
+          Optional<Path> compiler =
+              new ExecutableFinder()
+                  .getOptionalExecutable(DEFAULT_KOTLIN_COMPILER, delegate.getEnvironment());
+          if (compiler.isPresent()) {
+            kotlinHome = compiler.get().toRealPath().getParent().normalize();
+            if (kotlinHome != null && kotlinHome.endsWith(Paths.get(""bin""))) {
+              kotlinHome = kotlinHome.getParent().normalize();
+            }
+            return kotlinHome;
+          } else {
+            throw new HumanReadableException(
+                ""Could not resolve kotlin home directory, Consider setting KOTLIN_HOME."");
+          }
+        }
+      }
+    } catch (IOException io) {
+      throw new HumanReadableException(
+          ""Could not resolve kotlin home directory, Consider setting KOTLIN_HOME."", io);
+    }
+  }",method,
+"    if (kotlinHome != null) {
+      return kotlinHome;
+    }",method,
+"        if (home != null) {
+          return Paths.get(home).normalize();
+        }",method,
+"public class RadialGradient extends Shader {
+    private static final int TYPE_COLORS_AND_POSITIONS = 1;
+    private static final int TYPE_COLOR_CENTER_AND_COLOR_EDGE = 2;
+    private int mType;
+    private float mX;
+    private float mY;
+    private float mRadius;
+    private int[] mColors;
+    private float[] mPositions;
+    private int mCenterColor;
+    private int mEdgeColor;
+    private TileMode mTileMode;
+    public RadialGradient(float centerX, float centerY, float radius,
+            @NonNull @ColorInt int colors[], @Nullable float stops[],
+            @NonNull TileMode tileMode) {
+        if (radius <= 0) {
+            throw new IllegalArgumentException(""radius must be > 0"");
+        }
+        if (colors.length < 2) {
+            throw new IllegalArgumentException(""needs >= 2 number of colors"");
+        }
+        if (stops != null && colors.length != stops.length) {
+            throw new IllegalArgumentException(""color and position arrays must be of equal length"");
+        }
+        mType = TYPE_COLORS_AND_POSITIONS;
+        mX = centerX;
+        mY = centerY;
+        mRadius = radius;
+        mColors = colors.clone();
+        mPositions = stops != null ? stops.clone() : null;
+        mTileMode = tileMode;
+    }
+    public RadialGradient(float centerX, float centerY, float radius,
+            @ColorInt int centerColor, @ColorInt int edgeColor, @NonNull TileMode tileMode) {
+        if (radius <= 0) {
+            throw new IllegalArgumentException(""radius must be > 0"");
+        }
+        mType = TYPE_COLOR_CENTER_AND_COLOR_EDGE;
+        mX = centerX;
+        mY = centerY;
+        mRadius = radius;
+        mCenterColor = centerColor;
+        mEdgeColor = edgeColor;
+        mTileMode = tileMode;
+    }
+    @Override
+    long createNativeInstance(long nativeMatrix) {
+        if (mType == TYPE_COLORS_AND_POSITIONS) {
+            return nativeCreate1(nativeMatrix, mX, mY, mRadius,
+                    mColors, mPositions, mTileMode.nativeInt);
+        } else { // TYPE_COLOR_CENTER_AND_COLOR_EDGE
+            return nativeCreate2(nativeMatrix, mX, mY, mRadius,
+                    mCenterColor, mEdgeColor, mTileMode.nativeInt);
+        }
+    }
+    @Override
+    protected Shader copy() {
+        final RadialGradient copy;
+        if (mType == TYPE_COLORS_AND_POSITIONS) {
+            copy = new RadialGradient(mX, mY, mRadius, mColors.clone(),
+                    mPositions != null ? mPositions.clone() : null, mTileMode);
+        } else { // TYPE_COLOR_CENTER_AND_COLOR_EDGE
+            copy = new RadialGradient(mX, mY, mRadius, mCenterColor, mEdgeColor, mTileMode);
+        }
+        copyLocalMatrix(copy);
+        return copy;
+    }
+    private static native long nativeCreate1(long matrix, float x, float y, float radius,
+            int colors[], float positions[], int tileMode);
+    private static native long nativeCreate2(long matrix, float x, float y, float radius,
+            int color0, int color1, int tileMode);
+}",class,
+"public class Rasterizer {
+    protected void finalize() throws Throwable { }
+}",class,
+"    public RadialGradient(float centerX, float centerY, float radius,
+            @NonNull @ColorInt int colors[], @Nullable float stops[],
+            @NonNull TileMode tileMode) {
+        if (radius <= 0) {
+            throw new IllegalArgumentException(""radius must be > 0"");
+        }
+        if (colors.length < 2) {
+            throw new IllegalArgumentException(""needs >= 2 number of colors"");
+        }
+        if (stops != null && colors.length != stops.length) {
+            throw new IllegalArgumentException(""color and position arrays must be of equal length"");
+        }
+        mType = TYPE_COLORS_AND_POSITIONS;
+        mX = centerX;
+        mY = centerY;
+        mRadius = radius;
+        mColors = colors.clone();
+        mPositions = stops != null ? stops.clone() : null;
+        mTileMode = tileMode;
+    }",method,
+"        if (radius <= 0) {
+            throw new IllegalArgumentException(""radius must be > 0"");
+        }",method,
+"        if (colors.length < 2) {
+            throw new IllegalArgumentException(""needs >= 2 number of colors"");
+        }",method,
+"        if (stops != null && colors.length != stops.length) {
+            throw new IllegalArgumentException(""color and position arrays must be of equal length"");
+        }",method,
+"    public RadialGradient(float centerX, float centerY, float radius,
+            @ColorInt int centerColor, @ColorInt int edgeColor, @NonNull TileMode tileMode) {
+        if (radius <= 0) {
+            throw new IllegalArgumentException(""radius must be > 0"");
+        }
+        mType = TYPE_COLOR_CENTER_AND_COLOR_EDGE;
+        mX = centerX;
+        mY = centerY;
+        mRadius = radius;
+        mCenterColor = centerColor;
+        mEdgeColor = edgeColor;
+        mTileMode = tileMode;
+    }",method,
+"        if (radius <= 0) {
+            throw new IllegalArgumentException(""radius must be > 0"");
+        }",method,
+"    @Override
+    long createNativeInstance(long nativeMatrix) {
+        if (mType == TYPE_COLORS_AND_POSITIONS) {
+            return nativeCreate1(nativeMatrix, mX, mY, mRadius,
+                    mColors, mPositions, mTileMode.nativeInt);
+        } else { // TYPE_COLOR_CENTER_AND_COLOR_EDGE
+            return nativeCreate2(nativeMatrix, mX, mY, mRadius,
+                    mCenterColor, mEdgeColor, mTileMode.nativeInt);
+        }
+    }",method,
+"        if (mType == TYPE_COLORS_AND_POSITIONS) {
+            return nativeCreate1(nativeMatrix, mX, mY, mRadius,
+                    mColors, mPositions, mTileMode.nativeInt);
+        }",method,
+"    @Override
+    protected Shader copy() {
+        final RadialGradient copy;
+        if (mType == TYPE_COLORS_AND_POSITIONS) {
+            copy = new RadialGradient(mX, mY, mRadius, mColors.clone(),
+                    mPositions != null ? mPositions.clone() : null, mTileMode);
+        } else { // TYPE_COLOR_CENTER_AND_COLOR_EDGE
+            copy = new RadialGradient(mX, mY, mRadius, mCenterColor, mEdgeColor, mTileMode);
+        }
+        copyLocalMatrix(copy);
+        return copy;
+    }",method,
+"        if (mType == TYPE_COLORS_AND_POSITIONS) {
+            copy = new RadialGradient(mX, mY, mRadius, mColors.clone(),
+                    mPositions != null ? mPositions.clone() : null, mTileMode);
+        }",method,
+    protected void finalize() throws Throwable { },method,
+"            @NonNull @ColorInt int colors[], @Nullable float stops[],
+            @NonNull TileMode tileMode) {
+        if (radius <= 0) {
+            throw new IllegalArgumentException(""radius must be > 0"");
+        }",method,
+"            @ColorInt int centerColor, @ColorInt int edgeColor, @NonNull TileMode tileMode) {
+        if (radius <= 0) {
+            throw new IllegalArgumentException(""radius must be > 0"");
+        }",method,
+"public class CheckPointTest {
+  @ClassRule
+  public static final RocksMemoryResource rocksMemoryResource =
+      new RocksMemoryResource();
+  @Rule
+  public TemporaryFolder dbFolder = new TemporaryFolder();
+  @Rule
+  public TemporaryFolder checkpointFolder = new TemporaryFolder();
+  @Test
+  public void checkPoint() throws RocksDBException {
+    try (final Options options = new Options().
+        setCreateIfMissing(true)) {
+      try (final RocksDB db = RocksDB.open(options,
+          dbFolder.getRoot().getAbsolutePath())) {
+        db.put(""key"".getBytes(), ""value"".getBytes());
+        try (final Checkpoint checkpoint = Checkpoint.create(db)) {
+          checkpoint.createCheckpoint(checkpointFolder.
+              getRoot().getAbsolutePath() + ""/snapshot1"");
+          db.put(""key2"".getBytes(), ""value2"".getBytes());
+          checkpoint.createCheckpoint(checkpointFolder.
+              getRoot().getAbsolutePath() + ""/snapshot2"");
+        }
+      }
+      try (final RocksDB db = RocksDB.open(options,
+          checkpointFolder.getRoot().getAbsolutePath() +
+              ""/snapshot1"")) {
+        assertThat(new String(db.get(""key"".getBytes()))).
+            isEqualTo(""value"");
+        assertThat(db.get(""key2"".getBytes())).isNull();
+      }
+      try (final RocksDB db = RocksDB.open(options,
+          checkpointFolder.getRoot().getAbsolutePath() +
+              ""/snapshot2"")) {
+        assertThat(new String(db.get(""key"".getBytes()))).
+            isEqualTo(""value"");
+        assertThat(new String(db.get(""key2"".getBytes()))).
+            isEqualTo(""value2"");
+      }
+    }
+  }
+  @Test(expected = IllegalArgumentException.class)
+  public void failIfDbIsNull() {
+    try (final Checkpoint checkpoint = Checkpoint.create(null)) {
+    }
+  }
+  @Test(expected = IllegalStateException.class)
+  public void failIfDbNotInitialized() throws RocksDBException {
+    try (final RocksDB db = RocksDB.open(
+        dbFolder.getRoot().getAbsolutePath())) {
+      db.close();
+      Checkpoint.create(db);
+    }
+  }
+  @Test(expected = RocksDBException.class)
+  public void failWithIllegalPath() throws RocksDBException {
+    try (final RocksDB db = RocksDB.open(dbFolder.getRoot().getAbsolutePath());
+         final Checkpoint checkpoint = Checkpoint.create(db)) {
+      checkpoint.createCheckpoint(""/Z:///:\\C:\\TZ/-"");
+    }
+  }
+}",class,
+"  @Test
+  public void checkPoint() throws RocksDBException {
+    try (final Options options = new Options().
+        setCreateIfMissing(true)) {
+      try (final RocksDB db = RocksDB.open(options,
+          dbFolder.getRoot().getAbsolutePath())) {
+        db.put(""key"".getBytes(), ""value"".getBytes());
+        try (final Checkpoint checkpoint = Checkpoint.create(db)) {
+          checkpoint.createCheckpoint(checkpointFolder.
+              getRoot().getAbsolutePath() + ""/snapshot1"");
+          db.put(""key2"".getBytes(), ""value2"".getBytes());
+          checkpoint.createCheckpoint(checkpointFolder.
+              getRoot().getAbsolutePath() + ""/snapshot2"");
+        }
+      }
+      try (final RocksDB db = RocksDB.open(options,
+          checkpointFolder.getRoot().getAbsolutePath() +
+              ""/snapshot1"")) {
+        assertThat(new String(db.get(""key"".getBytes()))).
+            isEqualTo(""value"");
+        assertThat(db.get(""key2"".getBytes())).isNull();
+      }
+      try (final RocksDB db = RocksDB.open(options,
+          checkpointFolder.getRoot().getAbsolutePath() +
+              ""/snapshot2"")) {
+        assertThat(new String(db.get(""key"".getBytes()))).
+            isEqualTo(""value"");
+        assertThat(new String(db.get(""key2"".getBytes()))).
+            isEqualTo(""value2"");
+      }
+    }
+  }",method,
+"  @Test(expected = IllegalArgumentException.class)
+  public void failIfDbIsNull() {
+    try (final Checkpoint checkpoint = Checkpoint.create(null)) {
+    }
+  }",method,
+"  @Test(expected = IllegalStateException.class)
+  public void failIfDbNotInitialized() throws RocksDBException {
+    try (final RocksDB db = RocksDB.open(
+        dbFolder.getRoot().getAbsolutePath())) {
+      db.close();
+      Checkpoint.create(db);
+    }
+  }",method,
+"  @Test(expected = RocksDBException.class)
+  public void failWithIllegalPath() throws RocksDBException {
+    try (final RocksDB db = RocksDB.open(dbFolder.getRoot().getAbsolutePath());
+         final Checkpoint checkpoint = Checkpoint.create(db)) {
+      checkpoint.createCheckpoint(""/Z:///:\\C:\\TZ/-"");
+    }
+  }",method,
+"public class ClassOnlyUsedInOneModuleInspection extends BaseGlobalInspection {
+  @Nls
+  @NotNull
+  @Override
+  public String getDisplayName() {
+    return InspectionGadgetsBundle.message(
+      ""class.only.used.in.one.module.display.name"");
+  }
+  @Nullable
+  @Override
+  public CommonProblemDescriptor[] checkElement(
+    @NotNull RefEntity refEntity,
+    @NotNull AnalysisScope scope,
+    @NotNull InspectionManager manager,
+    @NotNull GlobalInspectionContext globalContext) {
+    if (!(refEntity instanceof RefClass)) {
+      return null;
+    }
+    final RefClass refClass = (RefClass)refEntity;
+    final RefEntity owner = refClass.getOwner();
+    if (!(owner instanceof RefPackage)) {
+      return null;
+    }
+    final Set<RefClass> dependencies =
+      DependencyUtils.calculateDependenciesForClass(refClass);
+    RefModule otherModule = null;
+    for (RefClass dependency : dependencies) {
+      final RefModule module = dependency.getModule();
+      if (refClass.getModule() == module) {
+        return null;
+      }
+      if (otherModule != module) {
+        if (otherModule == null) {
+          otherModule = module;
+        }
+        else {
+          return null;
+        }
+      }
+    }
+    final Set<RefClass> dependents =
+      DependencyUtils.calculateDependentsForClass(refClass);
+    for (RefClass dependent : dependents) {
+      final RefModule module = dependent.getModule();
+      if (refClass.getModule() == module) {
+        return null;
+      }
+      if (otherModule != module) {
+        if (otherModule == null) {
+          otherModule = module;
+        }
+        else {
+          return null;
+        }
+      }
+    }
+    if (otherModule == null) {
+      return null;
+    }
+    final PsiClass aClass = refClass.getElement();
+    final PsiIdentifier identifier = aClass.getNameIdentifier();
+    if (identifier == null) {
+      return null;
+    }
+    final String moduleName = otherModule.getName();
+    return new CommonProblemDescriptor[]{
+      manager.createProblemDescriptor(identifier,
+                                      InspectionGadgetsBundle.message(
+                                        ""class.only.used.in.one.module.problem.descriptor"",
+                                        moduleName),
+                                      true, ProblemHighlightType.GENERIC_ERROR_OR_WARNING, false)
+    };
+  }
+}",class,
+"  @Nls
+  @NotNull
+  @Override
+  public String getDisplayName() {
+    return InspectionGadgetsBundle.message(
+      ""class.only.used.in.one.module.display.name"");
+  }",method,
+"  @Nullable
+  @Override
+  public CommonProblemDescriptor[] checkElement(
+    @NotNull RefEntity refEntity,
+    @NotNull AnalysisScope scope,
+    @NotNull InspectionManager manager,
+    @NotNull GlobalInspectionContext globalContext) {
+    if (!(refEntity instanceof RefClass)) {
+      return null;
+    }
+    final RefClass refClass = (RefClass)refEntity;
+    final RefEntity owner = refClass.getOwner();
+    if (!(owner instanceof RefPackage)) {
+      return null;
+    }
+    final Set<RefClass> dependencies =
+      DependencyUtils.calculateDependenciesForClass(refClass);
+    RefModule otherModule = null;
+    for (RefClass dependency : dependencies) {
+      final RefModule module = dependency.getModule();
+      if (refClass.getModule() == module) {
+        return null;
+      }
+      if (otherModule != module) {
+        if (otherModule == null) {
+          otherModule = module;
+        }
+        else {
+          return null;
+        }
+      }
+    }
+    final Set<RefClass> dependents =
+      DependencyUtils.calculateDependentsForClass(refClass);
+    for (RefClass dependent : dependents) {
+      final RefModule module = dependent.getModule();
+      if (refClass.getModule() == module) {
+        return null;
+      }
+      if (otherModule != module) {
+        if (otherModule == null) {
+          otherModule = module;
+        }
+        else {
+          return null;
+        }
+      }
+    }
+    if (otherModule == null) {
+      return null;
+    }
+    final PsiClass aClass = refClass.getElement();
+    final PsiIdentifier identifier = aClass.getNameIdentifier();
+    if (identifier == null) {
+      return null;
+    }
+    final String moduleName = otherModule.getName();
+    return new CommonProblemDescriptor[]{
+      manager.createProblemDescriptor(identifier,
+                                      InspectionGadgetsBundle.message(
+                                        ""class.only.used.in.one.module.problem.descriptor"",
+                                        moduleName),
+                                      true, ProblemHighlightType.GENERIC_ERROR_OR_WARNING, false)
+    };
+  }",method,
+"    for (RefClass dependency : dependencies) {
+      final RefModule module = dependency.getModule();
+      if (refClass.getModule() == module) {
+        return null;
+      }
+      if (otherModule != module) {
+        if (otherModule == null) {
+          otherModule = module;
+        }
+        else {
+          return null;
+        }
+      }
+    }",method,
+"      if (otherModule != module) {
+        if (otherModule == null) {
+          otherModule = module;
+        }
+        else {
+          return null;
+        }
+      }",method,
+"        if (otherModule == null) {
+          otherModule = module;
+        }",method,
+"    for (RefClass dependent : dependents) {
+      final RefModule module = dependent.getModule();
+      if (refClass.getModule() == module) {
+        return null;
+      }
+      if (otherModule != module) {
+        if (otherModule == null) {
+          otherModule = module;
+        }
+        else {
+          return null;
+        }
+      }
+    }",method,
+"      if (otherModule != module) {
+        if (otherModule == null) {
+          otherModule = module;
+        }
+        else {
+          return null;
+        }
+      }",method,
+"        if (otherModule == null) {
+          otherModule = module;
+        }",method,
+"    if (otherModule == null) {
+      return null;
+    }",method,
+"    if (identifier == null) {
+      return null;
+    }",method,
+"public class EnvironmentRule implements RuleDefinition {
+  public static final String RULE_NAME = ""environment"";
+  public static final String FULFILLS_ATTRIBUTE = ""fulfills"";
+  @Override
+  public RuleClass build(RuleClass.Builder builder, RuleDefinitionEnvironment env) {
+    return builder
+        .override(attr(""tags"", Type.STRING_LIST)
+            // No need to show up in "":all"", etc. target patterns.
+            .value(ImmutableList.of(""manual""))
+            .nonconfigurable(""low-level attribute, used in TargetUtils without configurations""))
+        .add(attr(FULFILLS_ATTRIBUTE, BuildType.LABEL_LIST)
+            .allowedRuleClasses(EnvironmentRule.RULE_NAME)
+            .allowedFileTypes(FileTypeSet.NO_FILE)
+            .nonconfigurable(""used for defining constraint models - this shouldn't be configured""))
+        .exemptFromConstraintChecking(""this rule *defines* a constraint"")
+        .setUndocumented()
+        .build();
+  }
+  @Override
+  public Metadata getMetadata() {
+    return RuleDefinition.Metadata.builder()
+        .name(EnvironmentRule.RULE_NAME)
+        .ancestors(BaseRuleClasses.BaseRule.class)
+        .factoryClass(Environment.class)
+        .build();
+  }
+}",class,
+"  @Override
+  public RuleClass build(RuleClass.Builder builder, RuleDefinitionEnvironment env) {
+    return builder
+        .override(attr(""tags"", Type.STRING_LIST)
+            // No need to show up in "":all"", etc. target patterns.
+            .value(ImmutableList.of(""manual""))
+            .nonconfigurable(""low-level attribute, used in TargetUtils without configurations""))
+        .add(attr(FULFILLS_ATTRIBUTE, BuildType.LABEL_LIST)
+            .allowedRuleClasses(EnvironmentRule.RULE_NAME)
+            .allowedFileTypes(FileTypeSet.NO_FILE)
+            .nonconfigurable(""used for defining constraint models - this shouldn't be configured""))
+        .exemptFromConstraintChecking(""this rule *defines* a constraint"")
+        .setUndocumented()
+        .build();
+  }",method,
+"  @Override
+  public Metadata getMetadata() {
+    return RuleDefinition.Metadata.builder()
+        .name(EnvironmentRule.RULE_NAME)
+        .ancestors(BaseRuleClasses.BaseRule.class)
+        .factoryClass(Environment.class)
+        .build();
+  }",method,
+"    if (areStaticImportsEnabled) {
+      fixColumnWidthToHeader(result, 0);
+      fixColumnWidthToHeader(result, 2);
+      result.getColumnModel().getColumn(1).setCellRenderer(packageRenderer);
+      result.getColumnModel().getColumn(0).setCellRenderer(new BooleanTableCellRenderer());
+      result.getColumnModel().getColumn(2).setCellRenderer(new BooleanTableCellRenderer());
+    }",method,
+"  private static void fixColumnWidthToHeader(JBTable result, int columnIdx) {
+    final TableColumn column = result.getColumnModel().getColumn(columnIdx);
+    final int width =
+      15 + result.getTableHeader().getFontMetrics(result.getTableHeader().getFont()).stringWidth(result.getColumnName(columnIdx));
+    column.setMinWidth(width);
+    column.setMaxWidth(width);
+  }",method,
+"  public static void refreshTableModel(int selectedRow, JBTable table) {
+    AbstractTableModel model = (AbstractTableModel)table.getModel();
+    model.fireTableRowsInserted(selectedRow, selectedRow);
+    table.setRowSelectionInterval(selectedRow, selectedRow);
+    TableUtil.editCellAt(table, selectedRow, 0);
+    Component editorComp = table.getEditorComponent();
+    if (editorComp != null) {
+      IdeFocusManager.getGlobalInstance().doWhenFocusSettlesDown(() -> {
+        IdeFocusManager.getGlobalInstance().requestFocus(editorComp, true);
+      });
+    }
+  }",method,
+"    if (editorComp != null) {
+      IdeFocusManager.getGlobalInstance().doWhenFocusSettlesDown(() -> {
+        IdeFocusManager.getGlobalInstance().requestFocus(editorComp, true);
+      });
+    }",method,
+"public class HelpScreen2 extends GLScreen {
+    Camera2D guiCam;
+    SpriteBatcher batcher;
+    Rectangle nextBounds;
+    Vector2 touchPoint;
+    Texture helpImage;
+    TextureRegion helpRegion;    
+    public HelpScreen2(Game game) {
+        super(game);
+        guiCam = new Camera2D(glGraphics, 320, 480);
+        nextBounds = new Rectangle(320 - 64, 0, 64, 64);
+        touchPoint = new Vector2();
+        batcher = new SpriteBatcher(glGraphics, 1);
+    }
+    @Override
+    public void resume() {
+        helpImage = new Texture(glGame, ""help2.png"" );
+        helpRegion = new TextureRegion(helpImage, 0, 0, 320, 480);
+    }
+    @Override
+    public void pause() {
+        helpImage.dispose();
+    }
+    @Override
+    public void update(float deltaTime) {
+        List<TouchEvent> touchEvents = game.getInput().getTouchEvents();
+        game.getInput().getKeyEvents();
+        int len = touchEvents.size();
+        for(int i = 0; i < len; i++) {
+            TouchEvent event = touchEvents.get(i);
+            touchPoint.set(event.x, event.y);
+            guiCam.touchToWorld(touchPoint);
+            if(event.type == TouchEvent.TOUCH_UP) {
+                if(OverlapTester.pointInRectangle(nextBounds, touchPoint)) {
+                    Assets.playSound(Assets.clickSound);
+                    game.setScreen(new HelpScreen3(game));
+                    return;
+                }
+            }
+        }
+    }
+    @Override
+    public void present(float deltaTime) {
+        GL10 gl = glGraphics.getGL();        
+        gl.glClear(GL10.GL_COLOR_BUFFER_BIT);
+        guiCam.setViewportAndMatrices();
+        gl.glEnable(GL10.GL_TEXTURE_2D);
+        batcher.beginBatch(helpImage);
+        batcher.drawSprite(160, 240, 320, 480, helpRegion);
+        batcher.endBatch();
+        gl.glEnable(GL10.GL_BLEND);
+        gl.glBlendFunc(GL10.GL_SRC_ALPHA, GL10.GL_ONE_MINUS_SRC_ALPHA);
+        batcher.beginBatch(Assets.items);          
+        batcher.drawSprite(320 - 32, 32, -64, 64, Assets.arrow);
+        batcher.endBatch();
+        gl.glDisable(GL10.GL_BLEND);
+    }
+    @Override
+    public void dispose() {
+    }
+}",class,
+"    public HelpScreen2(Game game) {
+        super(game);
+        guiCam = new Camera2D(glGraphics, 320, 480);
+        nextBounds = new Rectangle(320 - 64, 0, 64, 64);
+        touchPoint = new Vector2();
+        batcher = new SpriteBatcher(glGraphics, 1);
+    }",method,
+"    @Override
+    public void resume() {
+        helpImage = new Texture(glGame, ""help2.png"" );
+        helpRegion = new TextureRegion(helpImage, 0, 0, 320, 480);
+    }",method,
+"    @Override
+    public void pause() {
+        helpImage.dispose();
+    }",method,
+"    @Override
+    public void update(float deltaTime) {
+        List<TouchEvent> touchEvents = game.getInput().getTouchEvents();
+        game.getInput().getKeyEvents();
+        int len = touchEvents.size();
+        for(int i = 0; i < len; i++) {
+            TouchEvent event = touchEvents.get(i);
+            touchPoint.set(event.x, event.y);
+            guiCam.touchToWorld(touchPoint);
+            if(event.type == TouchEvent.TOUCH_UP) {
+                if(OverlapTester.pointInRectangle(nextBounds, touchPoint)) {
+                    Assets.playSound(Assets.clickSound);
+                    game.setScreen(new HelpScreen3(game));
+                    return;
+                }
+            }
+        }
+    }",method,
+"        for(int i = 0; i < len; i++) {
+            TouchEvent event = touchEvents.get(i);
+            touchPoint.set(event.x, event.y);
+            guiCam.touchToWorld(touchPoint);
+            if(event.type == TouchEvent.TOUCH_UP) {
+                if(OverlapTester.pointInRectangle(nextBounds, touchPoint)) {
+                    Assets.playSound(Assets.clickSound);
+                    game.setScreen(new HelpScreen3(game));
+                    return;
+                }
+            }
+        }",method,
+"            if(event.type == TouchEvent.TOUCH_UP) {
+                if(OverlapTester.pointInRectangle(nextBounds, touchPoint)) {
+                    Assets.playSound(Assets.clickSound);
+                    game.setScreen(new HelpScreen3(game));
+                    return;
+                }
+            }",method,
+"    @Override
+    public void present(float deltaTime) {
+        GL10 gl = glGraphics.getGL();        
+        gl.glClear(GL10.GL_COLOR_BUFFER_BIT);
+        guiCam.setViewportAndMatrices();
+        gl.glEnable(GL10.GL_TEXTURE_2D);
+        batcher.beginBatch(helpImage);
+        batcher.drawSprite(160, 240, 320, 480, helpRegion);
+        batcher.endBatch();
+        gl.glEnable(GL10.GL_BLEND);
+        gl.glBlendFunc(GL10.GL_SRC_ALPHA, GL10.GL_ONE_MINUS_SRC_ALPHA);
+        batcher.beginBatch(Assets.items);          
+        batcher.drawSprite(320 - 32, 32, -64, 64, Assets.arrow);
+        batcher.endBatch();
+        gl.glDisable(GL10.GL_BLEND);
+    }",method,
+"    @Override
+    public void dispose() {
+    }",method,
+"public final class FakeRestChannel extends AbstractRestChannel {
+    private final CountDownLatch latch;
+    private final AtomicInteger responses = new AtomicInteger();
+    private final AtomicInteger errors = new AtomicInteger();
+    private RestResponse capturedRestResponse;
+    public FakeRestChannel(RestRequest request, boolean detailedErrorsEnabled, int responseCount) {
+        super(request, detailedErrorsEnabled);
+        this.latch = new CountDownLatch(responseCount);
+    }
+    @Override
+    public XContentBuilder newBuilder() throws IOException {
+        return super.newBuilder();
+    }
+    @Override
+    public XContentBuilder newErrorBuilder() throws IOException {
+        return super.newErrorBuilder();
+    }
+    @Override
+    public XContentBuilder newBuilder(@Nullable XContentType requestContentType, boolean useFiltering) throws IOException {
+        return super.newBuilder(requestContentType, useFiltering);
+    }
+    @Override
+    protected BytesStreamOutput newBytesOutput() {
+        return super.newBytesOutput();
+    }
+    @Override
+    public RestRequest request() {
+        return super.request();
+    }
+    @Override
+    public void sendResponse(RestResponse response) {
+        this.capturedRestResponse = response;
+        if (response.status() == RestStatus.OK) {
+            responses.incrementAndGet();
+        } else {
+            errors.incrementAndGet();
+        }
+        latch.countDown();
+    }
+    public RestResponse capturedResponse() {
+        return capturedRestResponse;
+    }
+    public boolean await() throws InterruptedException {
+        return latch.await(10, TimeUnit.SECONDS);
+    }
+    public AtomicInteger responses() {
+        return responses;
+    }
+    public AtomicInteger errors() {
+        return errors;
+    }
+}",class,
+"    public FakeRestChannel(RestRequest request, boolean detailedErrorsEnabled, int responseCount) {
+        super(request, detailedErrorsEnabled);
+        this.latch = new CountDownLatch(responseCount);
+    }",method,
+"    @Override
+    public XContentBuilder newBuilder() throws IOException {
+        return super.newBuilder();
+    }",method,
+"    @Override
+    public XContentBuilder newErrorBuilder() throws IOException {
+        return super.newErrorBuilder();
+    }",method,
+"    @Override
+    public XContentBuilder newBuilder(@Nullable XContentType requestContentType, boolean useFiltering) throws IOException {
+        return super.newBuilder(requestContentType, useFiltering);
+    }",method,
+"    @Override
+    protected BytesStreamOutput newBytesOutput() {
+        return super.newBytesOutput();
+    }",method,
+"    @Override
+    public RestRequest request() {
+        return super.request();
+    }",method,
+"    @Override
+    public void sendResponse(RestResponse response) {
+        this.capturedRestResponse = response;
+        if (response.status() == RestStatus.OK) {
+            responses.incrementAndGet();
+        } else {
+            errors.incrementAndGet();
+        }
+        latch.countDown();
+    }",method,
+"    public RestResponse capturedResponse() {
+        return capturedRestResponse;
+    }",method,
+"    public boolean await() throws InterruptedException {
+        return latch.await(10, TimeUnit.SECONDS);
+    }",method,
+"    public AtomicInteger responses() {
+        return responses;
+    }",method,
+"    public AtomicInteger errors() {
+        return errors;
+    }",method,
+"public abstract class ModuleRootManager implements ModuleRootModel, ProjectModelElement {
+  public static ModuleRootManager getInstance(@NotNull Module module) {
+    return module.getComponent(ModuleRootManager.class);
+  }
+  @NotNull
+  public abstract ModuleFileIndex getFileIndex();
+  @NotNull
+  public abstract ModifiableRootModel getModifiableModel();
+  @NotNull
+  public abstract Module[] getDependencies();
+  @NotNull
+  public abstract Module[] getDependencies(boolean includeTests);
+  public abstract boolean isDependsOn(Module module);
+}",class,
+"  public static ModuleRootManager getInstance(@NotNull Module module) {
+    return module.getComponent(ModuleRootManager.class);
+  }",method,
+"public class NekoActivationActivity extends Activity {
+    private void toastUp(String s) {
+        Toast toast = Toast.makeText(this, s, Toast.LENGTH_SHORT);
+        toast.getView().setBackgroundDrawable(null);
+        toast.show();
+    }
+    @Override
+    public void onStart() {
+        super.onStart();
+        final PackageManager pm = getPackageManager();
+        final ComponentName cn = new ComponentName(this, NekoTile.class);
+        if (pm.getComponentEnabledSetting(cn) == PackageManager.COMPONENT_ENABLED_STATE_ENABLED) {
+            if (NekoLand.DEBUG) {
+                Log.v(""Neko"", ""Disabling tile."");
+            }
+            pm.setComponentEnabledSetting(cn, PackageManager.COMPONENT_ENABLED_STATE_DISABLED,
+                    PackageManager.DONT_KILL_APP);
+            MetricsLogger.histogram(this, ""egg_neko_enable"", 0);
+            toastUp(""\uD83D\uDEAB"");
+        } else {
+            if (NekoLand.DEBUG) {
+                Log.v(""Neko"", ""Enabling tile."");
+            }
+            pm.setComponentEnabledSetting(cn, PackageManager.COMPONENT_ENABLED_STATE_ENABLED,
+                    PackageManager.DONT_KILL_APP);
+            MetricsLogger.histogram(this, ""egg_neko_enable"", 1);
+            toastUp(""\uD83D\uDC31"");
+        }
+        finish();
+    }
+}",class,
+"    private void toastUp(String s) {
+        Toast toast = Toast.makeText(this, s, Toast.LENGTH_SHORT);
+        toast.getView().setBackgroundDrawable(null);
+        toast.show();
+    }",method,
+"    @Override
+    public void onStart() {
+        super.onStart();
+        final PackageManager pm = getPackageManager();
+        final ComponentName cn = new ComponentName(this, NekoTile.class);
+        if (pm.getComponentEnabledSetting(cn) == PackageManager.COMPONENT_ENABLED_STATE_ENABLED) {
+            if (NekoLand.DEBUG) {
+                Log.v(""Neko"", ""Disabling tile."");
+            }
+            pm.setComponentEnabledSetting(cn, PackageManager.COMPONENT_ENABLED_STATE_DISABLED,
+                    PackageManager.DONT_KILL_APP);
+            MetricsLogger.histogram(this, ""egg_neko_enable"", 0);
+            toastUp(""\uD83D\uDEAB"");
+        } else {
+            if (NekoLand.DEBUG) {
+                Log.v(""Neko"", ""Enabling tile."");
+            }
+            pm.setComponentEnabledSetting(cn, PackageManager.COMPONENT_ENABLED_STATE_ENABLED,
+                    PackageManager.DONT_KILL_APP);
+            MetricsLogger.histogram(this, ""egg_neko_enable"", 1);
+            toastUp(""\uD83D\uDC31"");
+        }
+        finish();
+    }",method,
+"            if (NekoLand.DEBUG) {
+                Log.v(""Neko"", ""Disabling tile."");
+            }",method,
+"            if (NekoLand.DEBUG) {
+                Log.v(""Neko"", ""Enabling tile."");
+            }",method,
+"public class DefaultElementSelector extends AbstractElementSelector {
+    public DefaultElementSelector(String uri, String name) {
+        super(uri, name);
+    }
+    public short getSelectorType() {
+        return SAC_ELEMENT_NODE_SELECTOR;
+    }
+    public String toString() {
+        String name = getLocalName();
+        if (name == null) {
+            return ""*"";
+        }
+        return name;
+    }
+}",class,
+"    public DefaultElementSelector(String uri, String name) {
+        super(uri, name);
+    }",method,
+"    public short getSelectorType() {
+        return SAC_ELEMENT_NODE_SELECTOR;
+    }",method,
+"    public String toString() {
+        String name = getLocalName();
+        if (name == null) {
+            return ""*"";
+        }
+        return name;
+    }",method,
+"        if (name == null) {
+            return ""*"";
+        }",method,
+"public abstract class StructSchemaExtractionStrategySupport implements ModelSchemaExtractionStrategy {
+    private final ModelSchemaAspectExtractor aspectExtractor;
+    protected StructSchemaExtractionStrategySupport(ModelSchemaAspectExtractor aspectExtractor) {
+        this.aspectExtractor = aspectExtractor;
+    }
+    @Override
+    public <R> void extract(final ModelSchemaExtractionContext<R> extractionContext) {
+        ModelType<R> type = extractionContext.getType();
+        if (!isTarget(type)) {
+            return;
+        }
+        CandidateMethods candidateMethods = ModelSchemaUtils.getCandidateMethods(type.getRawClass());
+        Iterable<ModelPropertyExtractionContext> candidateProperties = selectProperties(extractionContext, candidateMethods);
+        List<ModelPropertyExtractionResult<?>> extractedProperties = extractProperties(candidateProperties);
+        List<ModelSchemaAspect> aspects = aspectExtractor.extract(extractionContext, extractedProperties);
+        Set<WeaklyTypeReferencingMethod<?, ?>> nonPropertyMethods = getNonPropertyMethods(candidateMethods, extractedProperties);
+        Iterable<ModelProperty<?>> properties = Iterables.transform(extractedProperties, new Function<ModelPropertyExtractionResult<?>, ModelProperty<?>>() {
+            @Override
+            public ModelProperty<?> apply(ModelPropertyExtractionResult<?> propertyResult) {
+                return propertyResult.getProperty();
+            }
+        });
+        ModelSchema<R> schema = createSchema(extractionContext, properties, nonPropertyMethods, aspects);
+        for (ModelPropertyExtractionResult<?> propertyResult : extractedProperties) {
+            toPropertyExtractionContext(extractionContext, propertyResult);
+        }
+        extractionContext.found(schema);
+    }
+    private Set<WeaklyTypeReferencingMethod<?, ?>> getNonPropertyMethods(CandidateMethods candidateMethods, List<ModelPropertyExtractionResult<?>> extractedProperties) {
+        Set<Method> nonPropertyMethods = Sets.newLinkedHashSet(Iterables.transform(candidateMethods.allMethods().keySet(), new Function<Wrapper<Method>, Method>() {
+            @Override
+            public Method apply(Wrapper<Method> method) {
+                return method.get();
+            }
+        }));
+        for (ModelPropertyExtractionResult<?> extractedProperty : extractedProperties) {
+            for (PropertyAccessorExtractionContext accessor : extractedProperty.getAccessors()) {
+                nonPropertyMethods.removeAll(accessor.getDeclaringMethods());
+            }
+        }
+        return Sets.newLinkedHashSet(Iterables.transform(nonPropertyMethods, new Function<Method, WeaklyTypeReferencingMethod<?, ?>>() {
+            @Override
+            public WeaklyTypeReferencingMethod<?, ?> apply(Method method) {
+                return WeaklyTypeReferencingMethod.of(method);
+            }
+        }));
+    }
+    protected abstract boolean isTarget(ModelType<?> type);
+    private Iterable<ModelPropertyExtractionContext> selectProperties(final ModelSchemaExtractionContext<?> context, CandidateMethods candidateMethods) {
+        Map<String, ModelPropertyExtractionContext> propertiesMap = Maps.newTreeMap();
+        for (Map.Entry<Wrapper<Method>, Collection<Method>> entry : candidateMethods.allMethods().entrySet()) {
+            Method method = entry.getKey().get();
+            PropertyAccessorType propertyAccessorType = PropertyAccessorType.of(method);
+            Collection<Method> methodsWithEqualSignature = entry.getValue();
+            if (propertyAccessorType != null) {
+                String propertyName = propertyAccessorType.propertyNameFor(method);
+                ModelPropertyExtractionContext propertyContext = propertiesMap.get(propertyName);
+                if (propertyContext == null) {
+                    propertyContext = new ModelPropertyExtractionContext(propertyName);
+                    propertiesMap.put(propertyName, propertyContext);
+                }
+                propertyContext.addAccessor(new PropertyAccessorExtractionContext(propertyAccessorType, methodsWithEqualSignature));
+            }
+        }
+        return Collections2.filter(propertiesMap.values(), new Predicate<ModelPropertyExtractionContext>() {
+            @Override
+            public boolean apply(ModelPropertyExtractionContext property) {
+                return property.isReadable();
+            }
+        });
+    }
+    private static List<ModelPropertyExtractionResult<?>> extractProperties(Iterable<ModelPropertyExtractionContext> properties) {
+        ImmutableList.Builder<ModelPropertyExtractionResult<?>> builder = ImmutableList.builder();
+        for (ModelPropertyExtractionContext propertyContext : properties) {
+            builder.add(extractProperty(propertyContext));
+        }
+        return builder.build();
+    }
+    private static ModelPropertyExtractionResult<?> extractProperty(ModelPropertyExtractionContext property) {
+        ModelType<?> propertyType = determinePropertyType(property.getAccessor(PropertyAccessorType.GET_GETTER));
+        if (propertyType == null) {
+            propertyType = determinePropertyType(property.getAccessor(PropertyAccessorType.IS_GETTER));
+        }
+        if (propertyType == null) {
+            propertyType = determinePropertyType(property.getAccessor(PropertyAccessorType.SETTER));
+        }
+        return createProperty(propertyType, property);
+    }
+    private static ModelType<?> determinePropertyType(PropertyAccessorExtractionContext accessor) {
+        return accessor == null ? null : ModelType.of(accessor.getAccessorType().propertyTypeFor(accessor.getMostSpecificDeclaration()));
+    }
+    private static <P> ModelPropertyExtractionResult<P> createProperty(ModelType<P> propertyType, ModelPropertyExtractionContext propertyContext) {
+        ImmutableMap.Builder<PropertyAccessorType, WeaklyTypeReferencingMethod<?, ?>> accessors = ImmutableMap.builder();
+        for (PropertyAccessorExtractionContext accessor : propertyContext.getAccessors()) {
+            WeaklyTypeReferencingMethod<?, ?> accessorMethod = WeaklyTypeReferencingMethod.of(accessor.getMostSpecificDeclaration());
+            accessors.put(accessor.getAccessorType(), accessorMethod);
+        }
+        ModelProperty<P> property = new ModelProperty<P>(
+            propertyType,
+            propertyContext.getPropertyName(),
+            propertyContext.getDeclaredBy(),
+            accessors.build()
+        );
+        return new ModelPropertyExtractionResult<P>(property, propertyContext.getAccessors());
+    }
+    private static <R, P> void toPropertyExtractionContext(ModelSchemaExtractionContext<R> parentContext, ModelPropertyExtractionResult<P> propertyResult) {
+        ModelProperty<P> property = propertyResult.getProperty();
+        String propertyDescription = propertyDescription(parentContext, property);
+        parentContext.child(property.getType(), propertyDescription, attachSchema(property));
+    }
+    private static <P> Action<? super ModelSchema<P>> attachSchema(final ModelProperty<P> property) {
+        return new Action<ModelSchema<P>>() {
+            @Override
+            public void execute(ModelSchema<P> propertySchema) {
+                property.setSchema(propertySchema);
+            }
+        };
+    }
+    private static String propertyDescription(ModelSchemaExtractionContext<?> parentContext, ModelProperty<?> property) {
+        if (property.getDeclaredBy().size() == 1 && property.getDeclaredBy().contains(parentContext.getType())) {
+            return String.format(""property '%s'"", property.getName());
+        } else {
+            ImmutableSortedSet<String> declaredBy = ImmutableSortedSet.copyOf(Iterables.transform(property.getDeclaredBy(), Functions.toStringFunction()));
+            return String.format(""property '%s' declared by %s"", property.getName(), Joiner.on("", "").join(declaredBy));
+        }
+    }
+    protected abstract <R> ModelSchema<R> createSchema(ModelSchemaExtractionContext<R> extractionContext, Iterable<ModelProperty<?>> properties, Set<WeaklyTypeReferencingMethod<?, ?>> nonPropertyMethods, Iterable<ModelSchemaAspect> aspects);
+}",class,
+"    protected StructSchemaExtractionStrategySupport(ModelSchemaAspectExtractor aspectExtractor) {
+        this.aspectExtractor = aspectExtractor;
+    }",method,
+"    @Override
+    public <R> void extract(final ModelSchemaExtractionContext<R> extractionContext) {
+        ModelType<R> type = extractionContext.getType();
+        if (!isTarget(type)) {
+            return;
+        }
+        CandidateMethods candidateMethods = ModelSchemaUtils.getCandidateMethods(type.getRawClass());
+        Iterable<ModelPropertyExtractionContext> candidateProperties = selectProperties(extractionContext, candidateMethods);
+        List<ModelPropertyExtractionResult<?>> extractedProperties = extractProperties(candidateProperties);
+        List<ModelSchemaAspect> aspects = aspectExtractor.extract(extractionContext, extractedProperties);
+        Set<WeaklyTypeReferencingMethod<?, ?>> nonPropertyMethods = getNonPropertyMethods(candidateMethods, extractedProperties);
+        Iterable<ModelProperty<?>> properties = Iterables.transform(extractedProperties, new Function<ModelPropertyExtractionResult<?>, ModelProperty<?>>() {
+            @Override
+            public ModelProperty<?> apply(ModelPropertyExtractionResult<?> propertyResult) {
+                return propertyResult.getProperty();
+            }
+        });
+        ModelSchema<R> schema = createSchema(extractionContext, properties, nonPropertyMethods, aspects);
+        for (ModelPropertyExtractionResult<?> propertyResult : extractedProperties) {
+            toPropertyExtractionContext(extractionContext, propertyResult);
+        }
+        extractionContext.found(schema);
+    }",method,
+"            @Override
+            public ModelProperty<?> apply(ModelPropertyExtractionResult<?> propertyResult) {
+                return propertyResult.getProperty();
+            }",method,
+"        for (ModelPropertyExtractionResult<?> propertyResult : extractedProperties) {
+            toPropertyExtractionContext(extractionContext, propertyResult);
+        }",method,
+"    private Set<WeaklyTypeReferencingMethod<?, ?>> getNonPropertyMethods(CandidateMethods candidateMethods, List<ModelPropertyExtractionResult<?>> extractedProperties) {
+        Set<Method> nonPropertyMethods = Sets.newLinkedHashSet(Iterables.transform(candidateMethods.allMethods().keySet(), new Function<Wrapper<Method>, Method>() {
+            @Override
+            public Method apply(Wrapper<Method> method) {
+                return method.get();
+            }
+        }));
+        for (ModelPropertyExtractionResult<?> extractedProperty : extractedProperties) {
+            for (PropertyAccessorExtractionContext accessor : extractedProperty.getAccessors()) {
+                nonPropertyMethods.removeAll(accessor.getDeclaringMethods());
+            }
+        }
+        return Sets.newLinkedHashSet(Iterables.transform(nonPropertyMethods, new Function<Method, WeaklyTypeReferencingMethod<?, ?>>() {
+            @Override
+            public WeaklyTypeReferencingMethod<?, ?> apply(Method method) {
+                return WeaklyTypeReferencingMethod.of(method);
+            }
+        }));
+    }",method,
+"            @Override
+            public Method apply(Wrapper<Method> method) {
+                return method.get();
+            }",method,
+"        for (ModelPropertyExtractionResult<?> extractedProperty : extractedProperties) {
+            for (PropertyAccessorExtractionContext accessor : extractedProperty.getAccessors()) {
+                nonPropertyMethods.removeAll(accessor.getDeclaringMethods());
+            }
+        }",method,
+"        return Sets.newLinkedHashSet(Iterables.transform(nonPropertyMethods, new Function<Method, WeaklyTypeReferencingMethod<?, ?>>() {
+            @Override
+            public WeaklyTypeReferencingMethod<?, ?> apply(Method method) {
+                return WeaklyTypeReferencingMethod.of(method);
+            }
+        }",method,
+"            @Override
+            public WeaklyTypeReferencingMethod<?, ?> apply(Method method) {
+                return WeaklyTypeReferencingMethod.of(method);
+            }",method,
+"    private Iterable<ModelPropertyExtractionContext> selectProperties(final ModelSchemaExtractionContext<?> context, CandidateMethods candidateMethods) {
+        Map<String, ModelPropertyExtractionContext> propertiesMap = Maps.newTreeMap();
+        for (Map.Entry<Wrapper<Method>, Collection<Method>> entry : candidateMethods.allMethods().entrySet()) {
+            Method method = entry.getKey().get();
+            PropertyAccessorType propertyAccessorType = PropertyAccessorType.of(method);
+            Collection<Method> methodsWithEqualSignature = entry.getValue();
+            if (propertyAccessorType != null) {
+                String propertyName = propertyAccessorType.propertyNameFor(method);
+                ModelPropertyExtractionContext propertyContext = propertiesMap.get(propertyName);
+                if (propertyContext == null) {
+                    propertyContext = new ModelPropertyExtractionContext(propertyName);
+                    propertiesMap.put(propertyName, propertyContext);
+                }
+                propertyContext.addAccessor(new PropertyAccessorExtractionContext(propertyAccessorType, methodsWithEqualSignature));
+            }
+        }
+        return Collections2.filter(propertiesMap.values(), new Predicate<ModelPropertyExtractionContext>() {
+            @Override
+            public boolean apply(ModelPropertyExtractionContext property) {
+                return property.isReadable();
+            }
+        });
+    }",method,
+"            if (propertyAccessorType != null) {
+                String propertyName = propertyAccessorType.propertyNameFor(method);
+                ModelPropertyExtractionContext propertyContext = propertiesMap.get(propertyName);
+                if (propertyContext == null) {
+                    propertyContext = new ModelPropertyExtractionContext(propertyName);
+                    propertiesMap.put(propertyName, propertyContext);
+                }
+                propertyContext.addAccessor(new PropertyAccessorExtractionContext(propertyAccessorType, methodsWithEqualSignature));
+            }",method,
+"                if (propertyContext == null) {
+                    propertyContext = new ModelPropertyExtractionContext(propertyName);
+                    propertiesMap.put(propertyName, propertyContext);
+                }",method,
+"            @Override
+            public boolean apply(ModelPropertyExtractionContext property) {
+                return property.isReadable();
+            }",method,
+"    private static List<ModelPropertyExtractionResult<?>> extractProperties(Iterable<ModelPropertyExtractionContext> properties) {
+        ImmutableList.Builder<ModelPropertyExtractionResult<?>> builder = ImmutableList.builder();
+        for (ModelPropertyExtractionContext propertyContext : properties) {
+            builder.add(extractProperty(propertyContext));
+        }
+        return builder.build();
+    }",method,
+"        for (ModelPropertyExtractionContext propertyContext : properties) {
+            builder.add(extractProperty(propertyContext));
+        }",method,
+"    private static ModelPropertyExtractionResult<?> extractProperty(ModelPropertyExtractionContext property) {
+        ModelType<?> propertyType = determinePropertyType(property.getAccessor(PropertyAccessorType.GET_GETTER));
+        if (propertyType == null) {
+            propertyType = determinePropertyType(property.getAccessor(PropertyAccessorType.IS_GETTER));
+        }
+        if (propertyType == null) {
+            propertyType = determinePropertyType(property.getAccessor(PropertyAccessorType.SETTER));
+        }
+        return createProperty(propertyType, property);
+    }",method,
+"        if (propertyType == null) {
+            propertyType = determinePropertyType(property.getAccessor(PropertyAccessorType.IS_GETTER));
+        }",method,

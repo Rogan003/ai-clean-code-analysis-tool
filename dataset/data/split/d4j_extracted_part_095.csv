@@ -1,0 +1,1232 @@
+code_snippet,type,score
+"    @Override
+    public int getVersion() throws RemoteException {
+        checkPermissions();
+        return mLocationHardware.getVersion();
+    }",method,
+"public class UpdateOptionsPanel {
+  private JCheckBox myPruneEmptyDirectories;
+  private TextFieldWithBrowseButton myBranch;
+  private TextFieldWithBrowseButton myBranch2;
+  private JCheckBox mySwitchToHeadRevision;
+  private JCheckBox myCreateNewDirectories;
+  private JCheckBox myCleanCopy;
+  private JPanel myDateOrRevisionPanel;
+  private final ChangeKeywordSubstitutionPanel myChangeKeywordSubstitutionPanel;
+  private final DateOrRevisionOrTagSettings myDateOrRevisionOrTagSettings;
+  private JPanel myPanel;
+  private JPanel myKeywordSubstitutionPanel;
+  private JRadioButton myDoNotMerge;
+  private JRadioButton myMergeWithBranch;
+  private JRadioButton myMergeTwoBranches;
+  private final JRadioButton[] myMergingGroup;
+  private final Project myProject;
+  public UpdateOptionsPanel(Project project,
+                            final Collection<FilePath> files) {
+    myProject = project;
+    final CvsConfiguration configuration = CvsConfiguration.getInstance(myProject);
+    myChangeKeywordSubstitutionPanel =
+      new ChangeKeywordSubstitutionPanel(KeywordSubstitution.getValue(configuration.UPDATE_KEYWORD_SUBSTITUTION));
+    configuration.CLEAN_COPY = false;
+    configuration.RESET_STICKY = false;
+    myMergingGroup = new JRadioButton[]{myDoNotMerge, myMergeWithBranch, myMergeTwoBranches};
+    myKeywordSubstitutionPanel.setLayout(new BorderLayout());
+    myKeywordSubstitutionPanel.add(myChangeKeywordSubstitutionPanel.getComponent(), BorderLayout.CENTER);
+    myDateOrRevisionOrTagSettings = new DateOrRevisionOrTagSettings(new TagsProviderOnVirtualFiles(files),
+                                                                    project);
+    myDateOrRevisionOrTagSettings.setHeadCaption(CvsBundle.message(""label.default.update.branch""));
+    myDateOrRevisionPanel.setLayout(new BorderLayout());
+    myDateOrRevisionPanel.add(myDateOrRevisionOrTagSettings.getPanel(), BorderLayout.CENTER);
+    TagsHelper.addChooseBranchAction(myBranch, files, project);
+    TagsHelper.addChooseBranchAction(myBranch2, files, project);
+  }
+  public void reset() {
+    CvsConfiguration config = CvsConfiguration.getInstance(myProject);
+    myPruneEmptyDirectories.setSelected(config.PRUNE_EMPTY_DIRECTORIES);
+    myDoNotMerge.setSelected(true);
+    myBranch.setText(config.MERGE_WITH_BRANCH1_NAME);
+    myBranch2.setText(config.MERGE_WITH_BRANCH2_NAME);
+    mySwitchToHeadRevision.setSelected(false);
+    myCreateNewDirectories.setSelected(config.CREATE_NEW_DIRECTORIES);
+    myCleanCopy.setSelected(false);
+    myDateOrRevisionOrTagSettings.updateFrom(config.UPDATE_DATE_OR_REVISION_SETTINGS);
+    for (JRadioButton jRadioButton : myMergingGroup) {
+      jRadioButton.addItemListener(new ItemListener() {
+        @Override
+        public void itemStateChanged(ItemEvent e) {
+          enableBranchField();
+        }
+      });
+    }
+    enableBranchField();
+  }
+  private void enableBranchField() {
+    int mergingMode = getSelected(myMergingGroup);
+    switch (mergingMode) {
+      case CvsConfiguration.DO_NOT_MERGE:
+        myBranch.setEnabled(false);
+        myBranch2.setEnabled(false);
+        break;
+      case CvsConfiguration.MERGE_WITH_BRANCH:
+        myBranch.setEnabled(true);
+        myBranch2.setEnabled(false);
+        break;
+      case CvsConfiguration.MERGE_TWO_BRANCHES:
+        myBranch.setEnabled(true);
+        myBranch2.setEnabled(true);
+        break;
+    }
+  }
+  public void apply() throws ConfigurationException {
+    CvsConfiguration configuration = CvsConfiguration.getInstance(myProject);
+    configuration.CLEAN_COPY = false;
+    if (myCleanCopy.isSelected()) {
+      if (Messages.showYesNoDialog(
+        CvsBundle.message(""confirmation.clean.copy""),
+        CvsBundle.message(""confirmation.title.clean.copy""), Messages.getWarningIcon()) == Messages.YES) {
+        configuration.CLEAN_COPY = true;
+      } else {
+        throw new CancelledConfigurationException();
+      }
+    }
+    configuration.PRUNE_EMPTY_DIRECTORIES = myPruneEmptyDirectories.isSelected();
+    configuration.MERGING_MODE = getSelected(myMergingGroup);
+    configuration.MERGE_WITH_BRANCH1_NAME = myBranch.getText();
+    configuration.MERGE_WITH_BRANCH2_NAME = myBranch2.getText();
+    configuration.RESET_STICKY = mySwitchToHeadRevision.isSelected();
+    configuration.CREATE_NEW_DIRECTORIES = myCreateNewDirectories.isSelected();
+    final KeywordSubstitution keywordSubstitution = myChangeKeywordSubstitutionPanel.getKeywordSubstitution();
+    if (keywordSubstitution == null) {
+      configuration.UPDATE_KEYWORD_SUBSTITUTION = null;
+    } else {
+      configuration.UPDATE_KEYWORD_SUBSTITUTION = keywordSubstitution.toString();
+    }
+    myDateOrRevisionOrTagSettings.saveTo(configuration.UPDATE_DATE_OR_REVISION_SETTINGS);
+  }
+  private static int getSelected(JRadioButton[] mergingGroup) {
+    for (int i = 0; i < mergingGroup.length; i++) {
+      JRadioButton jRadioButton = mergingGroup[i];
+      if (jRadioButton.isSelected()) return i;
+    }
+    return 0;
+  }
+  public JComponent getPanel() {
+    return myPanel;
+  }
+}",class,
+"  public UpdateOptionsPanel(Project project,
+                            final Collection<FilePath> files) {
+    myProject = project;
+    final CvsConfiguration configuration = CvsConfiguration.getInstance(myProject);
+    myChangeKeywordSubstitutionPanel =
+      new ChangeKeywordSubstitutionPanel(KeywordSubstitution.getValue(configuration.UPDATE_KEYWORD_SUBSTITUTION));
+    configuration.CLEAN_COPY = false;
+    configuration.RESET_STICKY = false;
+    myMergingGroup = new JRadioButton[]{myDoNotMerge, myMergeWithBranch, myMergeTwoBranches};
+    myKeywordSubstitutionPanel.setLayout(new BorderLayout());
+    myKeywordSubstitutionPanel.add(myChangeKeywordSubstitutionPanel.getComponent(), BorderLayout.CENTER);
+    myDateOrRevisionOrTagSettings = new DateOrRevisionOrTagSettings(new TagsProviderOnVirtualFiles(files),
+                                                                    project);
+    myDateOrRevisionOrTagSettings.setHeadCaption(CvsBundle.message(""label.default.update.branch""));
+    myDateOrRevisionPanel.setLayout(new BorderLayout());
+    myDateOrRevisionPanel.add(myDateOrRevisionOrTagSettings.getPanel(), BorderLayout.CENTER);
+    TagsHelper.addChooseBranchAction(myBranch, files, project);
+    TagsHelper.addChooseBranchAction(myBranch2, files, project);
+  }",method,
+"  public void reset() {
+    CvsConfiguration config = CvsConfiguration.getInstance(myProject);
+    myPruneEmptyDirectories.setSelected(config.PRUNE_EMPTY_DIRECTORIES);
+    myDoNotMerge.setSelected(true);
+    myBranch.setText(config.MERGE_WITH_BRANCH1_NAME);
+    myBranch2.setText(config.MERGE_WITH_BRANCH2_NAME);
+    mySwitchToHeadRevision.setSelected(false);
+    myCreateNewDirectories.setSelected(config.CREATE_NEW_DIRECTORIES);
+    myCleanCopy.setSelected(false);
+    myDateOrRevisionOrTagSettings.updateFrom(config.UPDATE_DATE_OR_REVISION_SETTINGS);
+    for (JRadioButton jRadioButton : myMergingGroup) {
+      jRadioButton.addItemListener(new ItemListener() {
+        @Override
+        public void itemStateChanged(ItemEvent e) {
+          enableBranchField();
+        }
+      });
+    }
+    enableBranchField();
+  }",method,
+"    for (JRadioButton jRadioButton : myMergingGroup) {
+      jRadioButton.addItemListener(new ItemListener() {
+        @Override
+        public void itemStateChanged(ItemEvent e) {
+          enableBranchField();
+        }
+      });
+    }",method,
+"      jRadioButton.addItemListener(new ItemListener() {
+        @Override
+        public void itemStateChanged(ItemEvent e) {
+          enableBranchField();
+        }
+      }",method,
+"        @Override
+        public void itemStateChanged(ItemEvent e) {
+          enableBranchField();
+        }",method,
+"  private void enableBranchField() {
+    int mergingMode = getSelected(myMergingGroup);
+    switch (mergingMode) {
+      case CvsConfiguration.DO_NOT_MERGE:
+        myBranch.setEnabled(false);
+        myBranch2.setEnabled(false);
+        break;
+      case CvsConfiguration.MERGE_WITH_BRANCH:
+        myBranch.setEnabled(true);
+        myBranch2.setEnabled(false);
+        break;
+      case CvsConfiguration.MERGE_TWO_BRANCHES:
+        myBranch.setEnabled(true);
+        myBranch2.setEnabled(true);
+        break;
+    }
+  }",method,
+"    switch (mergingMode) {
+      case CvsConfiguration.DO_NOT_MERGE:
+        myBranch.setEnabled(false);
+        myBranch2.setEnabled(false);
+        break;
+      case CvsConfiguration.MERGE_WITH_BRANCH:
+        myBranch.setEnabled(true);
+        myBranch2.setEnabled(false);
+        break;
+      case CvsConfiguration.MERGE_TWO_BRANCHES:
+        myBranch.setEnabled(true);
+        myBranch2.setEnabled(true);
+        break;
+    }",method,
+"  public void apply() throws ConfigurationException {
+    CvsConfiguration configuration = CvsConfiguration.getInstance(myProject);
+    configuration.CLEAN_COPY = false;
+    if (myCleanCopy.isSelected()) {
+      if (Messages.showYesNoDialog(
+        CvsBundle.message(""confirmation.clean.copy""),
+        CvsBundle.message(""confirmation.title.clean.copy""), Messages.getWarningIcon()) == Messages.YES) {
+        configuration.CLEAN_COPY = true;
+      } else {
+        throw new CancelledConfigurationException();
+      }
+    }
+    configuration.PRUNE_EMPTY_DIRECTORIES = myPruneEmptyDirectories.isSelected();
+    configuration.MERGING_MODE = getSelected(myMergingGroup);
+    configuration.MERGE_WITH_BRANCH1_NAME = myBranch.getText();
+    configuration.MERGE_WITH_BRANCH2_NAME = myBranch2.getText();
+    configuration.RESET_STICKY = mySwitchToHeadRevision.isSelected();
+    configuration.CREATE_NEW_DIRECTORIES = myCreateNewDirectories.isSelected();
+    final KeywordSubstitution keywordSubstitution = myChangeKeywordSubstitutionPanel.getKeywordSubstitution();
+    if (keywordSubstitution == null) {
+      configuration.UPDATE_KEYWORD_SUBSTITUTION = null;
+    } else {
+      configuration.UPDATE_KEYWORD_SUBSTITUTION = keywordSubstitution.toString();
+    }
+    myDateOrRevisionOrTagSettings.saveTo(configuration.UPDATE_DATE_OR_REVISION_SETTINGS);
+  }",method,
+"    if (keywordSubstitution == null) {
+      configuration.UPDATE_KEYWORD_SUBSTITUTION = null;
+    }",method,
+"  private static int getSelected(JRadioButton[] mergingGroup) {
+    for (int i = 0; i < mergingGroup.length; i++) {
+      JRadioButton jRadioButton = mergingGroup[i];
+      if (jRadioButton.isSelected()) return i;
+    }
+    return 0;
+  }",method,
+"    for (int i = 0; i < mergingGroup.length; i++) {
+      JRadioButton jRadioButton = mergingGroup[i];
+      if (jRadioButton.isSelected()) return i;
+    }",method,
+"  public JComponent getPanel() {
+    return myPanel;
+  }",method,
+"public class InstrumentationTestSuite extends TestSuite {
+    private final Instrumentation mInstrumentation;
+    public InstrumentationTestSuite(Instrumentation instr) {
+        mInstrumentation = instr;
+    }
+    public InstrumentationTestSuite(String name, Instrumentation instr) {
+        super(name);
+        mInstrumentation = instr;
+    }
+    public InstrumentationTestSuite(final Class theClass, Instrumentation instr) {
+        super(theClass);
+        mInstrumentation = instr;
+    }
+    @Override
+    public void addTestSuite(Class testClass) {
+        addTest(new InstrumentationTestSuite(testClass, mInstrumentation));
+    }
+    @Override
+    public void runTest(Test test, TestResult result) {
+        if (test instanceof InstrumentationTestCase) {
+            ((InstrumentationTestCase) test).injectInstrumentation(mInstrumentation);
+        }
+        // run the test as usual
+        super.runTest(test, result);
+    }
+}",class,
+"    public InstrumentationTestSuite(Instrumentation instr) {
+        mInstrumentation = instr;
+    }",method,
+"    public InstrumentationTestSuite(String name, Instrumentation instr) {
+        super(name);
+        mInstrumentation = instr;
+    }",method,
+"    public InstrumentationTestSuite(final Class theClass, Instrumentation instr) {
+        super(theClass);
+        mInstrumentation = instr;
+    }",method,
+"    @Override
+    public void addTestSuite(Class testClass) {
+        addTest(new InstrumentationTestSuite(testClass, mInstrumentation));
+    }",method,
+"    @Override
+    public void runTest(Test test, TestResult result) {
+        if (test instanceof InstrumentationTestCase) {
+            ((InstrumentationTestCase) test).injectInstrumentation(mInstrumentation);
+        }
+        // run the test as usual
+        super.runTest(test, result);
+    }",method,
+"        if (test instanceof InstrumentationTestCase) {
+            ((InstrumentationTestCase) test).injectInstrumentation(mInstrumentation);
+        }",method,
+"    public static class AppInfo {
+        private String   name;
+        private Drawable icon;
+        private String   packageName;
+        private String   packagePath;
+        private String   versionName;
+        private int      versionCode;
+        private boolean  isSystem;
+        public Drawable getIcon() {
+            return icon;
+        }
+        public void setIcon(final Drawable icon) {
+            this.icon = icon;
+        }
+        public boolean isSystem() {
+            return isSystem;
+        }
+        public void setSystem(final boolean isSystem) {
+            this.isSystem = isSystem;
+        }
+        public String getName() {
+            return name;
+        }
+        public void setName(final String name) {
+            this.name = name;
+        }
+        public String getPackageName() {
+            return packageName;
+        }
+        public void setPackageName(final String packageName) {
+            this.packageName = packageName;
+        }
+        public String getPackagePath() {
+            return packagePath;
+        }
+        public void setPackagePath(final String packagePath) {
+            this.packagePath = packagePath;
+        }
+        public int getVersionCode() {
+            return versionCode;
+        }
+        public void setVersionCode(final int versionCode) {
+            this.versionCode = versionCode;
+        }
+        public String getVersionName() {
+            return versionName;
+        }
+        public void setVersionName(final String versionName) {
+            this.versionName = versionName;
+        }
+        public AppInfo(String packageName, String name, Drawable icon, String packagePath,
+                       String versionName, int versionCode, boolean isSystem) {
+            this.setName(name);
+            this.setIcon(icon);
+            this.setPackageName(packageName);
+            this.setPackagePath(packagePath);
+            this.setVersionName(versionName);
+            this.setVersionCode(versionCode);
+            this.setSystem(isSystem);
+        }
+        @Override
+        public String toString() {
+            return ""pkg name: "" + getPackageName() +
+                    ""\napp name: "" + getName() +
+                    ""\napp path: "" + getPackagePath() +
+                    ""\napp v name: "" + getVersionName() +
+                    ""\napp v code: "" + getVersionCode() +
+                    ""\nis system: "" + isSystem();
+        }
+    }",class,
+"    public static boolean isAppForeground(final String packageName) {
+        return !isSpace(packageName) && packageName.equals(ProcessUtils.getForegroundProcessName());
+    }",method,
+"        public Drawable getIcon() {
+            return icon;
+        }",method,
+"        public void setIcon(final Drawable icon) {
+            this.icon = icon;
+        }",method,
+"        public boolean isSystem() {
+            return isSystem;
+        }",method,
+"        public void setSystem(final boolean isSystem) {
+            this.isSystem = isSystem;
+        }",method,
+"        public String getName() {
+            return name;
+        }",method,
+"        public void setName(final String name) {
+            this.name = name;
+        }",method,
+"        public String getPackageName() {
+            return packageName;
+        }",method,
+"        public void setPackageName(final String packageName) {
+            this.packageName = packageName;
+        }",method,
+"        public String getPackagePath() {
+            return packagePath;
+        }",method,
+"        public void setPackagePath(final String packagePath) {
+            this.packagePath = packagePath;
+        }",method,
+"        public int getVersionCode() {
+            return versionCode;
+        }",method,
+"        public void setVersionCode(final int versionCode) {
+            this.versionCode = versionCode;
+        }",method,
+"        public String getVersionName() {
+            return versionName;
+        }",method,
+"        public void setVersionName(final String versionName) {
+            this.versionName = versionName;
+        }",method,
+"        public AppInfo(String packageName, String name, Drawable icon, String packagePath,
+                       String versionName, int versionCode, boolean isSystem) {
+            this.setName(name);
+            this.setIcon(icon);
+            this.setPackageName(packageName);
+            this.setPackagePath(packagePath);
+            this.setVersionName(versionName);
+            this.setVersionCode(versionCode);
+            this.setSystem(isSystem);
+        }",method,
+"        @Override
+        public String toString() {
+            return ""pkg name: "" + getPackageName() +
+                    ""\napp name: "" + getName() +
+                    ""\napp path: "" + getPackagePath() +
+                    ""\napp v name: "" + getVersionName() +
+                    ""\napp v code: "" + getVersionCode() +
+                    ""\nis system: "" + isSystem();
+        }",method,
+"    public static AppInfo getAppInfo() {
+        return getAppInfo(Utils.getApp().getPackageName());
+    }",method,
+"    public static AppInfo getAppInfo(final String packageName) {
+        try {
+            PackageManager pm = Utils.getApp().getPackageManager();
+            PackageInfo pi = pm.getPackageInfo(packageName, 0);
+            return getBean(pm, pi);
+        } catch (PackageManager.NameNotFoundException e) {
+            e.printStackTrace();
+            return null;
+        }
+    }",method,
+"    private static AppInfo getBean(final PackageManager pm, final PackageInfo pi) {
+        if (pm == null || pi == null) return null;
+        ApplicationInfo ai = pi.applicationInfo;
+        String packageName = pi.packageName;
+        String name = ai.loadLabel(pm).toString();
+        Drawable icon = ai.loadIcon(pm);
+        String packagePath = ai.sourceDir;
+        String versionName = pi.versionName;
+        int versionCode = pi.versionCode;
+        boolean isSystem = (ApplicationInfo.FLAG_SYSTEM & ai.flags) != 0;
+        return new AppInfo(packageName, name, icon, packagePath, versionName, versionCode, isSystem);
+    }",method,
+"    public static List<AppInfo> getAppsInfo() {
+        List<AppInfo> list = new ArrayList<>();
+        PackageManager pm = Utils.getApp().getPackageManager();
+        // 获取系统中安装的所有软件信息
+        List<PackageInfo> installedPackages = pm.getInstalledPackages(0);
+        for (PackageInfo pi : installedPackages) {
+            AppInfo ai = getBean(pm, pi);
+            if (ai == null) continue;
+            list.add(ai);
+        }
+        return list;
+    }",method,
+"        for (PackageInfo pi : installedPackages) {
+            AppInfo ai = getBean(pm, pi);
+            if (ai == null) continue;
+            list.add(ai);
+        }",method,
+"    public static boolean cleanAppData(final String... dirPaths) {
+        File[] dirs = new File[dirPaths.length];
+        int i = 0;
+        for (String dirPath : dirPaths) {
+            dirs[i++] = new File(dirPath);
+        }
+        return cleanAppData(dirs);
+    }",method,
+"        for (String dirPath : dirPaths) {
+            dirs[i++] = new File(dirPath);
+        }",method,
+"    public static boolean cleanAppData(final File... dirs) {
+        boolean isSuccess = CleanUtils.cleanInternalCache();
+        isSuccess &= CleanUtils.cleanInternalDbs();
+        isSuccess &= CleanUtils.cleanInternalSP();
+        isSuccess &= CleanUtils.cleanInternalFiles();
+        isSuccess &= CleanUtils.cleanExternalCache();
+        for (File dir : dirs) {
+            isSuccess &= CleanUtils.cleanCustomCache(dir);
+        }
+        return isSuccess;
+    }",method,
+"        for (File dir : dirs) {
+            isSuccess &= CleanUtils.cleanCustomCache(dir);
+        }",method,
+"    private static boolean isSpace(final String s) {
+        if (s == null) return true;
+        for (int i = 0, len = s.length(); i < len; ++i) {
+            if (!Character.isWhitespace(s.charAt(i))) {
+                return false;
+            }
+        }
+        return true;
+    }",method,
+" * StateBuilder is using this class to check if e.g. a DrawCommand list for a given View needs to be
+ * updated.
+ */
+ final class ElementsList<E> {
+  private static final class Scope {
+    Object[] elements;
+    int index;
+    int size;
+  }
+  // List of scopes.  These are never cleared, but instead recycled when a new scope is needed at
+  // a given depth.
+  private final ArrayList<Scope> mScopesStack = new ArrayList<>();
+  // Working list of all new elements we are gathering across scopes.  Whenever we get a call to
+  // finish() we pop the new elements off the collection, either discarding them if there was no
+  // change from the base or accumulating and returning them as a list of new elements.
+  private final ArrayDeque<E> mElements = new ArrayDeque<>();
+  private final E[] mEmptyArray;
+  private Scope mCurrentScope = null;
+  private int mScopeIndex = 0;
+  public ElementsList(E[] emptyArray) {
+    mEmptyArray = emptyArray;
+    mScopesStack.add(mCurrentScope);
+  }
+  public void start(Object[] elements) {
+    pushScope();
+    Scope scope = getCurrentScope();
+    scope.elements = elements;
+    scope.index = 0;
+    scope.size = mElements.size();
+  }
+  public E[] finish() {
+    Scope scope = getCurrentScope();
+    popScope();
+    E[] result = null;
+    int size = mElements.size() - scope.size;
+    if (scope.index != scope.elements.length) {
+      result = extractElements(size);
+    } else {
+      // downsize
+      for (int i = 0; i < size; ++i) {
+        mElements.pollLast();
+      }
+    }
+    // To prevent resource leaks.
+    scope.elements = null;
+    return result;
+  }
+  public void add(E element) {
+    Scope scope = getCurrentScope();
+    if (scope.index < scope.elements.length &&
+        scope.elements[scope.index] == element) {
+      ++scope.index;
+    } else {
+      scope.index = Integer.MAX_VALUE;
+    }
+    mElements.add(element);
+  }
+  public void clear() {
+    if (getCurrentScope() != null) {
+      throw new RuntimeException(""Must call finish() for every start() call being made."");
+    }
+    mElements.clear();
+  }
+  private E[] extractElements(int size) {
+    if (size == 0) {
+      // avoid allocating empty array
+      return mEmptyArray;
+    }
+    E[] elements = (E[]) Array.newInstance(mEmptyArray.getClass().getComponentType(), size);
+    for (int i = size - 1; i >= 0; --i) {
+      elements[i] = mElements.pollLast();
+    }
+    return elements;
+  }
+  private void pushScope() {
+    ++mScopeIndex;
+    if (mScopeIndex == mScopesStack.size()) {
+      // We reached a new deepest scope, we need to create a scope for this depth.
+      mCurrentScope = new Scope();
+      mScopesStack.add(mCurrentScope);
+    } else {
+      // We have had a scope at this depth before, lets recycle it.
+      mCurrentScope = mScopesStack.get(mScopeIndex);
+    }
+  }
+  private void popScope() {
+    --mScopeIndex;
+    mCurrentScope = mScopesStack.get(mScopeIndex);
+  }
+  private Scope getCurrentScope() {
+    return mCurrentScope;
+  }
+}",class,
+"  private static final class Scope {
+    Object[] elements;
+    int index;
+    int size;
+  }",class,
+"  public ElementsList(E[] emptyArray) {
+    mEmptyArray = emptyArray;
+    mScopesStack.add(mCurrentScope);
+  }",method,
+"  public void start(Object[] elements) {
+    pushScope();
+    Scope scope = getCurrentScope();
+    scope.elements = elements;
+    scope.index = 0;
+    scope.size = mElements.size();
+  }",method,
+"  public E[] finish() {
+    Scope scope = getCurrentScope();
+    popScope();
+    E[] result = null;
+    int size = mElements.size() - scope.size;
+    if (scope.index != scope.elements.length) {
+      result = extractElements(size);
+    } else {
+      // downsize
+      for (int i = 0; i < size; ++i) {
+        mElements.pollLast();
+      }
+    }
+    // To prevent resource leaks.
+    scope.elements = null;
+    return result;
+  }",method,
+"    if (scope.index != scope.elements.length) {
+      result = extractElements(size);
+    }",method,
+"      for (int i = 0; i < size; ++i) {
+        mElements.pollLast();
+      }",method,
+"  public void add(E element) {
+    Scope scope = getCurrentScope();
+    if (scope.index < scope.elements.length &&
+        scope.elements[scope.index] == element) {
+      ++scope.index;
+    } else {
+      scope.index = Integer.MAX_VALUE;
+    }
+    mElements.add(element);
+  }",method,
+"    if (scope.index < scope.elements.length &&
+        scope.elements[scope.index] == element) {
+      ++scope.index;
+    }",method,
+"  public void clear() {
+    if (getCurrentScope() != null) {
+      throw new RuntimeException(""Must call finish() for every start() call being made."");
+    }
+    mElements.clear();
+  }",method,
+"  private E[] extractElements(int size) {
+    if (size == 0) {
+      // avoid allocating empty array
+      return mEmptyArray;
+    }
+    E[] elements = (E[]) Array.newInstance(mEmptyArray.getClass().getComponentType(), size);
+    for (int i = size - 1; i >= 0; --i) {
+      elements[i] = mElements.pollLast();
+    }
+    return elements;
+  }",method,
+"    if (size == 0) {
+      // avoid allocating empty array
+      return mEmptyArray;
+    }",method,
+"    for (int i = size - 1; i >= 0; --i) {
+      elements[i] = mElements.pollLast();
+    }",method,
+"  private void pushScope() {
+    ++mScopeIndex;
+    if (mScopeIndex == mScopesStack.size()) {
+      // We reached a new deepest scope, we need to create a scope for this depth.
+      mCurrentScope = new Scope();
+      mScopesStack.add(mCurrentScope);
+    } else {
+      // We have had a scope at this depth before, lets recycle it.
+      mCurrentScope = mScopesStack.get(mScopeIndex);
+    }
+  }",method,
+"  private void popScope() {
+    --mScopeIndex;
+    mCurrentScope = mScopesStack.get(mScopeIndex);
+  }",method,
+"  private Scope getCurrentScope() {
+    return mCurrentScope;
+  }",method,
+"public class RaptorConnector
+        implements Connector
+{
+    private static final Logger log = Logger.get(RaptorConnector.class);
+    private final LifeCycleManager lifeCycleManager;
+    private final RaptorMetadataFactory metadataFactory;
+    private final RaptorSplitManager splitManager;
+    private final RaptorPageSourceProvider pageSourceProvider;
+    private final RaptorPageSinkProvider pageSinkProvider;
+    private final RaptorNodePartitioningProvider nodePartitioningProvider;
+    private final List<PropertyMetadata<?>> sessionProperties;
+    private final List<PropertyMetadata<?>> tableProperties;
+    private final Set<SystemTable> systemTables;
+    private final MetadataDao dao;
+    private final boolean coordinator;
+    private final ConcurrentMap<ConnectorTransactionHandle, RaptorMetadata> transactions = new ConcurrentHashMap<>();
+    private final ScheduledExecutorService unblockMaintenanceExecutor = newSingleThreadScheduledExecutor(daemonThreadsNamed(""raptor-unblock-maintenance""));
+    @GuardedBy(""this"")
+    private final SetMultimap<Long, UUID> deletions = HashMultimap.create();
+    @Inject
+    public RaptorConnector(
+            LifeCycleManager lifeCycleManager,
+            NodeManager nodeManager,
+            RaptorMetadataFactory metadataFactory,
+            RaptorSplitManager splitManager,
+            RaptorPageSourceProvider pageSourceProvider,
+            RaptorPageSinkProvider pageSinkProvider,
+            RaptorNodePartitioningProvider nodePartitioningProvider,
+            RaptorSessionProperties sessionProperties,
+            RaptorTableProperties tableProperties,
+            Set<SystemTable> systemTables,
+            @ForMetadata IDBI dbi)
+    {
+        this.lifeCycleManager = requireNonNull(lifeCycleManager, ""lifeCycleManager is null"");
+        this.metadataFactory = requireNonNull(metadataFactory, ""metadataFactory is null"");
+        this.splitManager = requireNonNull(splitManager, ""splitManager is null"");
+        this.pageSourceProvider = requireNonNull(pageSourceProvider, ""pageSourceProvider is null"");
+        this.pageSinkProvider = requireNonNull(pageSinkProvider, ""pageSinkProvider is null"");
+        this.nodePartitioningProvider = requireNonNull(nodePartitioningProvider, ""nodePartitioningProvider is null"");
+        this.sessionProperties = requireNonNull(sessionProperties, ""sessionProperties is null"").getSessionProperties();
+        this.tableProperties = requireNonNull(tableProperties, ""tableProperties is null"").getTableProperties();
+        this.systemTables = requireNonNull(systemTables, ""systemTables is null"");
+        this.dao = onDemandDao(dbi, MetadataDao.class);
+        this.coordinator = nodeManager.getCurrentNode().isCoordinator();
+    }
+    @PostConstruct
+    public void start()
+    {
+        if (coordinator) {
+            dao.unblockAllMaintenance();
+        }
+    }
+    @Override
+    public boolean isSingleStatementWritesOnly()
+    {
+        return true;
+    }
+    @Override
+    public ConnectorTransactionHandle beginTransaction(IsolationLevel isolationLevel, boolean readOnly)
+    {
+        checkConnectorSupports(READ_COMMITTED, isolationLevel);
+        RaptorTransactionHandle transaction = new RaptorTransactionHandle();
+        transactions.put(transaction, metadataFactory.create(tableId -> beginDelete(tableId, transaction.getUuid())));
+        return transaction;
+    }
+    @Override
+    public void commit(ConnectorTransactionHandle transaction)
+    {
+        checkArgument(transactions.remove(transaction) != null, ""no such transaction: %s"", transaction);
+        finishDelete(((RaptorTransactionHandle) transaction).getUuid());
+    }
+    @Override
+    public void rollback(ConnectorTransactionHandle transaction)
+    {
+        RaptorMetadata metadata = transactions.remove(transaction);
+        checkArgument(metadata != null, ""no such transaction: %s"", transaction);
+        finishDelete(((RaptorTransactionHandle) transaction).getUuid());
+        metadata.rollback();
+    }
+    @Override
+    public ConnectorPageSourceProvider getPageSourceProvider()
+    {
+        return pageSourceProvider;
+    }
+    @Override
+    public ConnectorPageSinkProvider getPageSinkProvider()
+    {
+        return pageSinkProvider;
+    }
+    @Override
+    public ConnectorMetadata getMetadata(ConnectorTransactionHandle transaction)
+    {
+        RaptorMetadata metadata = transactions.get(transaction);
+        checkArgument(metadata != null, ""no such transaction: %s"", transaction);
+        return metadata;
+    }
+    @Override
+    public ConnectorSplitManager getSplitManager()
+    {
+        return splitManager;
+    }
+    @Override
+    public ConnectorNodePartitioningProvider getNodePartitioningProvider()
+    {
+        return nodePartitioningProvider;
+    }
+    @Override
+    public List<PropertyMetadata<?>> getSessionProperties()
+    {
+        return sessionProperties;
+    }
+    @Override
+    public List<PropertyMetadata<?>> getTableProperties()
+    {
+        return tableProperties;
+    }
+    @Override
+    public Set<SystemTable> getSystemTables()
+    {
+        return systemTables;
+    }
+    @Override
+    public final void shutdown()
+    {
+        try {
+            lifeCycleManager.stop();
+        }
+        catch (Exception e) {
+            log.error(e, ""Error shutting down connector"");
+        }
+    }
+    private synchronized void beginDelete(long tableId, UUID transactionId)
+    {
+        dao.blockMaintenance(tableId);
+        verify(deletions.put(tableId, transactionId));
+    }
+    private synchronized void finishDelete(UUID transactionId)
+    {
+        deletions.entries().stream()
+                .filter(entry -> entry.getValue().equals(transactionId))
+                .findFirst()
+                .ifPresent(entry -> {
+                    long tableId = entry.getKey();
+                    deletions.remove(tableId, transactionId);
+                    if (!deletions.containsKey(tableId)) {
+                        unblockMaintenance(tableId);
+                    }
+                });
+    }
+    private void unblockMaintenance(long tableId)
+    {
+        try {
+            dao.unblockMaintenance(tableId);
+        }
+        catch (Throwable t) {
+            log.warn(t, ""Failed to unblock maintenance for table ID %s, will retry"", tableId);
+            unblockMaintenanceExecutor.schedule(() -> unblockMaintenance(tableId), 2, SECONDS);
+        }
+    }
+}",class,
+"    @Inject
+    public RaptorConnector(
+            LifeCycleManager lifeCycleManager,
+            NodeManager nodeManager,
+            RaptorMetadataFactory metadataFactory,
+            RaptorSplitManager splitManager,
+            RaptorPageSourceProvider pageSourceProvider,
+            RaptorPageSinkProvider pageSinkProvider,
+            RaptorNodePartitioningProvider nodePartitioningProvider,
+            RaptorSessionProperties sessionProperties,
+            RaptorTableProperties tableProperties,
+            Set<SystemTable> systemTables,
+            @ForMetadata IDBI dbi)
+    {
+        this.lifeCycleManager = requireNonNull(lifeCycleManager, ""lifeCycleManager is null"");
+        this.metadataFactory = requireNonNull(metadataFactory, ""metadataFactory is null"");
+        this.splitManager = requireNonNull(splitManager, ""splitManager is null"");
+        this.pageSourceProvider = requireNonNull(pageSourceProvider, ""pageSourceProvider is null"");
+        this.pageSinkProvider = requireNonNull(pageSinkProvider, ""pageSinkProvider is null"");
+        this.nodePartitioningProvider = requireNonNull(nodePartitioningProvider, ""nodePartitioningProvider is null"");
+        this.sessionProperties = requireNonNull(sessionProperties, ""sessionProperties is null"").getSessionProperties();
+        this.tableProperties = requireNonNull(tableProperties, ""tableProperties is null"").getTableProperties();
+        this.systemTables = requireNonNull(systemTables, ""systemTables is null"");
+        this.dao = onDemandDao(dbi, MetadataDao.class);
+        this.coordinator = nodeManager.getCurrentNode().isCoordinator();
+    }",method,
+"    @PostConstruct
+    public void start()
+    {
+        if (coordinator) {
+            dao.unblockAllMaintenance();
+        }
+    }",method,
+"        if (coordinator) {
+            dao.unblockAllMaintenance();
+        }",method,
+"    @Override
+    public boolean isSingleStatementWritesOnly()
+    {
+        return true;
+    }",method,
+"    @Override
+    public ConnectorTransactionHandle beginTransaction(IsolationLevel isolationLevel, boolean readOnly)
+    {
+        checkConnectorSupports(READ_COMMITTED, isolationLevel);
+        RaptorTransactionHandle transaction = new RaptorTransactionHandle();
+        transactions.put(transaction, metadataFactory.create(tableId -> beginDelete(tableId, transaction.getUuid())));
+        return transaction;
+    }",method,
+"    @Override
+    public void commit(ConnectorTransactionHandle transaction)
+    {
+        checkArgument(transactions.remove(transaction) != null, ""no such transaction: %s"", transaction);
+        finishDelete(((RaptorTransactionHandle) transaction).getUuid());
+    }",method,
+"    @Override
+    public void rollback(ConnectorTransactionHandle transaction)
+    {
+        RaptorMetadata metadata = transactions.remove(transaction);
+        checkArgument(metadata != null, ""no such transaction: %s"", transaction);
+        finishDelete(((RaptorTransactionHandle) transaction).getUuid());
+        metadata.rollback();
+    }",method,
+"    @Override
+    public ConnectorPageSourceProvider getPageSourceProvider()
+    {
+        return pageSourceProvider;
+    }",method,
+"    @Override
+    public ConnectorPageSinkProvider getPageSinkProvider()
+    {
+        return pageSinkProvider;
+    }",method,
+"    @Override
+    public ConnectorMetadata getMetadata(ConnectorTransactionHandle transaction)
+    {
+        RaptorMetadata metadata = transactions.get(transaction);
+        checkArgument(metadata != null, ""no such transaction: %s"", transaction);
+        return metadata;
+    }",method,
+"    @Override
+    public ConnectorSplitManager getSplitManager()
+    {
+        return splitManager;
+    }",method,
+"    @Override
+    public ConnectorNodePartitioningProvider getNodePartitioningProvider()
+    {
+        return nodePartitioningProvider;
+    }",method,
+"    @Override
+    public List<PropertyMetadata<?>> getSessionProperties()
+    {
+        return sessionProperties;
+    }",method,
+"    @Override
+    public List<PropertyMetadata<?>> getTableProperties()
+    {
+        return tableProperties;
+    }",method,
+"    @Override
+    public Set<SystemTable> getSystemTables()
+    {
+        return systemTables;
+    }",method,
+"    @Override
+    public final void shutdown()
+    {
+        try {
+            lifeCycleManager.stop();
+        }
+        catch (Exception e) {
+            log.error(e, ""Error shutting down connector"");
+        }
+    }",method,
+"        catch (Exception e) {
+            log.error(e, ""Error shutting down connector"");
+        }",method,
+"    private synchronized void beginDelete(long tableId, UUID transactionId)
+    {
+        dao.blockMaintenance(tableId);
+        verify(deletions.put(tableId, transactionId));
+    }",method,
+"    private synchronized void finishDelete(UUID transactionId)
+    {
+        deletions.entries().stream()
+                .filter(entry -> entry.getValue().equals(transactionId))
+                .findFirst()
+                .ifPresent(entry -> {
+                    long tableId = entry.getKey();
+                    deletions.remove(tableId, transactionId);
+                    if (!deletions.containsKey(tableId)) {
+                        unblockMaintenance(tableId);
+                    }
+                });
+    }",method,
+"    private void unblockMaintenance(long tableId)
+    {
+        try {
+            dao.unblockMaintenance(tableId);
+        }
+        catch (Throwable t) {
+            log.warn(t, ""Failed to unblock maintenance for table ID %s, will retry"", tableId);
+            unblockMaintenanceExecutor.schedule(() -> unblockMaintenance(tableId), 2, SECONDS);
+        }
+    }",method,
+"        catch (Throwable t) {
+            log.warn(t, ""Failed to unblock maintenance for table ID %s, will retry"", tableId);
+            unblockMaintenanceExecutor.schedule(() -> unblockMaintenance(tableId), 2, SECONDS);
+        }",method,
+"public class DescriptorSubstitutor {
+    private DescriptorSubstitutor() {
+    }
+    @NotNull
+    public static TypeSubstitutor substituteTypeParameters(
+            @ReadOnly @NotNull List<TypeParameterDescriptor> typeParameters,
+            @NotNull TypeSubstitution originalSubstitution,
+            @NotNull DeclarationDescriptor newContainingDeclaration,
+            @NotNull @Mutable List<TypeParameterDescriptor> result
+    ) {
+        return substituteTypeParameters(typeParameters, originalSubstitution, newContainingDeclaration, result, null);
+    }
+    @NotNull
+    public static TypeSubstitutor substituteTypeParameters(
+            @ReadOnly @NotNull List<TypeParameterDescriptor> typeParameters,
+            @NotNull TypeSubstitution originalSubstitution,
+            @NotNull DeclarationDescriptor newContainingDeclaration,
+            @NotNull @Mutable List<TypeParameterDescriptor> result,
+            @Nullable boolean[] wereChanges
+    ) {
+        Map<TypeConstructor, TypeProjection> mutableSubstitution = new HashMap<TypeConstructor, TypeProjection>();
+        Map<TypeParameterDescriptor, TypeParameterDescriptorImpl> substitutedMap = new HashMap<TypeParameterDescriptor, TypeParameterDescriptorImpl>();
+        int index = 0;
+        for (TypeParameterDescriptor descriptor : typeParameters) {
+            TypeParameterDescriptorImpl substituted = TypeParameterDescriptorImpl.createForFurtherModification(
+                    newContainingDeclaration,
+                    descriptor.getAnnotations(),
+                    descriptor.isReified(),
+                    descriptor.getVariance(),
+                    descriptor.getName(),
+                    index++,
+                    SourceElement.NO_SOURCE
+            );
+            mutableSubstitution.put(descriptor.getTypeConstructor(), new TypeProjectionImpl(substituted.getDefaultType()));
+            substitutedMap.put(descriptor, substituted);
+            result.add(substituted);
+        }
+        TypeSubstitutor substitutor = TypeSubstitutor.createChainedSubstitutor(
+                originalSubstitution, TypeConstructorSubstitution.createByConstructorsMap(mutableSubstitution)
+        );
+        for (TypeParameterDescriptor descriptor : typeParameters) {
+            TypeParameterDescriptorImpl substituted = substitutedMap.get(descriptor);
+            for (KotlinType upperBound : descriptor.getUpperBounds()) {
+                KotlinType substitutedBound = substitutor.substitute(upperBound, Variance.IN_VARIANCE);
+                assert substitutedBound != null : ""Upper bound failed to substitute: "" + descriptor;
+                if (substitutedBound != upperBound && wereChanges != null) {
+                    wereChanges[0] = true;
+                }
+                substituted.addUpperBound(substitutedBound);
+            }
+            substituted.setInitialized();
+        }
+        return substitutor;
+    }
+}",class,
+"    private DescriptorSubstitutor() {
+    }",method,
+"    @NotNull
+    public static TypeSubstitutor substituteTypeParameters(
+            @ReadOnly @NotNull List<TypeParameterDescriptor> typeParameters,
+            @NotNull TypeSubstitution originalSubstitution,
+            @NotNull DeclarationDescriptor newContainingDeclaration,
+            @NotNull @Mutable List<TypeParameterDescriptor> result
+    ) {
+        return substituteTypeParameters(typeParameters, originalSubstitution, newContainingDeclaration, result, null);
+    }",method,
+"    @NotNull
+    public static TypeSubstitutor substituteTypeParameters(
+            @ReadOnly @NotNull List<TypeParameterDescriptor> typeParameters,
+            @NotNull TypeSubstitution originalSubstitution,
+            @NotNull DeclarationDescriptor newContainingDeclaration,
+            @NotNull @Mutable List<TypeParameterDescriptor> result,
+            @Nullable boolean[] wereChanges
+    ) {
+        Map<TypeConstructor, TypeProjection> mutableSubstitution = new HashMap<TypeConstructor, TypeProjection>();
+        Map<TypeParameterDescriptor, TypeParameterDescriptorImpl> substitutedMap = new HashMap<TypeParameterDescriptor, TypeParameterDescriptorImpl>();
+        int index = 0;
+        for (TypeParameterDescriptor descriptor : typeParameters) {
+            TypeParameterDescriptorImpl substituted = TypeParameterDescriptorImpl.createForFurtherModification(
+                    newContainingDeclaration,
+                    descriptor.getAnnotations(),
+                    descriptor.isReified(),
+                    descriptor.getVariance(),
+                    descriptor.getName(),
+                    index++,
+                    SourceElement.NO_SOURCE
+            );
+            mutableSubstitution.put(descriptor.getTypeConstructor(), new TypeProjectionImpl(substituted.getDefaultType()));
+            substitutedMap.put(descriptor, substituted);
+            result.add(substituted);
+        }
+        TypeSubstitutor substitutor = TypeSubstitutor.createChainedSubstitutor(
+                originalSubstitution, TypeConstructorSubstitution.createByConstructorsMap(mutableSubstitution)
+        );
+        for (TypeParameterDescriptor descriptor : typeParameters) {
+            TypeParameterDescriptorImpl substituted = substitutedMap.get(descriptor);
+            for (KotlinType upperBound : descriptor.getUpperBounds()) {
+                KotlinType substitutedBound = substitutor.substitute(upperBound, Variance.IN_VARIANCE);
+                assert substitutedBound != null : ""Upper bound failed to substitute: "" + descriptor;
+                if (substitutedBound != upperBound && wereChanges != null) {
+                    wereChanges[0] = true;
+                }
+                substituted.addUpperBound(substitutedBound);
+            }
+            substituted.setInitialized();
+        }
+        return substitutor;
+    }",method,
+"        for (TypeParameterDescriptor descriptor : typeParameters) {
+            TypeParameterDescriptorImpl substituted = TypeParameterDescriptorImpl.createForFurtherModification(
+                    newContainingDeclaration,
+                    descriptor.getAnnotations(),
+                    descriptor.isReified(),
+                    descriptor.getVariance(),
+                    descriptor.getName(),
+                    index++,
+                    SourceElement.NO_SOURCE
+            );
+            mutableSubstitution.put(descriptor.getTypeConstructor(), new TypeProjectionImpl(substituted.getDefaultType()));
+            substitutedMap.put(descriptor, substituted);
+            result.add(substituted);
+        }",method,
+"        for (TypeParameterDescriptor descriptor : typeParameters) {
+            TypeParameterDescriptorImpl substituted = substitutedMap.get(descriptor);
+            for (KotlinType upperBound : descriptor.getUpperBounds()) {
+                KotlinType substitutedBound = substitutor.substitute(upperBound, Variance.IN_VARIANCE);
+                assert substitutedBound != null : ""Upper bound failed to substitute: "" + descriptor;
+                if (substitutedBound != upperBound && wereChanges != null) {
+                    wereChanges[0] = true;
+                }
+                substituted.addUpperBound(substitutedBound);
+            }
+            substituted.setInitialized();
+        }",method,
+"                if (substitutedBound != upperBound && wereChanges != null) {
+                    wereChanges[0] = true;
+                }",method,
+"public class JavaCoreProjectEnvironment extends CoreProjectEnvironment {
+  private final JavaFileManager myFileManager;
+  private final PackageIndex myPackageIndex;
+  public JavaCoreProjectEnvironment(Disposable parentDisposable, CoreApplicationEnvironment applicationEnvironment) {
+    super(parentDisposable, applicationEnvironment);
+    myProject.registerService(PsiElementFactory.class, new PsiElementFactoryImpl(myPsiManager));
+    myProject.registerService(JavaPsiImplementationHelper.class, createJavaPsiImplementationHelper());
+    myProject.registerService(PsiResolveHelper.class, new PsiResolveHelperImpl(myPsiManager));
+    myProject.registerService(LanguageLevelProjectExtension.class, new CoreLanguageLevelProjectExtension());
+    myProject.registerService(JavaResolveCache.class, new JavaResolveCache(myMessageBus));
+    myProject.registerService(JavaCodeStyleSettingsFacade.class, new CoreJavaCodeStyleSettingsFacade());
+    myProject.registerService(JavaCodeStyleManager.class, new CoreJavaCodeStyleManager());
+    myProject.registerService(ControlFlowFactory.class, new ControlFlowFactory(myPsiManager));
+    myPackageIndex = createCorePackageIndex();
+    myProject.registerService(PackageIndex.class, myPackageIndex);
+    myFileManager = createCoreFileManager();
+    myProject.registerService(JavaFileManager.class, myFileManager);
+    myProject.registerService(JvmPsiConversionHelper.class, new JvmPsiConversionHelperImpl());
+    registerJavaPsiFacade();
+    myProject.registerService(JvmFacade.class, new JvmFacadeImpl(myProject, myMessageBus));
+  }
+  protected void registerJavaPsiFacade() {
+    JavaPsiFacadeImpl javaPsiFacade = new JavaPsiFacadeImpl(myProject, myPsiManager, myFileManager, myMessageBus);
+    myProject.registerService(JavaPsiFacade.class, javaPsiFacade);
+  }
+  protected CoreJavaPsiImplementationHelper createJavaPsiImplementationHelper() {
+    return new CoreJavaPsiImplementationHelper(myProject);
+  }
+  protected JavaFileManager createCoreFileManager() {
+    return new CoreJavaFileManager(myPsiManager);
+  }
+  protected PackageIndex createCorePackageIndex() {
+    return new CorePackageIndex();
+  }
+  public void addJarToClassPath(File path) {
+    assert path.isFile();
+    final VirtualFile root = getEnvironment().getJarFileSystem().findFileByPath(path + ""!/"");
+    if (root == null) {
+      throw new IllegalArgumentException(""trying to add non-existing file to classpath: "" + path);
+    }
+    addSourcesToClasspath(root);
+  }
+  public void addSourcesToClasspath(@NotNull VirtualFile root) {
+    assert root.isDirectory();
+    ((CoreJavaFileManager)myFileManager).addToClasspath(root);
+    ((CorePackageIndex)myPackageIndex).addToClasspath(root);
+    ((MockFileIndexFacade)myFileIndexFacade).addLibraryRoot(root);
+  }
+}",class,
+"  public JavaCoreProjectEnvironment(Disposable parentDisposable, CoreApplicationEnvironment applicationEnvironment) {
+    super(parentDisposable, applicationEnvironment);
+    myProject.registerService(PsiElementFactory.class, new PsiElementFactoryImpl(myPsiManager));
+    myProject.registerService(JavaPsiImplementationHelper.class, createJavaPsiImplementationHelper());
+    myProject.registerService(PsiResolveHelper.class, new PsiResolveHelperImpl(myPsiManager));
+    myProject.registerService(LanguageLevelProjectExtension.class, new CoreLanguageLevelProjectExtension());
+    myProject.registerService(JavaResolveCache.class, new JavaResolveCache(myMessageBus));
+    myProject.registerService(JavaCodeStyleSettingsFacade.class, new CoreJavaCodeStyleSettingsFacade());
+    myProject.registerService(JavaCodeStyleManager.class, new CoreJavaCodeStyleManager());
+    myProject.registerService(ControlFlowFactory.class, new ControlFlowFactory(myPsiManager));
+    myPackageIndex = createCorePackageIndex();
+    myProject.registerService(PackageIndex.class, myPackageIndex);
+    myFileManager = createCoreFileManager();
+    myProject.registerService(JavaFileManager.class, myFileManager);
+    myProject.registerService(JvmPsiConversionHelper.class, new JvmPsiConversionHelperImpl());
+    registerJavaPsiFacade();
+    myProject.registerService(JvmFacade.class, new JvmFacadeImpl(myProject, myMessageBus));
+  }",method,
+"  protected void registerJavaPsiFacade() {
+    JavaPsiFacadeImpl javaPsiFacade = new JavaPsiFacadeImpl(myProject, myPsiManager, myFileManager, myMessageBus);
+    myProject.registerService(JavaPsiFacade.class, javaPsiFacade);
+  }",method,
+"  protected CoreJavaPsiImplementationHelper createJavaPsiImplementationHelper() {
+    return new CoreJavaPsiImplementationHelper(myProject);
+  }",method,
+"  protected JavaFileManager createCoreFileManager() {
+    return new CoreJavaFileManager(myPsiManager);
+  }",method,
+"  protected PackageIndex createCorePackageIndex() {
+    return new CorePackageIndex();
+  }",method,
+"  public void addJarToClassPath(File path) {
+    assert path.isFile();
+    final VirtualFile root = getEnvironment().getJarFileSystem().findFileByPath(path + ""!/"");
+    if (root == null) {
+      throw new IllegalArgumentException(""trying to add non-existing file to classpath: "" + path);
+    }
+    addSourcesToClasspath(root);
+  }",method,

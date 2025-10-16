@@ -1,0 +1,1654 @@
+code_snippet,type,score
+"    public SQLAlterDatabaseStatement() {
+    }",method,
+"    public SQLAlterDatabaseStatement(String dbType) {
+        this.setDbType(dbType);
+    }",method,
+"    public SQLName getName() {
+        return name;
+    }",method,
+"    public void setName(SQLName name) {
+        if (name != null) {
+            name.setParent(this);
+        }
+        this.name = name;
+    }",method,
+"        if (name != null) {
+            name.setParent(this);
+        }",method,
+"    public SQLAlterCharacter getCharacter() {
+        return character;
+    }",method,
+"    public void setCharacter(SQLAlterCharacter character) {
+        if (character != null) {
+            character.setParent(this);
+        }
+        this.character = character;
+    }",method,
+"        if (character != null) {
+            character.setParent(this);
+        }",method,
+"    public boolean isUpgradeDataDirectoryName() {
+        return upgradeDataDirectoryName;
+    }",method,
+"    public void setUpgradeDataDirectoryName(boolean upgradeDataDirectoryName) {
+        this.upgradeDataDirectoryName = upgradeDataDirectoryName;
+    }",method,
+"    @Override
+    protected void accept0(SQLASTVisitor visitor) {
+        if (visitor.visit(this)) {
+            acceptChild(visitor, name);
+        }
+        visitor.endVisit(this);
+    }",method,
+"    @Override
+    public List<SQLObject> getChildren() {
+        return Collections.<SQLObject>singletonList(name);
+    }",method,
+"public class DtdCompletionContributor extends CompletionContributor {
+  private static final String[] KEYWORDS = new String[] {
+    ""#PCDATA"",""#IMPLIED"",""#REQUIRED"",""#FIXED"",""<!ATTLIST"", ""<!ELEMENT"", ""<!NOTATION"", ""INCLUDE"",
+    ""IGNORE"", ""CDATA"", ""ID"" , ""IDREF"", ""EMPTY"", ""ANY"", ""IDREFS"", ""ENTITIES"", ""ENTITY"", ""<!ENTITY"",
+    ""NMTOKEN"", ""NMTOKENS"", ""SYSTEM"", ""PUBLIC""
+  };
+  private static final InsertHandler<LookupElement> INSERT_HANDLER = new BasicInsertHandler<LookupElement>() {
+    @Override
+    public void handleInsert(InsertionContext context, LookupElement item) {
+      super.handleInsert(context, item);
+      if (item.getObject().toString().startsWith(""<!"")) {
+        context.commitDocument();
+        int caretOffset = context.getEditor().getCaretModel().getOffset();
+        PsiElement tag = PsiTreeUtil.getParentOfType(context.getFile().findElementAt(caretOffset), PsiNamedElement.class);
+        if (tag == null) {
+          context.getEditor().getDocument().insertString(caretOffset, "" >"");
+          context.getEditor().getCaretModel().moveToOffset(caretOffset + 1);
+        }
+      }
+    }
+  };
+  public DtdCompletionContributor() {
+    extend(CompletionType.BASIC, psiElement(), new CompletionProvider<CompletionParameters>() {
+      @Override
+      protected void addCompletions(@NotNull CompletionParameters parameters,
+                                    ProcessingContext context,
+                                    @NotNull CompletionResultSet result) {
+        PsiElement position = parameters.getPosition();
+        PsiElement prev = PsiTreeUtil.prevVisibleLeaf(position);
+        if (prev != null && hasDtdKeywordCompletion(prev)) {
+          addKeywordCompletions(result.withPrefixMatcher(keywordPrefix(position, result.getPrefixMatcher().getPrefix())));
+        }
+        if (prev != null && prev.textMatches(""%"")) {
+          addEntityCompletions(result, position);
+        }
+      }
+    });
+  }
+  @NotNull
+  private static String keywordPrefix(@NotNull PsiElement position, @NotNull String prefix) {
+    final PsiElement prevLeaf = PsiTreeUtil.prevLeaf(position);
+    final PsiElement prevPrevLeaf = prevLeaf != null ? PsiTreeUtil.prevLeaf(prevLeaf):null;
+    if (prevLeaf != null) {
+      final String prevLeafText = prevLeaf.getText();
+      if(""#"".equals(prevLeafText)) {
+        prefix = ""#"" + prefix;
+      } else if (""!"".equals(prevLeafText) && prevPrevLeaf != null && ""<"".equals(prevPrevLeaf.getText())) {
+        prefix = ""<!"" + prefix;
+      }
+    }
+    return prefix;
+  }
+  private static void addKeywordCompletions(@NotNull CompletionResultSet result) {
+    for (String keyword : KEYWORDS) {
+      result.addElement(LookupElementBuilder.create(keyword).withInsertHandler(INSERT_HANDLER));
+    }
+  }
+  private static void addEntityCompletions(@NotNull final CompletionResultSet result, PsiElement position) {
+    final PsiElementProcessor processor = new PsiElementProcessor() {
+      @Override
+      public boolean execute(@NotNull final PsiElement element) {
+        if (element instanceof XmlEntityDecl) {
+          final XmlEntityDecl xmlEntityDecl = (XmlEntityDecl)element;
+          String name = xmlEntityDecl.getName();
+          if (name != null && xmlEntityDecl.isInternalReference()) {
+            result.addElement(LookupElementBuilder.create(name).withInsertHandler(XmlCompletionContributor.ENTITY_INSERT_HANDLER));
+          }
+        }
+        return true;
+      }
+    };
+    XmlUtil.processXmlElements((XmlFile)position.getContainingFile().getOriginalFile(), processor, true);
+  }
+  private static boolean hasDtdKeywordCompletion(@NotNull PsiElement prev) {
+    return prev.textMatches(""#"") ||
+           prev.textMatches(""!"") ||
+           prev.textMatches(""("") ||
+           prev.textMatches("","") ||
+           prev.textMatches(""|"") ||
+           prev.textMatches(""["") ||
+           prev.getNode().getElementType() == XmlTokenType.XML_NAME;
+  }
+}",class,
+"    @Override
+    public void handleInsert(InsertionContext context, LookupElement item) {
+      super.handleInsert(context, item);
+      if (item.getObject().toString().startsWith(""<!"")) {
+        context.commitDocument();
+        int caretOffset = context.getEditor().getCaretModel().getOffset();
+        PsiElement tag = PsiTreeUtil.getParentOfType(context.getFile().findElementAt(caretOffset), PsiNamedElement.class);
+        if (tag == null) {
+          context.getEditor().getDocument().insertString(caretOffset, "" >"");
+          context.getEditor().getCaretModel().moveToOffset(caretOffset + 1);
+        }
+      }
+    }",method,
+"        if (tag == null) {
+          context.getEditor().getDocument().insertString(caretOffset, "" >"");
+          context.getEditor().getCaretModel().moveToOffset(caretOffset + 1);
+        }",method,
+"  public DtdCompletionContributor() {
+    extend(CompletionType.BASIC, psiElement(), new CompletionProvider<CompletionParameters>() {
+      @Override
+      protected void addCompletions(@NotNull CompletionParameters parameters,
+                                    ProcessingContext context,
+                                    @NotNull CompletionResultSet result) {
+        PsiElement position = parameters.getPosition();
+        PsiElement prev = PsiTreeUtil.prevVisibleLeaf(position);
+        if (prev != null && hasDtdKeywordCompletion(prev)) {
+          addKeywordCompletions(result.withPrefixMatcher(keywordPrefix(position, result.getPrefixMatcher().getPrefix())));
+        }
+        if (prev != null && prev.textMatches(""%"")) {
+          addEntityCompletions(result, position);
+        }
+      }
+    });
+  }",method,
+"      @Override
+      protected void addCompletions(@NotNull CompletionParameters parameters,
+                                    ProcessingContext context,
+                                    @NotNull CompletionResultSet result) {
+        PsiElement position = parameters.getPosition();
+        PsiElement prev = PsiTreeUtil.prevVisibleLeaf(position);
+        if (prev != null && hasDtdKeywordCompletion(prev)) {
+          addKeywordCompletions(result.withPrefixMatcher(keywordPrefix(position, result.getPrefixMatcher().getPrefix())));
+        }
+        if (prev != null && prev.textMatches(""%"")) {
+          addEntityCompletions(result, position);
+        }
+      }",method,
+"  @NotNull
+  private static String keywordPrefix(@NotNull PsiElement position, @NotNull String prefix) {
+    final PsiElement prevLeaf = PsiTreeUtil.prevLeaf(position);
+    final PsiElement prevPrevLeaf = prevLeaf != null ? PsiTreeUtil.prevLeaf(prevLeaf):null;
+    if (prevLeaf != null) {
+      final String prevLeafText = prevLeaf.getText();
+      if(""#"".equals(prevLeafText)) {
+        prefix = ""#"" + prefix;
+      } else if (""!"".equals(prevLeafText) && prevPrevLeaf != null && ""<"".equals(prevPrevLeaf.getText())) {
+        prefix = ""<!"" + prefix;
+      }
+    }
+    return prefix;
+  }",method,
+"    if (prevLeaf != null) {
+      final String prevLeafText = prevLeaf.getText();
+      if(""#"".equals(prevLeafText)) {
+        prefix = ""#"" + prefix;
+      } else if (""!"".equals(prevLeafText) && prevPrevLeaf != null && ""<"".equals(prevPrevLeaf.getText())) {
+        prefix = ""<!"" + prefix;
+      }
+    }",method,
+"  private static void addKeywordCompletions(@NotNull CompletionResultSet result) {
+    for (String keyword : KEYWORDS) {
+      result.addElement(LookupElementBuilder.create(keyword).withInsertHandler(INSERT_HANDLER));
+    }
+  }",method,
+"    for (String keyword : KEYWORDS) {
+      result.addElement(LookupElementBuilder.create(keyword).withInsertHandler(INSERT_HANDLER));
+    }",method,
+"  private static void addEntityCompletions(@NotNull final CompletionResultSet result, PsiElement position) {
+    final PsiElementProcessor processor = new PsiElementProcessor() {
+      @Override
+      public boolean execute(@NotNull final PsiElement element) {
+        if (element instanceof XmlEntityDecl) {
+          final XmlEntityDecl xmlEntityDecl = (XmlEntityDecl)element;
+          String name = xmlEntityDecl.getName();
+          if (name != null && xmlEntityDecl.isInternalReference()) {
+            result.addElement(LookupElementBuilder.create(name).withInsertHandler(XmlCompletionContributor.ENTITY_INSERT_HANDLER));
+          }
+        }
+        return true;
+      }
+    };
+    XmlUtil.processXmlElements((XmlFile)position.getContainingFile().getOriginalFile(), processor, true);
+  }",method,
+"      @Override
+      public boolean execute(@NotNull final PsiElement element) {
+        if (element instanceof XmlEntityDecl) {
+          final XmlEntityDecl xmlEntityDecl = (XmlEntityDecl)element;
+          String name = xmlEntityDecl.getName();
+          if (name != null && xmlEntityDecl.isInternalReference()) {
+            result.addElement(LookupElementBuilder.create(name).withInsertHandler(XmlCompletionContributor.ENTITY_INSERT_HANDLER));
+          }
+        }
+        return true;
+      }",method,
+"        if (element instanceof XmlEntityDecl) {
+          final XmlEntityDecl xmlEntityDecl = (XmlEntityDecl)element;
+          String name = xmlEntityDecl.getName();
+          if (name != null && xmlEntityDecl.isInternalReference()) {
+            result.addElement(LookupElementBuilder.create(name).withInsertHandler(XmlCompletionContributor.ENTITY_INSERT_HANDLER));
+          }
+        }",method,
+"  private static boolean hasDtdKeywordCompletion(@NotNull PsiElement prev) {
+    return prev.textMatches(""#"") ||
+           prev.textMatches(""!"") ||
+           prev.textMatches(""("") ||
+           prev.textMatches("","") ||
+           prev.textMatches(""|"") ||
+           prev.textMatches(""["") ||
+           prev.getNode().getElementType() == XmlTokenType.XML_NAME;
+  }",method,
+"public class BaseActivity extends ActionBarActivity implements FriendItemFragment.OnFragmentInteractionListener {
+    protected FrameLayout frameLayout;
+    protected ListView mDrawerList;
+    protected String[] listArray = { ""Home"", ""Profile"", ""Settings"",""Friends"", ""Logout""};
+    protected static int position;
+    private static boolean isLaunch = true;
+    private DrawerLayout mDrawerLayout;
+    private ActionBarDrawerToggle actionBarDrawerToggle;
+    @Override
+    protected void onCreate(Bundle savedInstanceState) {
+        super.onCreate(savedInstanceState);
+        setContentView(R.layout.drawer_activity);
+        frameLayout = (FrameLayout)findViewById(R.id.content_frame);
+        mDrawerLayout = (DrawerLayout) findViewById(R.id.drawer_layout);
+        mDrawerList = (ListView) findViewById(R.id.left_drawer);
+        // set a custom shadow that overlays the main content when the drawer opens
+        //mDrawerLayout.setDrawerShadow(R.drawable.drawer_shadow, GravityCompat.START);
+        // set up the drawer's list view with items and click listener
+        mDrawerList.setAdapter(new ArrayAdapter<String>(this, R.layout.drawer_list_item, listArray));
+        mDrawerList.setOnItemClickListener(new OnItemClickListener() {
+            @Override
+            public void onItemClick(AdapterView<?> parent, View view,
+                                    int position, long id) {
+                openActivity(position);
+            }
+        });
+        getSupportActionBar().setDisplayHomeAsUpEnabled(true);
+        getSupportActionBar().setHomeButtonEnabled(true);
+        // enable ActionBar app icon to behave as action to toggle nav drawer
+       // getSupportActionBar().setDisplayHomeAsUpEnabled(true);
+        //getActionBar().setHomeButtonEnabled(true);
+        // ActionBarDrawerToggle ties together the the proper interactions between the sliding drawer and the action bar app icon
+        actionBarDrawerToggle = new ActionBarDrawerToggle(
+                this,						
+                mDrawerLayout, 				
+                R.drawable.ic_launcher,     
+                R.string.drawer_open,  
+                R.string.drawer_close)      
+        {
+            @Override
+            public void onDrawerClosed(View drawerView) {
+                getSupportActionBar().setTitle(listArray[position]);
+                invalidateOptionsMenu(); // creates call to onPrepareOptionsMenu()
+                super.onDrawerClosed(drawerView);
+            }
+            @Override
+            public void onDrawerOpened(View drawerView) {
+                getSupportActionBar().setTitle(getString(R.string.app_name));
+                invalidateOptionsMenu(); // creates call to onPrepareOptionsMenu()
+                super.onDrawerOpened(drawerView);
+            }
+            @Override
+            public void onDrawerSlide(View drawerView, float slideOffset) {
+                super.onDrawerSlide(drawerView, slideOffset);
+            }
+            @Override
+            public void onDrawerStateChanged(int newState) {
+                super.onDrawerStateChanged(newState);
+            }
+        };
+        mDrawerLayout.setDrawerListener(actionBarDrawerToggle);
+        if(isLaunch){
+            isLaunch = false;
+            openActivity(0);
+        }
+    }
+    protected void openActivity(int position) {
+//		mDrawerList.setItemChecked(position, true);
+//		setTitle(listArray[position]);
+        mDrawerLayout.closeDrawer(mDrawerList);
+        BaseActivity.position = position; //Setting currently selected position in this field so that it will be available in our child activities.
+        Fragment fragment;
+        switch (position) {
+            case 0:
+                startActivity(new Intent(this, MainActivity.class));
+                Log.d(""position"", Integer.toString(position));
+                break;
+            case 1:
+                SearchActivity.check=""2"";
+                startActivity(new Intent(this, ProfileActivity.class));
+                Log.d(""position"", Integer.toString(position));
+                break;
+            case 2:
+                startActivity(new Intent(this, SettingsActivity.class));
+                Log.d(""position"", Integer.toString(position));
+                break;
+            case 3:
+                SearchActivity.check=""2"";
+                startActivity(new Intent(this, FriendsActivity.class));
+             //   startActivity(new Intent(this, SignUpDetailsActivity.class));
+                break;
+            case 4:
+                fragment = new ProfileFragment();
+                getFragmentManager().beginTransaction()
+                        .replace(R.id.content_frame, fragment).commit();
+                Log.d(""position"", Integer.toString(position));
+              //  startActivity(new Intent(this, SignUpDetailsActivity.class));
+                break;
+            default:
+                break;
+        }
+        Toast.makeText(this, ""Selected Item Position::"" + position, Toast.LENGTH_LONG).show();
+    }
+    @Override
+    public boolean onCreateOptionsMenu(Menu menu) {
+        getMenuInflater().inflate(R.menu.menu_main, menu);
+        return super.onCreateOptionsMenu(menu);
+    }
+    @Override
+    public boolean onOptionsItemSelected(MenuItem item) {
+        // The action bar home/up action should open or close the drawer.
+        // ActionBarDrawerToggle will take care of this.
+        if (actionBarDrawerToggle.onOptionsItemSelected(item)) {
+            return true;
+        }
+        switch (item.getItemId()) {
+            default:
+                return super.onOptionsItemSelected(item);
+        }
+    }
+    @Override
+    public boolean onPrepareOptionsMenu(Menu menu) {
+        // If the nav drawer is open, hide action items related to the content view
+        boolean drawerOpen = mDrawerLayout.isDrawerOpen(mDrawerList);
+        //menu.findItem(R.id.action_settings).setVisible(!drawerOpen);
+        return super.onPrepareOptionsMenu(menu);
+    }
+    @Override
+    public void onBackPressed() {
+        if(mDrawerLayout.isDrawerOpen(mDrawerList)){
+            mDrawerLayout.closeDrawer(mDrawerList);
+        }else {
+            mDrawerLayout.openDrawer(mDrawerList);
+        }
+    }
+    @Override
+    public void onFragmentInteraction(String id) {
+        Toast toast = Toast.makeText(this, ""Works!"",Toast.LENGTH_SHORT);
+        toast.show();
+    }
+}",class,
+"    @Override
+    protected void onCreate(Bundle savedInstanceState) {
+        super.onCreate(savedInstanceState);
+        setContentView(R.layout.drawer_activity);
+        frameLayout = (FrameLayout)findViewById(R.id.content_frame);
+        mDrawerLayout = (DrawerLayout) findViewById(R.id.drawer_layout);
+        mDrawerList = (ListView) findViewById(R.id.left_drawer);
+        // set a custom shadow that overlays the main content when the drawer opens
+        //mDrawerLayout.setDrawerShadow(R.drawable.drawer_shadow, GravityCompat.START);
+        // set up the drawer's list view with items and click listener
+        mDrawerList.setAdapter(new ArrayAdapter<String>(this, R.layout.drawer_list_item, listArray));
+        mDrawerList.setOnItemClickListener(new OnItemClickListener() {
+            @Override
+            public void onItemClick(AdapterView<?> parent, View view,
+                                    int position, long id) {
+                openActivity(position);
+            }
+        });
+        getSupportActionBar().setDisplayHomeAsUpEnabled(true);
+        getSupportActionBar().setHomeButtonEnabled(true);
+        // enable ActionBar app icon to behave as action to toggle nav drawer
+       // getSupportActionBar().setDisplayHomeAsUpEnabled(true);
+        //getActionBar().setHomeButtonEnabled(true);
+        // ActionBarDrawerToggle ties together the the proper interactions between the sliding drawer and the action bar app icon
+        actionBarDrawerToggle = new ActionBarDrawerToggle(
+                this,						
+                mDrawerLayout, 				
+                R.drawable.ic_launcher,     
+                R.string.drawer_open,  
+                R.string.drawer_close)      
+        {
+            @Override
+            public void onDrawerClosed(View drawerView) {
+                getSupportActionBar().setTitle(listArray[position]);
+                invalidateOptionsMenu(); // creates call to onPrepareOptionsMenu()
+                super.onDrawerClosed(drawerView);
+            }
+            @Override
+            public void onDrawerOpened(View drawerView) {
+                getSupportActionBar().setTitle(getString(R.string.app_name));
+                invalidateOptionsMenu(); // creates call to onPrepareOptionsMenu()
+                super.onDrawerOpened(drawerView);
+            }
+            @Override
+            public void onDrawerSlide(View drawerView, float slideOffset) {
+                super.onDrawerSlide(drawerView, slideOffset);
+            }
+            @Override
+            public void onDrawerStateChanged(int newState) {
+                super.onDrawerStateChanged(newState);
+            }
+        };
+        mDrawerLayout.setDrawerListener(actionBarDrawerToggle);
+        if(isLaunch){
+            isLaunch = false;
+            openActivity(0);
+        }
+    }",method,
+"        mDrawerList.setOnItemClickListener(new OnItemClickListener() {
+            @Override
+            public void onItemClick(AdapterView<?> parent, View view,
+                                    int position, long id) {
+                openActivity(position);
+            }
+        }",method,
+"            @Override
+            public void onItemClick(AdapterView<?> parent, View view,
+                                    int position, long id) {
+                openActivity(position);
+            }",method,
+"            @Override
+            public void onDrawerClosed(View drawerView) {
+                getSupportActionBar().setTitle(listArray[position]);
+                invalidateOptionsMenu(); // creates call to onPrepareOptionsMenu()
+                super.onDrawerClosed(drawerView);
+            }",method,
+"            @Override
+            public void onDrawerOpened(View drawerView) {
+                getSupportActionBar().setTitle(getString(R.string.app_name));
+                invalidateOptionsMenu(); // creates call to onPrepareOptionsMenu()
+                super.onDrawerOpened(drawerView);
+            }",method,
+"            @Override
+            public void onDrawerSlide(View drawerView, float slideOffset) {
+                super.onDrawerSlide(drawerView, slideOffset);
+            }",method,
+"            @Override
+            public void onDrawerStateChanged(int newState) {
+                super.onDrawerStateChanged(newState);
+            }",method,
+"        if(isLaunch){
+            isLaunch = false;
+            openActivity(0);
+        }",method,
+"    protected void openActivity(int position) {
+//		mDrawerList.setItemChecked(position, true);
+//		setTitle(listArray[position]);
+        mDrawerLayout.closeDrawer(mDrawerList);
+        BaseActivity.position = position; //Setting currently selected position in this field so that it will be available in our child activities.
+        Fragment fragment;
+        switch (position) {
+            case 0:
+                startActivity(new Intent(this, MainActivity.class));
+                Log.d(""position"", Integer.toString(position));
+                break;
+            case 1:
+                SearchActivity.check=""2"";
+                startActivity(new Intent(this, ProfileActivity.class));
+                Log.d(""position"", Integer.toString(position));
+                break;
+            case 2:
+                startActivity(new Intent(this, SettingsActivity.class));
+                Log.d(""position"", Integer.toString(position));
+                break;
+            case 3:
+                SearchActivity.check=""2"";
+                startActivity(new Intent(this, FriendsActivity.class));
+             //   startActivity(new Intent(this, SignUpDetailsActivity.class));
+                break;
+            case 4:
+                fragment = new ProfileFragment();
+                getFragmentManager().beginTransaction()
+                        .replace(R.id.content_frame, fragment).commit();
+                Log.d(""position"", Integer.toString(position));
+              //  startActivity(new Intent(this, SignUpDetailsActivity.class));
+                break;
+            default:
+                break;
+        }
+        Toast.makeText(this, ""Selected Item Position::"" + position, Toast.LENGTH_LONG).show();
+    }",method,
+"        switch (position) {
+            case 0:
+                startActivity(new Intent(this, MainActivity.class));
+                Log.d(""position"", Integer.toString(position));
+                break;
+            case 1:
+                SearchActivity.check=""2"";
+                startActivity(new Intent(this, ProfileActivity.class));
+                Log.d(""position"", Integer.toString(position));
+                break;
+            case 2:
+                startActivity(new Intent(this, SettingsActivity.class));
+                Log.d(""position"", Integer.toString(position));
+                break;
+            case 3:
+                SearchActivity.check=""2"";
+                startActivity(new Intent(this, FriendsActivity.class));
+             //   startActivity(new Intent(this, SignUpDetailsActivity.class));
+                break;
+            case 4:
+                fragment = new ProfileFragment();
+                getFragmentManager().beginTransaction()
+                        .replace(R.id.content_frame, fragment).commit();
+                Log.d(""position"", Integer.toString(position));
+              //  startActivity(new Intent(this, SignUpDetailsActivity.class));
+                break;
+            default:
+                break;
+        }",method,
+"    @Override
+    public boolean onCreateOptionsMenu(Menu menu) {
+        getMenuInflater().inflate(R.menu.menu_main, menu);
+        return super.onCreateOptionsMenu(menu);
+    }",method,
+"    @Override
+    public boolean onOptionsItemSelected(MenuItem item) {
+        // The action bar home/up action should open or close the drawer.
+        // ActionBarDrawerToggle will take care of this.
+        if (actionBarDrawerToggle.onOptionsItemSelected(item)) {
+            return true;
+        }
+        switch (item.getItemId()) {
+            default:
+                return super.onOptionsItemSelected(item);
+        }
+    }",method,
+"    @Override
+    public boolean onPrepareOptionsMenu(Menu menu) {
+        // If the nav drawer is open, hide action items related to the content view
+        boolean drawerOpen = mDrawerLayout.isDrawerOpen(mDrawerList);
+        //menu.findItem(R.id.action_settings).setVisible(!drawerOpen);
+        return super.onPrepareOptionsMenu(menu);
+    }",method,
+"    @Override
+    public void onBackPressed() {
+        if(mDrawerLayout.isDrawerOpen(mDrawerList)){
+            mDrawerLayout.closeDrawer(mDrawerList);
+        }else {
+            mDrawerLayout.openDrawer(mDrawerList);
+        }
+    }",method,
+"    @Override
+    public void onFragmentInteraction(String id) {
+        Toast toast = Toast.makeText(this, ""Works!"",Toast.LENGTH_SHORT);
+        toast.show();
+    }",method,
+"public class DefaultMethodShimGenerator extends UnitTreeVisitor {
+  private CodeReferenceMap deadCodeMap;
+  public DefaultMethodShimGenerator(CompilationUnit unit, CodeReferenceMap deadCodeMap) {
+    super(unit);
+    this.deadCodeMap = deadCodeMap;
+  }
+  private class TypeFixer {
+    private final AbstractTypeDeclaration typeNode;
+    private final TypeElement typeElem;
+    private final Set<TypeElement> visitedTypes = new HashSet<>();
+    private final SetMultimap<String, ExecutablePair> existingMethods = LinkedHashMultimap.create();
+    private final SetMultimap<String, ExecutablePair> newMethods = LinkedHashMultimap.create();
+    private SetMultimap<String, ExecutablePair> collector = existingMethods;
+    private TypeFixer(AbstractTypeDeclaration node) {
+      typeNode = node;
+      typeElem = node.getTypeElement();
+    }
+    private void visit() {
+      // Collect existing methods.
+      collectMethods((DeclaredType) typeElem.asType());
+      collectInheritedMethods(typeElem.getSuperclass());
+      // Collect new methods from newly implemented interfaces.
+      collector = newMethods;
+      for (TypeMirror t : typeElem.getInterfaces()) {
+        collectInheritedMethods((DeclaredType) t);
+      }
+      for (String signature : newMethods.keySet()) {
+        fixNewMethods(signature);
+      }
+    }
+    private void collectInheritedMethods(TypeMirror type) {
+      if (TypeUtil.isNone(type)) {
+        return;
+      }
+      collectMethods((DeclaredType) type);
+      for (TypeMirror supertype : typeUtil.directSupertypes(type)) {
+        collectInheritedMethods(supertype);
+      }
+    }
+    private void collectMethods(DeclaredType type) {
+      TypeElement typeElem = TypeUtil.asTypeElement(type);
+      if (visitedTypes.contains(typeElem)) {
+        return;
+      }
+      visitedTypes.add(typeElem);
+      for (ExecutableElement methodElem : Iterables.filter(
+          ElementUtil.getMethods(typeElem), ElementUtil::isInstanceMethod)) {
+        if (!isDeadMethod(methodElem)) {
+          ExecutablePair method = new ExecutablePair(
+              methodElem, typeUtil.asMemberOf(type, methodElem));
+          collector.put(getOverrideSignature(method), method);
+        }
+      }
+    }
+    private void fixNewMethods(String signature) {
+      Set<ExecutablePair> existingMethods = this.existingMethods.get(signature);
+      Set<ExecutablePair> newMethods = this.newMethods.get(signature);
+      Iterable<ExecutablePair> allMethods = Iterables.concat(existingMethods, newMethods);
+      ExecutablePair first = allMethods.iterator().next();
+      String mainSelector = nameTable.getMethodSelector(first.element());
+      ExecutablePair impl = resolveImplementation(allMethods);
+      // Find the set of selectors for this method that don't yet have shims in a superclass.
+      Set<String> existingSelectors = new HashSet<>();
+      Map<String, ExecutablePair> newSelectors = new LinkedHashMap<>();
+      for (ExecutablePair method : existingMethods) {
+        existingSelectors.add(nameTable.getMethodSelector(method.element()));
+      }
+      existingSelectors.add(mainSelector);
+      for (ExecutablePair method : newMethods) {
+        String sel =  nameTable.getMethodSelector(method.element());
+        if (!existingSelectors.contains(sel) && !newSelectors.containsKey(sel)) {
+          newSelectors.put(sel, method);
+        }
+      }
+      if (newMethods.contains(impl)) {
+        if (ElementUtil.isDefault(impl.element())) {
+          addDefaultMethodShim(mainSelector, impl);
+        } else {
+          // Must be an abstract class.
+          unit.setHasIncompleteProtocol();
+        }
+      }
+      for (Map.Entry<String, ExecutablePair> entry : newSelectors.entrySet()) {
+        addRenamingMethodShim(entry.getKey(), entry.getValue(), impl);
+      }
+    }
+    private boolean isDeadMethod(ExecutableElement methodElem) {
+      return deadCodeMap != null && deadCodeMap.containsMethod(methodElem, typeUtil);
+    }
+    private ExecutablePair resolveImplementation(Iterable<ExecutablePair> allMethods) {
+      ExecutablePair impl = null;
+      for (ExecutablePair method : allMethods) {
+        if (takesPrecedence(method, impl)) {
+          impl = method;
+        }
+      }
+      return impl;
+    }
+    private boolean declaredByClass(ExecutableElement e) {
+      return ElementUtil.getDeclaringClass(e).getKind().isClass();
+    }
+    private boolean takesPrecedence(ExecutablePair a, ExecutablePair b) {
+      return b == null
+          || (!declaredByClass(b.element()) && declaredByClass(a.element()))
+          || elementUtil.overrides(
+              a.element(), b.element(), ElementUtil.getDeclaringClass(a.element()));
+    }
+    private void addShimWithInvocation(
+        String selector, ExecutablePair method, Expression invocation, List<Expression> args) {
+      GeneratedExecutableElement element = GeneratedExecutableElement.newMethodWithSelector(
+              selector, method.type().getReturnType(), typeElem)
+          .addModifiers(method.element().getModifiers())
+          .removeModifiers(Modifier.ABSTRACT, Modifier.DEFAULT);
+      MethodDeclaration methodDecl = new MethodDeclaration(element);
+      methodDecl.setHasDeclaration(false);
+      int i = 0;
+      for (TypeMirror paramType : method.type().getParameterTypes()) {
+        GeneratedVariableElement newParam = GeneratedVariableElement.newParameter(
+            ""arg"" + i++, paramType, element);
+        element.addParameter(newParam);
+        methodDecl.addParameter(new SingleVariableDeclaration(newParam));
+        args.add(new SimpleName(newParam));
+      }
+      Block block = new Block();
+      block.addStatement(TypeUtil.isVoid(method.element().getReturnType())
+          ? new ExpressionStatement(invocation) : new ReturnStatement(invocation));
+      methodDecl.setBody(block);
+      typeNode.addBodyDeclaration(methodDecl);
+    }
+    private void addDefaultMethodShim(String selector, ExecutablePair method) {
+      // The shim's only purpose is to call the default method implementation and returns it value
+      // if required.
+      TypeElement declaringClass = ElementUtil.getDeclaringClass(method.element());
+      String name = nameTable.getFullFunctionName(method.element());
+      FunctionElement funcElement = new FunctionElement(
+          name, method.element().getReturnType(), declaringClass)
+          .addParameters(declaringClass.asType())
+          .addParameters(((ExecutableType) method.element().asType()).getParameterTypes());
+      FunctionInvocation invocation =
+          new FunctionInvocation(funcElement, method.type().getReturnType());
+      // All default method implementations require self as the first function call argument.
+      invocation.addArgument(new ThisExpression(typeElem.asType()));
+      addShimWithInvocation(selector, method, invocation, invocation.getArguments());
+    }
+    private void addRenamingMethodShim(
+        String selector, ExecutablePair method, ExecutablePair delegate) {
+      MethodInvocation invocation = new MethodInvocation(delegate, null);
+      addShimWithInvocation(selector, method, invocation, invocation.getArguments());
+    }
+  }
+  // Generates a signature that will be the same for methods that can override each other and unique
+  // otherwise. Used as a key to group inherited methods together.
+  private String getOverrideSignature(ExecutablePair method) {
+    StringBuilder sb = new StringBuilder(ElementUtil.getName(method.element()));
+    sb.append('(');
+    for (TypeMirror pType : method.type().getParameterTypes()) {
+      sb.append(typeUtil.getSignatureName(pType));
+    }
+    sb.append(')');
+    return sb.toString();
+  }
+  @Override
+  public void endVisit(EnumDeclaration node) {
+    new TypeFixer(node).visit();
+  }
+  @Override
+  public void endVisit(TypeDeclaration node) {
+    if (!node.isInterface()) {
+      new TypeFixer(node).visit();
+    }
+  }
+}",class,
+"  private class TypeFixer {
+    private final AbstractTypeDeclaration typeNode;
+    private final TypeElement typeElem;
+    private final Set<TypeElement> visitedTypes = new HashSet<>();
+    private final SetMultimap<String, ExecutablePair> existingMethods = LinkedHashMultimap.create();
+    private final SetMultimap<String, ExecutablePair> newMethods = LinkedHashMultimap.create();
+    private SetMultimap<String, ExecutablePair> collector = existingMethods;
+    private TypeFixer(AbstractTypeDeclaration node) {
+      typeNode = node;
+      typeElem = node.getTypeElement();
+    }
+    private void visit() {
+      // Collect existing methods.
+      collectMethods((DeclaredType) typeElem.asType());
+      collectInheritedMethods(typeElem.getSuperclass());
+      // Collect new methods from newly implemented interfaces.
+      collector = newMethods;
+      for (TypeMirror t : typeElem.getInterfaces()) {
+        collectInheritedMethods((DeclaredType) t);
+      }
+      for (String signature : newMethods.keySet()) {
+        fixNewMethods(signature);
+      }
+    }
+    private void collectInheritedMethods(TypeMirror type) {
+      if (TypeUtil.isNone(type)) {
+        return;
+      }
+      collectMethods((DeclaredType) type);
+      for (TypeMirror supertype : typeUtil.directSupertypes(type)) {
+        collectInheritedMethods(supertype);
+      }
+    }
+    private void collectMethods(DeclaredType type) {
+      TypeElement typeElem = TypeUtil.asTypeElement(type);
+      if (visitedTypes.contains(typeElem)) {
+        return;
+      }
+      visitedTypes.add(typeElem);
+      for (ExecutableElement methodElem : Iterables.filter(
+          ElementUtil.getMethods(typeElem), ElementUtil::isInstanceMethod)) {
+        if (!isDeadMethod(methodElem)) {
+          ExecutablePair method = new ExecutablePair(
+              methodElem, typeUtil.asMemberOf(type, methodElem));
+          collector.put(getOverrideSignature(method), method);
+        }
+      }
+    }
+    private void fixNewMethods(String signature) {
+      Set<ExecutablePair> existingMethods = this.existingMethods.get(signature);
+      Set<ExecutablePair> newMethods = this.newMethods.get(signature);
+      Iterable<ExecutablePair> allMethods = Iterables.concat(existingMethods, newMethods);
+      ExecutablePair first = allMethods.iterator().next();
+      String mainSelector = nameTable.getMethodSelector(first.element());
+      ExecutablePair impl = resolveImplementation(allMethods);
+      // Find the set of selectors for this method that don't yet have shims in a superclass.
+      Set<String> existingSelectors = new HashSet<>();
+      Map<String, ExecutablePair> newSelectors = new LinkedHashMap<>();
+      for (ExecutablePair method : existingMethods) {
+        existingSelectors.add(nameTable.getMethodSelector(method.element()));
+      }
+      existingSelectors.add(mainSelector);
+      for (ExecutablePair method : newMethods) {
+        String sel =  nameTable.getMethodSelector(method.element());
+        if (!existingSelectors.contains(sel) && !newSelectors.containsKey(sel)) {
+          newSelectors.put(sel, method);
+        }
+      }
+      if (newMethods.contains(impl)) {
+        if (ElementUtil.isDefault(impl.element())) {
+          addDefaultMethodShim(mainSelector, impl);
+        } else {
+          // Must be an abstract class.
+          unit.setHasIncompleteProtocol();
+        }
+      }
+      for (Map.Entry<String, ExecutablePair> entry : newSelectors.entrySet()) {
+        addRenamingMethodShim(entry.getKey(), entry.getValue(), impl);
+      }
+    }
+    private boolean isDeadMethod(ExecutableElement methodElem) {
+      return deadCodeMap != null && deadCodeMap.containsMethod(methodElem, typeUtil);
+    }
+    private ExecutablePair resolveImplementation(Iterable<ExecutablePair> allMethods) {
+      ExecutablePair impl = null;
+      for (ExecutablePair method : allMethods) {
+        if (takesPrecedence(method, impl)) {
+          impl = method;
+        }
+      }
+      return impl;
+    }
+    private boolean declaredByClass(ExecutableElement e) {
+      return ElementUtil.getDeclaringClass(e).getKind().isClass();
+    }
+    private boolean takesPrecedence(ExecutablePair a, ExecutablePair b) {
+      return b == null
+          || (!declaredByClass(b.element()) && declaredByClass(a.element()))
+          || elementUtil.overrides(
+              a.element(), b.element(), ElementUtil.getDeclaringClass(a.element()));
+    }
+    private void addShimWithInvocation(
+        String selector, ExecutablePair method, Expression invocation, List<Expression> args) {
+      GeneratedExecutableElement element = GeneratedExecutableElement.newMethodWithSelector(
+              selector, method.type().getReturnType(), typeElem)
+          .addModifiers(method.element().getModifiers())
+          .removeModifiers(Modifier.ABSTRACT, Modifier.DEFAULT);
+      MethodDeclaration methodDecl = new MethodDeclaration(element);
+      methodDecl.setHasDeclaration(false);
+      int i = 0;
+      for (TypeMirror paramType : method.type().getParameterTypes()) {
+        GeneratedVariableElement newParam = GeneratedVariableElement.newParameter(
+            ""arg"" + i++, paramType, element);
+        element.addParameter(newParam);
+        methodDecl.addParameter(new SingleVariableDeclaration(newParam));
+        args.add(new SimpleName(newParam));
+      }
+      Block block = new Block();
+      block.addStatement(TypeUtil.isVoid(method.element().getReturnType())
+          ? new ExpressionStatement(invocation) : new ReturnStatement(invocation));
+      methodDecl.setBody(block);
+      typeNode.addBodyDeclaration(methodDecl);
+    }
+    private void addDefaultMethodShim(String selector, ExecutablePair method) {
+      // The shim's only purpose is to call the default method implementation and returns it value
+      // if required.
+      TypeElement declaringClass = ElementUtil.getDeclaringClass(method.element());
+      String name = nameTable.getFullFunctionName(method.element());
+      FunctionElement funcElement = new FunctionElement(
+          name, method.element().getReturnType(), declaringClass)
+          .addParameters(declaringClass.asType())
+          .addParameters(((ExecutableType) method.element().asType()).getParameterTypes());
+      FunctionInvocation invocation =
+          new FunctionInvocation(funcElement, method.type().getReturnType());
+      // All default method implementations require self as the first function call argument.
+      invocation.addArgument(new ThisExpression(typeElem.asType()));
+      addShimWithInvocation(selector, method, invocation, invocation.getArguments());
+    }
+    private void addRenamingMethodShim(
+        String selector, ExecutablePair method, ExecutablePair delegate) {
+      MethodInvocation invocation = new MethodInvocation(delegate, null);
+      addShimWithInvocation(selector, method, invocation, invocation.getArguments());
+    }
+  }",class,
+"  public DefaultMethodShimGenerator(CompilationUnit unit, CodeReferenceMap deadCodeMap) {
+    super(unit);
+    this.deadCodeMap = deadCodeMap;
+  }",method,
+"    private TypeFixer(AbstractTypeDeclaration node) {
+      typeNode = node;
+      typeElem = node.getTypeElement();
+    }",method,
+"    private void visit() {
+      // Collect existing methods.
+      collectMethods((DeclaredType) typeElem.asType());
+      collectInheritedMethods(typeElem.getSuperclass());
+      // Collect new methods from newly implemented interfaces.
+      collector = newMethods;
+      for (TypeMirror t : typeElem.getInterfaces()) {
+        collectInheritedMethods((DeclaredType) t);
+      }
+      for (String signature : newMethods.keySet()) {
+        fixNewMethods(signature);
+      }
+    }",method,
+"    private void collectInheritedMethods(TypeMirror type) {
+      if (TypeUtil.isNone(type)) {
+        return;
+      }
+      collectMethods((DeclaredType) type);
+      for (TypeMirror supertype : typeUtil.directSupertypes(type)) {
+        collectInheritedMethods(supertype);
+      }
+    }",method,
+"    private void collectMethods(DeclaredType type) {
+      TypeElement typeElem = TypeUtil.asTypeElement(type);
+      if (visitedTypes.contains(typeElem)) {
+        return;
+      }
+      visitedTypes.add(typeElem);
+      for (ExecutableElement methodElem : Iterables.filter(
+          ElementUtil.getMethods(typeElem), ElementUtil::isInstanceMethod)) {
+        if (!isDeadMethod(methodElem)) {
+          ExecutablePair method = new ExecutablePair(
+              methodElem, typeUtil.asMemberOf(type, methodElem));
+          collector.put(getOverrideSignature(method), method);
+        }
+      }
+    }",method,
+"    private void fixNewMethods(String signature) {
+      Set<ExecutablePair> existingMethods = this.existingMethods.get(signature);
+      Set<ExecutablePair> newMethods = this.newMethods.get(signature);
+      Iterable<ExecutablePair> allMethods = Iterables.concat(existingMethods, newMethods);
+      ExecutablePair first = allMethods.iterator().next();
+      String mainSelector = nameTable.getMethodSelector(first.element());
+      ExecutablePair impl = resolveImplementation(allMethods);
+      // Find the set of selectors for this method that don't yet have shims in a superclass.
+      Set<String> existingSelectors = new HashSet<>();
+      Map<String, ExecutablePair> newSelectors = new LinkedHashMap<>();
+      for (ExecutablePair method : existingMethods) {
+        existingSelectors.add(nameTable.getMethodSelector(method.element()));
+      }
+      existingSelectors.add(mainSelector);
+      for (ExecutablePair method : newMethods) {
+        String sel =  nameTable.getMethodSelector(method.element());
+        if (!existingSelectors.contains(sel) && !newSelectors.containsKey(sel)) {
+          newSelectors.put(sel, method);
+        }
+      }
+      if (newMethods.contains(impl)) {
+        if (ElementUtil.isDefault(impl.element())) {
+          addDefaultMethodShim(mainSelector, impl);
+        } else {
+          // Must be an abstract class.
+          unit.setHasIncompleteProtocol();
+        }
+      }
+      for (Map.Entry<String, ExecutablePair> entry : newSelectors.entrySet()) {
+        addRenamingMethodShim(entry.getKey(), entry.getValue(), impl);
+      }
+    }",method,
+"      for (ExecutablePair method : existingMethods) {
+        existingSelectors.add(nameTable.getMethodSelector(method.element()));
+      }",method,
+"      for (ExecutablePair method : newMethods) {
+        String sel =  nameTable.getMethodSelector(method.element());
+        if (!existingSelectors.contains(sel) && !newSelectors.containsKey(sel)) {
+          newSelectors.put(sel, method);
+        }
+      }",method,
+"    private boolean isDeadMethod(ExecutableElement methodElem) {
+      return deadCodeMap != null && deadCodeMap.containsMethod(methodElem, typeUtil);
+    }",method,
+"    private ExecutablePair resolveImplementation(Iterable<ExecutablePair> allMethods) {
+      ExecutablePair impl = null;
+      for (ExecutablePair method : allMethods) {
+        if (takesPrecedence(method, impl)) {
+          impl = method;
+        }
+      }
+      return impl;
+    }",method,
+"      for (ExecutablePair method : allMethods) {
+        if (takesPrecedence(method, impl)) {
+          impl = method;
+        }
+      }",method,
+"    private boolean declaredByClass(ExecutableElement e) {
+      return ElementUtil.getDeclaringClass(e).getKind().isClass();
+    }",method,
+"    private boolean takesPrecedence(ExecutablePair a, ExecutablePair b) {
+      return b == null
+          || (!declaredByClass(b.element()) && declaredByClass(a.element()))
+          || elementUtil.overrides(
+              a.element(), b.element(), ElementUtil.getDeclaringClass(a.element()));
+    }",method,
+"    private void addShimWithInvocation(
+        String selector, ExecutablePair method, Expression invocation, List<Expression> args) {
+      GeneratedExecutableElement element = GeneratedExecutableElement.newMethodWithSelector(
+              selector, method.type().getReturnType(), typeElem)
+          .addModifiers(method.element().getModifiers())
+          .removeModifiers(Modifier.ABSTRACT, Modifier.DEFAULT);
+      MethodDeclaration methodDecl = new MethodDeclaration(element);
+      methodDecl.setHasDeclaration(false);
+      int i = 0;
+      for (TypeMirror paramType : method.type().getParameterTypes()) {
+        GeneratedVariableElement newParam = GeneratedVariableElement.newParameter(
+            ""arg"" + i++, paramType, element);
+        element.addParameter(newParam);
+        methodDecl.addParameter(new SingleVariableDeclaration(newParam));
+        args.add(new SimpleName(newParam));
+      }
+      Block block = new Block();
+      block.addStatement(TypeUtil.isVoid(method.element().getReturnType())
+          ? new ExpressionStatement(invocation) : new ReturnStatement(invocation));
+      methodDecl.setBody(block);
+      typeNode.addBodyDeclaration(methodDecl);
+    }",method,
+"    private void addDefaultMethodShim(String selector, ExecutablePair method) {
+      // The shim's only purpose is to call the default method implementation and returns it value
+      // if required.
+      TypeElement declaringClass = ElementUtil.getDeclaringClass(method.element());
+      String name = nameTable.getFullFunctionName(method.element());
+      FunctionElement funcElement = new FunctionElement(
+          name, method.element().getReturnType(), declaringClass)
+          .addParameters(declaringClass.asType())
+          .addParameters(((ExecutableType) method.element().asType()).getParameterTypes());
+      FunctionInvocation invocation =
+          new FunctionInvocation(funcElement, method.type().getReturnType());
+      // All default method implementations require self as the first function call argument.
+      invocation.addArgument(new ThisExpression(typeElem.asType()));
+      addShimWithInvocation(selector, method, invocation, invocation.getArguments());
+    }",method,
+"    private void addRenamingMethodShim(
+        String selector, ExecutablePair method, ExecutablePair delegate) {
+      MethodInvocation invocation = new MethodInvocation(delegate, null);
+      addShimWithInvocation(selector, method, invocation, invocation.getArguments());
+    }",method,
+"  private String getOverrideSignature(ExecutablePair method) {
+    StringBuilder sb = new StringBuilder(ElementUtil.getName(method.element()));
+    sb.append('(');
+    for (TypeMirror pType : method.type().getParameterTypes()) {
+      sb.append(typeUtil.getSignatureName(pType));
+    }
+    sb.append(')');
+    return sb.toString();
+  }",method,
+"  @Override
+  public void endVisit(EnumDeclaration node) {
+    new TypeFixer(node).visit();
+  }",method,
+"  @Override
+  public void endVisit(TypeDeclaration node) {
+    if (!node.isInterface()) {
+      new TypeFixer(node).visit();
+    }
+  }",method,
+"public class VariableBlurFilter extends AbstractBufferedImageOp {
+	private int hRadius = 1;
+	private int vRadius = 1;
+	private int iterations = 1;
+	private BufferedImage blurMask;
+	private boolean premultiplyAlpha = true;
+	public void setPremultiplyAlpha( boolean premultiplyAlpha ) {
+		this.premultiplyAlpha = premultiplyAlpha;
+	}
+	public boolean getPremultiplyAlpha() {
+		return premultiplyAlpha;
+	}
+    public BufferedImage filter( BufferedImage src, BufferedImage dst ) {
+		int width = src.getWidth();
+        int height = src.getHeight();
+        if ( dst == null )
+            dst = new BufferedImage( width, height, BufferedImage.TYPE_INT_ARGB );
+        int[] inPixels = new int[width*height];
+        int[] outPixels = new int[width*height];
+        getRGB( src, 0, 0, width, height, inPixels );
+        if ( premultiplyAlpha )
+			ImageMath.premultiply( inPixels, 0, inPixels.length );
+        for (int i = 0; i < iterations; i++ ) {
+            blur( inPixels, outPixels, width, height, hRadius, 1 );
+            blur( outPixels, inPixels, height, width, vRadius, 2 );
+        }
+        if ( premultiplyAlpha )
+			ImageMath.unpremultiply( inPixels, 0, inPixels.length );
+        setRGB( dst, 0, 0, width, height, inPixels );
+        return dst;
+    }
+    public BufferedImage createCompatibleDestImage(BufferedImage src, ColorModel dstCM) {
+        if ( dstCM == null )
+            dstCM = src.getColorModel();
+        return new BufferedImage(dstCM, dstCM.createCompatibleWritableRaster(src.getWidth(), src.getHeight()), dstCM.isAlphaPremultiplied(), null);
+    }
+    public Rectangle2D getBounds2D( BufferedImage src ) {
+        return new Rectangle(0, 0, src.getWidth(), src.getHeight());
+    }
+    public Point2D getPoint2D( Point2D srcPt, Point2D dstPt ) {
+        if ( dstPt == null )
+            dstPt = new Point2D.Double();
+        dstPt.setLocation( srcPt.getX(), srcPt.getY() );
+        return dstPt;
+    }
+    public RenderingHints getRenderingHints() {
+        return null;
+    }
+    public void blur( int[] in, int[] out, int width, int height, int radius, int pass ) {
+        int widthMinus1 = width-1;
+        int[] r = new int[width];
+        int[] g = new int[width];
+        int[] b = new int[width];
+        int[] a = new int[width];
+        int[] mask = new int[width];
+		int inIndex = 0;
+        for ( int y = 0; y < height; y++ ) {
+            int outIndex = y;
+			if ( blurMask != null ) {
+				if ( pass == 1 )
+					getRGB( blurMask, 0, y, width, 1, mask );
+				else
+					getRGB( blurMask, y, 0, 1, width, mask );
+			}
+            for ( int x = 0; x < width; x++ ) {
+				int argb = in[inIndex+x];
+				a[x] = (argb >> 24) & 0xff;
+                r[x] = (argb >> 16) & 0xff;
+                g[x] = (argb >> 8) & 0xff;
+                b[x] = argb & 0xff;
+                if ( x != 0 ) {
+                    a[x] += a[x-1];
+                    r[x] += r[x-1];
+                    g[x] += g[x-1];
+                    b[x] += b[x-1];
+                }
+			}
+            for ( int x = 0; x < width; x++ ) {
+				// Get the blur radius at x, y
+				int ra;
+				if ( blurMask != null ) {
+					if ( pass == 1 )
+						ra = (int)((mask[x] & 0xff)*hRadius/255f);
+					else
+						ra = (int)((mask[x] & 0xff)*vRadius/255f);
+				} else {
+					if ( pass == 1 )
+						ra = (int)(blurRadiusAt( x, y, width, height ) * hRadius);
+					else
+						ra = (int)(blurRadiusAt( y, x, height, width ) * vRadius);
+				}
+                int divisor = 2*ra+1;
+                int ta = 0, tr = 0, tg = 0, tb = 0;
+				int i1 = x+ra;
+                if ( i1 > widthMinus1 ) {
+                    int f = i1-widthMinus1;
+					int l = widthMinus1;
+					ta += (a[l]-a[l-1]) * f;
+					tr += (r[l]-r[l-1]) * f;
+					tg += (g[l]-g[l-1]) * f;
+					tb += (b[l]-b[l-1]) * f;
+					i1 = widthMinus1;
+                }
+				int i2 = x-ra-1;
+                if ( i2 < 0 ) {
+					ta -= a[0] * i2;
+					tr -= r[0] * i2;
+					tg -= g[0] * i2;
+					tb -= b[0] * i2;
+                    i2 = 0;
+				}
+                ta += a[i1] - a[i2];
+                tr += r[i1] - r[i2];
+                tg += g[i1] - g[i2];
+                tb += b[i1] - b[i2];
+                out[ outIndex ] = ((ta/divisor) << 24) | ((tr/divisor) << 16) | ((tg/divisor) << 8) | (tb/divisor);
+                outIndex += height;
+            }
+			inIndex += width;
+        }
+    }
+	protected float blurRadiusAt( int x, int y, int width, int height ) {
+		return (float)x/width;
+	}
+	public void setHRadius(int hRadius) {
+		this.hRadius = hRadius;
+	}
+	public int getHRadius() {
+		return hRadius;
+	}
+	public void setVRadius(int vRadius) {
+		this.vRadius = vRadius;
+	}
+	public int getVRadius() {
+		return vRadius;
+	}
+	public void setRadius(int radius) {
+		this.hRadius = this.vRadius = radius;
+	}
+	public int getRadius() {
+		return hRadius;
+	}
+	public void setIterations(int iterations) {
+		this.iterations = iterations;
+	}
+	public int getIterations() {
+		return iterations;
+	}
+	public void setBlurMask(BufferedImage blurMask) {
+		this.blurMask = blurMask;
+	}
+	public BufferedImage getBlurMask() {
+		return blurMask;
+	}
+	public String toString() {
+		return ""Blur/Variable Blur..."";
+	}
+}",class,
+"	public void setPremultiplyAlpha( boolean premultiplyAlpha ) {
+		this.premultiplyAlpha = premultiplyAlpha;
+	}",method,
+"	public boolean getPremultiplyAlpha() {
+		return premultiplyAlpha;
+	}",method,
+"    public BufferedImage filter( BufferedImage src, BufferedImage dst ) {
+		int width = src.getWidth();
+        int height = src.getHeight();
+        if ( dst == null )
+            dst = new BufferedImage( width, height, BufferedImage.TYPE_INT_ARGB );
+        int[] inPixels = new int[width*height];
+        int[] outPixels = new int[width*height];
+        getRGB( src, 0, 0, width, height, inPixels );
+        if ( premultiplyAlpha )
+			ImageMath.premultiply( inPixels, 0, inPixels.length );
+        for (int i = 0; i < iterations; i++ ) {
+            blur( inPixels, outPixels, width, height, hRadius, 1 );
+            blur( outPixels, inPixels, height, width, vRadius, 2 );
+        }
+        if ( premultiplyAlpha )
+			ImageMath.unpremultiply( inPixels, 0, inPixels.length );
+        setRGB( dst, 0, 0, width, height, inPixels );
+        return dst;
+    }",method,
+"        for (int i = 0; i < iterations; i++ ) {
+            blur( inPixels, outPixels, width, height, hRadius, 1 );
+            blur( outPixels, inPixels, height, width, vRadius, 2 );
+        }",method,
+"    public BufferedImage createCompatibleDestImage(BufferedImage src, ColorModel dstCM) {
+        if ( dstCM == null )
+            dstCM = src.getColorModel();
+        return new BufferedImage(dstCM, dstCM.createCompatibleWritableRaster(src.getWidth(), src.getHeight()), dstCM.isAlphaPremultiplied(), null);
+    }",method,
+"    public Rectangle2D getBounds2D( BufferedImage src ) {
+        return new Rectangle(0, 0, src.getWidth(), src.getHeight());
+    }",method,
+"    public Point2D getPoint2D( Point2D srcPt, Point2D dstPt ) {
+        if ( dstPt == null )
+            dstPt = new Point2D.Double();
+        dstPt.setLocation( srcPt.getX(), srcPt.getY() );
+        return dstPt;
+    }",method,
+"    public RenderingHints getRenderingHints() {
+        return null;
+    }",method,
+"    public void blur( int[] in, int[] out, int width, int height, int radius, int pass ) {
+        int widthMinus1 = width-1;
+        int[] r = new int[width];
+        int[] g = new int[width];
+        int[] b = new int[width];
+        int[] a = new int[width];
+        int[] mask = new int[width];
+		int inIndex = 0;
+        for ( int y = 0; y < height; y++ ) {
+            int outIndex = y;
+			if ( blurMask != null ) {
+				if ( pass == 1 )
+					getRGB( blurMask, 0, y, width, 1, mask );
+				else
+					getRGB( blurMask, y, 0, 1, width, mask );
+			}
+            for ( int x = 0; x < width; x++ ) {
+				int argb = in[inIndex+x];
+				a[x] = (argb >> 24) & 0xff;
+                r[x] = (argb >> 16) & 0xff;
+                g[x] = (argb >> 8) & 0xff;
+                b[x] = argb & 0xff;
+                if ( x != 0 ) {
+                    a[x] += a[x-1];
+                    r[x] += r[x-1];
+                    g[x] += g[x-1];
+                    b[x] += b[x-1];
+                }
+			}
+            for ( int x = 0; x < width; x++ ) {
+				// Get the blur radius at x, y
+				int ra;
+				if ( blurMask != null ) {
+					if ( pass == 1 )
+						ra = (int)((mask[x] & 0xff)*hRadius/255f);
+					else
+						ra = (int)((mask[x] & 0xff)*vRadius/255f);
+				} else {
+					if ( pass == 1 )
+						ra = (int)(blurRadiusAt( x, y, width, height ) * hRadius);
+					else
+						ra = (int)(blurRadiusAt( y, x, height, width ) * vRadius);
+				}
+                int divisor = 2*ra+1;
+                int ta = 0, tr = 0, tg = 0, tb = 0;
+				int i1 = x+ra;
+                if ( i1 > widthMinus1 ) {
+                    int f = i1-widthMinus1;
+					int l = widthMinus1;
+					ta += (a[l]-a[l-1]) * f;
+					tr += (r[l]-r[l-1]) * f;
+					tg += (g[l]-g[l-1]) * f;
+					tb += (b[l]-b[l-1]) * f;
+					i1 = widthMinus1;
+                }
+				int i2 = x-ra-1;
+                if ( i2 < 0 ) {
+					ta -= a[0] * i2;
+					tr -= r[0] * i2;
+					tg -= g[0] * i2;
+					tb -= b[0] * i2;
+                    i2 = 0;
+				}
+                ta += a[i1] - a[i2];
+                tr += r[i1] - r[i2];
+                tg += g[i1] - g[i2];
+                tb += b[i1] - b[i2];
+                out[ outIndex ] = ((ta/divisor) << 24) | ((tr/divisor) << 16) | ((tg/divisor) << 8) | (tb/divisor);
+                outIndex += height;
+            }
+			inIndex += width;
+        }
+    }",method,
+"        for ( int y = 0; y < height; y++ ) {
+            int outIndex = y;
+			if ( blurMask != null ) {
+				if ( pass == 1 )
+					getRGB( blurMask, 0, y, width, 1, mask );
+				else
+					getRGB( blurMask, y, 0, 1, width, mask );
+			}
+            for ( int x = 0; x < width; x++ ) {
+				int argb = in[inIndex+x];
+				a[x] = (argb >> 24) & 0xff;
+                r[x] = (argb >> 16) & 0xff;
+                g[x] = (argb >> 8) & 0xff;
+                b[x] = argb & 0xff;
+                if ( x != 0 ) {
+                    a[x] += a[x-1];
+                    r[x] += r[x-1];
+                    g[x] += g[x-1];
+                    b[x] += b[x-1];
+                }
+			}
+            for ( int x = 0; x < width; x++ ) {
+				// Get the blur radius at x, y
+				int ra;
+				if ( blurMask != null ) {
+					if ( pass == 1 )
+						ra = (int)((mask[x] & 0xff)*hRadius/255f);
+					else
+						ra = (int)((mask[x] & 0xff)*vRadius/255f);
+				} else {
+					if ( pass == 1 )
+						ra = (int)(blurRadiusAt( x, y, width, height ) * hRadius);
+					else
+						ra = (int)(blurRadiusAt( y, x, height, width ) * vRadius);
+				}
+                int divisor = 2*ra+1;
+                int ta = 0, tr = 0, tg = 0, tb = 0;
+				int i1 = x+ra;
+                if ( i1 > widthMinus1 ) {
+                    int f = i1-widthMinus1;
+					int l = widthMinus1;
+					ta += (a[l]-a[l-1]) * f;
+					tr += (r[l]-r[l-1]) * f;
+					tg += (g[l]-g[l-1]) * f;
+					tb += (b[l]-b[l-1]) * f;
+					i1 = widthMinus1;
+                }
+				int i2 = x-ra-1;
+                if ( i2 < 0 ) {
+					ta -= a[0] * i2;
+					tr -= r[0] * i2;
+					tg -= g[0] * i2;
+					tb -= b[0] * i2;
+                    i2 = 0;
+				}
+                ta += a[i1] - a[i2];
+                tr += r[i1] - r[i2];
+                tg += g[i1] - g[i2];
+                tb += b[i1] - b[i2];
+                out[ outIndex ] = ((ta/divisor) << 24) | ((tr/divisor) << 16) | ((tg/divisor) << 8) | (tb/divisor);
+                outIndex += height;
+            }
+			inIndex += width;
+        }",method,
+"			if ( blurMask != null ) {
+				if ( pass == 1 )
+					getRGB( blurMask, 0, y, width, 1, mask );
+				else
+					getRGB( blurMask, y, 0, 1, width, mask );
+			}",method,
+"            for ( int x = 0; x < width; x++ ) {
+				int argb = in[inIndex+x];
+				a[x] = (argb >> 24) & 0xff;
+                r[x] = (argb >> 16) & 0xff;
+                g[x] = (argb >> 8) & 0xff;
+                b[x] = argb & 0xff;
+                if ( x != 0 ) {
+                    a[x] += a[x-1];
+                    r[x] += r[x-1];
+                    g[x] += g[x-1];
+                    b[x] += b[x-1];
+                }
+			}",method,
+"                if ( x != 0 ) {
+                    a[x] += a[x-1];
+                    r[x] += r[x-1];
+                    g[x] += g[x-1];
+                    b[x] += b[x-1];
+                }",method,
+"            for ( int x = 0; x < width; x++ ) {
+				// Get the blur radius at x, y
+				int ra;
+				if ( blurMask != null ) {
+					if ( pass == 1 )
+						ra = (int)((mask[x] & 0xff)*hRadius/255f);
+					else
+						ra = (int)((mask[x] & 0xff)*vRadius/255f);
+				} else {
+					if ( pass == 1 )
+						ra = (int)(blurRadiusAt( x, y, width, height ) * hRadius);
+					else
+						ra = (int)(blurRadiusAt( y, x, height, width ) * vRadius);
+				}
+                int divisor = 2*ra+1;
+                int ta = 0, tr = 0, tg = 0, tb = 0;
+				int i1 = x+ra;
+                if ( i1 > widthMinus1 ) {
+                    int f = i1-widthMinus1;
+					int l = widthMinus1;
+					ta += (a[l]-a[l-1]) * f;
+					tr += (r[l]-r[l-1]) * f;
+					tg += (g[l]-g[l-1]) * f;
+					tb += (b[l]-b[l-1]) * f;
+					i1 = widthMinus1;
+                }
+				int i2 = x-ra-1;
+                if ( i2 < 0 ) {
+					ta -= a[0] * i2;
+					tr -= r[0] * i2;
+					tg -= g[0] * i2;
+					tb -= b[0] * i2;
+                    i2 = 0;
+				}
+                ta += a[i1] - a[i2];
+                tr += r[i1] - r[i2];
+                tg += g[i1] - g[i2];
+                tb += b[i1] - b[i2];
+                out[ outIndex ] = ((ta/divisor) << 24) | ((tr/divisor) << 16) | ((tg/divisor) << 8) | (tb/divisor);
+                outIndex += height;
+            }",method,
+"				if ( blurMask != null ) {
+					if ( pass == 1 )
+						ra = (int)((mask[x] & 0xff)*hRadius/255f);
+					else
+						ra = (int)((mask[x] & 0xff)*vRadius/255f);
+				}",method,
+"                if ( i1 > widthMinus1 ) {
+                    int f = i1-widthMinus1;
+					int l = widthMinus1;
+					ta += (a[l]-a[l-1]) * f;
+					tr += (r[l]-r[l-1]) * f;
+					tg += (g[l]-g[l-1]) * f;
+					tb += (b[l]-b[l-1]) * f;
+					i1 = widthMinus1;
+                }",method,
+"                if ( i2 < 0 ) {
+					ta -= a[0] * i2;
+					tr -= r[0] * i2;
+					tg -= g[0] * i2;
+					tb -= b[0] * i2;
+                    i2 = 0;
+				}",method,
+"	protected float blurRadiusAt( int x, int y, int width, int height ) {
+		return (float)x/width;
+	}",method,
+"	public void setHRadius(int hRadius) {
+		this.hRadius = hRadius;
+	}",method,
+"	public int getHRadius() {
+		return hRadius;
+	}",method,
+"	public void setVRadius(int vRadius) {
+		this.vRadius = vRadius;
+	}",method,
+"	public int getVRadius() {
+		return vRadius;
+	}",method,
+"	public void setRadius(int radius) {
+		this.hRadius = this.vRadius = radius;
+	}",method,
+"	public int getRadius() {
+		return hRadius;
+	}",method,
+"	public void setIterations(int iterations) {
+		this.iterations = iterations;
+	}",method,
+"	public int getIterations() {
+		return iterations;
+	}",method,
+"	public void setBlurMask(BufferedImage blurMask) {
+		this.blurMask = blurMask;
+	}",method,
+"	public BufferedImage getBlurMask() {
+		return blurMask;
+	}",method,
+"	public String toString() {
+		return ""Blur/Variable Blur..."";
+	}",method,
+"public final class IoUtils {
+	public static final int DEFAULT_BUFFER_SIZE = 32 * 1024; // 32 KB
+	public static final int DEFAULT_IMAGE_TOTAL_SIZE = 500 * 1024; // 500 Kb
+	public static final int CONTINUE_LOADING_PERCENTAGE = 75;
+	private IoUtils() {
+	}
+	public static boolean copyStream(InputStream is, OutputStream os, CopyListener listener) throws IOException {
+		return copyStream(is, os, listener, DEFAULT_BUFFER_SIZE);
+	}
+	public static boolean copyStream(InputStream is, OutputStream os, CopyListener listener, int bufferSize)
+			throws IOException {
+		int current = 0;
+		int total = is.available();
+		if (total <= 0) {
+			total = DEFAULT_IMAGE_TOTAL_SIZE;
+		}
+		final byte[] bytes = new byte[bufferSize];
+		int count;
+		if (shouldStopLoading(listener, current, total)) return false;
+		while ((count = is.read(bytes, 0, bufferSize)) != -1) {
+			os.write(bytes, 0, count);
+			current += count;
+			if (shouldStopLoading(listener, current, total)) return false;
+		}
+		os.flush();
+		return true;
+	}
+	private static boolean shouldStopLoading(CopyListener listener, int current, int total) {
+		if (listener != null) {
+			boolean shouldContinue = listener.onBytesCopied(current, total);
+			if (!shouldContinue) {
+				if (100 * current / total < CONTINUE_LOADING_PERCENTAGE) {
+					return true; // if loaded more than 75% then continue loading anyway
+				}
+			}
+		}
+		return false;
+	}
+	public static void readAndCloseStream(InputStream is) {
+		final byte[] bytes = new byte[DEFAULT_BUFFER_SIZE];
+		try {
+			while (is.read(bytes, 0, DEFAULT_BUFFER_SIZE) != -1);
+		} catch (IOException ignored) {
+		} finally {
+			closeSilently(is);
+		}
+	}
+	public static void closeSilently(Closeable closeable) {
+		if (closeable != null) {
+			try {
+				closeable.close();
+			} catch (Exception ignored) {
+			}
+		}
+	}
+	public static interface CopyListener {
+		boolean onBytesCopied(int current, int total);
+	}
+}",class,
+"	private IoUtils() {
+	}",method,
+"	public static boolean copyStream(InputStream is, OutputStream os, CopyListener listener) throws IOException {
+		return copyStream(is, os, listener, DEFAULT_BUFFER_SIZE);
+	}",method,
+"	public static boolean copyStream(InputStream is, OutputStream os, CopyListener listener, int bufferSize)
+			throws IOException {
+		int current = 0;
+		int total = is.available();
+		if (total <= 0) {
+			total = DEFAULT_IMAGE_TOTAL_SIZE;
+		}
+		final byte[] bytes = new byte[bufferSize];
+		int count;
+		if (shouldStopLoading(listener, current, total)) return false;
+		while ((count = is.read(bytes, 0, bufferSize)) != -1) {
+			os.write(bytes, 0, count);
+			current += count;
+			if (shouldStopLoading(listener, current, total)) return false;
+		}
+		os.flush();
+		return true;
+	}",method,
+"		if (total <= 0) {
+			total = DEFAULT_IMAGE_TOTAL_SIZE;
+		}",method,
+"	private static boolean shouldStopLoading(CopyListener listener, int current, int total) {
+		if (listener != null) {
+			boolean shouldContinue = listener.onBytesCopied(current, total);
+			if (!shouldContinue) {
+				if (100 * current / total < CONTINUE_LOADING_PERCENTAGE) {
+					return true; // if loaded more than 75% then continue loading anyway
+				}
+			}
+		}
+		return false;
+	}",method,
+"		if (listener != null) {
+			boolean shouldContinue = listener.onBytesCopied(current, total);
+			if (!shouldContinue) {
+				if (100 * current / total < CONTINUE_LOADING_PERCENTAGE) {
+					return true; // if loaded more than 75% then continue loading anyway
+				}
+			}
+		}",method,
+"			if (!shouldContinue) {
+				if (100 * current / total < CONTINUE_LOADING_PERCENTAGE) {
+					return true; // if loaded more than 75% then continue loading anyway
+				}
+			}",method,
+"				if (100 * current / total < CONTINUE_LOADING_PERCENTAGE) {
+					return true; // if loaded more than 75% then continue loading anyway
+				}",method,

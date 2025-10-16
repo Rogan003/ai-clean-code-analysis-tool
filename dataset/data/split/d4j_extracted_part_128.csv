@@ -1,0 +1,1319 @@
+code_snippet,type,score
+"    for (ClassSymbol symbol : classSymbols) {
+      if (!symbol.isHierarchyIncomplete() && symbol.hasAmbiguousSupers()) {
+        ambiguousSupers.set(symbol.myAnchorId);
+      }
+    }",method,
+"  @NotNull
+  private static BitSet calcAnonymous(ClassSymbol[] classSymbols) {
+    BitSet answer = new BitSet();
+    for (ClassSymbol symbol : classSymbols) {
+      if (!symbol.isHierarchyIncomplete() && symbol.myShortName == NameEnvironment.NO_NAME) {
+        answer.set(symbol.myAnchorId);
+      }
+    }
+    return answer;
+  }",method,
+"    for (ClassSymbol symbol : classSymbols) {
+      if (!symbol.isHierarchyIncomplete() && symbol.myShortName == NameEnvironment.NO_NAME) {
+        answer.set(symbol.myAnchorId);
+      }
+    }",method,
+"  @NotNull
+  private BitSet calcCoveredFiles(ClassSymbol[] classSymbols) {
+    BitSet problematicFiles = new BitSet();
+    BitSet coveredFiles = new BitSet();
+    for (ClassSymbol symbol : classSymbols) {
+      int fileId = myClassAnchors.getFileId(symbol.myAnchorId);
+      coveredFiles.set(fileId);
+      if (symbol.isHierarchyIncomplete()) {
+        problematicFiles.set(fileId);
+      }
+    }
+    coveredFiles.andNot(problematicFiles);
+    return coveredFiles;
+  }",method,
+"    for (ClassSymbol symbol : classSymbols) {
+      int fileId = myClassAnchors.getFileId(symbol.myAnchorId);
+      coveredFiles.set(fileId);
+      if (symbol.isHierarchyIncomplete()) {
+        problematicFiles.set(fileId);
+      }
+    }",method,
+"  private boolean isCovered(@NotNull StubClassAnchor anchor) {
+    return myCoveredFiles.get(anchor.myFileId);
+  }",method,
+"  @Override
+  @NotNull
+  public List<StubClassAnchor> getCoveredClasses() {
+    return ContainerUtil.filter(getAllClasses(), this::isCovered);
+  }",method,
+"  @Override
+  @NotNull
+  public List<StubClassAnchor> getAllClasses() {
+    return IntStream.range(0, myClassAnchors.size()).boxed().map(myClassAnchors::getAnchor).collect(Collectors.toList());
+  }",method,
+"  @NotNull
+  @Override
+  public SmartClassAnchor[] getDirectSubtypeCandidates(@NotNull PsiClass psiClass) {
+    SmartClassAnchor anchor = findAnchor(psiClass);
+    return anchor == null ? StubClassAnchor.EMPTY_ARRAY : getDirectSubtypeCandidates(anchor);
+  }",method,
+"  @Override
+  @Nullable
+  public SmartClassAnchor findAnchor(@NotNull PsiClass psiClass) {
+    VirtualFile vFile = psiClass.getContainingFile().getVirtualFile();
+    return vFile instanceof VirtualFileWithId ? forPsiClass(((VirtualFileWithId)vFile).getId(), psiClass) : null;
+  }",method,
+"  @NotNull
+  @Override
+  public SmartClassAnchor[] getDirectSubtypeCandidates(@NotNull SmartClassAnchor anchor) {
+    int symbolId = ((StubClassAnchor)anchor).myId;
+    int start = subtypeStart(symbolId);
+    int end = subtypeEnd(symbolId);
+    int length = end - start;
+    if (length == 0) {
+      return StubClassAnchor.EMPTY_ARRAY;
+    }
+    StubClassAnchor[] result = new StubClassAnchor[length];
+    for (int i = 0; i < length; i++) {
+      result[i] = myClassAnchors.getAnchor(mySubtypes[start + i]);
+    }
+    return result;
+  }",method,
+"    if (length == 0) {
+      return StubClassAnchor.EMPTY_ARRAY;
+    }",method,
+"    for (int i = 0; i < length; i++) {
+      result[i] = myClassAnchors.getAnchor(mySubtypes[start + i]);
+    }",method,
+"  @Override
+  public boolean hasAmbiguousSupers(@NotNull SmartClassAnchor anchor) {
+    return myAmbiguousSupers.get(((StubClassAnchor)anchor).myId);
+  }",method,
+"  @Override
+  public boolean isAnonymous(@NotNull SmartClassAnchor anchor) {
+    return myAnonymous.get(((StubClassAnchor)anchor).myId);
+  }",method,
+"  @NotNull
+  @Override
+  public GlobalSearchScope restrictToUncovered(@NotNull GlobalSearchScope scope) {
+    if (myCoveredFiles.isEmpty()) {
+      return scope;
+    }
+    return new DelegatingGlobalSearchScope(scope, this) {
+      @Override
+      public boolean contains(@NotNull VirtualFile file) {
+        if (file instanceof VirtualFileWithId && myCoveredFiles.get(((VirtualFileWithId)file).getId())) {
+          return false;
+        }
+        return super.contains(file);
+      }
+    };
+  }",method,
+"    return new DelegatingGlobalSearchScope(scope, this) {
+      @Override
+      public boolean contains(@NotNull VirtualFile file) {
+        if (file instanceof VirtualFileWithId && myCoveredFiles.get(((VirtualFileWithId)file).getId())) {
+          return false;
+        }
+        return super.contains(file);
+      }
+    }",method,
+"      @Override
+      public boolean contains(@NotNull VirtualFile file) {
+        if (file instanceof VirtualFileWithId && myCoveredFiles.get(((VirtualFileWithId)file).getId())) {
+          return false;
+        }
+        return super.contains(file);
+      }",method,
+"  @NotNull
+  private Integer[] getAnchorsFromDistinctFiles() {
+    if (myClassAnchors.size() == 0) return new Integer[0];
+    Integer[] result = new Integer[myClassAnchors.size()];
+    result[0] = 0;
+    int i = 1;
+    for (int classAnchor = 1; classAnchor < result.length; classAnchor++) {
+      if (myClassAnchors.getFileId(classAnchor - 1) != myClassAnchors.getFileId(classAnchor)) {
+        result[i++] = classAnchor;
+      }
+    }
+    return Arrays.copyOf(result, i);
+  }",method,
+"    for (int classAnchor = 1; classAnchor < result.length; classAnchor++) {
+      if (myClassAnchors.getFileId(classAnchor - 1) != myClassAnchors.getFileId(classAnchor)) {
+        result[i++] = classAnchor;
+      }
+    }",method,
+"  private int[] mkByFileId() {
+    // using a boxed array since there seems to be no easy way to sort int[] with custom comparator
+    Integer[] ids = getAnchorsFromDistinctFiles();
+    Arrays.sort(ids, (a1, a2) -> Integer.compare(myClassAnchors.getFileId(a1), myClassAnchors.getFileId(a2)));
+    return ArrayUtils.toPrimitive(ids);
+  }",method,
+"  private void connectSubTypes(ClassSymbol[] classSymbols) {
+    int[] sizes = calculateSizes(classSymbols);
+    int[] starts = new int[classSymbols.length];
+    int count = 0;
+    for (int i = 0; i < sizes.length; i++) {
+      starts[i] = count;
+      count += sizes[i];
+    }
+    int[] subtypes = new int[count];
+    int[] filled = new int[sizes.length];
+    for (int subTypeId = 0; subTypeId < classSymbols.length; subTypeId++) {
+      ClassSymbol subType = classSymbols[subTypeId];
+      for (ClassSymbol superType : subType.rawSuperClasses()) {
+        int superTypeId = superType.myAnchorId;
+        subtypes[starts[superTypeId] + filled[superTypeId]] = subTypeId;
+        filled[superTypeId] += 1;
+      }
+    }
+    this.mySubtypes = subtypes;
+    this.mySubtypeStarts = starts;
+  }",method,
+"    for (int i = 0; i < sizes.length; i++) {
+      starts[i] = count;
+      count += sizes[i];
+    }",method,
+"    for (int subTypeId = 0; subTypeId < classSymbols.length; subTypeId++) {
+      ClassSymbol subType = classSymbols[subTypeId];
+      for (ClassSymbol superType : subType.rawSuperClasses()) {
+        int superTypeId = superType.myAnchorId;
+        subtypes[starts[superTypeId] + filled[superTypeId]] = subTypeId;
+        filled[superTypeId] += 1;
+      }
+    }",method,
+"  private void excludeUncoveredFiles(ClassSymbol[] classSymbols) {
+    for (ClassSymbol symbol : classSymbols) {
+      if (!myCoveredFiles.get(myClassAnchors.getFileId(symbol.myAnchorId))) {
+        symbol.markHierarchyIncomplete();
+      }
+    }
+  }",method,
+"    for (ClassSymbol symbol : classSymbols) {
+      if (!myCoveredFiles.get(myClassAnchors.getFileId(symbol.myAnchorId))) {
+        symbol.markHierarchyIncomplete();
+      }
+    }",method,
+"  private static int[] calculateSizes(ClassSymbol[] classSymbols) {
+    int[] sizes = new int[classSymbols.length];
+    for (ClassSymbol subType : classSymbols) {
+      for (ClassSymbol superType : subType.rawSuperClasses()) {
+        sizes[superType.myAnchorId] += 1;
+      }
+    }
+    return sizes;
+  }",method,
+"    for (ClassSymbol subType : classSymbols) {
+      for (ClassSymbol superType : subType.rawSuperClasses()) {
+        sizes[superType.myAnchorId] += 1;
+      }
+    }",method,
+"  private int subtypeStart(int nameId) {
+    return mySubtypeStarts[nameId];
+  }",method,
+"  private int subtypeEnd(int nameId) {
+    return (nameId + 1 >= mySubtypeStarts.length) ? mySubtypes.length : mySubtypeStarts[nameId + 1];
+  }",method,
+"  private StubClassAnchor forPsiClass(int fileId, PsiClass psiClass) {
+    int id = getFirst(fileId);
+    if (id == -1) {
+      return null;
+    }
+    while (id < myClassAnchors.size() && myClassAnchors.getFileId(id) == fileId) {
+      if (psiClass.isEquivalentTo(myClassAnchors.retrieveClass(psiClass.getProject(), id))) {
+        return myClassAnchors.getAnchor(id);
+      }
+      id++;
+    }
+    return null;
+  }",method,
+"    if (id == -1) {
+      return null;
+    }",method,
+"  private int getFirst(int fileId) {
+    int lo = 0;
+    int hi = myClassAnchorsByFileIds.length - 1;
+    while (lo <= hi) {
+      int mid = lo + (hi - lo) / 2;
+      int midFileId = myClassAnchors.getFileId(myClassAnchorsByFileIds[mid]);
+      if      (fileId < midFileId) hi = mid - 1;
+      else if (fileId > midFileId) lo = mid + 1;
+      else return myClassAnchorsByFileIds[mid];
+    }
+    return -1;
+  }",method,
+"    while (lo <= hi) {
+      int mid = lo + (hi - lo) / 2;
+      int midFileId = myClassAnchors.getFileId(myClassAnchorsByFileIds[mid]);
+      if      (fileId < midFileId) hi = mid - 1;
+      else if (fileId > midFileId) lo = mid + 1;
+      else return myClassAnchorsByFileIds[mid];
+    }",method,
+"public class UploadFile implements CommandHandler {
+  private final JsonToBeanConverter toBean;
+  private final ActiveSession session;
+  public UploadFile(JsonToBeanConverter toBean, ActiveSession session) {
+    this.toBean = Objects.requireNonNull(toBean);
+    this.session = Objects.requireNonNull(session);
+  }
+  @Override
+  public void execute(HttpRequest req, HttpResponse resp) throws IOException {
+    Map<?, ?> args = toBean.convert(Map.class, req.getContentString());
+    String file = (String) args.get(""file"");
+    File tempDir = session.getFileSystem().createTempDir(""upload"", ""file"");
+    Zip.unzip(file, tempDir);
+    // Select the first file
+    File[] allFiles = tempDir.listFiles();
+    Response response = new Response(session.getId());
+    if (allFiles == null || allFiles.length != 1) {
+      response.setStatus(ErrorCodes.UNHANDLED_ERROR);
+      response.setValue(new WebDriverException(
+          ""Expected there to be only 1 file. There were: "" +
+          (allFiles == null ? 0 : allFiles.length)));
+    } else {
+      response.setStatus(ErrorCodes.SUCCESS);
+      response.setValue(allFiles[0].getAbsolutePath());
+    }
+    session.getDownstreamDialect().getResponseCodec().encode(() -> resp, response);
+  }
+}",class,
+"  public UploadFile(JsonToBeanConverter toBean, ActiveSession session) {
+    this.toBean = Objects.requireNonNull(toBean);
+    this.session = Objects.requireNonNull(session);
+  }",method,
+"  @Override
+  public void execute(HttpRequest req, HttpResponse resp) throws IOException {
+    Map<?, ?> args = toBean.convert(Map.class, req.getContentString());
+    String file = (String) args.get(""file"");
+    File tempDir = session.getFileSystem().createTempDir(""upload"", ""file"");
+    Zip.unzip(file, tempDir);
+    // Select the first file
+    File[] allFiles = tempDir.listFiles();
+    Response response = new Response(session.getId());
+    if (allFiles == null || allFiles.length != 1) {
+      response.setStatus(ErrorCodes.UNHANDLED_ERROR);
+      response.setValue(new WebDriverException(
+          ""Expected there to be only 1 file. There were: "" +
+          (allFiles == null ? 0 : allFiles.length)));
+    } else {
+      response.setStatus(ErrorCodes.SUCCESS);
+      response.setValue(allFiles[0].getAbsolutePath());
+    }
+    session.getDownstreamDialect().getResponseCodec().encode(() -> resp, response);
+  }",method,
+"    if (allFiles == null || allFiles.length != 1) {
+      response.setStatus(ErrorCodes.UNHANDLED_ERROR);
+      response.setValue(new WebDriverException(
+          ""Expected there to be only 1 file. There were: "" +
+          (allFiles == null ? 0 : allFiles.length)));
+    }",method,
+"public class StartNewLineBeforeAction extends EditorAction {
+  public StartNewLineBeforeAction() {
+    super(new Handler());
+  }
+  private static class Handler extends EditorWriteActionHandler {
+    public Handler() {
+      super(true);
+    }
+    @Override
+    public boolean isEnabledForCaret(@NotNull Editor editor, @NotNull Caret caret, DataContext dataContext) {
+      return getHandler(IdeActions.ACTION_EDITOR_ENTER).isEnabled(editor, caret, dataContext);
+    }
+    @Override
+    public void executeWriteAction(Editor editor, Caret caret, DataContext dataContext) {
+      editor.getSelectionModel().removeSelection();
+      LogicalPosition caretPosition = editor.getCaretModel().getLogicalPosition();
+      final int line = caretPosition.line;
+      int lineStartOffset = editor.getDocument().getLineStartOffset(line);
+      editor.getCaretModel().moveToOffset(lineStartOffset);
+      getHandler(IdeActions.ACTION_EDITOR_ENTER).execute(editor, caret, dataContext);
+      editor.getCaretModel().moveToOffset(editor.getDocument().getLineStartOffset(line));
+      getHandler(IdeActions.ACTION_EDITOR_MOVE_LINE_END).execute(editor, caret, dataContext);
+    }
+    private static EditorActionHandler getHandler(@NotNull String actionId) {
+      return EditorActionManager.getInstance().getActionHandler(actionId);
+    }
+  }
+}",class,
+"  private static class Handler extends EditorWriteActionHandler {
+    public Handler() {
+      super(true);
+    }
+    @Override
+    public boolean isEnabledForCaret(@NotNull Editor editor, @NotNull Caret caret, DataContext dataContext) {
+      return getHandler(IdeActions.ACTION_EDITOR_ENTER).isEnabled(editor, caret, dataContext);
+    }
+    @Override
+    public void executeWriteAction(Editor editor, Caret caret, DataContext dataContext) {
+      editor.getSelectionModel().removeSelection();
+      LogicalPosition caretPosition = editor.getCaretModel().getLogicalPosition();
+      final int line = caretPosition.line;
+      int lineStartOffset = editor.getDocument().getLineStartOffset(line);
+      editor.getCaretModel().moveToOffset(lineStartOffset);
+      getHandler(IdeActions.ACTION_EDITOR_ENTER).execute(editor, caret, dataContext);
+      editor.getCaretModel().moveToOffset(editor.getDocument().getLineStartOffset(line));
+      getHandler(IdeActions.ACTION_EDITOR_MOVE_LINE_END).execute(editor, caret, dataContext);
+    }
+    private static EditorActionHandler getHandler(@NotNull String actionId) {
+      return EditorActionManager.getInstance().getActionHandler(actionId);
+    }
+  }",class,
+"  public StartNewLineBeforeAction() {
+    super(new Handler());
+  }",method,
+"    public Handler() {
+      super(true);
+    }",method,
+"    @Override
+    public boolean isEnabledForCaret(@NotNull Editor editor, @NotNull Caret caret, DataContext dataContext) {
+      return getHandler(IdeActions.ACTION_EDITOR_ENTER).isEnabled(editor, caret, dataContext);
+    }",method,
+"    @Override
+    public void executeWriteAction(Editor editor, Caret caret, DataContext dataContext) {
+      editor.getSelectionModel().removeSelection();
+      LogicalPosition caretPosition = editor.getCaretModel().getLogicalPosition();
+      final int line = caretPosition.line;
+      int lineStartOffset = editor.getDocument().getLineStartOffset(line);
+      editor.getCaretModel().moveToOffset(lineStartOffset);
+      getHandler(IdeActions.ACTION_EDITOR_ENTER).execute(editor, caret, dataContext);
+      editor.getCaretModel().moveToOffset(editor.getDocument().getLineStartOffset(line));
+      getHandler(IdeActions.ACTION_EDITOR_MOVE_LINE_END).execute(editor, caret, dataContext);
+    }",method,
+"    private static EditorActionHandler getHandler(@NotNull String actionId) {
+      return EditorActionManager.getInstance().getActionHandler(actionId);
+    }",method,
+"public class ImmutableNetworkTest {
+  @Test
+  public void immutableNetwork() {
+    MutableNetwork<String, Integer> mutableNetwork = NetworkBuilder.directed().build();
+    mutableNetwork.addNode(""A"");
+    ImmutableNetwork<String, Integer> immutableNetwork = ImmutableNetwork.copyOf(mutableNetwork);
+    assertThat(immutableNetwork.asGraph()).isInstanceOf(ImmutableGraph.class);
+    assertThat(immutableNetwork).isNotInstanceOf(MutableNetwork.class);
+    assertThat(immutableNetwork).isEqualTo(mutableNetwork);
+    mutableNetwork.addNode(""B"");
+    assertThat(immutableNetwork).isNotEqualTo(mutableNetwork);
+  }
+  @Test
+  public void copyOfImmutableNetwork_optimized() {
+    Network<String, String> network1 =
+        ImmutableNetwork.copyOf(NetworkBuilder.directed().<String, String>build());
+    Network<String, String> network2 = ImmutableNetwork.copyOf(network1);
+    assertThat(network2).isSameAs(network1);
+  }
+  @Test
+  public void edgesConnecting_directed() {
+    MutableNetwork<String, String> mutableNetwork =
+        NetworkBuilder.directed().allowsSelfLoops(true).build();
+    mutableNetwork.addEdge(""A"", ""A"", ""AA"");
+    mutableNetwork.addEdge(""A"", ""B"", ""AB"");
+    Network<String, String> network = ImmutableNetwork.copyOf(mutableNetwork);
+    assertThat(network.edgesConnecting(""A"", ""A"")).containsExactly(""AA"");
+    assertThat(network.edgesConnecting(""A"", ""B"")).containsExactly(""AB"");
+    assertThat(network.edgesConnecting(""B"", ""A"")).isEmpty();
+  }
+  @Test
+  public void edgesConnecting_undirected() {
+    MutableNetwork<String, String> mutableNetwork =
+        NetworkBuilder.undirected().allowsSelfLoops(true).build();
+    mutableNetwork.addEdge(""A"", ""A"", ""AA"");
+    mutableNetwork.addEdge(""A"", ""B"", ""AB"");
+    Network<String, String> network = ImmutableNetwork.copyOf(mutableNetwork);
+    assertThat(network.edgesConnecting(""A"", ""A"")).containsExactly(""AA"");
+    assertThat(network.edgesConnecting(""A"", ""B"")).containsExactly(""AB"");
+    assertThat(network.edgesConnecting(""B"", ""A"")).containsExactly(""AB"");
+  }
+}",class,
+"  @Test
+  public void immutableNetwork() {
+    MutableNetwork<String, Integer> mutableNetwork = NetworkBuilder.directed().build();
+    mutableNetwork.addNode(""A"");
+    ImmutableNetwork<String, Integer> immutableNetwork = ImmutableNetwork.copyOf(mutableNetwork);
+    assertThat(immutableNetwork.asGraph()).isInstanceOf(ImmutableGraph.class);
+    assertThat(immutableNetwork).isNotInstanceOf(MutableNetwork.class);
+    assertThat(immutableNetwork).isEqualTo(mutableNetwork);
+    mutableNetwork.addNode(""B"");
+    assertThat(immutableNetwork).isNotEqualTo(mutableNetwork);
+  }",method,
+"  @Test
+  public void copyOfImmutableNetwork_optimized() {
+    Network<String, String> network1 =
+        ImmutableNetwork.copyOf(NetworkBuilder.directed().<String, String>build());
+    Network<String, String> network2 = ImmutableNetwork.copyOf(network1);
+    assertThat(network2).isSameAs(network1);
+  }",method,
+"  @Test
+  public void edgesConnecting_directed() {
+    MutableNetwork<String, String> mutableNetwork =
+        NetworkBuilder.directed().allowsSelfLoops(true).build();
+    mutableNetwork.addEdge(""A"", ""A"", ""AA"");
+    mutableNetwork.addEdge(""A"", ""B"", ""AB"");
+    Network<String, String> network = ImmutableNetwork.copyOf(mutableNetwork);
+    assertThat(network.edgesConnecting(""A"", ""A"")).containsExactly(""AA"");
+    assertThat(network.edgesConnecting(""A"", ""B"")).containsExactly(""AB"");
+    assertThat(network.edgesConnecting(""B"", ""A"")).isEmpty();
+  }",method,
+"  @Test
+  public void edgesConnecting_undirected() {
+    MutableNetwork<String, String> mutableNetwork =
+        NetworkBuilder.undirected().allowsSelfLoops(true).build();
+    mutableNetwork.addEdge(""A"", ""A"", ""AA"");
+    mutableNetwork.addEdge(""A"", ""B"", ""AB"");
+    Network<String, String> network = ImmutableNetwork.copyOf(mutableNetwork);
+    assertThat(network.edgesConnecting(""A"", ""A"")).containsExactly(""AA"");
+    assertThat(network.edgesConnecting(""A"", ""B"")).containsExactly(""AB"");
+    assertThat(network.edgesConnecting(""B"", ""A"")).containsExactly(""AB"");
+  }",method,
+"public class XercesClassLoader extends URLClassLoader
+{
+    private String[] exceptionList = new String[] {""org.apache.xerces""};
+    private Map classCache = new HashMap();
+    XercesClassLoader(URL[] classpath, ClassLoader parent)
+    {
+        super(classpath, parent);
+        this.exceptionList = exceptionList;
+    }
+    private boolean isStrInList(String name, String[] list)
+    {
+        boolean retValue = false;
+        if (list != null)
+        {
+            for (int i = 0; i < list.length; i++)
+            {
+                if (name.startsWith(list[i]))
+                {
+                    retValue = true;
+                    break;
+                }
+            }
+        }
+        return retValue;
+    }
+    private boolean delegateToSuper(String name)
+    {
+        return !isStrInList(name, exceptionList);
+    }
+    protected Class loadClass(String name, boolean resolve)
+            throws ClassNotFoundException
+    {
+        // First, check if the class has already been loaded by this class loader
+        Class c = findLoadedClass(name);
+        if (c != null)
+        {
+            return c;
+        }
+        c = (Class) classCache.get(name);
+        if (c == null)
+        {
+            synchronized (this)
+            {
+                c = (Class) classCache.get(name);
+                if (c == null)
+                {
+                    // First Delegate class loading to the Application class loader and
+                    // if not found try this class loader.
+                    if (delegateToSuper(name))
+                    {
+                        try
+                        {
+                            c = super.loadClass(name, resolve);
+                        }
+                        catch (ClassNotFoundException cnfe)
+                        {
+                            //maybe the parent doesn't have this,
+                            // in which case keep going and try to find it
+                            // in our ClassLoader.
+                            c = findClass(name);
+                        }
+                    }
+                    // First try to load the class using this class loader and if not found
+                    // delegate to the parent application class loader.
+                    else
+                    {
+                        try
+                        {
+                            //find the class in our classpath first, if it exists, use it.
+                            c = findClass(name);
+                        }
+                        catch (ClassNotFoundException e)
+                        {
+                            //else use the standard mechanism for loading classes.
+                            c = super.loadClass(name, false);
+                        }
+                    }
+                    if (c == null)
+                    {
+                        throw new ClassNotFoundException();
+                    }
+                }
+                classCache.put(name, c);
+            }
+        }
+        if (resolve)
+        {
+            resolveClass(c);
+        }
+        return c;
+    }
+    public URL getResource(String name)
+    {
+        URL url = null;
+        if (url == null)
+        {
+            url = findResource(name);
+        }
+        if (url == null)
+        {
+            url = getParent().getResource(name);
+        }
+        return url;
+    }
+}",class,
+"        // First, check if the class has already been loaded by this class loader
+        Class c = findLoadedClass(name);
+        if (c != null)
+        {
+            return c;
+        }",class,
+"                    // First Delegate class loading to the Application class loader and
+                    // if not found try this class loader.
+                    if (delegateToSuper(name))
+                    {
+                        try
+                        {
+                            c = super.loadClass(name, resolve);
+                        }
+                        catch (ClassNotFoundException cnfe)
+                        {
+                            //maybe the parent doesn't have this,
+                            // in which case keep going and try to find it
+                            // in our ClassLoader.
+                            c = findClass(name);
+                        }
+                    }",class,
+"                    // First try to load the class using this class loader and if not found
+                    // delegate to the parent application class loader.
+                    else
+                    {
+                        try
+                        {
+                            //find the class in our classpath first, if it exists, use it.
+                            c = findClass(name);
+                        }
+                        catch (ClassNotFoundException e)
+                        {
+                            //else use the standard mechanism for loading classes.
+                            c = super.loadClass(name, false);
+                        }
+                    }",class,
+"                            //find the class in our classpath first, if it exists, use it.
+                            c = findClass(name);
+                        }
+                        catch (ClassNotFoundException e)
+                        {
+                            //else use the standard mechanism for loading classes.
+                            c = super.loadClass(name, false);
+                        }",class,
+"    XercesClassLoader(URL[] classpath, ClassLoader parent)
+    {
+        super(classpath, parent);
+        this.exceptionList = exceptionList;
+    }",method,
+"    private boolean isStrInList(String name, String[] list)
+    {
+        boolean retValue = false;
+        if (list != null)
+        {
+            for (int i = 0; i < list.length; i++)
+            {
+                if (name.startsWith(list[i]))
+                {
+                    retValue = true;
+                    break;
+                }
+            }
+        }
+        return retValue;
+    }",method,
+"        if (list != null)
+        {
+            for (int i = 0; i < list.length; i++)
+            {
+                if (name.startsWith(list[i]))
+                {
+                    retValue = true;
+                    break;
+                }
+            }
+        }",method,
+"            for (int i = 0; i < list.length; i++)
+            {
+                if (name.startsWith(list[i]))
+                {
+                    retValue = true;
+                    break;
+                }
+            }",method,
+"    private boolean delegateToSuper(String name)
+    {
+        return !isStrInList(name, exceptionList);
+    }",method,
+"    protected Class loadClass(String name, boolean resolve)
+            throws ClassNotFoundException
+    {
+        // First, check if the class has already been loaded by this class loader
+        Class c = findLoadedClass(name);
+        if (c != null)
+        {
+            return c;
+        }
+        c = (Class) classCache.get(name);
+        if (c == null)
+        {
+            synchronized (this)
+            {
+                c = (Class) classCache.get(name);
+                if (c == null)
+                {
+                    // First Delegate class loading to the Application class loader and
+                    // if not found try this class loader.
+                    if (delegateToSuper(name))
+                    {
+                        try
+                        {
+                            c = super.loadClass(name, resolve);
+                        }
+                        catch (ClassNotFoundException cnfe)
+                        {
+                            //maybe the parent doesn't have this,
+                            // in which case keep going and try to find it
+                            // in our ClassLoader.
+                            c = findClass(name);
+                        }
+                    }
+                    // First try to load the class using this class loader and if not found
+                    // delegate to the parent application class loader.
+                    else
+                    {
+                        try
+                        {
+                            //find the class in our classpath first, if it exists, use it.
+                            c = findClass(name);
+                        }
+                        catch (ClassNotFoundException e)
+                        {
+                            //else use the standard mechanism for loading classes.
+                            c = super.loadClass(name, false);
+                        }
+                    }
+                    if (c == null)
+                    {
+                        throw new ClassNotFoundException();
+                    }
+                }
+                classCache.put(name, c);
+            }
+        }
+        if (resolve)
+        {
+            resolveClass(c);
+        }
+        return c;
+    }",method,
+"        if (c != null)
+        {
+            return c;
+        }",method,
+"        if (c == null)
+        {
+            synchronized (this)
+            {
+                c = (Class) classCache.get(name);
+                if (c == null)
+                {
+                    // First Delegate class loading to the Application class loader and
+                    // if not found try this class loader.
+                    if (delegateToSuper(name))
+                    {
+                        try
+                        {
+                            c = super.loadClass(name, resolve);
+                        }
+                        catch (ClassNotFoundException cnfe)
+                        {
+                            //maybe the parent doesn't have this,
+                            // in which case keep going and try to find it
+                            // in our ClassLoader.
+                            c = findClass(name);
+                        }
+                    }
+                    // First try to load the class using this class loader and if not found
+                    // delegate to the parent application class loader.
+                    else
+                    {
+                        try
+                        {
+                            //find the class in our classpath first, if it exists, use it.
+                            c = findClass(name);
+                        }
+                        catch (ClassNotFoundException e)
+                        {
+                            //else use the standard mechanism for loading classes.
+                            c = super.loadClass(name, false);
+                        }
+                    }
+                    if (c == null)
+                    {
+                        throw new ClassNotFoundException();
+                    }
+                }
+                classCache.put(name, c);
+            }
+        }",method,
+"            synchronized (this)
+            {
+                c = (Class) classCache.get(name);
+                if (c == null)
+                {
+                    // First Delegate class loading to the Application class loader and
+                    // if not found try this class loader.
+                    if (delegateToSuper(name))
+                    {
+                        try
+                        {
+                            c = super.loadClass(name, resolve);
+                        }
+                        catch (ClassNotFoundException cnfe)
+                        {
+                            //maybe the parent doesn't have this,
+                            // in which case keep going and try to find it
+                            // in our ClassLoader.
+                            c = findClass(name);
+                        }
+                    }
+                    // First try to load the class using this class loader and if not found
+                    // delegate to the parent application class loader.
+                    else
+                    {
+                        try
+                        {
+                            //find the class in our classpath first, if it exists, use it.
+                            c = findClass(name);
+                        }
+                        catch (ClassNotFoundException e)
+                        {
+                            //else use the standard mechanism for loading classes.
+                            c = super.loadClass(name, false);
+                        }
+                    }
+                    if (c == null)
+                    {
+                        throw new ClassNotFoundException();
+                    }
+                }
+                classCache.put(name, c);
+            }",method,
+"                if (c == null)
+                {
+                    // First Delegate class loading to the Application class loader and
+                    // if not found try this class loader.
+                    if (delegateToSuper(name))
+                    {
+                        try
+                        {
+                            c = super.loadClass(name, resolve);
+                        }
+                        catch (ClassNotFoundException cnfe)
+                        {
+                            //maybe the parent doesn't have this,
+                            // in which case keep going and try to find it
+                            // in our ClassLoader.
+                            c = findClass(name);
+                        }
+                    }
+                    // First try to load the class using this class loader and if not found
+                    // delegate to the parent application class loader.
+                    else
+                    {
+                        try
+                        {
+                            //find the class in our classpath first, if it exists, use it.
+                            c = findClass(name);
+                        }
+                        catch (ClassNotFoundException e)
+                        {
+                            //else use the standard mechanism for loading classes.
+                            c = super.loadClass(name, false);
+                        }
+                    }
+                    if (c == null)
+                    {
+                        throw new ClassNotFoundException();
+                    }
+                }",method,
+"                        catch (ClassNotFoundException cnfe)
+                        {
+                            //maybe the parent doesn't have this,
+                            // in which case keep going and try to find it
+                            // in our ClassLoader.
+                            c = findClass(name);
+                        }",method,
+"                        catch (ClassNotFoundException e)
+                        {
+                            //else use the standard mechanism for loading classes.
+                            c = super.loadClass(name, false);
+                        }",method,
+"                    if (c == null)
+                    {
+                        throw new ClassNotFoundException();
+                    }",method,
+"        if (resolve)
+        {
+            resolveClass(c);
+        }",method,
+"    public URL getResource(String name)
+    {
+        URL url = null;
+        if (url == null)
+        {
+            url = findResource(name);
+        }
+        if (url == null)
+        {
+            url = getParent().getResource(name);
+        }
+        return url;
+    }",method,
+"        if (url == null)
+        {
+            url = findResource(name);
+        }",method,
+"        if (url == null)
+        {
+            url = getParent().getResource(name);
+        }",method,
+"  SourceVersion(int version, String flag) {
+    this.flag = flag;
+    this.version = version;
+  }",method,
+"  public int version() {
+    return version;
+  }",method,
+"  public String flag() {
+    return flag;
+  }",method,
+"  public static SourceVersion parse(String flag) {
+    String fullFlag = flag.length() == 1 ? ""1."" + flag : flag;
+    for (SourceVersion sv : values()) {
+      if (sv.flag.equals(fullFlag)) {
+        return sv;
+      }
+    }
+    throw new IllegalArgumentException(flag);
+  }",method,
+"  public static SourceVersion valueOf(int majorVersion) {
+    for (SourceVersion sv : values()) {
+      if (sv.version == majorVersion) {
+        return sv;
+      }
+    }
+    throw new IllegalArgumentException(""Unsupported version: "" + majorVersion);
+  }",method,
+"      if (sv.version == majorVersion) {
+        return sv;
+      }",method,
+"  public static boolean java7Minimum(SourceVersion sourceVersion) {
+    return sourceVersion.version >= 7;
+  }",method,
+"  public static boolean java8Minimum(SourceVersion sourceVersion) {
+    return sourceVersion.version >= 8;
+  }",method,
+"  public static boolean java9Minimum(SourceVersion sourceVersion) {
+    return sourceVersion.version >= 9;
+  }",method,
+"  public static SourceVersion defaultVersion() {
+    try {
+      Method versionMethod = Runtime.class.getMethod(""version"");
+      Object version = versionMethod.invoke(null);
+      int majorVersion = (int) version.getClass().getMethod(""major"").invoke(version);
+      return SourceVersion.valueOf(majorVersion);
+    } catch (Exception e) {
+      SourceVersion sysVer = SourceVersion.parse(System.getProperty(""java.specification.version""));
+      // TODO(tball): remove when Java 9 source is supported.
+      return sysVer == JAVA_9 ? JAVA_8 : sysVer;
+    }
+  }",method,
+"  @Override
+  public String toString() {
+    return flag;
+  }",method,
+"public class AtBeanLiteModeScopeTests {
+	static class LiteBeans {
+		@Bean
+		public LifecycleBean singleton() {
+			LifecycleBean bean = new LifecycleBean(""singleton"");
+			assertFalse(bean.isInitialized());
+			return bean;
+		}
+		@Bean
+		@Scope(""prototype"")
+		public LifecycleBean prototype() {
+			LifecycleBean bean = new LifecycleBean(""prototype"");
+			assertFalse(bean.isInitialized());
+			return bean;
+		}
+	}
+	@Autowired
+	private ApplicationContext applicationContext;
+	@Autowired
+	@Qualifier(""singleton"")
+	private LifecycleBean injectedSingletonBean;
+	@Autowired
+	@Qualifier(""prototype"")
+	private LifecycleBean injectedPrototypeBean;
+	@Test
+	public void singletonLiteBean() {
+		assertNotNull(injectedSingletonBean);
+		assertTrue(injectedSingletonBean.isInitialized());
+		LifecycleBean retrievedSingletonBean = applicationContext.getBean(""singleton"", LifecycleBean.class);
+		assertNotNull(retrievedSingletonBean);
+		assertTrue(retrievedSingletonBean.isInitialized());
+		assertSame(injectedSingletonBean, retrievedSingletonBean);
+	}
+	@Test
+	public void prototypeLiteBean() {
+		assertNotNull(injectedPrototypeBean);
+		assertTrue(injectedPrototypeBean.isInitialized());
+		LifecycleBean retrievedPrototypeBean = applicationContext.getBean(""prototype"", LifecycleBean.class);
+		assertNotNull(retrievedPrototypeBean);
+		assertTrue(retrievedPrototypeBean.isInitialized());
+		assertNotSame(injectedPrototypeBean, retrievedPrototypeBean);
+	}
+}",class,
+"	static class LiteBeans {
+		@Bean
+		public LifecycleBean singleton() {
+			LifecycleBean bean = new LifecycleBean(""singleton"");
+			assertFalse(bean.isInitialized());
+			return bean;
+		}
+		@Bean
+		@Scope(""prototype"")
+		public LifecycleBean prototype() {
+			LifecycleBean bean = new LifecycleBean(""prototype"");
+			assertFalse(bean.isInitialized());
+			return bean;
+		}
+	}",class,
+"		@Bean
+		public LifecycleBean singleton() {
+			LifecycleBean bean = new LifecycleBean(""singleton"");
+			assertFalse(bean.isInitialized());
+			return bean;
+		}",method,
+"		@Bean
+		@Scope(""prototype"")
+		public LifecycleBean prototype() {
+			LifecycleBean bean = new LifecycleBean(""prototype"");
+			assertFalse(bean.isInitialized());
+			return bean;
+		}",method,
+"	@Test
+	public void singletonLiteBean() {
+		assertNotNull(injectedSingletonBean);
+		assertTrue(injectedSingletonBean.isInitialized());
+		LifecycleBean retrievedSingletonBean = applicationContext.getBean(""singleton"", LifecycleBean.class);
+		assertNotNull(retrievedSingletonBean);
+		assertTrue(retrievedSingletonBean.isInitialized());
+		assertSame(injectedSingletonBean, retrievedSingletonBean);
+	}",method,
+"	@Test
+	public void prototypeLiteBean() {
+		assertNotNull(injectedPrototypeBean);
+		assertTrue(injectedPrototypeBean.isInitialized());
+		LifecycleBean retrievedPrototypeBean = applicationContext.getBean(""prototype"", LifecycleBean.class);
+		assertNotNull(retrievedPrototypeBean);
+		assertTrue(retrievedPrototypeBean.isInitialized());
+		assertNotSame(injectedPrototypeBean, retrievedPrototypeBean);
+	}",method,
+"import java.util.Set;
+class MergeParallelIfsPredicate implements PsiElementPredicate {
+  public boolean satisfiedBy(PsiElement element) {
+    if (!(element instanceof PsiJavaToken)) {
+      return false;
+    }
+    final PsiJavaToken token = (PsiJavaToken)element;
+    final PsiElement parent = token.getParent();
+    if (!(parent instanceof PsiIfStatement)) {
+      return false;
+    }
+    final PsiIfStatement ifStatement = (PsiIfStatement)parent;
+    final PsiElement nextStatement =
+      PsiTreeUtil.skipWhitespacesForward(ifStatement);
+    if (!(nextStatement instanceof PsiIfStatement)) {
+      return false;
+    }
+    final PsiIfStatement nextIfStatement = (PsiIfStatement)nextStatement;
+    if (ErrorUtil.containsError(ifStatement)) {
+      return false;
+    }
+    if (ErrorUtil.containsError(nextIfStatement)) {
+      return false;
+    }
+    if (!ifStatementsCanBeMerged(ifStatement, nextIfStatement)) {
+      return false;
+    }
+    final PsiExpression condition = ifStatement.getCondition();
+    final Set<PsiVariable> variables =
+      VariableAccessUtils.collectUsedVariables(condition);
+    final PsiStatement thenBranch = ifStatement.getThenBranch();
+    if (VariableAccessUtils.isAnyVariableAssigned(variables, thenBranch)) {
+      return false;
+    }
+    final PsiStatement elseBranch = ifStatement.getElseBranch();
+    return !VariableAccessUtils.isAnyVariableAssigned(variables,
+                                                      elseBranch);
+  }
+  public static boolean ifStatementsCanBeMerged(PsiIfStatement statement1,
+                                                PsiIfStatement statement2) {
+    final PsiStatement thenBranch = statement1.getThenBranch();
+    final PsiStatement elseBranch = statement1.getElseBranch();
+    if (thenBranch == null) {
+      return false;
+    }
+    final PsiExpression firstCondition = statement1.getCondition();
+    final PsiExpression secondCondition = statement2.getCondition();
+    if (!EquivalenceChecker.getCanonicalPsiEquivalence().expressionsAreEquivalent(firstCondition,
+                                                                                  secondCondition)) {
+      return false;
+    }
+    final PsiStatement nextThenBranch = statement2.getThenBranch();
+    if (!canBeMerged(thenBranch, nextThenBranch)) {
+      return false;
+    }
+    final PsiStatement nextElseBranch = statement2.getElseBranch();
+    return elseBranch == null || nextElseBranch == null ||
+           canBeMerged(elseBranch, nextElseBranch);
+  }
+  private static boolean canBeMerged(PsiStatement statement1,
+                                     PsiStatement statement2) {
+    if (!ControlFlowUtils.statementMayCompleteNormally(statement1)) {
+      return false;
+    }
+    final Set<String> statement1Declarations =
+      calculateTopLevelDeclarations(statement1);
+    if (containsConflictingDeclarations(statement1Declarations, statement2)) {
+      return false;
+    }
+    final Set<String> statement2Declarations =
+      calculateTopLevelDeclarations(statement2);
+    return !containsConflictingDeclarations(statement2Declarations,
+                                            statement1);
+  }
+  private static boolean containsConflictingDeclarations(
+    Set<String> declarations, PsiElement context) {
+    final DeclarationVisitor visitor = new DeclarationVisitor(declarations);
+    context.accept(visitor);
+    return visitor.hasConflict();
+  }
+  private static Set<String> calculateTopLevelDeclarations(
+    PsiStatement statement) {
+    final Set<String> out = new HashSet<>();
+    if (statement instanceof PsiDeclarationStatement) {
+      addDeclarations((PsiDeclarationStatement)statement, out);
+    }
+    else if (statement instanceof PsiBlockStatement) {
+      final PsiBlockStatement blockStatement =
+        (PsiBlockStatement)statement;
+      final PsiCodeBlock block = blockStatement.getCodeBlock();
+      final PsiStatement[] statements = block.getStatements();
+      for (PsiStatement statement1 : statements) {
+        if (statement1 instanceof PsiDeclarationStatement) {
+          addDeclarations((PsiDeclarationStatement)statement1, out);
+        }
+      }
+    }
+    return out;
+  }
+  private static void addDeclarations(PsiDeclarationStatement statement,
+                                      Collection<String> declaredVariables) {
+    final PsiElement[] elements = statement.getDeclaredElements();
+    for (final PsiElement element : elements) {
+      if (element instanceof PsiVariable) {
+        final PsiVariable variable = (PsiVariable)element;
+        final String name = variable.getName();
+        declaredVariables.add(name);
+      }
+    }
+  }
+  private static class DeclarationVisitor
+    extends JavaRecursiveElementWalkingVisitor {
+    private final Set<String> declarations;
+    private boolean hasConflict = false;
+    private DeclarationVisitor(Set<String> declarations) {
+      super();
+      this.declarations = new HashSet<>(declarations);
+    }
+    @Override
+    public void visitVariable(PsiVariable variable) {
+      super.visitVariable(variable);
+      final String name = variable.getName();
+      for (Object declaration : declarations) {
+        final String testName = (String)declaration;
+        if (testName.equals(name)) {
+          hasConflict = true;
+        }
+      }
+    }
+    public boolean hasConflict() {
+      return hasConflict;
+    }
+  }
+}",class,
+"  private static class DeclarationVisitor
+    extends JavaRecursiveElementWalkingVisitor {
+    private final Set<String> declarations;
+    private boolean hasConflict = false;
+    private DeclarationVisitor(Set<String> declarations) {
+      super();
+      this.declarations = new HashSet<>(declarations);
+    }
+    @Override
+    public void visitVariable(PsiVariable variable) {
+      super.visitVariable(variable);
+      final String name = variable.getName();
+      for (Object declaration : declarations) {
+        final String testName = (String)declaration;
+        if (testName.equals(name)) {
+          hasConflict = true;
+        }
+      }
+    }
+    public boolean hasConflict() {
+      return hasConflict;
+    }
+  }",class,
+"  public boolean satisfiedBy(PsiElement element) {
+    if (!(element instanceof PsiJavaToken)) {
+      return false;
+    }
+    final PsiJavaToken token = (PsiJavaToken)element;
+    final PsiElement parent = token.getParent();
+    if (!(parent instanceof PsiIfStatement)) {
+      return false;
+    }
+    final PsiIfStatement ifStatement = (PsiIfStatement)parent;
+    final PsiElement nextStatement =
+      PsiTreeUtil.skipWhitespacesForward(ifStatement);
+    if (!(nextStatement instanceof PsiIfStatement)) {
+      return false;
+    }
+    final PsiIfStatement nextIfStatement = (PsiIfStatement)nextStatement;
+    if (ErrorUtil.containsError(ifStatement)) {
+      return false;
+    }
+    if (ErrorUtil.containsError(nextIfStatement)) {
+      return false;
+    }
+    if (!ifStatementsCanBeMerged(ifStatement, nextIfStatement)) {
+      return false;
+    }
+    final PsiExpression condition = ifStatement.getCondition();
+    final Set<PsiVariable> variables =
+      VariableAccessUtils.collectUsedVariables(condition);
+    final PsiStatement thenBranch = ifStatement.getThenBranch();
+    if (VariableAccessUtils.isAnyVariableAssigned(variables, thenBranch)) {
+      return false;
+    }
+    final PsiStatement elseBranch = ifStatement.getElseBranch();
+    return !VariableAccessUtils.isAnyVariableAssigned(variables,
+                                                      elseBranch);
+  }",method,
+"  public static boolean ifStatementsCanBeMerged(PsiIfStatement statement1,
+                                                PsiIfStatement statement2) {
+    final PsiStatement thenBranch = statement1.getThenBranch();
+    final PsiStatement elseBranch = statement1.getElseBranch();
+    if (thenBranch == null) {
+      return false;
+    }
+    final PsiExpression firstCondition = statement1.getCondition();
+    final PsiExpression secondCondition = statement2.getCondition();
+    if (!EquivalenceChecker.getCanonicalPsiEquivalence().expressionsAreEquivalent(firstCondition,
+                                                                                  secondCondition)) {
+      return false;
+    }
+    final PsiStatement nextThenBranch = statement2.getThenBranch();
+    if (!canBeMerged(thenBranch, nextThenBranch)) {
+      return false;
+    }
+    final PsiStatement nextElseBranch = statement2.getElseBranch();
+    return elseBranch == null || nextElseBranch == null ||
+           canBeMerged(elseBranch, nextElseBranch);
+  }",method,
+"    if (thenBranch == null) {
+      return false;
+    }",method,
+"  private static boolean canBeMerged(PsiStatement statement1,
+                                     PsiStatement statement2) {
+    if (!ControlFlowUtils.statementMayCompleteNormally(statement1)) {
+      return false;
+    }
+    final Set<String> statement1Declarations =
+      calculateTopLevelDeclarations(statement1);
+    if (containsConflictingDeclarations(statement1Declarations, statement2)) {
+      return false;
+    }
+    final Set<String> statement2Declarations =
+      calculateTopLevelDeclarations(statement2);
+    return !containsConflictingDeclarations(statement2Declarations,
+                                            statement1);
+  }",method,
+"  private static boolean containsConflictingDeclarations(
+    Set<String> declarations, PsiElement context) {
+    final DeclarationVisitor visitor = new DeclarationVisitor(declarations);
+    context.accept(visitor);
+    return visitor.hasConflict();
+  }",method,
+"  private static Set<String> calculateTopLevelDeclarations(
+    PsiStatement statement) {
+    final Set<String> out = new HashSet<>();
+    if (statement instanceof PsiDeclarationStatement) {
+      addDeclarations((PsiDeclarationStatement)statement, out);
+    }
+    else if (statement instanceof PsiBlockStatement) {
+      final PsiBlockStatement blockStatement =
+        (PsiBlockStatement)statement;
+      final PsiCodeBlock block = blockStatement.getCodeBlock();
+      final PsiStatement[] statements = block.getStatements();
+      for (PsiStatement statement1 : statements) {
+        if (statement1 instanceof PsiDeclarationStatement) {
+          addDeclarations((PsiDeclarationStatement)statement1, out);
+        }
+      }
+    }
+    return out;
+  }",method,
+"    if (statement instanceof PsiDeclarationStatement) {
+      addDeclarations((PsiDeclarationStatement)statement, out);
+    }",method,
+"    else if (statement instanceof PsiBlockStatement) {
+      final PsiBlockStatement blockStatement =
+        (PsiBlockStatement)statement;
+      final PsiCodeBlock block = blockStatement.getCodeBlock();
+      final PsiStatement[] statements = block.getStatements();
+      for (PsiStatement statement1 : statements) {
+        if (statement1 instanceof PsiDeclarationStatement) {
+          addDeclarations((PsiDeclarationStatement)statement1, out);
+        }
+      }
+    }",method,
+"      for (PsiStatement statement1 : statements) {
+        if (statement1 instanceof PsiDeclarationStatement) {
+          addDeclarations((PsiDeclarationStatement)statement1, out);
+        }
+      }",method,
+"        if (statement1 instanceof PsiDeclarationStatement) {
+          addDeclarations((PsiDeclarationStatement)statement1, out);
+        }",method,

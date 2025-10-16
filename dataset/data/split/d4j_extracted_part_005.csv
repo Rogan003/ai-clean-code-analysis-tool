@@ -1,0 +1,1328 @@
+code_snippet,type,score
+"  @Override
+  public void navigate(boolean requestFocus) {
+    navigate(requestFocus, false);
+  }",method,good
+"  @Override
+  public boolean canNavigate() {
+    final NavigationItem item = getNavigationItem();
+    return item != null && item.canNavigate();
+  }",method,good
+"  @Override
+  public boolean canNavigateToSource() {
+    final NavigationItem item = getNavigationItem();
+    return item != null && item.canNavigateToSource();
+  }",method,good
+"  @Nullable
+  protected String calcTooltip() {
+    return null;
+  }",method,good
+"  @Override
+  public boolean validate() {
+    final PsiElement psiElement = extractPsiFromValue();
+    if (psiElement == null || !psiElement.isValid()) {
+      setValue(null);
+    }
+    return getValue() != null;
+  }",method,good
+"final class Search {
+    private static final String usage = ""USAGE: Search -R <configuration.xml> [-d | -r | -p | -h | -f] 'query string' ..\n"" +
+            ""\t -R <configuration.xml> Read configuration from the specified file\n"" +
+            ""\t -d Symbol Definitions\n"" +
+            ""\t -r Symbol References\n"" +
+            ""\t -p Path\n"" +
+            ""\t -h History\n"" +
+            ""\t -f Full text"";
+    private SearchEngine engine;
+    final List<Hit> results = new ArrayList<Hit>();
+    int totalResults =0;
+    int nhits=0;
+    @SuppressWarnings({""PMD.SwitchStmtsShouldHaveDefault""})
+    protected boolean parseCmdLine(String[] argv) {
+        engine = new SearchEngine();
+        Getopt getopt = new Getopt(argv, ""R:d:r:p:h:f:"");
+        try {
+            getopt.parse();
+        } catch (Exception e) {
+            System.err.println(e.getMessage());
+            System.err.println(usage);
+            return false;
+        }
+        int cmd;
+        while ((cmd = getopt.getOpt()) != -1) {
+            switch (cmd) {
+                case 'R':
+                    try {
+                        RuntimeEnvironment.getInstance().readConfiguration(new File(getopt.getOptarg()));
+                    } catch (Exception e) {
+                        System.err.println(""Failed to read config file: "");
+                        System.err.println(e.getMessage());
+                        return false;
+                    }
+                    break;
+                case 'd':
+                    engine.setDefinition(getopt.getOptarg());
+                    break;
+                case 'r':
+                    engine.setSymbol(getopt.getOptarg());
+                    break;
+                case 'p':
+                    engine.setFile(getopt.getOptarg());
+                    break;
+                case 'h':
+                    engine.setHistory(getopt.getOptarg());
+                    break;
+                case 'f':
+                    engine.setFreetext(getopt.getOptarg());
+                    break;
+            }
+        }
+        return true;
+    }
+    protected boolean search() {
+        if (RuntimeEnvironment.getInstance().getDataRootPath() == null) {
+            System.err.println(""You must specify a configuration file"");
+            System.err.println(usage);
+            return false;
+        }
+        if (engine == null || !engine.isValidQuery()) {
+            System.err.println(""You did not specify a valid query"");
+            System.err.println(usage);
+            return false;
+        }
+        results.clear();
+        nhits = engine.search();
+        if (nhits > 0) {
+            engine.results(0, nhits, results);
+        }
+        totalResults = engine.totalHits;
+        return true;
+    }
+    protected void dumpResults() {
+        if (results.isEmpty()) {
+            System.err.println(""Your search \"""" + engine.getQuery() + ""\"" did not match any files."");
+        } else {
+            String root = RuntimeEnvironment.getInstance().getSourceRootPath();
+            System.out.println(""Printing results 1 - "" + nhits +"" of "" + totalResults + "" total matching documents collected."");
+            for (Hit hit : results) {
+                File file = new File(root, hit.getPath());
+                System.out.println(file.getAbsolutePath() + "":""+hit.getLineno()+"" ["" + hit.getLine() + ""]"");
+            }
+            if (nhits<totalResults) {
+                System.out.println(""Printed results 1 - "" + nhits +"" of "" + totalResults + "" total matching documents collected."");
+                System.out.println(""Collect the rest (y/n) ?"");
+                BufferedReader in=null;
+                try {
+                    in = new BufferedReader(new InputStreamReader(System.in, ""UTF-8""));
+                    String line = in.readLine();
+                    if (null == line || line.length() == 0 || line.charAt(0) == 'n') {
+                       return;
+                    }
+                } catch (Exception ex) {
+                    System.err.println(ex.getMessage());
+                }
+              engine.results(nhits, totalResults, results);
+              for (Hit hit : results) {
+                File file = new File(root, hit.getPath());
+                System.out.println(file.getAbsolutePath() + "":""+hit.getLineno()+"" ["" + hit.getLine() + ""]"");
+              }
+            }
+        }
+    }
+    public static void main(String[] argv) {
+        Search searcher = new Search();
+        boolean success = false;
+        if (searcher.parseCmdLine(argv) && searcher.search()) {
+            success = true;
+            searcher.dumpResults();
+        }
+        if (!success) {
+            System.exit(1);
+        }
+    }
+}",class,changes_required
+"    @SuppressWarnings({""PMD.SwitchStmtsShouldHaveDefault""})
+    protected boolean parseCmdLine(String[] argv) {
+        engine = new SearchEngine();
+        Getopt getopt = new Getopt(argv, ""R:d:r:p:h:f:"");
+        try {
+            getopt.parse();
+        } catch (Exception e) {
+            System.err.println(e.getMessage());
+            System.err.println(usage);
+            return false;
+        }
+        int cmd;
+        while ((cmd = getopt.getOpt()) != -1) {
+            switch (cmd) {
+                case 'R':
+                    try {
+                        RuntimeEnvironment.getInstance().readConfiguration(new File(getopt.getOptarg()));
+                    } catch (Exception e) {
+                        System.err.println(""Failed to read config file: "");
+                        System.err.println(e.getMessage());
+                        return false;
+                    }
+                    break;
+                case 'd':
+                    engine.setDefinition(getopt.getOptarg());
+                    break;
+                case 'r':
+                    engine.setSymbol(getopt.getOptarg());
+                    break;
+                case 'p':
+                    engine.setFile(getopt.getOptarg());
+                    break;
+                case 'h':
+                    engine.setHistory(getopt.getOptarg());
+                    break;
+                case 'f':
+                    engine.setFreetext(getopt.getOptarg());
+                    break;
+            }
+        }
+        return true;
+    }",method,changes_recommended
+"            switch (cmd) {
+                case 'R':
+                    try {
+                        RuntimeEnvironment.getInstance().readConfiguration(new File(getopt.getOptarg()));
+                    } catch (Exception e) {
+                        System.err.println(""Failed to read config file: "");
+                        System.err.println(e.getMessage());
+                        return false;
+                    }
+                    break;
+                case 'd':
+                    engine.setDefinition(getopt.getOptarg());
+                    break;
+                case 'r':
+                    engine.setSymbol(getopt.getOptarg());
+                    break;
+                case 'p':
+                    engine.setFile(getopt.getOptarg());
+                    break;
+                case 'h':
+                    engine.setHistory(getopt.getOptarg());
+                    break;
+                case 'f':
+                    engine.setFreetext(getopt.getOptarg());
+                    break;
+            }",method,changes_recommended
+"    protected boolean search() {
+        if (RuntimeEnvironment.getInstance().getDataRootPath() == null) {
+            System.err.println(""You must specify a configuration file"");
+            System.err.println(usage);
+            return false;
+        }
+        if (engine == null || !engine.isValidQuery()) {
+            System.err.println(""You did not specify a valid query"");
+            System.err.println(usage);
+            return false;
+        }
+        results.clear();
+        nhits = engine.search();
+        if (nhits > 0) {
+            engine.results(0, nhits, results);
+        }
+        totalResults = engine.totalHits;
+        return true;
+    }",method,good
+"        if (nhits > 0) {
+            engine.results(0, nhits, results);
+        }",method,good
+"    protected void dumpResults() {
+        if (results.isEmpty()) {
+            System.err.println(""Your search \"""" + engine.getQuery() + ""\"" did not match any files."");
+        } else {
+            String root = RuntimeEnvironment.getInstance().getSourceRootPath();
+            System.out.println(""Printing results 1 - "" + nhits +"" of "" + totalResults + "" total matching documents collected."");
+            for (Hit hit : results) {
+                File file = new File(root, hit.getPath());
+                System.out.println(file.getAbsolutePath() + "":""+hit.getLineno()+"" ["" + hit.getLine() + ""]"");
+            }
+            if (nhits<totalResults) {
+                System.out.println(""Printed results 1 - "" + nhits +"" of "" + totalResults + "" total matching documents collected."");
+                System.out.println(""Collect the rest (y/n) ?"");
+                BufferedReader in=null;
+                try {
+                    in = new BufferedReader(new InputStreamReader(System.in, ""UTF-8""));
+                    String line = in.readLine();
+                    if (null == line || line.length() == 0 || line.charAt(0) == 'n') {
+                       return;
+                    }
+                } catch (Exception ex) {
+                    System.err.println(ex.getMessage());
+                }
+              engine.results(nhits, totalResults, results);
+              for (Hit hit : results) {
+                File file = new File(root, hit.getPath());
+                System.out.println(file.getAbsolutePath() + "":""+hit.getLineno()+"" ["" + hit.getLine() + ""]"");
+              }
+            }
+        }
+    }",method,changes_recommended
+"            for (Hit hit : results) {
+                File file = new File(root, hit.getPath());
+                System.out.println(file.getAbsolutePath() + "":""+hit.getLineno()+"" ["" + hit.getLine() + ""]"");
+            }",method,good
+"            if (nhits<totalResults) {
+                System.out.println(""Printed results 1 - "" + nhits +"" of "" + totalResults + "" total matching documents collected."");
+                System.out.println(""Collect the rest (y/n) ?"");
+                BufferedReader in=null;
+                try {
+                    in = new BufferedReader(new InputStreamReader(System.in, ""UTF-8""));
+                    String line = in.readLine();
+                    if (null == line || line.length() == 0 || line.charAt(0) == 'n') {
+                       return;
+                    }
+                } catch (Exception ex) {
+                    System.err.println(ex.getMessage());
+                }
+              engine.results(nhits, totalResults, results);
+              for (Hit hit : results) {
+                File file = new File(root, hit.getPath());
+                System.out.println(file.getAbsolutePath() + "":""+hit.getLineno()+"" ["" + hit.getLine() + ""]"");
+              }
+            }",method,good
+"              for (Hit hit : results) {
+                File file = new File(root, hit.getPath());
+                System.out.println(file.getAbsolutePath() + "":""+hit.getLineno()+"" ["" + hit.getLine() + ""]"");
+              }",method,good
+"    public static void main(String[] argv) {
+        Search searcher = new Search();
+        boolean success = false;
+        if (searcher.parseCmdLine(argv) && searcher.search()) {
+            success = true;
+            searcher.dumpResults();
+        }
+        if (!success) {
+            System.exit(1);
+        }
+    }",method,good
+"        if (!success) {
+            System.exit(1);
+        }",method,good
+"public abstract class MethodSignatureBase implements MethodSignature {
+  private final PsiSubstitutor mySubstitutor;
+  private final PsiType[] myParameterTypes;
+  private volatile PsiType[] myErasedParameterTypes;
+  protected final PsiTypeParameter[] myTypeParameters;
+  protected MethodSignatureBase(@NotNull PsiSubstitutor substitutor, @NotNull PsiType[] parameterTypes, @NotNull PsiTypeParameter[] typeParameters) {
+    mySubstitutor = substitutor;
+    assert substitutor.isValid();
+    myParameterTypes = PsiType.createArray(parameterTypes.length);
+    for (int i = 0; i < parameterTypes.length; i++) {
+      PsiType type = parameterTypes[i];
+      if (type != null) {
+        PsiUtil.ensureValidType(type);
+      }
+      if (type instanceof PsiEllipsisType) type = ((PsiEllipsisType) type).toArrayType();
+      myParameterTypes[i] = substitutor.substitute(type);
+    }
+    myTypeParameters = typeParameters;
+  }
+  protected MethodSignatureBase(@NotNull PsiSubstitutor substitutor,
+                                @Nullable PsiParameterList parameterList,
+                                @Nullable PsiTypeParameterList typeParameterList) {
+    mySubstitutor = substitutor;
+    if (parameterList == null) {
+      myParameterTypes = PsiType.EMPTY_ARRAY;
+    }
+    else {
+      final PsiParameter[] parameters = parameterList.getParameters();
+      myParameterTypes = PsiType.createArray(parameters.length);
+      for (int i = 0; i < parameters.length; i++) {
+        PsiType type = parameters[i].getType();
+        if (type instanceof PsiEllipsisType) type = ((PsiEllipsisType)type).toArrayType();
+        myParameterTypes[i] = substitutor.substitute(type);
+      }
+    }
+    myTypeParameters = typeParameterList == null ? PsiTypeParameter.EMPTY_ARRAY : typeParameterList.getTypeParameters();
+  }
+  @Override
+  @NotNull
+  public PsiType[] getParameterTypes() {
+    return myParameterTypes;
+  }
+  @Override
+  @NotNull
+  public PsiTypeParameter[] getTypeParameters() {
+    return myTypeParameters;
+  }
+  @NotNull
+  public PsiType[] getErasedParameterTypes() {
+    PsiType[] result = myErasedParameterTypes;
+    if (result == null) {
+      myErasedParameterTypes = result = MethodSignatureUtil.calcErasedParameterTypes(this);
+    }
+    return result;
+  }
+  public boolean equals(Object o) {
+    if (this == o) return true;
+    if (!(o instanceof MethodSignature)) return false;
+    final MethodSignature methodSignature = (MethodSignature)o;
+    return MethodSignatureUtil.areSignaturesEqual(methodSignature, this);
+  }
+  public int hashCode() {
+    int result = getName().hashCode();
+    final PsiType[] parameterTypes = getErasedParameterTypes();
+    result = 31 * result + parameterTypes.length;
+    for (int i = 0, length = Math.min(3, parameterTypes.length); i < length; i++) {
+      PsiType type = parameterTypes[i];
+      if (type == null) continue;
+      result = 31 * result + type.hashCode();
+    }
+    return result;
+  }
+  @SuppressWarnings({""HardCodedStringLiteral""})
+  public String toString() {
+    String s = getClass().getSimpleName() + "": "";
+    final PsiTypeParameter[] typeParameters = getTypeParameters();
+    if (typeParameters.length != 0) {
+      String sep = ""<"";
+      for (PsiTypeParameter typeParameter : typeParameters) {
+        s += sep + typeParameter.getName();
+        sep = "", "";
+      }
+      s += "">"";
+    }
+    s += getName() + ""("" + Arrays.asList(getParameterTypes()) + "")"";
+    return s;
+  }
+  @Override
+  @NotNull
+  public PsiSubstitutor getSubstitutor() {
+    return mySubstitutor;
+  }
+}",class,changes_required
+"  protected MethodSignatureBase(@NotNull PsiSubstitutor substitutor, @NotNull PsiType[] parameterTypes, @NotNull PsiTypeParameter[] typeParameters) {
+    mySubstitutor = substitutor;
+    assert substitutor.isValid();
+    myParameterTypes = PsiType.createArray(parameterTypes.length);
+    for (int i = 0; i < parameterTypes.length; i++) {
+      PsiType type = parameterTypes[i];
+      if (type != null) {
+        PsiUtil.ensureValidType(type);
+      }
+      if (type instanceof PsiEllipsisType) type = ((PsiEllipsisType) type).toArrayType();
+      myParameterTypes[i] = substitutor.substitute(type);
+    }
+    myTypeParameters = typeParameters;
+  }",method,good
+"    for (int i = 0; i < parameterTypes.length; i++) {
+      PsiType type = parameterTypes[i];
+      if (type != null) {
+        PsiUtil.ensureValidType(type);
+      }
+      if (type instanceof PsiEllipsisType) type = ((PsiEllipsisType) type).toArrayType();
+      myParameterTypes[i] = substitutor.substitute(type);
+    }",method,good
+"      if (type != null) {
+        PsiUtil.ensureValidType(type);
+      }",method,good
+"  protected MethodSignatureBase(@NotNull PsiSubstitutor substitutor,
+                                @Nullable PsiParameterList parameterList,
+                                @Nullable PsiTypeParameterList typeParameterList) {
+    mySubstitutor = substitutor;
+    if (parameterList == null) {
+      myParameterTypes = PsiType.EMPTY_ARRAY;
+    }
+    else {
+      final PsiParameter[] parameters = parameterList.getParameters();
+      myParameterTypes = PsiType.createArray(parameters.length);
+      for (int i = 0; i < parameters.length; i++) {
+        PsiType type = parameters[i].getType();
+        if (type instanceof PsiEllipsisType) type = ((PsiEllipsisType)type).toArrayType();
+        myParameterTypes[i] = substitutor.substitute(type);
+      }
+    }
+    myTypeParameters = typeParameterList == null ? PsiTypeParameter.EMPTY_ARRAY : typeParameterList.getTypeParameters();
+  }",method,changes_recommended
+"    if (parameterList == null) {
+      myParameterTypes = PsiType.EMPTY_ARRAY;
+    }",method,good
+"      for (int i = 0; i < parameters.length; i++) {
+        PsiType type = parameters[i].getType();
+        if (type instanceof PsiEllipsisType) type = ((PsiEllipsisType)type).toArrayType();
+        myParameterTypes[i] = substitutor.substitute(type);
+      }",method,good
+"  @Override
+  @NotNull
+  public PsiType[] getParameterTypes() {
+    return myParameterTypes;
+  }",method,good
+"  @Override
+  @NotNull
+  public PsiTypeParameter[] getTypeParameters() {
+    return myTypeParameters;
+  }",method,good
+"  @NotNull
+  public PsiType[] getErasedParameterTypes() {
+    PsiType[] result = myErasedParameterTypes;
+    if (result == null) {
+      myErasedParameterTypes = result = MethodSignatureUtil.calcErasedParameterTypes(this);
+    }
+    return result;
+  }",method,good
+"    if (result == null) {
+      myErasedParameterTypes = result = MethodSignatureUtil.calcErasedParameterTypes(this);
+    }",method,good
+"  public boolean equals(Object o) {
+    if (this == o) return true;
+    if (!(o instanceof MethodSignature)) return false;
+    final MethodSignature methodSignature = (MethodSignature)o;
+    return MethodSignatureUtil.areSignaturesEqual(methodSignature, this);
+  }",method,good
+"  public int hashCode() {
+    int result = getName().hashCode();
+    final PsiType[] parameterTypes = getErasedParameterTypes();
+    result = 31 * result + parameterTypes.length;
+    for (int i = 0, length = Math.min(3, parameterTypes.length); i < length; i++) {
+      PsiType type = parameterTypes[i];
+      if (type == null) continue;
+      result = 31 * result + type.hashCode();
+    }
+    return result;
+  }",method,good
+"  @SuppressWarnings({""HardCodedStringLiteral""})
+  public String toString() {
+    String s = getClass().getSimpleName() + "": "";
+    final PsiTypeParameter[] typeParameters = getTypeParameters();
+    if (typeParameters.length != 0) {
+      String sep = ""<"";
+      for (PsiTypeParameter typeParameter : typeParameters) {
+        s += sep + typeParameter.getName();
+        sep = "", "";
+      }
+      s += "">"";
+    }
+    s += getName() + ""("" + Arrays.asList(getParameterTypes()) + "")"";
+    return s;
+  }",method,good
+"    if (typeParameters.length != 0) {
+      String sep = ""<"";
+      for (PsiTypeParameter typeParameter : typeParameters) {
+        s += sep + typeParameter.getName();
+        sep = "", "";
+      }
+      s += "">"";
+    }",method,good
+"      for (PsiTypeParameter typeParameter : typeParameters) {
+        s += sep + typeParameter.getName();
+        sep = "", "";
+      }",method,good
+"  @Override
+  @NotNull
+  public PsiSubstitutor getSubstitutor() {
+    return mySubstitutor;
+  }",method,good
+"public class JMethod extends JNode {
+	private static final long serialVersionUID = 3834526867464663751L;
+	private static final ImageIcon ICON_MTH_DEF = Utils.openIcon(""methdef_obj"");
+	private static final ImageIcon ICON_MTH_PRI = Utils.openIcon(""methpri_obj"");
+	private static final ImageIcon ICON_MTH_PRO = Utils.openIcon(""methpro_obj"");
+	private static final ImageIcon ICON_MTH_PUB = Utils.openIcon(""methpub_obj"");
+	private static final ImageIcon ICON_CONSTRUCTOR = Utils.openIcon(""constr_ovr"");
+	private static final ImageIcon ICON_SYNC = Utils.openIcon(""synch_co"");
+	private final JavaMethod mth;
+	private final JClass jParent;
+	public JMethod(JavaMethod javaMethod, JClass jClass) {
+		this.mth = javaMethod;
+		this.jParent = jClass;
+	}
+	@Override
+	public JavaNode getJavaNode() {
+		return mth;
+	}
+	@Override
+	public JClass getJParent() {
+		return jParent;
+	}
+	public ArgType getReturnType() {
+		return mth.getReturnType();
+	}
+	@Override
+	public JClass getRootClass() {
+		return jParent.getRootClass();
+	}
+	@Override
+	public int getLine() {
+		return mth.getDecompiledLine();
+	}
+	@Override
+	public Icon getIcon() {
+		AccessInfo accessFlags = mth.getAccessFlags();
+		OverlayIcon icon = Utils.makeIcon(accessFlags, ICON_MTH_PUB, ICON_MTH_PRI, ICON_MTH_PRO, ICON_MTH_DEF);
+		if (accessFlags.isConstructor()) {
+			icon.add(ICON_CONSTRUCTOR);
+		}
+		if (accessFlags.isSynchronized()) {
+			icon.add(ICON_SYNC);
+		}
+		return icon;
+	}
+	String makeBaseString() {
+		if (mth.isClassInit()) {
+			return ""{...}"";
+		}
+		StringBuilder base = new StringBuilder();
+		if (mth.isConstructor()) {
+			base.append(mth.getDeclaringClass().getName());
+		} else {
+			base.append(mth.getName());
+		}
+		base.append('(');
+		for (Iterator<ArgType> it = mth.getArguments().iterator(); it.hasNext(); ) {
+			base.append(Utils.typeStr(it.next()));
+			if (it.hasNext()) {
+				base.append("", "");
+			}
+		}
+		base.append(')');
+		return base.toString();
+	}
+	@Override
+	public String makeString() {
+		return Utils.typeFormat(makeBaseString(), getReturnType());
+	}
+	@Override
+	public String makeLongString() {
+		String name = mth.getDeclaringClass().getFullName() + ""."" + makeBaseString();
+		return Utils.typeFormat(name, getReturnType());
+	}
+	@Override
+	public int hashCode() {
+		return mth.hashCode();
+	}
+	@Override
+	public boolean equals(Object o) {
+		return this == o || o instanceof JMethod && mth.equals(((JMethod) o).mth);
+	}
+}",class,changes_recommended
+"	public JMethod(JavaMethod javaMethod, JClass jClass) {
+		this.mth = javaMethod;
+		this.jParent = jClass;
+	}",method,good
+"	@Override
+	public JavaNode getJavaNode() {
+		return mth;
+	}",method,good
+"	@Override
+	public JClass getJParent() {
+		return jParent;
+	}",method,good
+"	public ArgType getReturnType() {
+		return mth.getReturnType();
+	}",method,good
+"	@Override
+	public JClass getRootClass() {
+		return jParent.getRootClass();
+	}",method,good
+"	@Override
+	public int getLine() {
+		return mth.getDecompiledLine();
+	}",method,good
+"	@Override
+	public Icon getIcon() {
+		AccessInfo accessFlags = mth.getAccessFlags();
+		OverlayIcon icon = Utils.makeIcon(accessFlags, ICON_MTH_PUB, ICON_MTH_PRI, ICON_MTH_PRO, ICON_MTH_DEF);
+		if (accessFlags.isConstructor()) {
+			icon.add(ICON_CONSTRUCTOR);
+		}
+		if (accessFlags.isSynchronized()) {
+			icon.add(ICON_SYNC);
+		}
+		return icon;
+	}",method,good
+"	String makeBaseString() {
+		if (mth.isClassInit()) {
+			return ""{...}"";
+		}
+		StringBuilder base = new StringBuilder();
+		if (mth.isConstructor()) {
+			base.append(mth.getDeclaringClass().getName());
+		} else {
+			base.append(mth.getName());
+		}
+		base.append('(');
+		for (Iterator<ArgType> it = mth.getArguments().iterator(); it.hasNext(); ) {
+			base.append(Utils.typeStr(it.next()));
+			if (it.hasNext()) {
+				base.append("", "");
+			}
+		}
+		base.append(')');
+		return base.toString();
+	}",method,good
+"	@Override
+	public String makeString() {
+		return Utils.typeFormat(makeBaseString(), getReturnType());
+	}",method,good
+"	@Override
+	public String makeLongString() {
+		String name = mth.getDeclaringClass().getFullName() + ""."" + makeBaseString();
+		return Utils.typeFormat(name, getReturnType());
+	}",method,good
+"	@Override
+	public int hashCode() {
+		return mth.hashCode();
+	}",method,good
+"	@Override
+	public boolean equals(Object o) {
+		return this == o || o instanceof JMethod && mth.equals(((JMethod) o).mth);
+	}",method,good
+"public class ExampleModule
+        implements Module
+{
+    private final String connectorId;
+    private final TypeManager typeManager;
+    public ExampleModule(String connectorId, TypeManager typeManager)
+    {
+        this.connectorId = requireNonNull(connectorId, ""connector id is null"");
+        this.typeManager = requireNonNull(typeManager, ""typeManager is null"");
+    }
+    @Override
+    public void configure(Binder binder)
+    {
+        binder.bind(TypeManager.class).toInstance(typeManager);
+        binder.bind(ExampleConnector.class).in(Scopes.SINGLETON);
+        binder.bind(ExampleConnectorId.class).toInstance(new ExampleConnectorId(connectorId));
+        binder.bind(ExampleMetadata.class).in(Scopes.SINGLETON);
+        binder.bind(ExampleClient.class).in(Scopes.SINGLETON);
+        binder.bind(ExampleSplitManager.class).in(Scopes.SINGLETON);
+        binder.bind(ExampleRecordSetProvider.class).in(Scopes.SINGLETON);
+        configBinder(binder).bindConfig(ExampleConfig.class);
+        jsonBinder(binder).addDeserializerBinding(Type.class).to(TypeDeserializer.class);
+        jsonCodecBinder(binder).bindMapJsonCodec(String.class, listJsonCodec(ExampleTable.class));
+    }
+    public static final class TypeDeserializer
+            extends FromStringDeserializer<Type>
+    {
+        private final TypeManager typeManager;
+        @Inject
+        public TypeDeserializer(TypeManager typeManager)
+        {
+            super(Type.class);
+            this.typeManager = requireNonNull(typeManager, ""typeManager is null"");
+        }
+        @Override
+        protected Type _deserialize(String value, DeserializationContext context)
+        {
+            Type type = typeManager.getType(parseTypeSignature(value));
+            checkArgument(type != null, ""Unknown type %s"", value);
+            return type;
+        }
+    }
+}",class,good
+"    public static final class TypeDeserializer
+            extends FromStringDeserializer<Type>
+    {
+        private final TypeManager typeManager;
+        @Inject
+        public TypeDeserializer(TypeManager typeManager)
+        {
+            super(Type.class);
+            this.typeManager = requireNonNull(typeManager, ""typeManager is null"");
+        }
+        @Override
+        protected Type _deserialize(String value, DeserializationContext context)
+        {
+            Type type = typeManager.getType(parseTypeSignature(value));
+            checkArgument(type != null, ""Unknown type %s"", value);
+            return type;
+        }
+    }",class,good
+"    public ExampleModule(String connectorId, TypeManager typeManager)
+    {
+        this.connectorId = requireNonNull(connectorId, ""connector id is null"");
+        this.typeManager = requireNonNull(typeManager, ""typeManager is null"");
+    }",method,good
+"    @Override
+    public void configure(Binder binder)
+    {
+        binder.bind(TypeManager.class).toInstance(typeManager);
+        binder.bind(ExampleConnector.class).in(Scopes.SINGLETON);
+        binder.bind(ExampleConnectorId.class).toInstance(new ExampleConnectorId(connectorId));
+        binder.bind(ExampleMetadata.class).in(Scopes.SINGLETON);
+        binder.bind(ExampleClient.class).in(Scopes.SINGLETON);
+        binder.bind(ExampleSplitManager.class).in(Scopes.SINGLETON);
+        binder.bind(ExampleRecordSetProvider.class).in(Scopes.SINGLETON);
+        configBinder(binder).bindConfig(ExampleConfig.class);
+        jsonBinder(binder).addDeserializerBinding(Type.class).to(TypeDeserializer.class);
+        jsonCodecBinder(binder).bindMapJsonCodec(String.class, listJsonCodec(ExampleTable.class));
+    }",method,good
+"        @Inject
+        public TypeDeserializer(TypeManager typeManager)
+        {
+            super(Type.class);
+            this.typeManager = requireNonNull(typeManager, ""typeManager is null"");
+        }",method,good
+"        @Override
+        protected Type _deserialize(String value, DeserializationContext context)
+        {
+            Type type = typeManager.getType(parseTypeSignature(value));
+            checkArgument(type != null, ""Unknown type %s"", value);
+            return type;
+        }",method,good
+"public class JSONTypeTest1 extends TestCase {
+    public void test_ignores() throws Exception {
+        A a = new A();
+        a.setF1(1001);
+        a.setF2(1002);
+        a.setF3(1003);
+        Assert.assertEquals(""{\""f1\"":1001,\""f3\"":1003}"", JSON.toJSONString(a));
+    }
+    public void test_ignoresParent() throws Exception {
+        B b = new B();
+        b.setF1(1001);
+        b.setF2(1002);
+        b.setF3(1003);
+        b.setF4(1004);
+        b.setF5(1005);
+        Assert.assertEquals(""{\""f1\"":1001,\""f3\"":1003,\""f5\"":1005}"", JSON.toJSONString(b));
+    }
+    public void test_ignoresParent2() throws Exception {
+        C c = new C();
+        c.setF1(1001);
+        c.setF2(1002);
+        c.setF3(1003);
+        c.setF4(1004);
+        c.setF5(1005);
+        c.setF6(1006);
+        Assert.assertEquals(""{\""f1\"":1001,\""f3\"":1003,\""f5\"":1005,\""f6\"":1006}"", JSON.toJSONString(c));
+    }
+    public void test_ignoresParent3() throws Exception {
+        D d = new D();
+        d.setF1(1001);
+        d.setF2(1002);
+        d.setF3(1003);
+        d.setF4(1004);
+        d.setF5(1005);
+        d.setF6(1006);
+        d.setF7(1007);
+        Assert.assertEquals(""{\""f1\"":1001,\""f3\"":1003,\""f5\"":1005,\""f6\"":1006,\""f7\"":1007}"", JSON.toJSONString(d));
+    }
+    @JSONType(ignores = ""f2"")
+    public static class A {
+        private int f1;
+        private int f2;
+        private int f3;
+        public int getF1() {
+            return f1;
+        }
+        public void setF1(int f1) {
+            this.f1 = f1;
+        }
+        public int getF2() {
+            return f2;
+        }
+        public void setF2(int f2) {
+            this.f2 = f2;
+        }
+        public int getF3() {
+            return f3;
+        }
+        public void setF3(int f3) {
+            this.f3 = f3;
+        }
+    }
+    @JSONType(ignores = { ""f4"" })
+    public static class B extends A {
+        private int f4;
+        private int f5;
+        public int getF4() {
+            return f4;
+        }
+        public void setF4(int f4) {
+            this.f4 = f4;
+        }
+        public int getF5() {
+            return f5;
+        }
+        public void setF5(int f5) {
+            this.f5 = f5;
+        }
+    }
+    public static class C extends B {
+        private int f6;
+        public int getF6() {
+            return f6;
+        }
+        public void setF6(int f6) {
+            this.f6 = f6;
+        }
+    }
+    public static class D extends C {
+        private int f7;
+        public int getF7() {
+            return f7;
+        }
+        public void setF7(int f7) {
+            this.f7 = f7;
+        }
+    }
+}",class,changes_required
+"    public static class A {
+        private int f1;
+        private int f2;
+        private int f3;
+        public int getF1() {
+            return f1;
+        }
+        public void setF1(int f1) {
+            this.f1 = f1;
+        }
+        public int getF2() {
+            return f2;
+        }
+        public void setF2(int f2) {
+            this.f2 = f2;
+        }
+        public int getF3() {
+            return f3;
+        }
+        public void setF3(int f3) {
+            this.f3 = f3;
+        }
+    }",class,good
+"    public static class B extends A {
+        private int f4;
+        private int f5;
+        public int getF4() {
+            return f4;
+        }
+        public void setF4(int f4) {
+            this.f4 = f4;
+        }
+        public int getF5() {
+            return f5;
+        }
+        public void setF5(int f5) {
+            this.f5 = f5;
+        }
+    }",class,good
+"    public static class C extends B {
+        private int f6;
+        public int getF6() {
+            return f6;
+        }
+        public void setF6(int f6) {
+            this.f6 = f6;
+        }
+    }",class,good
+"    public static class D extends C {
+        private int f7;
+        public int getF7() {
+            return f7;
+        }
+        public void setF7(int f7) {
+            this.f7 = f7;
+        }
+    }",class,good
+"    public void test_ignores() throws Exception {
+        A a = new A();
+        a.setF1(1001);
+        a.setF2(1002);
+        a.setF3(1003);
+        Assert.assertEquals(""{\""f1\"":1001,\""f3\"":1003}"", JSON.toJSONString(a));
+    }",method,good
+"    public void test_ignoresParent() throws Exception {
+        B b = new B();
+        b.setF1(1001);
+        b.setF2(1002);
+        b.setF3(1003);
+        b.setF4(1004);
+        b.setF5(1005);
+        Assert.assertEquals(""{\""f1\"":1001,\""f3\"":1003,\""f5\"":1005}"", JSON.toJSONString(b));
+    }",method,good
+"    public void test_ignoresParent2() throws Exception {
+        C c = new C();
+        c.setF1(1001);
+        c.setF2(1002);
+        c.setF3(1003);
+        c.setF4(1004);
+        c.setF5(1005);
+        c.setF6(1006);
+        Assert.assertEquals(""{\""f1\"":1001,\""f3\"":1003,\""f5\"":1005,\""f6\"":1006}"", JSON.toJSONString(c));
+    }",method,good
+"    public void test_ignoresParent3() throws Exception {
+        D d = new D();
+        d.setF1(1001);
+        d.setF2(1002);
+        d.setF3(1003);
+        d.setF4(1004);
+        d.setF5(1005);
+        d.setF6(1006);
+        d.setF7(1007);
+        Assert.assertEquals(""{\""f1\"":1001,\""f3\"":1003,\""f5\"":1005,\""f6\"":1006,\""f7\"":1007}"", JSON.toJSONString(d));
+    }",method,good
+"        public int getF1() {
+            return f1;
+        }",method,good
+"        public void setF1(int f1) {
+            this.f1 = f1;
+        }",method,good
+"        public int getF2() {
+            return f2;
+        }",method,good
+"        public void setF2(int f2) {
+            this.f2 = f2;
+        }",method,good
+"        public int getF3() {
+            return f3;
+        }",method,good
+"        public void setF3(int f3) {
+            this.f3 = f3;
+        }",method,good
+"        public int getF4() {
+            return f4;
+        }",method,good
+"        public void setF4(int f4) {
+            this.f4 = f4;
+        }",method,good
+"        public int getF5() {
+            return f5;
+        }",method,good
+"        public void setF5(int f5) {
+            this.f5 = f5;
+        }",method,good
+"        public int getF6() {
+            return f6;
+        }",method,good
+"        public void setF6(int f6) {
+            this.f6 = f6;
+        }",method,good
+"        public int getF7() {
+            return f7;
+        }",method,good
+"        public void setF7(int f7) {
+            this.f7 = f7;
+        }",method,good
+"public class ArgumentMatchingToolTest extends TestBase {
+    @Test
+    public void shouldNotFindAnySuspiciousMatchersWhenNumberOfArgumentsDoesntMatch() {
+        // given
+        List<ArgumentMatcher> matchers = (List) Arrays.asList(new Equals(1));
+        // when
+        Integer[] suspicious = ArgumentMatchingTool.getSuspiciouslyNotMatchingArgsIndexes(matchers, new Object[] { 10, 20 });
+        // then
+        assertEquals(0, suspicious.length);
+    }
+    @Test
+    public void shouldNotFindAnySuspiciousMatchersWhenArgumentsMatch() {
+        // given
+        List<ArgumentMatcher> matchers = (List) Arrays.asList(new Equals(10), new Equals(20));
+        // when
+        Integer[] suspicious = ArgumentMatchingTool.getSuspiciouslyNotMatchingArgsIndexes(matchers, new Object[] { 10, 20 });
+        // then
+        assertEquals(0, suspicious.length);
+    }
+    @Test
+    public void shouldFindSuspiciousMatchers() {
+        // given
+        Equals matcherInt20 = new Equals(20);
+        Long longPretendingAnInt = 20L;
+        // when
+        List<ArgumentMatcher> matchers = (List) Arrays.asList(new Equals(10), matcherInt20);
+        Integer[] suspicious = ArgumentMatchingTool.getSuspiciouslyNotMatchingArgsIndexes(matchers, new Object[] { 10, longPretendingAnInt });
+        // then
+        assertEquals(1, suspicious.length);
+        assertEquals(new Integer(1), suspicious[0]);
+    }
+    @Test
+    public void shouldNotFindSuspiciousMatchersWhenTypesAreTheSame() {
+        // given
+        Equals matcherWithBadDescription = new Equals(20) {
+            public String toString() {
+                return ""10"";
+            }
+        };
+        Integer argument = 10;
+        // when
+        Integer[] suspicious = ArgumentMatchingTool.getSuspiciouslyNotMatchingArgsIndexes((List) Arrays.asList(matcherWithBadDescription), new Object[] { argument });
+        // then
+        assertEquals(0, suspicious.length);
+    }
+    @Test
+    public void shouldWorkFineWhenGivenArgIsNull() {
+        // when
+        Integer[] suspicious = ArgumentMatchingTool.getSuspiciouslyNotMatchingArgsIndexes((List) Arrays.asList(new Equals(20)), new Object[] { null });
+        // then
+        assertEquals(0, suspicious.length);
+    }
+    @Test
+    @SuppressWarnings(""rawtypes"")
+    public void shouldUseMatchersSafely() {
+        // This matcher is evil cause typeMatches(Object) returns true for every passed type but matches(T)
+        // method accepts only Strings. When a Integer is passed (thru the matches(Object) bridge method )  a
+        // ClassCastException will be thrown.
+        class StringMatcher implements ArgumentMatcher<String>, ContainsExtraTypeInfo {
+            @Override
+            public boolean matches(String item) {
+                return true; // in this test we never get here
+            }
+            @Override
+            public String toStringWithType() {
+                return """";
+            }
+            @Override
+            public boolean typeMatches(Object target) {
+                return true;
+            }
+        }
+        // given
+        List<ArgumentMatcher> matchers = (List) singletonList(new StringMatcher());
+        // when
+        Integer[] suspicious = ArgumentMatchingTool.getSuspiciouslyNotMatchingArgsIndexes(matchers, new Object[] { 10 });
+        // then
+        assertEquals(0, suspicious.length);
+    }
+}",class,changes_required
+"        class StringMatcher implements ArgumentMatcher<String>, ContainsExtraTypeInfo {
+            @Override
+            public boolean matches(String item) {
+                return true; // in this test we never get here
+            }
+            @Override
+            public String toStringWithType() {
+                return """";
+            }
+            @Override
+            public boolean typeMatches(Object target) {
+                return true;
+            }
+        }",class,good
+"    @Test
+    public void shouldNotFindAnySuspiciousMatchersWhenNumberOfArgumentsDoesntMatch() {
+        // given
+        List<ArgumentMatcher> matchers = (List) Arrays.asList(new Equals(1));
+        // when
+        Integer[] suspicious = ArgumentMatchingTool.getSuspiciouslyNotMatchingArgsIndexes(matchers, new Object[] { 10, 20 });
+        // then
+        assertEquals(0, suspicious.length);
+    }",method,good
+"    @Test
+    public void shouldNotFindAnySuspiciousMatchersWhenArgumentsMatch() {
+        // given
+        List<ArgumentMatcher> matchers = (List) Arrays.asList(new Equals(10), new Equals(20));
+        // when
+        Integer[] suspicious = ArgumentMatchingTool.getSuspiciouslyNotMatchingArgsIndexes(matchers, new Object[] { 10, 20 });
+        // then
+        assertEquals(0, suspicious.length);
+    }",method,good
+"    @Test
+    public void shouldFindSuspiciousMatchers() {
+        // given
+        Equals matcherInt20 = new Equals(20);
+        Long longPretendingAnInt = 20L;
+        // when
+        List<ArgumentMatcher> matchers = (List) Arrays.asList(new Equals(10), matcherInt20);
+        Integer[] suspicious = ArgumentMatchingTool.getSuspiciouslyNotMatchingArgsIndexes(matchers, new Object[] { 10, longPretendingAnInt });
+        // then
+        assertEquals(1, suspicious.length);
+        assertEquals(new Integer(1), suspicious[0]);
+    }",method,good
+"    @Test
+    public void shouldNotFindSuspiciousMatchersWhenTypesAreTheSame() {
+        // given
+        Equals matcherWithBadDescription = new Equals(20) {
+            public String toString() {
+                return ""10"";
+            }
+        };
+        Integer argument = 10;
+        // when
+        Integer[] suspicious = ArgumentMatchingTool.getSuspiciouslyNotMatchingArgsIndexes((List) Arrays.asList(matcherWithBadDescription), new Object[] { argument });
+        // then
+        assertEquals(0, suspicious.length);
+    }",method,good
+"            public String toString() {
+                return ""10"";
+            }",method,good
+"    @Test
+    public void shouldWorkFineWhenGivenArgIsNull() {
+        // when
+        Integer[] suspicious = ArgumentMatchingTool.getSuspiciouslyNotMatchingArgsIndexes((List) Arrays.asList(new Equals(20)), new Object[] { null });
+        // then
+        assertEquals(0, suspicious.length);
+    }",method,good
+"    @Test
+    @SuppressWarnings(""rawtypes"")
+    public void shouldUseMatchersSafely() {
+        // This matcher is evil cause typeMatches(Object) returns true for every passed type but matches(T)
+        // method accepts only Strings. When a Integer is passed (thru the matches(Object) bridge method )  a
+        // ClassCastException will be thrown.
+        class StringMatcher implements ArgumentMatcher<String>, ContainsExtraTypeInfo {
+            @Override
+            public boolean matches(String item) {
+                return true; // in this test we never get here
+            }
+            @Override
+            public String toStringWithType() {
+                return """";
+            }
+            @Override
+            public boolean typeMatches(Object target) {
+                return true;
+            }
+        }
+        // given
+        List<ArgumentMatcher> matchers = (List) singletonList(new StringMatcher());
+        // when
+        Integer[] suspicious = ArgumentMatchingTool.getSuspiciouslyNotMatchingArgsIndexes(matchers, new Object[] { 10 });
+        // then
+        assertEquals(0, suspicious.length);
+    }",method,good
+"            @Override
+            public boolean matches(String item) {
+                return true; // in this test we never get here
+            }",method,good
+"            @Override
+            public String toStringWithType() {
+                return """";
+            }",method,good
+"            @Override
+            public boolean typeMatches(Object target) {
+                return true;
+            }",method,good
+"public class JpsMavenRepositoryLibraryDescriptor {
+  private final String myMavenId;
+  private final String myGroupId;
+  private final String myArtifactId;
+  private final String myVersion;
+  private final boolean myIncludeTransitiveDependencies;
+  public JpsMavenRepositoryLibraryDescriptor(@NotNull String groupId, @NotNull String artifactId, @NotNull String version) {
+    this(groupId, artifactId, version, true);
+  }
+  public JpsMavenRepositoryLibraryDescriptor(@NotNull String groupId, @NotNull String artifactId, @NotNull String version,
+                                             boolean includeTransitiveDependencies) {
+    myGroupId = groupId;
+    myArtifactId = artifactId;
+    myVersion = version;
+    myIncludeTransitiveDependencies = includeTransitiveDependencies;
+    myMavenId = groupId + "":"" + artifactId + "":"" + version;
+  }
+  public JpsMavenRepositoryLibraryDescriptor(@Nullable String mavenId) {
+    this(mavenId, true);
+  }
+  public JpsMavenRepositoryLibraryDescriptor(@Nullable String mavenId, boolean includeTransitiveDependencies) {
+    myMavenId = mavenId;
+    myIncludeTransitiveDependencies = includeTransitiveDependencies;
+    if (mavenId == null) {
+      myGroupId = myArtifactId = myVersion = null;
+    }
+    else {
+      String[] parts = mavenId.split("":"");
+      myGroupId = parts.length > 0 ? parts[0] : null;
+      myArtifactId = parts.length > 1 ? parts[1] : null;
+      myVersion = parts.length > 2 ? parts[2] : null;
+    }
+  }
+  public String getMavenId() {
+    return myMavenId;
+  }
+  public String getGroupId() {
+    return myGroupId;
+  }
+  public String getArtifactId() {
+    return myArtifactId;
+  }
+  public boolean isIncludeTransitiveDependencies() {
+    return myIncludeTransitiveDependencies;
+  }
+  public String getVersion() {
+    return myVersion;
+  }
+  @Override
+  public boolean equals(Object o) {
+    if (this == o) return true;
+    if (o == null || getClass() != o.getClass()) return false;
+    JpsMavenRepositoryLibraryDescriptor that = (JpsMavenRepositoryLibraryDescriptor)o;
+    return Objects.equals(myMavenId, that.myMavenId) && myIncludeTransitiveDependencies == that.myIncludeTransitiveDependencies;
+  }
+  @Override
+  public int hashCode() {
+    return Objects.hashCode(myMavenId) * 31 + (myIncludeTransitiveDependencies ? 1 : 0);
+  }
+  @Override
+  public String toString() {
+    return myMavenId != null ? myMavenId : ""null"";
+  }
+}",class,changes_required
+"public abstract class JpsOrderRootType {
+  public static final JpsOrderRootType COMPILED = new JpsOrderRootType() {
+    @Override
+    public String toString() {
+      return ""compiled root"";
+    }
+  };
+  public static final JpsOrderRootType SOURCES = new JpsOrderRootType() {
+    @Override
+    public String toString() {
+      return ""sources root"";
+    }
+  };
+  public static final JpsOrderRootType DOCUMENTATION = new JpsOrderRootType() {
+    @Override
+    public String toString() {
+      return ""documentation root"";
+    }
+  };
+}",class,good
+"  public JpsMavenRepositoryLibraryDescriptor(@NotNull String groupId, @NotNull String artifactId, @NotNull String version) {
+    this(groupId, artifactId, version, true);
+  }",method,good
+"  public JpsMavenRepositoryLibraryDescriptor(@NotNull String groupId, @NotNull String artifactId, @NotNull String version,
+                                             boolean includeTransitiveDependencies) {
+    myGroupId = groupId;
+    myArtifactId = artifactId;
+    myVersion = version;
+    myIncludeTransitiveDependencies = includeTransitiveDependencies;
+    myMavenId = groupId + "":"" + artifactId + "":"" + version;
+  }",method,changes_recommended
+"  public JpsMavenRepositoryLibraryDescriptor(@Nullable String mavenId) {
+    this(mavenId, true);
+  }",method,good
+"  public JpsMavenRepositoryLibraryDescriptor(@Nullable String mavenId, boolean includeTransitiveDependencies) {
+    myMavenId = mavenId;
+    myIncludeTransitiveDependencies = includeTransitiveDependencies;
+    if (mavenId == null) {
+      myGroupId = myArtifactId = myVersion = null;
+    }
+    else {
+      String[] parts = mavenId.split("":"");
+      myGroupId = parts.length > 0 ? parts[0] : null;
+      myArtifactId = parts.length > 1 ? parts[1] : null;
+      myVersion = parts.length > 2 ? parts[2] : null;
+    }
+  }",method,good
+"    if (mavenId == null) {
+      myGroupId = myArtifactId = myVersion = null;
+    }",method,good
+"  public String getMavenId() {
+    return myMavenId;
+  }",method,good
+"  public String getGroupId() {
+    return myGroupId;
+  }",method,good
+"  public String getArtifactId() {
+    return myArtifactId;
+  }",method,good
+"  public boolean isIncludeTransitiveDependencies() {
+    return myIncludeTransitiveDependencies;
+  }",method,good
+"  public String getVersion() {
+    return myVersion;
+  }",method,good
+"  @Override
+  public boolean equals(Object o) {
+    if (this == o) return true;
+    if (o == null || getClass() != o.getClass()) return false;
+    JpsMavenRepositoryLibraryDescriptor that = (JpsMavenRepositoryLibraryDescriptor)o;
+    return Objects.equals(myMavenId, that.myMavenId) && myIncludeTransitiveDependencies == that.myIncludeTransitiveDependencies;
+  }",method,good
+"  @Override
+  public int hashCode() {
+    return Objects.hashCode(myMavenId) * 31 + (myIncludeTransitiveDependencies ? 1 : 0);
+  }",method,good

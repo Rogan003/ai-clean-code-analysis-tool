@@ -1,0 +1,1184 @@
+code_snippet,type,score
+"    public void setLanguage(String language) {
+        this.language = language;
+    }",method,
+"    public void setTitle(String title) {
+        this.title = title;
+    }",method,
+"    protected long getContentSize() {
+        return 7 + Utf8.utf8StringLengthInBytes(title);
+    }",method,
+"    protected void getContent(ByteBuffer byteBuffer) {
+        writeVersionAndFlags(byteBuffer);
+        IsoTypeWriter.writeIso639(byteBuffer, language);
+        byteBuffer.put(Utf8.convert(title));
+        byteBuffer.put((byte) 0);
+    }",method,
+"    @Override
+    public void _parseDetails(ByteBuffer content) {
+        parseVersionAndFlags(content);
+        language = IsoTypeReader.readIso639(content);
+        title = IsoTypeReader.readString(content);
+    }",method,
+"    public String toString() {
+        return ""TitleBox[language="" + getLanguage() + "";title="" + getTitle() + ""]"";
+    }",method,
+"abstract class AbstractSortedSetMultimap<K, V> extends AbstractSetMultimap<K, V>
+    implements SortedSetMultimap<K, V> {
+  protected AbstractSortedSetMultimap(Map<K, Collection<V>> map) {
+    super(map);
+  }
+  @Override
+  abstract SortedSet<V> createCollection();
+  @Override
+  SortedSet<V> createUnmodifiableEmptyCollection() {
+    Comparator<? super V> comparator = valueComparator();
+    if (comparator == null) {
+      return Collections.unmodifiableSortedSet(createCollection());
+    } else {
+      return ImmutableSortedSet.emptySet(valueComparator());
+    }
+  }
+  // Following Javadoc copied from Multimap and SortedSetMultimap.
+  @Override
+  public SortedSet<V> get(@Nullable K key) {
+    return (SortedSet<V>) super.get(key);
+  }
+  @CanIgnoreReturnValue
+  @Override
+  public SortedSet<V> removeAll(@Nullable Object key) {
+    return (SortedSet<V>) super.removeAll(key);
+  }
+  @CanIgnoreReturnValue
+  @Override
+  public SortedSet<V> replaceValues(@Nullable K key, Iterable<? extends V> values) {
+    return (SortedSet<V>) super.replaceValues(key, values);
+  }
+  @Override
+  public Map<K, Collection<V>> asMap() {
+    return super.asMap();
+  }
+  @Override
+  public Collection<V> values() {
+    return super.values();
+  }
+  private static final long serialVersionUID = 430848587173315748L;
+}",class,
+"  protected AbstractSortedSetMultimap(Map<K, Collection<V>> map) {
+    super(map);
+  }",method,
+"  @Override
+  SortedSet<V> createUnmodifiableEmptyCollection() {
+    Comparator<? super V> comparator = valueComparator();
+    if (comparator == null) {
+      return Collections.unmodifiableSortedSet(createCollection());
+    } else {
+      return ImmutableSortedSet.emptySet(valueComparator());
+    }
+  }",method,
+"    if (comparator == null) {
+      return Collections.unmodifiableSortedSet(createCollection());
+    }",method,
+"  @Override
+  public SortedSet<V> get(@Nullable K key) {
+    return (SortedSet<V>) super.get(key);
+  }",method,
+"  @CanIgnoreReturnValue
+  @Override
+  public SortedSet<V> removeAll(@Nullable Object key) {
+    return (SortedSet<V>) super.removeAll(key);
+  }",method,
+"  @CanIgnoreReturnValue
+  @Override
+  public SortedSet<V> replaceValues(@Nullable K key, Iterable<? extends V> values) {
+    return (SortedSet<V>) super.replaceValues(key, values);
+  }",method,
+"  @Override
+  public Map<K, Collection<V>> asMap() {
+    return super.asMap();
+  }",method,
+"  @Override
+  public Collection<V> values() {
+    return super.values();
+  }",method,
+"public class HTTPServerList extends Vector<HTTPServer> 
+{
+	////////////////////////////////////////////////
+	//	Constructor
+	////////////////////////////////////////////////
+	private InetAddress[] binds = null;
+	private int port = Device.HTTP_DEFAULT_PORT;
+	public HTTPServerList() {
+	}
+	public HTTPServerList(InetAddress[] list, int port) {
+		this.binds = list;
+		this.port = port;
+	}
+	////////////////////////////////////////////////
+	//	Methods
+	////////////////////////////////////////////////
+	public void addRequestListener(HTTPRequestListener listener)
+	{
+		int nServers = size();
+		for (int n=0; n<nServers; n++) {
+			HTTPServer server = getHTTPServer(n);
+			server.addRequestListener(listener);
+		}
+	}		
+	public HTTPServer getHTTPServer(int n)
+	{
+		return (HTTPServer)get(n);
+	}
+	////////////////////////////////////////////////
+	//	open/close
+	////////////////////////////////////////////////
+	public void close()
+	{
+		int nServers = size();
+		for (int n=0; n<nServers; n++) {
+			HTTPServer server = getHTTPServer(n);
+			server.close();
+		}
+	}
+	public int open(){
+		InetAddress[] binds=this.binds;
+		String[] bindAddresses;
+		if(binds!=null){			
+			bindAddresses = new String[binds.length];
+			for (int i = 0; i < binds.length; i++) {
+				bindAddresses[i] = binds[i].getHostAddress();
+			}
+		}else{
+			int nHostAddrs = HostInterface.getNHostAddresses();
+			bindAddresses = new String[nHostAddrs]; 
+			for (int n=0; n<nHostAddrs; n++) {
+				bindAddresses[n] = HostInterface.getHostAddress(n);
+			}
+		}		
+		int j=0;
+		for (int i = 0; i < bindAddresses.length; i++) {
+			HTTPServer httpServer = new HTTPServer();
+			if((bindAddresses[i]==null) || (httpServer.open(bindAddresses[i], port) == false)) {
+				close();
+				clear();
+			}else{
+				add(httpServer);
+				j++;
+			}
+		}
+		return j;
+	}
+	public boolean open(int port) 
+	{
+		this.port=port;
+		return open()!=0;
+	}
+	////////////////////////////////////////////////
+	//	start/stop
+	////////////////////////////////////////////////
+	public void start()
+	{
+		int nServers = size();
+		for (int n=0; n<nServers; n++) {
+			HTTPServer server = getHTTPServer(n);
+			server.start();
+		}
+	}
+	public void stop()
+	{
+		int nServers = size();
+		for (int n=0; n<nServers; n++) {
+			HTTPServer server = getHTTPServer(n);
+			server.stop();
+		}
+	}
+}",class,
+"	public HTTPServerList() {
+	}",method,
+"	public HTTPServerList(InetAddress[] list, int port) {
+		this.binds = list;
+		this.port = port;
+	}",method,
+"	public void addRequestListener(HTTPRequestListener listener)
+	{
+		int nServers = size();
+		for (int n=0; n<nServers; n++) {
+			HTTPServer server = getHTTPServer(n);
+			server.addRequestListener(listener);
+		}
+	}",method,
+"		for (int n=0; n<nServers; n++) {
+			HTTPServer server = getHTTPServer(n);
+			server.addRequestListener(listener);
+		}",method,
+"	public HTTPServer getHTTPServer(int n)
+	{
+		return (HTTPServer)get(n);
+	}",method,
+"	public void close()
+	{
+		int nServers = size();
+		for (int n=0; n<nServers; n++) {
+			HTTPServer server = getHTTPServer(n);
+			server.close();
+		}
+	}",method,
+"		for (int n=0; n<nServers; n++) {
+			HTTPServer server = getHTTPServer(n);
+			server.close();
+		}",method,
+"	public int open(){
+		InetAddress[] binds=this.binds;
+		String[] bindAddresses;
+		if(binds!=null){			
+			bindAddresses = new String[binds.length];
+			for (int i = 0; i < binds.length; i++) {
+				bindAddresses[i] = binds[i].getHostAddress();
+			}
+		}else{
+			int nHostAddrs = HostInterface.getNHostAddresses();
+			bindAddresses = new String[nHostAddrs]; 
+			for (int n=0; n<nHostAddrs; n++) {
+				bindAddresses[n] = HostInterface.getHostAddress(n);
+			}
+		}		
+		int j=0;
+		for (int i = 0; i < bindAddresses.length; i++) {
+			HTTPServer httpServer = new HTTPServer();
+			if((bindAddresses[i]==null) || (httpServer.open(bindAddresses[i], port) == false)) {
+				close();
+				clear();
+			}else{
+				add(httpServer);
+				j++;
+			}
+		}
+		return j;
+	}",method,
+"		if(binds!=null){			
+			bindAddresses = new String[binds.length];
+			for (int i = 0; i < binds.length; i++) {
+				bindAddresses[i] = binds[i].getHostAddress();
+			}
+		}",method,
+"			for (int i = 0; i < binds.length; i++) {
+				bindAddresses[i] = binds[i].getHostAddress();
+			}",method,
+"			for (int n=0; n<nHostAddrs; n++) {
+				bindAddresses[n] = HostInterface.getHostAddress(n);
+			}",method,
+"		for (int i = 0; i < bindAddresses.length; i++) {
+			HTTPServer httpServer = new HTTPServer();
+			if((bindAddresses[i]==null) || (httpServer.open(bindAddresses[i], port) == false)) {
+				close();
+				clear();
+			}else{
+				add(httpServer);
+				j++;
+			}
+		}",method,
+"	public boolean open(int port) 
+	{
+		this.port=port;
+		return open()!=0;
+	}",method,
+"	public void start()
+	{
+		int nServers = size();
+		for (int n=0; n<nServers; n++) {
+			HTTPServer server = getHTTPServer(n);
+			server.start();
+		}
+	}",method,
+"		for (int n=0; n<nServers; n++) {
+			HTTPServer server = getHTTPServer(n);
+			server.start();
+		}",method,
+"	public void stop()
+	{
+		int nServers = size();
+		for (int n=0; n<nServers; n++) {
+			HTTPServer server = getHTTPServer(n);
+			server.stop();
+		}
+	}",method,
+"		for (int n=0; n<nServers; n++) {
+			HTTPServer server = getHTTPServer(n);
+			server.stop();
+		}",method,
+"public class FramebufferToTextureTest extends GdxTest {
+	TextureRegion fbTexture;
+	Texture texture;
+	Model mesh;
+	ModelInstance modelInstance;
+	ModelBatch modelBatch;
+	PerspectiveCamera cam;
+	SpriteBatch batch;
+	BitmapFont font;
+	Color clearColor = new Color(0.2f, 0.2f, 0.2f, 1);
+	float angle = 0;
+	@Override
+	public void create () {
+		texture = new Texture(Gdx.files.internal(""data/badlogic.jpg""), true);
+		texture.setFilter(TextureFilter.MipMap, TextureFilter.Linear);
+		ObjLoader objLoader = new ObjLoader();
+		mesh = objLoader.loadModel(Gdx.files.internal(""data/cube.obj""));
+		mesh.materials.get(0).set(new TextureAttribute(TextureAttribute.Diffuse, texture));
+		modelInstance = new ModelInstance(mesh);
+		modelBatch = new ModelBatch();
+		cam = new PerspectiveCamera(67, Gdx.graphics.getWidth(), Gdx.graphics.getHeight());
+		cam.position.set(3, 3, 3);
+		cam.direction.set(-1, -1, -1);
+		batch = new SpriteBatch();
+		font = new BitmapFont();
+	}
+	@Override
+	public void render () {
+		Gdx.gl.glViewport(0, 0, Gdx.graphics.getBackBufferWidth(), Gdx.graphics.getBackBufferHeight());
+		Gdx.gl.glClearColor(clearColor.r, clearColor.g, clearColor.b, clearColor.a);
+		Gdx.gl.glClear(GL20.GL_COLOR_BUFFER_BIT | GL20.GL_DEPTH_BUFFER_BIT);
+		Gdx.gl.glEnable(GL20.GL_DEPTH_TEST);
+		cam.update();
+		modelInstance.transform.rotate(Vector3.Y, 45 * Gdx.graphics.getDeltaTime());
+		modelBatch.begin(cam);
+		modelBatch.render(modelInstance);
+		modelBatch.end();
+		if (Gdx.input.justTouched() || fbTexture == null) {
+			if (fbTexture != null) fbTexture.getTexture().dispose();
+			fbTexture = ScreenUtils.getFrameBufferTexture();
+		}
+		batch.begin();
+		if (fbTexture != null) {
+			batch.draw(fbTexture, 0, 0, 100, 100);
+		}
+		font.draw(batch, ""Touch screen to take a snapshot"", 10, 40);
+		batch.end();
+	}
+	@Override
+	public void pause () {
+		fbTexture = null;
+	}
+}",class,
+"	@Override
+	public void create () {
+		texture = new Texture(Gdx.files.internal(""data/badlogic.jpg""), true);
+		texture.setFilter(TextureFilter.MipMap, TextureFilter.Linear);
+		ObjLoader objLoader = new ObjLoader();
+		mesh = objLoader.loadModel(Gdx.files.internal(""data/cube.obj""));
+		mesh.materials.get(0).set(new TextureAttribute(TextureAttribute.Diffuse, texture));
+		modelInstance = new ModelInstance(mesh);
+		modelBatch = new ModelBatch();
+		cam = new PerspectiveCamera(67, Gdx.graphics.getWidth(), Gdx.graphics.getHeight());
+		cam.position.set(3, 3, 3);
+		cam.direction.set(-1, -1, -1);
+		batch = new SpriteBatch();
+		font = new BitmapFont();
+	}",method,
+"	@Override
+	public void render () {
+		Gdx.gl.glViewport(0, 0, Gdx.graphics.getBackBufferWidth(), Gdx.graphics.getBackBufferHeight());
+		Gdx.gl.glClearColor(clearColor.r, clearColor.g, clearColor.b, clearColor.a);
+		Gdx.gl.glClear(GL20.GL_COLOR_BUFFER_BIT | GL20.GL_DEPTH_BUFFER_BIT);
+		Gdx.gl.glEnable(GL20.GL_DEPTH_TEST);
+		cam.update();
+		modelInstance.transform.rotate(Vector3.Y, 45 * Gdx.graphics.getDeltaTime());
+		modelBatch.begin(cam);
+		modelBatch.render(modelInstance);
+		modelBatch.end();
+		if (Gdx.input.justTouched() || fbTexture == null) {
+			if (fbTexture != null) fbTexture.getTexture().dispose();
+			fbTexture = ScreenUtils.getFrameBufferTexture();
+		}
+		batch.begin();
+		if (fbTexture != null) {
+			batch.draw(fbTexture, 0, 0, 100, 100);
+		}
+		font.draw(batch, ""Touch screen to take a snapshot"", 10, 40);
+		batch.end();
+	}",method,
+"		if (fbTexture != null) {
+			batch.draw(fbTexture, 0, 0, 100, 100);
+		}",method,
+"	@Override
+	public void pause () {
+		fbTexture = null;
+	}",method,
+"public class TabParserTest {
+    private Context context;
+    private List<BottomBarTab> tabs;
+    @Before
+    public void setUp() throws Exception {
+        context = InstrumentationRegistry.getContext();
+        tabs = new TabParser(
+                context,
+                new BottomBarTab.Config.Builder().build(),
+                com.roughike.bottombar.test.R.xml.dummy_tabs_five
+        ).parseTabs();
+    }
+    @Test
+    public void correctAmountOfTabs() {
+        assertEquals(5, tabs.size());
+    }
+    @Test
+    public void idsNotEmpty() {
+        assertNotSame(0, tabs.get(0).getId());
+        assertNotSame(0, tabs.get(1).getId());
+        assertNotSame(0, tabs.get(2).getId());
+        assertNotSame(0, tabs.get(3).getId());
+        assertNotSame(0, tabs.get(4).getId());
+    }
+    @Test
+    public void correctTabTitles() {
+        assertEquals(""Recents"", tabs.get(0).getTitle());
+        assertEquals(""Favorites"", tabs.get(1).getTitle());
+        assertEquals(""Nearby"", tabs.get(2).getTitle());
+        assertEquals(""Friends"", tabs.get(3).getTitle());
+        assertEquals(""Food"", tabs.get(4).getTitle());
+    }
+    @Test
+    public void correctInActiveColors() {
+        assertEquals(Color.parseColor(""#00FF00""), tabs.get(0).getInActiveColor());
+        assertEquals(Color.parseColor(""#0000FF""), tabs.get(1).getInActiveColor());
+        assertEquals(Color.parseColor(""#FF0000""), tabs.get(2).getInActiveColor());
+        assertEquals(Color.parseColor(""#F0F000""), tabs.get(3).getInActiveColor());
+        assertEquals(Color.parseColor(""#F00F00""), tabs.get(4).getInActiveColor());
+    }
+    @Test
+    public void correctActiveColors() {
+        assertEquals(Color.parseColor(""#FF0000""), tabs.get(0).getActiveColor());
+        assertEquals(
+                ContextCompat.getColor(context, com.roughike.bottombar.test.R.color.test_random_color),
+                tabs.get(1).getActiveColor()
+        );
+        assertEquals(Color.parseColor(""#0000FF""), tabs.get(2).getActiveColor());
+        assertEquals(Color.parseColor(""#DAD666""), tabs.get(3).getActiveColor());
+        assertEquals(Color.parseColor(""#F00F00""), tabs.get(4).getActiveColor());
+    }
+    @Test
+    public void iconResourcesExist() {
+        assertNotNull(getDrawableByResource(tabs.get(0).getIconResId()));
+        assertNotNull(getDrawableByResource(tabs.get(1).getIconResId()));
+        assertNotNull(getDrawableByResource(tabs.get(2).getIconResId()));
+        assertNotNull(getDrawableByResource(tabs.get(3).getIconResId()));
+        assertNotNull(getDrawableByResource(tabs.get(4).getIconResId()));
+    }
+    @Test
+    public void iconResourceIdsAsExpected() {
+        int expectedId = com.roughike.bottombar.test.R.drawable.empty_icon;
+        assertEquals(expectedId, tabs.get(0).getIconResId());
+        assertEquals(expectedId, tabs.get(1).getIconResId());
+        assertEquals(expectedId, tabs.get(2).getIconResId());
+        assertEquals(expectedId, tabs.get(3).getIconResId());
+        assertEquals(expectedId, tabs.get(4).getIconResId());
+    }
+    @Test
+    public void barColorWhenSelectedAsExpected() {
+        assertEquals(Color.parseColor(""#FF0000""), tabs.get(0).getBarColorWhenSelected());
+        assertEquals(Color.parseColor(""#00FF00""), tabs.get(1).getBarColorWhenSelected());
+        assertEquals(Color.parseColor(""#F00000""), tabs.get(2).getBarColorWhenSelected());
+        assertEquals(Color.parseColor(""#00F000""), tabs.get(3).getBarColorWhenSelected());
+        assertEquals(Color.parseColor(""#00F0F0""), tabs.get(4).getBarColorWhenSelected());
+    }
+    @Test
+    public void badgeBackgroundColorAsExpected() {
+        assertEquals(Color.parseColor(""#FF0000""), tabs.get(0).getBadgeBackgroundColor());
+        assertEquals(Color.parseColor(""#00FF00""), tabs.get(1).getBadgeBackgroundColor());
+        assertEquals(Color.parseColor(""#F00000""), tabs.get(2).getBadgeBackgroundColor());
+        assertEquals(Color.parseColor(""#00F000""), tabs.get(3).getBadgeBackgroundColor());
+        assertEquals(Color.parseColor(""#00F0F0""), tabs.get(4).getBadgeBackgroundColor());
+    }
+    @Test
+    public void correctBadgeHidingPolicies() {
+        assertFalse(tabs.get(0).getBadgeHidesWhenActive());
+        assertTrue(tabs.get(1).getBadgeHidesWhenActive());
+        assertFalse(tabs.get(2).getBadgeHidesWhenActive());
+        assertTrue(tabs.get(3).getBadgeHidesWhenActive());
+        assertTrue(tabs.get(4).getBadgeHidesWhenActive());
+    }
+    @Test
+    public void titlelessTabsAsExpected() {
+        assertFalse(tabs.get(0).isTitleless());
+        assertFalse(tabs.get(1).isTitleless());
+        assertTrue(tabs.get(2).isTitleless());
+        assertFalse(tabs.get(3).isTitleless());
+        assertTrue(tabs.get(4).isTitleless());
+    }
+    private Drawable getDrawableByResource(int iconResId) {
+        return ContextCompat.getDrawable(context, iconResId);
+    }
+}",class,
+"    @Before
+    public void setUp() throws Exception {
+        context = InstrumentationRegistry.getContext();
+        tabs = new TabParser(
+                context,
+                new BottomBarTab.Config.Builder().build(),
+                com.roughike.bottombar.test.R.xml.dummy_tabs_five
+        ).parseTabs();
+    }",method,
+"    @Test
+    public void correctAmountOfTabs() {
+        assertEquals(5, tabs.size());
+    }",method,
+"    @Test
+    public void idsNotEmpty() {
+        assertNotSame(0, tabs.get(0).getId());
+        assertNotSame(0, tabs.get(1).getId());
+        assertNotSame(0, tabs.get(2).getId());
+        assertNotSame(0, tabs.get(3).getId());
+        assertNotSame(0, tabs.get(4).getId());
+    }",method,
+"    @Test
+    public void correctTabTitles() {
+        assertEquals(""Recents"", tabs.get(0).getTitle());
+        assertEquals(""Favorites"", tabs.get(1).getTitle());
+        assertEquals(""Nearby"", tabs.get(2).getTitle());
+        assertEquals(""Friends"", tabs.get(3).getTitle());
+        assertEquals(""Food"", tabs.get(4).getTitle());
+    }",method,
+"    @Test
+    public void correctInActiveColors() {
+        assertEquals(Color.parseColor(""#00FF00""), tabs.get(0).getInActiveColor());
+        assertEquals(Color.parseColor(""#0000FF""), tabs.get(1).getInActiveColor());
+        assertEquals(Color.parseColor(""#FF0000""), tabs.get(2).getInActiveColor());
+        assertEquals(Color.parseColor(""#F0F000""), tabs.get(3).getInActiveColor());
+        assertEquals(Color.parseColor(""#F00F00""), tabs.get(4).getInActiveColor());
+    }",method,
+"    @Test
+    public void correctActiveColors() {
+        assertEquals(Color.parseColor(""#FF0000""), tabs.get(0).getActiveColor());
+        assertEquals(
+                ContextCompat.getColor(context, com.roughike.bottombar.test.R.color.test_random_color),
+                tabs.get(1).getActiveColor()
+        );
+        assertEquals(Color.parseColor(""#0000FF""), tabs.get(2).getActiveColor());
+        assertEquals(Color.parseColor(""#DAD666""), tabs.get(3).getActiveColor());
+        assertEquals(Color.parseColor(""#F00F00""), tabs.get(4).getActiveColor());
+    }",method,
+"    @Test
+    public void iconResourcesExist() {
+        assertNotNull(getDrawableByResource(tabs.get(0).getIconResId()));
+        assertNotNull(getDrawableByResource(tabs.get(1).getIconResId()));
+        assertNotNull(getDrawableByResource(tabs.get(2).getIconResId()));
+        assertNotNull(getDrawableByResource(tabs.get(3).getIconResId()));
+        assertNotNull(getDrawableByResource(tabs.get(4).getIconResId()));
+    }",method,
+"    @Test
+    public void iconResourceIdsAsExpected() {
+        int expectedId = com.roughike.bottombar.test.R.drawable.empty_icon;
+        assertEquals(expectedId, tabs.get(0).getIconResId());
+        assertEquals(expectedId, tabs.get(1).getIconResId());
+        assertEquals(expectedId, tabs.get(2).getIconResId());
+        assertEquals(expectedId, tabs.get(3).getIconResId());
+        assertEquals(expectedId, tabs.get(4).getIconResId());
+    }",method,
+"    @Test
+    public void barColorWhenSelectedAsExpected() {
+        assertEquals(Color.parseColor(""#FF0000""), tabs.get(0).getBarColorWhenSelected());
+        assertEquals(Color.parseColor(""#00FF00""), tabs.get(1).getBarColorWhenSelected());
+        assertEquals(Color.parseColor(""#F00000""), tabs.get(2).getBarColorWhenSelected());
+        assertEquals(Color.parseColor(""#00F000""), tabs.get(3).getBarColorWhenSelected());
+        assertEquals(Color.parseColor(""#00F0F0""), tabs.get(4).getBarColorWhenSelected());
+    }",method,
+"    @Test
+    public void badgeBackgroundColorAsExpected() {
+        assertEquals(Color.parseColor(""#FF0000""), tabs.get(0).getBadgeBackgroundColor());
+        assertEquals(Color.parseColor(""#00FF00""), tabs.get(1).getBadgeBackgroundColor());
+        assertEquals(Color.parseColor(""#F00000""), tabs.get(2).getBadgeBackgroundColor());
+        assertEquals(Color.parseColor(""#00F000""), tabs.get(3).getBadgeBackgroundColor());
+        assertEquals(Color.parseColor(""#00F0F0""), tabs.get(4).getBadgeBackgroundColor());
+    }",method,
+"    @Test
+    public void correctBadgeHidingPolicies() {
+        assertFalse(tabs.get(0).getBadgeHidesWhenActive());
+        assertTrue(tabs.get(1).getBadgeHidesWhenActive());
+        assertFalse(tabs.get(2).getBadgeHidesWhenActive());
+        assertTrue(tabs.get(3).getBadgeHidesWhenActive());
+        assertTrue(tabs.get(4).getBadgeHidesWhenActive());
+    }",method,
+"    @Test
+    public void titlelessTabsAsExpected() {
+        assertFalse(tabs.get(0).isTitleless());
+        assertFalse(tabs.get(1).isTitleless());
+        assertTrue(tabs.get(2).isTitleless());
+        assertFalse(tabs.get(3).isTitleless());
+        assertTrue(tabs.get(4).isTitleless());
+    }",method,
+"    private Drawable getDrawableByResource(int iconResId) {
+        return ContextCompat.getDrawable(context, iconResId);
+    }",method,
+"public abstract class AbstractCompltnProplComputer implements
+		IJavaCompletionProposalComputer {
+    public AbstractCompltnProplComputer(
+            GenericTemplCompltnProcessor processor) {
+        this.processor = processor;
+    }
+	private final GenericTemplCompltnProcessor processor;
+    public List computeCompletionProposals(
+			ContentAssistInvocationContext context, IProgressMonitor monitor) {
+		if (!(context instanceof JavaContentAssistInvocationContext)) {
+			return Collections.EMPTY_LIST;
+		}
+		JavaContentAssistInvocationContext javaContext = (JavaContentAssistInvocationContext)context;
+		ITextViewer viewer = javaContext.getViewer();
+		int offset = javaContext.getInvocationOffset();
+		ICompletionProposal[] computeCompletionProposals = 
+			processor.computeCompletionProposals(viewer, offset);
+		return Arrays.asList(computeCompletionProposals);
+	}
+	public List computeContextInformation(
+			ContentAssistInvocationContext context, IProgressMonitor monitor) {
+		return Collections.EMPTY_LIST;
+	}
+	public String getErrorMessage() {
+		return null;
+	}
+	public void sessionEnded() {
+	}
+	public void sessionStarted() {
+	}
+}",class,
+"    public AbstractCompltnProplComputer(
+            GenericTemplCompltnProcessor processor) {
+        this.processor = processor;
+    }",method,
+"    public List computeCompletionProposals(
+			ContentAssistInvocationContext context, IProgressMonitor monitor) {
+		if (!(context instanceof JavaContentAssistInvocationContext)) {
+			return Collections.EMPTY_LIST;
+		}
+		JavaContentAssistInvocationContext javaContext = (JavaContentAssistInvocationContext)context;
+		ITextViewer viewer = javaContext.getViewer();
+		int offset = javaContext.getInvocationOffset();
+		ICompletionProposal[] computeCompletionProposals = 
+			processor.computeCompletionProposals(viewer, offset);
+		return Arrays.asList(computeCompletionProposals);
+	}",method,
+"	public List computeContextInformation(
+			ContentAssistInvocationContext context, IProgressMonitor monitor) {
+		return Collections.EMPTY_LIST;
+	}",method,
+"	public String getErrorMessage() {
+		return null;
+	}",method,
+"	public void sessionEnded() {
+	}",method,
+"	public void sessionStarted() {
+	}",method,
+"public class JavaCoreApplicationEnvironment extends CoreApplicationEnvironment {
+  public JavaCoreApplicationEnvironment(@NotNull Disposable parentDisposable) {
+    this(parentDisposable, true);
+  }
+  public JavaCoreApplicationEnvironment(@NotNull Disposable parentDisposable, boolean unitTestMode) {
+    super(parentDisposable, unitTestMode);
+    registerFileType(JavaClassFileType.INSTANCE, ""class"");
+    registerFileType(JavaFileType.INSTANCE, ""java"");
+    registerFileType(ArchiveFileType.INSTANCE, ""jar;zip"");
+    registerFileType(PlainTextFileType.INSTANCE, ""txt;sh;bat;cmd;policy;log;cgi;MF;jad;jam;htaccess"");
+    addExplicitExtension(LanguageASTFactory.INSTANCE, PlainTextLanguage.INSTANCE, new PlainTextASTFactory());
+    addExplicitExtension(LanguageParserDefinitions.INSTANCE, PlainTextLanguage.INSTANCE, new PlainTextParserDefinition());
+    addExplicitExtension(FileTypeFileViewProviders.INSTANCE, JavaClassFileType.INSTANCE,  new ClassFileViewProviderFactory());
+    addExplicitExtension(BinaryFileStubBuilders.INSTANCE, JavaClassFileType.INSTANCE, new ClassFileStubBuilder());
+    addExplicitExtension(LanguageASTFactory.INSTANCE, JavaLanguage.INSTANCE, new CoreJavaASTFactory());
+    addExplicitExtension(LanguageParserDefinitions.INSTANCE, JavaLanguage.INSTANCE, new JavaParserDefinition());
+    addExplicitExtension(LanguageConstantExpressionEvaluator.INSTANCE, JavaLanguage.INSTANCE, new PsiExpressionEvaluator());
+    addExtension(ContainerProvider.EP_NAME, new JavaContainerProvider());
+    myApplication.registerService(PsiPackageImplementationHelper.class, new CorePsiPackageImplementationHelper());
+    myApplication.registerService(EmptySubstitutor.class, new EmptySubstitutorImpl());
+    myApplication.registerService(JavaDirectoryService.class, createJavaDirectoryService());
+    myApplication.registerService(JavaVersionService.class, new JavaVersionService());
+    addExplicitExtension(ItemPresentationProviders.INSTANCE, PsiPackage.class, new PackagePresentationProvider());
+    addExplicitExtension(ItemPresentationProviders.INSTANCE, PsiClass.class, new ClassPresentationProvider());
+    addExplicitExtension(ItemPresentationProviders.INSTANCE, PsiMethod.class, new MethodPresentationProvider());
+    addExplicitExtension(ItemPresentationProviders.INSTANCE, PsiField.class, new FieldPresentationProvider());
+    addExplicitExtension(ItemPresentationProviders.INSTANCE, PsiLocalVariable.class, new VariablePresentationProvider());
+    addExplicitExtension(ItemPresentationProviders.INSTANCE, PsiParameter.class, new VariablePresentationProvider());
+    registerApplicationService(JavaCodeFoldingSettings.class, new JavaCodeFoldingSettingsBase());
+    addExplicitExtension(LanguageFolding.INSTANCE, JavaLanguage.INSTANCE, new JavaFoldingBuilderBase() {
+      @Override
+      protected boolean shouldShowExplicitLambdaType(@NotNull PsiAnonymousClass anonymousClass, @NotNull PsiNewExpression expression) {
+        return false;
+      }
+      @Override
+      protected boolean isBelowRightMargin(@NotNull Project project, int lineLength) {
+        return false;
+      }
+    });
+    registerApplicationExtensionPoint(SuperMethodsSearch.EP_NAME, QueryExecutor.class);
+    addExtension(SuperMethodsSearch.EP_NAME, new MethodSuperSearcher());
+  }
+  @SuppressWarnings(""MethodMayBeStatic"") // overridden in upsource
+  protected CoreJavaDirectoryService createJavaDirectoryService() {
+    return new CoreJavaDirectoryService();
+  }
+}",class,
+"  public JavaCoreApplicationEnvironment(@NotNull Disposable parentDisposable) {
+    this(parentDisposable, true);
+  }",method,
+"  public JavaCoreApplicationEnvironment(@NotNull Disposable parentDisposable, boolean unitTestMode) {
+    super(parentDisposable, unitTestMode);
+    registerFileType(JavaClassFileType.INSTANCE, ""class"");
+    registerFileType(JavaFileType.INSTANCE, ""java"");
+    registerFileType(ArchiveFileType.INSTANCE, ""jar;zip"");
+    registerFileType(PlainTextFileType.INSTANCE, ""txt;sh;bat;cmd;policy;log;cgi;MF;jad;jam;htaccess"");
+    addExplicitExtension(LanguageASTFactory.INSTANCE, PlainTextLanguage.INSTANCE, new PlainTextASTFactory());
+    addExplicitExtension(LanguageParserDefinitions.INSTANCE, PlainTextLanguage.INSTANCE, new PlainTextParserDefinition());
+    addExplicitExtension(FileTypeFileViewProviders.INSTANCE, JavaClassFileType.INSTANCE,  new ClassFileViewProviderFactory());
+    addExplicitExtension(BinaryFileStubBuilders.INSTANCE, JavaClassFileType.INSTANCE, new ClassFileStubBuilder());
+    addExplicitExtension(LanguageASTFactory.INSTANCE, JavaLanguage.INSTANCE, new CoreJavaASTFactory());
+    addExplicitExtension(LanguageParserDefinitions.INSTANCE, JavaLanguage.INSTANCE, new JavaParserDefinition());
+    addExplicitExtension(LanguageConstantExpressionEvaluator.INSTANCE, JavaLanguage.INSTANCE, new PsiExpressionEvaluator());
+    addExtension(ContainerProvider.EP_NAME, new JavaContainerProvider());
+    myApplication.registerService(PsiPackageImplementationHelper.class, new CorePsiPackageImplementationHelper());
+    myApplication.registerService(EmptySubstitutor.class, new EmptySubstitutorImpl());
+    myApplication.registerService(JavaDirectoryService.class, createJavaDirectoryService());
+    myApplication.registerService(JavaVersionService.class, new JavaVersionService());
+    addExplicitExtension(ItemPresentationProviders.INSTANCE, PsiPackage.class, new PackagePresentationProvider());
+    addExplicitExtension(ItemPresentationProviders.INSTANCE, PsiClass.class, new ClassPresentationProvider());
+    addExplicitExtension(ItemPresentationProviders.INSTANCE, PsiMethod.class, new MethodPresentationProvider());
+    addExplicitExtension(ItemPresentationProviders.INSTANCE, PsiField.class, new FieldPresentationProvider());
+    addExplicitExtension(ItemPresentationProviders.INSTANCE, PsiLocalVariable.class, new VariablePresentationProvider());
+    addExplicitExtension(ItemPresentationProviders.INSTANCE, PsiParameter.class, new VariablePresentationProvider());
+    registerApplicationService(JavaCodeFoldingSettings.class, new JavaCodeFoldingSettingsBase());
+    addExplicitExtension(LanguageFolding.INSTANCE, JavaLanguage.INSTANCE, new JavaFoldingBuilderBase() {
+      @Override
+      protected boolean shouldShowExplicitLambdaType(@NotNull PsiAnonymousClass anonymousClass, @NotNull PsiNewExpression expression) {
+        return false;
+      }
+      @Override
+      protected boolean isBelowRightMargin(@NotNull Project project, int lineLength) {
+        return false;
+      }
+    });
+    registerApplicationExtensionPoint(SuperMethodsSearch.EP_NAME, QueryExecutor.class);
+    addExtension(SuperMethodsSearch.EP_NAME, new MethodSuperSearcher());
+  }",method,
+"    addExplicitExtension(LanguageFolding.INSTANCE, JavaLanguage.INSTANCE, new JavaFoldingBuilderBase() {
+      @Override
+      protected boolean shouldShowExplicitLambdaType(@NotNull PsiAnonymousClass anonymousClass, @NotNull PsiNewExpression expression) {
+        return false;
+      }
+      @Override
+      protected boolean isBelowRightMargin(@NotNull Project project, int lineLength) {
+        return false;
+      }
+    }",method,
+"      @Override
+      protected boolean shouldShowExplicitLambdaType(@NotNull PsiAnonymousClass anonymousClass, @NotNull PsiNewExpression expression) {
+        return false;
+      }",method,
+"      @Override
+      protected boolean isBelowRightMargin(@NotNull Project project, int lineLength) {
+        return false;
+      }",method,
+"  @SuppressWarnings(""MethodMayBeStatic"") // overridden in upsource
+  protected CoreJavaDirectoryService createJavaDirectoryService() {
+    return new CoreJavaDirectoryService();
+  }",method,
+"public abstract class IdItem extends IndexedItem {
+    private final CstType type;
+    public IdItem(CstType type) {
+        if (type == null) {
+            throw new NullPointerException(""type == null"");
+        }
+        this.type = type;
+    }
+    @Override
+    public void addContents(DexFile file) {
+        TypeIdsSection typeIds = file.getTypeIds();
+        typeIds.intern(type);
+    }
+    public final CstType getDefiningClass() {
+        return type;
+    }
+}",class,
+"public abstract class IndexedItem extends Item {
+    private int index;
+    public IndexedItem() {
+        index = -1;
+    }
+    public final boolean hasIndex() {
+        return (index >= 0);
+    }
+    public final int getIndex() {
+        if (index < 0) {
+            throw new RuntimeException(""index not yet set"");
+        }
+        return index;
+    }
+    public final void setIndex(int index) {
+        if (this.index != -1) {
+            throw new RuntimeException(""index already set"");
+        }
+        this.index = index;
+    }
+    public final String indexString() {
+        return '[' + Integer.toHexString(index) + ']';
+    }
+}",class,
+"    public IdItem(CstType type) {
+        if (type == null) {
+            throw new NullPointerException(""type == null"");
+        }
+        this.type = type;
+    }",method,
+"        if (type == null) {
+            throw new NullPointerException(""type == null"");
+        }",method,
+"    @Override
+    public void addContents(DexFile file) {
+        TypeIdsSection typeIds = file.getTypeIds();
+        typeIds.intern(type);
+    }",method,
+"    public final CstType getDefiningClass() {
+        return type;
+    }",method,
+"    public IndexedItem() {
+        index = -1;
+    }",method,
+"    public final boolean hasIndex() {
+        return (index >= 0);
+    }",method,
+"    public final int getIndex() {
+        if (index < 0) {
+            throw new RuntimeException(""index not yet set"");
+        }
+        return index;
+    }",method,
+"        if (index < 0) {
+            throw new RuntimeException(""index not yet set"");
+        }",method,
+"    public final void setIndex(int index) {
+        if (this.index != -1) {
+            throw new RuntimeException(""index already set"");
+        }
+        this.index = index;
+    }",method,
+"        if (this.index != -1) {
+            throw new RuntimeException(""index already set"");
+        }",method,
+"    public final String indexString() {
+        return '[' + Integer.toHexString(index) + ']';
+    }",method,
+"public class NavigationBar extends CustomBar {
+    private static final String ATTR_COLOR = ""navigationBarColor"";
+    public static final String ATTR_TRANSLUCENT = ""windowTranslucentNavigation"";
+    // These correspond to @dimen/navigation_side_padding in the system ui code.
+    private static final int PADDING_WIDTH_DEFAULT = 36;
+    private static final int PADDING_WIDTH_SW360 = 40;
+    private static final int PADDING_WIDTH_SW400 = 50;
+    // These corresponds to @dimen/navigation_key_width in the system ui code.
+    private static final int WIDTH_DEFAULT = 36;
+    private static final int WIDTH_SW360 = 40;
+    private static final int WIDTH_SW600 = 48;
+    protected static final String LAYOUT_XML = ""/bars/navigation_bar.xml"";
+    private static final String LAYOUT_600DP_XML = ""/bars/navigation_bar600dp.xml"";
+    public NavigationBar(BridgeContext context, Density density, int orientation, boolean isRtl,
+      boolean rtlEnabled, int simulatedPlatformVersion) {
+        this(context, density, orientation, isRtl, rtlEnabled, simulatedPlatformVersion,
+          getShortestWidth(context)>= 600 ? LAYOUT_600DP_XML : LAYOUT_XML);
+    }
+    protected NavigationBar(BridgeContext context, Density density, int orientation, boolean isRtl,
+      boolean rtlEnabled, int simulatedPlatformVersion, String layoutPath) {
+        super(context, orientation, layoutPath, ""navigation_bar.xml"", simulatedPlatformVersion);
+        int color = getBarColor(ATTR_COLOR, ATTR_TRANSLUCENT);
+        setBackgroundColor(color == 0 ? 0xFF000000 : color);
+        // Cannot access the inside items through id because no R.id values have been
+        // created for them.
+        // We do know the order though.
+        // 0 is a spacer.
+        int back = 1;
+        int recent = 5;
+        if (orientation == LinearLayout.VERTICAL || (isRtl && !rtlEnabled)) {
+            // If RTL is enabled, then layoutlib mirrors the layout for us.
+            back = 5;
+            recent = 1;
+        }
+        //noinspection SpellCheckingInspection
+        loadIcon(back, ""ic_sysbar_back.png"", density, isRtl);
+        //noinspection SpellCheckingInspection
+        loadIcon(3, ""ic_sysbar_home.png"", density, isRtl);
+        //noinspection SpellCheckingInspection
+        loadIcon(recent, ""ic_sysbar_recent.png"", density, isRtl);
+        setupNavBar(context, orientation);
+    }
+    private void setupNavBar(BridgeContext context, int orientation) {
+        float sw = getShortestWidth(context);
+        View leftPadding = getChildAt(0);
+        View rightPadding = getChildAt(6);
+        setSize(context, leftPadding, orientation, getSidePadding(sw));
+        setSize(context, rightPadding, orientation, getSidePadding(sw));
+        int navButtonWidth = getWidth(sw);
+        for (int i = 1; i < 6; i += 2) {
+            View navButton = getChildAt(i);
+            setSize(context, navButton, orientation, navButtonWidth);
+        }
+        if (sw >= 600) {
+            setSize(context, getChildAt(2), orientation, 128);
+            setSize(context, getChildAt(4), orientation, 128);
+        }
+    }
+    private static void setSize(BridgeContext context, View view, int orientation, int size) {
+        size *= context.getMetrics().density;
+        LayoutParams layoutParams = (LayoutParams) view.getLayoutParams();
+        if (orientation == HORIZONTAL) {
+            layoutParams.width = size;
+        } else {
+            layoutParams.height = size;
+        }
+        view.setLayoutParams(layoutParams);
+    }
+    protected int getSidePadding(float sw) {
+        if (sw >= 400) {
+            return PADDING_WIDTH_SW400;
+        }
+        if (sw >= 360) {
+            return PADDING_WIDTH_SW360;
+        }
+        return PADDING_WIDTH_DEFAULT;
+    }
+    private static int getWidth(float sw) {
+        if (sw >= 600) {
+            return WIDTH_SW600;
+        }
+        if (sw >= 360) {
+            return WIDTH_SW360;
+        }
+        return WIDTH_DEFAULT;
+    }
+    private static float getShortestWidth(BridgeContext context) {
+        DisplayMetrics metrics = context.getMetrics();
+        float sw = metrics.widthPixels < metrics.heightPixels ?
+                metrics.widthPixels : metrics.heightPixels;
+        sw /= metrics.density;
+        return sw;
+    }
+    @Override
+    protected TextView getStyleableTextView() {
+        return null;
+    }
+}",class,
+"    public NavigationBar(BridgeContext context, Density density, int orientation, boolean isRtl,
+      boolean rtlEnabled, int simulatedPlatformVersion) {
+        this(context, density, orientation, isRtl, rtlEnabled, simulatedPlatformVersion,
+          getShortestWidth(context)>= 600 ? LAYOUT_600DP_XML : LAYOUT_XML);
+    }",method,
+"    protected NavigationBar(BridgeContext context, Density density, int orientation, boolean isRtl,
+      boolean rtlEnabled, int simulatedPlatformVersion, String layoutPath) {
+        super(context, orientation, layoutPath, ""navigation_bar.xml"", simulatedPlatformVersion);
+        int color = getBarColor(ATTR_COLOR, ATTR_TRANSLUCENT);
+        setBackgroundColor(color == 0 ? 0xFF000000 : color);
+        // Cannot access the inside items through id because no R.id values have been
+        // created for them.
+        // We do know the order though.
+        // 0 is a spacer.
+        int back = 1;
+        int recent = 5;
+        if (orientation == LinearLayout.VERTICAL || (isRtl && !rtlEnabled)) {
+            // If RTL is enabled, then layoutlib mirrors the layout for us.
+            back = 5;
+            recent = 1;
+        }
+        //noinspection SpellCheckingInspection
+        loadIcon(back, ""ic_sysbar_back.png"", density, isRtl);
+        //noinspection SpellCheckingInspection
+        loadIcon(3, ""ic_sysbar_home.png"", density, isRtl);
+        //noinspection SpellCheckingInspection
+        loadIcon(recent, ""ic_sysbar_recent.png"", density, isRtl);
+        setupNavBar(context, orientation);
+    }",method,
+"    private void setupNavBar(BridgeContext context, int orientation) {
+        float sw = getShortestWidth(context);
+        View leftPadding = getChildAt(0);
+        View rightPadding = getChildAt(6);
+        setSize(context, leftPadding, orientation, getSidePadding(sw));
+        setSize(context, rightPadding, orientation, getSidePadding(sw));
+        int navButtonWidth = getWidth(sw);
+        for (int i = 1; i < 6; i += 2) {
+            View navButton = getChildAt(i);
+            setSize(context, navButton, orientation, navButtonWidth);
+        }
+        if (sw >= 600) {
+            setSize(context, getChildAt(2), orientation, 128);
+            setSize(context, getChildAt(4), orientation, 128);
+        }
+    }",method,
+"        for (int i = 1; i < 6; i += 2) {
+            View navButton = getChildAt(i);
+            setSize(context, navButton, orientation, navButtonWidth);
+        }",method,
+"        if (sw >= 600) {
+            setSize(context, getChildAt(2), orientation, 128);
+            setSize(context, getChildAt(4), orientation, 128);
+        }",method,
+"    private static void setSize(BridgeContext context, View view, int orientation, int size) {
+        size *= context.getMetrics().density;
+        LayoutParams layoutParams = (LayoutParams) view.getLayoutParams();
+        if (orientation == HORIZONTAL) {
+            layoutParams.width = size;
+        } else {
+            layoutParams.height = size;
+        }
+        view.setLayoutParams(layoutParams);
+    }",method,
+"        if (orientation == HORIZONTAL) {
+            layoutParams.width = size;
+        }",method,
+"    protected int getSidePadding(float sw) {
+        if (sw >= 400) {
+            return PADDING_WIDTH_SW400;
+        }
+        if (sw >= 360) {
+            return PADDING_WIDTH_SW360;
+        }
+        return PADDING_WIDTH_DEFAULT;
+    }",method,
+"        if (sw >= 400) {
+            return PADDING_WIDTH_SW400;
+        }",method,
+"        if (sw >= 360) {
+            return PADDING_WIDTH_SW360;
+        }",method,
+"    private static int getWidth(float sw) {
+        if (sw >= 600) {
+            return WIDTH_SW600;
+        }
+        if (sw >= 360) {
+            return WIDTH_SW360;
+        }
+        return WIDTH_DEFAULT;
+    }",method,
+"        if (sw >= 600) {
+            return WIDTH_SW600;
+        }",method,
+"        if (sw >= 360) {
+            return WIDTH_SW360;
+        }",method,
+"    private static float getShortestWidth(BridgeContext context) {
+        DisplayMetrics metrics = context.getMetrics();
+        float sw = metrics.widthPixels < metrics.heightPixels ?
+                metrics.widthPixels : metrics.heightPixels;
+        sw /= metrics.density;
+        return sw;
+    }",method,
+"    @Override
+    protected TextView getStyleableTextView() {
+        return null;
+    }",method,
+"public class Lwjgl3WindowConfiguration {
+	int windowX = -1;
+	int windowY = -1;
+	int windowWidth = 640;
+	int windowHeight = 480;
+	int windowMinWidth = -1, windowMinHeight = -1, windowMaxWidth = -1, windowMaxHeight = -1;
+	boolean windowResizable = true;
+	boolean windowDecorated = true;
+	boolean windowMaximized = false;
+	FileType windowIconFileType;
+	String[] windowIconPaths;
+	Lwjgl3WindowListener windowListener;
+	Lwjgl3DisplayMode fullscreenMode;
+	String title = """";
+	Color initialBackgroundColor = Color.BLACK;
+	boolean initialVisible = true;
+	void setWindowConfiguration (Lwjgl3WindowConfiguration config){
+		windowX = config.windowX;
+		windowY = config.windowY;
+		windowWidth = config.windowWidth;
+		windowHeight = config.windowHeight;
+		windowMinWidth = config.windowMinWidth;
+		windowMinHeight = config.windowMinHeight;
+		windowMaxWidth = config.windowMaxWidth;
+		windowMaxHeight = config.windowMaxHeight;
+		windowResizable = config.windowResizable;
+		windowDecorated = config.windowDecorated;
+		windowMaximized = config.windowMaximized;
+		windowIconFileType = config.windowIconFileType;
+		if (config.windowIconPaths != null) 
+			windowIconPaths = Arrays.copyOf(config.windowIconPaths, config.windowIconPaths.length);
+		windowListener = config.windowListener;
+		fullscreenMode = config.fullscreenMode;
+		title = config.title;
+		initialBackgroundColor = config.initialBackgroundColor;
+		initialVisible = config.initialVisible;
+	}
+	public void setInitialVisible(boolean visibility) {
+		this.initialVisible = visibility;
+	}
+	public void setWindowedMode(int width, int height) {
+		this.windowWidth = width;
+		this.windowHeight = height;		
+	}
+	public void setResizable(boolean resizable) {
+		this.windowResizable = resizable;
+	}
+	public void setDecorated(boolean decorated) {
+		this.windowDecorated = decorated;
+	}
+	public void setMaximized(boolean maximized) {
+		this.windowMaximized = maximized;
+	}
+	public void setWindowPosition(int x, int y) {
+		windowX = x;
+		windowY = y;
+	}
+	public void setWindowSizeLimits(int minWidth, int minHeight, int maxWidth, int maxHeight) {
+		windowMinWidth = minWidth;
+		windowMinHeight = minHeight;
+		windowMaxWidth = maxWidth;
+		windowMaxHeight = maxHeight;
+	}
+	public void setWindowIcon (String... filePaths) {
+		setWindowIcon(FileType.Internal, filePaths);
+	}
+	public void setWindowIcon (FileType fileType, String... filePaths) {
+		windowIconFileType = fileType;
+		windowIconPaths = filePaths;
+	}
+	public void setWindowListener(Lwjgl3WindowListener windowListener) {
+		this.windowListener = windowListener;
+	}
+	public void setFullscreenMode(DisplayMode mode) {
+		this.fullscreenMode = (Lwjgl3DisplayMode)mode;
+	}
+	public void setTitle(String title) {
+		this.title = title;
+	}
+	public void setInitialBackgroundColor(Color color) {
+		initialBackgroundColor = color;
+	}
+}",class,
+"	void setWindowConfiguration (Lwjgl3WindowConfiguration config){
+		windowX = config.windowX;
+		windowY = config.windowY;
+		windowWidth = config.windowWidth;
+		windowHeight = config.windowHeight;
+		windowMinWidth = config.windowMinWidth;
+		windowMinHeight = config.windowMinHeight;
+		windowMaxWidth = config.windowMaxWidth;
+		windowMaxHeight = config.windowMaxHeight;
+		windowResizable = config.windowResizable;
+		windowDecorated = config.windowDecorated;
+		windowMaximized = config.windowMaximized;
+		windowIconFileType = config.windowIconFileType;
+		if (config.windowIconPaths != null) 
+			windowIconPaths = Arrays.copyOf(config.windowIconPaths, config.windowIconPaths.length);
+		windowListener = config.windowListener;
+		fullscreenMode = config.fullscreenMode;
+		title = config.title;
+		initialBackgroundColor = config.initialBackgroundColor;
+		initialVisible = config.initialVisible;
+	}",method,
+"	public void setInitialVisible(boolean visibility) {
+		this.initialVisible = visibility;
+	}",method,
+"	public void setWindowedMode(int width, int height) {
+		this.windowWidth = width;
+		this.windowHeight = height;		
+	}",method,
+"	public void setResizable(boolean resizable) {
+		this.windowResizable = resizable;
+	}",method,
+"	public void setDecorated(boolean decorated) {
+		this.windowDecorated = decorated;
+	}",method,

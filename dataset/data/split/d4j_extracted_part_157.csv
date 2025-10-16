@@ -1,0 +1,1424 @@
+code_snippet,type,score
+"  public void writeDouble(Double d) throws TException {
+      writeDouble(d.doubleValue());
+  }",method,
+"public class JpaWorkManagerTest extends TestCase {
+  private Injector injector;
+  private static final String UNIQUE_TEXT_3 =
+      JpaWorkManagerTest.class.getSimpleName()
+          + ""CONSTRAINT_VIOLATING some other unique text""
+          + new Date();
+  @Override
+  public void setUp() {
+    injector = Guice.createInjector(new JpaPersistModule(""testUnit""));
+    //startup persistence
+    injector.getInstance(PersistService.class).start();
+  }
+  @Override
+  public void tearDown() {
+    try {
+      injector.getInstance(EntityManagerFactory.class).close();
+    } catch (HibernateException ex) {
+      // Expected if the persist service has already been stopped.
+    }
+  }
+  public void testWorkManagerInSession() {
+    injector.getInstance(UnitOfWork.class).begin();
+    try {
+      injector.getInstance(TransactionalObject.class).runOperationInTxn();
+    } finally {
+      injector.getInstance(UnitOfWork.class).end();
+    }
+    injector.getInstance(UnitOfWork.class).begin();
+    injector.getInstance(EntityManager.class).getTransaction().begin();
+    try {
+      final Query query =
+          injector
+              .getInstance(EntityManager.class)
+              .createQuery(""select e from JpaTestEntity as e where text = :text"");
+      query.setParameter(""text"", UNIQUE_TEXT_3);
+      final Object o = query.getSingleResult();
+      assertNotNull(""no result!!"", o);
+      assertTrue(""Unknown type returned "" + o.getClass(), o instanceof JpaTestEntity);
+      JpaTestEntity ent = (JpaTestEntity) o;
+      assertEquals(
+          ""Incorrect result returned or not persisted properly"" + ent.getText(),
+          UNIQUE_TEXT_3,
+          ent.getText());
+    } finally {
+      injector.getInstance(EntityManager.class).getTransaction().commit();
+      injector.getInstance(UnitOfWork.class).end();
+    }
+  }
+  public void testCloseMoreThanOnce() {
+    injector.getInstance(PersistService.class).stop();
+    try {
+      injector.getInstance(PersistService.class).stop();
+      fail();
+    } catch (IllegalStateException e) {
+      // Ignored.
+    }
+  }
+  public static class TransactionalObject {
+    @Inject EntityManager em;
+    @Transactional
+    public void runOperationInTxn() {
+      JpaTestEntity testEntity = new JpaTestEntity();
+      testEntity.setText(UNIQUE_TEXT_3);
+      em.persist(testEntity);
+    }
+    @Transactional
+    public void runOperationInTxnError() {
+      JpaTestEntity testEntity = new JpaTestEntity();
+      testEntity.setText(UNIQUE_TEXT_3 + ""transient never in db!"" + hashCode());
+      em.persist(testEntity);
+    }
+  }
+}",class,
+"  public static class TransactionalObject {
+    @Inject EntityManager em;
+    @Transactional
+    public void runOperationInTxn() {
+      JpaTestEntity testEntity = new JpaTestEntity();
+      testEntity.setText(UNIQUE_TEXT_3);
+      em.persist(testEntity);
+    }
+    @Transactional
+    public void runOperationInTxnError() {
+      JpaTestEntity testEntity = new JpaTestEntity();
+      testEntity.setText(UNIQUE_TEXT_3 + ""transient never in db!"" + hashCode());
+      em.persist(testEntity);
+    }
+  }",class,
+"  @Override
+  public void setUp() {
+    injector = Guice.createInjector(new JpaPersistModule(""testUnit""));
+    //startup persistence
+    injector.getInstance(PersistService.class).start();
+  }",method,
+"  @Override
+  public void tearDown() {
+    try {
+      injector.getInstance(EntityManagerFactory.class).close();
+    } catch (HibernateException ex) {
+      // Expected if the persist service has already been stopped.
+    }
+  }",method,
+"  public void testWorkManagerInSession() {
+    injector.getInstance(UnitOfWork.class).begin();
+    try {
+      injector.getInstance(TransactionalObject.class).runOperationInTxn();
+    } finally {
+      injector.getInstance(UnitOfWork.class).end();
+    }
+    injector.getInstance(UnitOfWork.class).begin();
+    injector.getInstance(EntityManager.class).getTransaction().begin();
+    try {
+      final Query query =
+          injector
+              .getInstance(EntityManager.class)
+              .createQuery(""select e from JpaTestEntity as e where text = :text"");
+      query.setParameter(""text"", UNIQUE_TEXT_3);
+      final Object o = query.getSingleResult();
+      assertNotNull(""no result!!"", o);
+      assertTrue(""Unknown type returned "" + o.getClass(), o instanceof JpaTestEntity);
+      JpaTestEntity ent = (JpaTestEntity) o;
+      assertEquals(
+          ""Incorrect result returned or not persisted properly"" + ent.getText(),
+          UNIQUE_TEXT_3,
+          ent.getText());
+    } finally {
+      injector.getInstance(EntityManager.class).getTransaction().commit();
+      injector.getInstance(UnitOfWork.class).end();
+    }
+  }",method,
+"  public void testCloseMoreThanOnce() {
+    injector.getInstance(PersistService.class).stop();
+    try {
+      injector.getInstance(PersistService.class).stop();
+      fail();
+    } catch (IllegalStateException e) {
+      // Ignored.
+    }
+  }",method,
+"    @Inject EntityManager em;
+    @Transactional
+    public void runOperationInTxn() {
+      JpaTestEntity testEntity = new JpaTestEntity();
+      testEntity.setText(UNIQUE_TEXT_3);
+      em.persist(testEntity);
+    }",method,
+"    @Transactional
+    public void runOperationInTxnError() {
+      JpaTestEntity testEntity = new JpaTestEntity();
+      testEntity.setText(UNIQUE_TEXT_3 + ""transient never in db!"" + hashCode());
+      em.persist(testEntity);
+    }",method,
+"public class DisplayHelpServlet extends HttpServlet {
+  private static final long serialVersionUID = 8484071790930378855L;
+  public static final String HELPER_TYPE_PARAMETER = ""webdriver.server.displayhelpservlet.type"";
+  private static final String HELPER_SERVLET_TEMPLATE = ""displayhelpservlet.html"";
+  private static final String HELPER_SERVLET_ASSET_PATH_PREFIX = ""/assets/"";
+  private static final String HELPER_SERVLET_RESOURCE_PATH = ""org/openqa/grid/images/"";
+  private static final String HELPER_SERVLET_TEMPLATE_CONFIG_JSON_VAR = ""${servletConfigJson}"";
+  private final class DisplayHelpServletConfig {
+    String version;
+    String type;
+    String consoleLink;
+  }
+  private final DisplayHelpServletConfig servletConfig = new DisplayHelpServletConfig();
+  @Override
+  protected void doGet(HttpServletRequest request, HttpServletResponse response)
+      throws ServletException, IOException {
+    process(request, response);
+  }
+  @Override
+  protected void doPost(HttpServletRequest request, HttpServletResponse response)
+      throws ServletException, IOException {
+    process(request, response);
+  }
+  protected void process(HttpServletRequest request, HttpServletResponse response)
+      throws IOException {
+    initServletConfig();
+    String resource = request.getPathInfo();
+    InputStream in;
+    if (resource.contains(HELPER_SERVLET_ASSET_PATH_PREFIX) &&
+        !resource.replace(HELPER_SERVLET_ASSET_PATH_PREFIX, """").contains(""/"") &&
+        !resource.replace(HELPER_SERVLET_ASSET_PATH_PREFIX, """").equals("""")) {
+      // request is for an asset of the help page
+      resource = resource.replace(HELPER_SERVLET_ASSET_PATH_PREFIX, """");
+      in = getResourceInputStream(resource);
+      if (in == null) {
+        response.sendError(HttpServletResponse.SC_NOT_FOUND);
+      } else {
+        response.setStatus(200);
+        ByteStreams.copy(in, response.getOutputStream());
+      }
+    } else {
+      // request is for an unknown entity. show the help page
+      in = getResourceInputStream(HELPER_SERVLET_TEMPLATE);
+      if (in == null) {
+        response.sendError(HttpServletResponse.SC_NOT_FOUND);
+      } else {
+        final String json = new GsonBuilder().serializeNulls().create().toJson(servletConfig);
+        final String jsonUtf8 = new String(json.getBytes(), ""UTF-8"");
+        final String htmlTemplate =
+          new BufferedReader(new InputStreamReader(in, ""UTF-8"")).lines().collect(Collectors.joining(""\n""));
+        final String updatedTemplate =
+          htmlTemplate.replace(HELPER_SERVLET_TEMPLATE_CONFIG_JSON_VAR, jsonUtf8);
+        response.setContentType(""text/html"");
+        response.setCharacterEncoding(""UTF-8"");
+        response.setStatus(200);
+        response.getOutputStream().print(updatedTemplate);
+      }
+    }
+    response.flushBuffer();
+  }
+  private void initServletConfig() {
+    if (servletConfig.version == null) {
+      servletConfig.version = new BuildInfo().getReleaseLabel();
+    }
+    if (servletConfig.type == null) {
+      servletConfig.type = getHelperType();
+    }
+    if (servletConfig.consoleLink == null) {
+      // a hub may not have a console attached, in which case it will not set this parameter
+      // so we default to """".
+      servletConfig.consoleLink = getInitParameter(ConsoleServlet.CONSOLE_PATH_PARAMETER, """");
+    }
+  }
+  private String getHelperType() {
+    GridRole role = GridRole.get(getInitParameter(HELPER_TYPE_PARAMETER, ""standalone""));
+    String type = ""Standalone"";
+    switch (role) {
+      case HUB: {
+        type = ""Grid Hub"";
+        break;
+      }
+      case NODE: {
+        type = ""Grid Node"";
+        break;
+      }
+      default: {
+        break;
+      }
+    }
+    return type;
+  }
+  @Override
+  public String getInitParameter(String param) {
+    return getServletContext().getInitParameter(param);
+  }
+  private String getInitParameter(String param, String defaultValue) {
+    final String value = getInitParameter(param);
+    if (value == null || value.trim().isEmpty()) {
+      return defaultValue;
+    }
+    return value;
+  }
+  private InputStream getResourceInputStream(String resource)
+    throws IOException {
+    InputStream in = Thread.currentThread().getContextClassLoader()
+      .getResourceAsStream(HELPER_SERVLET_RESOURCE_PATH + resource);
+    if (in == null) {
+      return null;
+    }
+    return in;
+  }
+}",class,
+"  private final class DisplayHelpServletConfig {
+    String version;
+    String type;
+    String consoleLink;
+  }",class,
+"  @Override
+  protected void doGet(HttpServletRequest request, HttpServletResponse response)
+      throws ServletException, IOException {
+    process(request, response);
+  }",method,
+"  @Override
+  protected void doPost(HttpServletRequest request, HttpServletResponse response)
+      throws ServletException, IOException {
+    process(request, response);
+  }",method,
+"  protected void process(HttpServletRequest request, HttpServletResponse response)
+      throws IOException {
+    initServletConfig();
+    String resource = request.getPathInfo();
+    InputStream in;
+    if (resource.contains(HELPER_SERVLET_ASSET_PATH_PREFIX) &&
+        !resource.replace(HELPER_SERVLET_ASSET_PATH_PREFIX, """").contains(""/"") &&
+        !resource.replace(HELPER_SERVLET_ASSET_PATH_PREFIX, """").equals("""")) {
+      // request is for an asset of the help page
+      resource = resource.replace(HELPER_SERVLET_ASSET_PATH_PREFIX, """");
+      in = getResourceInputStream(resource);
+      if (in == null) {
+        response.sendError(HttpServletResponse.SC_NOT_FOUND);
+      } else {
+        response.setStatus(200);
+        ByteStreams.copy(in, response.getOutputStream());
+      }
+    } else {
+      // request is for an unknown entity. show the help page
+      in = getResourceInputStream(HELPER_SERVLET_TEMPLATE);
+      if (in == null) {
+        response.sendError(HttpServletResponse.SC_NOT_FOUND);
+      } else {
+        final String json = new GsonBuilder().serializeNulls().create().toJson(servletConfig);
+        final String jsonUtf8 = new String(json.getBytes(), ""UTF-8"");
+        final String htmlTemplate =
+          new BufferedReader(new InputStreamReader(in, ""UTF-8"")).lines().collect(Collectors.joining(""\n""));
+        final String updatedTemplate =
+          htmlTemplate.replace(HELPER_SERVLET_TEMPLATE_CONFIG_JSON_VAR, jsonUtf8);
+        response.setContentType(""text/html"");
+        response.setCharacterEncoding(""UTF-8"");
+        response.setStatus(200);
+        response.getOutputStream().print(updatedTemplate);
+      }
+    }
+    response.flushBuffer();
+  }",method,
+"      if (in == null) {
+        response.sendError(HttpServletResponse.SC_NOT_FOUND);
+      }",method,
+"      if (in == null) {
+        response.sendError(HttpServletResponse.SC_NOT_FOUND);
+      }",method,
+"  private void initServletConfig() {
+    if (servletConfig.version == null) {
+      servletConfig.version = new BuildInfo().getReleaseLabel();
+    }
+    if (servletConfig.type == null) {
+      servletConfig.type = getHelperType();
+    }
+    if (servletConfig.consoleLink == null) {
+      // a hub may not have a console attached, in which case it will not set this parameter
+      // so we default to """".
+      servletConfig.consoleLink = getInitParameter(ConsoleServlet.CONSOLE_PATH_PARAMETER, """");
+    }
+  }",method,
+"    if (servletConfig.version == null) {
+      servletConfig.version = new BuildInfo().getReleaseLabel();
+    }",method,
+"    if (servletConfig.type == null) {
+      servletConfig.type = getHelperType();
+    }",method,
+"    if (servletConfig.consoleLink == null) {
+      // a hub may not have a console attached, in which case it will not set this parameter
+      // so we default to """".
+      servletConfig.consoleLink = getInitParameter(ConsoleServlet.CONSOLE_PATH_PARAMETER, """");
+    }",method,
+"  private String getHelperType() {
+    GridRole role = GridRole.get(getInitParameter(HELPER_TYPE_PARAMETER, ""standalone""));
+    String type = ""Standalone"";
+    switch (role) {
+      case HUB: {
+        type = ""Grid Hub"";
+        break;
+      }
+      case NODE: {
+        type = ""Grid Node"";
+        break;
+      }
+      default: {
+        break;
+      }
+    }
+    return type;
+  }",method,
+"    switch (role) {
+      case HUB: {
+        type = ""Grid Hub"";
+        break;
+      }
+      case NODE: {
+        type = ""Grid Node"";
+        break;
+      }
+      default: {
+        break;
+      }
+    }",method,
+"  @Override
+  public String getInitParameter(String param) {
+    return getServletContext().getInitParameter(param);
+  }",method,
+"  private String getInitParameter(String param, String defaultValue) {
+    final String value = getInitParameter(param);
+    if (value == null || value.trim().isEmpty()) {
+      return defaultValue;
+    }
+    return value;
+  }",method,
+"  private InputStream getResourceInputStream(String resource)
+    throws IOException {
+    InputStream in = Thread.currentThread().getContextClassLoader()
+      .getResourceAsStream(HELPER_SERVLET_RESOURCE_PATH + resource);
+    if (in == null) {
+      return null;
+    }
+    return in;
+  }",method,
+"    if (in == null) {
+      return null;
+    }",method,
+"public class ConfigFileFactoryImpl extends ConfigFileFactory {
+  private static final Logger LOG = Logger.getInstance(""#com.intellij.util.descriptors.impl.ConfigFileFactoryImpl"");
+  @Override
+  public ConfigFileMetaDataProvider createMetaDataProvider(final ConfigFileMetaData... metaDatas) {
+    return new ConfigFileMetaDataRegistryImpl(metaDatas);
+  }
+  @Override
+  public ConfigFileMetaDataRegistry createMetaDataRegistry() {
+    return new ConfigFileMetaDataRegistryImpl();
+  }
+  @Override
+  public ConfigFileInfoSet createConfigFileInfoSet(final ConfigFileMetaDataProvider metaDataProvider) {
+    return new ConfigFileInfoSetImpl(metaDataProvider);
+  }
+  @Override
+  public ConfigFileContainer createConfigFileContainer(final Project project, final ConfigFileMetaDataProvider metaDataProvider,
+                                                       final ConfigFileInfoSet configuration) {
+    return new ConfigFileContainerImpl(project, metaDataProvider, (ConfigFileInfoSetImpl)configuration);
+  }
+  private static String getText(final String templateName, @Nullable Project project) throws IOException {
+    final FileTemplateManager templateManager = project == null ? FileTemplateManager.getDefaultInstance() : FileTemplateManager.getInstance(project);
+    final FileTemplate template = templateManager.getJ2eeTemplate(templateName);
+    if (template == null) {
+      return """";
+    }
+    return template.getText(templateManager.getDefaultProperties());
+  }
+  @Override
+  @Nullable
+  public VirtualFile createFile(@Nullable Project project, String url, ConfigFileVersion version, final boolean forceNew) {
+    return createFileFromTemplate(project, url, version.getTemplateName(), forceNew);
+  }
+  @Nullable
+  private VirtualFile createFileFromTemplate(@Nullable final Project project, String url, final String templateName, final boolean forceNew) {
+    final LocalFileSystem fileSystem = LocalFileSystem.getInstance();
+    final File file = new File(VfsUtilCore.urlToPath(url));
+    VirtualFile existingFile = fileSystem.refreshAndFindFileByIoFile(file);
+    if (existingFile != null) {
+      existingFile.refresh(false, false);
+      if (!existingFile.isValid()) {
+        existingFile = null;
+      }
+    }
+    if (existingFile != null && !forceNew) {
+      return existingFile;
+    }
+    try {
+      String text = getText(templateName, project);
+      final VirtualFile childData;
+      if (existingFile == null || existingFile.isDirectory()) {
+        final VirtualFile virtualFile;
+        if (!FileUtil.createParentDirs(file) ||
+            (virtualFile = fileSystem.refreshAndFindFileByIoFile(file.getParentFile())) == null) {
+          throw new IOException(IdeBundle.message(""error.message.unable.to.create.file"", file.getPath()));
+        }
+        childData = virtualFile.createChildData(this, file.getName());
+      }
+      else {
+        childData = existingFile;
+      }
+      VfsUtil.saveText(childData, text);
+      return childData;
+    }
+    catch (final IOException e) {
+      LOG.info(e);
+      ApplicationManager.getApplication().invokeLater(
+        () -> Messages.showErrorDialog(IdeBundle.message(""message.text.error.creating.deployment.descriptor"", e.getLocalizedMessage()),
+                                     IdeBundle.message(""message.text.creating.deployment.descriptor"")));
+    }
+    return null;
+  }
+  @Override
+  public ConfigFileContainer createSingleFileContainer(Project project, ConfigFileMetaData metaData) {
+    final ConfigFileMetaDataProvider metaDataProvider = createMetaDataProvider(metaData);
+    return createConfigFileContainer(project, metaDataProvider, createConfigFileInfoSet(metaDataProvider));
+  }
+}",class,
+"  @Override
+  public ConfigFileMetaDataProvider createMetaDataProvider(final ConfigFileMetaData... metaDatas) {
+    return new ConfigFileMetaDataRegistryImpl(metaDatas);
+  }",method,
+"  @Override
+  public ConfigFileMetaDataRegistry createMetaDataRegistry() {
+    return new ConfigFileMetaDataRegistryImpl();
+  }",method,
+"  @Override
+  public ConfigFileInfoSet createConfigFileInfoSet(final ConfigFileMetaDataProvider metaDataProvider) {
+    return new ConfigFileInfoSetImpl(metaDataProvider);
+  }",method,
+"  @Override
+  public ConfigFileContainer createConfigFileContainer(final Project project, final ConfigFileMetaDataProvider metaDataProvider,
+                                                       final ConfigFileInfoSet configuration) {
+    return new ConfigFileContainerImpl(project, metaDataProvider, (ConfigFileInfoSetImpl)configuration);
+  }",method,
+"  private static String getText(final String templateName, @Nullable Project project) throws IOException {
+    final FileTemplateManager templateManager = project == null ? FileTemplateManager.getDefaultInstance() : FileTemplateManager.getInstance(project);
+    final FileTemplate template = templateManager.getJ2eeTemplate(templateName);
+    if (template == null) {
+      return """";
+    }
+    return template.getText(templateManager.getDefaultProperties());
+  }",method,
+"    if (template == null) {
+      return """";
+    }",method,
+"  @Override
+  @Nullable
+  public VirtualFile createFile(@Nullable Project project, String url, ConfigFileVersion version, final boolean forceNew) {
+    return createFileFromTemplate(project, url, version.getTemplateName(), forceNew);
+  }",method,
+"  @Nullable
+  private VirtualFile createFileFromTemplate(@Nullable final Project project, String url, final String templateName, final boolean forceNew) {
+    final LocalFileSystem fileSystem = LocalFileSystem.getInstance();
+    final File file = new File(VfsUtilCore.urlToPath(url));
+    VirtualFile existingFile = fileSystem.refreshAndFindFileByIoFile(file);
+    if (existingFile != null) {
+      existingFile.refresh(false, false);
+      if (!existingFile.isValid()) {
+        existingFile = null;
+      }
+    }
+    if (existingFile != null && !forceNew) {
+      return existingFile;
+    }
+    try {
+      String text = getText(templateName, project);
+      final VirtualFile childData;
+      if (existingFile == null || existingFile.isDirectory()) {
+        final VirtualFile virtualFile;
+        if (!FileUtil.createParentDirs(file) ||
+            (virtualFile = fileSystem.refreshAndFindFileByIoFile(file.getParentFile())) == null) {
+          throw new IOException(IdeBundle.message(""error.message.unable.to.create.file"", file.getPath()));
+        }
+        childData = virtualFile.createChildData(this, file.getName());
+      }
+      else {
+        childData = existingFile;
+      }
+      VfsUtil.saveText(childData, text);
+      return childData;
+    }
+    catch (final IOException e) {
+      LOG.info(e);
+      ApplicationManager.getApplication().invokeLater(
+        () -> Messages.showErrorDialog(IdeBundle.message(""message.text.error.creating.deployment.descriptor"", e.getLocalizedMessage()),
+                                     IdeBundle.message(""message.text.creating.deployment.descriptor"")));
+    }
+    return null;
+  }",method,
+"    if (existingFile != null) {
+      existingFile.refresh(false, false);
+      if (!existingFile.isValid()) {
+        existingFile = null;
+      }
+    }",method,
+"    if (existingFile != null && !forceNew) {
+      return existingFile;
+    }",method,
+"    catch (final IOException e) {
+      LOG.info(e);
+      ApplicationManager.getApplication().invokeLater(
+        () -> Messages.showErrorDialog(IdeBundle.message(""message.text.error.creating.deployment.descriptor"", e.getLocalizedMessage()),
+                                     IdeBundle.message(""message.text.creating.deployment.descriptor"")));
+    }",method,
+"  @Override
+  public ConfigFileContainer createSingleFileContainer(Project project, ConfigFileMetaData metaData) {
+    final ConfigFileMetaDataProvider metaDataProvider = createMetaDataProvider(metaData);
+    return createConfigFileContainer(project, metaDataProvider, createConfigFileInfoSet(metaDataProvider));
+  }",method,
+"public class SmartSelectionTestGenerated extends AbstractSmartSelectionTest {
+    public void testAllFilesPresentInSmartSelection() throws Exception {
+        KotlinTestUtils.assertAllTestsPresentByMetadata(this.getClass(), new File(""idea/testData/smartSelection""), Pattern.compile(""^([^.]+)\\.kt$""), TargetBackend.ANY, true);
+    }
+    @TestMetadata(""commentsAndExtraSpaces.kt"")
+    public void testCommentsAndExtraSpaces() throws Exception {
+        String fileName = KotlinTestUtils.navigationMetadata(""idea/testData/smartSelection/commentsAndExtraSpaces.kt"");
+        doTestSmartSelection(fileName);
+    }
+    @TestMetadata(""labelledStatement.kt"")
+    public void testLabelledStatement() throws Exception {
+        String fileName = KotlinTestUtils.navigationMetadata(""idea/testData/smartSelection/labelledStatement.kt"");
+        doTestSmartSelection(fileName);
+    }
+    @TestMetadata(""labelledThis.kt"")
+    public void testLabelledThis() throws Exception {
+        String fileName = KotlinTestUtils.navigationMetadata(""idea/testData/smartSelection/labelledThis.kt"");
+        doTestSmartSelection(fileName);
+    }
+    @TestMetadata(""lambdaCalls.kt"")
+    public void testLambdaCalls() throws Exception {
+        String fileName = KotlinTestUtils.navigationMetadata(""idea/testData/smartSelection/lambdaCalls.kt"");
+        doTestSmartSelection(fileName);
+    }
+    @TestMetadata(""multilineCalls.kt"")
+    public void testMultilineCalls() throws Exception {
+        String fileName = KotlinTestUtils.navigationMetadata(""idea/testData/smartSelection/multilineCalls.kt"");
+        doTestSmartSelection(fileName);
+    }
+    @TestMetadata(""multilineOperations.kt"")
+    public void testMultilineOperations() throws Exception {
+        String fileName = KotlinTestUtils.navigationMetadata(""idea/testData/smartSelection/multilineOperations.kt"");
+        doTestSmartSelection(fileName);
+    }
+    @TestMetadata(""objectLiteral.kt"")
+    public void testObjectLiteral() throws Exception {
+        String fileName = KotlinTestUtils.navigationMetadata(""idea/testData/smartSelection/objectLiteral.kt"");
+        doTestSmartSelection(fileName);
+    }
+    @TestMetadata(""parenthesized.kt"")
+    public void testParenthesized() throws Exception {
+        String fileName = KotlinTestUtils.navigationMetadata(""idea/testData/smartSelection/parenthesized.kt"");
+        doTestSmartSelection(fileName);
+    }
+    @TestMetadata(""simple.kt"")
+    public void testSimple() throws Exception {
+        String fileName = KotlinTestUtils.navigationMetadata(""idea/testData/smartSelection/simple.kt"");
+        doTestSmartSelection(fileName);
+    }
+    @TestMetadata(""superExpression.kt"")
+    public void testSuperExpression() throws Exception {
+        String fileName = KotlinTestUtils.navigationMetadata(""idea/testData/smartSelection/superExpression.kt"");
+        doTestSmartSelection(fileName);
+    }
+    @TestMetadata(""superExpressionWithLabel.kt"")
+    public void testSuperExpressionWithLabel() throws Exception {
+        String fileName = KotlinTestUtils.navigationMetadata(""idea/testData/smartSelection/superExpressionWithLabel.kt"");
+        doTestSmartSelection(fileName);
+    }
+    @TestMetadata(""superExpressionWithLabelAndType.kt"")
+    public void testSuperExpressionWithLabelAndType() throws Exception {
+        String fileName = KotlinTestUtils.navigationMetadata(""idea/testData/smartSelection/superExpressionWithLabelAndType.kt"");
+        doTestSmartSelection(fileName);
+    }
+    @TestMetadata(""superExpressionWithType.kt"")
+    public void testSuperExpressionWithType() throws Exception {
+        String fileName = KotlinTestUtils.navigationMetadata(""idea/testData/smartSelection/superExpressionWithType.kt"");
+        doTestSmartSelection(fileName);
+    }
+    @TestMetadata(""typeInSuperExpression.kt"")
+    public void testTypeInSuperExpression() throws Exception {
+        String fileName = KotlinTestUtils.navigationMetadata(""idea/testData/smartSelection/typeInSuperExpression.kt"");
+        doTestSmartSelection(fileName);
+    }
+    @TestMetadata(""typeInSuperExpressionWithLabel.kt"")
+    public void testTypeInSuperExpressionWithLabel() throws Exception {
+        String fileName = KotlinTestUtils.navigationMetadata(""idea/testData/smartSelection/typeInSuperExpressionWithLabel.kt"");
+        doTestSmartSelection(fileName);
+    }
+}",class,
+"    public void testAllFilesPresentInSmartSelection() throws Exception {
+        KotlinTestUtils.assertAllTestsPresentByMetadata(this.getClass(), new File(""idea/testData/smartSelection""), Pattern.compile(""^([^.]+)\\.kt$""), TargetBackend.ANY, true);
+    }",method,
+"    @TestMetadata(""commentsAndExtraSpaces.kt"")
+    public void testCommentsAndExtraSpaces() throws Exception {
+        String fileName = KotlinTestUtils.navigationMetadata(""idea/testData/smartSelection/commentsAndExtraSpaces.kt"");
+        doTestSmartSelection(fileName);
+    }",method,
+"    @TestMetadata(""labelledStatement.kt"")
+    public void testLabelledStatement() throws Exception {
+        String fileName = KotlinTestUtils.navigationMetadata(""idea/testData/smartSelection/labelledStatement.kt"");
+        doTestSmartSelection(fileName);
+    }",method,
+"    @TestMetadata(""labelledThis.kt"")
+    public void testLabelledThis() throws Exception {
+        String fileName = KotlinTestUtils.navigationMetadata(""idea/testData/smartSelection/labelledThis.kt"");
+        doTestSmartSelection(fileName);
+    }",method,
+"    @TestMetadata(""lambdaCalls.kt"")
+    public void testLambdaCalls() throws Exception {
+        String fileName = KotlinTestUtils.navigationMetadata(""idea/testData/smartSelection/lambdaCalls.kt"");
+        doTestSmartSelection(fileName);
+    }",method,
+"    @TestMetadata(""multilineCalls.kt"")
+    public void testMultilineCalls() throws Exception {
+        String fileName = KotlinTestUtils.navigationMetadata(""idea/testData/smartSelection/multilineCalls.kt"");
+        doTestSmartSelection(fileName);
+    }",method,
+"    @TestMetadata(""multilineOperations.kt"")
+    public void testMultilineOperations() throws Exception {
+        String fileName = KotlinTestUtils.navigationMetadata(""idea/testData/smartSelection/multilineOperations.kt"");
+        doTestSmartSelection(fileName);
+    }",method,
+"    @TestMetadata(""objectLiteral.kt"")
+    public void testObjectLiteral() throws Exception {
+        String fileName = KotlinTestUtils.navigationMetadata(""idea/testData/smartSelection/objectLiteral.kt"");
+        doTestSmartSelection(fileName);
+    }",method,
+"    @TestMetadata(""parenthesized.kt"")
+    public void testParenthesized() throws Exception {
+        String fileName = KotlinTestUtils.navigationMetadata(""idea/testData/smartSelection/parenthesized.kt"");
+        doTestSmartSelection(fileName);
+    }",method,
+"    @TestMetadata(""simple.kt"")
+    public void testSimple() throws Exception {
+        String fileName = KotlinTestUtils.navigationMetadata(""idea/testData/smartSelection/simple.kt"");
+        doTestSmartSelection(fileName);
+    }",method,
+"    @TestMetadata(""superExpression.kt"")
+    public void testSuperExpression() throws Exception {
+        String fileName = KotlinTestUtils.navigationMetadata(""idea/testData/smartSelection/superExpression.kt"");
+        doTestSmartSelection(fileName);
+    }",method,
+"    @TestMetadata(""superExpressionWithLabel.kt"")
+    public void testSuperExpressionWithLabel() throws Exception {
+        String fileName = KotlinTestUtils.navigationMetadata(""idea/testData/smartSelection/superExpressionWithLabel.kt"");
+        doTestSmartSelection(fileName);
+    }",method,
+"    @TestMetadata(""superExpressionWithLabelAndType.kt"")
+    public void testSuperExpressionWithLabelAndType() throws Exception {
+        String fileName = KotlinTestUtils.navigationMetadata(""idea/testData/smartSelection/superExpressionWithLabelAndType.kt"");
+        doTestSmartSelection(fileName);
+    }",method,
+"    @TestMetadata(""superExpressionWithType.kt"")
+    public void testSuperExpressionWithType() throws Exception {
+        String fileName = KotlinTestUtils.navigationMetadata(""idea/testData/smartSelection/superExpressionWithType.kt"");
+        doTestSmartSelection(fileName);
+    }",method,
+"    @TestMetadata(""typeInSuperExpression.kt"")
+    public void testTypeInSuperExpression() throws Exception {
+        String fileName = KotlinTestUtils.navigationMetadata(""idea/testData/smartSelection/typeInSuperExpression.kt"");
+        doTestSmartSelection(fileName);
+    }",method,
+"    @TestMetadata(""typeInSuperExpressionWithLabel.kt"")
+    public void testTypeInSuperExpressionWithLabel() throws Exception {
+        String fileName = KotlinTestUtils.navigationMetadata(""idea/testData/smartSelection/typeInSuperExpressionWithLabel.kt"");
+        doTestSmartSelection(fileName);
+    }",method,
+"public class TableTest {
+    @Test
+    public void basicOperations() {
+        Table<String, Integer, String> table = new Table<>();
+        table.put(""foo"", 5, ""bar"");
+        table.put(""foo"", 6, ""baz"");
+        assertEquals(""bar"", table.get(""foo"", 5));
+        assertEquals(""baz"", table.get(""foo"", 6));
+        Map<Integer, String> row = table.row(""foo"");
+        assertEquals(""bar"", row.get(5));
+        assertEquals(""baz"", row.get(6));
+        assertEquals(""bar"", table.remove(""foo"", 5));
+        assertNull(table.get(""foo"", 5));
+        assertEquals(""baz"", table.remove(""foo"", 6));
+        assertNull(table.get(""foo"", 6));
+        assertTrue(table.row(""foo"").isEmpty());
+    }
+}",class,
+"public class TestBackgroundThreadExceptionHandler implements Thread.UncaughtExceptionHandler {
+    private Throwable firstException = null;
+    @Override
+    public void uncaughtException(Thread t, Throwable e) {
+        if (this.firstException == null)
+            this.firstException = e;
+    }
+    public void verifyNoExceptions() {
+        if (this.firstException != null)
+            throw new AssertionError(this.firstException);
+    }
+}",class,
+"    @Test
+    public void basicOperations() {
+        Table<String, Integer, String> table = new Table<>();
+        table.put(""foo"", 5, ""bar"");
+        table.put(""foo"", 6, ""baz"");
+        assertEquals(""bar"", table.get(""foo"", 5));
+        assertEquals(""baz"", table.get(""foo"", 6));
+        Map<Integer, String> row = table.row(""foo"");
+        assertEquals(""bar"", row.get(5));
+        assertEquals(""baz"", row.get(6));
+        assertEquals(""bar"", table.remove(""foo"", 5));
+        assertNull(table.get(""foo"", 5));
+        assertEquals(""baz"", table.remove(""foo"", 6));
+        assertNull(table.get(""foo"", 6));
+        assertTrue(table.row(""foo"").isEmpty());
+    }",method,
+"    @Override
+    public void uncaughtException(Thread t, Throwable e) {
+        if (this.firstException == null)
+            this.firstException = e;
+    }",method,
+"    public void verifyNoExceptions() {
+        if (this.firstException != null)
+            throw new AssertionError(this.firstException);
+    }",method,
+"public class ActionExecutionInactivityWatchdogTest {
+  private void assertInactivityWatchdogReports(final boolean shouldReport) throws Exception {
+    // The monitor implementation below is a state machine. This variable indicates which state
+    // it is in.
+    final int[] monitorState = new int[] {0};
+    // Object that the test thread will wait on.
+    final Object monitorFinishedIndicator = new Object();
+    // Reported number of action completions in each call to waitForNextCompletion.
+    final int[] actionCompletions = new int[] {1, 0, 3, 0, 0, 0, 0, 2};
+    // Simulated delay of action completions in each call to waitForNextCompletion.
+    final int[] waits = new int[] {5, 10, 3, 10, 30, 60, 60, 1};
+    // Log of all Sleep.sleep and InactivityMonitor.waitForNextCompletion calls.
+    final List<String> sleepsAndWaits = new ArrayList<>();
+    // Mock monitor for this test.
+    InactivityMonitor monitor =
+        new InactivityMonitor() {
+          @Override
+          public int waitForNextCompletion(int timeoutMilliseconds) throws InterruptedException {
+            // Simulate the following sequence of events (see actionCompletions):
+            // 1. return in 5s (within timeout), 1 action completed; caller will sleep
+            // 2. return in 10s (after timeout), 0 action completed; caller will wait
+            // 3. return in 3s (within timeout), 3 actions completed (this is possible, since the
+            //    waiting (thread doesn't necessarily wake up immediately); caller will sleep
+            // 4. return in 10s (after timeout), 0 action completed; caller will wait 30s
+            // 5. return in 30s (after timeout), 0 action completed still; caller will wait 60s
+            // 6. return in 60s (after timeout), 0 action completed still; caller will wait 60s
+            // 7. return in 60s (after timeout), 0 action completed still; caller will wait 60s
+            // 8. return in 1s (within timeout), 2 actions completed; caller will sleep, but we
+            //    won't record that, because monitorState reached its maximum
+            synchronized (monitorFinishedIndicator) {
+              if (monitorState[0] >= actionCompletions.length) {
+                // Notify the test thread that the test is over.
+                monitorFinishedIndicator.notify();
+                return 1;
+              } else {
+                int index = monitorState[0];
+                sleepsAndWaits.add(""wait:"" + waits[index]);
+                ++monitorState[0];
+                return actionCompletions[index];
+              }
+            }
+          }
+          @Override
+          public boolean hasStarted() {
+            return true;
+          }
+          @Override
+          public int getPending() {
+            int index = monitorState[0];
+            if (index >= actionCompletions.length) {
+              return 0;
+            }
+            int result = actionCompletions[index];
+            while (result == 0) {
+              ++index;
+              result = actionCompletions[index];
+            }
+            return result;
+          }
+        };
+    final boolean[] didReportInactivity = new boolean[] {false};
+    InactivityReporter reporter =
+        new InactivityReporter() {
+          @Override
+          public void maybeReportInactivity() {
+            if (shouldReport) {
+              didReportInactivity[0] = true;
+            }
+          }
+        };
+    // Mock sleep object; just logs how much the caller's thread would've slept.
+    ActionExecutionInactivityWatchdog.Sleep sleep =
+        new ActionExecutionInactivityWatchdog.Sleep() {
+          @Override
+          public void sleep(int durationMilliseconds) throws InterruptedException {
+            if (monitorState[0] < actionCompletions.length) {
+              sleepsAndWaits.add(""sleep:"" + durationMilliseconds);
+            }
+          }
+        };
+    ActionExecutionInactivityWatchdog watchdog =
+        new ActionExecutionInactivityWatchdog(monitor, reporter, 0, sleep);
+    try {
+      synchronized (monitorFinishedIndicator) {
+        watchdog.start();
+        long startTime = System.currentTimeMillis();
+        boolean done = false;
+        while (!done) {
+          try {
+            monitorFinishedIndicator.wait(5000);
+            done = true;
+            assertWithMessage(""test didn't finish under 5 seconds"")
+                .that(System.currentTimeMillis() - startTime)
+                .isLessThan(5000L);
+          } catch (InterruptedException ie) {
+            // so-called Spurious Wakeup; ignore
+          }
+        }
+      }
+    } finally {
+      watchdog.stop();
+    }
+    assertThat(didReportInactivity[0]).isEqualTo(shouldReport);
+    assertThat(sleepsAndWaits)
+        .containsExactly(
+            ""wait:5"",
+            ""sleep:1000"",
+            ""wait:10"",
+            ""wait:3"",
+            ""sleep:1000"",
+            ""wait:10"",
+            ""wait:30"",
+            ""wait:60"",
+            ""wait:60"",
+            ""wait:1"")
+        .inOrder();
+  }
+  @Test
+  public void testInactivityWatchdogReportsWhenItShould() throws Exception {
+    assertInactivityWatchdogReports(true);
+  }
+  @Test
+  public void testInactivityWatchdogDoesNotReportWhenItShouldNot() throws Exception {
+    assertInactivityWatchdogReports(false);
+  }
+}",class,
+"  private void assertInactivityWatchdogReports(final boolean shouldReport) throws Exception {
+    // The monitor implementation below is a state machine. This variable indicates which state
+    // it is in.
+    final int[] monitorState = new int[] {0};
+    // Object that the test thread will wait on.
+    final Object monitorFinishedIndicator = new Object();
+    // Reported number of action completions in each call to waitForNextCompletion.
+    final int[] actionCompletions = new int[] {1, 0, 3, 0, 0, 0, 0, 2};
+    // Simulated delay of action completions in each call to waitForNextCompletion.
+    final int[] waits = new int[] {5, 10, 3, 10, 30, 60, 60, 1};
+    // Log of all Sleep.sleep and InactivityMonitor.waitForNextCompletion calls.
+    final List<String> sleepsAndWaits = new ArrayList<>();
+    // Mock monitor for this test.
+    InactivityMonitor monitor =
+        new InactivityMonitor() {
+          @Override
+          public int waitForNextCompletion(int timeoutMilliseconds) throws InterruptedException {
+            // Simulate the following sequence of events (see actionCompletions):
+            // 1. return in 5s (within timeout), 1 action completed; caller will sleep
+            // 2. return in 10s (after timeout), 0 action completed; caller will wait
+            // 3. return in 3s (within timeout), 3 actions completed (this is possible, since the
+            //    waiting (thread doesn't necessarily wake up immediately); caller will sleep
+            // 4. return in 10s (after timeout), 0 action completed; caller will wait 30s
+            // 5. return in 30s (after timeout), 0 action completed still; caller will wait 60s
+            // 6. return in 60s (after timeout), 0 action completed still; caller will wait 60s
+            // 7. return in 60s (after timeout), 0 action completed still; caller will wait 60s
+            // 8. return in 1s (within timeout), 2 actions completed; caller will sleep, but we
+            //    won't record that, because monitorState reached its maximum
+            synchronized (monitorFinishedIndicator) {
+              if (monitorState[0] >= actionCompletions.length) {
+                // Notify the test thread that the test is over.
+                monitorFinishedIndicator.notify();
+                return 1;
+              } else {
+                int index = monitorState[0];
+                sleepsAndWaits.add(""wait:"" + waits[index]);
+                ++monitorState[0];
+                return actionCompletions[index];
+              }
+            }
+          }
+          @Override
+          public boolean hasStarted() {
+            return true;
+          }
+          @Override
+          public int getPending() {
+            int index = monitorState[0];
+            if (index >= actionCompletions.length) {
+              return 0;
+            }
+            int result = actionCompletions[index];
+            while (result == 0) {
+              ++index;
+              result = actionCompletions[index];
+            }
+            return result;
+          }
+        };
+    final boolean[] didReportInactivity = new boolean[] {false};
+    InactivityReporter reporter =
+        new InactivityReporter() {
+          @Override
+          public void maybeReportInactivity() {
+            if (shouldReport) {
+              didReportInactivity[0] = true;
+            }
+          }
+        };
+    // Mock sleep object; just logs how much the caller's thread would've slept.
+    ActionExecutionInactivityWatchdog.Sleep sleep =
+        new ActionExecutionInactivityWatchdog.Sleep() {
+          @Override
+          public void sleep(int durationMilliseconds) throws InterruptedException {
+            if (monitorState[0] < actionCompletions.length) {
+              sleepsAndWaits.add(""sleep:"" + durationMilliseconds);
+            }
+          }
+        };
+    ActionExecutionInactivityWatchdog watchdog =
+        new ActionExecutionInactivityWatchdog(monitor, reporter, 0, sleep);
+    try {
+      synchronized (monitorFinishedIndicator) {
+        watchdog.start();
+        long startTime = System.currentTimeMillis();
+        boolean done = false;
+        while (!done) {
+          try {
+            monitorFinishedIndicator.wait(5000);
+            done = true;
+            assertWithMessage(""test didn't finish under 5 seconds"")
+                .that(System.currentTimeMillis() - startTime)
+                .isLessThan(5000L);
+          } catch (InterruptedException ie) {
+            // so-called Spurious Wakeup; ignore
+          }
+        }
+      }
+    } finally {
+      watchdog.stop();
+    }
+    assertThat(didReportInactivity[0]).isEqualTo(shouldReport);
+    assertThat(sleepsAndWaits)
+        .containsExactly(
+            ""wait:5"",
+            ""sleep:1000"",
+            ""wait:10"",
+            ""wait:3"",
+            ""sleep:1000"",
+            ""wait:10"",
+            ""wait:30"",
+            ""wait:60"",
+            ""wait:60"",
+            ""wait:1"")
+        .inOrder();
+  }",method,
+"        new InactivityMonitor() {
+          @Override
+          public int waitForNextCompletion(int timeoutMilliseconds) throws InterruptedException {
+            // Simulate the following sequence of events (see actionCompletions):
+            // 1. return in 5s (within timeout), 1 action completed; caller will sleep
+            // 2. return in 10s (after timeout), 0 action completed; caller will wait
+            // 3. return in 3s (within timeout), 3 actions completed (this is possible, since the
+            //    waiting (thread doesn't necessarily wake up immediately); caller will sleep
+            // 4. return in 10s (after timeout), 0 action completed; caller will wait 30s
+            // 5. return in 30s (after timeout), 0 action completed still; caller will wait 60s
+            // 6. return in 60s (after timeout), 0 action completed still; caller will wait 60s
+            // 7. return in 60s (after timeout), 0 action completed still; caller will wait 60s
+            // 8. return in 1s (within timeout), 2 actions completed; caller will sleep, but we
+            //    won't record that, because monitorState reached its maximum
+            synchronized (monitorFinishedIndicator) {
+              if (monitorState[0] >= actionCompletions.length) {
+                // Notify the test thread that the test is over.
+                monitorFinishedIndicator.notify();
+                return 1;
+              } else {
+                int index = monitorState[0];
+                sleepsAndWaits.add(""wait:"" + waits[index]);
+                ++monitorState[0];
+                return actionCompletions[index];
+              }
+            }
+          }
+          @Override
+          public boolean hasStarted() {
+            return true;
+          }
+          @Override
+          public int getPending() {
+            int index = monitorState[0];
+            if (index >= actionCompletions.length) {
+              return 0;
+            }
+            int result = actionCompletions[index];
+            while (result == 0) {
+              ++index;
+              result = actionCompletions[index];
+            }
+            return result;
+          }
+        }",method,
+"          @Override
+          public int waitForNextCompletion(int timeoutMilliseconds) throws InterruptedException {
+            // Simulate the following sequence of events (see actionCompletions):
+            // 1. return in 5s (within timeout), 1 action completed; caller will sleep
+            // 2. return in 10s (after timeout), 0 action completed; caller will wait
+            // 3. return in 3s (within timeout), 3 actions completed (this is possible, since the
+            //    waiting (thread doesn't necessarily wake up immediately); caller will sleep
+            // 4. return in 10s (after timeout), 0 action completed; caller will wait 30s
+            // 5. return in 30s (after timeout), 0 action completed still; caller will wait 60s
+            // 6. return in 60s (after timeout), 0 action completed still; caller will wait 60s
+            // 7. return in 60s (after timeout), 0 action completed still; caller will wait 60s
+            // 8. return in 1s (within timeout), 2 actions completed; caller will sleep, but we
+            //    won't record that, because monitorState reached its maximum
+            synchronized (monitorFinishedIndicator) {
+              if (monitorState[0] >= actionCompletions.length) {
+                // Notify the test thread that the test is over.
+                monitorFinishedIndicator.notify();
+                return 1;
+              } else {
+                int index = monitorState[0];
+                sleepsAndWaits.add(""wait:"" + waits[index]);
+                ++monitorState[0];
+                return actionCompletions[index];
+              }
+            }
+          }",method,
+"            synchronized (monitorFinishedIndicator) {
+              if (monitorState[0] >= actionCompletions.length) {
+                // Notify the test thread that the test is over.
+                monitorFinishedIndicator.notify();
+                return 1;
+              } else {
+                int index = monitorState[0];
+                sleepsAndWaits.add(""wait:"" + waits[index]);
+                ++monitorState[0];
+                return actionCompletions[index];
+              }
+            }",method,
+"              if (monitorState[0] >= actionCompletions.length) {
+                // Notify the test thread that the test is over.
+                monitorFinishedIndicator.notify();
+                return 1;
+              }",method,
+"          @Override
+          public boolean hasStarted() {
+            return true;
+          }",method,
+"          @Override
+          public int getPending() {
+            int index = monitorState[0];
+            if (index >= actionCompletions.length) {
+              return 0;
+            }
+            int result = actionCompletions[index];
+            while (result == 0) {
+              ++index;
+              result = actionCompletions[index];
+            }
+            return result;
+          }",method,
+"            if (index >= actionCompletions.length) {
+              return 0;
+            }",method,
+"            while (result == 0) {
+              ++index;
+              result = actionCompletions[index];
+            }",method,
+"        new InactivityReporter() {
+          @Override
+          public void maybeReportInactivity() {
+            if (shouldReport) {
+              didReportInactivity[0] = true;
+            }
+          }
+        }",method,
+"          @Override
+          public void maybeReportInactivity() {
+            if (shouldReport) {
+              didReportInactivity[0] = true;
+            }
+          }",method,
+"            if (shouldReport) {
+              didReportInactivity[0] = true;
+            }",method,
+"        new ActionExecutionInactivityWatchdog.Sleep() {
+          @Override
+          public void sleep(int durationMilliseconds) throws InterruptedException {
+            if (monitorState[0] < actionCompletions.length) {
+              sleepsAndWaits.add(""sleep:"" + durationMilliseconds);
+            }
+          }
+        }",method,
+"          @Override
+          public void sleep(int durationMilliseconds) throws InterruptedException {
+            if (monitorState[0] < actionCompletions.length) {
+              sleepsAndWaits.add(""sleep:"" + durationMilliseconds);
+            }
+          }",method,
+"            if (monitorState[0] < actionCompletions.length) {
+              sleepsAndWaits.add(""sleep:"" + durationMilliseconds);
+            }",method,
+"      synchronized (monitorFinishedIndicator) {
+        watchdog.start();
+        long startTime = System.currentTimeMillis();
+        boolean done = false;
+        while (!done) {
+          try {
+            monitorFinishedIndicator.wait(5000);
+            done = true;
+            assertWithMessage(""test didn't finish under 5 seconds"")
+                .that(System.currentTimeMillis() - startTime)
+                .isLessThan(5000L);
+          } catch (InterruptedException ie) {
+            // so-called Spurious Wakeup; ignore
+          }
+        }
+      }",method,
+"        while (!done) {
+          try {
+            monitorFinishedIndicator.wait(5000);
+            done = true;
+            assertWithMessage(""test didn't finish under 5 seconds"")
+                .that(System.currentTimeMillis() - startTime)
+                .isLessThan(5000L);
+          } catch (InterruptedException ie) {
+            // so-called Spurious Wakeup; ignore
+          }
+        }",method,
+"  @Test
+  public void testInactivityWatchdogReportsWhenItShould() throws Exception {
+    assertInactivityWatchdogReports(true);
+  }",method,
+"  @Test
+  public void testInactivityWatchdogDoesNotReportWhenItShouldNot() throws Exception {
+    assertInactivityWatchdogReports(false);
+  }",method,
+"public class CrashWhenStartingBrowserTest {
+  private Hub hub;
+  private SelfRegisteringRemote remote;
+  private Registry registry;
+  private Wait<Object> wait = new FluentWait<Object>("""").withTimeout(30, SECONDS);
+  private String proxyId;
+  private static final String WRONG_PATH = ""stupidPathUnlikelyToExist"";
+  @Before
+  public void prepareANodePointingToANonExistingFirefox() throws Exception {
+    hub = GridTestHelper.getHub();
+    registry = hub.getRegistry();
+    remote = GridTestHelper.getRemoteWithoutCapabilities(hub.getUrl(), GridRole.NODE);
+    remote.addBrowser(DesiredCapabilities.firefox(), 1);
+    remote.setRemoteServer(new SeleniumServer(remote.getConfiguration()));
+    remote.startRemoteServer();
+    remote.sendRegistrationRequest();
+    RegistryTestHelper.waitForNode(registry, 1);
+    proxyId = getProxyId();
+  }
+  @Test
+  public void serverCrashesStartingFirefox() throws MalformedURLException {
+    // should be up
+    DefaultRemoteProxy p;
+    assertTrue(registry.getAllProxies().size() == 1);
+    p = (DefaultRemoteProxy) registry.getAllProxies().getProxyById(proxyId);
+    wait.until(isUp(p));
+    // no active sessions
+    assertEquals(""active session is found on empty grid"", 0, registry.getActiveSessions().size());
+    try {
+      Capabilities ff = new FirefoxOptions()
+          .setBinary(WRONG_PATH)
+          .addTo(DesiredCapabilities.firefox());
+      new RemoteWebDriver(hub.getWebDriverHubRequestURL(), ff);
+      fail(""Expected WebDriverException to be thrown"");
+    } catch (SessionNotCreatedException expected) {
+      assertTrue(
+          ""We'd like to assert the path is in the message, but the spec does not demand this"",
+          true);
+    }
+    RegistryTestHelper.waitForActiveTestSessionCount(registry, 0);
+  }
+  private Function<Object, Boolean> isUp(final DefaultRemoteProxy proxy) {
+    return input -> !proxy.isDown();
+  }
+  private String getProxyId() throws Exception {
+    RemoteProxy p = null;
+    for (RemoteProxy remoteProxy : registry.getAllProxies()) {
+      p = remoteProxy;
+    }
+    if (p == null) {
+      throw new Exception(""Unable to find registered proxy at hub"");
+    }
+    String proxyId = p.getId();
+    if (proxyId == null) {
+      throw  new Exception(""Unable to get id of proxy"");
+    }
+    return proxyId;
+  }
+  @After
+  public void stop() throws Exception {
+    remote.stopRemoteServer();
+    hub.stop();
+  }
+}",class,
+"  @Before
+  public void prepareANodePointingToANonExistingFirefox() throws Exception {
+    hub = GridTestHelper.getHub();
+    registry = hub.getRegistry();
+    remote = GridTestHelper.getRemoteWithoutCapabilities(hub.getUrl(), GridRole.NODE);
+    remote.addBrowser(DesiredCapabilities.firefox(), 1);
+    remote.setRemoteServer(new SeleniumServer(remote.getConfiguration()));
+    remote.startRemoteServer();
+    remote.sendRegistrationRequest();
+    RegistryTestHelper.waitForNode(registry, 1);
+    proxyId = getProxyId();
+  }",method,
+"  @Test
+  public void serverCrashesStartingFirefox() throws MalformedURLException {
+    // should be up
+    DefaultRemoteProxy p;
+    assertTrue(registry.getAllProxies().size() == 1);
+    p = (DefaultRemoteProxy) registry.getAllProxies().getProxyById(proxyId);
+    wait.until(isUp(p));
+    // no active sessions
+    assertEquals(""active session is found on empty grid"", 0, registry.getActiveSessions().size());
+    try {
+      Capabilities ff = new FirefoxOptions()
+          .setBinary(WRONG_PATH)
+          .addTo(DesiredCapabilities.firefox());
+      new RemoteWebDriver(hub.getWebDriverHubRequestURL(), ff);
+      fail(""Expected WebDriverException to be thrown"");
+    } catch (SessionNotCreatedException expected) {
+      assertTrue(
+          ""We'd like to assert the path is in the message, but the spec does not demand this"",
+          true);
+    }
+    RegistryTestHelper.waitForActiveTestSessionCount(registry, 0);
+  }",method,
+"  private Function<Object, Boolean> isUp(final DefaultRemoteProxy proxy) {
+    return input -> !proxy.isDown();
+  }",method,
+"  private String getProxyId() throws Exception {
+    RemoteProxy p = null;
+    for (RemoteProxy remoteProxy : registry.getAllProxies()) {
+      p = remoteProxy;
+    }
+    if (p == null) {
+      throw new Exception(""Unable to find registered proxy at hub"");
+    }
+    String proxyId = p.getId();
+    if (proxyId == null) {
+      throw  new Exception(""Unable to get id of proxy"");
+    }
+    return proxyId;
+  }",method,
+"    if (p == null) {
+      throw new Exception(""Unable to find registered proxy at hub"");
+    }",method,
+"    if (proxyId == null) {
+      throw  new Exception(""Unable to get id of proxy"");
+    }",method,
+"  @After
+  public void stop() throws Exception {
+    remote.stopRemoteServer();
+    hub.stop();
+  }",method,
+"public abstract class PluginReplacement implements PluginAware {
+  public static final ExtensionPointName<PluginReplacement> EP_NAME = ExtensionPointName.create(""com.intellij.pluginReplacement"");
+  private final String myNewPluginId;
+  private PluginDescriptor myPluginDescriptor;
+  protected PluginReplacement(String newPluginId) {
+    myNewPluginId = newPluginId;
+  }
+  @NotNull
+  public String getReplacementMessage(@NotNull IdeaPluginDescriptor oldPlugin, @NotNull IdeaPluginDescriptor newPlugin) {
+    return IdeBundle.message(""plugin.manager.replace.plugin.0.by.plugin.1"", oldPlugin.getName(), newPlugin.getName());
+  }
+  @Override
+  public final void setPluginDescriptor(PluginDescriptor pluginDescriptor) {
+    myPluginDescriptor = pluginDescriptor;
+  }
+  public final PluginDescriptor getOldPluginDescriptor() {
+    return myPluginDescriptor;
+  }
+  public final String getNewPluginId() {
+    return myNewPluginId;
+  }
+}",class,
+"  protected PluginReplacement(String newPluginId) {
+    myNewPluginId = newPluginId;
+  }",method,
+"  @NotNull
+  public String getReplacementMessage(@NotNull IdeaPluginDescriptor oldPlugin, @NotNull IdeaPluginDescriptor newPlugin) {
+    return IdeBundle.message(""plugin.manager.replace.plugin.0.by.plugin.1"", oldPlugin.getName(), newPlugin.getName());
+  }",method,
+"  @Override
+  public final void setPluginDescriptor(PluginDescriptor pluginDescriptor) {
+    myPluginDescriptor = pluginDescriptor;
+  }",method,
+"  public final PluginDescriptor getOldPluginDescriptor() {
+    return myPluginDescriptor;
+  }",method,
+"  public final String getNewPluginId() {
+    return myNewPluginId;
+  }",method,
+"imports + ""class Foo"" + i + "" extends Bar1, Bar2, Bar3 {}"");
+    }
+    ensureIndexUpToDate();
+    PlatformTestUtil.startPerformanceTest(getTestName(false), 800, () -> assertNull(ref.resolve()))
+      .attempts(1).assertTiming();
+  }
+  public void testQualifiedAnonymousClass() throws Exception {
+    RecursionManager.assertOnRecursionPrevention(getTestRootDisposable());
+    PsiReference ref = configure();
+    VirtualFile file = ref.getElement().getContainingFile().getVirtualFile();
+    assertNotNull(file);
+    VirtualFile pkg = WriteAction.compute(() -> file.getParent().createChildDirectory(this, ""foo""));
+    createFile(myModule, pkg, ""Outer.java"", ""package foo; public class Outer { protected static class Inner { protected Inner() {} } }"");
+    assertEquals(""Inner"", assertInstanceOf(ref.resolve(), PsiClass.class).getName());
+  }",class,
+"    createFile(myModule, pkg, ""Outer.java"", ""package foo; public class Outer { protected static class Inner { protected Inner() {} } }"");
+    assertEquals(""Inner"", assertInstanceOf(ref.resolve(), PsiClass.class).getName());
+  }
+  @SuppressWarnings({""ConstantConditions""}",class,
+"    createFile(myModule, pkg, ""Outer.java"", ""package foo; public class Outer { protected static class Inner { protected Inner() {} } }"");
+    assertEquals(""Inner"", assertInstanceOf(ref.resolve(), PsiClass.class).getName());
+  }
+  @SuppressWarnings({""ConstantConditions""}",class,
+"  public void testQualifiedAnonymousClass() throws Exception {
+    RecursionManager.assertOnRecursionPrevention(getTestRootDisposable());
+    PsiReference ref = configure();
+    VirtualFile file = ref.getElement().getContainingFile().getVirtualFile();
+    assertNotNull(file);
+    VirtualFile pkg = WriteAction.compute(() -> file.getParent().createChildDirectory(this, ""foo""));
+    createFile(myModule, pkg, ""Outer.java"", ""package foo; public class Outer { protected static class Inner { protected Inner() {} } }"");
+    assertEquals(""Inner"", assertInstanceOf(ref.resolve(), PsiClass.class).getName());
+  }",method,
+"    createFile(myModule, pkg, ""Outer.java"", ""package foo; public class Outer { protected static class Inner { protected Inner() {} } }"");
+    assertEquals(""Inner"", assertInstanceOf(ref.resolve(), PsiClass.class).getName());
+  }
+  @SuppressWarnings({""ConstantConditions""}",method,
+"  @SuppressWarnings({""ConstantConditions""})
+  private void configureDependency() {
+    ApplicationManager.getApplication().runWriteAction(() -> {
+      ModifiableModuleModel modifiableModel = ModuleManager.getInstance(getProject()).getModifiableModel();
+      Module module = modifiableModel.newModule(""a.iml"", StdModuleTypes.JAVA.getId());
+      modifiableModel.commit();
+      VirtualFile root = LocalFileSystem.getInstance().refreshAndFindFileByPath(getTestDataPath() + ""/class/dependentModule"");
+      assert root != null;
+      PsiTestUtil.addContentRoot(module, root);
+      PsiTestUtil.addSourceRoot(module, root.findChild(""src""));
+      PsiTestUtil.addSourceRoot(module, root.findChild(""test""), true);
+      ModuleRootModificationUtil.addDependency(getModule(), module);
+    });
+  }",method,

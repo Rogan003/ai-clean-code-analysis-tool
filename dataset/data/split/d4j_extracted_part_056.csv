@@ -1,0 +1,1416 @@
+code_snippet,type,score
+"    protected void cancelSyncsandDisableAutoSync() {
+        ContentResolver.setMasterSyncAutomatically(false);
+        ContentResolver.cancelSync(null , null );
+    }",method,
+"public class EncapsulateFieldAction extends BaseRefactoringIntentionAction {
+  @NotNull
+  @Override
+  public String getText() {
+    return CodeInsightBundle.message(""intention.encapsulate.field.text"");
+  }
+  @NotNull
+  @Override
+  public final String getFamilyName() {
+    return getText();
+  }
+  @Override
+  public boolean isAvailable(@NotNull Project project, Editor editor, @NotNull PsiElement element) {
+    if (element instanceof SyntheticElement){
+      return false;
+    }
+    final PsiField field = getField(element);
+    return field != null && !field.hasModifierProperty(PsiModifier.FINAL) && !field.hasModifierProperty(PsiModifier.PRIVATE);
+  }
+  @Override
+  public void invoke(@NotNull Project project, Editor editor, @NotNull PsiElement element) throws IncorrectOperationException {
+    final PsiField field = getField(element);
+    if (field == null) {
+      return;
+    }
+    new EncapsulateFieldsHandler().invoke(project, new PsiElement[]{field}, null);
+  }
+  @Nullable
+  protected static PsiField getField(@Nullable PsiElement element) {
+    if (element == null || !(element instanceof PsiIdentifier)) {
+      return null;
+    }
+    final PsiElement parent = element.getParent();
+    if (parent == null || !(parent instanceof PsiReferenceExpression)) {
+      return null;
+    }
+    final PsiReferenceExpression ref = (PsiReferenceExpression)parent;
+    final PsiExpression qualifier = ref.getQualifierExpression();
+    if (qualifier == null || qualifier instanceof PsiThisExpression) {
+      return null;
+    }
+    final PsiElement resolved = ref.resolve();
+    if (resolved == null || !(resolved instanceof PsiField)) {
+      return null;
+    }
+    return (PsiField)resolved;
+  }
+  @Override
+  public boolean startInWriteAction() {
+    return false;
+  }
+}",class,
+"  @NotNull
+  @Override
+  public String getText() {
+    return CodeInsightBundle.message(""intention.encapsulate.field.text"");
+  }",method,
+"  @NotNull
+  @Override
+  public final String getFamilyName() {
+    return getText();
+  }",method,
+"  @Override
+  public boolean isAvailable(@NotNull Project project, Editor editor, @NotNull PsiElement element) {
+    if (element instanceof SyntheticElement){
+      return false;
+    }
+    final PsiField field = getField(element);
+    return field != null && !field.hasModifierProperty(PsiModifier.FINAL) && !field.hasModifierProperty(PsiModifier.PRIVATE);
+  }",method,
+"    if (element instanceof SyntheticElement){
+      return false;
+    }",method,
+"  @Override
+  public void invoke(@NotNull Project project, Editor editor, @NotNull PsiElement element) throws IncorrectOperationException {
+    final PsiField field = getField(element);
+    if (field == null) {
+      return;
+    }
+    new EncapsulateFieldsHandler().invoke(project, new PsiElement[]{field}, null);
+  }",method,
+"    if (field == null) {
+      return;
+    }",method,
+"  @Nullable
+  protected static PsiField getField(@Nullable PsiElement element) {
+    if (element == null || !(element instanceof PsiIdentifier)) {
+      return null;
+    }
+    final PsiElement parent = element.getParent();
+    if (parent == null || !(parent instanceof PsiReferenceExpression)) {
+      return null;
+    }
+    final PsiReferenceExpression ref = (PsiReferenceExpression)parent;
+    final PsiExpression qualifier = ref.getQualifierExpression();
+    if (qualifier == null || qualifier instanceof PsiThisExpression) {
+      return null;
+    }
+    final PsiElement resolved = ref.resolve();
+    if (resolved == null || !(resolved instanceof PsiField)) {
+      return null;
+    }
+    return (PsiField)resolved;
+  }",method,
+"    if (qualifier == null || qualifier instanceof PsiThisExpression) {
+      return null;
+    }",method,
+"  @Override
+  public boolean startInWriteAction() {
+    return false;
+  }",method,
+"public class NakedNotifyInspection extends BaseInspection {
+  @Override
+  @NotNull
+  public String getDisplayName() {
+    return InspectionGadgetsBundle.message(""naked.notify.display.name"");
+  }
+  @Override
+  @NotNull
+  protected String buildErrorString(Object... infos) {
+    return InspectionGadgetsBundle.message(
+      ""naked.notify.problem.descriptor"");
+  }
+  @Override
+  public BaseInspectionVisitor buildVisitor() {
+    return new NakedNotifyVisitor();
+  }
+  private static class NakedNotifyVisitor extends BaseInspectionVisitor {
+    @Override
+    public void visitMethod(@NotNull PsiMethod method) {
+      super.visitMethod(method);
+      if (!method.hasModifierProperty(PsiModifier.SYNCHRONIZED)) {
+        return;
+      }
+      final PsiCodeBlock body = method.getBody();
+      if (body != null) {
+        checkBody(body);
+      }
+    }
+    @Override
+    public void visitSynchronizedStatement(@NotNull PsiSynchronizedStatement statement) {
+      super.visitSynchronizedStatement(statement);
+      checkBody(statement.getBody());
+    }
+    private void checkBody(PsiCodeBlock body) {
+      final PsiStatement firstStatement = ControlFlowUtils.getFirstStatementInBlock(body);
+      if (!(firstStatement instanceof PsiExpressionStatement)) {
+        return;
+      }
+      final PsiExpression firstExpression =
+        ((PsiExpressionStatement)firstStatement).getExpression();
+      if (!(firstExpression instanceof PsiMethodCallExpression)) {
+        return;
+      }
+      final PsiMethodCallExpression methodCallExpression =
+        (PsiMethodCallExpression)firstExpression;
+      final PsiReferenceExpression methodExpression =
+        methodCallExpression.getMethodExpression();
+      @NonNls final String methodName =
+        methodExpression.getReferenceName();
+      if (!HardcodedMethodConstants.NOTIFY.equals(methodName) &&
+          !HardcodedMethodConstants.NOTIFY_ALL.equals(methodName)) {
+        return;
+      }
+      final PsiExpressionList argumentList =
+        methodCallExpression.getArgumentList();
+      if (argumentList.getExpressions().length != 0) {
+        return;
+      }
+      registerMethodCallError(methodCallExpression);
+    }
+  }
+}",class,
+"  private static class NakedNotifyVisitor extends BaseInspectionVisitor {
+    @Override
+    public void visitMethod(@NotNull PsiMethod method) {
+      super.visitMethod(method);
+      if (!method.hasModifierProperty(PsiModifier.SYNCHRONIZED)) {
+        return;
+      }
+      final PsiCodeBlock body = method.getBody();
+      if (body != null) {
+        checkBody(body);
+      }
+    }
+    @Override
+    public void visitSynchronizedStatement(@NotNull PsiSynchronizedStatement statement) {
+      super.visitSynchronizedStatement(statement);
+      checkBody(statement.getBody());
+    }
+    private void checkBody(PsiCodeBlock body) {
+      final PsiStatement firstStatement = ControlFlowUtils.getFirstStatementInBlock(body);
+      if (!(firstStatement instanceof PsiExpressionStatement)) {
+        return;
+      }
+      final PsiExpression firstExpression =
+        ((PsiExpressionStatement)firstStatement).getExpression();
+      if (!(firstExpression instanceof PsiMethodCallExpression)) {
+        return;
+      }
+      final PsiMethodCallExpression methodCallExpression =
+        (PsiMethodCallExpression)firstExpression;
+      final PsiReferenceExpression methodExpression =
+        methodCallExpression.getMethodExpression();
+      @NonNls final String methodName =
+        methodExpression.getReferenceName();
+      if (!HardcodedMethodConstants.NOTIFY.equals(methodName) &&
+          !HardcodedMethodConstants.NOTIFY_ALL.equals(methodName)) {
+        return;
+      }
+      final PsiExpressionList argumentList =
+        methodCallExpression.getArgumentList();
+      if (argumentList.getExpressions().length != 0) {
+        return;
+      }
+      registerMethodCallError(methodCallExpression);
+    }
+  }",class,
+"  @Override
+  @NotNull
+  public String getDisplayName() {
+    return InspectionGadgetsBundle.message(""naked.notify.display.name"");
+  }",method,
+"  @Override
+  @NotNull
+  protected String buildErrorString(Object... infos) {
+    return InspectionGadgetsBundle.message(
+      ""naked.notify.problem.descriptor"");
+  }",method,
+"  @Override
+  public BaseInspectionVisitor buildVisitor() {
+    return new NakedNotifyVisitor();
+  }",method,
+"    @Override
+    public void visitMethod(@NotNull PsiMethod method) {
+      super.visitMethod(method);
+      if (!method.hasModifierProperty(PsiModifier.SYNCHRONIZED)) {
+        return;
+      }
+      final PsiCodeBlock body = method.getBody();
+      if (body != null) {
+        checkBody(body);
+      }
+    }",method,
+"      if (body != null) {
+        checkBody(body);
+      }",method,
+"    @Override
+    public void visitSynchronizedStatement(@NotNull PsiSynchronizedStatement statement) {
+      super.visitSynchronizedStatement(statement);
+      checkBody(statement.getBody());
+    }",method,
+"    private void checkBody(PsiCodeBlock body) {
+      final PsiStatement firstStatement = ControlFlowUtils.getFirstStatementInBlock(body);
+      if (!(firstStatement instanceof PsiExpressionStatement)) {
+        return;
+      }
+      final PsiExpression firstExpression =
+        ((PsiExpressionStatement)firstStatement).getExpression();
+      if (!(firstExpression instanceof PsiMethodCallExpression)) {
+        return;
+      }
+      final PsiMethodCallExpression methodCallExpression =
+        (PsiMethodCallExpression)firstExpression;
+      final PsiReferenceExpression methodExpression =
+        methodCallExpression.getMethodExpression();
+      @NonNls final String methodName =
+        methodExpression.getReferenceName();
+      if (!HardcodedMethodConstants.NOTIFY.equals(methodName) &&
+          !HardcodedMethodConstants.NOTIFY_ALL.equals(methodName)) {
+        return;
+      }
+      final PsiExpressionList argumentList =
+        methodCallExpression.getArgumentList();
+      if (argumentList.getExpressions().length != 0) {
+        return;
+      }
+      registerMethodCallError(methodCallExpression);
+    }",method,
+"	public ModArabicHeadFinder() {
+		this(new ArabicTreebankLanguagePack());
+	}",method,
+"import java.util.Map;
+class DefaultIncludedBuildControllers implements Stoppable, IncludedBuildControllers {
+    private final Map<BuildIdentifier, IncludedBuildController> buildControllers = Maps.newHashMap();
+    private final ManagedExecutor executorService;
+    private final IncludedBuildRegistry includedBuildRegistry;
+    private boolean taskExecutionStarted;
+    DefaultIncludedBuildControllers(ExecutorFactory executorFactory, IncludedBuildRegistry includedBuildRegistry) {
+        this.includedBuildRegistry = includedBuildRegistry;
+        this.executorService = executorFactory.create(""included builds"");
+    }
+    public IncludedBuildController getBuildController(BuildIdentifier buildId) {
+        IncludedBuildController buildController = buildControllers.get(buildId);
+        if (buildController != null) {
+            return buildController;
+        }
+        IncludedBuild build = includedBuildRegistry.getBuild(buildId);
+        DefaultIncludedBuildController newBuildController = new DefaultIncludedBuildController(build);
+        buildControllers.put(buildId, newBuildController);
+        executorService.submit(newBuildController);
+        // Required for build controllers created after initial start
+        if (taskExecutionStarted) {
+            newBuildController.startTaskExecution();
+        }
+        return newBuildController;
+    }
+    @Override
+    public void startTaskExecution() {
+        this.taskExecutionStarted = true;
+        populateTaskGraphs();
+        for (IncludedBuildController buildController : buildControllers.values()) {
+            buildController.startTaskExecution();
+        }
+    }
+    private void populateTaskGraphs() {
+        boolean tasksDiscovered = true;
+        while (tasksDiscovered) {
+            tasksDiscovered = false;
+            for (IncludedBuildController buildController : buildControllers.values()) {
+                if (buildController.populateTaskGraph()) {
+                    tasksDiscovered = true;
+                }
+            }
+        }
+    }
+    @Override
+    public void stopTaskExecution() {
+        for (IncludedBuildController buildController : buildControllers.values()) {
+            buildController.stopTaskExecution();
+        }
+        buildControllers.clear();
+        // TODO:DAZ Move this logic into IncludedBuildController, and register a controller for _every_ included build.
+        for (IncludedBuild includedBuild : includedBuildRegistry.getIncludedBuilds().values()) {
+            ((IncludedBuildInternal) includedBuild).finishBuild();
+        }
+    }
+    @Override
+    public void stop() {
+        CompositeStoppable.stoppable(buildControllers.values()).stop();
+        executorService.stop();
+    }
+}",class,
+"    DefaultIncludedBuildControllers(ExecutorFactory executorFactory, IncludedBuildRegistry includedBuildRegistry) {
+        this.includedBuildRegistry = includedBuildRegistry;
+        this.executorService = executorFactory.create(""included builds"");
+    }",method,
+"    public IncludedBuildController getBuildController(BuildIdentifier buildId) {
+        IncludedBuildController buildController = buildControllers.get(buildId);
+        if (buildController != null) {
+            return buildController;
+        }
+        IncludedBuild build = includedBuildRegistry.getBuild(buildId);
+        DefaultIncludedBuildController newBuildController = new DefaultIncludedBuildController(build);
+        buildControllers.put(buildId, newBuildController);
+        executorService.submit(newBuildController);
+        // Required for build controllers created after initial start
+        if (taskExecutionStarted) {
+            newBuildController.startTaskExecution();
+        }
+        return newBuildController;
+    }",method,
+"        if (buildController != null) {
+            return buildController;
+        }",method,
+"        if (taskExecutionStarted) {
+            newBuildController.startTaskExecution();
+        }",method,
+"    @Override
+    public void startTaskExecution() {
+        this.taskExecutionStarted = true;
+        populateTaskGraphs();
+        for (IncludedBuildController buildController : buildControllers.values()) {
+            buildController.startTaskExecution();
+        }
+    }",method,
+"    private void populateTaskGraphs() {
+        boolean tasksDiscovered = true;
+        while (tasksDiscovered) {
+            tasksDiscovered = false;
+            for (IncludedBuildController buildController : buildControllers.values()) {
+                if (buildController.populateTaskGraph()) {
+                    tasksDiscovered = true;
+                }
+            }
+        }
+    }",method,
+"        while (tasksDiscovered) {
+            tasksDiscovered = false;
+            for (IncludedBuildController buildController : buildControllers.values()) {
+                if (buildController.populateTaskGraph()) {
+                    tasksDiscovered = true;
+                }
+            }
+        }",method,
+"    @Override
+    public void stopTaskExecution() {
+        for (IncludedBuildController buildController : buildControllers.values()) {
+            buildController.stopTaskExecution();
+        }
+        buildControllers.clear();
+        // TODO:DAZ Move this logic into IncludedBuildController, and register a controller for _every_ included build.
+        for (IncludedBuild includedBuild : includedBuildRegistry.getIncludedBuilds().values()) {
+            ((IncludedBuildInternal) includedBuild).finishBuild();
+        }
+    }",method,
+"    @Override
+    public void stop() {
+        CompositeStoppable.stoppable(buildControllers.values()).stop();
+        executorService.stop();
+    }",method,
+"public class NotWriteDefaultValueTest_NoneASM extends TestCase {
+    public void test_for_byte() throws Exception {
+        VO_Byte vo = new VO_Byte();
+        String text = JSON.toJSONString(vo, SerializerFeature.NotWriteDefaultValue);
+        Assert.assertEquals(""{}"", text);
+    }
+    public void test_for_short() throws Exception {
+        VO_Short vo = new VO_Short();
+        String text = JSON.toJSONString(vo, SerializerFeature.NotWriteDefaultValue);
+        Assert.assertEquals(""{}"", text);
+    }
+    public void test_for_int() throws Exception {
+        VO_Int vo = new VO_Int();
+        String text = JSON.toJSONString(vo, SerializerFeature.NotWriteDefaultValue);
+        Assert.assertEquals(""{}"", text);
+    }
+    public void test_for_long() throws Exception {
+        VO_Long vo = new VO_Long();
+        String text = JSON.toJSONString(vo, SerializerFeature.NotWriteDefaultValue);
+        Assert.assertEquals(""{}"", text);
+    }
+    public void test_for_float() throws Exception {
+        VO_Float vo = new VO_Float();
+        String text = JSON.toJSONString(vo, SerializerFeature.NotWriteDefaultValue);
+        Assert.assertEquals(""{}"", text);
+    }
+    public void test_for_double() throws Exception {
+        VO_Double vo = new VO_Double();
+        String text = JSON.toJSONString(vo, SerializerFeature.NotWriteDefaultValue);
+        Assert.assertEquals(""{}"", text);
+    }
+    public void test_for_boolean() throws Exception {
+        VO_Boolean vo = new VO_Boolean();
+        vo.f1 = true;
+        String text = JSON.toJSONString(vo, SerializerFeature.NotWriteDefaultValue);
+        Assert.assertEquals(""{\""f1\"":true}"", text);
+    }
+    private static class VO_Byte {
+        private byte f0;
+        private byte f1;
+        public byte getF0() {
+            return f0;
+        }
+        public void setF0(byte f0) {
+            this.f0 = f0;
+        }
+        public byte getF1() {
+            return f1;
+        }
+        public void setF1(byte f1) {
+            this.f1 = f1;
+        }
+    }
+    private static class VO_Short {
+        private short f0;
+        private short f1;
+        public short getF0() {
+            return f0;
+        }
+        public void setF0(short f0) {
+            this.f0 = f0;
+        }
+        public short getF1() {
+            return f1;
+        }
+        public void setF1(short f1) {
+            this.f1 = f1;
+        }
+    }
+    private static class VO_Int {
+        private int f0;
+        private int f1;
+        public int getF0() {
+            return f0;
+        }
+        public void setF0(int f0) {
+            this.f0 = f0;
+        }
+        public int getF1() {
+            return f1;
+        }
+        public void setF1(int f1) {
+            this.f1 = f1;
+        }
+    }
+    private static class VO_Long {
+        private long f0;
+        private long f1;
+        public long getF0() {
+            return f0;
+        }
+        public void setF0(long f0) {
+            this.f0 = f0;
+        }
+        public long getF1() {
+            return f1;
+        }
+        public void setF1(long f1) {
+            this.f1 = f1;
+        }
+    }
+    private static class VO_Float {
+        private float f0;
+        private float f1;
+        public float getF0() {
+            return f0;
+        }
+        public void setF0(float f0) {
+            this.f0 = f0;
+        }
+        public float getF1() {
+            return f1;
+        }
+        public void setF1(float f1) {
+            this.f1 = f1;
+        }
+    }
+    private static class VO_Double {
+        private double f0;
+        private double f1;
+        public double getF0() {
+            return f0;
+        }
+        public void setF0(double f0) {
+            this.f0 = f0;
+        }
+        public double getF1() {
+            return f1;
+        }
+        public void setF1(double f1) {
+            this.f1 = f1;
+        }
+    }
+    private static class VO_Boolean {
+        private boolean f0;
+        private boolean f1;
+        public boolean isF0() {
+            return f0;
+        }
+        public void setF0(boolean f0) {
+            this.f0 = f0;
+        }
+        public boolean isF1() {
+            return f1;
+        }
+        public void setF1(boolean f1) {
+            this.f1 = f1;
+        }
+    }
+}",class,
+"    private static class VO_Byte {
+        private byte f0;
+        private byte f1;
+        public byte getF0() {
+            return f0;
+        }
+        public void setF0(byte f0) {
+            this.f0 = f0;
+        }
+        public byte getF1() {
+            return f1;
+        }
+        public void setF1(byte f1) {
+            this.f1 = f1;
+        }
+    }",class,
+"    private static class VO_Short {
+        private short f0;
+        private short f1;
+        public short getF0() {
+            return f0;
+        }
+        public void setF0(short f0) {
+            this.f0 = f0;
+        }
+        public short getF1() {
+            return f1;
+        }
+        public void setF1(short f1) {
+            this.f1 = f1;
+        }
+    }",class,
+"    private static class VO_Int {
+        private int f0;
+        private int f1;
+        public int getF0() {
+            return f0;
+        }
+        public void setF0(int f0) {
+            this.f0 = f0;
+        }
+        public int getF1() {
+            return f1;
+        }
+        public void setF1(int f1) {
+            this.f1 = f1;
+        }
+    }",class,
+"    private static class VO_Long {
+        private long f0;
+        private long f1;
+        public long getF0() {
+            return f0;
+        }
+        public void setF0(long f0) {
+            this.f0 = f0;
+        }
+        public long getF1() {
+            return f1;
+        }
+        public void setF1(long f1) {
+            this.f1 = f1;
+        }
+    }",class,
+"    private static class VO_Float {
+        private float f0;
+        private float f1;
+        public float getF0() {
+            return f0;
+        }
+        public void setF0(float f0) {
+            this.f0 = f0;
+        }
+        public float getF1() {
+            return f1;
+        }
+        public void setF1(float f1) {
+            this.f1 = f1;
+        }
+    }",class,
+"    private static class VO_Double {
+        private double f0;
+        private double f1;
+        public double getF0() {
+            return f0;
+        }
+        public void setF0(double f0) {
+            this.f0 = f0;
+        }
+        public double getF1() {
+            return f1;
+        }
+        public void setF1(double f1) {
+            this.f1 = f1;
+        }
+    }",class,
+"    private static class VO_Boolean {
+        private boolean f0;
+        private boolean f1;
+        public boolean isF0() {
+            return f0;
+        }
+        public void setF0(boolean f0) {
+            this.f0 = f0;
+        }
+        public boolean isF1() {
+            return f1;
+        }
+        public void setF1(boolean f1) {
+            this.f1 = f1;
+        }
+    }",class,
+"    public void test_for_byte() throws Exception {
+        VO_Byte vo = new VO_Byte();
+        String text = JSON.toJSONString(vo, SerializerFeature.NotWriteDefaultValue);
+        Assert.assertEquals(""{}"", text);
+    }",method,
+"    public void test_for_short() throws Exception {
+        VO_Short vo = new VO_Short();
+        String text = JSON.toJSONString(vo, SerializerFeature.NotWriteDefaultValue);
+        Assert.assertEquals(""{}"", text);
+    }",method,
+"    public void test_for_int() throws Exception {
+        VO_Int vo = new VO_Int();
+        String text = JSON.toJSONString(vo, SerializerFeature.NotWriteDefaultValue);
+        Assert.assertEquals(""{}"", text);
+    }",method,
+"    public void test_for_long() throws Exception {
+        VO_Long vo = new VO_Long();
+        String text = JSON.toJSONString(vo, SerializerFeature.NotWriteDefaultValue);
+        Assert.assertEquals(""{}"", text);
+    }",method,
+"    public void test_for_float() throws Exception {
+        VO_Float vo = new VO_Float();
+        String text = JSON.toJSONString(vo, SerializerFeature.NotWriteDefaultValue);
+        Assert.assertEquals(""{}"", text);
+    }",method,
+"    public void test_for_double() throws Exception {
+        VO_Double vo = new VO_Double();
+        String text = JSON.toJSONString(vo, SerializerFeature.NotWriteDefaultValue);
+        Assert.assertEquals(""{}"", text);
+    }",method,
+"    public void test_for_boolean() throws Exception {
+        VO_Boolean vo = new VO_Boolean();
+        vo.f1 = true;
+        String text = JSON.toJSONString(vo, SerializerFeature.NotWriteDefaultValue);
+        Assert.assertEquals(""{\""f1\"":true}"", text);
+    }",method,
+"        public byte getF0() {
+            return f0;
+        }",method,
+"        public void setF0(byte f0) {
+            this.f0 = f0;
+        }",method,
+"        public byte getF1() {
+            return f1;
+        }",method,
+"        public void setF1(byte f1) {
+            this.f1 = f1;
+        }",method,
+"        public short getF0() {
+            return f0;
+        }",method,
+"        public void setF0(short f0) {
+            this.f0 = f0;
+        }",method,
+"        public short getF1() {
+            return f1;
+        }",method,
+"        public void setF1(short f1) {
+            this.f1 = f1;
+        }",method,
+"        public int getF0() {
+            return f0;
+        }",method,
+"        public void setF0(int f0) {
+            this.f0 = f0;
+        }",method,
+"        public int getF1() {
+            return f1;
+        }",method,
+"        public void setF1(int f1) {
+            this.f1 = f1;
+        }",method,
+"        public long getF0() {
+            return f0;
+        }",method,
+"        public void setF0(long f0) {
+            this.f0 = f0;
+        }",method,
+"        public long getF1() {
+            return f1;
+        }",method,
+"        public void setF1(long f1) {
+            this.f1 = f1;
+        }",method,
+"        public float getF0() {
+            return f0;
+        }",method,
+"        public void setF0(float f0) {
+            this.f0 = f0;
+        }",method,
+"        public float getF1() {
+            return f1;
+        }",method,
+"        public void setF1(float f1) {
+            this.f1 = f1;
+        }",method,
+"        public double getF0() {
+            return f0;
+        }",method,
+"        public void setF0(double f0) {
+            this.f0 = f0;
+        }",method,
+"        public double getF1() {
+            return f1;
+        }",method,
+"        public void setF1(double f1) {
+            this.f1 = f1;
+        }",method,
+"        public boolean isF0() {
+            return f0;
+        }",method,
+"        public void setF0(boolean f0) {
+            this.f0 = f0;
+        }",method,
+"        public boolean isF1() {
+            return f1;
+        }",method,
+"        public void setF1(boolean f1) {
+            this.f1 = f1;
+        }",method,
+"public class DL4jServeRouteBuilder extends RouteBuilder {
+    protected String modelUri;
+    protected String kafkaBroker;
+    protected String consumingTopic;
+    protected boolean computationGraph;
+    protected String outputUri;
+    protected Processor finalProcessor;
+    protected String groupId = ""dl4j-serving"";
+    protected String zooKeeperHost = ""localhost"";
+    protected int zooKeeperPort = 2181;
+    //default no-op
+    protected Processor beforeProcessor;
+    @Override
+    public void configure() throws Exception {
+        if (groupId == null)
+            groupId = ""dl4j-serving"";
+        if (zooKeeperHost == null)
+            zooKeeperHost = ""localhost"";
+        String kafkaUri = String.format(""kafka:%s?topic=%s&groupId=%s"", kafkaBroker, consumingTopic, groupId);
+        if (beforeProcessor == null) {
+            beforeProcessor = new Processor() {
+                @Override
+                public void process(Exchange exchange) throws Exception {
+                }
+            };
+        }
+        from(kafkaUri).process(beforeProcessor).process(new Processor() {
+            @Override
+            public void process(Exchange exchange) throws Exception {
+                INDArray predict;
+                if (exchange.getIn().getBody() instanceof byte[]) {
+                    byte[] o = (byte[]) exchange.getIn().getBody();
+                    byte[] arr = Base64.decodeBase64(new String(o));
+                    ByteArrayInputStream bis = new ByteArrayInputStream(arr);
+                    DataInputStream dis = new DataInputStream(bis);
+                    predict = Nd4j.read(dis);
+                } else
+                    predict = (INDArray) exchange.getIn().getBody();
+                if (computationGraph) {
+                    ComputationGraph graph = ModelSerializer.restoreComputationGraph(modelUri);
+                    INDArray[] output = graph.output(predict);
+                    exchange.getOut().setBody(output);
+                    exchange.getIn().setBody(output);
+                } else {
+                    MultiLayerNetwork network = ModelSerializer.restoreMultiLayerNetwork(modelUri);
+                    INDArray output = network.output(predict);
+                    exchange.getOut().setBody(output);
+                    exchange.getIn().setBody(output);
+                }
+            }
+        }).process(finalProcessor).to(outputUri);
+    }
+}",class,
+"    @Override
+    public void configure() throws Exception {
+        if (groupId == null)
+            groupId = ""dl4j-serving"";
+        if (zooKeeperHost == null)
+            zooKeeperHost = ""localhost"";
+        String kafkaUri = String.format(""kafka:%s?topic=%s&groupId=%s"", kafkaBroker, consumingTopic, groupId);
+        if (beforeProcessor == null) {
+            beforeProcessor = new Processor() {
+                @Override
+                public void process(Exchange exchange) throws Exception {
+                }
+            };
+        }
+        from(kafkaUri).process(beforeProcessor).process(new Processor() {
+            @Override
+            public void process(Exchange exchange) throws Exception {
+                INDArray predict;
+                if (exchange.getIn().getBody() instanceof byte[]) {
+                    byte[] o = (byte[]) exchange.getIn().getBody();
+                    byte[] arr = Base64.decodeBase64(new String(o));
+                    ByteArrayInputStream bis = new ByteArrayInputStream(arr);
+                    DataInputStream dis = new DataInputStream(bis);
+                    predict = Nd4j.read(dis);
+                } else
+                    predict = (INDArray) exchange.getIn().getBody();
+                if (computationGraph) {
+                    ComputationGraph graph = ModelSerializer.restoreComputationGraph(modelUri);
+                    INDArray[] output = graph.output(predict);
+                    exchange.getOut().setBody(output);
+                    exchange.getIn().setBody(output);
+                } else {
+                    MultiLayerNetwork network = ModelSerializer.restoreMultiLayerNetwork(modelUri);
+                    INDArray output = network.output(predict);
+                    exchange.getOut().setBody(output);
+                    exchange.getIn().setBody(output);
+                }
+            }
+        }).process(finalProcessor).to(outputUri);
+    }",method,
+"        if (beforeProcessor == null) {
+            beforeProcessor = new Processor() {
+                @Override
+                public void process(Exchange exchange) throws Exception {
+                }
+            };
+        }",method,
+"                @Override
+                public void process(Exchange exchange) throws Exception {
+                }",method,
+"            @Override
+            public void process(Exchange exchange) throws Exception {
+                INDArray predict;
+                if (exchange.getIn().getBody() instanceof byte[]) {
+                    byte[] o = (byte[]) exchange.getIn().getBody();
+                    byte[] arr = Base64.decodeBase64(new String(o));
+                    ByteArrayInputStream bis = new ByteArrayInputStream(arr);
+                    DataInputStream dis = new DataInputStream(bis);
+                    predict = Nd4j.read(dis);
+                } else
+                    predict = (INDArray) exchange.getIn().getBody();
+                if (computationGraph) {
+                    ComputationGraph graph = ModelSerializer.restoreComputationGraph(modelUri);
+                    INDArray[] output = graph.output(predict);
+                    exchange.getOut().setBody(output);
+                    exchange.getIn().setBody(output);
+                } else {
+                    MultiLayerNetwork network = ModelSerializer.restoreMultiLayerNetwork(modelUri);
+                    INDArray output = network.output(predict);
+                    exchange.getOut().setBody(output);
+                    exchange.getIn().setBody(output);
+                }
+            }",method,
+"                if (computationGraph) {
+                    ComputationGraph graph = ModelSerializer.restoreComputationGraph(modelUri);
+                    INDArray[] output = graph.output(predict);
+                    exchange.getOut().setBody(output);
+                    exchange.getIn().setBody(output);
+                }",method,
+"public class ParametersListTest {
+  @Test
+  public void paramsGroupEmpty() {
+    ParametersList params = new ParametersList();
+    assertEquals(0, params.getParamsGroupsCount());
+    assertTrue(params.getParamsGroups().isEmpty());
+  }
+  @Test
+  public void paramsGroupAdd() {
+    ParametersList params = new ParametersList();
+    ParamsGroup group1 = params.addParamsGroup(""id1"");
+    assertEquals(""id1"", group1.getId());
+    assertEquals(1, params.getParamsGroupsCount());
+    assertEquals(asList(group1), params.getParamsGroups());
+    ParamsGroup group2 = params.addParamsGroup(""id2"");
+    assertEquals(""id2"", group2.getId());
+    assertEquals(2, params.getParamsGroupsCount());
+    assertEquals(asList(group1, group2), params.getParamsGroups());
+  }
+  @Test
+  public void paramsGroupAddAt() {
+    ParametersList params = new ParametersList();
+    ParamsGroup group1 = params.addParamsGroup(""id1"");
+    ParamsGroup group2 = params.addParamsGroup(""id2"");
+    ParamsGroup group12 = params.addParamsGroupAt(1, ""id12"");
+    ParamsGroup group01 = params.addParamsGroupAt(0, ""id01"");
+    assertEquals(asList(group01, group1, group12, group2), params.getParamsGroups());
+  }
+  @Test
+  public void paramsGroupRemove() {
+    ParametersList params = new ParametersList();
+    params.addParamsGroup(""id1"");
+    ParamsGroup group2 = params.addParamsGroup(""id2"");
+    ParamsGroup group3 = params.addParamsGroup(""id3"");
+    ParamsGroup group4 = params.addParamsGroup(""id4"");
+    params.removeParamsGroup(0);
+    assertEquals(asList(group2, group3, group4), params.getParamsGroups());
+    params.removeParamsGroup(1);
+    assertEquals(asList(group2, group4), params.getParamsGroups());
+  }
+  @Test
+  public void paramsGroupGroupParams() {
+    ParametersList params = new ParametersList();
+    params.add(""param1"");
+    ParamsGroup group1 = params.addParamsGroup(""id1"");
+    group1.addParameter(""group1_param1"");
+    params.add(""param2"");
+    group1.addParameter(""group1_param2"");
+    ParamsGroup group2 = params.addParamsGroup(""id2"");
+    group2.addParameter(""group2_param1"");
+    params.add(""param3"");
+    assertEquals(asList(""param1"", ""param2"", ""param3""), params.getParameters());
+    assertEquals(asList(""param1"", ""param2"", ""param3"", ""group1_param1"", ""group1_param2"", ""group2_param1""), params.getList());
+    assertArrayEquals(new String[]{""param1"", ""param2"", ""param3"", ""group1_param1"", ""group1_param2"", ""group2_param1""}, params.getArray());
+    assertEquals(""param1 param2 param3 group1_param1 group1_param2 group2_param1"", params.getParametersString().trim());
+    ParametersList group1_params = group1.getParametersList();
+    assertEquals(asList(""group1_param1"", ""group1_param2""), group1_params.getParameters());
+    assertEquals(asList(""group1_param1"", ""group1_param2""), group1_params.getList());
+    assertArrayEquals(new String[]{""group1_param1"", ""group1_param2""}, group1_params.getArray());
+    assertEquals(""group1_param1 group1_param2"", group1_params.getParametersString().trim());
+    ParametersList group2_params = group2.getParametersList();
+    assertEquals(asList(""group2_param1""), group2_params.getParameters());
+    assertEquals(asList(""group2_param1""), group2_params.getList());
+    assertArrayEquals(new String[]{""group2_param1""}, group2_params.getArray());
+    assertEquals(""group2_param1"", group2_params.getParametersString().trim());
+  }
+  @Test
+  public void paramsGroupSubGroups() {
+    ParametersList params = new ParametersList();
+    ParamsGroup group1 = params.addParamsGroup(""id1"");
+    group1.addParameter(""group1_param1"");
+    group1.addParameter(""group1_param2"");
+    ParamsGroup group2 = params.addParamsGroup(""id2"");
+    group2.addParameter(""group2_param1"");
+    ParamsGroup group1_1 = group1.getParametersList().addParamsGroup(""id1_1"");
+    group1_1.addParameter(""group1_1_param1"");
+    ParamsGroup group1_2 = group1.getParametersList().addParamsGroup(""id1_2"");
+    group1_2.addParameter(""group1_2_param1"");
+    assertEquals(asList(""group1_param1"", ""group1_param2"", ""group1_1_param1"", ""group1_2_param1"", ""group2_param1""), params.getList());
+    assertEquals(asList(""group1_param1"", ""group1_param2"", ""group1_1_param1"", ""group1_2_param1"", ""group2_param1""), params.getList());
+    assertEquals(""group1_param1 group1_param2 group1_1_param1 group1_2_param1 group2_param1"", params.getParametersString().trim());
+  }
+  @Test
+  public void paramsGroupClone() {
+    ParametersList params = new ParametersList();
+    ParamsGroup group1 = params.addParamsGroup(""id1"");
+    group1.addParameter(""group1_param1"");
+    ParamsGroup group2 = params.addParamsGroup(""id2"");
+    group2.addParameter(""group2_param1"");
+    ParamsGroup group3 = params.addParamsGroup(""id3"");
+    group3.addParameter(""group3_param1"");
+    ParametersList params_clone = params.clone();
+    params.removeParamsGroup(0);
+    group2.addParameter(""group2_param2"");
+    assertEquals(""group2_param1 group2_param2 group3_param1"", params.getParametersString().trim());
+    assertEquals(""group1_param1 group2_param1 group3_param1"", params_clone.getParametersString().trim());
+  }
+  @Test
+  public void addParametersString() {
+    checkTokenizer(""a b c"",
+                   ""a"", ""b"", ""c"");
+    checkTokenizer(""a \""b\"""",
+                   ""a"", ""b"");
+    checkTokenizer(""a \""b\\\"""",
+                   ""a"", ""b\"""");
+    checkTokenizer(""a \""\"""",
+                   ""a"", """"); // Bug #12169
+    checkTokenizer(""a \""x\"""",
+                   ""a"", ""x"");
+    checkTokenizer(""a \""\\\""\"" b"",
+                   ""a"", ""\"""", ""b"");
+  }
+  @Test
+  public void paramsWithSpacesAndQuotes() {
+    checkTokenizer(""a b=\""some text\"" c"",
+                   ""a"", ""b=some text"", ""c"");
+    checkTokenizer(""a b=\""some text with spaces\"" c"",
+                   ""a"", ""b=some text with spaces"", ""c"");
+    checkTokenizer(""a b=\""some text with spaces\"".more c"",
+                   ""a"", ""b=some text with spaces.more"", ""c"");
+    checkTokenizer(""a b=\""some text with spaces \""more c"",
+                   ""a"", ""b=some text with spaces more"", ""c"");
+    checkTokenizer(""a \""some text with spaces\""More c"",
+                   ""a"", ""some text with spacesMore"", ""c"");
+    checkTokenizer(""a \""some text with spaces more c"",
+                   ""a"", ""some text with spaces more c"");
+    checkTokenizer(""a\""Some text with spaces \""more c"",
+                   ""aSome text with spaces more"", ""c"");
+    checkTokenizer(""a\""Some text with spaces \""more"",
+                   ""aSome text with spaces more"");
+    checkTokenizer(""a\""Some text with spaces \""more next\""Text moreText\""End c"",
+                   ""aSome text with spaces more"", ""nextText moreTextEnd"", ""c"");
+    checkTokenizer(""\""\""C:\\phing.bat\"""",
+                   ""C:\\phing.bat"");
+    checkTokenizer(""-Dp.1=\""some text\"" -Dp.2=\\\""value\\\"""",
+                   ""-Dp.1=some text"", ""-Dp.2=\""value\"""");
+    checkTokenizer(""-Dp.1=- -dump-config"",
+                   ""-Dp.1=-"", ""-dump-config"");
+  }
+  @Test
+  public void joiningParams() {
+    String[] parameters = {""simpleParam"", ""param with spaces"", ""withQuote=\"""", ""param=\""complex quoted\"""", ""C:\\\""q\"""", ""C:\\w s\\""};
+    ParametersList parametersList = new ParametersList();
+    parametersList.addAll(parameters);
+    String joined = parametersList.getParametersString();
+    assertEquals(""simpleParam \""param with spaces\"" withQuote=\\\"" \""param=\\\""complex quoted\\\""\"" C:\\\\\""q\\\"" \""C:\\w s\""\\"", joined);
+    checkTokenizer(joined, parameters);
+  }
+  @Test
+  public void properties() {
+    ParametersList params = new ParametersList();
+    params.addProperty(""foo.foo"", ""\""bar bar\"" bar"");
+    assertEquals(1, params.getProperties().size());
+    assertEquals(""\""bar bar\"" bar"", params.getProperties().get(""foo.foo""));
+  }
+  private static void checkTokenizer(String paramString, String... expected) {
+    ParametersList params = new ParametersList();
+    params.addParametersString(paramString);
+    assertEquals(asList(expected), params.getList());
+    List<String> lines = ParametersListUtil.parse(paramString, true);
+    assertEquals(paramString, StringUtil.join(lines, "" ""));
+  }
+  @Test
+  public void testParameterListUtil() {
+    final List<String> expected = Arrays.asList(
+      ""cmd"",
+      ""-a"",
+      ""-b"",
+      ""arg0"",
+      ""-c"",
+      ""--long-option"",
+      ""--long-opt2=arg1"",
+      ""arg2"",
+      ""arg3"",
+      ""-a"",
+      ""a \""r g"",
+      ""--foo=d e f""
+    );
+    final String doubleQuotes = ""cmd -a -b arg0 -c --long-option    --long-opt2=arg1 arg2 arg3 -a \""a \\\""r g\"" --foo=\""d e f\""\""\"""";
+    Assert.assertEquals(""Double quotes broken"", expected, ParametersListUtil.parse(doubleQuotes, false, true));
+    final String singleQuotes = ""cmd -a -b arg0 -c --long-option    --long-opt2=arg1 arg2 arg3 -a 'a \""r g' --foo='d e f'"";
+    Assert.assertEquals(""Single quotes broken"", expected, ParametersListUtil.parse(singleQuotes, false, true));
+    final String mixedQuotes = ""cmd -a -b arg0 -c --long-option    --long-opt2=arg1 arg2 arg3 -a \""a \\\""r g\"" --foo='d e f'"";
+    Assert.assertEquals(""Mixed quotes broken"", expected, ParametersListUtil.parse(mixedQuotes, false, true));
+  }
+}",class,
+"  @Test
+  public void paramsGroupEmpty() {
+    ParametersList params = new ParametersList();
+    assertEquals(0, params.getParamsGroupsCount());
+    assertTrue(params.getParamsGroups().isEmpty());
+  }",method,
+"  @Test
+  public void paramsGroupAdd() {
+    ParametersList params = new ParametersList();
+    ParamsGroup group1 = params.addParamsGroup(""id1"");
+    assertEquals(""id1"", group1.getId());
+    assertEquals(1, params.getParamsGroupsCount());
+    assertEquals(asList(group1), params.getParamsGroups());
+    ParamsGroup group2 = params.addParamsGroup(""id2"");
+    assertEquals(""id2"", group2.getId());
+    assertEquals(2, params.getParamsGroupsCount());
+    assertEquals(asList(group1, group2), params.getParamsGroups());
+  }",method,
+"  @Test
+  public void paramsGroupAddAt() {
+    ParametersList params = new ParametersList();
+    ParamsGroup group1 = params.addParamsGroup(""id1"");
+    ParamsGroup group2 = params.addParamsGroup(""id2"");
+    ParamsGroup group12 = params.addParamsGroupAt(1, ""id12"");
+    ParamsGroup group01 = params.addParamsGroupAt(0, ""id01"");
+    assertEquals(asList(group01, group1, group12, group2), params.getParamsGroups());
+  }",method,
+"  @Test
+  public void paramsGroupRemove() {
+    ParametersList params = new ParametersList();
+    params.addParamsGroup(""id1"");
+    ParamsGroup group2 = params.addParamsGroup(""id2"");
+    ParamsGroup group3 = params.addParamsGroup(""id3"");
+    ParamsGroup group4 = params.addParamsGroup(""id4"");
+    params.removeParamsGroup(0);
+    assertEquals(asList(group2, group3, group4), params.getParamsGroups());
+    params.removeParamsGroup(1);
+    assertEquals(asList(group2, group4), params.getParamsGroups());
+  }",method,
+"  @Test
+  public void paramsGroupGroupParams() {
+    ParametersList params = new ParametersList();
+    params.add(""param1"");
+    ParamsGroup group1 = params.addParamsGroup(""id1"");
+    group1.addParameter(""group1_param1"");
+    params.add(""param2"");
+    group1.addParameter(""group1_param2"");
+    ParamsGroup group2 = params.addParamsGroup(""id2"");
+    group2.addParameter(""group2_param1"");
+    params.add(""param3"");
+    assertEquals(asList(""param1"", ""param2"", ""param3""), params.getParameters());
+    assertEquals(asList(""param1"", ""param2"", ""param3"", ""group1_param1"", ""group1_param2"", ""group2_param1""), params.getList());
+    assertArrayEquals(new String[]{""param1"", ""param2"", ""param3"", ""group1_param1"", ""group1_param2"", ""group2_param1""}, params.getArray());
+    assertEquals(""param1 param2 param3 group1_param1 group1_param2 group2_param1"", params.getParametersString().trim());
+    ParametersList group1_params = group1.getParametersList();
+    assertEquals(asList(""group1_param1"", ""group1_param2""), group1_params.getParameters());
+    assertEquals(asList(""group1_param1"", ""group1_param2""), group1_params.getList());
+    assertArrayEquals(new String[]{""group1_param1"", ""group1_param2""}, group1_params.getArray());
+    assertEquals(""group1_param1 group1_param2"", group1_params.getParametersString().trim());
+    ParametersList group2_params = group2.getParametersList();
+    assertEquals(asList(""group2_param1""), group2_params.getParameters());
+    assertEquals(asList(""group2_param1""), group2_params.getList());
+    assertArrayEquals(new String[]{""group2_param1""}, group2_params.getArray());
+    assertEquals(""group2_param1"", group2_params.getParametersString().trim());
+  }",method,
+"  @Test
+  public void paramsGroupSubGroups() {
+    ParametersList params = new ParametersList();
+    ParamsGroup group1 = params.addParamsGroup(""id1"");
+    group1.addParameter(""group1_param1"");
+    group1.addParameter(""group1_param2"");
+    ParamsGroup group2 = params.addParamsGroup(""id2"");
+    group2.addParameter(""group2_param1"");
+    ParamsGroup group1_1 = group1.getParametersList().addParamsGroup(""id1_1"");
+    group1_1.addParameter(""group1_1_param1"");
+    ParamsGroup group1_2 = group1.getParametersList().addParamsGroup(""id1_2"");
+    group1_2.addParameter(""group1_2_param1"");
+    assertEquals(asList(""group1_param1"", ""group1_param2"", ""group1_1_param1"", ""group1_2_param1"", ""group2_param1""), params.getList());
+    assertEquals(asList(""group1_param1"", ""group1_param2"", ""group1_1_param1"", ""group1_2_param1"", ""group2_param1""), params.getList());
+    assertEquals(""group1_param1 group1_param2 group1_1_param1 group1_2_param1 group2_param1"", params.getParametersString().trim());
+  }",method,
+"  @Test
+  public void paramsGroupClone() {
+    ParametersList params = new ParametersList();
+    ParamsGroup group1 = params.addParamsGroup(""id1"");
+    group1.addParameter(""group1_param1"");
+    ParamsGroup group2 = params.addParamsGroup(""id2"");
+    group2.addParameter(""group2_param1"");
+    ParamsGroup group3 = params.addParamsGroup(""id3"");
+    group3.addParameter(""group3_param1"");
+    ParametersList params_clone = params.clone();
+    params.removeParamsGroup(0);
+    group2.addParameter(""group2_param2"");
+    assertEquals(""group2_param1 group2_param2 group3_param1"", params.getParametersString().trim());
+    assertEquals(""group1_param1 group2_param1 group3_param1"", params_clone.getParametersString().trim());
+  }",method,
+"  @Test
+  public void addParametersString() {
+    checkTokenizer(""a b c"",
+                   ""a"", ""b"", ""c"");
+    checkTokenizer(""a \""b\"""",
+                   ""a"", ""b"");
+    checkTokenizer(""a \""b\\\"""",
+                   ""a"", ""b\"""");
+    checkTokenizer(""a \""\"""",
+                   ""a"", """"); // Bug #12169
+    checkTokenizer(""a \""x\"""",
+                   ""a"", ""x"");
+    checkTokenizer(""a \""\\\""\"" b"",
+                   ""a"", ""\"""", ""b"");
+  }",method,
+"  @Test
+  public void paramsWithSpacesAndQuotes() {
+    checkTokenizer(""a b=\""some text\"" c"",
+                   ""a"", ""b=some text"", ""c"");
+    checkTokenizer(""a b=\""some text with spaces\"" c"",
+                   ""a"", ""b=some text with spaces"", ""c"");
+    checkTokenizer(""a b=\""some text with spaces\"".more c"",
+                   ""a"", ""b=some text with spaces.more"", ""c"");
+    checkTokenizer(""a b=\""some text with spaces \""more c"",
+                   ""a"", ""b=some text with spaces more"", ""c"");
+    checkTokenizer(""a \""some text with spaces\""More c"",
+                   ""a"", ""some text with spacesMore"", ""c"");
+    checkTokenizer(""a \""some text with spaces more c"",
+                   ""a"", ""some text with spaces more c"");
+    checkTokenizer(""a\""Some text with spaces \""more c"",
+                   ""aSome text with spaces more"", ""c"");
+    checkTokenizer(""a\""Some text with spaces \""more"",
+                   ""aSome text with spaces more"");
+    checkTokenizer(""a\""Some text with spaces \""more next\""Text moreText\""End c"",
+                   ""aSome text with spaces more"", ""nextText moreTextEnd"", ""c"");
+    checkTokenizer(""\""\""C:\\phing.bat\"""",
+                   ""C:\\phing.bat"");
+    checkTokenizer(""-Dp.1=\""some text\"" -Dp.2=\\\""value\\\"""",
+                   ""-Dp.1=some text"", ""-Dp.2=\""value\"""");
+    checkTokenizer(""-Dp.1=- -dump-config"",
+                   ""-Dp.1=-"", ""-dump-config"");
+  }",method,
+"  @Test
+  public void joiningParams() {
+    String[] parameters = {""simpleParam"", ""param with spaces"", ""withQuote=\"""", ""param=\""complex quoted\"""", ""C:\\\""q\"""", ""C:\\w s\\""};
+    ParametersList parametersList = new ParametersList();
+    parametersList.addAll(parameters);
+    String joined = parametersList.getParametersString();
+    assertEquals(""simpleParam \""param with spaces\"" withQuote=\\\"" \""param=\\\""complex quoted\\\""\"" C:\\\\\""q\\\"" \""C:\\w s\""\\"", joined);
+    checkTokenizer(joined, parameters);
+  }",method,
+"  @Test
+  public void properties() {
+    ParametersList params = new ParametersList();
+    params.addProperty(""foo.foo"", ""\""bar bar\"" bar"");
+    assertEquals(1, params.getProperties().size());
+    assertEquals(""\""bar bar\"" bar"", params.getProperties().get(""foo.foo""));
+  }",method,
+"  private static void checkTokenizer(String paramString, String... expected) {
+    ParametersList params = new ParametersList();
+    params.addParametersString(paramString);
+    assertEquals(asList(expected), params.getList());
+    List<String> lines = ParametersListUtil.parse(paramString, true);
+    assertEquals(paramString, StringUtil.join(lines, "" ""));
+  }",method,
+"  @Test
+  public void testParameterListUtil() {
+    final List<String> expected = Arrays.asList(
+      ""cmd"",
+      ""-a"",
+      ""-b"",
+      ""arg0"",
+      ""-c"",
+      ""--long-option"",
+      ""--long-opt2=arg1"",
+      ""arg2"",
+      ""arg3"",
+      ""-a"",
+      ""a \""r g"",
+      ""--foo=d e f""
+    );
+    final String doubleQuotes = ""cmd -a -b arg0 -c --long-option    --long-opt2=arg1 arg2 arg3 -a \""a \\\""r g\"" --foo=\""d e f\""\""\"""";
+    Assert.assertEquals(""Double quotes broken"", expected, ParametersListUtil.parse(doubleQuotes, false, true));
+    final String singleQuotes = ""cmd -a -b arg0 -c --long-option    --long-opt2=arg1 arg2 arg3 -a 'a \""r g' --foo='d e f'"";
+    Assert.assertEquals(""Single quotes broken"", expected, ParametersListUtil.parse(singleQuotes, false, true));
+    final String mixedQuotes = ""cmd -a -b arg0 -c --long-option    --long-opt2=arg1 arg2 arg3 -a \""a \\\""r g\"" --foo='d e f'"";
+    Assert.assertEquals(""Mixed quotes broken"", expected, ParametersListUtil.parse(mixedQuotes, false, true));
+  }",method,
+"public class ComboChartRenderer extends AbstractChartRenderer {
+    protected List<ChartRenderer> renderers;
+    protected Viewport unionViewport = new Viewport();
+    public ComboChartRenderer(Context context, Chart chart) {
+        super(context, chart);
+        this.renderers = new ArrayList<>();
+    }
+    @Override
+    public void onChartSizeChanged() {
+        for (ChartRenderer renderer : renderers) {
+            renderer.onChartSizeChanged();
+        }
+    }
+    @Override
+    public void onChartDataChanged() {
+        super.onChartDataChanged();
+        for (ChartRenderer renderer : renderers) {
+            renderer.onChartDataChanged();
+        }
+        onChartViewportChanged();
+    }
+    @Override
+    public void onChartViewportChanged() {
+        if (isViewportCalculationEnabled) {
+            int rendererIndex = 0;
+            for (ChartRenderer renderer : renderers) {
+                renderer.onChartViewportChanged();
+                if (rendererIndex == 0) {
+                    unionViewport.set(renderer.getMaximumViewport());
+                } else {
+                    unionViewport.union(renderer.getMaximumViewport());
+                }
+                ++rendererIndex;
+            }
+            computator.setMaxViewport(unionViewport);
+            computator.setCurrentViewport(unionViewport);
+        }
+    }
+    public void draw(Canvas canvas) {
+        for (ChartRenderer renderer : renderers) {
+            renderer.draw(canvas);
+        }
+    }
+    @Override
+    public void drawUnclipped(Canvas canvas) {
+        for (ChartRenderer renderer : renderers) {
+            renderer.drawUnclipped(canvas);
+        }
+    }
+    public boolean checkTouch(float touchX, float touchY) {
+        selectedValue.clear();
+        int rendererIndex = renderers.size() - 1;
+        for (; rendererIndex >= 0; rendererIndex--) {
+            ChartRenderer renderer = renderers.get(rendererIndex);
+            if (renderer.checkTouch(touchX, touchY)) {
+                selectedValue.set(renderer.getSelectedValue());
+                break;
+            }
+        }
+        //clear the rest of renderers if value was selected, if value was not selected this loop
+        // will not be executed.
+        for (rendererIndex--; rendererIndex >= 0; rendererIndex--) {
+            ChartRenderer renderer = renderers.get(rendererIndex);
+            renderer.clearTouch();
+        }
+        return isTouched();
+    }
+    @Override
+    public void clearTouch() {
+        for (ChartRenderer renderer : renderers) {
+            renderer.clearTouch();
+        }
+        selectedValue.clear();
+    }
+}",class,
+"    public ComboChartRenderer(Context context, Chart chart) {
+        super(context, chart);
+        this.renderers = new ArrayList<>();
+    }",method,
+"    @Override
+    public void onChartSizeChanged() {
+        for (ChartRenderer renderer : renderers) {
+            renderer.onChartSizeChanged();
+        }
+    }",method,
+"        for (ChartRenderer renderer : renderers) {
+            renderer.onChartSizeChanged();
+        }",method,
+"    @Override
+    public void onChartDataChanged() {
+        super.onChartDataChanged();
+        for (ChartRenderer renderer : renderers) {
+            renderer.onChartDataChanged();
+        }
+        onChartViewportChanged();
+    }",method,
+"        for (ChartRenderer renderer : renderers) {
+            renderer.onChartDataChanged();
+        }",method,
+"    @Override
+    public void onChartViewportChanged() {
+        if (isViewportCalculationEnabled) {
+            int rendererIndex = 0;
+            for (ChartRenderer renderer : renderers) {
+                renderer.onChartViewportChanged();
+                if (rendererIndex == 0) {
+                    unionViewport.set(renderer.getMaximumViewport());
+                } else {
+                    unionViewport.union(renderer.getMaximumViewport());
+                }
+                ++rendererIndex;
+            }
+            computator.setMaxViewport(unionViewport);
+            computator.setCurrentViewport(unionViewport);
+        }
+    }",method,

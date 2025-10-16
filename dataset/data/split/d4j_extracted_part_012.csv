@@ -1,0 +1,1157 @@
+code_snippet,type,score
+"}
+class Test {
+  private int count1;
+  private int count2;
+  public void test() {
+    int oldCount1 = getCount1();
+    int oldCount2 = getCount2();
+    count1++;
+    if (oldCount1 != getCount1() || oldCount2 != getCount2()) {
+      System.out.println(""changed"");
+    }
+  }
+  private int getCount1() {
+    return count1;
+  }
+  private int getCount2() {
+    return count2;
+  }
+}",class,
+"}class DataFlowBug {
+  public void add2() {
+    try {
+      throw <warning descr=""Dereference of 'null' will produce 'java.lang.NullPointerException'"">null</warning>;
+    } catch (Throwable e) {
+      if (e instanceof NullPointerException) {
+        return;
+      }
+    }
+  }
+}",class,
+"}class DataFlowBug {
+  void foo() {
+    RuntimeException o = System.nanoTime() % 2 == 0 ? null : new RuntimeException();
+    throw <warning descr=""Dereference of 'o' may produce 'java.lang.NullPointerException'"">o</warning>;
+  }
+  void foo2() {
+    try {
+      RuntimeException o = System.nanoTime() % 2 == 0 ? null : new RuntimeException();
+      throw <warning descr=""Dereference of 'o' may produce 'java.lang.NullPointerException'"">o</warning>;
+    }
+    catch (RuntimeException exception) {
+    }
+  }
+  void foo(RuntimeException tt) {
+    throw tt;
+  }
+}",class,
+"}final class Alive implements java.io.Serializable {
+  private transient final Object elvis = new Object();
+  @Override
+  public String toString() {
+    if (elvis != null) {
+      return ""uh-huh-huh"";
+    } else {
+      return ""the king is dead"";
+    }
+  }
+}",class,
+"}class Contracts {
+  private boolean method(boolean a) {
+      boolean b = true;
+      <warning descr=""Condition 'b' at the left side of assignment expression is always 'true'. Can be simplified""><caret>b</warning> |= a;
+      return b;
+  }
+}",class,
+"}class Contracts {
+  private boolean method(boolean a) {
+      boolean b = true;
+      return b;
+  }
+}",class,
+"}class Bar {
+  public static void main(String[] args) {
+    for (String s : args) {
+      try {
+        System.out.println(s);
+      }
+      catch (Exception e) {
+        System.out.println(e);
+      }
+    }
+  }
+}",class,
+"}
+class Bar {
+    void submit(Runnable r) { }
+    String[] foos() { return new String[0]; }
+    void navigateTo() {
+        submit(new Runnable() {
+            public void run() {
+                try {
+                    for (Object next : foos()) {
+                        if (next != null) {
+                        }
+                    }
+                }
+                catch (Throwable th) {
+                }
+            }
+        });
+    }
+}",class,
+"}
+class Bar {
+  void repeatUntilPassesInSmartMode(final Runnable r) {
+    while (true) {
+      try {
+        r.run();
+        return;
+      }
+      catch (Throwable e) {
+      }
+    }
+  }
+}",class,
+"}
+class Test {
+  public void closeable(AutoCloseable y) {
+    try(<error descr=""Resource references are not supported at language level '1.7'"">y</error>) {
+      System.out.println(""Hello"");
+    }
+    catch (Exception e) {
+      throw new RuntimeException(e);
+    }
+  }
+  public void incompleteCode(AutoCloseable y) {
+    try(<error descr=""Resource references are not supported at language level '1.7'"">y</error><error descr=""')' expected""> </error>{
+      System.out.println(""Hello"");
+    }
+    catch (Exception e) {
+      throw new RuntimeException(e);
+    }
+  }
+}",class,
+"}class Test {
+  static class ResourcefulException1 extends Exception { }
+  static class ResourcefulException2 extends Exception { }
+  static class ResourcefulException3 extends Exception { }
+  static class ExceptionalResource implements AutoCloseable {
+    @Override public void close() throws ResourcefulException1 { }
+  }
+  ExceptionalResource provideExceptionalResource() throws ResourcefulException2 {
+    return new ExceptionalResource();
+  }
+  void m() {
+    try (ExceptionalResource r = provideExceptionalResource()) {
+      System.out.println(r);
+    }
+    catch (Exception e) {
+      if (e instanceof ResourcefulException1) {
+        System.out.println(""1"");
+      }
+      else if (e instanceof ResourcefulException2) {
+        System.out.println(""2"");
+      }
+      else if (<warning descr=""Condition 'e instanceof ResourcefulException3' is always 'false'"">e instanceof ResourcefulException3</warning>) {
+        System.out.println(""3"");
+      }
+    }
+  }
+}",class,
+  static class ResourcefulException1 extends Exception { },class,
+  static class ResourcefulException2 extends Exception { },class,
+  static class ResourcefulException3 extends Exception { },class,
+"  static class ExceptionalResource implements AutoCloseable {
+    @Override public void close() throws ResourcefulException1 { }
+  }",class,
+"}class Test {
+  static class MyResource implements AutoCloseable {
+    @Override public void close() { }
+  }
+  interface MyResourceProvider {
+    MyResource getResource();
+  }
+  void m1() throws Exception {
+    MyResourceProvider provider = null;
+    try (MyResource r = provider.<warning descr=""Method invocation 'getResource' may produce 'java.lang.NullPointerException'"">getResource</warning>()) {
+      System.out.println(r);
+    }
+  }
+  void m2() {
+    try (MyResource r = null) {
+      System.out.println(r);
+    }
+  }
+}",class,
+"  static class MyResource implements AutoCloseable {
+    @Override public void close() { }
+  }",class,
+"  public void matchAfterFragment(int patternIndex, int matchLen) {
+    int star = patternIndex < matchLen ? matchLen : -1;
+    while (matchLen > 0) {
+      int i = matchLen == star ? matchLen : star;
+    }
+  }",method,
+"    while (matchLen > 0) {
+      int i = matchLen == star ? matchLen : star;
+    }",method,
+"  public void matchAfterFragmentBoxed(Integer patternIndex, Integer matchLen) {
+    Integer star = patternIndex < matchLen ? matchLen : -1;
+    while (matchLen > 0) {
+      Integer i = matchLen == star ? matchLen : star;
+    }
+  }",method,
+"    while (matchLen > 0) {
+      Integer i = matchLen == star ? matchLen : star;
+    }",method,
+"  public void matchAfterFragmentSemiBoxed(Integer patternIndex, Integer matchLen) {
+    int star = patternIndex < matchLen ? matchLen : -1;
+    while (matchLen > 0) {
+      Integer i = matchLen == star ? matchLen : star;
+    }
+  }",method,
+"    while (matchLen > 0) {
+      Integer i = matchLen == star ? matchLen : star;
+    }",method,
+"  public void test() {
+    int oldCount1 = getCount1();
+    int oldCount2 = getCount2();
+    count1++;
+    if (oldCount1 != getCount1() || oldCount2 != getCount2()) {
+      System.out.println(""changed"");
+    }
+  }",method,
+"  private int getCount1() {
+    return count1;
+  }",method,
+"  private int getCount2() {
+    return count2;
+  }",method,
+"  public void add2() {
+    try {
+      throw <warning descr=""Dereference of 'null' will produce 'java.lang.NullPointerException'"">null</warning>;
+    } catch (Throwable e) {
+      if (e instanceof NullPointerException) {
+        return;
+      }
+    }
+  }",method,
+"      if (e instanceof NullPointerException) {
+        return;
+      }",method,
+"  void foo() {
+    RuntimeException o = System.nanoTime() % 2 == 0 ? null : new RuntimeException();
+    throw <warning descr=""Dereference of 'o' may produce 'java.lang.NullPointerException'"">o</warning>;
+  }",method,
+"  void foo2() {
+    try {
+      RuntimeException o = System.nanoTime() % 2 == 0 ? null : new RuntimeException();
+      throw <warning descr=""Dereference of 'o' may produce 'java.lang.NullPointerException'"">o</warning>;
+    }
+    catch (RuntimeException exception) {
+    }
+  }",method,
+"    catch (RuntimeException exception) {
+    }",method,
+"  void foo(RuntimeException tt) {
+    throw tt;
+  }",method,
+"  @Override
+  public String toString() {
+    if (elvis != null) {
+      return ""uh-huh-huh"";
+    } else {
+      return ""the king is dead"";
+    }
+  }",method,
+"    if (elvis != null) {
+      return ""uh-huh-huh"";
+    }",method,
+"  private boolean method(boolean a) {
+      boolean b = true;
+      <warning descr=""Condition 'b' at the left side of assignment expression is always 'true'. Can be simplified""><caret>b</warning> |= a;
+      return b;
+  }",method,
+"  private boolean method(boolean a) {
+      boolean b = true;
+      return b;
+  }",method,
+"  public static void main(String[] args) {
+    for (String s : args) {
+      try {
+        System.out.println(s);
+      }
+      catch (Exception e) {
+        System.out.println(e);
+      }
+    }
+  }",method,
+"    for (String s : args) {
+      try {
+        System.out.println(s);
+      }
+      catch (Exception e) {
+        System.out.println(e);
+      }
+    }",method,
+"      catch (Exception e) {
+        System.out.println(e);
+      }",method,
+    void submit(Runnable r) { },method,
+    String[] foos() { return new String[0]; },method,
+"    void navigateTo() {
+        submit(new Runnable() {
+            public void run() {
+                try {
+                    for (Object next : foos()) {
+                        if (next != null) {
+                        }
+                    }
+                }
+                catch (Throwable th) {
+                }
+            }
+        });
+    }",method,
+"        submit(new Runnable() {
+            public void run() {
+                try {
+                    for (Object next : foos()) {
+                        if (next != null) {
+                        }
+                    }
+                }
+                catch (Throwable th) {
+                }
+            }
+        }",method,
+"            public void run() {
+                try {
+                    for (Object next : foos()) {
+                        if (next != null) {
+                        }
+                    }
+                }
+                catch (Throwable th) {
+                }
+            }",method,
+"                        if (next != null) {
+                        }",method,
+"                catch (Throwable th) {
+                }",method,
+"  void repeatUntilPassesInSmartMode(final Runnable r) {
+    while (true) {
+      try {
+        r.run();
+        return;
+      }
+      catch (Throwable e) {
+      }
+    }
+  }",method,
+"    while (true) {
+      try {
+        r.run();
+        return;
+      }
+      catch (Throwable e) {
+      }
+    }",method,
+"      catch (Throwable e) {
+      }",method,
+"  public void closeable(AutoCloseable y) {
+    try(<error descr=""Resource references are not supported at language level '1.7'"">y</error>) {
+      System.out.println(""Hello"");
+    }
+    catch (Exception e) {
+      throw new RuntimeException(e);
+    }
+  }",method,
+"    try(<error descr=""Resource references are not supported at language level '1.7'"">y</error>) {
+      System.out.println(""Hello"");
+    }",method,
+"    catch (Exception e) {
+      throw new RuntimeException(e);
+    }",method,
+"  public void incompleteCode(AutoCloseable y) {
+    try(<error descr=""Resource references are not supported at language level '1.7'"">y</error><error descr=""')' expected""> </error>{
+      System.out.println(""Hello"");
+    }
+    catch (Exception e) {
+      throw new RuntimeException(e);
+    }
+  }",method,
+"    catch (Exception e) {
+      throw new RuntimeException(e);
+    }",method,
+"  ExceptionalResource provideExceptionalResource() throws ResourcefulException2 {
+    return new ExceptionalResource();
+  }",method,
+"  void m() {
+    try (ExceptionalResource r = provideExceptionalResource()) {
+      System.out.println(r);
+    }
+    catch (Exception e) {
+      if (e instanceof ResourcefulException1) {
+        System.out.println(""1"");
+      }
+      else if (e instanceof ResourcefulException2) {
+        System.out.println(""2"");
+      }
+      else if (<warning descr=""Condition 'e instanceof ResourcefulException3' is always 'false'"">e instanceof ResourcefulException3</warning>) {
+        System.out.println(""3"");
+      }
+    }
+  }",method,
+"    catch (Exception e) {
+      if (e instanceof ResourcefulException1) {
+        System.out.println(""1"");
+      }
+      else if (e instanceof ResourcefulException2) {
+        System.out.println(""2"");
+      }
+      else if (<warning descr=""Condition 'e instanceof ResourcefulException3' is always 'false'"">e instanceof ResourcefulException3</warning>) {
+        System.out.println(""3"");
+      }
+    }",method,
+"      if (e instanceof ResourcefulException1) {
+        System.out.println(""1"");
+      }",method,
+"      else if (e instanceof ResourcefulException2) {
+        System.out.println(""2"");
+      }",method,
+"      else if (<warning descr=""Condition 'e instanceof ResourcefulException3' is always 'false'"">e instanceof ResourcefulException3</warning>) {
+        System.out.println(""3"");
+      }",method,
+"  void m1() throws Exception {
+    MyResourceProvider provider = null;
+    try (MyResource r = provider.<warning descr=""Method invocation 'getResource' may produce 'java.lang.NullPointerException'"">getResource</warning>()) {
+      System.out.println(r);
+    }
+  }",method,
+"  void m2() {
+    try (MyResource r = null) {
+      System.out.println(r);
+    }
+  }",method,
+"    try (MyResource r = null) {
+      System.out.println(r);
+    }",method,
+"public class SessionAutoConfigurationHazelcastTests
+		extends AbstractSessionAutoConfigurationTests {
+	private final WebApplicationContextRunner contextRunner = new WebApplicationContextRunner()
+			.withConfiguration(AutoConfigurations.of(SessionAutoConfiguration.class))
+			.withUserConfiguration(HazelcastConfiguration.class);
+	@Test
+	public void defaultConfig() {
+		this.contextRunner.withPropertyValues(""spring.session.store-type=hazelcast"")
+				.run(this::validateDefaultConfig);
+	}
+	@Test
+	public void defaultConfigWithUniqueStoreImplementation() {
+		this.contextRunner
+				.withClassLoader(
+						new HideClassesClassLoader(JdbcOperationsSessionRepository.class,
+								RedisOperationsSessionRepository.class,
+								MongoOperationsSessionRepository.class))
+				.run(this::validateDefaultConfig);
+	}
+	private void validateDefaultConfig(AssertableWebApplicationContext context) {
+		validateSessionRepository(context, HazelcastSessionRepository.class);
+		HazelcastInstance hazelcastInstance = context.getBean(HazelcastInstance.class);
+		verify(hazelcastInstance, times(1)).getMap(""spring:session:sessions"");
+	}
+	@Test
+	public void customMapName() {
+		this.contextRunner
+				.withPropertyValues(""spring.session.store-type=hazelcast"",
+						""spring.session.hazelcast.map-name=foo:bar:biz"")
+				.run((context) -> {
+					validateSessionRepository(context, HazelcastSessionRepository.class);
+					HazelcastInstance hazelcastInstance = context
+							.getBean(HazelcastInstance.class);
+					verify(hazelcastInstance, times(1)).getMap(""foo:bar:biz"");
+				});
+	}
+	@Test
+	public void customFlushMode() {
+		this.contextRunner
+				.withPropertyValues(""spring.session.store-type=hazelcast"",
+						""spring.session.hazelcast.flush-mode=immediate"")
+				.run((context) -> {
+					HazelcastSessionRepository repository = validateSessionRepository(
+							context, HazelcastSessionRepository.class);
+					assertThat(new DirectFieldAccessor(repository)
+							.getPropertyValue(""hazelcastFlushMode""))
+									.isEqualTo(HazelcastFlushMode.IMMEDIATE);
+				});
+	}
+	@Configuration
+	static class HazelcastConfiguration {
+		@Bean
+		@SuppressWarnings(""unchecked"")
+		public HazelcastInstance hazelcastInstance() {
+			IMap<Object, Object> map = mock(IMap.class);
+			HazelcastInstance mock = mock(HazelcastInstance.class);
+			given(mock.getMap(""spring:session:sessions"")).willReturn(map);
+			given(mock.getMap(""foo:bar:biz"")).willReturn(map);
+			return mock;
+		}
+	}
+}",class,
+"	static class HazelcastConfiguration {
+		@Bean
+		@SuppressWarnings(""unchecked"")
+		public HazelcastInstance hazelcastInstance() {
+			IMap<Object, Object> map = mock(IMap.class);
+			HazelcastInstance mock = mock(HazelcastInstance.class);
+			given(mock.getMap(""spring:session:sessions"")).willReturn(map);
+			given(mock.getMap(""foo:bar:biz"")).willReturn(map);
+			return mock;
+		}
+	}",class,
+"	@Test
+	public void defaultConfig() {
+		this.contextRunner.withPropertyValues(""spring.session.store-type=hazelcast"")
+				.run(this::validateDefaultConfig);
+	}",method,
+"	@Test
+	public void defaultConfigWithUniqueStoreImplementation() {
+		this.contextRunner
+				.withClassLoader(
+						new HideClassesClassLoader(JdbcOperationsSessionRepository.class,
+								RedisOperationsSessionRepository.class,
+								MongoOperationsSessionRepository.class))
+				.run(this::validateDefaultConfig);
+	}",method,
+"	private void validateDefaultConfig(AssertableWebApplicationContext context) {
+		validateSessionRepository(context, HazelcastSessionRepository.class);
+		HazelcastInstance hazelcastInstance = context.getBean(HazelcastInstance.class);
+		verify(hazelcastInstance, times(1)).getMap(""spring:session:sessions"");
+	}",method,
+"	@Test
+	public void customMapName() {
+		this.contextRunner
+				.withPropertyValues(""spring.session.store-type=hazelcast"",
+						""spring.session.hazelcast.map-name=foo:bar:biz"")
+				.run((context) -> {
+					validateSessionRepository(context, HazelcastSessionRepository.class);
+					HazelcastInstance hazelcastInstance = context
+							.getBean(HazelcastInstance.class);
+					verify(hazelcastInstance, times(1)).getMap(""foo:bar:biz"");
+				});
+	}",method,
+"	@Test
+	public void customFlushMode() {
+		this.contextRunner
+				.withPropertyValues(""spring.session.store-type=hazelcast"",
+						""spring.session.hazelcast.flush-mode=immediate"")
+				.run((context) -> {
+					HazelcastSessionRepository repository = validateSessionRepository(
+							context, HazelcastSessionRepository.class);
+					assertThat(new DirectFieldAccessor(repository)
+							.getPropertyValue(""hazelcastFlushMode""))
+									.isEqualTo(HazelcastFlushMode.IMMEDIATE);
+				});
+	}",method,
+"		@Bean
+		@SuppressWarnings(""unchecked"")
+		public HazelcastInstance hazelcastInstance() {
+			IMap<Object, Object> map = mock(IMap.class);
+			HazelcastInstance mock = mock(HazelcastInstance.class);
+			given(mock.getMap(""spring:session:sessions"")).willReturn(map);
+			given(mock.getMap(""foo:bar:biz"")).willReturn(map);
+			return mock;
+		}",method,
+"public class AbstractDataSetIteratorTest {
+    @Test
+    public void next() throws Exception {
+        int numFeatures = 128;
+        int batchSize = 10;
+        int numRows = 1000;
+        AtomicInteger cnt = new AtomicInteger(0);
+        FloatsDataSetIterator iterator = new FloatsDataSetIterator(floatIterable(numRows, numFeatures), batchSize);
+        assertTrue(iterator.hasNext());
+        while (iterator.hasNext()) {
+            DataSet dataSet = iterator.next();
+            INDArray features = dataSet.getFeatures();
+            assertEquals(batchSize, features.rows());
+            assertEquals(numFeatures, features.columns());
+            cnt.incrementAndGet();
+        }
+        assertEquals(numRows / batchSize, cnt.get());
+    }
+    protected static Iterable<Pair<float[], float[]>> floatIterable(final int totalRows, final int numColumns) {
+        return new Iterable<Pair<float[], float[]>>() {
+            @Override
+            public Iterator<Pair<float[], float[]>> iterator() {
+                return new Iterator<Pair<float[], float[]>>() {
+                    private AtomicInteger cnt = new AtomicInteger(0);
+                    @Override
+                    public boolean hasNext() {
+                        return cnt.incrementAndGet() <= totalRows;
+                    }
+                    @Override
+                    public Pair<float[], float[]> next() {
+                        float features[] = new float[numColumns];
+                        float labels[] = new float[numColumns];
+                        for (int i = 0; i < numColumns; i++) {
+                            features[i] = (float) i;
+                            labels[i] = RandomUtils.nextFloat(0, 5);
+                        }
+                        return Pair.makePair(features, labels);
+                    }
+                    @Override
+                    public void remove() {
+                        // no-op
+                    }
+                };
+            }
+        };
+    }
+}",class,
+"    @Test
+    public void next() throws Exception {
+        int numFeatures = 128;
+        int batchSize = 10;
+        int numRows = 1000;
+        AtomicInteger cnt = new AtomicInteger(0);
+        FloatsDataSetIterator iterator = new FloatsDataSetIterator(floatIterable(numRows, numFeatures), batchSize);
+        assertTrue(iterator.hasNext());
+        while (iterator.hasNext()) {
+            DataSet dataSet = iterator.next();
+            INDArray features = dataSet.getFeatures();
+            assertEquals(batchSize, features.rows());
+            assertEquals(numFeatures, features.columns());
+            cnt.incrementAndGet();
+        }
+        assertEquals(numRows / batchSize, cnt.get());
+    }",method,
+"    protected static Iterable<Pair<float[], float[]>> floatIterable(final int totalRows, final int numColumns) {
+        return new Iterable<Pair<float[], float[]>>() {
+            @Override
+            public Iterator<Pair<float[], float[]>> iterator() {
+                return new Iterator<Pair<float[], float[]>>() {
+                    private AtomicInteger cnt = new AtomicInteger(0);
+                    @Override
+                    public boolean hasNext() {
+                        return cnt.incrementAndGet() <= totalRows;
+                    }
+                    @Override
+                    public Pair<float[], float[]> next() {
+                        float features[] = new float[numColumns];
+                        float labels[] = new float[numColumns];
+                        for (int i = 0; i < numColumns; i++) {
+                            features[i] = (float) i;
+                            labels[i] = RandomUtils.nextFloat(0, 5);
+                        }
+                        return Pair.makePair(features, labels);
+                    }
+                    @Override
+                    public void remove() {
+                        // no-op
+                    }
+                };
+            }
+        };
+    }",method,
+"            @Override
+            public Iterator<Pair<float[], float[]>> iterator() {
+                return new Iterator<Pair<float[], float[]>>() {
+                    private AtomicInteger cnt = new AtomicInteger(0);
+                    @Override
+                    public boolean hasNext() {
+                        return cnt.incrementAndGet() <= totalRows;
+                    }
+                    @Override
+                    public Pair<float[], float[]> next() {
+                        float features[] = new float[numColumns];
+                        float labels[] = new float[numColumns];
+                        for (int i = 0; i < numColumns; i++) {
+                            features[i] = (float) i;
+                            labels[i] = RandomUtils.nextFloat(0, 5);
+                        }
+                        return Pair.makePair(features, labels);
+                    }
+                    @Override
+                    public void remove() {
+                        // no-op
+                    }
+                };
+            }",method,
+"                    @Override
+                    public boolean hasNext() {
+                        return cnt.incrementAndGet() <= totalRows;
+                    }",method,
+"                    @Override
+                    public Pair<float[], float[]> next() {
+                        float features[] = new float[numColumns];
+                        float labels[] = new float[numColumns];
+                        for (int i = 0; i < numColumns; i++) {
+                            features[i] = (float) i;
+                            labels[i] = RandomUtils.nextFloat(0, 5);
+                        }
+                        return Pair.makePair(features, labels);
+                    }",method,
+"                        for (int i = 0; i < numColumns; i++) {
+                            features[i] = (float) i;
+                            labels[i] = RandomUtils.nextFloat(0, 5);
+                        }",method,
+"                    @Override
+                    public void remove() {
+                        // no-op
+                    }",method,
+"public class GeneticAlgorithm extends JFrame {
+	Random rnd = new Random(1);
+	int n = rnd.nextInt(300) + 250;
+	int generation;
+	double[] x = new double[n];
+	double[] y = new double[n];
+	int[] bestState;
+	{
+		for (int i = 0; i < n; i++) {
+			x[i] = rnd.nextDouble();
+			y[i] = rnd.nextDouble();
+		}
+	}
+	public void geneticAlgorithm() {
+		bestState = new int[n];
+		for (int i = 0; i < n; i++)
+			bestState[i] = i;
+		final int populationLimit = 100;
+		final Population population = new Population(populationLimit);
+		final int n = x.length;
+		for (int i = 0; i < populationLimit; i++)
+			population.chromosomes.add(new Chromosome(optimize(getRandomPermutation(n))));
+		final double mutationRate = 0.3;
+		final int generations = 10_000;
+		for (generation = 0; generation < generations; generation++) {
+			int i = 0;
+			while (population.chromosomes.size() < population.populationLimit) {
+				int i1 = rnd.nextInt(population.chromosomes.size());
+				int i2 = (i1 + 1 + rnd.nextInt(population.chromosomes.size() - 1)) % population.chromosomes.size();
+				Chromosome parent1 = population.chromosomes.get(i1);
+				Chromosome parent2 = population.chromosomes.get(i2);
+				int[][] pair = crossOver(parent1.p, parent2.p);
+				if (rnd.nextDouble() < mutationRate) {
+					mutate(pair[0]);
+					mutate(pair[1]);
+				}
+				population.chromosomes.add(new Chromosome(optimize(pair[0])));
+				population.chromosomes.add(new Chromosome(optimize(pair[1])));
+			}
+			population.nextGeneration();
+			bestState = population.chromosomes.get(0).p;
+			repaint();
+		}
+	}
+	int[][] crossOver(int[] p1, int[] p2) {
+		int n = p1.length;
+		int i1 = rnd.nextInt(n);
+		int i2 = (i1 + 1 + rnd.nextInt(n - 1)) % n;
+		int[] n1 = p1.clone();
+		int[] n2 = p2.clone();
+		boolean[] used1 = new boolean[n];
+		boolean[] used2 = new boolean[n];
+		for (int i = i1; ; i = (i + 1) % n) {
+			n1[i] = p2[i];
+			used1[n1[i]] = true;
+			n2[i] = p1[i];
+			used2[n2[i]] = true;
+			if (i == i2) {
+				break;
+			}
+		}
+		for (int i = (i2 + 1) % n; i != i1; i = (i + 1) % n) {
+			if (used1[n1[i]]) {
+				n1[i] = -1;
+			} else {
+				used1[n1[i]] = true;
+			}
+			if (used2[n2[i]]) {
+				n2[i] = -1;
+			} else {
+				used2[n2[i]] = true;
+			}
+		}
+		int pos1 = 0;
+		int pos2 = 0;
+		for (int i = 0; i < n; i++) {
+			if (n1[i] == -1) {
+				while (used1[pos1])
+					++pos1;
+				n1[i] = pos1++;
+			}
+			if (n2[i] == -1) {
+				while (used2[pos2])
+					++pos2;
+				n2[i] = pos2++;
+			}
+		}
+		return new int[][]{n1, n2};
+	}
+	void mutate(int[] p) {
+		int n = p.length;
+		int i = rnd.nextInt(n);
+		int j = (i + 1 + rnd.nextInt(n - 1)) % n;
+		reverse(p, i, j);
+	}
+	// http://en.wikipedia.org/wiki/2-opt
+	static void reverse(int[] p, int i, int j) {
+		int n = p.length;
+		// reverse order from i to j
+		while (i != j) {
+			int t = p[j];
+			p[j] = p[i];
+			p[i] = t;
+			i = (i + 1) % n;
+			if (i == j) break;
+			j = (j - 1 + n) % n;
+		}
+	}
+	double eval(int[] state) {
+		double res = 0;
+		for (int i = 0, j = state.length - 1; i < state.length; j = i++)
+			res += dist(x[state[i]], y[state[i]], x[state[j]], y[state[j]]);
+		return res;
+	}
+	static double dist(double x1, double y1, double x2, double y2) {
+		double dx = x1 - x2;
+		double dy = y1 - y2;
+		return Math.sqrt(dx * dx + dy * dy);
+	}
+	int[] getRandomPermutation(int n) {
+		int[] res = new int[n];
+		for (int i = 0; i < n; i++) {
+			int j = rnd.nextInt(i + 1);
+			res[i] = res[j];
+			res[j] = i;
+		}
+		return res;
+	}
+	// try all 2-opt moves
+	int[] optimize(int[] p) {
+		int[] res = p.clone();
+		for (boolean improved = true; improved; ) {
+			improved = false;
+			for (int i = 0; i < n; i++) {
+				for (int j = 0; j < n; j++) {
+					if (i == j || (j + 1) % n == i) continue;
+					int i1 = (i - 1 + n) % n;
+					int j1 = (j + 1) % n;
+					double delta = dist(x[res[i1]], y[res[i1]], x[res[j]], y[res[j]])
+							+ dist(x[res[i]], y[res[i]], x[res[j1]], y[res[j1]])
+							- dist(x[res[i1]], y[res[i1]], x[res[i]], y[res[i]])
+							- dist(x[res[j]], y[res[j]], x[res[j1]], y[res[j1]]);
+					if (delta < -1e-9) {
+						reverse(res, i, j);
+						improved = true;
+					}
+				}
+			}
+		}
+		return res;
+	}
+	class Chromosome implements Comparable<Chromosome> {
+		final int[] p;
+		private double cost = Double.NaN;
+		public Chromosome(int[] p) {
+			this.p = p;
+		}
+		public double getCost() {
+			return Double.isNaN(cost) ? cost = eval(p) : cost;
+		}
+		@Override
+		public int compareTo(Chromosome o) {
+			return Double.compare(getCost(), o.getCost());
+		}
+	}
+	static class Population {
+		List<Chromosome> chromosomes = new ArrayList<>();
+		final int populationLimit;
+		public Population(int populationLimit) {
+			this.populationLimit = populationLimit;
+		}
+		public void nextGeneration() {
+			Collections.sort(chromosomes);
+			chromosomes = new ArrayList<>(chromosomes.subList(0, (chromosomes.size() + 1) / 2));
+		}
+	}
+	// visualization code
+	public GeneticAlgorithm() {
+		setContentPane(new JPanel() {
+			protected void paintComponent(Graphics g) {
+				super.paintComponent(g);
+				((Graphics2D) g).setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
+				((Graphics2D) g).setStroke(new BasicStroke(3));
+				g.setColor(Color.BLUE);
+				int w = getWidth() - 5;
+				int h = getHeight() - 30;
+				for (int i = 0, j = n - 1; i < n; j = i++)
+					g.drawLine((int) (x[bestState[i]] * w), (int) ((1 - y[bestState[i]]) * h),
+							(int) (x[bestState[j]] * w), (int) ((1 - y[bestState[j]]) * h));
+				g.setColor(Color.RED);
+				for (int i = 0; i < n; i++)
+					g.drawOval((int) (x[i] * w) - 1, (int) ((1 - y[i]) * h) - 1, 3, 3);
+				g.setColor(Color.BLACK);
+				g.drawString(String.format(""length: %.3f"", eval(bestState)), 5, h + 20);
+				g.drawString(String.format(""generation: %d"", generation), 150, h + 20);
+			}
+		});
+		setSize(new Dimension(600, 600));
+		setDefaultCloseOperation(WindowConstants.EXIT_ON_CLOSE);
+		setVisible(true);
+		new Thread(this::geneticAlgorithm).start();
+	}
+	public static void main(String[] args) {
+		new GeneticAlgorithm();
+	}
+}",class,
+"	class Chromosome implements Comparable<Chromosome> {
+		final int[] p;
+		private double cost = Double.NaN;
+		public Chromosome(int[] p) {
+			this.p = p;
+		}
+		public double getCost() {
+			return Double.isNaN(cost) ? cost = eval(p) : cost;
+		}
+		@Override
+		public int compareTo(Chromosome o) {
+			return Double.compare(getCost(), o.getCost());
+		}
+	}",class,
+"	static class Population {
+		List<Chromosome> chromosomes = new ArrayList<>();
+		final int populationLimit;
+		public Population(int populationLimit) {
+			this.populationLimit = populationLimit;
+		}
+		public void nextGeneration() {
+			Collections.sort(chromosomes);
+			chromosomes = new ArrayList<>(chromosomes.subList(0, (chromosomes.size() + 1) / 2));
+		}
+	}",class,
+"		for (int i = 0; i < n; i++) {
+			x[i] = rnd.nextDouble();
+			y[i] = rnd.nextDouble();
+		}",method,
+"	public void geneticAlgorithm() {
+		bestState = new int[n];
+		for (int i = 0; i < n; i++)
+			bestState[i] = i;
+		final int populationLimit = 100;
+		final Population population = new Population(populationLimit);
+		final int n = x.length;
+		for (int i = 0; i < populationLimit; i++)
+			population.chromosomes.add(new Chromosome(optimize(getRandomPermutation(n))));
+		final double mutationRate = 0.3;
+		final int generations = 10_000;
+		for (generation = 0; generation < generations; generation++) {
+			int i = 0;
+			while (population.chromosomes.size() < population.populationLimit) {
+				int i1 = rnd.nextInt(population.chromosomes.size());
+				int i2 = (i1 + 1 + rnd.nextInt(population.chromosomes.size() - 1)) % population.chromosomes.size();
+				Chromosome parent1 = population.chromosomes.get(i1);
+				Chromosome parent2 = population.chromosomes.get(i2);
+				int[][] pair = crossOver(parent1.p, parent2.p);
+				if (rnd.nextDouble() < mutationRate) {
+					mutate(pair[0]);
+					mutate(pair[1]);
+				}
+				population.chromosomes.add(new Chromosome(optimize(pair[0])));
+				population.chromosomes.add(new Chromosome(optimize(pair[1])));
+			}
+			population.nextGeneration();
+			bestState = population.chromosomes.get(0).p;
+			repaint();
+		}
+	}",method,
+"		for (generation = 0; generation < generations; generation++) {
+			int i = 0;
+			while (population.chromosomes.size() < population.populationLimit) {
+				int i1 = rnd.nextInt(population.chromosomes.size());
+				int i2 = (i1 + 1 + rnd.nextInt(population.chromosomes.size() - 1)) % population.chromosomes.size();
+				Chromosome parent1 = population.chromosomes.get(i1);
+				Chromosome parent2 = population.chromosomes.get(i2);
+				int[][] pair = crossOver(parent1.p, parent2.p);
+				if (rnd.nextDouble() < mutationRate) {
+					mutate(pair[0]);
+					mutate(pair[1]);
+				}
+				population.chromosomes.add(new Chromosome(optimize(pair[0])));
+				population.chromosomes.add(new Chromosome(optimize(pair[1])));
+			}
+			population.nextGeneration();
+			bestState = population.chromosomes.get(0).p;
+			repaint();
+		}",method,
+"	int[][] crossOver(int[] p1, int[] p2) {
+		int n = p1.length;
+		int i1 = rnd.nextInt(n);
+		int i2 = (i1 + 1 + rnd.nextInt(n - 1)) % n;
+		int[] n1 = p1.clone();
+		int[] n2 = p2.clone();
+		boolean[] used1 = new boolean[n];
+		boolean[] used2 = new boolean[n];
+		for (int i = i1; ; i = (i + 1) % n) {
+			n1[i] = p2[i];
+			used1[n1[i]] = true;
+			n2[i] = p1[i];
+			used2[n2[i]] = true;
+			if (i == i2) {
+				break;
+			}
+		}
+		for (int i = (i2 + 1) % n; i != i1; i = (i + 1) % n) {
+			if (used1[n1[i]]) {
+				n1[i] = -1;
+			} else {
+				used1[n1[i]] = true;
+			}
+			if (used2[n2[i]]) {
+				n2[i] = -1;
+			} else {
+				used2[n2[i]] = true;
+			}
+		}
+		int pos1 = 0;
+		int pos2 = 0;
+		for (int i = 0; i < n; i++) {
+			if (n1[i] == -1) {
+				while (used1[pos1])
+					++pos1;
+				n1[i] = pos1++;
+			}
+			if (n2[i] == -1) {
+				while (used2[pos2])
+					++pos2;
+				n2[i] = pos2++;
+			}
+		}
+		return new int[][]{n1, n2};
+	}",method,
+"			if (i == i2) {
+				break;
+			}",method,
+"			if (used1[n1[i]]) {
+				n1[i] = -1;
+			}",method,
+"			if (used2[n2[i]]) {
+				n2[i] = -1;
+			}",method,
+"		for (int i = 0; i < n; i++) {
+			if (n1[i] == -1) {
+				while (used1[pos1])
+					++pos1;
+				n1[i] = pos1++;
+			}
+			if (n2[i] == -1) {
+				while (used2[pos2])
+					++pos2;
+				n2[i] = pos2++;
+			}
+		}",method,
+"			if (n1[i] == -1) {
+				while (used1[pos1])
+					++pos1;
+				n1[i] = pos1++;
+			}",method,
+"			if (n2[i] == -1) {
+				while (used2[pos2])
+					++pos2;
+				n2[i] = pos2++;
+			}",method,
+"	void mutate(int[] p) {
+		int n = p.length;
+		int i = rnd.nextInt(n);
+		int j = (i + 1 + rnd.nextInt(n - 1)) % n;
+		reverse(p, i, j);
+	}",method,
+"	static void reverse(int[] p, int i, int j) {
+		int n = p.length;
+		// reverse order from i to j
+		while (i != j) {
+			int t = p[j];
+			p[j] = p[i];
+			p[i] = t;
+			i = (i + 1) % n;
+			if (i == j) break;
+			j = (j - 1 + n) % n;
+		}
+	}",method,
+"		while (i != j) {
+			int t = p[j];
+			p[j] = p[i];
+			p[i] = t;
+			i = (i + 1) % n;
+			if (i == j) break;
+			j = (j - 1 + n) % n;
+		}",method,
+"	double eval(int[] state) {
+		double res = 0;
+		for (int i = 0, j = state.length - 1; i < state.length; j = i++)
+			res += dist(x[state[i]], y[state[i]], x[state[j]], y[state[j]]);
+		return res;
+	}",method,
+"	static double dist(double x1, double y1, double x2, double y2) {
+		double dx = x1 - x2;
+		double dy = y1 - y2;
+		return Math.sqrt(dx * dx + dy * dy);
+	}",method,
+"	int[] getRandomPermutation(int n) {
+		int[] res = new int[n];
+		for (int i = 0; i < n; i++) {
+			int j = rnd.nextInt(i + 1);
+			res[i] = res[j];
+			res[j] = i;
+		}
+		return res;
+	}",method,
+"		for (int i = 0; i < n; i++) {
+			int j = rnd.nextInt(i + 1);
+			res[i] = res[j];
+			res[j] = i;
+		}",method,
+"	int[] optimize(int[] p) {
+		int[] res = p.clone();
+		for (boolean improved = true; improved; ) {
+			improved = false;
+			for (int i = 0; i < n; i++) {
+				for (int j = 0; j < n; j++) {
+					if (i == j || (j + 1) % n == i) continue;
+					int i1 = (i - 1 + n) % n;
+					int j1 = (j + 1) % n;
+					double delta = dist(x[res[i1]], y[res[i1]], x[res[j]], y[res[j]])
+							+ dist(x[res[i]], y[res[i]], x[res[j1]], y[res[j1]])
+							- dist(x[res[i1]], y[res[i1]], x[res[i]], y[res[i]])
+							- dist(x[res[j]], y[res[j]], x[res[j1]], y[res[j1]]);
+					if (delta < -1e-9) {
+						reverse(res, i, j);
+						improved = true;
+					}
+				}
+			}
+		}
+		return res;
+	}",method,
+"		for (boolean improved = true; improved; ) {
+			improved = false;
+			for (int i = 0; i < n; i++) {
+				for (int j = 0; j < n; j++) {
+					if (i == j || (j + 1) % n == i) continue;
+					int i1 = (i - 1 + n) % n;
+					int j1 = (j + 1) % n;
+					double delta = dist(x[res[i1]], y[res[i1]], x[res[j]], y[res[j]])
+							+ dist(x[res[i]], y[res[i]], x[res[j1]], y[res[j1]])
+							- dist(x[res[i1]], y[res[i1]], x[res[i]], y[res[i]])
+							- dist(x[res[j]], y[res[j]], x[res[j1]], y[res[j1]]);
+					if (delta < -1e-9) {
+						reverse(res, i, j);
+						improved = true;
+					}
+				}
+			}
+		}",method,

@@ -1,0 +1,1186 @@
+code_snippet,type,score
+"    if (this.mapOfEnumString == null) {
+      this.mapOfEnumString = new HashMap<String, InnerEnum>();
+    }",method,
+"  @ApiModelProperty(value = """")
+  public Map<String, InnerEnum> getMapOfEnumString() {
+    return mapOfEnumString;
+  }",method,
+"  public void setMapOfEnumString(Map<String, InnerEnum> mapOfEnumString) {
+    this.mapOfEnumString = mapOfEnumString;
+  }",method,
+"  @Override
+  public boolean equals(java.lang.Object o) {
+    if (this == o) {
+      return true;
+    }
+    if (o == null || getClass() != o.getClass()) {
+      return false;
+    }
+    MapTest mapTest = (MapTest) o;
+    return Objects.equals(this.mapMapOfString, mapTest.mapMapOfString) &&
+        Objects.equals(this.mapOfEnumString, mapTest.mapOfEnumString);
+  }",method,
+"    if (this == o) {
+      return true;
+    }",method,
+"  @Override
+  public int hashCode() {
+    return Objects.hash(mapMapOfString, mapOfEnumString);
+  }",method,
+"  @Override
+  public String toString() {
+    StringBuilder sb = new StringBuilder();
+    sb.append(""class MapTest {\n"");
+    sb.append(""    mapMapOfString: "").append(toIndentedString(mapMapOfString)).append(""\n"");
+    sb.append(""    mapOfEnumString: "").append(toIndentedString(mapOfEnumString)).append(""\n"");
+    sb.append(""}"");
+    return sb.toString();
+  }",method,
+"  private String toIndentedString(java.lang.Object o) {
+    if (o == null) {
+      return ""null"";
+    }
+    return o.toString().replace(""\n"", ""\n    "");
+  }",method,
+"    if (o == null) {
+      return ""null"";
+    }",method,
+"  private ControlFlowBuilderUtil() {
+  }",method,
+"  public static ReadWriteVariableInstruction[] getReadsWithoutPriorWrites(Instruction[] flow, boolean onlyFirstRead) {
+    DFAEngine<ReadBeforeWriteState> engine = new DFAEngine<>(
+      flow,
+      new ReadBeforeWriteInstance(buildNamesIndex(flow), onlyFirstRead),
+      ReadBeforeWriteSemilattice.INSTANCE
+    );
+    List<ReadBeforeWriteState> dfaResult = engine.performDFAWithTimeout();
+    if (dfaResult == null) {
+      return ReadWriteVariableInstruction.EMPTY_ARRAY;
+    }
+    List<ReadWriteVariableInstruction> result = new ArrayList<>();
+    BitSet reads = dfaResult.get(dfaResult.size() - 1).getReads();
+    for (int i = reads.nextSetBit(0); i >= 0; i = reads.nextSetBit(i + 1)) {
+      if (i == Integer.MAX_VALUE) break;
+      result.add((ReadWriteVariableInstruction)flow[i]);
+    }
+    return result.toArray(ReadWriteVariableInstruction.EMPTY_ARRAY);
+  }",method,
+"    if (dfaResult == null) {
+      return ReadWriteVariableInstruction.EMPTY_ARRAY;
+    }",method,
+"  private static TObjectIntHashMap<String> buildNamesIndex(Instruction[] flow) {
+    TObjectIntHashMap<String> namesIndex = new ObjectIntHashMap<>();
+    int idx = 0;
+    for (Instruction instruction : flow) {
+      if (instruction instanceof ReadWriteVariableInstruction) {
+        String name = ((ReadWriteVariableInstruction)instruction).getVariableName();
+        if (!namesIndex.contains(name)) {
+          namesIndex.put(name, idx++);
+        }
+      }
+    }
+    return namesIndex;
+  }",method,
+"    for (Instruction instruction : flow) {
+      if (instruction instanceof ReadWriteVariableInstruction) {
+        String name = ((ReadWriteVariableInstruction)instruction).getVariableName();
+        if (!namesIndex.contains(name)) {
+          namesIndex.put(name, idx++);
+        }
+      }
+    }",method,
+"      if (instruction instanceof ReadWriteVariableInstruction) {
+        String name = ((ReadWriteVariableInstruction)instruction).getVariableName();
+        if (!namesIndex.contains(name)) {
+          namesIndex.put(name, idx++);
+        }
+      }",method,
+"  public static boolean isInstanceOfBinary(GrBinaryExpression binary) {
+    if (binary.getOperationTokenType() == GroovyTokenTypes.kIN) {
+      GrExpression left = binary.getLeftOperand();
+      GrExpression right = binary.getRightOperand();
+      if (left instanceof GrReferenceExpression && ((GrReferenceExpression)left).getQualifier() == null &&
+          right instanceof GrReferenceExpression && findClassByText((GrReferenceExpression)right)) {
+        return true;
+      }
+    }
+    return false;
+  }",method,
+"public class LEDVisualizerSkin implements VisualizerSkin {
+  private static Logger logger = Logger.getLogger(LEDVisualizerSkin.class);
+  private Simulation simulation = null;
+  private Visualizer visualizer = null;
+  private Observer ledObserver = new Observer() {
+    public void update(Observable obs, Object obj) {
+      visualizer.repaint();
+    }
+  };
+  private MoteCountListener newMotesListener = new MoteCountListener() {
+    public void moteWasAdded(Mote mote) {
+      LED led = mote.getInterfaces().getLED();
+      if (led != null) {
+        led.addObserver(ledObserver);
+      }
+    }
+    public void moteWasRemoved(Mote mote) {
+      LED led = mote.getInterfaces().getLED();
+      if (led != null) {
+        led.deleteObserver(ledObserver);
+      }
+    }
+  };
+  public void setActive(Simulation simulation, Visualizer vis) {
+    this.simulation = simulation;
+    this.visualizer = vis;
+    simulation.getEventCentral().addMoteCountListener(newMotesListener);
+    for (Mote m: simulation.getMotes()) {
+      newMotesListener.moteWasAdded(m);
+    }
+  }
+  public void setInactive() {
+    simulation.getEventCentral().removeMoteCountListener(newMotesListener);
+    for (Mote m: simulation.getMotes()) {
+      newMotesListener.moteWasRemoved(m);
+    }
+  }
+  public Color[] getColorOf(Mote mote) {
+    return null;
+  }
+  public void paintBeforeMotes(Graphics g) {
+  }
+  public void paintAfterMotes(Graphics g) {
+    Mote[] allMotes = simulation.getMotes();
+    for (Mote mote: allMotes) {
+      LED leds = mote.getInterfaces().getLED();
+      if (leds == null) {
+        continue;
+      }
+      Position pos = mote.getInterfaces().getPosition();
+      Point pixel = visualizer.transformPositionToPixel(pos);
+      int x = pixel.x - 2*Visualizer.MOTE_RADIUS;
+      int y = pixel.y - Visualizer.MOTE_RADIUS;
+      g.setColor(Color.RED);
+      if (leds.isRedOn()) {
+        g.fillRect(x, y, 7, 4);
+      } else {
+        g.drawRect(x, y, 7, 4);
+      }
+      y += 6;
+      g.setColor(Color.GREEN);
+      if (leds.isGreenOn()) {
+        g.fillRect(x, y, 7, 4);
+      } else {
+        g.drawRect(x, y, 7, 4);
+      }
+      y += 6;
+      g.setColor(Color.BLUE);
+      if (leds.isYellowOn()) {
+        g.fillRect(x, y, 7, 4);
+      } else {
+        g.drawRect(x, y, 7, 4);
+      }
+    }
+  }
+  public Visualizer getVisualizer() {
+    return visualizer;
+  }
+}",class,
+"    public void update(Observable obs, Object obj) {
+      visualizer.repaint();
+    }",method,
+"    public void moteWasAdded(Mote mote) {
+      LED led = mote.getInterfaces().getLED();
+      if (led != null) {
+        led.addObserver(ledObserver);
+      }
+    }",method,
+"      if (led != null) {
+        led.addObserver(ledObserver);
+      }",method,
+"    public void moteWasRemoved(Mote mote) {
+      LED led = mote.getInterfaces().getLED();
+      if (led != null) {
+        led.deleteObserver(ledObserver);
+      }
+    }",method,
+"      if (led != null) {
+        led.deleteObserver(ledObserver);
+      }",method,
+"  public void setActive(Simulation simulation, Visualizer vis) {
+    this.simulation = simulation;
+    this.visualizer = vis;
+    simulation.getEventCentral().addMoteCountListener(newMotesListener);
+    for (Mote m: simulation.getMotes()) {
+      newMotesListener.moteWasAdded(m);
+    }
+  }",method,
+"  public void setInactive() {
+    simulation.getEventCentral().removeMoteCountListener(newMotesListener);
+    for (Mote m: simulation.getMotes()) {
+      newMotesListener.moteWasRemoved(m);
+    }
+  }",method,
+"  public Color[] getColorOf(Mote mote) {
+    return null;
+  }",method,
+"  public void paintBeforeMotes(Graphics g) {
+  }",method,
+"  public void paintAfterMotes(Graphics g) {
+    Mote[] allMotes = simulation.getMotes();
+    for (Mote mote: allMotes) {
+      LED leds = mote.getInterfaces().getLED();
+      if (leds == null) {
+        continue;
+      }
+      Position pos = mote.getInterfaces().getPosition();
+      Point pixel = visualizer.transformPositionToPixel(pos);
+      int x = pixel.x - 2*Visualizer.MOTE_RADIUS;
+      int y = pixel.y - Visualizer.MOTE_RADIUS;
+      g.setColor(Color.RED);
+      if (leds.isRedOn()) {
+        g.fillRect(x, y, 7, 4);
+      } else {
+        g.drawRect(x, y, 7, 4);
+      }
+      y += 6;
+      g.setColor(Color.GREEN);
+      if (leds.isGreenOn()) {
+        g.fillRect(x, y, 7, 4);
+      } else {
+        g.drawRect(x, y, 7, 4);
+      }
+      y += 6;
+      g.setColor(Color.BLUE);
+      if (leds.isYellowOn()) {
+        g.fillRect(x, y, 7, 4);
+      } else {
+        g.drawRect(x, y, 7, 4);
+      }
+    }
+  }",method,
+"    for (Mote mote: allMotes) {
+      LED leds = mote.getInterfaces().getLED();
+      if (leds == null) {
+        continue;
+      }
+      Position pos = mote.getInterfaces().getPosition();
+      Point pixel = visualizer.transformPositionToPixel(pos);
+      int x = pixel.x - 2*Visualizer.MOTE_RADIUS;
+      int y = pixel.y - Visualizer.MOTE_RADIUS;
+      g.setColor(Color.RED);
+      if (leds.isRedOn()) {
+        g.fillRect(x, y, 7, 4);
+      } else {
+        g.drawRect(x, y, 7, 4);
+      }
+      y += 6;
+      g.setColor(Color.GREEN);
+      if (leds.isGreenOn()) {
+        g.fillRect(x, y, 7, 4);
+      } else {
+        g.drawRect(x, y, 7, 4);
+      }
+      y += 6;
+      g.setColor(Color.BLUE);
+      if (leds.isYellowOn()) {
+        g.fillRect(x, y, 7, 4);
+      } else {
+        g.drawRect(x, y, 7, 4);
+      }
+    }",method,
+"      if (leds == null) {
+        continue;
+      }",method,
+"  public Visualizer getVisualizer() {
+    return visualizer;
+  }",method,
+"public class IsolationLevelDataSourceRouter extends AbstractRoutingDataSource {
+	private static final Constants constants = new Constants(TransactionDefinition.class);
+	@Override
+	protected Object resolveSpecifiedLookupKey(Object lookupKey) {
+		if (lookupKey instanceof Integer) {
+			return lookupKey;
+		}
+		else if (lookupKey instanceof String) {
+			String constantName = (String) lookupKey;
+			if (!constantName.startsWith(DefaultTransactionDefinition.PREFIX_ISOLATION)) {
+				throw new IllegalArgumentException(""Only isolation constants allowed"");
+			}
+			return constants.asNumber(constantName);
+		}
+		else {
+			throw new IllegalArgumentException(
+					""Invalid lookup key - needs to be isolation level Integer or isolation level name String: "" + lookupKey);
+		}
+	}
+	@Override
+	@Nullable
+	protected Object determineCurrentLookupKey() {
+		return TransactionSynchronizationManager.getCurrentTransactionIsolationLevel();
+	}
+}",class,
+"	@Override
+	protected Object resolveSpecifiedLookupKey(Object lookupKey) {
+		if (lookupKey instanceof Integer) {
+			return lookupKey;
+		}
+		else if (lookupKey instanceof String) {
+			String constantName = (String) lookupKey;
+			if (!constantName.startsWith(DefaultTransactionDefinition.PREFIX_ISOLATION)) {
+				throw new IllegalArgumentException(""Only isolation constants allowed"");
+			}
+			return constants.asNumber(constantName);
+		}
+		else {
+			throw new IllegalArgumentException(
+					""Invalid lookup key - needs to be isolation level Integer or isolation level name String: "" + lookupKey);
+		}
+	}",method,
+"		if (lookupKey instanceof Integer) {
+			return lookupKey;
+		}",method,
+"		else if (lookupKey instanceof String) {
+			String constantName = (String) lookupKey;
+			if (!constantName.startsWith(DefaultTransactionDefinition.PREFIX_ISOLATION)) {
+				throw new IllegalArgumentException(""Only isolation constants allowed"");
+			}
+			return constants.asNumber(constantName);
+		}",method,
+"	@Override
+	@Nullable
+	protected Object determineCurrentLookupKey() {
+		return TransactionSynchronizationManager.getCurrentTransactionIsolationLevel();
+	}",method,
+"public class EpollChannelConfig extends DefaultChannelConfig {
+    final AbstractEpollChannel channel;
+    EpollChannelConfig(AbstractEpollChannel channel) {
+        super(channel);
+        this.channel = channel;
+    }
+    @Override
+    public Map<ChannelOption<?>, Object> getOptions() {
+        return getOptions(super.getOptions(), EpollChannelOption.EPOLL_MODE);
+    }
+    @SuppressWarnings(""unchecked"")
+    @Override
+    public <T> T getOption(ChannelOption<T> option) {
+        if (option == EpollChannelOption.EPOLL_MODE) {
+            return (T) getEpollMode();
+        }
+        return super.getOption(option);
+    }
+    @Override
+    public <T> boolean setOption(ChannelOption<T> option, T value) {
+        validate(option, value);
+        if (option == EpollChannelOption.EPOLL_MODE) {
+            setEpollMode((EpollMode) value);
+        } else {
+            return super.setOption(option, value);
+        }
+        return true;
+    }
+    @Override
+    public EpollChannelConfig setConnectTimeoutMillis(int connectTimeoutMillis) {
+        super.setConnectTimeoutMillis(connectTimeoutMillis);
+        return this;
+    }
+    @Override
+    @Deprecated
+    public EpollChannelConfig setMaxMessagesPerRead(int maxMessagesPerRead) {
+        super.setMaxMessagesPerRead(maxMessagesPerRead);
+        return this;
+    }
+    @Override
+    public EpollChannelConfig setWriteSpinCount(int writeSpinCount) {
+        super.setWriteSpinCount(writeSpinCount);
+        return this;
+    }
+    @Override
+    public EpollChannelConfig setAllocator(ByteBufAllocator allocator) {
+        super.setAllocator(allocator);
+        return this;
+    }
+    @Override
+    public EpollChannelConfig setRecvByteBufAllocator(RecvByteBufAllocator allocator) {
+        if (!(allocator.newHandle() instanceof RecvByteBufAllocator.ExtendedHandle)) {
+            throw new IllegalArgumentException(""allocator.newHandle() must return an object of type: "" +
+                    RecvByteBufAllocator.ExtendedHandle.class);
+        }
+        super.setRecvByteBufAllocator(allocator);
+        return this;
+    }
+    @Override
+    public EpollChannelConfig setAutoRead(boolean autoRead) {
+        super.setAutoRead(autoRead);
+        return this;
+    }
+    @Override
+    @Deprecated
+    public EpollChannelConfig setWriteBufferHighWaterMark(int writeBufferHighWaterMark) {
+        super.setWriteBufferHighWaterMark(writeBufferHighWaterMark);
+        return this;
+    }
+    @Override
+    @Deprecated
+    public EpollChannelConfig setWriteBufferLowWaterMark(int writeBufferLowWaterMark) {
+        super.setWriteBufferLowWaterMark(writeBufferLowWaterMark);
+        return this;
+    }
+    @Override
+    public EpollChannelConfig setWriteBufferWaterMark(WriteBufferWaterMark writeBufferWaterMark) {
+        super.setWriteBufferWaterMark(writeBufferWaterMark);
+        return this;
+    }
+    @Override
+    public EpollChannelConfig setMessageSizeEstimator(MessageSizeEstimator estimator) {
+        super.setMessageSizeEstimator(estimator);
+        return this;
+    }
+    public EpollMode getEpollMode() {
+        return channel.isFlagSet(Native.EPOLLET)
+                ? EpollMode.EDGE_TRIGGERED : EpollMode.LEVEL_TRIGGERED;
+    }
+    public EpollChannelConfig setEpollMode(EpollMode mode) {
+        if (mode == null) {
+            throw new NullPointerException(""mode"");
+        }
+        try {
+            switch (mode) {
+            case EDGE_TRIGGERED:
+                checkChannelNotRegistered();
+                channel.setFlag(Native.EPOLLET);
+                break;
+            case LEVEL_TRIGGERED:
+                checkChannelNotRegistered();
+                channel.clearFlag(Native.EPOLLET);
+                break;
+            default:
+                throw new Error();
+            }
+        } catch (IOException e) {
+            throw new ChannelException(e);
+        }
+        return this;
+    }
+    private void checkChannelNotRegistered() {
+        if (channel.isRegistered()) {
+            throw new IllegalStateException(""EpollMode can only be changed before channel is registered"");
+        }
+    }
+    @Override
+    protected final void autoReadCleared() {
+        channel.clearEpollIn();
+    }
+}",class,
+"    EpollChannelConfig(AbstractEpollChannel channel) {
+        super(channel);
+        this.channel = channel;
+    }",method,
+"    @Override
+    public Map<ChannelOption<?>, Object> getOptions() {
+        return getOptions(super.getOptions(), EpollChannelOption.EPOLL_MODE);
+    }",method,
+"    @SuppressWarnings(""unchecked"")
+    @Override
+    public <T> T getOption(ChannelOption<T> option) {
+        if (option == EpollChannelOption.EPOLL_MODE) {
+            return (T) getEpollMode();
+        }
+        return super.getOption(option);
+    }",method,
+"        if (option == EpollChannelOption.EPOLL_MODE) {
+            return (T) getEpollMode();
+        }",method,
+"    @Override
+    public <T> boolean setOption(ChannelOption<T> option, T value) {
+        validate(option, value);
+        if (option == EpollChannelOption.EPOLL_MODE) {
+            setEpollMode((EpollMode) value);
+        } else {
+            return super.setOption(option, value);
+        }
+        return true;
+    }",method,
+"        if (option == EpollChannelOption.EPOLL_MODE) {
+            setEpollMode((EpollMode) value);
+        }",method,
+"    @Override
+    public EpollChannelConfig setConnectTimeoutMillis(int connectTimeoutMillis) {
+        super.setConnectTimeoutMillis(connectTimeoutMillis);
+        return this;
+    }",method,
+"    @Override
+    @Deprecated
+    public EpollChannelConfig setMaxMessagesPerRead(int maxMessagesPerRead) {
+        super.setMaxMessagesPerRead(maxMessagesPerRead);
+        return this;
+    }",method,
+"    @Override
+    public EpollChannelConfig setWriteSpinCount(int writeSpinCount) {
+        super.setWriteSpinCount(writeSpinCount);
+        return this;
+    }",method,
+"    @Override
+    public EpollChannelConfig setAllocator(ByteBufAllocator allocator) {
+        super.setAllocator(allocator);
+        return this;
+    }",method,
+"    @Override
+    public EpollChannelConfig setRecvByteBufAllocator(RecvByteBufAllocator allocator) {
+        if (!(allocator.newHandle() instanceof RecvByteBufAllocator.ExtendedHandle)) {
+            throw new IllegalArgumentException(""allocator.newHandle() must return an object of type: "" +
+                    RecvByteBufAllocator.ExtendedHandle.class);
+        }
+        super.setRecvByteBufAllocator(allocator);
+        return this;
+    }",method,
+"    @Override
+    public EpollChannelConfig setAutoRead(boolean autoRead) {
+        super.setAutoRead(autoRead);
+        return this;
+    }",method,
+"    @Override
+    @Deprecated
+    public EpollChannelConfig setWriteBufferHighWaterMark(int writeBufferHighWaterMark) {
+        super.setWriteBufferHighWaterMark(writeBufferHighWaterMark);
+        return this;
+    }",method,
+"    @Override
+    @Deprecated
+    public EpollChannelConfig setWriteBufferLowWaterMark(int writeBufferLowWaterMark) {
+        super.setWriteBufferLowWaterMark(writeBufferLowWaterMark);
+        return this;
+    }",method,
+"    @Override
+    public EpollChannelConfig setWriteBufferWaterMark(WriteBufferWaterMark writeBufferWaterMark) {
+        super.setWriteBufferWaterMark(writeBufferWaterMark);
+        return this;
+    }",method,
+"    @Override
+    public EpollChannelConfig setMessageSizeEstimator(MessageSizeEstimator estimator) {
+        super.setMessageSizeEstimator(estimator);
+        return this;
+    }",method,
+"    public EpollMode getEpollMode() {
+        return channel.isFlagSet(Native.EPOLLET)
+                ? EpollMode.EDGE_TRIGGERED : EpollMode.LEVEL_TRIGGERED;
+    }",method,
+"    public EpollChannelConfig setEpollMode(EpollMode mode) {
+        if (mode == null) {
+            throw new NullPointerException(""mode"");
+        }
+        try {
+            switch (mode) {
+            case EDGE_TRIGGERED:
+                checkChannelNotRegistered();
+                channel.setFlag(Native.EPOLLET);
+                break;
+            case LEVEL_TRIGGERED:
+                checkChannelNotRegistered();
+                channel.clearFlag(Native.EPOLLET);
+                break;
+            default:
+                throw new Error();
+            }
+        } catch (IOException e) {
+            throw new ChannelException(e);
+        }
+        return this;
+    }",method,
+"        if (mode == null) {
+            throw new NullPointerException(""mode"");
+        }",method,
+"            switch (mode) {
+            case EDGE_TRIGGERED:
+                checkChannelNotRegistered();
+                channel.setFlag(Native.EPOLLET);
+                break;
+            case LEVEL_TRIGGERED:
+                checkChannelNotRegistered();
+                channel.clearFlag(Native.EPOLLET);
+                break;
+            default:
+                throw new Error();
+            }",method,
+"    private void checkChannelNotRegistered() {
+        if (channel.isRegistered()) {
+            throw new IllegalStateException(""EpollMode can only be changed before channel is registered"");
+        }
+    }",method,
+"    @Override
+    protected final void autoReadCleared() {
+        channel.clearEpollIn();
+    }",method,
+"        if (invite.chat != null) {
+            avatarDrawable = new AvatarDrawable(invite.chat);
+            if (chatInvite.chat.photo != null) {
+                photo = chatInvite.chat.photo.photo_small;
+            }
+            title = invite.chat.title;
+            participants_count = invite.chat.participants_count;
+        }",method,
+"            if (chatInvite.chat.photo != null) {
+                photo = chatInvite.chat.photo.photo_small;
+            }",method,
+"            if (chatInvite.photo != null) {
+                photo = chatInvite.photo.photo_small;
+            }",method,
+"        if (participants_count > 0) {
+            textView = new TextView(context);
+            textView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 14);
+            textView.setTextColor(Theme.getColor(Theme.key_dialogTextGray3));
+            textView.setSingleLine(true);
+            textView.setEllipsize(TextUtils.TruncateAt.END);
+            textView.setText(LocaleController.formatPluralString(""Members"", participants_count));
+            linearLayout.addView(textView, LayoutHelper.createLinear(LayoutHelper.WRAP_CONTENT, LayoutHelper.WRAP_CONTENT, Gravity.TOP | Gravity.CENTER_HORIZONTAL, 10, 4, 10, 10));
+        }",method,
+"        pickerBottomLayout.cancelButton.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View view) {
+                dismiss();
+            }
+        }",method,
+"            @Override
+            public void onClick(View view) {
+                dismiss();
+            }",method,
+"public class SpacingManager extends LengthManager {
+    protected String property;
+    public SpacingManager(String prop) {
+        property = prop;
+    }
+    public boolean isInheritedProperty() {
+        return true;
+    }
+    public boolean isAnimatableProperty() {
+        return true;
+    }
+    public boolean isAdditiveProperty() {
+        return true;
+    }
+    public int getPropertyType() {
+        return SVGTypes.TYPE_SPACING_VALUE;
+    }
+    public String getPropertyName() {
+        return property;
+    }
+    public Value getDefaultValue() {
+        return SVGValueConstants.NORMAL_VALUE;
+    }
+    public Value createValue(LexicalUnit lu, CSSEngine engine)
+        throws DOMException {
+        switch (lu.getLexicalUnitType()) {
+        case LexicalUnit.SAC_INHERIT:
+            return SVGValueConstants.INHERIT_VALUE;
+        case LexicalUnit.SAC_IDENT:
+            if (lu.getStringValue().equalsIgnoreCase
+                (CSSConstants.CSS_NORMAL_VALUE)) {
+                return SVGValueConstants.NORMAL_VALUE;
+            }
+            throw createInvalidIdentifierDOMException(lu.getStringValue());
+        }
+        return super.createValue(lu, engine);
+    }
+    public Value createStringValue(short type, String value, CSSEngine engine)
+        throws DOMException {
+        if (type != CSSPrimitiveValue.CSS_IDENT) {
+            throw createInvalidStringTypeDOMException(type);
+        }
+        if (value.equalsIgnoreCase(CSSConstants.CSS_NORMAL_VALUE)) {
+            return SVGValueConstants.NORMAL_VALUE;
+        }
+        throw createInvalidIdentifierDOMException(value);
+    }
+    protected int getOrientation() {
+        return BOTH_ORIENTATION;
+    }
+}",class,
+"    public SpacingManager(String prop) {
+        property = prop;
+    }",method,
+"    public boolean isInheritedProperty() {
+        return true;
+    }",method,
+"    public boolean isAnimatableProperty() {
+        return true;
+    }",method,
+"    public boolean isAdditiveProperty() {
+        return true;
+    }",method,
+"    public int getPropertyType() {
+        return SVGTypes.TYPE_SPACING_VALUE;
+    }",method,
+"    public String getPropertyName() {
+        return property;
+    }",method,
+"    public Value getDefaultValue() {
+        return SVGValueConstants.NORMAL_VALUE;
+    }",method,
+"    public Value createValue(LexicalUnit lu, CSSEngine engine)
+        throws DOMException {
+        switch (lu.getLexicalUnitType()) {
+        case LexicalUnit.SAC_INHERIT:
+            return SVGValueConstants.INHERIT_VALUE;
+        case LexicalUnit.SAC_IDENT:
+            if (lu.getStringValue().equalsIgnoreCase
+                (CSSConstants.CSS_NORMAL_VALUE)) {
+                return SVGValueConstants.NORMAL_VALUE;
+            }
+            throw createInvalidIdentifierDOMException(lu.getStringValue());
+        }
+        return super.createValue(lu, engine);
+    }",method,
+"    public Value createStringValue(short type, String value, CSSEngine engine)
+        throws DOMException {
+        if (type != CSSPrimitiveValue.CSS_IDENT) {
+            throw createInvalidStringTypeDOMException(type);
+        }
+        if (value.equalsIgnoreCase(CSSConstants.CSS_NORMAL_VALUE)) {
+            return SVGValueConstants.NORMAL_VALUE;
+        }
+        throw createInvalidIdentifierDOMException(value);
+    }",method,
+"        if (type != CSSPrimitiveValue.CSS_IDENT) {
+            throw createInvalidStringTypeDOMException(type);
+        }",method,
+"    protected int getOrientation() {
+        return BOTH_ORIENTATION;
+    }",method,
+"public final class TestProxyPrinterProvider {
+  private final TestProxyFilterProvider myFilterProvider;
+  private BaseTestsOutputConsoleView myTestOutputConsoleView;
+  public TestProxyPrinterProvider(@NotNull BaseTestsOutputConsoleView testsOutputConsoleView,
+                                  @NotNull TestProxyFilterProvider filterProvider) {
+    myTestOutputConsoleView = testsOutputConsoleView;
+    myFilterProvider = filterProvider;
+  }
+  @Nullable
+  public Printer getPrinterByType(@NotNull String nodeType, @NotNull String nodeName, @Nullable String nodeArguments) {
+    Filter filter = myFilterProvider.getFilter(nodeType, nodeName, nodeArguments);
+    if (filter != null && !Disposer.isDisposed(myTestOutputConsoleView)) {
+      return new HyperlinkPrinter(myTestOutputConsoleView, HyperlinkPrinter.ERROR_CONTENT_TYPE, filter);
+    }
+    return null;
+  }
+  private static class HyperlinkPrinter extends TestsOutputConsolePrinter {
+    public static final Condition<ConsoleViewContentType> ERROR_CONTENT_TYPE =
+      contentType -> ConsoleViewContentType.ERROR_OUTPUT == contentType;
+    private static final String NL = ""\n"";
+    private final Condition<ConsoleViewContentType> myContentTypeCondition;
+    private final Filter myFilter;
+    public HyperlinkPrinter(@NotNull BaseTestsOutputConsoleView testsOutputConsoleView,
+                            @NotNull Condition<ConsoleViewContentType> contentTypeCondition,
+                            @NotNull Filter filter) {
+      super(testsOutputConsoleView, testsOutputConsoleView.getProperties(), null);
+      myContentTypeCondition = contentTypeCondition;
+      myFilter = filter;
+    }
+    @Override
+    public void print(String text, ConsoleViewContentType contentType) {
+      if (contentType == null || !myContentTypeCondition.value(contentType)) {
+        defaultPrint(text, contentType);
+        return;
+      }
+      text = StringUtil.replace(text, ""\r\n"", NL, false);
+      StringTokenizer tokenizer = new StringTokenizer(text, NL, true);
+      while (tokenizer.hasMoreTokens()) {
+        String line = tokenizer.nextToken();
+        if (NL.equals(line)) {
+          defaultPrint(line, contentType);
+        }
+        else {
+          printLine(line, contentType);
+        }
+      }
+    }
+    private void defaultPrint(String text, ConsoleViewContentType contentType) {
+      super.print(text, contentType);
+    }
+    private void printLine(@NotNull String line, @NotNull ConsoleViewContentType contentType) {
+      Filter.Result result;
+      try {
+        result = myFilter.applyFilter(line, line.length());
+      }
+      catch (Throwable t) {
+        throw new RuntimeException(""Error while applying "" + myFilter + "" to '""+line+""'"", t);
+      }
+      if (result != null) {
+        List<Filter.ResultItem> items = sort(result.getResultItems());
+        int lastOffset = 0;
+        for (Filter.ResultItem item : items) {
+          defaultPrint(line.substring(lastOffset, item.getHighlightStartOffset()), contentType);
+          String linkText = line.substring(item.getHighlightStartOffset(), item.getHighlightEndOffset());
+          printHyperlink(linkText, item.getHyperlinkInfo());
+          lastOffset = item.getHighlightEndOffset();
+        }
+        defaultPrint(line.substring(lastOffset), contentType);
+      }
+      else {
+        defaultPrint(line, contentType);
+      }
+    }
+    @NotNull
+    private static List<Filter.ResultItem> sort(@NotNull List<Filter.ResultItem> items) {
+      if (items.size() <= 1) {
+        return items;
+      }
+      List<Filter.ResultItem> copy = new ArrayList<>(items);
+      Collections.sort(copy, Comparator.comparingInt(Filter.ResultItem::getHighlightStartOffset));
+      return copy;
+    }
+  }
+}",class,
+"  private static class HyperlinkPrinter extends TestsOutputConsolePrinter {
+    public static final Condition<ConsoleViewContentType> ERROR_CONTENT_TYPE =
+      contentType -> ConsoleViewContentType.ERROR_OUTPUT == contentType;
+    private static final String NL = ""\n"";
+    private final Condition<ConsoleViewContentType> myContentTypeCondition;
+    private final Filter myFilter;
+    public HyperlinkPrinter(@NotNull BaseTestsOutputConsoleView testsOutputConsoleView,
+                            @NotNull Condition<ConsoleViewContentType> contentTypeCondition,
+                            @NotNull Filter filter) {
+      super(testsOutputConsoleView, testsOutputConsoleView.getProperties(), null);
+      myContentTypeCondition = contentTypeCondition;
+      myFilter = filter;
+    }
+    @Override
+    public void print(String text, ConsoleViewContentType contentType) {
+      if (contentType == null || !myContentTypeCondition.value(contentType)) {
+        defaultPrint(text, contentType);
+        return;
+      }
+      text = StringUtil.replace(text, ""\r\n"", NL, false);
+      StringTokenizer tokenizer = new StringTokenizer(text, NL, true);
+      while (tokenizer.hasMoreTokens()) {
+        String line = tokenizer.nextToken();
+        if (NL.equals(line)) {
+          defaultPrint(line, contentType);
+        }
+        else {
+          printLine(line, contentType);
+        }
+      }
+    }
+    private void defaultPrint(String text, ConsoleViewContentType contentType) {
+      super.print(text, contentType);
+    }
+    private void printLine(@NotNull String line, @NotNull ConsoleViewContentType contentType) {
+      Filter.Result result;
+      try {
+        result = myFilter.applyFilter(line, line.length());
+      }
+      catch (Throwable t) {
+        throw new RuntimeException(""Error while applying "" + myFilter + "" to '""+line+""'"", t);
+      }
+      if (result != null) {
+        List<Filter.ResultItem> items = sort(result.getResultItems());
+        int lastOffset = 0;
+        for (Filter.ResultItem item : items) {
+          defaultPrint(line.substring(lastOffset, item.getHighlightStartOffset()), contentType);
+          String linkText = line.substring(item.getHighlightStartOffset(), item.getHighlightEndOffset());
+          printHyperlink(linkText, item.getHyperlinkInfo());
+          lastOffset = item.getHighlightEndOffset();
+        }
+        defaultPrint(line.substring(lastOffset), contentType);
+      }
+      else {
+        defaultPrint(line, contentType);
+      }
+    }
+    @NotNull
+    private static List<Filter.ResultItem> sort(@NotNull List<Filter.ResultItem> items) {
+      if (items.size() <= 1) {
+        return items;
+      }
+      List<Filter.ResultItem> copy = new ArrayList<>(items);
+      Collections.sort(copy, Comparator.comparingInt(Filter.ResultItem::getHighlightStartOffset));
+      return copy;
+    }
+  }",class,
+"  public TestProxyPrinterProvider(@NotNull BaseTestsOutputConsoleView testsOutputConsoleView,
+                                  @NotNull TestProxyFilterProvider filterProvider) {
+    myTestOutputConsoleView = testsOutputConsoleView;
+    myFilterProvider = filterProvider;
+  }",method,
+"  @Nullable
+  public Printer getPrinterByType(@NotNull String nodeType, @NotNull String nodeName, @Nullable String nodeArguments) {
+    Filter filter = myFilterProvider.getFilter(nodeType, nodeName, nodeArguments);
+    if (filter != null && !Disposer.isDisposed(myTestOutputConsoleView)) {
+      return new HyperlinkPrinter(myTestOutputConsoleView, HyperlinkPrinter.ERROR_CONTENT_TYPE, filter);
+    }
+    return null;
+  }",method,
+"    public HyperlinkPrinter(@NotNull BaseTestsOutputConsoleView testsOutputConsoleView,
+                            @NotNull Condition<ConsoleViewContentType> contentTypeCondition,
+                            @NotNull Filter filter) {
+      super(testsOutputConsoleView, testsOutputConsoleView.getProperties(), null);
+      myContentTypeCondition = contentTypeCondition;
+      myFilter = filter;
+    }",method,
+"    @Override
+    public void print(String text, ConsoleViewContentType contentType) {
+      if (contentType == null || !myContentTypeCondition.value(contentType)) {
+        defaultPrint(text, contentType);
+        return;
+      }
+      text = StringUtil.replace(text, ""\r\n"", NL, false);
+      StringTokenizer tokenizer = new StringTokenizer(text, NL, true);
+      while (tokenizer.hasMoreTokens()) {
+        String line = tokenizer.nextToken();
+        if (NL.equals(line)) {
+          defaultPrint(line, contentType);
+        }
+        else {
+          printLine(line, contentType);
+        }
+      }
+    }",method,
+"    private void defaultPrint(String text, ConsoleViewContentType contentType) {
+      super.print(text, contentType);
+    }",method,
+"    private void printLine(@NotNull String line, @NotNull ConsoleViewContentType contentType) {
+      Filter.Result result;
+      try {
+        result = myFilter.applyFilter(line, line.length());
+      }
+      catch (Throwable t) {
+        throw new RuntimeException(""Error while applying "" + myFilter + "" to '""+line+""'"", t);
+      }
+      if (result != null) {
+        List<Filter.ResultItem> items = sort(result.getResultItems());
+        int lastOffset = 0;
+        for (Filter.ResultItem item : items) {
+          defaultPrint(line.substring(lastOffset, item.getHighlightStartOffset()), contentType);
+          String linkText = line.substring(item.getHighlightStartOffset(), item.getHighlightEndOffset());
+          printHyperlink(linkText, item.getHyperlinkInfo());
+          lastOffset = item.getHighlightEndOffset();
+        }
+        defaultPrint(line.substring(lastOffset), contentType);
+      }
+      else {
+        defaultPrint(line, contentType);
+      }
+    }",method,
+"      catch (Throwable t) {
+        throw new RuntimeException(""Error while applying "" + myFilter + "" to '""+line+""'"", t);
+      }",method,
+"      if (result != null) {
+        List<Filter.ResultItem> items = sort(result.getResultItems());
+        int lastOffset = 0;
+        for (Filter.ResultItem item : items) {
+          defaultPrint(line.substring(lastOffset, item.getHighlightStartOffset()), contentType);
+          String linkText = line.substring(item.getHighlightStartOffset(), item.getHighlightEndOffset());
+          printHyperlink(linkText, item.getHyperlinkInfo());
+          lastOffset = item.getHighlightEndOffset();
+        }
+        defaultPrint(line.substring(lastOffset), contentType);
+      }",method,
+"        for (Filter.ResultItem item : items) {
+          defaultPrint(line.substring(lastOffset, item.getHighlightStartOffset()), contentType);
+          String linkText = line.substring(item.getHighlightStartOffset(), item.getHighlightEndOffset());
+          printHyperlink(linkText, item.getHyperlinkInfo());
+          lastOffset = item.getHighlightEndOffset();
+        }",method,
+"    @NotNull
+    private static List<Filter.ResultItem> sort(@NotNull List<Filter.ResultItem> items) {
+      if (items.size() <= 1) {
+        return items;
+      }
+      List<Filter.ResultItem> copy = new ArrayList<>(items);
+      Collections.sort(copy, Comparator.comparingInt(Filter.ResultItem::getHighlightStartOffset));
+      return copy;
+    }",method,
+"public class NetBroadcastTuple implements Serializable {
+    private final MultiLayerConfiguration configuration;
+    private final ComputationGraphConfiguration graphConfiguration;
+    private final INDArray parameters;
+    private final INDArray updaterState;
+    private final AtomicInteger counter;
+    public NetBroadcastTuple(MultiLayerConfiguration configuration, INDArray parameters, INDArray updaterState) {
+        this(configuration, null, parameters, updaterState);
+    }
+    public NetBroadcastTuple(ComputationGraphConfiguration graphConfiguration, INDArray parameters,
+                    INDArray updaterState) {
+        this(null, graphConfiguration, parameters, updaterState);
+    }
+    public NetBroadcastTuple(MultiLayerConfiguration configuration, ComputationGraphConfiguration graphConfiguration,
+                    INDArray parameters, INDArray updaterState) {
+        this(configuration, graphConfiguration, parameters, updaterState, new AtomicInteger(0));
+    }
+    public NetBroadcastTuple(MultiLayerConfiguration configuration, ComputationGraphConfiguration graphConfiguration,
+                    INDArray parameters, INDArray updaterState, AtomicInteger counter) {
+        this.configuration = configuration;
+        this.graphConfiguration = graphConfiguration;
+        this.parameters = parameters;
+        this.updaterState = updaterState;
+        this.counter = counter;
+    }
+}",class,
+"    public NetBroadcastTuple(MultiLayerConfiguration configuration, INDArray parameters, INDArray updaterState) {
+        this(configuration, null, parameters, updaterState);
+    }",method,
+"    public NetBroadcastTuple(ComputationGraphConfiguration graphConfiguration, INDArray parameters,
+                    INDArray updaterState) {
+        this(null, graphConfiguration, parameters, updaterState);
+    }",method,
+"    public NetBroadcastTuple(MultiLayerConfiguration configuration, ComputationGraphConfiguration graphConfiguration,
+                    INDArray parameters, INDArray updaterState) {
+        this(configuration, graphConfiguration, parameters, updaterState, new AtomicInteger(0));
+    }",method,
+"    public NetBroadcastTuple(MultiLayerConfiguration configuration, ComputationGraphConfiguration graphConfiguration,
+                    INDArray parameters, INDArray updaterState, AtomicInteger counter) {
+        this.configuration = configuration;
+        this.graphConfiguration = graphConfiguration;
+        this.parameters = parameters;
+        this.updaterState = updaterState;
+        this.counter = counter;
+    }",method,
+"import org.springframework.test.context.MergedContextConfiguration;
+class DuplicateJsonObjectContextCustomizerFactory implements ContextCustomizerFactory {
+	@Override
+	public ContextCustomizer createContextCustomizer(Class<?> testClass,
+			List<ContextConfigurationAttributes> configAttributes) {
+		return new DuplicateJsonObjectContextCustomizer();
+	}
+	private static class DuplicateJsonObjectContextCustomizer
+			implements ContextCustomizer {
+		private final Log logger = LogFactory
+				.getLog(DuplicateJsonObjectContextCustomizer.class);
+		@Override
+		public void customizeContext(ConfigurableApplicationContext context,
+				MergedContextConfiguration mergedConfig) {
+			List<URL> jsonObjects = findJsonObjects();
+			if (jsonObjects.size() > 1) {
+				logDuplicateJsonObjectsWarning(jsonObjects);
+			}
+		}
+		private List<URL> findJsonObjects() {
+			List<URL> jsonObjects = new ArrayList<>();
+			try {
+				Enumeration<URL> resources = getClass().getClassLoader()
+						.getResources(""org/json/JSONObject.class"");
+				while (resources.hasMoreElements()) {
+					jsonObjects.add(resources.nextElement());
+				}
+			}
+			catch (Exception ex) {
+				// Continue
+			}
+			return jsonObjects;
+		}
+		private void logDuplicateJsonObjectsWarning(List<URL> jsonObjects) {
+			StringBuilder message = new StringBuilder(""\n\nFound multiple occurrences of""
+					+ "" org.json.JSONObject on the class path:\n\n"");
+			for (URL jsonObject : jsonObjects) {
+				message.append(""\t"" + jsonObject + ""\n"");
+			}
+			message.append(""\nYou may wish to exclude one of them to ensure""
+					+ "" predictable runtime behaviour\n"");
+			this.logger.warn(message);
+		}
+		@Override
+		public int hashCode() {
+			return getClass().hashCode();
+		}
+		@Override
+		public boolean equals(Object obj) {
+			if (obj == null || obj.getClass() != getClass()) {
+				return false;
+			}
+			return true;
+		}
+	}
+}",class,
+"	private static class DuplicateJsonObjectContextCustomizer
+			implements ContextCustomizer {
+		private final Log logger = LogFactory
+				.getLog(DuplicateJsonObjectContextCustomizer.class);
+		@Override
+		public void customizeContext(ConfigurableApplicationContext context,
+				MergedContextConfiguration mergedConfig) {
+			List<URL> jsonObjects = findJsonObjects();
+			if (jsonObjects.size() > 1) {
+				logDuplicateJsonObjectsWarning(jsonObjects);
+			}
+		}
+		private List<URL> findJsonObjects() {
+			List<URL> jsonObjects = new ArrayList<>();
+			try {
+				Enumeration<URL> resources = getClass().getClassLoader()
+						.getResources(""org/json/JSONObject.class"");
+				while (resources.hasMoreElements()) {
+					jsonObjects.add(resources.nextElement());
+				}
+			}
+			catch (Exception ex) {
+				// Continue
+			}
+			return jsonObjects;
+		}
+		private void logDuplicateJsonObjectsWarning(List<URL> jsonObjects) {
+			StringBuilder message = new StringBuilder(""\n\nFound multiple occurrences of""
+					+ "" org.json.JSONObject on the class path:\n\n"");
+			for (URL jsonObject : jsonObjects) {
+				message.append(""\t"" + jsonObject + ""\n"");
+			}
+			message.append(""\nYou may wish to exclude one of them to ensure""
+					+ "" predictable runtime behaviour\n"");
+			this.logger.warn(message);
+		}
+		@Override
+		public int hashCode() {
+			return getClass().hashCode();
+		}
+		@Override
+		public boolean equals(Object obj) {
+			if (obj == null || obj.getClass() != getClass()) {
+				return false;
+			}
+			return true;
+		}
+	}",class,
+"					+ "" org.json.JSONObject on the class path:\n\n"");
+			for (URL jsonObject : jsonObjects) {
+				message.append(""\t"" + jsonObject + ""\n"");
+			}",class,
+"	@Override
+	public ContextCustomizer createContextCustomizer(Class<?> testClass,
+			List<ContextConfigurationAttributes> configAttributes) {
+		return new DuplicateJsonObjectContextCustomizer();
+	}",method,
+"		@Override
+		public void customizeContext(ConfigurableApplicationContext context,
+				MergedContextConfiguration mergedConfig) {
+			List<URL> jsonObjects = findJsonObjects();
+			if (jsonObjects.size() > 1) {
+				logDuplicateJsonObjectsWarning(jsonObjects);
+			}
+		}",method,
+"		private List<URL> findJsonObjects() {
+			List<URL> jsonObjects = new ArrayList<>();
+			try {
+				Enumeration<URL> resources = getClass().getClassLoader()
+						.getResources(""org/json/JSONObject.class"");
+				while (resources.hasMoreElements()) {
+					jsonObjects.add(resources.nextElement());
+				}
+			}
+			catch (Exception ex) {
+				// Continue
+			}
+			return jsonObjects;
+		}",method,
+"			catch (Exception ex) {
+				// Continue
+			}",method,
+"		private void logDuplicateJsonObjectsWarning(List<URL> jsonObjects) {
+			StringBuilder message = new StringBuilder(""\n\nFound multiple occurrences of""
+					+ "" org.json.JSONObject on the class path:\n\n"");
+			for (URL jsonObject : jsonObjects) {
+				message.append(""\t"" + jsonObject + ""\n"");
+			}
+			message.append(""\nYou may wish to exclude one of them to ensure""
+					+ "" predictable runtime behaviour\n"");
+			this.logger.warn(message);
+		}",method,

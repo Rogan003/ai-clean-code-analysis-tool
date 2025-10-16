@@ -1,0 +1,2867 @@
+code_snippet,type,score
+"        public void setFrom(SQLTableSource from) {
+            this.from = from;
+        }",method,
+"        public SQLTableSource getTableSource() {
+            return tableSource;
+        }",method,
+"        public void setTableSource(SQLTableSource tableSource) {
+            this.tableSource = tableSource;
+        }",method,
+"        public void addTableSource(long alias_hash, SQLTableSource tableSource) {
+            tableSourceMap.put(alias_hash, tableSource);
+        }",method,
+"        protected void declare(SQLDeclareItem x) {
+            if (declares == null) {
+                declares = new HashMap<Long, SQLDeclareItem>();
+            }
+            declares.put(x.getName().nameHashCode64(), x);
+        }",method,
+"            if (declares == null) {
+                declares = new HashMap<Long, SQLDeclareItem>();
+            }",method,
+"        protected SQLDeclareItem findDeclare(long nameHash) {
+            if (declares == null) {
+                return null;
+            }
+            return declares.get(nameHash);
+        }",method,
+"            if (declares == null) {
+                return null;
+            }",method,
+"public class TryEvaluator implements Evaluator {
+  @NotNull private final Evaluator myBodyEvaluator;
+  private final List<CatchEvaluator> myCatchBlockEvaluators;
+  @Nullable private final Evaluator myFinallyEvaluator;
+  public TryEvaluator(@NotNull Evaluator bodyEvaluator,
+                      List<CatchEvaluator> catchBlockEvaluators,
+                      @Nullable Evaluator finallyEvaluator) {
+    myBodyEvaluator = bodyEvaluator;
+    myCatchBlockEvaluators = catchBlockEvaluators;
+    myFinallyEvaluator = finallyEvaluator;
+  }
+  @Override
+  public Object evaluate(EvaluationContextImpl context) throws EvaluateException {
+    Object result = context.getSuspendContext().getDebugProcess().getVirtualMachineProxy().mirrorOfVoid();
+    try {
+      result = myBodyEvaluator.evaluate(context);
+    } catch (EvaluateException e) {
+      boolean catched = false;
+      ObjectReference vmException = e.getExceptionFromTargetVM();
+      if (vmException != null) {
+        for (CatchEvaluator evaluator : myCatchBlockEvaluators) {
+          if (evaluator != null && DebuggerUtils.instanceOf(vmException.type(), evaluator.getExceptionType())) {
+            result = evaluator.evaluate(vmException, context);
+            catched = true;
+            break;
+          }
+        }
+      }
+      if (!catched) {
+        throw e;
+      }
+    } finally {
+      if (myFinallyEvaluator != null) {
+        result = myFinallyEvaluator.evaluate(context);
+      }
+    }
+    return result;
+  }
+}",class,
+"  @Nullable private final Evaluator myFinallyEvaluator;
+  public TryEvaluator(@NotNull Evaluator bodyEvaluator,
+                      List<CatchEvaluator> catchBlockEvaluators,
+                      @Nullable Evaluator finallyEvaluator) {
+    myBodyEvaluator = bodyEvaluator;
+    myCatchBlockEvaluators = catchBlockEvaluators;
+    myFinallyEvaluator = finallyEvaluator;
+  }",method,
+"  @Override
+  public Object evaluate(EvaluationContextImpl context) throws EvaluateException {
+    Object result = context.getSuspendContext().getDebugProcess().getVirtualMachineProxy().mirrorOfVoid();
+    try {
+      result = myBodyEvaluator.evaluate(context);
+    } catch (EvaluateException e) {
+      boolean catched = false;
+      ObjectReference vmException = e.getExceptionFromTargetVM();
+      if (vmException != null) {
+        for (CatchEvaluator evaluator : myCatchBlockEvaluators) {
+          if (evaluator != null && DebuggerUtils.instanceOf(vmException.type(), evaluator.getExceptionType())) {
+            result = evaluator.evaluate(vmException, context);
+            catched = true;
+            break;
+          }
+        }
+      }
+      if (!catched) {
+        throw e;
+      }
+    } finally {
+      if (myFinallyEvaluator != null) {
+        result = myFinallyEvaluator.evaluate(context);
+      }
+    }
+    return result;
+  }",method,
+"      if (vmException != null) {
+        for (CatchEvaluator evaluator : myCatchBlockEvaluators) {
+          if (evaluator != null && DebuggerUtils.instanceOf(vmException.type(), evaluator.getExceptionType())) {
+            result = evaluator.evaluate(vmException, context);
+            catched = true;
+            break;
+          }
+        }
+      }",method,
+"        for (CatchEvaluator evaluator : myCatchBlockEvaluators) {
+          if (evaluator != null && DebuggerUtils.instanceOf(vmException.type(), evaluator.getExceptionType())) {
+            result = evaluator.evaluate(vmException, context);
+            catched = true;
+            break;
+          }
+        }",method,
+"      if (!catched) {
+        throw e;
+      }",method,
+"      if (myFinallyEvaluator != null) {
+        result = myFinallyEvaluator.evaluate(context);
+      }",method,
+"public class ParameterizedAssertionErrorTest {
+    @DataPoint
+    public static final String METHOD_NAME = ""methodName"";
+    @DataPoint
+    public static final NullPointerException NULL_POINTER_EXCEPTION = new NullPointerException();
+    @DataPoint
+    public static Object[] NO_OBJECTS = new Object[0];
+    @DataPoint
+    public static ParameterizedAssertionError A = new ParameterizedAssertionError(
+            NULL_POINTER_EXCEPTION, METHOD_NAME);
+    @DataPoint
+    public static ParameterizedAssertionError B = new ParameterizedAssertionError(
+            NULL_POINTER_EXCEPTION, METHOD_NAME);
+    @DataPoint
+    public static ParameterizedAssertionError B2 = new ParameterizedAssertionError(
+            NULL_POINTER_EXCEPTION, ""methodName2"");
+    @Theory
+    public void equalParameterizedAssertionErrorsHaveSameToString(
+            ParameterizedAssertionError a, ParameterizedAssertionError b) {
+        assumeThat(a, is(b));
+        assertThat(a.toString(), is(b.toString()));
+    }
+    @Theory
+    public void differentParameterizedAssertionErrorsHaveDifferentToStrings(
+            ParameterizedAssertionError a, ParameterizedAssertionError b) {
+        assumeThat(a, not(b));
+        assertThat(a.toString(), not(b.toString()));
+    }
+    @Theory
+    public void equalsReturnsTrue(Throwable targetException, String methodName,
+            Object[] params) {
+        assertThat(
+                new ParameterizedAssertionError(targetException, methodName, params),
+                is(new ParameterizedAssertionError(targetException, methodName, params)));
+    }
+    @Theory
+    public void sameHashCodeWhenEquals(Throwable targetException, String methodName,
+            Object[] params) {
+        ParameterizedAssertionError one = new ParameterizedAssertionError(
+                targetException, methodName, params);
+        ParameterizedAssertionError two = new ParameterizedAssertionError(
+                targetException, methodName, params);
+        assumeThat(one, is(two));
+        assertThat(one.hashCode(), is(two.hashCode()));
+    }
+    @Theory(nullsAccepted = false)
+    public void buildParameterizedAssertionError(String methodName, String param) {
+        assertThat(new ParameterizedAssertionError(
+                new RuntimeException(), methodName, param).toString(),
+                containsString(methodName));
+    }
+    @Theory
+    public void isNotEqualToNull(ParameterizedAssertionError a) {
+        assertFalse(a.equals(null));
+    }
+    @Test
+    public void canJoinWhenToStringFails() {
+        assertThat(ParameterizedAssertionError.join("" "", new Object() {
+            @Override
+            public String toString() {
+                throw new UnsupportedOperationException();
+            }
+        }), is(""[toString failed]""));
+    }
+}",class,
+"    @Theory
+    public void equalParameterizedAssertionErrorsHaveSameToString(
+            ParameterizedAssertionError a, ParameterizedAssertionError b) {
+        assumeThat(a, is(b));
+        assertThat(a.toString(), is(b.toString()));
+    }",method,
+"    @Theory
+    public void differentParameterizedAssertionErrorsHaveDifferentToStrings(
+            ParameterizedAssertionError a, ParameterizedAssertionError b) {
+        assumeThat(a, not(b));
+        assertThat(a.toString(), not(b.toString()));
+    }",method,
+"    @Theory
+    public void equalsReturnsTrue(Throwable targetException, String methodName,
+            Object[] params) {
+        assertThat(
+                new ParameterizedAssertionError(targetException, methodName, params),
+                is(new ParameterizedAssertionError(targetException, methodName, params)));
+    }",method,
+"    @Theory
+    public void sameHashCodeWhenEquals(Throwable targetException, String methodName,
+            Object[] params) {
+        ParameterizedAssertionError one = new ParameterizedAssertionError(
+                targetException, methodName, params);
+        ParameterizedAssertionError two = new ParameterizedAssertionError(
+                targetException, methodName, params);
+        assumeThat(one, is(two));
+        assertThat(one.hashCode(), is(two.hashCode()));
+    }",method,
+"    @Theory(nullsAccepted = false)
+    public void buildParameterizedAssertionError(String methodName, String param) {
+        assertThat(new ParameterizedAssertionError(
+                new RuntimeException(), methodName, param).toString(),
+                containsString(methodName));
+    }",method,
+"    @Theory
+    public void isNotEqualToNull(ParameterizedAssertionError a) {
+        assertFalse(a.equals(null));
+    }",method,
+"    @Test
+    public void canJoinWhenToStringFails() {
+        assertThat(ParameterizedAssertionError.join("" "", new Object() {
+            @Override
+            public String toString() {
+                throw new UnsupportedOperationException();
+            }
+        }), is(""[toString failed]""));
+    }",method,
+"        assertThat(ParameterizedAssertionError.join("" "", new Object() {
+            @Override
+            public String toString() {
+                throw new UnsupportedOperationException();
+            }
+        }",method,
+"            @Override
+            public String toString() {
+                throw new UnsupportedOperationException();
+            }",method,
+"public abstract class BaseRemoteModelService<T> extends ModelServiceWithCalSupport implements ModelService<T> {
+	private String m_host;
+	private String m_name;
+	private int m_port = 2281; // default admin port
+	@Inject
+	private String m_serviceUri = ""/cat/r/model"";
+	public BaseRemoteModelService(String name) {
+		m_name = name;
+	}
+	protected abstract T buildModel(String xml) throws SAXException, IOException;
+	public URL buildUrl(ModelRequest request) throws MalformedURLException {
+		StringBuilder sb = new StringBuilder(64);
+		for (Entry<String, String> e : request.getProperties().entrySet()) {
+			if (e.getValue() != null) {
+				try {
+					sb.append('&');
+					sb.append(e.getKey()).append('=').append(URLEncoder.encode(e.getValue(), ""utf-8""));
+				} catch (Exception ex) {
+					Cat.logError(ex);
+				}
+			}
+		}
+		String url = String.format(""http://%s:%s%s/%s/%s/%s?op=xml%s"", m_host, m_port, m_serviceUri, m_name,
+		      request.getDomain(), request.getPeriod(), sb.toString());
+		return new URL(url);
+	}
+	@Override
+	public String getName() {
+		return m_name;
+	}
+	@Override
+	public ModelResponse<T> invoke(ModelRequest request) {
+		Transaction t = newTransaction(""ModelService"", getClass().getSimpleName());
+		try {
+			URL url = buildUrl(request);
+			t.addData(url.toString());
+			InputStream in = Urls.forIO().connectTimeout(1000).readTimeout(10000).openStream(url.toExternalForm());
+			GZIPInputStream gzip = new GZIPInputStream(in);
+			String xml = Files.forIO().readFrom(gzip, ""utf-8"");
+			int len = xml == null ? 0 : xml.length();
+			t.addData(""length"", len);
+			if (len > 0) {
+				ModelResponse<T> response = new ModelResponse<T>();
+				T report = buildModel(xml);
+				response.setModel(report);
+				t.setStatus(Message.SUCCESS);
+				return response;
+			} else {
+				t.setStatus(""NoReport"");
+			}
+		} catch (Exception e) {
+			t.setStatus(e);
+		} finally {
+			t.complete();
+		}
+		return null;
+	}
+	@Override
+	public boolean isEligable(ModelRequest request) {
+		ModelPeriod period = request.getPeriod();
+		return !period.isHistorical();
+	}
+	public void setHost(String host) {
+		m_host = host;
+	}
+	public void setPort(int port) {
+		m_port = port;
+	}
+	public void setServiceUri(String serviceUri) {
+		m_serviceUri = serviceUri;
+	}
+	@Override
+	public String toString() {
+		StringBuilder sb = new StringBuilder(64);
+		sb.append(getClass().getSimpleName()).append('[');
+		sb.append(""name="").append(m_name);
+		sb.append(']');
+		return sb.toString();
+	}
+}",class,
+"	public BaseRemoteModelService(String name) {
+		m_name = name;
+	}",method,
+"	public URL buildUrl(ModelRequest request) throws MalformedURLException {
+		StringBuilder sb = new StringBuilder(64);
+		for (Entry<String, String> e : request.getProperties().entrySet()) {
+			if (e.getValue() != null) {
+				try {
+					sb.append('&');
+					sb.append(e.getKey()).append('=').append(URLEncoder.encode(e.getValue(), ""utf-8""));
+				} catch (Exception ex) {
+					Cat.logError(ex);
+				}
+			}
+		}
+		String url = String.format(""http://%s:%s%s/%s/%s/%s?op=xml%s"", m_host, m_port, m_serviceUri, m_name,
+		      request.getDomain(), request.getPeriod(), sb.toString());
+		return new URL(url);
+	}
+	@Override
+	public String getName() {
+		return m_name;
+	}
+	@Override
+	public ModelResponse<T> invoke(ModelRequest request) {
+		Transaction t = newTransaction(""ModelService"", getClass().getSimpleName());
+		try {
+			URL url = buildUrl(request);
+			t.addData(url.toString());
+			InputStream in = Urls.forIO().connectTimeout(1000).readTimeout(10000).openStream(url.toExternalForm());
+			GZIPInputStream gzip = new GZIPInputStream(in);
+			String xml = Files.forIO().readFrom(gzip, ""utf-8"");
+			int len = xml == null ? 0 : xml.length();
+			t.addData(""length"", len);
+			if (len > 0) {
+				ModelResponse<T> response = new ModelResponse<T>();
+				T report = buildModel(xml);
+				response.setModel(report);
+				t.setStatus(Message.SUCCESS);
+				return response;
+			} else {
+				t.setStatus(""NoReport"");
+			}
+		} catch (Exception e) {
+			t.setStatus(e);
+		} finally {
+			t.complete();
+		}
+		return null;
+	}
+	@Override
+	public boolean isEligable(ModelRequest request) {
+		ModelPeriod period = request.getPeriod();
+		return !period.isHistorical();
+	}
+	public void setHost(String host) {
+		m_host = host;
+	}
+	public void setPort(int port) {
+		m_port = port;
+	}
+	public void setServiceUri(String serviceUri) {
+		m_serviceUri = serviceUri;
+	}
+	@Override
+	public String toString() {
+		StringBuilder sb = new StringBuilder(64);
+		sb.append(getClass().getSimpleName()).append('[');
+		sb.append(""name="").append(m_name);
+		sb.append(']');
+		return sb.toString();
+	}",method,
+"public class PersistentBlobProvider {
+  private static final String TAG = PersistentBlobProvider.class.getSimpleName();
+  private static final String     URI_STRING            = ""content://org.thoughtcrime.securesms/capture-new"";
+  public  static final Uri        CONTENT_URI           = Uri.parse(URI_STRING);
+  public  static final String     AUTHORITY             = ""org.thoughtcrime.securesms"";
+  public  static final String     EXPECTED_PATH_OLD     = ""capture#"";
+  public  static final String     EXPECTED_PATH_NEW     = ""capture-new*/*/#"";
+  private static final int        MIMETYPE_PATH_SEGMENT = 1;
+  private static final int        FILENAME_PATH_SEGMENT = 2;
+  private static final int        FILESIZE_PATH_SEGMENT = 3;
+  private static final String     BLOB_EXTENSION        = ""blob"";
+  private static final int        MATCH_OLD             = 1;
+  private static final int        MATCH_NEW             = 2;
+  private static final UriMatcher MATCHER               = new UriMatcher(UriMatcher.NO_MATCH) {{
+    addURI(AUTHORITY, EXPECTED_PATH_OLD, MATCH_OLD);
+    addURI(AUTHORITY, EXPECTED_PATH_NEW, MATCH_NEW);
+  }};
+  private static volatile PersistentBlobProvider instance;
+  public static PersistentBlobProvider getInstance(Context context) {
+    if (instance == null) {
+      synchronized (PersistentBlobProvider.class) {
+        if (instance == null) {
+          instance = new PersistentBlobProvider(context);
+        }
+      }
+    }
+    return instance;
+  }
+  private final Context           context;
+  @SuppressLint(""UseSparseArrays"")
+  private final Map<Long, byte[]> cache    = Collections.synchronizedMap(new HashMap<Long, byte[]>());
+  private final ExecutorService   executor = Executors.newCachedThreadPool();
+  private PersistentBlobProvider(Context context) {
+    this.context = context.getApplicationContext();
+  }
+  public Uri create(@NonNull  MasterSecret masterSecret,
+                    @NonNull  byte[] blobBytes,
+                    @NonNull  String mimeType,
+                    @Nullable String fileName)
+  {
+    final long id = System.currentTimeMillis();
+    cache.put(id, blobBytes);
+    return create(masterSecret, new ByteArrayInputStream(blobBytes), id, mimeType, fileName, (long) blobBytes.length);
+  }
+  public Uri create(@NonNull  MasterSecret masterSecret,
+                    @NonNull  InputStream input,
+                    @NonNull  String mimeType,
+                    @Nullable String fileName,
+                    @Nullable Long   fileSize)
+  {
+    return create(masterSecret, input, System.currentTimeMillis(), mimeType, fileName, fileSize);
+  }
+  private Uri create(@NonNull  MasterSecret masterSecret,
+                     @NonNull  InputStream input,
+                               long id,
+                     @NonNull  String mimeType,
+                     @Nullable String fileName,
+                     @Nullable Long fileSize)
+  {
+    persistToDisk(masterSecret, id, input);
+    final Uri uniqueUri = CONTENT_URI.buildUpon()
+                                     .appendPath(mimeType)
+                                     .appendPath(getEncryptedFileName(masterSecret, fileName))
+                                     .appendEncodedPath(String.valueOf(fileSize))
+                                     .appendEncodedPath(String.valueOf(System.currentTimeMillis()))
+                                     .build();
+    return ContentUris.withAppendedId(uniqueUri, id);
+  }
+  private void persistToDisk(final MasterSecret masterSecret, final long id, final InputStream input) {
+    executor.submit(new Runnable() {
+      @Override
+      public void run() {
+        try {
+          OutputStream output = new EncryptingPartOutputStream(getFile(id), masterSecret);
+          Log.w(TAG, ""Starting stream copy...."");
+          Util.copy(input, output);
+          Log.w(TAG, ""Stream copy finished..."");
+        } catch (IOException e) {
+          Log.w(TAG, e);
+        }
+        cache.remove(id);
+      }
+    });
+  }
+  public Uri createForExternal(@NonNull String mimeType) throws IOException {
+    return Uri.fromFile(new File(getExternalDir(context),
+                        String.valueOf(System.currentTimeMillis()) + ""."" + getExtensionFromMimeType(mimeType)));
+  }
+  public boolean delete(@NonNull Uri uri) {
+    switch (MATCHER.match(uri)) {
+    case MATCH_OLD:
+    case MATCH_NEW:
+      long id = ContentUris.parseId(uri);
+      cache.remove(id);
+      return getFile(ContentUris.parseId(uri)).delete();
+    }
+    return false;
+  }
+  public @NonNull InputStream getStream(MasterSecret masterSecret, long id) throws IOException {
+    final byte[] cached = cache.get(id);
+    return cached != null ? new ByteArrayInputStream(cached)
+                          : DecryptingPartInputStream.createFor(masterSecret, getFile(id));
+  }
+  private File getFile(long id) {
+    File legacy = getLegacyFile(id);
+    File cache  = getCacheFile(id);
+    if (legacy.exists()) return legacy;
+    else                 return cache;
+  }
+  private File getLegacyFile(long id) {
+    return new File(context.getDir(""captures"", Context.MODE_PRIVATE), id + ""."" + BLOB_EXTENSION);
+  }
+  private File getCacheFile(long id) {
+    return new File(context.getCacheDir(), ""capture-"" + id + ""."" + BLOB_EXTENSION);
+  }
+  private @Nullable String getEncryptedFileName(@NonNull MasterSecret masterSecret, @Nullable String fileName) {
+    if (fileName == null) return null;
+    return new MasterCipher(masterSecret).encryptBody(fileName);
+  }
+  public static @Nullable String getMimeType(@NonNull Context context, @NonNull Uri persistentBlobUri) {
+    if (!isAuthority(context, persistentBlobUri)) return null;
+    return isExternalBlobUri(context, persistentBlobUri)
+        ? getMimeTypeFromExtension(persistentBlobUri)
+        : persistentBlobUri.getPathSegments().get(MIMETYPE_PATH_SEGMENT);
+  }
+  public static @Nullable String getFileName(@NonNull Context context, @NonNull MasterSecret masterSecret, @NonNull Uri persistentBlobUri) {
+    if (!isAuthority(context, persistentBlobUri))      return null;
+    if (isExternalBlobUri(context, persistentBlobUri)) return null;
+    if (MATCHER.match(persistentBlobUri) == MATCH_OLD) return null;
+    String fileName = persistentBlobUri.getPathSegments().get(FILENAME_PATH_SEGMENT);
+    try {
+      return new MasterCipher(masterSecret).decryptBody(fileName);
+    } catch (InvalidMessageException e) {
+      Log.w(TAG, ""No valid filename for URI"");
+    }
+    return null;
+  }
+  public static @Nullable Long getFileSize(@NonNull Context context, Uri persistentBlobUri) {
+    if (!isAuthority(context, persistentBlobUri))      return null;
+    if (isExternalBlobUri(context, persistentBlobUri)) return null;
+    if (MATCHER.match(persistentBlobUri) == MATCH_OLD) return null;
+    try {
+      return Long.valueOf(persistentBlobUri.getPathSegments().get(FILESIZE_PATH_SEGMENT));
+    } catch (NumberFormatException e) {
+      Log.w(TAG, e);
+      return null;
+    }
+  }
+  private static @NonNull String getExtensionFromMimeType(String mimeType) {
+    final String extension = MimeTypeMap.getSingleton().getExtensionFromMimeType(mimeType);
+    return extension != null ? extension : BLOB_EXTENSION;
+  }
+  private static @NonNull String getMimeTypeFromExtension(@NonNull Uri uri) {
+    final String mimeType = MimeTypeMap.getSingleton()
+        .getMimeTypeFromExtension(MimeTypeMap.getFileExtensionFromUrl(uri.toString()));
+    return mimeType != null ? mimeType : ""application/octet-stream"";
+  }
+  private static @NonNull File getExternalDir(Context context) throws IOException {
+    final File externalDir = context.getExternalFilesDir(null);
+    if (externalDir == null) throw new IOException(""no external files directory"");
+    return externalDir;
+  }",class,
+"  public static PersistentBlobProvider getInstance(Context context) {
+    if (instance == null) {
+      synchronized (PersistentBlobProvider.class) {
+        if (instance == null) {
+          instance = new PersistentBlobProvider(context);
+        }
+      }
+    }
+    return instance;
+  }
+  private final Context           context;
+  @SuppressLint(""UseSparseArrays"")
+  private final Map<Long, byte[]> cache    = Collections.synchronizedMap(new HashMap<Long, byte[]>());
+  private final ExecutorService   executor = Executors.newCachedThreadPool();
+  private PersistentBlobProvider(Context context) {
+    this.context = context.getApplicationContext();
+  }
+  public Uri create(@NonNull  MasterSecret masterSecret,
+                    @NonNull  byte[] blobBytes,
+                    @NonNull  String mimeType,
+                    @Nullable String fileName)
+  {
+    final long id = System.currentTimeMillis();
+    cache.put(id, blobBytes);
+    return create(masterSecret, new ByteArrayInputStream(blobBytes), id, mimeType, fileName, (long) blobBytes.length);
+  }
+  public Uri create(@NonNull  MasterSecret masterSecret,
+                    @NonNull  InputStream input,
+                    @NonNull  String mimeType,
+                    @Nullable String fileName,
+                    @Nullable Long   fileSize)
+  {
+    return create(masterSecret, input, System.currentTimeMillis(), mimeType, fileName, fileSize);
+  }
+  private Uri create(@NonNull  MasterSecret masterSecret,
+                     @NonNull  InputStream input,
+                               long id,
+                     @NonNull  String mimeType,
+                     @Nullable String fileName,
+                     @Nullable Long fileSize)
+  {
+    persistToDisk(masterSecret, id, input);
+    final Uri uniqueUri = CONTENT_URI.buildUpon()
+                                     .appendPath(mimeType)
+                                     .appendPath(getEncryptedFileName(masterSecret, fileName))
+                                     .appendEncodedPath(String.valueOf(fileSize))
+                                     .appendEncodedPath(String.valueOf(System.currentTimeMillis()))
+                                     .build();
+    return ContentUris.withAppendedId(uniqueUri, id);
+  }
+  private void persistToDisk(final MasterSecret masterSecret, final long id, final InputStream input) {
+    executor.submit(new Runnable() {
+      @Override
+      public void run() {
+        try {
+          OutputStream output = new EncryptingPartOutputStream(getFile(id), masterSecret);
+          Log.w(TAG, ""Starting stream copy...."");
+          Util.copy(input, output);
+          Log.w(TAG, ""Stream copy finished..."");
+        } catch (IOException e) {
+          Log.w(TAG, e);
+        }
+        cache.remove(id);
+      }
+    });
+  }
+  public Uri createForExternal(@NonNull String mimeType) throws IOException {
+    return Uri.fromFile(new File(getExternalDir(context),
+                        String.valueOf(System.currentTimeMillis()) + ""."" + getExtensionFromMimeType(mimeType)));
+  }
+  public boolean delete(@NonNull Uri uri) {
+    switch (MATCHER.match(uri)) {
+    case MATCH_OLD:
+    case MATCH_NEW:
+      long id = ContentUris.parseId(uri);
+      cache.remove(id);
+      return getFile(ContentUris.parseId(uri)).delete();
+    }
+    return false;
+  }
+  public @NonNull InputStream getStream(MasterSecret masterSecret, long id) throws IOException {
+    final byte[] cached = cache.get(id);
+    return cached != null ? new ByteArrayInputStream(cached)
+                          : DecryptingPartInputStream.createFor(masterSecret, getFile(id));
+  }
+  private File getFile(long id) {
+    File legacy = getLegacyFile(id);
+    File cache  = getCacheFile(id);
+    if (legacy.exists()) return legacy;
+    else                 return cache;
+  }
+  private File getLegacyFile(long id) {
+    return new File(context.getDir(""captures"", Context.MODE_PRIVATE), id + ""."" + BLOB_EXTENSION);
+  }
+  private File getCacheFile(long id) {
+    return new File(context.getCacheDir(), ""capture-"" + id + ""."" + BLOB_EXTENSION);
+  }
+  private @Nullable String getEncryptedFileName(@NonNull MasterSecret masterSecret, @Nullable String fileName) {
+    if (fileName == null) return null;
+    return new MasterCipher(masterSecret).encryptBody(fileName);
+  }
+  public static @Nullable String getMimeType(@NonNull Context context, @NonNull Uri persistentBlobUri) {
+    if (!isAuthority(context, persistentBlobUri)) return null;
+    return isExternalBlobUri(context, persistentBlobUri)
+        ? getMimeTypeFromExtension(persistentBlobUri)
+        : persistentBlobUri.getPathSegments().get(MIMETYPE_PATH_SEGMENT);
+  }
+  public static @Nullable String getFileName(@NonNull Context context, @NonNull MasterSecret masterSecret, @NonNull Uri persistentBlobUri) {
+    if (!isAuthority(context, persistentBlobUri))      return null;
+    if (isExternalBlobUri(context, persistentBlobUri)) return null;
+    if (MATCHER.match(persistentBlobUri) == MATCH_OLD) return null;
+    String fileName = persistentBlobUri.getPathSegments().get(FILENAME_PATH_SEGMENT);
+    try {
+      return new MasterCipher(masterSecret).decryptBody(fileName);
+    } catch (InvalidMessageException e) {
+      Log.w(TAG, ""No valid filename for URI"");
+    }
+    return null;
+  }
+  public static @Nullable Long getFileSize(@NonNull Context context, Uri persistentBlobUri) {
+    if (!isAuthority(context, persistentBlobUri))      return null;
+    if (isExternalBlobUri(context, persistentBlobUri)) return null;
+    if (MATCHER.match(persistentBlobUri) == MATCH_OLD) return null;
+    try {
+      return Long.valueOf(persistentBlobUri.getPathSegments().get(FILESIZE_PATH_SEGMENT));
+    } catch (NumberFormatException e) {
+      Log.w(TAG, e);
+      return null;
+    }
+  }
+  private static @NonNull String getExtensionFromMimeType(String mimeType) {
+    final String extension = MimeTypeMap.getSingleton().getExtensionFromMimeType(mimeType);
+    return extension != null ? extension : BLOB_EXTENSION;
+  }
+  private static @NonNull String getMimeTypeFromExtension(@NonNull Uri uri) {
+    final String mimeType = MimeTypeMap.getSingleton()
+        .getMimeTypeFromExtension(MimeTypeMap.getFileExtensionFromUrl(uri.toString()));
+    return mimeType != null ? mimeType : ""application/octet-stream"";
+  }
+  private static @NonNull File getExternalDir(Context context) throws IOException {
+    final File externalDir = context.getExternalFilesDir(null);
+    if (externalDir == null) throw new IOException(""no external files directory"");
+    return externalDir;
+  }
+  public static boolean isAuthority(@NonNull Context context, @NonNull Uri uri) {
+    int matchResult = MATCHER.match(uri);
+    return matchResult == MATCH_NEW || matchResult == MATCH_OLD || isExternalBlobUri(context, uri);
+  }",method,
+"    if (instance == null) {
+      synchronized (PersistentBlobProvider.class) {
+        if (instance == null) {
+          instance = new PersistentBlobProvider(context);
+        }
+      }
+    }
+    return instance;
+  }
+  private final Context           context;
+  @SuppressLint(""UseSparseArrays"")
+  private final Map<Long, byte[]> cache    = Collections.synchronizedMap(new HashMap<Long, byte[]>());
+  private final ExecutorService   executor = Executors.newCachedThreadPool();
+  private PersistentBlobProvider(Context context) {
+    this.context = context.getApplicationContext();
+  }
+  public Uri create(@NonNull  MasterSecret masterSecret,
+                    @NonNull  byte[] blobBytes,
+                    @NonNull  String mimeType,
+                    @Nullable String fileName)
+  {
+    final long id = System.currentTimeMillis();
+    cache.put(id, blobBytes);
+    return create(masterSecret, new ByteArrayInputStream(blobBytes), id, mimeType, fileName, (long) blobBytes.length);
+  }
+  public Uri create(@NonNull  MasterSecret masterSecret,
+                    @NonNull  InputStream input,
+                    @NonNull  String mimeType,
+                    @Nullable String fileName,
+                    @Nullable Long   fileSize)
+  {
+    return create(masterSecret, input, System.currentTimeMillis(), mimeType, fileName, fileSize);
+  }
+  private Uri create(@NonNull  MasterSecret masterSecret,
+                     @NonNull  InputStream input,
+                               long id,
+                     @NonNull  String mimeType,
+                     @Nullable String fileName,
+                     @Nullable Long fileSize)
+  {
+    persistToDisk(masterSecret, id, input);
+    final Uri uniqueUri = CONTENT_URI.buildUpon()
+                                     .appendPath(mimeType)
+                                     .appendPath(getEncryptedFileName(masterSecret, fileName))
+                                     .appendEncodedPath(String.valueOf(fileSize))
+                                     .appendEncodedPath(String.valueOf(System.currentTimeMillis()))
+                                     .build();
+    return ContentUris.withAppendedId(uniqueUri, id);
+  }
+  private void persistToDisk(final MasterSecret masterSecret, final long id, final InputStream input) {
+    executor.submit(new Runnable() {
+      @Override
+      public void run() {
+        try {
+          OutputStream output = new EncryptingPartOutputStream(getFile(id), masterSecret);
+          Log.w(TAG, ""Starting stream copy...."");
+          Util.copy(input, output);
+          Log.w(TAG, ""Stream copy finished..."");
+        } catch (IOException e) {
+          Log.w(TAG, e);
+        }
+        cache.remove(id);
+      }
+    });
+  }
+  public Uri createForExternal(@NonNull String mimeType) throws IOException {
+    return Uri.fromFile(new File(getExternalDir(context),
+                        String.valueOf(System.currentTimeMillis()) + ""."" + getExtensionFromMimeType(mimeType)));
+  }
+  public boolean delete(@NonNull Uri uri) {
+    switch (MATCHER.match(uri)) {
+    case MATCH_OLD:
+    case MATCH_NEW:
+      long id = ContentUris.parseId(uri);
+      cache.remove(id);
+      return getFile(ContentUris.parseId(uri)).delete();
+    }
+    return false;
+  }
+  public @NonNull InputStream getStream(MasterSecret masterSecret, long id) throws IOException {
+    final byte[] cached = cache.get(id);
+    return cached != null ? new ByteArrayInputStream(cached)
+                          : DecryptingPartInputStream.createFor(masterSecret, getFile(id));
+  }
+  private File getFile(long id) {
+    File legacy = getLegacyFile(id);
+    File cache  = getCacheFile(id);
+    if (legacy.exists()) return legacy;
+    else                 return cache;
+  }
+  private File getLegacyFile(long id) {
+    return new File(context.getDir(""captures"", Context.MODE_PRIVATE), id + ""."" + BLOB_EXTENSION);
+  }
+  private File getCacheFile(long id) {
+    return new File(context.getCacheDir(), ""capture-"" + id + ""."" + BLOB_EXTENSION);
+  }
+  private @Nullable String getEncryptedFileName(@NonNull MasterSecret masterSecret, @Nullable String fileName) {
+    if (fileName == null) return null;
+    return new MasterCipher(masterSecret).encryptBody(fileName);
+  }
+  public static @Nullable String getMimeType(@NonNull Context context, @NonNull Uri persistentBlobUri) {
+    if (!isAuthority(context, persistentBlobUri)) return null;
+    return isExternalBlobUri(context, persistentBlobUri)
+        ? getMimeTypeFromExtension(persistentBlobUri)
+        : persistentBlobUri.getPathSegments().get(MIMETYPE_PATH_SEGMENT);
+  }
+  public static @Nullable String getFileName(@NonNull Context context, @NonNull MasterSecret masterSecret, @NonNull Uri persistentBlobUri) {
+    if (!isAuthority(context, persistentBlobUri))      return null;
+    if (isExternalBlobUri(context, persistentBlobUri)) return null;
+    if (MATCHER.match(persistentBlobUri) == MATCH_OLD) return null;
+    String fileName = persistentBlobUri.getPathSegments().get(FILENAME_PATH_SEGMENT);
+    try {
+      return new MasterCipher(masterSecret).decryptBody(fileName);
+    } catch (InvalidMessageException e) {
+      Log.w(TAG, ""No valid filename for URI"");
+    }
+    return null;
+  }
+  public static @Nullable Long getFileSize(@NonNull Context context, Uri persistentBlobUri) {
+    if (!isAuthority(context, persistentBlobUri))      return null;
+    if (isExternalBlobUri(context, persistentBlobUri)) return null;
+    if (MATCHER.match(persistentBlobUri) == MATCH_OLD) return null;
+    try {
+      return Long.valueOf(persistentBlobUri.getPathSegments().get(FILESIZE_PATH_SEGMENT));
+    } catch (NumberFormatException e) {
+      Log.w(TAG, e);
+      return null;
+    }
+  }
+  private static @NonNull String getExtensionFromMimeType(String mimeType) {
+    final String extension = MimeTypeMap.getSingleton().getExtensionFromMimeType(mimeType);
+    return extension != null ? extension : BLOB_EXTENSION;
+  }
+  private static @NonNull String getMimeTypeFromExtension(@NonNull Uri uri) {
+    final String mimeType = MimeTypeMap.getSingleton()
+        .getMimeTypeFromExtension(MimeTypeMap.getFileExtensionFromUrl(uri.toString()));
+    return mimeType != null ? mimeType : ""application/octet-stream"";
+  }
+  private static @NonNull File getExternalDir(Context context) throws IOException {
+    final File externalDir = context.getExternalFilesDir(null);
+    if (externalDir == null) throw new IOException(""no external files directory"");
+    return externalDir;
+  }
+  public static boolean isAuthority(@NonNull Context context, @NonNull Uri uri) {
+    int matchResult = MATCHER.match(uri);
+    return matchResult == MATCH_NEW || matchResult == MATCH_OLD || isExternalBlobUri(context, uri);
+  }",method,
+"      synchronized (PersistentBlobProvider.class) {
+        if (instance == null) {
+          instance = new PersistentBlobProvider(context);
+        }
+      }
+    }
+    return instance;
+  }
+  private final Context           context;
+  @SuppressLint(""UseSparseArrays"")
+  private final Map<Long, byte[]> cache    = Collections.synchronizedMap(new HashMap<Long, byte[]>());
+  private final ExecutorService   executor = Executors.newCachedThreadPool();
+  private PersistentBlobProvider(Context context) {
+    this.context = context.getApplicationContext();
+  }
+  public Uri create(@NonNull  MasterSecret masterSecret,
+                    @NonNull  byte[] blobBytes,
+                    @NonNull  String mimeType,
+                    @Nullable String fileName)
+  {
+    final long id = System.currentTimeMillis();
+    cache.put(id, blobBytes);
+    return create(masterSecret, new ByteArrayInputStream(blobBytes), id, mimeType, fileName, (long) blobBytes.length);
+  }
+  public Uri create(@NonNull  MasterSecret masterSecret,
+                    @NonNull  InputStream input,
+                    @NonNull  String mimeType,
+                    @Nullable String fileName,
+                    @Nullable Long   fileSize)
+  {
+    return create(masterSecret, input, System.currentTimeMillis(), mimeType, fileName, fileSize);
+  }
+  private Uri create(@NonNull  MasterSecret masterSecret,
+                     @NonNull  InputStream input,
+                               long id,
+                     @NonNull  String mimeType,
+                     @Nullable String fileName,
+                     @Nullable Long fileSize)
+  {
+    persistToDisk(masterSecret, id, input);
+    final Uri uniqueUri = CONTENT_URI.buildUpon()
+                                     .appendPath(mimeType)
+                                     .appendPath(getEncryptedFileName(masterSecret, fileName))
+                                     .appendEncodedPath(String.valueOf(fileSize))
+                                     .appendEncodedPath(String.valueOf(System.currentTimeMillis()))
+                                     .build();
+    return ContentUris.withAppendedId(uniqueUri, id);
+  }
+  private void persistToDisk(final MasterSecret masterSecret, final long id, final InputStream input) {
+    executor.submit(new Runnable() {
+      @Override
+      public void run() {
+        try {
+          OutputStream output = new EncryptingPartOutputStream(getFile(id), masterSecret);
+          Log.w(TAG, ""Starting stream copy...."");
+          Util.copy(input, output);
+          Log.w(TAG, ""Stream copy finished..."");
+        } catch (IOException e) {
+          Log.w(TAG, e);
+        }
+        cache.remove(id);
+      }
+    });
+  }
+  public Uri createForExternal(@NonNull String mimeType) throws IOException {
+    return Uri.fromFile(new File(getExternalDir(context),
+                        String.valueOf(System.currentTimeMillis()) + ""."" + getExtensionFromMimeType(mimeType)));
+  }
+  public boolean delete(@NonNull Uri uri) {
+    switch (MATCHER.match(uri)) {
+    case MATCH_OLD:
+    case MATCH_NEW:
+      long id = ContentUris.parseId(uri);
+      cache.remove(id);
+      return getFile(ContentUris.parseId(uri)).delete();
+    }
+    return false;
+  }
+  public @NonNull InputStream getStream(MasterSecret masterSecret, long id) throws IOException {
+    final byte[] cached = cache.get(id);
+    return cached != null ? new ByteArrayInputStream(cached)
+                          : DecryptingPartInputStream.createFor(masterSecret, getFile(id));
+  }
+  private File getFile(long id) {
+    File legacy = getLegacyFile(id);
+    File cache  = getCacheFile(id);
+    if (legacy.exists()) return legacy;
+    else                 return cache;
+  }
+  private File getLegacyFile(long id) {
+    return new File(context.getDir(""captures"", Context.MODE_PRIVATE), id + ""."" + BLOB_EXTENSION);
+  }
+  private File getCacheFile(long id) {
+    return new File(context.getCacheDir(), ""capture-"" + id + ""."" + BLOB_EXTENSION);
+  }
+  private @Nullable String getEncryptedFileName(@NonNull MasterSecret masterSecret, @Nullable String fileName) {
+    if (fileName == null) return null;
+    return new MasterCipher(masterSecret).encryptBody(fileName);
+  }
+  public static @Nullable String getMimeType(@NonNull Context context, @NonNull Uri persistentBlobUri) {
+    if (!isAuthority(context, persistentBlobUri)) return null;
+    return isExternalBlobUri(context, persistentBlobUri)
+        ? getMimeTypeFromExtension(persistentBlobUri)
+        : persistentBlobUri.getPathSegments().get(MIMETYPE_PATH_SEGMENT);
+  }
+  public static @Nullable String getFileName(@NonNull Context context, @NonNull MasterSecret masterSecret, @NonNull Uri persistentBlobUri) {
+    if (!isAuthority(context, persistentBlobUri))      return null;
+    if (isExternalBlobUri(context, persistentBlobUri)) return null;
+    if (MATCHER.match(persistentBlobUri) == MATCH_OLD) return null;
+    String fileName = persistentBlobUri.getPathSegments().get(FILENAME_PATH_SEGMENT);
+    try {
+      return new MasterCipher(masterSecret).decryptBody(fileName);
+    } catch (InvalidMessageException e) {
+      Log.w(TAG, ""No valid filename for URI"");
+    }
+    return null;
+  }
+  public static @Nullable Long getFileSize(@NonNull Context context, Uri persistentBlobUri) {
+    if (!isAuthority(context, persistentBlobUri))      return null;
+    if (isExternalBlobUri(context, persistentBlobUri)) return null;
+    if (MATCHER.match(persistentBlobUri) == MATCH_OLD) return null;
+    try {
+      return Long.valueOf(persistentBlobUri.getPathSegments().get(FILESIZE_PATH_SEGMENT));
+    } catch (NumberFormatException e) {
+      Log.w(TAG, e);
+      return null;
+    }
+  }
+  private static @NonNull String getExtensionFromMimeType(String mimeType) {
+    final String extension = MimeTypeMap.getSingleton().getExtensionFromMimeType(mimeType);
+    return extension != null ? extension : BLOB_EXTENSION;
+  }
+  private static @NonNull String getMimeTypeFromExtension(@NonNull Uri uri) {
+    final String mimeType = MimeTypeMap.getSingleton()
+        .getMimeTypeFromExtension(MimeTypeMap.getFileExtensionFromUrl(uri.toString()));
+    return mimeType != null ? mimeType : ""application/octet-stream"";
+  }
+  private static @NonNull File getExternalDir(Context context) throws IOException {
+    final File externalDir = context.getExternalFilesDir(null);
+    if (externalDir == null) throw new IOException(""no external files directory"");
+    return externalDir;
+  }
+  public static boolean isAuthority(@NonNull Context context, @NonNull Uri uri) {
+    int matchResult = MATCHER.match(uri);
+    return matchResult == MATCH_NEW || matchResult == MATCH_OLD || isExternalBlobUri(context, uri);
+  }",method,
+"        if (instance == null) {
+          instance = new PersistentBlobProvider(context);
+        }
+      }
+    }
+    return instance;
+  }
+  private final Context           context;
+  @SuppressLint(""UseSparseArrays"")
+  private final Map<Long, byte[]> cache    = Collections.synchronizedMap(new HashMap<Long, byte[]>());
+  private final ExecutorService   executor = Executors.newCachedThreadPool();
+  private PersistentBlobProvider(Context context) {
+    this.context = context.getApplicationContext();
+  }
+  public Uri create(@NonNull  MasterSecret masterSecret,
+                    @NonNull  byte[] blobBytes,
+                    @NonNull  String mimeType,
+                    @Nullable String fileName)
+  {
+    final long id = System.currentTimeMillis();
+    cache.put(id, blobBytes);
+    return create(masterSecret, new ByteArrayInputStream(blobBytes), id, mimeType, fileName, (long) blobBytes.length);
+  }
+  public Uri create(@NonNull  MasterSecret masterSecret,
+                    @NonNull  InputStream input,
+                    @NonNull  String mimeType,
+                    @Nullable String fileName,
+                    @Nullable Long   fileSize)
+  {
+    return create(masterSecret, input, System.currentTimeMillis(), mimeType, fileName, fileSize);
+  }
+  private Uri create(@NonNull  MasterSecret masterSecret,
+                     @NonNull  InputStream input,
+                               long id,
+                     @NonNull  String mimeType,
+                     @Nullable String fileName,
+                     @Nullable Long fileSize)
+  {
+    persistToDisk(masterSecret, id, input);
+    final Uri uniqueUri = CONTENT_URI.buildUpon()
+                                     .appendPath(mimeType)
+                                     .appendPath(getEncryptedFileName(masterSecret, fileName))
+                                     .appendEncodedPath(String.valueOf(fileSize))
+                                     .appendEncodedPath(String.valueOf(System.currentTimeMillis()))
+                                     .build();
+    return ContentUris.withAppendedId(uniqueUri, id);
+  }
+  private void persistToDisk(final MasterSecret masterSecret, final long id, final InputStream input) {
+    executor.submit(new Runnable() {
+      @Override
+      public void run() {
+        try {
+          OutputStream output = new EncryptingPartOutputStream(getFile(id), masterSecret);
+          Log.w(TAG, ""Starting stream copy...."");
+          Util.copy(input, output);
+          Log.w(TAG, ""Stream copy finished..."");
+        } catch (IOException e) {
+          Log.w(TAG, e);
+        }
+        cache.remove(id);
+      }
+    });
+  }
+  public Uri createForExternal(@NonNull String mimeType) throws IOException {
+    return Uri.fromFile(new File(getExternalDir(context),
+                        String.valueOf(System.currentTimeMillis()) + ""."" + getExtensionFromMimeType(mimeType)));
+  }
+  public boolean delete(@NonNull Uri uri) {
+    switch (MATCHER.match(uri)) {
+    case MATCH_OLD:
+    case MATCH_NEW:
+      long id = ContentUris.parseId(uri);
+      cache.remove(id);
+      return getFile(ContentUris.parseId(uri)).delete();
+    }
+    return false;
+  }
+  public @NonNull InputStream getStream(MasterSecret masterSecret, long id) throws IOException {
+    final byte[] cached = cache.get(id);
+    return cached != null ? new ByteArrayInputStream(cached)
+                          : DecryptingPartInputStream.createFor(masterSecret, getFile(id));
+  }
+  private File getFile(long id) {
+    File legacy = getLegacyFile(id);
+    File cache  = getCacheFile(id);
+    if (legacy.exists()) return legacy;
+    else                 return cache;
+  }
+  private File getLegacyFile(long id) {
+    return new File(context.getDir(""captures"", Context.MODE_PRIVATE), id + ""."" + BLOB_EXTENSION);
+  }
+  private File getCacheFile(long id) {
+    return new File(context.getCacheDir(), ""capture-"" + id + ""."" + BLOB_EXTENSION);
+  }
+  private @Nullable String getEncryptedFileName(@NonNull MasterSecret masterSecret, @Nullable String fileName) {
+    if (fileName == null) return null;
+    return new MasterCipher(masterSecret).encryptBody(fileName);
+  }
+  public static @Nullable String getMimeType(@NonNull Context context, @NonNull Uri persistentBlobUri) {
+    if (!isAuthority(context, persistentBlobUri)) return null;
+    return isExternalBlobUri(context, persistentBlobUri)
+        ? getMimeTypeFromExtension(persistentBlobUri)
+        : persistentBlobUri.getPathSegments().get(MIMETYPE_PATH_SEGMENT);
+  }
+  public static @Nullable String getFileName(@NonNull Context context, @NonNull MasterSecret masterSecret, @NonNull Uri persistentBlobUri) {
+    if (!isAuthority(context, persistentBlobUri))      return null;
+    if (isExternalBlobUri(context, persistentBlobUri)) return null;
+    if (MATCHER.match(persistentBlobUri) == MATCH_OLD) return null;
+    String fileName = persistentBlobUri.getPathSegments().get(FILENAME_PATH_SEGMENT);
+    try {
+      return new MasterCipher(masterSecret).decryptBody(fileName);
+    } catch (InvalidMessageException e) {
+      Log.w(TAG, ""No valid filename for URI"");
+    }
+    return null;
+  }
+  public static @Nullable Long getFileSize(@NonNull Context context, Uri persistentBlobUri) {
+    if (!isAuthority(context, persistentBlobUri))      return null;
+    if (isExternalBlobUri(context, persistentBlobUri)) return null;
+    if (MATCHER.match(persistentBlobUri) == MATCH_OLD) return null;
+    try {
+      return Long.valueOf(persistentBlobUri.getPathSegments().get(FILESIZE_PATH_SEGMENT));
+    } catch (NumberFormatException e) {
+      Log.w(TAG, e);
+      return null;
+    }
+  }
+  private static @NonNull String getExtensionFromMimeType(String mimeType) {
+    final String extension = MimeTypeMap.getSingleton().getExtensionFromMimeType(mimeType);
+    return extension != null ? extension : BLOB_EXTENSION;
+  }
+  private static @NonNull String getMimeTypeFromExtension(@NonNull Uri uri) {
+    final String mimeType = MimeTypeMap.getSingleton()
+        .getMimeTypeFromExtension(MimeTypeMap.getFileExtensionFromUrl(uri.toString()));
+    return mimeType != null ? mimeType : ""application/octet-stream"";
+  }
+  private static @NonNull File getExternalDir(Context context) throws IOException {
+    final File externalDir = context.getExternalFilesDir(null);
+    if (externalDir == null) throw new IOException(""no external files directory"");
+    return externalDir;
+  }
+  public static boolean isAuthority(@NonNull Context context, @NonNull Uri uri) {
+    int matchResult = MATCHER.match(uri);
+    return matchResult == MATCH_NEW || matchResult == MATCH_OLD || isExternalBlobUri(context, uri);
+  }",method,
+"  private PersistentBlobProvider(Context context) {
+    this.context = context.getApplicationContext();
+  }
+  public Uri create(@NonNull  MasterSecret masterSecret,
+                    @NonNull  byte[] blobBytes,
+                    @NonNull  String mimeType,
+                    @Nullable String fileName)
+  {
+    final long id = System.currentTimeMillis();
+    cache.put(id, blobBytes);
+    return create(masterSecret, new ByteArrayInputStream(blobBytes), id, mimeType, fileName, (long) blobBytes.length);
+  }
+  public Uri create(@NonNull  MasterSecret masterSecret,
+                    @NonNull  InputStream input,
+                    @NonNull  String mimeType,
+                    @Nullable String fileName,
+                    @Nullable Long   fileSize)
+  {
+    return create(masterSecret, input, System.currentTimeMillis(), mimeType, fileName, fileSize);
+  }
+  private Uri create(@NonNull  MasterSecret masterSecret,
+                     @NonNull  InputStream input,
+                               long id,
+                     @NonNull  String mimeType,
+                     @Nullable String fileName,
+                     @Nullable Long fileSize)
+  {
+    persistToDisk(masterSecret, id, input);
+    final Uri uniqueUri = CONTENT_URI.buildUpon()
+                                     .appendPath(mimeType)
+                                     .appendPath(getEncryptedFileName(masterSecret, fileName))
+                                     .appendEncodedPath(String.valueOf(fileSize))
+                                     .appendEncodedPath(String.valueOf(System.currentTimeMillis()))
+                                     .build();
+    return ContentUris.withAppendedId(uniqueUri, id);
+  }
+  private void persistToDisk(final MasterSecret masterSecret, final long id, final InputStream input) {
+    executor.submit(new Runnable() {
+      @Override
+      public void run() {
+        try {
+          OutputStream output = new EncryptingPartOutputStream(getFile(id), masterSecret);
+          Log.w(TAG, ""Starting stream copy...."");
+          Util.copy(input, output);
+          Log.w(TAG, ""Stream copy finished..."");
+        } catch (IOException e) {
+          Log.w(TAG, e);
+        }
+        cache.remove(id);
+      }
+    });
+  }
+  public Uri createForExternal(@NonNull String mimeType) throws IOException {
+    return Uri.fromFile(new File(getExternalDir(context),
+                        String.valueOf(System.currentTimeMillis()) + ""."" + getExtensionFromMimeType(mimeType)));
+  }
+  public boolean delete(@NonNull Uri uri) {
+    switch (MATCHER.match(uri)) {
+    case MATCH_OLD:
+    case MATCH_NEW:
+      long id = ContentUris.parseId(uri);
+      cache.remove(id);
+      return getFile(ContentUris.parseId(uri)).delete();
+    }
+    return false;
+  }
+  public @NonNull InputStream getStream(MasterSecret masterSecret, long id) throws IOException {
+    final byte[] cached = cache.get(id);
+    return cached != null ? new ByteArrayInputStream(cached)
+                          : DecryptingPartInputStream.createFor(masterSecret, getFile(id));
+  }
+  private File getFile(long id) {
+    File legacy = getLegacyFile(id);
+    File cache  = getCacheFile(id);
+    if (legacy.exists()) return legacy;
+    else                 return cache;
+  }
+  private File getLegacyFile(long id) {
+    return new File(context.getDir(""captures"", Context.MODE_PRIVATE), id + ""."" + BLOB_EXTENSION);
+  }
+  private File getCacheFile(long id) {
+    return new File(context.getCacheDir(), ""capture-"" + id + ""."" + BLOB_EXTENSION);
+  }
+  private @Nullable String getEncryptedFileName(@NonNull MasterSecret masterSecret, @Nullable String fileName) {
+    if (fileName == null) return null;
+    return new MasterCipher(masterSecret).encryptBody(fileName);
+  }
+  public static @Nullable String getMimeType(@NonNull Context context, @NonNull Uri persistentBlobUri) {
+    if (!isAuthority(context, persistentBlobUri)) return null;
+    return isExternalBlobUri(context, persistentBlobUri)
+        ? getMimeTypeFromExtension(persistentBlobUri)
+        : persistentBlobUri.getPathSegments().get(MIMETYPE_PATH_SEGMENT);
+  }
+  public static @Nullable String getFileName(@NonNull Context context, @NonNull MasterSecret masterSecret, @NonNull Uri persistentBlobUri) {
+    if (!isAuthority(context, persistentBlobUri))      return null;
+    if (isExternalBlobUri(context, persistentBlobUri)) return null;
+    if (MATCHER.match(persistentBlobUri) == MATCH_OLD) return null;
+    String fileName = persistentBlobUri.getPathSegments().get(FILENAME_PATH_SEGMENT);
+    try {
+      return new MasterCipher(masterSecret).decryptBody(fileName);
+    } catch (InvalidMessageException e) {
+      Log.w(TAG, ""No valid filename for URI"");
+    }
+    return null;
+  }
+  public static @Nullable Long getFileSize(@NonNull Context context, Uri persistentBlobUri) {
+    if (!isAuthority(context, persistentBlobUri))      return null;
+    if (isExternalBlobUri(context, persistentBlobUri)) return null;
+    if (MATCHER.match(persistentBlobUri) == MATCH_OLD) return null;
+    try {
+      return Long.valueOf(persistentBlobUri.getPathSegments().get(FILESIZE_PATH_SEGMENT));
+    } catch (NumberFormatException e) {
+      Log.w(TAG, e);
+      return null;
+    }
+  }
+  private static @NonNull String getExtensionFromMimeType(String mimeType) {
+    final String extension = MimeTypeMap.getSingleton().getExtensionFromMimeType(mimeType);
+    return extension != null ? extension : BLOB_EXTENSION;
+  }
+  private static @NonNull String getMimeTypeFromExtension(@NonNull Uri uri) {
+    final String mimeType = MimeTypeMap.getSingleton()
+        .getMimeTypeFromExtension(MimeTypeMap.getFileExtensionFromUrl(uri.toString()));
+    return mimeType != null ? mimeType : ""application/octet-stream"";
+  }
+  private static @NonNull File getExternalDir(Context context) throws IOException {
+    final File externalDir = context.getExternalFilesDir(null);
+    if (externalDir == null) throw new IOException(""no external files directory"");
+    return externalDir;
+  }
+  public static boolean isAuthority(@NonNull Context context, @NonNull Uri uri) {
+    int matchResult = MATCHER.match(uri);
+    return matchResult == MATCH_NEW || matchResult == MATCH_OLD || isExternalBlobUri(context, uri);
+  }",method,
+"  public Uri create(@NonNull  MasterSecret masterSecret,
+                    @NonNull  byte[] blobBytes,
+                    @NonNull  String mimeType,
+                    @Nullable String fileName)
+  {
+    final long id = System.currentTimeMillis();
+    cache.put(id, blobBytes);
+    return create(masterSecret, new ByteArrayInputStream(blobBytes), id, mimeType, fileName, (long) blobBytes.length);
+  }
+  public Uri create(@NonNull  MasterSecret masterSecret,
+                    @NonNull  InputStream input,
+                    @NonNull  String mimeType,
+                    @Nullable String fileName,
+                    @Nullable Long   fileSize)
+  {
+    return create(masterSecret, input, System.currentTimeMillis(), mimeType, fileName, fileSize);
+  }
+  private Uri create(@NonNull  MasterSecret masterSecret,
+                     @NonNull  InputStream input,
+                               long id,
+                     @NonNull  String mimeType,
+                     @Nullable String fileName,
+                     @Nullable Long fileSize)
+  {
+    persistToDisk(masterSecret, id, input);
+    final Uri uniqueUri = CONTENT_URI.buildUpon()
+                                     .appendPath(mimeType)
+                                     .appendPath(getEncryptedFileName(masterSecret, fileName))
+                                     .appendEncodedPath(String.valueOf(fileSize))
+                                     .appendEncodedPath(String.valueOf(System.currentTimeMillis()))
+                                     .build();
+    return ContentUris.withAppendedId(uniqueUri, id);
+  }
+  private void persistToDisk(final MasterSecret masterSecret, final long id, final InputStream input) {
+    executor.submit(new Runnable() {
+      @Override
+      public void run() {
+        try {
+          OutputStream output = new EncryptingPartOutputStream(getFile(id), masterSecret);
+          Log.w(TAG, ""Starting stream copy...."");
+          Util.copy(input, output);
+          Log.w(TAG, ""Stream copy finished..."");
+        } catch (IOException e) {
+          Log.w(TAG, e);
+        }
+        cache.remove(id);
+      }
+    });
+  }
+  public Uri createForExternal(@NonNull String mimeType) throws IOException {
+    return Uri.fromFile(new File(getExternalDir(context),
+                        String.valueOf(System.currentTimeMillis()) + ""."" + getExtensionFromMimeType(mimeType)));
+  }
+  public boolean delete(@NonNull Uri uri) {
+    switch (MATCHER.match(uri)) {
+    case MATCH_OLD:
+    case MATCH_NEW:
+      long id = ContentUris.parseId(uri);
+      cache.remove(id);
+      return getFile(ContentUris.parseId(uri)).delete();
+    }
+    return false;
+  }
+  public @NonNull InputStream getStream(MasterSecret masterSecret, long id) throws IOException {
+    final byte[] cached = cache.get(id);
+    return cached != null ? new ByteArrayInputStream(cached)
+                          : DecryptingPartInputStream.createFor(masterSecret, getFile(id));
+  }
+  private File getFile(long id) {
+    File legacy = getLegacyFile(id);
+    File cache  = getCacheFile(id);
+    if (legacy.exists()) return legacy;
+    else                 return cache;
+  }
+  private File getLegacyFile(long id) {
+    return new File(context.getDir(""captures"", Context.MODE_PRIVATE), id + ""."" + BLOB_EXTENSION);
+  }
+  private File getCacheFile(long id) {
+    return new File(context.getCacheDir(), ""capture-"" + id + ""."" + BLOB_EXTENSION);
+  }
+  private @Nullable String getEncryptedFileName(@NonNull MasterSecret masterSecret, @Nullable String fileName) {
+    if (fileName == null) return null;
+    return new MasterCipher(masterSecret).encryptBody(fileName);
+  }
+  public static @Nullable String getMimeType(@NonNull Context context, @NonNull Uri persistentBlobUri) {
+    if (!isAuthority(context, persistentBlobUri)) return null;
+    return isExternalBlobUri(context, persistentBlobUri)
+        ? getMimeTypeFromExtension(persistentBlobUri)
+        : persistentBlobUri.getPathSegments().get(MIMETYPE_PATH_SEGMENT);
+  }
+  public static @Nullable String getFileName(@NonNull Context context, @NonNull MasterSecret masterSecret, @NonNull Uri persistentBlobUri) {
+    if (!isAuthority(context, persistentBlobUri))      return null;
+    if (isExternalBlobUri(context, persistentBlobUri)) return null;
+    if (MATCHER.match(persistentBlobUri) == MATCH_OLD) return null;
+    String fileName = persistentBlobUri.getPathSegments().get(FILENAME_PATH_SEGMENT);
+    try {
+      return new MasterCipher(masterSecret).decryptBody(fileName);
+    } catch (InvalidMessageException e) {
+      Log.w(TAG, ""No valid filename for URI"");
+    }
+    return null;
+  }
+  public static @Nullable Long getFileSize(@NonNull Context context, Uri persistentBlobUri) {
+    if (!isAuthority(context, persistentBlobUri))      return null;
+    if (isExternalBlobUri(context, persistentBlobUri)) return null;
+    if (MATCHER.match(persistentBlobUri) == MATCH_OLD) return null;
+    try {
+      return Long.valueOf(persistentBlobUri.getPathSegments().get(FILESIZE_PATH_SEGMENT));
+    } catch (NumberFormatException e) {
+      Log.w(TAG, e);
+      return null;
+    }
+  }
+  private static @NonNull String getExtensionFromMimeType(String mimeType) {
+    final String extension = MimeTypeMap.getSingleton().getExtensionFromMimeType(mimeType);
+    return extension != null ? extension : BLOB_EXTENSION;
+  }
+  private static @NonNull String getMimeTypeFromExtension(@NonNull Uri uri) {
+    final String mimeType = MimeTypeMap.getSingleton()
+        .getMimeTypeFromExtension(MimeTypeMap.getFileExtensionFromUrl(uri.toString()));
+    return mimeType != null ? mimeType : ""application/octet-stream"";
+  }
+  private static @NonNull File getExternalDir(Context context) throws IOException {
+    final File externalDir = context.getExternalFilesDir(null);
+    if (externalDir == null) throw new IOException(""no external files directory"");
+    return externalDir;
+  }
+  public static boolean isAuthority(@NonNull Context context, @NonNull Uri uri) {
+    int matchResult = MATCHER.match(uri);
+    return matchResult == MATCH_NEW || matchResult == MATCH_OLD || isExternalBlobUri(context, uri);
+  }",method,
+"  public Uri create(@NonNull  MasterSecret masterSecret,
+                    @NonNull  InputStream input,
+                    @NonNull  String mimeType,
+                    @Nullable String fileName,
+                    @Nullable Long   fileSize)
+  {
+    return create(masterSecret, input, System.currentTimeMillis(), mimeType, fileName, fileSize);
+  }
+  private Uri create(@NonNull  MasterSecret masterSecret,
+                     @NonNull  InputStream input,
+                               long id,
+                     @NonNull  String mimeType,
+                     @Nullable String fileName,
+                     @Nullable Long fileSize)
+  {
+    persistToDisk(masterSecret, id, input);
+    final Uri uniqueUri = CONTENT_URI.buildUpon()
+                                     .appendPath(mimeType)
+                                     .appendPath(getEncryptedFileName(masterSecret, fileName))
+                                     .appendEncodedPath(String.valueOf(fileSize))
+                                     .appendEncodedPath(String.valueOf(System.currentTimeMillis()))
+                                     .build();
+    return ContentUris.withAppendedId(uniqueUri, id);
+  }
+  private void persistToDisk(final MasterSecret masterSecret, final long id, final InputStream input) {
+    executor.submit(new Runnable() {
+      @Override
+      public void run() {
+        try {
+          OutputStream output = new EncryptingPartOutputStream(getFile(id), masterSecret);
+          Log.w(TAG, ""Starting stream copy...."");
+          Util.copy(input, output);
+          Log.w(TAG, ""Stream copy finished..."");
+        } catch (IOException e) {
+          Log.w(TAG, e);
+        }
+        cache.remove(id);
+      }
+    });
+  }
+  public Uri createForExternal(@NonNull String mimeType) throws IOException {
+    return Uri.fromFile(new File(getExternalDir(context),
+                        String.valueOf(System.currentTimeMillis()) + ""."" + getExtensionFromMimeType(mimeType)));
+  }
+  public boolean delete(@NonNull Uri uri) {
+    switch (MATCHER.match(uri)) {
+    case MATCH_OLD:
+    case MATCH_NEW:
+      long id = ContentUris.parseId(uri);
+      cache.remove(id);
+      return getFile(ContentUris.parseId(uri)).delete();
+    }
+    return false;
+  }
+  public @NonNull InputStream getStream(MasterSecret masterSecret, long id) throws IOException {
+    final byte[] cached = cache.get(id);
+    return cached != null ? new ByteArrayInputStream(cached)
+                          : DecryptingPartInputStream.createFor(masterSecret, getFile(id));
+  }
+  private File getFile(long id) {
+    File legacy = getLegacyFile(id);
+    File cache  = getCacheFile(id);
+    if (legacy.exists()) return legacy;
+    else                 return cache;
+  }
+  private File getLegacyFile(long id) {
+    return new File(context.getDir(""captures"", Context.MODE_PRIVATE), id + ""."" + BLOB_EXTENSION);
+  }
+  private File getCacheFile(long id) {
+    return new File(context.getCacheDir(), ""capture-"" + id + ""."" + BLOB_EXTENSION);
+  }
+  private @Nullable String getEncryptedFileName(@NonNull MasterSecret masterSecret, @Nullable String fileName) {
+    if (fileName == null) return null;
+    return new MasterCipher(masterSecret).encryptBody(fileName);
+  }
+  public static @Nullable String getMimeType(@NonNull Context context, @NonNull Uri persistentBlobUri) {
+    if (!isAuthority(context, persistentBlobUri)) return null;
+    return isExternalBlobUri(context, persistentBlobUri)
+        ? getMimeTypeFromExtension(persistentBlobUri)
+        : persistentBlobUri.getPathSegments().get(MIMETYPE_PATH_SEGMENT);
+  }
+  public static @Nullable String getFileName(@NonNull Context context, @NonNull MasterSecret masterSecret, @NonNull Uri persistentBlobUri) {
+    if (!isAuthority(context, persistentBlobUri))      return null;
+    if (isExternalBlobUri(context, persistentBlobUri)) return null;
+    if (MATCHER.match(persistentBlobUri) == MATCH_OLD) return null;
+    String fileName = persistentBlobUri.getPathSegments().get(FILENAME_PATH_SEGMENT);
+    try {
+      return new MasterCipher(masterSecret).decryptBody(fileName);
+    } catch (InvalidMessageException e) {
+      Log.w(TAG, ""No valid filename for URI"");
+    }
+    return null;
+  }
+  public static @Nullable Long getFileSize(@NonNull Context context, Uri persistentBlobUri) {
+    if (!isAuthority(context, persistentBlobUri))      return null;
+    if (isExternalBlobUri(context, persistentBlobUri)) return null;
+    if (MATCHER.match(persistentBlobUri) == MATCH_OLD) return null;
+    try {
+      return Long.valueOf(persistentBlobUri.getPathSegments().get(FILESIZE_PATH_SEGMENT));
+    } catch (NumberFormatException e) {
+      Log.w(TAG, e);
+      return null;
+    }
+  }
+  private static @NonNull String getExtensionFromMimeType(String mimeType) {
+    final String extension = MimeTypeMap.getSingleton().getExtensionFromMimeType(mimeType);
+    return extension != null ? extension : BLOB_EXTENSION;
+  }
+  private static @NonNull String getMimeTypeFromExtension(@NonNull Uri uri) {
+    final String mimeType = MimeTypeMap.getSingleton()
+        .getMimeTypeFromExtension(MimeTypeMap.getFileExtensionFromUrl(uri.toString()));
+    return mimeType != null ? mimeType : ""application/octet-stream"";
+  }
+  private static @NonNull File getExternalDir(Context context) throws IOException {
+    final File externalDir = context.getExternalFilesDir(null);
+    if (externalDir == null) throw new IOException(""no external files directory"");
+    return externalDir;
+  }
+  public static boolean isAuthority(@NonNull Context context, @NonNull Uri uri) {
+    int matchResult = MATCHER.match(uri);
+    return matchResult == MATCH_NEW || matchResult == MATCH_OLD || isExternalBlobUri(context, uri);
+  }",method,
+"  private Uri create(@NonNull  MasterSecret masterSecret,
+                     @NonNull  InputStream input,
+                               long id,
+                     @NonNull  String mimeType,
+                     @Nullable String fileName,
+                     @Nullable Long fileSize)
+  {
+    persistToDisk(masterSecret, id, input);
+    final Uri uniqueUri = CONTENT_URI.buildUpon()
+                                     .appendPath(mimeType)
+                                     .appendPath(getEncryptedFileName(masterSecret, fileName))
+                                     .appendEncodedPath(String.valueOf(fileSize))
+                                     .appendEncodedPath(String.valueOf(System.currentTimeMillis()))
+                                     .build();
+    return ContentUris.withAppendedId(uniqueUri, id);
+  }
+  private void persistToDisk(final MasterSecret masterSecret, final long id, final InputStream input) {
+    executor.submit(new Runnable() {
+      @Override
+      public void run() {
+        try {
+          OutputStream output = new EncryptingPartOutputStream(getFile(id), masterSecret);
+          Log.w(TAG, ""Starting stream copy...."");
+          Util.copy(input, output);
+          Log.w(TAG, ""Stream copy finished..."");
+        } catch (IOException e) {
+          Log.w(TAG, e);
+        }
+        cache.remove(id);
+      }
+    });
+  }
+  public Uri createForExternal(@NonNull String mimeType) throws IOException {
+    return Uri.fromFile(new File(getExternalDir(context),
+                        String.valueOf(System.currentTimeMillis()) + ""."" + getExtensionFromMimeType(mimeType)));
+  }
+  public boolean delete(@NonNull Uri uri) {
+    switch (MATCHER.match(uri)) {
+    case MATCH_OLD:
+    case MATCH_NEW:
+      long id = ContentUris.parseId(uri);
+      cache.remove(id);
+      return getFile(ContentUris.parseId(uri)).delete();
+    }
+    return false;
+  }
+  public @NonNull InputStream getStream(MasterSecret masterSecret, long id) throws IOException {
+    final byte[] cached = cache.get(id);
+    return cached != null ? new ByteArrayInputStream(cached)
+                          : DecryptingPartInputStream.createFor(masterSecret, getFile(id));
+  }
+  private File getFile(long id) {
+    File legacy = getLegacyFile(id);
+    File cache  = getCacheFile(id);
+    if (legacy.exists()) return legacy;
+    else                 return cache;
+  }
+  private File getLegacyFile(long id) {
+    return new File(context.getDir(""captures"", Context.MODE_PRIVATE), id + ""."" + BLOB_EXTENSION);
+  }
+  private File getCacheFile(long id) {
+    return new File(context.getCacheDir(), ""capture-"" + id + ""."" + BLOB_EXTENSION);
+  }
+  private @Nullable String getEncryptedFileName(@NonNull MasterSecret masterSecret, @Nullable String fileName) {
+    if (fileName == null) return null;
+    return new MasterCipher(masterSecret).encryptBody(fileName);
+  }
+  public static @Nullable String getMimeType(@NonNull Context context, @NonNull Uri persistentBlobUri) {
+    if (!isAuthority(context, persistentBlobUri)) return null;
+    return isExternalBlobUri(context, persistentBlobUri)
+        ? getMimeTypeFromExtension(persistentBlobUri)
+        : persistentBlobUri.getPathSegments().get(MIMETYPE_PATH_SEGMENT);
+  }
+  public static @Nullable String getFileName(@NonNull Context context, @NonNull MasterSecret masterSecret, @NonNull Uri persistentBlobUri) {
+    if (!isAuthority(context, persistentBlobUri))      return null;
+    if (isExternalBlobUri(context, persistentBlobUri)) return null;
+    if (MATCHER.match(persistentBlobUri) == MATCH_OLD) return null;
+    String fileName = persistentBlobUri.getPathSegments().get(FILENAME_PATH_SEGMENT);
+    try {
+      return new MasterCipher(masterSecret).decryptBody(fileName);
+    } catch (InvalidMessageException e) {
+      Log.w(TAG, ""No valid filename for URI"");
+    }
+    return null;
+  }
+  public static @Nullable Long getFileSize(@NonNull Context context, Uri persistentBlobUri) {
+    if (!isAuthority(context, persistentBlobUri))      return null;
+    if (isExternalBlobUri(context, persistentBlobUri)) return null;
+    if (MATCHER.match(persistentBlobUri) == MATCH_OLD) return null;
+    try {
+      return Long.valueOf(persistentBlobUri.getPathSegments().get(FILESIZE_PATH_SEGMENT));
+    } catch (NumberFormatException e) {
+      Log.w(TAG, e);
+      return null;
+    }
+  }
+  private static @NonNull String getExtensionFromMimeType(String mimeType) {
+    final String extension = MimeTypeMap.getSingleton().getExtensionFromMimeType(mimeType);
+    return extension != null ? extension : BLOB_EXTENSION;
+  }
+  private static @NonNull String getMimeTypeFromExtension(@NonNull Uri uri) {
+    final String mimeType = MimeTypeMap.getSingleton()
+        .getMimeTypeFromExtension(MimeTypeMap.getFileExtensionFromUrl(uri.toString()));
+    return mimeType != null ? mimeType : ""application/octet-stream"";
+  }
+  private static @NonNull File getExternalDir(Context context) throws IOException {
+    final File externalDir = context.getExternalFilesDir(null);
+    if (externalDir == null) throw new IOException(""no external files directory"");
+    return externalDir;
+  }
+  public static boolean isAuthority(@NonNull Context context, @NonNull Uri uri) {
+    int matchResult = MATCHER.match(uri);
+    return matchResult == MATCH_NEW || matchResult == MATCH_OLD || isExternalBlobUri(context, uri);
+  }",method,
+"  private void persistToDisk(final MasterSecret masterSecret, final long id, final InputStream input) {
+    executor.submit(new Runnable() {
+      @Override
+      public void run() {
+        try {
+          OutputStream output = new EncryptingPartOutputStream(getFile(id), masterSecret);
+          Log.w(TAG, ""Starting stream copy...."");
+          Util.copy(input, output);
+          Log.w(TAG, ""Stream copy finished..."");
+        } catch (IOException e) {
+          Log.w(TAG, e);
+        }
+        cache.remove(id);
+      }
+    });
+  }
+  public Uri createForExternal(@NonNull String mimeType) throws IOException {
+    return Uri.fromFile(new File(getExternalDir(context),
+                        String.valueOf(System.currentTimeMillis()) + ""."" + getExtensionFromMimeType(mimeType)));
+  }
+  public boolean delete(@NonNull Uri uri) {
+    switch (MATCHER.match(uri)) {
+    case MATCH_OLD:
+    case MATCH_NEW:
+      long id = ContentUris.parseId(uri);
+      cache.remove(id);
+      return getFile(ContentUris.parseId(uri)).delete();
+    }
+    return false;
+  }
+  public @NonNull InputStream getStream(MasterSecret masterSecret, long id) throws IOException {
+    final byte[] cached = cache.get(id);
+    return cached != null ? new ByteArrayInputStream(cached)
+                          : DecryptingPartInputStream.createFor(masterSecret, getFile(id));
+  }
+  private File getFile(long id) {
+    File legacy = getLegacyFile(id);
+    File cache  = getCacheFile(id);
+    if (legacy.exists()) return legacy;
+    else                 return cache;
+  }
+  private File getLegacyFile(long id) {
+    return new File(context.getDir(""captures"", Context.MODE_PRIVATE), id + ""."" + BLOB_EXTENSION);
+  }
+  private File getCacheFile(long id) {
+    return new File(context.getCacheDir(), ""capture-"" + id + ""."" + BLOB_EXTENSION);
+  }
+  private @Nullable String getEncryptedFileName(@NonNull MasterSecret masterSecret, @Nullable String fileName) {
+    if (fileName == null) return null;
+    return new MasterCipher(masterSecret).encryptBody(fileName);
+  }
+  public static @Nullable String getMimeType(@NonNull Context context, @NonNull Uri persistentBlobUri) {
+    if (!isAuthority(context, persistentBlobUri)) return null;
+    return isExternalBlobUri(context, persistentBlobUri)
+        ? getMimeTypeFromExtension(persistentBlobUri)
+        : persistentBlobUri.getPathSegments().get(MIMETYPE_PATH_SEGMENT);
+  }
+  public static @Nullable String getFileName(@NonNull Context context, @NonNull MasterSecret masterSecret, @NonNull Uri persistentBlobUri) {
+    if (!isAuthority(context, persistentBlobUri))      return null;
+    if (isExternalBlobUri(context, persistentBlobUri)) return null;
+    if (MATCHER.match(persistentBlobUri) == MATCH_OLD) return null;
+    String fileName = persistentBlobUri.getPathSegments().get(FILENAME_PATH_SEGMENT);
+    try {
+      return new MasterCipher(masterSecret).decryptBody(fileName);
+    } catch (InvalidMessageException e) {
+      Log.w(TAG, ""No valid filename for URI"");
+    }
+    return null;
+  }
+  public static @Nullable Long getFileSize(@NonNull Context context, Uri persistentBlobUri) {
+    if (!isAuthority(context, persistentBlobUri))      return null;
+    if (isExternalBlobUri(context, persistentBlobUri)) return null;
+    if (MATCHER.match(persistentBlobUri) == MATCH_OLD) return null;
+    try {
+      return Long.valueOf(persistentBlobUri.getPathSegments().get(FILESIZE_PATH_SEGMENT));
+    } catch (NumberFormatException e) {
+      Log.w(TAG, e);
+      return null;
+    }
+  }
+  private static @NonNull String getExtensionFromMimeType(String mimeType) {
+    final String extension = MimeTypeMap.getSingleton().getExtensionFromMimeType(mimeType);
+    return extension != null ? extension : BLOB_EXTENSION;
+  }
+  private static @NonNull String getMimeTypeFromExtension(@NonNull Uri uri) {
+    final String mimeType = MimeTypeMap.getSingleton()
+        .getMimeTypeFromExtension(MimeTypeMap.getFileExtensionFromUrl(uri.toString()));
+    return mimeType != null ? mimeType : ""application/octet-stream"";
+  }
+  private static @NonNull File getExternalDir(Context context) throws IOException {
+    final File externalDir = context.getExternalFilesDir(null);
+    if (externalDir == null) throw new IOException(""no external files directory"");
+    return externalDir;
+  }
+  public static boolean isAuthority(@NonNull Context context, @NonNull Uri uri) {
+    int matchResult = MATCHER.match(uri);
+    return matchResult == MATCH_NEW || matchResult == MATCH_OLD || isExternalBlobUri(context, uri);
+  }",method,
+"    executor.submit(new Runnable() {
+      @Override
+      public void run() {
+        try {
+          OutputStream output = new EncryptingPartOutputStream(getFile(id), masterSecret);
+          Log.w(TAG, ""Starting stream copy...."");
+          Util.copy(input, output);
+          Log.w(TAG, ""Stream copy finished..."");
+        } catch (IOException e) {
+          Log.w(TAG, e);
+        }
+        cache.remove(id);
+      }
+    });
+  }
+  public Uri createForExternal(@NonNull String mimeType) throws IOException {
+    return Uri.fromFile(new File(getExternalDir(context),
+                        String.valueOf(System.currentTimeMillis()) + ""."" + getExtensionFromMimeType(mimeType)));
+  }
+  public boolean delete(@NonNull Uri uri) {
+    switch (MATCHER.match(uri)) {
+    case MATCH_OLD:
+    case MATCH_NEW:
+      long id = ContentUris.parseId(uri);
+      cache.remove(id);
+      return getFile(ContentUris.parseId(uri)).delete();
+    }
+    return false;
+  }
+  public @NonNull InputStream getStream(MasterSecret masterSecret, long id) throws IOException {
+    final byte[] cached = cache.get(id);
+    return cached != null ? new ByteArrayInputStream(cached)
+                          : DecryptingPartInputStream.createFor(masterSecret, getFile(id));
+  }
+  private File getFile(long id) {
+    File legacy = getLegacyFile(id);
+    File cache  = getCacheFile(id);
+    if (legacy.exists()) return legacy;
+    else                 return cache;
+  }
+  private File getLegacyFile(long id) {
+    return new File(context.getDir(""captures"", Context.MODE_PRIVATE), id + ""."" + BLOB_EXTENSION);
+  }
+  private File getCacheFile(long id) {
+    return new File(context.getCacheDir(), ""capture-"" + id + ""."" + BLOB_EXTENSION);
+  }
+  private @Nullable String getEncryptedFileName(@NonNull MasterSecret masterSecret, @Nullable String fileName) {
+    if (fileName == null) return null;
+    return new MasterCipher(masterSecret).encryptBody(fileName);
+  }
+  public static @Nullable String getMimeType(@NonNull Context context, @NonNull Uri persistentBlobUri) {
+    if (!isAuthority(context, persistentBlobUri)) return null;
+    return isExternalBlobUri(context, persistentBlobUri)
+        ? getMimeTypeFromExtension(persistentBlobUri)
+        : persistentBlobUri.getPathSegments().get(MIMETYPE_PATH_SEGMENT);
+  }
+  public static @Nullable String getFileName(@NonNull Context context, @NonNull MasterSecret masterSecret, @NonNull Uri persistentBlobUri) {
+    if (!isAuthority(context, persistentBlobUri))      return null;
+    if (isExternalBlobUri(context, persistentBlobUri)) return null;
+    if (MATCHER.match(persistentBlobUri) == MATCH_OLD) return null;
+    String fileName = persistentBlobUri.getPathSegments().get(FILENAME_PATH_SEGMENT);
+    try {
+      return new MasterCipher(masterSecret).decryptBody(fileName);
+    } catch (InvalidMessageException e) {
+      Log.w(TAG, ""No valid filename for URI"");
+    }
+    return null;
+  }
+  public static @Nullable Long getFileSize(@NonNull Context context, Uri persistentBlobUri) {
+    if (!isAuthority(context, persistentBlobUri))      return null;
+    if (isExternalBlobUri(context, persistentBlobUri)) return null;
+    if (MATCHER.match(persistentBlobUri) == MATCH_OLD) return null;
+    try {
+      return Long.valueOf(persistentBlobUri.getPathSegments().get(FILESIZE_PATH_SEGMENT));
+    } catch (NumberFormatException e) {
+      Log.w(TAG, e);
+      return null;
+    }
+  }
+  private static @NonNull String getExtensionFromMimeType(String mimeType) {
+    final String extension = MimeTypeMap.getSingleton().getExtensionFromMimeType(mimeType);
+    return extension != null ? extension : BLOB_EXTENSION;
+  }
+  private static @NonNull String getMimeTypeFromExtension(@NonNull Uri uri) {
+    final String mimeType = MimeTypeMap.getSingleton()
+        .getMimeTypeFromExtension(MimeTypeMap.getFileExtensionFromUrl(uri.toString()));
+    return mimeType != null ? mimeType : ""application/octet-stream"";
+  }
+  private static @NonNull File getExternalDir(Context context) throws IOException {
+    final File externalDir = context.getExternalFilesDir(null);
+    if (externalDir == null) throw new IOException(""no external files directory"");
+    return externalDir;
+  }
+  public static boolean isAuthority(@NonNull Context context, @NonNull Uri uri) {
+    int matchResult = MATCHER.match(uri);
+    return matchResult == MATCH_NEW || matchResult == MATCH_OLD || isExternalBlobUri(context, uri);
+  }",method,
+"      @Override
+      public void run() {
+        try {
+          OutputStream output = new EncryptingPartOutputStream(getFile(id), masterSecret);
+          Log.w(TAG, ""Starting stream copy...."");
+          Util.copy(input, output);
+          Log.w(TAG, ""Stream copy finished..."");
+        } catch (IOException e) {
+          Log.w(TAG, e);
+        }
+        cache.remove(id);
+      }
+    });
+  }
+  public Uri createForExternal(@NonNull String mimeType) throws IOException {
+    return Uri.fromFile(new File(getExternalDir(context),
+                        String.valueOf(System.currentTimeMillis()) + ""."" + getExtensionFromMimeType(mimeType)));
+  }
+  public boolean delete(@NonNull Uri uri) {
+    switch (MATCHER.match(uri)) {
+    case MATCH_OLD:
+    case MATCH_NEW:
+      long id = ContentUris.parseId(uri);
+      cache.remove(id);
+      return getFile(ContentUris.parseId(uri)).delete();
+    }
+    return false;
+  }
+  public @NonNull InputStream getStream(MasterSecret masterSecret, long id) throws IOException {
+    final byte[] cached = cache.get(id);
+    return cached != null ? new ByteArrayInputStream(cached)
+                          : DecryptingPartInputStream.createFor(masterSecret, getFile(id));
+  }
+  private File getFile(long id) {
+    File legacy = getLegacyFile(id);
+    File cache  = getCacheFile(id);
+    if (legacy.exists()) return legacy;
+    else                 return cache;
+  }
+  private File getLegacyFile(long id) {
+    return new File(context.getDir(""captures"", Context.MODE_PRIVATE), id + ""."" + BLOB_EXTENSION);
+  }
+  private File getCacheFile(long id) {
+    return new File(context.getCacheDir(), ""capture-"" + id + ""."" + BLOB_EXTENSION);
+  }
+  private @Nullable String getEncryptedFileName(@NonNull MasterSecret masterSecret, @Nullable String fileName) {
+    if (fileName == null) return null;
+    return new MasterCipher(masterSecret).encryptBody(fileName);
+  }
+  public static @Nullable String getMimeType(@NonNull Context context, @NonNull Uri persistentBlobUri) {
+    if (!isAuthority(context, persistentBlobUri)) return null;
+    return isExternalBlobUri(context, persistentBlobUri)
+        ? getMimeTypeFromExtension(persistentBlobUri)
+        : persistentBlobUri.getPathSegments().get(MIMETYPE_PATH_SEGMENT);
+  }
+  public static @Nullable String getFileName(@NonNull Context context, @NonNull MasterSecret masterSecret, @NonNull Uri persistentBlobUri) {
+    if (!isAuthority(context, persistentBlobUri))      return null;
+    if (isExternalBlobUri(context, persistentBlobUri)) return null;
+    if (MATCHER.match(persistentBlobUri) == MATCH_OLD) return null;
+    String fileName = persistentBlobUri.getPathSegments().get(FILENAME_PATH_SEGMENT);
+    try {
+      return new MasterCipher(masterSecret).decryptBody(fileName);
+    } catch (InvalidMessageException e) {
+      Log.w(TAG, ""No valid filename for URI"");
+    }
+    return null;
+  }
+  public static @Nullable Long getFileSize(@NonNull Context context, Uri persistentBlobUri) {
+    if (!isAuthority(context, persistentBlobUri))      return null;
+    if (isExternalBlobUri(context, persistentBlobUri)) return null;
+    if (MATCHER.match(persistentBlobUri) == MATCH_OLD) return null;
+    try {
+      return Long.valueOf(persistentBlobUri.getPathSegments().get(FILESIZE_PATH_SEGMENT));
+    } catch (NumberFormatException e) {
+      Log.w(TAG, e);
+      return null;
+    }
+  }
+  private static @NonNull String getExtensionFromMimeType(String mimeType) {
+    final String extension = MimeTypeMap.getSingleton().getExtensionFromMimeType(mimeType);
+    return extension != null ? extension : BLOB_EXTENSION;
+  }
+  private static @NonNull String getMimeTypeFromExtension(@NonNull Uri uri) {
+    final String mimeType = MimeTypeMap.getSingleton()
+        .getMimeTypeFromExtension(MimeTypeMap.getFileExtensionFromUrl(uri.toString()));
+    return mimeType != null ? mimeType : ""application/octet-stream"";
+  }
+  private static @NonNull File getExternalDir(Context context) throws IOException {
+    final File externalDir = context.getExternalFilesDir(null);
+    if (externalDir == null) throw new IOException(""no external files directory"");
+    return externalDir;
+  }
+  public static boolean isAuthority(@NonNull Context context, @NonNull Uri uri) {
+    int matchResult = MATCHER.match(uri);
+    return matchResult == MATCH_NEW || matchResult == MATCH_OLD || isExternalBlobUri(context, uri);
+  }",method,
+"  public Uri createForExternal(@NonNull String mimeType) throws IOException {
+    return Uri.fromFile(new File(getExternalDir(context),
+                        String.valueOf(System.currentTimeMillis()) + ""."" + getExtensionFromMimeType(mimeType)));
+  }
+  public boolean delete(@NonNull Uri uri) {
+    switch (MATCHER.match(uri)) {
+    case MATCH_OLD:
+    case MATCH_NEW:
+      long id = ContentUris.parseId(uri);
+      cache.remove(id);
+      return getFile(ContentUris.parseId(uri)).delete();
+    }
+    return false;
+  }
+  public @NonNull InputStream getStream(MasterSecret masterSecret, long id) throws IOException {
+    final byte[] cached = cache.get(id);
+    return cached != null ? new ByteArrayInputStream(cached)
+                          : DecryptingPartInputStream.createFor(masterSecret, getFile(id));
+  }
+  private File getFile(long id) {
+    File legacy = getLegacyFile(id);
+    File cache  = getCacheFile(id);
+    if (legacy.exists()) return legacy;
+    else                 return cache;
+  }
+  private File getLegacyFile(long id) {
+    return new File(context.getDir(""captures"", Context.MODE_PRIVATE), id + ""."" + BLOB_EXTENSION);
+  }
+  private File getCacheFile(long id) {
+    return new File(context.getCacheDir(), ""capture-"" + id + ""."" + BLOB_EXTENSION);
+  }
+  private @Nullable String getEncryptedFileName(@NonNull MasterSecret masterSecret, @Nullable String fileName) {
+    if (fileName == null) return null;
+    return new MasterCipher(masterSecret).encryptBody(fileName);
+  }
+  public static @Nullable String getMimeType(@NonNull Context context, @NonNull Uri persistentBlobUri) {
+    if (!isAuthority(context, persistentBlobUri)) return null;
+    return isExternalBlobUri(context, persistentBlobUri)
+        ? getMimeTypeFromExtension(persistentBlobUri)
+        : persistentBlobUri.getPathSegments().get(MIMETYPE_PATH_SEGMENT);
+  }
+  public static @Nullable String getFileName(@NonNull Context context, @NonNull MasterSecret masterSecret, @NonNull Uri persistentBlobUri) {
+    if (!isAuthority(context, persistentBlobUri))      return null;
+    if (isExternalBlobUri(context, persistentBlobUri)) return null;
+    if (MATCHER.match(persistentBlobUri) == MATCH_OLD) return null;
+    String fileName = persistentBlobUri.getPathSegments().get(FILENAME_PATH_SEGMENT);
+    try {
+      return new MasterCipher(masterSecret).decryptBody(fileName);
+    } catch (InvalidMessageException e) {
+      Log.w(TAG, ""No valid filename for URI"");
+    }
+    return null;
+  }
+  public static @Nullable Long getFileSize(@NonNull Context context, Uri persistentBlobUri) {
+    if (!isAuthority(context, persistentBlobUri))      return null;
+    if (isExternalBlobUri(context, persistentBlobUri)) return null;
+    if (MATCHER.match(persistentBlobUri) == MATCH_OLD) return null;
+    try {
+      return Long.valueOf(persistentBlobUri.getPathSegments().get(FILESIZE_PATH_SEGMENT));
+    } catch (NumberFormatException e) {
+      Log.w(TAG, e);
+      return null;
+    }
+  }
+  private static @NonNull String getExtensionFromMimeType(String mimeType) {
+    final String extension = MimeTypeMap.getSingleton().getExtensionFromMimeType(mimeType);
+    return extension != null ? extension : BLOB_EXTENSION;
+  }
+  private static @NonNull String getMimeTypeFromExtension(@NonNull Uri uri) {
+    final String mimeType = MimeTypeMap.getSingleton()
+        .getMimeTypeFromExtension(MimeTypeMap.getFileExtensionFromUrl(uri.toString()));
+    return mimeType != null ? mimeType : ""application/octet-stream"";
+  }
+  private static @NonNull File getExternalDir(Context context) throws IOException {
+    final File externalDir = context.getExternalFilesDir(null);
+    if (externalDir == null) throw new IOException(""no external files directory"");
+    return externalDir;
+  }
+  public static boolean isAuthority(@NonNull Context context, @NonNull Uri uri) {
+    int matchResult = MATCHER.match(uri);
+    return matchResult == MATCH_NEW || matchResult == MATCH_OLD || isExternalBlobUri(context, uri);
+  }",method,
+"  public boolean delete(@NonNull Uri uri) {
+    switch (MATCHER.match(uri)) {
+    case MATCH_OLD:
+    case MATCH_NEW:
+      long id = ContentUris.parseId(uri);
+      cache.remove(id);
+      return getFile(ContentUris.parseId(uri)).delete();
+    }
+    return false;
+  }
+  public @NonNull InputStream getStream(MasterSecret masterSecret, long id) throws IOException {
+    final byte[] cached = cache.get(id);
+    return cached != null ? new ByteArrayInputStream(cached)
+                          : DecryptingPartInputStream.createFor(masterSecret, getFile(id));
+  }
+  private File getFile(long id) {
+    File legacy = getLegacyFile(id);
+    File cache  = getCacheFile(id);
+    if (legacy.exists()) return legacy;
+    else                 return cache;
+  }
+  private File getLegacyFile(long id) {
+    return new File(context.getDir(""captures"", Context.MODE_PRIVATE), id + ""."" + BLOB_EXTENSION);
+  }
+  private File getCacheFile(long id) {
+    return new File(context.getCacheDir(), ""capture-"" + id + ""."" + BLOB_EXTENSION);
+  }
+  private @Nullable String getEncryptedFileName(@NonNull MasterSecret masterSecret, @Nullable String fileName) {
+    if (fileName == null) return null;
+    return new MasterCipher(masterSecret).encryptBody(fileName);
+  }
+  public static @Nullable String getMimeType(@NonNull Context context, @NonNull Uri persistentBlobUri) {
+    if (!isAuthority(context, persistentBlobUri)) return null;
+    return isExternalBlobUri(context, persistentBlobUri)
+        ? getMimeTypeFromExtension(persistentBlobUri)
+        : persistentBlobUri.getPathSegments().get(MIMETYPE_PATH_SEGMENT);
+  }
+  public static @Nullable String getFileName(@NonNull Context context, @NonNull MasterSecret masterSecret, @NonNull Uri persistentBlobUri) {
+    if (!isAuthority(context, persistentBlobUri))      return null;
+    if (isExternalBlobUri(context, persistentBlobUri)) return null;
+    if (MATCHER.match(persistentBlobUri) == MATCH_OLD) return null;
+    String fileName = persistentBlobUri.getPathSegments().get(FILENAME_PATH_SEGMENT);
+    try {
+      return new MasterCipher(masterSecret).decryptBody(fileName);
+    } catch (InvalidMessageException e) {
+      Log.w(TAG, ""No valid filename for URI"");
+    }
+    return null;
+  }
+  public static @Nullable Long getFileSize(@NonNull Context context, Uri persistentBlobUri) {
+    if (!isAuthority(context, persistentBlobUri))      return null;
+    if (isExternalBlobUri(context, persistentBlobUri)) return null;
+    if (MATCHER.match(persistentBlobUri) == MATCH_OLD) return null;
+    try {
+      return Long.valueOf(persistentBlobUri.getPathSegments().get(FILESIZE_PATH_SEGMENT));
+    } catch (NumberFormatException e) {
+      Log.w(TAG, e);
+      return null;
+    }
+  }
+  private static @NonNull String getExtensionFromMimeType(String mimeType) {
+    final String extension = MimeTypeMap.getSingleton().getExtensionFromMimeType(mimeType);
+    return extension != null ? extension : BLOB_EXTENSION;
+  }
+  private static @NonNull String getMimeTypeFromExtension(@NonNull Uri uri) {
+    final String mimeType = MimeTypeMap.getSingleton()
+        .getMimeTypeFromExtension(MimeTypeMap.getFileExtensionFromUrl(uri.toString()));
+    return mimeType != null ? mimeType : ""application/octet-stream"";
+  }
+  private static @NonNull File getExternalDir(Context context) throws IOException {
+    final File externalDir = context.getExternalFilesDir(null);
+    if (externalDir == null) throw new IOException(""no external files directory"");
+    return externalDir;
+  }
+  public static boolean isAuthority(@NonNull Context context, @NonNull Uri uri) {
+    int matchResult = MATCHER.match(uri);
+    return matchResult == MATCH_NEW || matchResult == MATCH_OLD || isExternalBlobUri(context, uri);
+  }",method,
+"  private File getFile(long id) {
+    File legacy = getLegacyFile(id);
+    File cache  = getCacheFile(id);
+    if (legacy.exists()) return legacy;
+    else                 return cache;
+  }
+  private File getLegacyFile(long id) {
+    return new File(context.getDir(""captures"", Context.MODE_PRIVATE), id + ""."" + BLOB_EXTENSION);
+  }
+  private File getCacheFile(long id) {
+    return new File(context.getCacheDir(), ""capture-"" + id + ""."" + BLOB_EXTENSION);
+  }
+  private @Nullable String getEncryptedFileName(@NonNull MasterSecret masterSecret, @Nullable String fileName) {
+    if (fileName == null) return null;
+    return new MasterCipher(masterSecret).encryptBody(fileName);
+  }
+  public static @Nullable String getMimeType(@NonNull Context context, @NonNull Uri persistentBlobUri) {
+    if (!isAuthority(context, persistentBlobUri)) return null;
+    return isExternalBlobUri(context, persistentBlobUri)
+        ? getMimeTypeFromExtension(persistentBlobUri)
+        : persistentBlobUri.getPathSegments().get(MIMETYPE_PATH_SEGMENT);
+  }
+  public static @Nullable String getFileName(@NonNull Context context, @NonNull MasterSecret masterSecret, @NonNull Uri persistentBlobUri) {
+    if (!isAuthority(context, persistentBlobUri))      return null;
+    if (isExternalBlobUri(context, persistentBlobUri)) return null;
+    if (MATCHER.match(persistentBlobUri) == MATCH_OLD) return null;
+    String fileName = persistentBlobUri.getPathSegments().get(FILENAME_PATH_SEGMENT);
+    try {
+      return new MasterCipher(masterSecret).decryptBody(fileName);
+    } catch (InvalidMessageException e) {
+      Log.w(TAG, ""No valid filename for URI"");
+    }
+    return null;
+  }
+  public static @Nullable Long getFileSize(@NonNull Context context, Uri persistentBlobUri) {
+    if (!isAuthority(context, persistentBlobUri))      return null;
+    if (isExternalBlobUri(context, persistentBlobUri)) return null;
+    if (MATCHER.match(persistentBlobUri) == MATCH_OLD) return null;
+    try {
+      return Long.valueOf(persistentBlobUri.getPathSegments().get(FILESIZE_PATH_SEGMENT));
+    } catch (NumberFormatException e) {
+      Log.w(TAG, e);
+      return null;
+    }
+  }
+  private static @NonNull String getExtensionFromMimeType(String mimeType) {
+    final String extension = MimeTypeMap.getSingleton().getExtensionFromMimeType(mimeType);
+    return extension != null ? extension : BLOB_EXTENSION;
+  }
+  private static @NonNull String getMimeTypeFromExtension(@NonNull Uri uri) {
+    final String mimeType = MimeTypeMap.getSingleton()
+        .getMimeTypeFromExtension(MimeTypeMap.getFileExtensionFromUrl(uri.toString()));
+    return mimeType != null ? mimeType : ""application/octet-stream"";
+  }
+  private static @NonNull File getExternalDir(Context context) throws IOException {
+    final File externalDir = context.getExternalFilesDir(null);
+    if (externalDir == null) throw new IOException(""no external files directory"");
+    return externalDir;
+  }
+  public static boolean isAuthority(@NonNull Context context, @NonNull Uri uri) {
+    int matchResult = MATCHER.match(uri);
+    return matchResult == MATCH_NEW || matchResult == MATCH_OLD || isExternalBlobUri(context, uri);
+  }",method,
+"  private File getLegacyFile(long id) {
+    return new File(context.getDir(""captures"", Context.MODE_PRIVATE), id + ""."" + BLOB_EXTENSION);
+  }
+  private File getCacheFile(long id) {
+    return new File(context.getCacheDir(), ""capture-"" + id + ""."" + BLOB_EXTENSION);
+  }
+  private @Nullable String getEncryptedFileName(@NonNull MasterSecret masterSecret, @Nullable String fileName) {
+    if (fileName == null) return null;
+    return new MasterCipher(masterSecret).encryptBody(fileName);
+  }
+  public static @Nullable String getMimeType(@NonNull Context context, @NonNull Uri persistentBlobUri) {
+    if (!isAuthority(context, persistentBlobUri)) return null;
+    return isExternalBlobUri(context, persistentBlobUri)
+        ? getMimeTypeFromExtension(persistentBlobUri)
+        : persistentBlobUri.getPathSegments().get(MIMETYPE_PATH_SEGMENT);
+  }
+  public static @Nullable String getFileName(@NonNull Context context, @NonNull MasterSecret masterSecret, @NonNull Uri persistentBlobUri) {
+    if (!isAuthority(context, persistentBlobUri))      return null;
+    if (isExternalBlobUri(context, persistentBlobUri)) return null;
+    if (MATCHER.match(persistentBlobUri) == MATCH_OLD) return null;
+    String fileName = persistentBlobUri.getPathSegments().get(FILENAME_PATH_SEGMENT);
+    try {
+      return new MasterCipher(masterSecret).decryptBody(fileName);
+    } catch (InvalidMessageException e) {
+      Log.w(TAG, ""No valid filename for URI"");
+    }
+    return null;
+  }
+  public static @Nullable Long getFileSize(@NonNull Context context, Uri persistentBlobUri) {
+    if (!isAuthority(context, persistentBlobUri))      return null;
+    if (isExternalBlobUri(context, persistentBlobUri)) return null;
+    if (MATCHER.match(persistentBlobUri) == MATCH_OLD) return null;
+    try {
+      return Long.valueOf(persistentBlobUri.getPathSegments().get(FILESIZE_PATH_SEGMENT));
+    } catch (NumberFormatException e) {
+      Log.w(TAG, e);
+      return null;
+    }
+  }
+  private static @NonNull String getExtensionFromMimeType(String mimeType) {
+    final String extension = MimeTypeMap.getSingleton().getExtensionFromMimeType(mimeType);
+    return extension != null ? extension : BLOB_EXTENSION;
+  }
+  private static @NonNull String getMimeTypeFromExtension(@NonNull Uri uri) {
+    final String mimeType = MimeTypeMap.getSingleton()
+        .getMimeTypeFromExtension(MimeTypeMap.getFileExtensionFromUrl(uri.toString()));
+    return mimeType != null ? mimeType : ""application/octet-stream"";
+  }
+  private static @NonNull File getExternalDir(Context context) throws IOException {
+    final File externalDir = context.getExternalFilesDir(null);
+    if (externalDir == null) throw new IOException(""no external files directory"");
+    return externalDir;
+  }
+  public static boolean isAuthority(@NonNull Context context, @NonNull Uri uri) {
+    int matchResult = MATCHER.match(uri);
+    return matchResult == MATCH_NEW || matchResult == MATCH_OLD || isExternalBlobUri(context, uri);
+  }",method,
+"  private File getCacheFile(long id) {
+    return new File(context.getCacheDir(), ""capture-"" + id + ""."" + BLOB_EXTENSION);
+  }
+  private @Nullable String getEncryptedFileName(@NonNull MasterSecret masterSecret, @Nullable String fileName) {
+    if (fileName == null) return null;
+    return new MasterCipher(masterSecret).encryptBody(fileName);
+  }
+  public static @Nullable String getMimeType(@NonNull Context context, @NonNull Uri persistentBlobUri) {
+    if (!isAuthority(context, persistentBlobUri)) return null;
+    return isExternalBlobUri(context, persistentBlobUri)
+        ? getMimeTypeFromExtension(persistentBlobUri)
+        : persistentBlobUri.getPathSegments().get(MIMETYPE_PATH_SEGMENT);
+  }
+  public static @Nullable String getFileName(@NonNull Context context, @NonNull MasterSecret masterSecret, @NonNull Uri persistentBlobUri) {
+    if (!isAuthority(context, persistentBlobUri))      return null;
+    if (isExternalBlobUri(context, persistentBlobUri)) return null;
+    if (MATCHER.match(persistentBlobUri) == MATCH_OLD) return null;
+    String fileName = persistentBlobUri.getPathSegments().get(FILENAME_PATH_SEGMENT);
+    try {
+      return new MasterCipher(masterSecret).decryptBody(fileName);
+    } catch (InvalidMessageException e) {
+      Log.w(TAG, ""No valid filename for URI"");
+    }
+    return null;
+  }
+  public static @Nullable Long getFileSize(@NonNull Context context, Uri persistentBlobUri) {
+    if (!isAuthority(context, persistentBlobUri))      return null;
+    if (isExternalBlobUri(context, persistentBlobUri)) return null;
+    if (MATCHER.match(persistentBlobUri) == MATCH_OLD) return null;
+    try {
+      return Long.valueOf(persistentBlobUri.getPathSegments().get(FILESIZE_PATH_SEGMENT));
+    } catch (NumberFormatException e) {
+      Log.w(TAG, e);
+      return null;
+    }
+  }
+  private static @NonNull String getExtensionFromMimeType(String mimeType) {
+    final String extension = MimeTypeMap.getSingleton().getExtensionFromMimeType(mimeType);
+    return extension != null ? extension : BLOB_EXTENSION;
+  }
+  private static @NonNull String getMimeTypeFromExtension(@NonNull Uri uri) {
+    final String mimeType = MimeTypeMap.getSingleton()
+        .getMimeTypeFromExtension(MimeTypeMap.getFileExtensionFromUrl(uri.toString()));
+    return mimeType != null ? mimeType : ""application/octet-stream"";
+  }
+  private static @NonNull File getExternalDir(Context context) throws IOException {
+    final File externalDir = context.getExternalFilesDir(null);
+    if (externalDir == null) throw new IOException(""no external files directory"");
+    return externalDir;
+  }
+  public static boolean isAuthority(@NonNull Context context, @NonNull Uri uri) {
+    int matchResult = MATCHER.match(uri);
+    return matchResult == MATCH_NEW || matchResult == MATCH_OLD || isExternalBlobUri(context, uri);
+  }",method,
+"  public static boolean isAuthority(@NonNull Context context, @NonNull Uri uri) {
+    int matchResult = MATCHER.match(uri);
+    return matchResult == MATCH_NEW || matchResult == MATCH_OLD || isExternalBlobUri(context, uri);
+  }",method,
+"  private static boolean isExternalBlobUri(@NonNull Context context, @NonNull Uri uri) {
+    try {
+      return uri.getPath().startsWith(getExternalDir(context).getAbsolutePath());
+    } catch (IOException ioe) {
+      return false;
+    }
+  }",method,
+"public class QueryUtilsTest {
+  private static final BuildTarget TARGET = BuildTargetFactory.newInstance(""//:rule"");
+  private static final CellPathResolver CELL_NAMES =
+      TestCellPathResolver.get(new FakeProjectFilesystem());
+  @Test
+  public void extractParseTimeTargets() {
+    assertThat(
+        QueryUtils.extractParseTimeTargets(TARGET, CELL_NAMES, Query.of(""deps(//some:rule)""))
+            .collect(Collectors.toList()),
+        Matchers.contains(BuildTargetFactory.newInstance(""//some:rule"")));
+  }",class,
+public class Thing1 {},class,
+public class Thing2 {},class,
+"  @Test
+  public void extractParseTimeTargets() {
+    assertThat(
+        QueryUtils.extractParseTimeTargets(TARGET, CELL_NAMES, Query.of(""deps(//some:rule)""))
+            .collect(Collectors.toList()),
+        Matchers.contains(BuildTargetFactory.newInstance(""//some:rule"")));
+  }
+}
+package com.example;
+public class Thing1 {}",method,
+"  static String removePrefix(String identifer) {
+    int pos = identifer.indexOf(':');
+    if (pos != -1) {
+      if (pos == identifer.length() - 1) {
+        throw new IllegalArgumentException(""Invalid identifier: "" + identifer);
+      }
+      return identifer.substring(pos + 1);
+    } else {
+      return identifer;
+    }
+  }",method,
+"    if (pos != -1) {
+      if (pos == identifer.length() - 1) {
+        throw new IllegalArgumentException(""Invalid identifier: "" + identifer);
+      }
+      return identifer.substring(pos + 1);
+    }",method,
+"  default int order() {
+    return 0;
+  }",method,
+"  default boolean requiresResolve() {
+    return false;
+  }",method,
+"  default boolean blockingCreate() {
+    return false;
+  }",method,
+"  default void resolve(String identifier, DeploymentOptions deploymentOptions, ClassLoader classLoader, Future<String> resolution) {
+    resolution.complete(identifier);
+  }",method,
+"  default void init(Vertx vertx) {
+  }",method,
+"  default void close() {
+  }",method,
+"public class Parser {
+    private String url;
+    public Parser(String url) {
+        this.url = url;
+    }
+    public ArrayList<String> parseActu() {
+        ArrayList<String> lesParagraphes = new ArrayList<String>();
+        String actuContenu = """";
+        System.out.println(""DEBUG : url param jsoup => "" + url);
+        try {
+            Document docCont = Jsoup.connect(url).get();
+            Element actuCont = docCont.select(""div.divcontenu div.divcontenu"").first();
+            if (actuCont != null) {
+                actuContenu = actuCont.toString();
+                actuContenu = Jsoup.parse(actuContenu.replaceAll(""(?i)<br[^>]*>"", ""br2n"").replaceAll(""(?i)<p[^>]*>"", ""p2split"")).text();
+                actuContenu = actuContenu.replaceAll(""br2n"", ""\n"");
+                String[] lesParas = actuContenu.split(""p2split"");
+                List<String> list = Arrays.asList(lesParas);
+                lesParagraphes = new ArrayList<String>(list);
+            }
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+        return lesParagraphes;
+    }
+}",class,
+"public class NavDrawerItem {
+    private String title;
+    private int icon;
+    private String count = ""0"";
+    // boolean to set visiblity of the counter
+    private boolean isCounterVisible = false;
+    public NavDrawerItem() {
+    }
+    public NavDrawerItem(String title, int icon) {
+        this.title = title;
+        this.icon = icon;
+    }
+    public NavDrawerItem(String title, int icon, boolean isCounterVisible, String count) {
+        this.title = title;
+        this.icon = icon;
+        this.isCounterVisible = isCounterVisible;
+        this.count = count;
+    }
+    public String getTitle() {
+        return this.title;
+    }
+    public int getIcon() {
+        return this.icon;
+    }
+    public String getCount() {
+        return this.count;
+    }
+    public boolean getCounterVisibility() {
+        return this.isCounterVisible;
+    }
+    public void setTitle(String title) {
+        this.title = title;
+    }
+    public void setIcon(int icon) {
+        this.icon = icon;
+    }
+    public void setCount(String count) {
+        this.count = count;
+    }
+    public void setCounterVisibility(boolean isCounterVisible) {
+        this.isCounterVisible = isCounterVisible;
+    }
+}",class,
+"    public Parser(String url) {
+        this.url = url;
+    }",method,
+"    public ArrayList<String> parseActu() {
+        ArrayList<String> lesParagraphes = new ArrayList<String>();
+        String actuContenu = """";
+        System.out.println(""DEBUG : url param jsoup => "" + url);
+        try {
+            Document docCont = Jsoup.connect(url).get();
+            Element actuCont = docCont.select(""div.divcontenu div.divcontenu"").first();
+            if (actuCont != null) {
+                actuContenu = actuCont.toString();
+                actuContenu = Jsoup.parse(actuContenu.replaceAll(""(?i)<br[^>]*>"", ""br2n"").replaceAll(""(?i)<p[^>]*>"", ""p2split"")).text();
+                actuContenu = actuContenu.replaceAll(""br2n"", ""\n"");
+                String[] lesParas = actuContenu.split(""p2split"");
+                List<String> list = Arrays.asList(lesParas);
+                lesParagraphes = new ArrayList<String>(list);
+            }
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+        return lesParagraphes;
+    }",method,
+"            if (actuCont != null) {
+                actuContenu = actuCont.toString();
+                actuContenu = Jsoup.parse(actuContenu.replaceAll(""(?i)<br[^>]*>"", ""br2n"").replaceAll(""(?i)<p[^>]*>"", ""p2split"")).text();
+                actuContenu = actuContenu.replaceAll(""br2n"", ""\n"");
+                String[] lesParas = actuContenu.split(""p2split"");
+                List<String> list = Arrays.asList(lesParas);
+                lesParagraphes = new ArrayList<String>(list);
+            }",method,
+"    public NavDrawerItem() {
+    }",method,
+"    public NavDrawerItem(String title, int icon) {
+        this.title = title;
+        this.icon = icon;
+    }",method,
+"    public NavDrawerItem(String title, int icon, boolean isCounterVisible, String count) {
+        this.title = title;
+        this.icon = icon;
+        this.isCounterVisible = isCounterVisible;
+        this.count = count;
+    }",method,
+"    public String getTitle() {
+        return this.title;
+    }",method,
+"    public int getIcon() {
+        return this.icon;
+    }",method,
+"    public String getCount() {
+        return this.count;
+    }",method,
+"    public boolean getCounterVisibility() {
+        return this.isCounterVisible;
+    }",method,
+"    public void setTitle(String title) {
+        this.title = title;
+    }",method,
+"    public void setIcon(int icon) {
+        this.icon = icon;
+    }",method,
+"    public void setCount(String count) {
+        this.count = count;
+    }",method,
+"    public void setCounterVisibility(boolean isCounterVisible) {
+        this.isCounterVisible = isCounterVisible;
+    }",method,
+"public class PsiImmediateClassType extends PsiClassType.Stub {
+  private final PsiClass myClass;
+  private final PsiSubstitutor mySubstitutor;
+  private final PsiManager myManager;
+  private String myCanonicalText;
+  private String myCanonicalTextAnnotated;
+  private String myPresentableText;
+  private String myInternalCanonicalText;
+  private final ClassResolveResult myClassResolveResult = new ClassResolveResult() {
+    @Override
+    public PsiClass getElement() {
+      return myClass;
+    }
+    @NotNull
+    @Override
+    public PsiSubstitutor getSubstitutor() {
+      return mySubstitutor;
+    }
+    @Override
+    public boolean isValidResult() {
+      return true;
+    }
+    @Override
+    public boolean isAccessible() {
+      return true;
+    }
+    @Override
+    public boolean isStaticsScopeCorrect() {
+      return true;
+    }
+    @Override
+    public PsiElement getCurrentFileResolveScope() {
+      return null;
+    }
+    @Override
+    public boolean isPackagePrefixPackageReference() {
+      return false;
+    }
+  };
+  public PsiImmediateClassType(@NotNull PsiClass aClass, @NotNull PsiSubstitutor substitutor) {
+    this(aClass, substitutor, null, TypeAnnotationProvider.EMPTY);
+  }
+  public PsiImmediateClassType(@NotNull PsiClass aClass, @NotNull PsiSubstitutor substitutor, @Nullable LanguageLevel level) {
+    this(aClass, substitutor, level, TypeAnnotationProvider.EMPTY);
+  }
+  public PsiImmediateClassType(@NotNull PsiClass aClass,
+                               @NotNull PsiSubstitutor substitutor,
+                               @Nullable LanguageLevel level,
+                               @NotNull PsiAnnotation... annotations) {
+    super(level, annotations);
+    myClass = aClass;
+    myManager = aClass.getManager();
+    mySubstitutor = substitutor;
+    assert substitutor.isValid();
+  }
+  public PsiImmediateClassType(@NotNull PsiClass aClass,
+                               @NotNull PsiSubstitutor substitutor,
+                               @Nullable LanguageLevel level,
+                               @NotNull TypeAnnotationProvider provider) {
+    super(level, provider);
+    myClass = aClass;
+    myManager = aClass.getManager();
+    mySubstitutor = substitutor;
+    assert substitutor.isValid();
+  }
+  @Override
+  public PsiClass resolve() {
+    return myClass;
+  }
+  @Override
+  public String getClassName() {
+    return myClass.getName();
+  }
+  @Override
+  @NotNull
+  public PsiType[] getParameters() {
+    final PsiTypeParameter[] parameters = myClass.getTypeParameters();
+    if (parameters.length == 0) {
+      return PsiType.EMPTY_ARRAY;
+    }
+    List<PsiType> lst = new ArrayList<>();
+    for (PsiTypeParameter parameter : parameters) {
+      PsiType substituted = mySubstitutor.substitute(parameter);
+      if (substituted == null) {
+        return PsiType.EMPTY_ARRAY;
+      }
+      lst.add(substituted);
+    }
+    return lst.toArray(createArray(lst.size()));
+  }
+  @Override
+  @NotNull
+  public ClassResolveResult resolveGenerics() {
+    return myClassResolveResult;
+  }
+  @Override
+  @NotNull
+  public PsiClassType rawType() {
+    return JavaPsiFacade.getInstance(myClass.getProject()).getElementFactory().createType(myClass);
+  }
+  @NotNull
+  @Override
+  public String getPresentableText(boolean annotated) {
+    if (myPresentableText == null) {
+      myPresentableText = getText(TextType.PRESENTABLE, annotated);
+    }
+    return myPresentableText;
+  }
+  @NotNull
+  @Override
+  public String getCanonicalText(boolean annotated) {
+    String cached = annotated ? myCanonicalTextAnnotated : myCanonicalText;
+    if (cached == null) {
+      cached = getText(TextType.CANONICAL, annotated);
+      if (annotated) myCanonicalTextAnnotated = cached;
+      else myCanonicalText = cached;
+    }
+    return cached;
+  }
+  @NotNull
+  @Override
+  public String getInternalCanonicalText() {
+    if (myInternalCanonicalText == null) {
+      myInternalCanonicalText = getText(TextType.INT_CANONICAL, true);
+    }
+    return myInternalCanonicalText;
+  }
+  private enum TextType { PRESENTABLE, CANONICAL, INT_CANONICAL }
+  private String getText(@NotNull TextType textType, boolean annotated) {
+    mySubstitutor.ensureValid();
+    StringBuilder buffer = new StringBuilder();
+    buildText(myClass, mySubstitutor, buffer, textType, annotated);
+    return buffer.toString();
+  }
+  private void buildText(@NotNull PsiClass aClass,
+                         @NotNull PsiSubstitutor substitutor,
+                         @NotNull StringBuilder buffer,
+                         @NotNull TextType textType,
+                         boolean annotated) {
+    if (aClass instanceof PsiAnonymousClass) {
+      ClassResolveResult baseResolveResult = ((PsiAnonymousClass)aClass).getBaseClassType().resolveGenerics();
+      PsiClass baseClass = baseResolveResult.getElement();
+      if (baseClass != null) {
+        if (textType == TextType.INT_CANONICAL) {
+          buffer.append(""anonymous "");
+        }
+        buildText(baseClass, baseResolveResult.getSubstitutor(), buffer, textType, false);
+      }
+      return;
+    }
+    boolean qualified = textType != TextType.PRESENTABLE;
+    PsiClass enclosingClass = null;
+    if (!aClass.hasModifierProperty(PsiModifier.STATIC)) {
+      PsiElement parent = aClass.getParent();
+      if (parent instanceof PsiClass && !(parent instanceof PsiAnonymousClass)) {
+        enclosingClass = (PsiClass)parent;
+      }
+    }
+    if (enclosingClass != null) {
+      buildText(enclosingClass, substitutor, buffer, textType, false);
+      buffer.append('.');
+    }
+    else if (qualified) {
+      String fqn = aClass.getQualifiedName();
+      if (fqn != null) {
+        String prefix = StringUtil.getPackageName(fqn);
+        if (!StringUtil.isEmpty(prefix)) {
+          buffer.append(prefix);
+          buffer.append('.');
+        }
+      }
+    }
+    if (annotated) {
+      PsiNameHelper.appendAnnotations(buffer, getAnnotations(), qualified);
+    }
+    buffer.append(aClass.getName());
+    PsiTypeParameter[] typeParameters = aClass.getTypeParameters();
+    if (typeParameters.length > 0) {
+      int pos = buffer.length();
+      buffer.append('<');
+      for (int i = 0; i < typeParameters.length; i++) {
+        PsiTypeParameter typeParameter = typeParameters[i];
+        PsiUtilCore.ensureValid(typeParameter);
+        if (i > 0) {
+          buffer.append(',');
+          if (textType == TextType.PRESENTABLE) buffer.append(' ');
+        }
+        PsiType substitutionResult = substitutor.substitute(typeParameter);
+        if (substitutionResult == null) {
+          buffer.setLength(pos);
+          pos = -1;
+          break;
+        }
+        PsiUtil.ensureValidType(substitutionResult);
+        if (textType == TextType.PRESENTABLE) {
+          buffer.append(substitutionResult.getPresentableText());
+        }
+        else if (textType == TextType.CANONICAL) {
+          buffer.append(substitutionResult.getCanonicalText(annotated));
+        }
+        else {
+          buffer.append(substitutionResult.getInternalCanonicalText());
+        }
+      }
+      if (pos >= 0) {
+        buffer.append('>');
+      }
+    }
+  }
+  @Override
+  public boolean isValid() {
+    for (PsiAnnotation annotation : getAnnotations()) {
+      if (!annotation.isValid()) return false;
+    }
+    return myClass.isValid() && mySubstitutor.isValid();
+  }
+  @Override
+  public boolean equalsToText(@NotNull String text) {
+    String name = myClass.getName();
+    if (name == null || !text.contains(name)) return false;
+    if (text.equals(getCanonicalText(false))) return true;
+    PsiElementFactory factory = JavaPsiFacade.getInstance(myManager.getProject()).getElementFactory();
+    final PsiType patternType;
+    try {
+      patternType = factory.createTypeFromText(text, myClass);
+    }
+    catch (IncorrectOperationException e) {
+      return false;
+    }
+    return equals(patternType);
+  }
+  @Override
+  @NotNull
+  public GlobalSearchScope getResolveScope() {
+    return myClass.getResolveScope();
+  }
+  @Override
+  @NotNull
+  public LanguageLevel getLanguageLevel() {
+    return myLanguageLevel != null ? myLanguageLevel : PsiUtil.getLanguageLevel(myClass);
+  }
+  @NotNull
+  @Override
+  public PsiClassType setLanguageLevel(@NotNull LanguageLevel level) {
+    return level.equals(myLanguageLevel) ? this : new PsiImmediateClassType(myClass, mySubstitutor, level, getAnnotationProvider());
+  }
+}",class,
+"    @Override
+    public PsiClass getElement() {
+      return myClass;
+    }",method,
+"    @NotNull
+    @Override
+    public PsiSubstitutor getSubstitutor() {
+      return mySubstitutor;
+    }",method,
+"    @Override
+    public boolean isValidResult() {
+      return true;
+    }",method,
+"    @Override
+    public boolean isAccessible() {
+      return true;
+    }",method,
+"    @Override
+    public boolean isStaticsScopeCorrect() {
+      return true;
+    }",method,
+"    @Override
+    public PsiElement getCurrentFileResolveScope() {
+      return null;
+    }",method,
+"    @Override
+    public boolean isPackagePrefixPackageReference() {
+      return false;
+    }",method,
+"  public PsiImmediateClassType(@NotNull PsiClass aClass, @NotNull PsiSubstitutor substitutor) {
+    this(aClass, substitutor, null, TypeAnnotationProvider.EMPTY);
+  }",method,
+"  public PsiImmediateClassType(@NotNull PsiClass aClass, @NotNull PsiSubstitutor substitutor, @Nullable LanguageLevel level) {
+    this(aClass, substitutor, level, TypeAnnotationProvider.EMPTY);
+  }",method,
+"  public PsiImmediateClassType(@NotNull PsiClass aClass,
+                               @NotNull PsiSubstitutor substitutor,
+                               @Nullable LanguageLevel level,
+                               @NotNull PsiAnnotation... annotations) {
+    super(level, annotations);
+    myClass = aClass;
+    myManager = aClass.getManager();
+    mySubstitutor = substitutor;
+    assert substitutor.isValid();
+  }",method,
+"  public PsiImmediateClassType(@NotNull PsiClass aClass,
+                               @NotNull PsiSubstitutor substitutor,
+                               @Nullable LanguageLevel level,
+                               @NotNull TypeAnnotationProvider provider) {
+    super(level, provider);
+    myClass = aClass;
+    myManager = aClass.getManager();
+    mySubstitutor = substitutor;
+    assert substitutor.isValid();
+  }",method,
+"  @Override
+  public PsiClass resolve() {
+    return myClass;
+  }",method,
+"  @Override
+  public String getClassName() {
+    return myClass.getName();
+  }",method,
+"  @Override
+  @NotNull
+  public PsiType[] getParameters() {
+    final PsiTypeParameter[] parameters = myClass.getTypeParameters();
+    if (parameters.length == 0) {
+      return PsiType.EMPTY_ARRAY;
+    }
+    List<PsiType> lst = new ArrayList<>();
+    for (PsiTypeParameter parameter : parameters) {
+      PsiType substituted = mySubstitutor.substitute(parameter);
+      if (substituted == null) {
+        return PsiType.EMPTY_ARRAY;
+      }
+      lst.add(substituted);
+    }
+    return lst.toArray(createArray(lst.size()));
+  }",method,
+"    if (parameters.length == 0) {
+      return PsiType.EMPTY_ARRAY;
+    }",method,
+"    for (PsiTypeParameter parameter : parameters) {
+      PsiType substituted = mySubstitutor.substitute(parameter);
+      if (substituted == null) {
+        return PsiType.EMPTY_ARRAY;
+      }
+      lst.add(substituted);
+    }",method,
+"      if (substituted == null) {
+        return PsiType.EMPTY_ARRAY;
+      }",method,
+"  @Override
+  @NotNull
+  public ClassResolveResult resolveGenerics() {
+    return myClassResolveResult;
+  }",method,
+"  @Override
+  @NotNull
+  public PsiClassType rawType() {
+    return JavaPsiFacade.getInstance(myClass.getProject()).getElementFactory().createType(myClass);
+  }",method,
+"  @NotNull
+  @Override
+  public String getPresentableText(boolean annotated) {
+    if (myPresentableText == null) {
+      myPresentableText = getText(TextType.PRESENTABLE, annotated);
+    }
+    return myPresentableText;
+  }",method,
+"    if (myPresentableText == null) {
+      myPresentableText = getText(TextType.PRESENTABLE, annotated);
+    }",method,
+"  @NotNull
+  @Override
+  public String getCanonicalText(boolean annotated) {
+    String cached = annotated ? myCanonicalTextAnnotated : myCanonicalText;
+    if (cached == null) {
+      cached = getText(TextType.CANONICAL, annotated);
+      if (annotated) myCanonicalTextAnnotated = cached;
+      else myCanonicalText = cached;
+    }
+    return cached;
+  }",method,
+"    if (cached == null) {
+      cached = getText(TextType.CANONICAL, annotated);
+      if (annotated) myCanonicalTextAnnotated = cached;
+      else myCanonicalText = cached;
+    }",method,
+"  @NotNull
+  @Override
+  public String getInternalCanonicalText() {
+    if (myInternalCanonicalText == null) {
+      myInternalCanonicalText = getText(TextType.INT_CANONICAL, true);
+    }
+    return myInternalCanonicalText;
+  }",method,
+"    if (myInternalCanonicalText == null) {
+      myInternalCanonicalText = getText(TextType.INT_CANONICAL, true);
+    }",method,

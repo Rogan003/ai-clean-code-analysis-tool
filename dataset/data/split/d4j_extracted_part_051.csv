@@ -1,0 +1,1677 @@
+code_snippet,type,score
+"      if (project != null) {
+        if (project.isDisposed()) return;
+        if (!project.isInitialized()) {
+          StartupManager.getInstance(project).runWhenProjectIsInitialized(
+            () -> project.getMessageBus().syncPublisher(TOPIC).setInfo(text, requestor));
+          return;
+        }
+      }",method,
+"public class UiAutomatorTestCase extends TestCase {
+    private static final String DISABLE_IME = ""disable_ime"";
+    private static final String DUMMY_IME_PACKAGE = ""com.android.testing.dummyime"";
+    private UiDevice mUiDevice;
+    private Bundle mParams;
+    private IAutomationSupport mAutomationSupport;
+    private boolean mShouldDisableIme = false;
+    @Override
+    protected void setUp() throws Exception {
+        super.setUp();
+        mShouldDisableIme = ""true"".equals(mParams.getString(DISABLE_IME));
+        if (mShouldDisableIme) {
+            setDummyIme();
+        }
+    }
+    @Override
+    protected void tearDown() throws Exception {
+        if (mShouldDisableIme) {
+            restoreActiveIme();
+        }
+        super.tearDown();
+    }
+    public UiDevice getUiDevice() {
+        return mUiDevice;
+    }
+    public Bundle getParams() {
+        return mParams;
+    }
+    public IAutomationSupport getAutomationSupport() {
+        return mAutomationSupport;
+    }
+    void setUiDevice(UiDevice uiDevice) {
+        mUiDevice = uiDevice;
+    }
+    void setParams(Bundle params) {
+        mParams = params;
+    }
+    void setAutomationSupport(IAutomationSupport automationSupport) {
+        mAutomationSupport = automationSupport;
+    }
+    public void sleep(long ms) {
+        SystemClock.sleep(ms);
+    }
+    private void setDummyIme() throws RemoteException {
+        IInputMethodManager im = IInputMethodManager.Stub.asInterface(ServiceManager
+                .getService(Context.INPUT_METHOD_SERVICE));
+        List<InputMethodInfo> infos = im.getInputMethodList();
+        String id = null;
+        for (InputMethodInfo info : infos) {
+            if (DUMMY_IME_PACKAGE.equals(info.getComponent().getPackageName())) {
+                id = info.getId();
+            }
+        }
+        if (id == null) {
+            throw new RuntimeException(String.format(
+                    ""Required testing fixture missing: IME package (%s)"", DUMMY_IME_PACKAGE));
+        }
+        im.setInputMethod(null, id);
+    }
+    private void restoreActiveIme() throws RemoteException {
+        // TODO: figure out a way to restore active IME
+        // Currently retrieving active IME requires querying secure settings provider, which is hard
+        // to do without a Context; so the caveat here is that to make the post test device usable,
+        // the active IME needs to be manually switched.
+    }
+}",class,
+"    @Override
+    protected void setUp() throws Exception {
+        super.setUp();
+        mShouldDisableIme = ""true"".equals(mParams.getString(DISABLE_IME));
+        if (mShouldDisableIme) {
+            setDummyIme();
+        }
+    }",method,
+"        if (mShouldDisableIme) {
+            setDummyIme();
+        }",method,
+"    @Override
+    protected void tearDown() throws Exception {
+        if (mShouldDisableIme) {
+            restoreActiveIme();
+        }
+        super.tearDown();
+    }",method,
+"        if (mShouldDisableIme) {
+            restoreActiveIme();
+        }",method,
+"    public UiDevice getUiDevice() {
+        return mUiDevice;
+    }",method,
+"    public Bundle getParams() {
+        return mParams;
+    }",method,
+"    public IAutomationSupport getAutomationSupport() {
+        return mAutomationSupport;
+    }",method,
+"    void setUiDevice(UiDevice uiDevice) {
+        mUiDevice = uiDevice;
+    }",method,
+"    void setParams(Bundle params) {
+        mParams = params;
+    }",method,
+"    void setAutomationSupport(IAutomationSupport automationSupport) {
+        mAutomationSupport = automationSupport;
+    }",method,
+"    public void sleep(long ms) {
+        SystemClock.sleep(ms);
+    }",method,
+"    private void setDummyIme() throws RemoteException {
+        IInputMethodManager im = IInputMethodManager.Stub.asInterface(ServiceManager
+                .getService(Context.INPUT_METHOD_SERVICE));
+        List<InputMethodInfo> infos = im.getInputMethodList();
+        String id = null;
+        for (InputMethodInfo info : infos) {
+            if (DUMMY_IME_PACKAGE.equals(info.getComponent().getPackageName())) {
+                id = info.getId();
+            }
+        }
+        if (id == null) {
+            throw new RuntimeException(String.format(
+                    ""Required testing fixture missing: IME package (%s)"", DUMMY_IME_PACKAGE));
+        }
+        im.setInputMethod(null, id);
+    }",method,
+"        for (InputMethodInfo info : infos) {
+            if (DUMMY_IME_PACKAGE.equals(info.getComponent().getPackageName())) {
+                id = info.getId();
+            }
+        }",method,
+"        if (id == null) {
+            throw new RuntimeException(String.format(
+                    ""Required testing fixture missing: IME package (%s)"", DUMMY_IME_PACKAGE));
+        }",method,
+"    private void restoreActiveIme() throws RemoteException {
+        // TODO: figure out a way to restore active IME
+        // Currently retrieving active IME requires querying secure settings provider, which is hard
+        // to do without a Context; so the caveat here is that to make the post test device usable,
+        // the active IME needs to be manually switched.
+    }",method,
+"final class State {
+  byte[] ringBuffer;
+  byte[] contextModes;
+  byte[] contextMap;
+  byte[] distContextMap;
+  byte[] output;
+  byte[] byteBuffer;  // BitReader
+  short[] shortBuffer; // BitReader
+  int[] intBuffer;  // BitReader
+  int[] rings;
+  int[] blockTrees;
+  int[] hGroup0;
+  int[] hGroup1;
+  int[] hGroup2;
+  long accumulator64;  // BitReader: pre-fetched bits.
+  int runningState;  // Default value is 0 == Decode.UNINITIALIZED
+  int nextRunningState;
+  int accumulator32;  // BitReader: pre-fetched bits.
+  int bitOffset;  // BitReader: bit-reading position in accumulator.
+  int halfOffset;  // BitReader: offset of next item in intBuffer/shortBuffer.
+  int tailBytes;  // BitReader: number of bytes in unfinished half.
+  int endOfStreamReached;  // BitReader: input stream is finished.
+  int metaBlockLength;
+  int inputEnd;
+  int isUncompressed;
+  int isMetadata;
+  int literalBlockLength;
+  int numLiteralBlockTypes;
+  int commandBlockLength;
+  int numCommandBlockTypes;
+  int distanceBlockLength;
+  int numDistanceBlockTypes;
+  int pos;
+  int maxDistance;
+  int distRbIdx;
+  int trivialLiteralContext;
+  int literalTreeIndex;
+  int literalTree;
+  int j;
+  int insertLength;
+  int contextMapSlice;
+  int distContextMapSlice;
+  int contextLookupOffset1;
+  int contextLookupOffset2;
+  int treeCommandOffset;
+  int distanceCode;
+  int numDirectDistanceCodes;
+  int distancePostfixMask;
+  int distancePostfixBits;
+  int distance;
+  int copyLength;
+  int copyDst;
+  int maxBackwardDistance;
+  int maxRingBufferSize;
+  int ringBufferSize;
+  int expectedTotalSize;
+  int outputOffset;
+  int outputLength;
+  int outputUsed;
+  int bytesWritten;
+  int bytesToWrite;
+  InputStream input; // BitReader
+  State() {
+    this.ringBuffer = new byte[0];
+    this.rings = new int[10];
+    this.rings[0] = 16;
+    this.rings[1] = 15;
+    this.rings[2] = 11;
+    this.rings[3] = 4;
+  }
+}",class,
+"  State() {
+    this.ringBuffer = new byte[0];
+    this.rings = new int[10];
+    this.rings[0] = 16;
+    this.rings[1] = 15;
+    this.rings[2] = 11;
+    this.rings[3] = 4;
+  }",method,
+"public abstract class AbstractDataFlowTest extends AbstractPseudocodeTest {
+    @Override
+    public void dumpInstructions(
+            @NotNull PseudocodeImpl pseudocode,
+            @NotNull StringBuilder out,
+            @NotNull BindingContext bindingContext
+    ) {
+        PseudocodeVariablesData pseudocodeVariablesData = new PseudocodeVariablesData(pseudocode.getRootPseudocode(), bindingContext);
+        Map<Instruction, Edges<ReadOnlyInitControlFlowInfo>> variableInitializers =
+                pseudocodeVariablesData.getVariableInitializers();
+        Map<Instruction, Edges<ReadOnlyControlFlowInfo<VariableUseState>>> useStatusData =
+                pseudocodeVariablesData.getVariableUseStatusData();
+        String initPrefix = ""    INIT:"";
+        String usePrefix = ""    USE:"";
+        int initializersColumnWidth = countDataColumnWidth(initPrefix, pseudocode.getInstructionsIncludingDeadCode(), variableInitializers,
+                                                           pseudocodeVariablesData);
+        dumpInstructions(pseudocode, out, (instruction, next, prev) -> {
+            StringBuilder result = new StringBuilder();
+            Edges<ReadOnlyInitControlFlowInfo> initializersEdges = variableInitializers.get(instruction);
+            Edges<ReadOnlyInitControlFlowInfo> previousInitializersEdges = variableInitializers.get(prev);
+            String initializersData = """";
+            if (initializersEdges != null && !initializersEdges.equals(previousInitializersEdges)) {
+                initializersData = dumpEdgesData(initPrefix, initializersEdges, pseudocodeVariablesData);
+            }
+            result.append(String.format(""%1$-"" + initializersColumnWidth + ""s"", initializersData));
+            Edges<ReadOnlyControlFlowInfo<VariableUseState>> useStatusEdges = useStatusData.get(instruction);
+            Edges<ReadOnlyControlFlowInfo<VariableUseState>> nextUseStatusEdges = useStatusData.get(next);
+            if (useStatusEdges != null && !useStatusEdges.equals(nextUseStatusEdges)) {
+                result.append(dumpEdgesData(usePrefix, useStatusEdges, pseudocodeVariablesData));
+            }
+            return result.toString();
+        });
+    }
+    private static int countDataColumnWidth(
+            @NotNull String prefix,
+            @NotNull List<Instruction> instructions,
+            @NotNull Map<Instruction, Edges<ReadOnlyInitControlFlowInfo>> data,
+            @NotNull PseudocodeVariablesData variablesData
+    ) {
+        int maxWidth = 0;
+        for (Instruction instruction : instructions) {
+            Edges<ReadOnlyInitControlFlowInfo> edges = data.get(instruction);
+            if (edges == null) continue;
+            int length = dumpEdgesData(prefix, edges, variablesData).length();
+            if (maxWidth < length) {
+                maxWidth = length;
+            }
+        }
+        return maxWidth;
+    }
+    @NotNull
+    private static <S, I extends ReadOnlyControlFlowInfo<S>> String dumpEdgesData(
+            String prefix,
+            @NotNull Edges<I> edges,
+            @NotNull PseudocodeVariablesData variablesData
+    ) {
+        return prefix +
+               "" in: "" + renderVariableMap(edges.getIncoming().asMap(), variablesData) +
+               "" out: "" + renderVariableMap(edges.getOutgoing().asMap(), variablesData);
+    }
+    private static <S> String renderVariableMap(
+            javaslang.collection.Map<VariableDescriptor, S> map,
+            PseudocodeVariablesData variablesData
+    ) {
+        List<String> result = Lists.newArrayList();
+        for (Tuple2<VariableDescriptor, S> entry : map) {
+            VariableDescriptor variable = entry._1;
+            S state = entry._2;
+            if (variablesData.isVariableWithTrivialInitializer(variable)) continue;
+            result.add(variable.getName() + ""="" + state);
+        }
+        Collections.sort(result);
+        return ""{"" + StringUtil.join(result, "", "") + ""}"";
+    }
+}",class,
+"    @Override
+    public void dumpInstructions(
+            @NotNull PseudocodeImpl pseudocode,
+            @NotNull StringBuilder out,
+            @NotNull BindingContext bindingContext
+    ) {
+        PseudocodeVariablesData pseudocodeVariablesData = new PseudocodeVariablesData(pseudocode.getRootPseudocode(), bindingContext);
+        Map<Instruction, Edges<ReadOnlyInitControlFlowInfo>> variableInitializers =
+                pseudocodeVariablesData.getVariableInitializers();
+        Map<Instruction, Edges<ReadOnlyControlFlowInfo<VariableUseState>>> useStatusData =
+                pseudocodeVariablesData.getVariableUseStatusData();
+        String initPrefix = ""    INIT:"";
+        String usePrefix = ""    USE:"";
+        int initializersColumnWidth = countDataColumnWidth(initPrefix, pseudocode.getInstructionsIncludingDeadCode(), variableInitializers,
+                                                           pseudocodeVariablesData);
+        dumpInstructions(pseudocode, out, (instruction, next, prev) -> {
+            StringBuilder result = new StringBuilder();
+            Edges<ReadOnlyInitControlFlowInfo> initializersEdges = variableInitializers.get(instruction);
+            Edges<ReadOnlyInitControlFlowInfo> previousInitializersEdges = variableInitializers.get(prev);
+            String initializersData = """";
+            if (initializersEdges != null && !initializersEdges.equals(previousInitializersEdges)) {
+                initializersData = dumpEdgesData(initPrefix, initializersEdges, pseudocodeVariablesData);
+            }
+            result.append(String.format(""%1$-"" + initializersColumnWidth + ""s"", initializersData));
+            Edges<ReadOnlyControlFlowInfo<VariableUseState>> useStatusEdges = useStatusData.get(instruction);
+            Edges<ReadOnlyControlFlowInfo<VariableUseState>> nextUseStatusEdges = useStatusData.get(next);
+            if (useStatusEdges != null && !useStatusEdges.equals(nextUseStatusEdges)) {
+                result.append(dumpEdgesData(usePrefix, useStatusEdges, pseudocodeVariablesData));
+            }
+            return result.toString();
+        });
+    }",method,
+"    private static int countDataColumnWidth(
+            @NotNull String prefix,
+            @NotNull List<Instruction> instructions,
+            @NotNull Map<Instruction, Edges<ReadOnlyInitControlFlowInfo>> data,
+            @NotNull PseudocodeVariablesData variablesData
+    ) {
+        int maxWidth = 0;
+        for (Instruction instruction : instructions) {
+            Edges<ReadOnlyInitControlFlowInfo> edges = data.get(instruction);
+            if (edges == null) continue;
+            int length = dumpEdgesData(prefix, edges, variablesData).length();
+            if (maxWidth < length) {
+                maxWidth = length;
+            }
+        }
+        return maxWidth;
+    }",method,
+"        for (Instruction instruction : instructions) {
+            Edges<ReadOnlyInitControlFlowInfo> edges = data.get(instruction);
+            if (edges == null) continue;
+            int length = dumpEdgesData(prefix, edges, variablesData).length();
+            if (maxWidth < length) {
+                maxWidth = length;
+            }
+        }",method,
+"            if (maxWidth < length) {
+                maxWidth = length;
+            }",method,
+"    @NotNull
+    private static <S, I extends ReadOnlyControlFlowInfo<S>> String dumpEdgesData(
+            String prefix,
+            @NotNull Edges<I> edges,
+            @NotNull PseudocodeVariablesData variablesData
+    ) {
+        return prefix +
+               "" in: "" + renderVariableMap(edges.getIncoming().asMap(), variablesData) +
+               "" out: "" + renderVariableMap(edges.getOutgoing().asMap(), variablesData);
+    }",method,
+"    private static <S> String renderVariableMap(
+            javaslang.collection.Map<VariableDescriptor, S> map,
+            PseudocodeVariablesData variablesData
+    ) {
+        List<String> result = Lists.newArrayList();
+        for (Tuple2<VariableDescriptor, S> entry : map) {
+            VariableDescriptor variable = entry._1;
+            S state = entry._2;
+            if (variablesData.isVariableWithTrivialInitializer(variable)) continue;
+            result.add(variable.getName() + ""="" + state);
+        }
+        Collections.sort(result);
+        return ""{"" + StringUtil.join(result, "", "") + ""}"";
+    }",method,
+"        for (Tuple2<VariableDescriptor, S> entry : map) {
+            VariableDescriptor variable = entry._1;
+            S state = entry._2;
+            if (variablesData.isVariableWithTrivialInitializer(variable)) continue;
+            result.add(variable.getName() + ""="" + state);
+        }",method,
+"public class UseJBColorInspection extends DevKitInspectionBase {
+  @Override
+  public PsiElementVisitor buildInternalVisitor(@NotNull final ProblemsHolder holder, final boolean isOnTheFly) {
+    return new JavaElementVisitor() {
+      @Override
+      public void visitNewExpression(PsiNewExpression expression) {
+        final ProblemDescriptor descriptor = checkNewExpression(expression, holder.getManager(), isOnTheFly);
+        if (descriptor != null) {
+          holder.registerProblem(descriptor);
+        }
+        super.visitNewExpression(expression);
+      }
+      @Override
+      public void visitReferenceExpression(PsiReferenceExpression expression) {
+        super.visitReferenceExpression(expression);
+        final PsiElement parent = expression.getParent();
+        if (parent instanceof PsiMethodCallExpression) {
+          //do not resolve method names
+          return;
+        }
+        final PsiElement colorField = expression.resolve();
+        if (colorField != null && colorField instanceof PsiField && ((PsiField)colorField).hasModifierProperty(PsiModifier.STATIC)) {
+          final PsiClass colorClass = ((PsiField)colorField).getContainingClass();
+          if (colorClass != null && Color.class.getName().equals(colorClass.getQualifiedName())) {
+            String text = expression.getText();
+            if (text.contains(""."")) {
+              text = text.substring(text.lastIndexOf('.'));
+            }
+            text = StringUtil.trimStart(text, ""."");
+            if (text.equalsIgnoreCase(""lightGray"")) {
+              text = ""LIGHT_GRAY"";
+            }
+            else if (text.equalsIgnoreCase(""darkGray"")) {
+              text = ""DARK_GRAY"";
+            }
+            final ProblemDescriptor descriptor = holder.getManager()
+              .createProblemDescriptor(expression, ""Change to JBColor."" + text.toUpperCase(),
+                                       new ConvertToJBColorConstantQuickFix(text.toUpperCase()),
+                                       ProblemHighlightType.GENERIC_ERROR_OR_WARNING, isOnTheFly);
+            holder.registerProblem(descriptor);
+          }
+        }
+      }
+    };
+  }
+  @Nullable
+  private static ProblemDescriptor checkNewExpression(PsiNewExpression expression, InspectionManager manager, boolean isOnTheFly) {
+    final Project project = manager.getProject();
+    final PsiType type = expression.getType();
+    final PsiExpressionList arguments = expression.getArgumentList();
+    if (type != null && arguments != null && type.equalsToText(""java.awt.Color"")) {
+      final JavaPsiFacade facade = JavaPsiFacade.getInstance(project);
+      final PsiClass jbColorClass = facade.findClass(JBColor.class.getName(), GlobalSearchScope.allScope(project));
+      if (jbColorClass != null && facade.getResolveHelper().isAccessible(jbColorClass, expression, jbColorClass)) {
+        final PsiElement parent = expression.getParent();
+        if (parent instanceof PsiExpressionList && parent.getParent() instanceof PsiNewExpression) {
+          final PsiType parentType = ((PsiNewExpression)parent.getParent()).getType();
+          if (parentType == null || JBColor.class.getName().equals(parentType.getCanonicalText())) return null;
+        }
+        return manager.createProblemDescriptor(expression, ""Replace with JBColor"", new ConvertToJBColorQuickFix(),
+                                               ProblemHighlightType.GENERIC_ERROR_OR_WARNING, isOnTheFly);
+      }
+    }
+    return null;
+  }
+}",class,
+"  @Override
+  public PsiElementVisitor buildInternalVisitor(@NotNull final ProblemsHolder holder, final boolean isOnTheFly) {
+    return new JavaElementVisitor() {
+      @Override
+      public void visitNewExpression(PsiNewExpression expression) {
+        final ProblemDescriptor descriptor = checkNewExpression(expression, holder.getManager(), isOnTheFly);
+        if (descriptor != null) {
+          holder.registerProblem(descriptor);
+        }
+        super.visitNewExpression(expression);
+      }
+      @Override
+      public void visitReferenceExpression(PsiReferenceExpression expression) {
+        super.visitReferenceExpression(expression);
+        final PsiElement parent = expression.getParent();
+        if (parent instanceof PsiMethodCallExpression) {
+          //do not resolve method names
+          return;
+        }
+        final PsiElement colorField = expression.resolve();
+        if (colorField != null && colorField instanceof PsiField && ((PsiField)colorField).hasModifierProperty(PsiModifier.STATIC)) {
+          final PsiClass colorClass = ((PsiField)colorField).getContainingClass();
+          if (colorClass != null && Color.class.getName().equals(colorClass.getQualifiedName())) {
+            String text = expression.getText();
+            if (text.contains(""."")) {
+              text = text.substring(text.lastIndexOf('.'));
+            }
+            text = StringUtil.trimStart(text, ""."");
+            if (text.equalsIgnoreCase(""lightGray"")) {
+              text = ""LIGHT_GRAY"";
+            }
+            else if (text.equalsIgnoreCase(""darkGray"")) {
+              text = ""DARK_GRAY"";
+            }
+            final ProblemDescriptor descriptor = holder.getManager()
+              .createProblemDescriptor(expression, ""Change to JBColor."" + text.toUpperCase(),
+                                       new ConvertToJBColorConstantQuickFix(text.toUpperCase()),
+                                       ProblemHighlightType.GENERIC_ERROR_OR_WARNING, isOnTheFly);
+            holder.registerProblem(descriptor);
+          }
+        }
+      }
+    };
+  }",method,
+"    return new JavaElementVisitor() {
+      @Override
+      public void visitNewExpression(PsiNewExpression expression) {
+        final ProblemDescriptor descriptor = checkNewExpression(expression, holder.getManager(), isOnTheFly);
+        if (descriptor != null) {
+          holder.registerProblem(descriptor);
+        }
+        super.visitNewExpression(expression);
+      }
+      @Override
+      public void visitReferenceExpression(PsiReferenceExpression expression) {
+        super.visitReferenceExpression(expression);
+        final PsiElement parent = expression.getParent();
+        if (parent instanceof PsiMethodCallExpression) {
+          //do not resolve method names
+          return;
+        }
+        final PsiElement colorField = expression.resolve();
+        if (colorField != null && colorField instanceof PsiField && ((PsiField)colorField).hasModifierProperty(PsiModifier.STATIC)) {
+          final PsiClass colorClass = ((PsiField)colorField).getContainingClass();
+          if (colorClass != null && Color.class.getName().equals(colorClass.getQualifiedName())) {
+            String text = expression.getText();
+            if (text.contains(""."")) {
+              text = text.substring(text.lastIndexOf('.'));
+            }
+            text = StringUtil.trimStart(text, ""."");
+            if (text.equalsIgnoreCase(""lightGray"")) {
+              text = ""LIGHT_GRAY"";
+            }
+            else if (text.equalsIgnoreCase(""darkGray"")) {
+              text = ""DARK_GRAY"";
+            }
+            final ProblemDescriptor descriptor = holder.getManager()
+              .createProblemDescriptor(expression, ""Change to JBColor."" + text.toUpperCase(),
+                                       new ConvertToJBColorConstantQuickFix(text.toUpperCase()),
+                                       ProblemHighlightType.GENERIC_ERROR_OR_WARNING, isOnTheFly);
+            holder.registerProblem(descriptor);
+          }
+        }
+      }
+    }",method,
+"      @Override
+      public void visitNewExpression(PsiNewExpression expression) {
+        final ProblemDescriptor descriptor = checkNewExpression(expression, holder.getManager(), isOnTheFly);
+        if (descriptor != null) {
+          holder.registerProblem(descriptor);
+        }
+        super.visitNewExpression(expression);
+      }",method,
+"        if (descriptor != null) {
+          holder.registerProblem(descriptor);
+        }",method,
+"      @Override
+      public void visitReferenceExpression(PsiReferenceExpression expression) {
+        super.visitReferenceExpression(expression);
+        final PsiElement parent = expression.getParent();
+        if (parent instanceof PsiMethodCallExpression) {
+          //do not resolve method names
+          return;
+        }
+        final PsiElement colorField = expression.resolve();
+        if (colorField != null && colorField instanceof PsiField && ((PsiField)colorField).hasModifierProperty(PsiModifier.STATIC)) {
+          final PsiClass colorClass = ((PsiField)colorField).getContainingClass();
+          if (colorClass != null && Color.class.getName().equals(colorClass.getQualifiedName())) {
+            String text = expression.getText();
+            if (text.contains(""."")) {
+              text = text.substring(text.lastIndexOf('.'));
+            }
+            text = StringUtil.trimStart(text, ""."");
+            if (text.equalsIgnoreCase(""lightGray"")) {
+              text = ""LIGHT_GRAY"";
+            }
+            else if (text.equalsIgnoreCase(""darkGray"")) {
+              text = ""DARK_GRAY"";
+            }
+            final ProblemDescriptor descriptor = holder.getManager()
+              .createProblemDescriptor(expression, ""Change to JBColor."" + text.toUpperCase(),
+                                       new ConvertToJBColorConstantQuickFix(text.toUpperCase()),
+                                       ProblemHighlightType.GENERIC_ERROR_OR_WARNING, isOnTheFly);
+            holder.registerProblem(descriptor);
+          }
+        }
+      }",method,
+"        if (parent instanceof PsiMethodCallExpression) {
+          //do not resolve method names
+          return;
+        }",method,
+"  @Nullable
+  private static ProblemDescriptor checkNewExpression(PsiNewExpression expression, InspectionManager manager, boolean isOnTheFly) {
+    final Project project = manager.getProject();
+    final PsiType type = expression.getType();
+    final PsiExpressionList arguments = expression.getArgumentList();
+    if (type != null && arguments != null && type.equalsToText(""java.awt.Color"")) {
+      final JavaPsiFacade facade = JavaPsiFacade.getInstance(project);
+      final PsiClass jbColorClass = facade.findClass(JBColor.class.getName(), GlobalSearchScope.allScope(project));
+      if (jbColorClass != null && facade.getResolveHelper().isAccessible(jbColorClass, expression, jbColorClass)) {
+        final PsiElement parent = expression.getParent();
+        if (parent instanceof PsiExpressionList && parent.getParent() instanceof PsiNewExpression) {
+          final PsiType parentType = ((PsiNewExpression)parent.getParent()).getType();
+          if (parentType == null || JBColor.class.getName().equals(parentType.getCanonicalText())) return null;
+        }
+        return manager.createProblemDescriptor(expression, ""Replace with JBColor"", new ConvertToJBColorQuickFix(),
+                                               ProblemHighlightType.GENERIC_ERROR_OR_WARNING, isOnTheFly);
+      }
+    }
+    return null;
+  }",method,
+"public class TestIPv4Subnet {
+    @Test
+    @Parameters(source = TestIPv4Subnet.class, method=""validCidrs"")
+    public void testValidCidrs(String input) {
+        String[] expected = input.split(""/"");
+        IPv4Subnet testObject = IPv4Subnet.fromCidr(input);
+        // toString simply re-constructs the original format
+        Assert.assertEquals(input.trim(), testObject.toString());
+        Assert.assertEquals(expected[0].trim(),
+                testObject.getAddress().toString());
+        Assert.assertEquals(expected[1].trim(),
+                Integer.toString(testObject.getPrefixLen()));
+    }
+    @Test(expected = IllegalArgumentException.class)
+    @Parameters(source = TestIPv4Subnet.class, method=""invalidCidrs"")
+    public void testInvalidCidrs(String input) {
+        IPv4Subnet.fromCidr(input);
+    }
+    @Test
+    @Parameters(source = TestIPv4Subnet.class, method=""validCidrs"")
+    public void testIsValidIpv4Cidr(String input) {
+        Assert.assertTrue(IPv4Subnet.isValidIpv4Cidr(input));
+    }
+    @Test
+    @Parameters(source = TestIPv4Subnet.class, method=""invalidCidrs"")
+    public void testIsValidIpv4CidrNegative(String input) {
+        Assert.assertFalse(IPv4Subnet.isValidIpv4Cidr(input));
+    }
+    @Test(expected = IllegalArgumentException.class)
+    @Parameters(source = TestIPv4Subnet.class, method=""invalidCidrs"")
+    public void testGetAddressAndPrefixLenNegative(String input) {
+        IPv4Subnet.fromCidr(input);
+    }
+    @Test
+    @Parameters(source = TestIPv4Subnet.class, method=""prefixLenToBytes"")
+    public void testPrefixLenToBytes(int prefixLen, byte[] expected) {
+        Assert.assertArrayEquals(
+            expected, IPv4Subnet.prefixLenToBytes(prefixLen));
+    }
+    @Test
+    public void testDefaultMask() {
+        IPv4Subnet subnet = IPv4Subnet.fromCidr(""1.1.1.1"");
+        Assert.assertEquals(""1.1.1.1/32"", subnet.toString());
+    }
+    public static Object[] validCidrs() {
+        return $(
+                $(""0.0.0.0/0""),
+                $(""0.0.0.0/16""),
+                $(""0.0.0.0/32""),
+                $(""10.10.10.10/0""),
+                $(""10.10.10.10/16""),
+                $(""10.10.10.10/32""),
+                $(""255.255.255.255/0""),
+                $(""255.255.255.255/16""),
+                $(""255.255.255.255/32""),
+                $(""  0.0.0.0/0""),
+                $(""0.0.0.0/0  ""),
+                $(""  0.0.0.0/0  "")
+        );
+    }
+    public static Object[] invalidCidrs() {
+        return $(
+                $(""""),
+                $(""foo""),
+                // Invalid delim
+                $(""1.1.1.1_32""),
+                $(""1.1.1.1 32""),
+                // Bad prefix len
+                $(""1.1.1.1/""),
+                $(""1.1.1.1/foo""),
+                $(""1.1.1.1/-1""),
+                $(""1.1.1.1/33""),
+                // Bad address format
+                $(""/32""),
+                $(""1.1.1/32""),
+                $(""1.1.1.1.1/32""),
+                $(""-1.1.1.1/0""),
+                $(""1.-1.1.1/0""),
+                $(""1.1.-1.1/0""),
+                $(""1.1.1.-1/0""),
+                $(""256.255.255.255/0""),
+                $(""255.256.255.255/0""),
+                $(""255.255.256.255/0""),
+                $(""255.255.255.256/0"")
+        );
+    }
+    @SuppressWarnings(""uncheck"")
+    public static Object[] prefixLenToBytes() {
+        return $($(32, new byte[] {
+                        (byte) 255, (byte) 255, (byte) 255, (byte) 255 }),
+                $(24, new byte[] {
+                        (byte) 255, (byte) 255, (byte) 255, (byte) 0 }),
+                $(16, new byte[] {
+                        (byte) 255, (byte) 255, (byte) 0, (byte) 0 }),
+                $(8, new byte[] {
+                        (byte) 255, (byte) 0, (byte) 0, (byte) 0 }),
+                $(23, new byte[] {
+                        (byte) 255, (byte) 255, (byte) 254, (byte) 0 }),
+                $(17, new byte[] {
+                        (byte) 255, (byte) 255, (byte) 128, (byte) 0}),
+                $(3, new byte[] {
+                        (byte) 224, (byte) 0, (byte) 0, (byte) 0 }));
+    }
+}",class,
+"    @Test
+    @Parameters(source = TestIPv4Subnet.class, method=""validCidrs"")
+    public void testValidCidrs(String input) {
+        String[] expected = input.split(""/"");
+        IPv4Subnet testObject = IPv4Subnet.fromCidr(input);
+        // toString simply re-constructs the original format
+        Assert.assertEquals(input.trim(), testObject.toString());
+        Assert.assertEquals(expected[0].trim(),
+                testObject.getAddress().toString());
+        Assert.assertEquals(expected[1].trim(),
+                Integer.toString(testObject.getPrefixLen()));
+    }",method,
+"    @Test(expected = IllegalArgumentException.class)
+    @Parameters(source = TestIPv4Subnet.class, method=""invalidCidrs"")
+    public void testInvalidCidrs(String input) {
+        IPv4Subnet.fromCidr(input);
+    }",method,
+"    @Test
+    @Parameters(source = TestIPv4Subnet.class, method=""validCidrs"")
+    public void testIsValidIpv4Cidr(String input) {
+        Assert.assertTrue(IPv4Subnet.isValidIpv4Cidr(input));
+    }",method,
+"    @Test
+    @Parameters(source = TestIPv4Subnet.class, method=""invalidCidrs"")
+    public void testIsValidIpv4CidrNegative(String input) {
+        Assert.assertFalse(IPv4Subnet.isValidIpv4Cidr(input));
+    }",method,
+"    @Test(expected = IllegalArgumentException.class)
+    @Parameters(source = TestIPv4Subnet.class, method=""invalidCidrs"")
+    public void testGetAddressAndPrefixLenNegative(String input) {
+        IPv4Subnet.fromCidr(input);
+    }",method,
+"    @Test
+    @Parameters(source = TestIPv4Subnet.class, method=""prefixLenToBytes"")
+    public void testPrefixLenToBytes(int prefixLen, byte[] expected) {
+        Assert.assertArrayEquals(
+            expected, IPv4Subnet.prefixLenToBytes(prefixLen));
+    }",method,
+"    @Test
+    public void testDefaultMask() {
+        IPv4Subnet subnet = IPv4Subnet.fromCidr(""1.1.1.1"");
+        Assert.assertEquals(""1.1.1.1/32"", subnet.toString());
+    }",method,
+"    public static Object[] validCidrs() {
+        return $(
+                $(""0.0.0.0/0""),
+                $(""0.0.0.0/16""),
+                $(""0.0.0.0/32""),
+                $(""10.10.10.10/0""),
+                $(""10.10.10.10/16""),
+                $(""10.10.10.10/32""),
+                $(""255.255.255.255/0""),
+                $(""255.255.255.255/16""),
+                $(""255.255.255.255/32""),
+                $(""  0.0.0.0/0""),
+                $(""0.0.0.0/0  ""),
+                $(""  0.0.0.0/0  "")
+        );
+    }",method,
+"    public static Object[] invalidCidrs() {
+        return $(
+                $(""""),
+                $(""foo""),
+                // Invalid delim
+                $(""1.1.1.1_32""),
+                $(""1.1.1.1 32""),
+                // Bad prefix len
+                $(""1.1.1.1/""),
+                $(""1.1.1.1/foo""),
+                $(""1.1.1.1/-1""),
+                $(""1.1.1.1/33""),
+                // Bad address format
+                $(""/32""),
+                $(""1.1.1/32""),
+                $(""1.1.1.1.1/32""),
+                $(""-1.1.1.1/0""),
+                $(""1.-1.1.1/0""),
+                $(""1.1.-1.1/0""),
+                $(""1.1.1.-1/0""),
+                $(""256.255.255.255/0""),
+                $(""255.256.255.255/0""),
+                $(""255.255.256.255/0""),
+                $(""255.255.255.256/0"")
+        );
+    }",method,
+"    @SuppressWarnings(""uncheck"")
+    public static Object[] prefixLenToBytes() {
+        return $($(32, new byte[] {
+                        (byte) 255, (byte) 255, (byte) 255, (byte) 255 }),
+                $(24, new byte[] {
+                        (byte) 255, (byte) 255, (byte) 255, (byte) 0 }),
+                $(16, new byte[] {
+                        (byte) 255, (byte) 255, (byte) 0, (byte) 0 }),
+                $(8, new byte[] {
+                        (byte) 255, (byte) 0, (byte) 0, (byte) 0 }),
+                $(23, new byte[] {
+                        (byte) 255, (byte) 255, (byte) 254, (byte) 0 }),
+                $(17, new byte[] {
+                        (byte) 255, (byte) 255, (byte) 128, (byte) 0}),
+                $(3, new byte[] {
+                        (byte) 224, (byte) 0, (byte) 0, (byte) 0 }));
+    }",method,
+"public class CharacterPickerDialog extends Dialog
+        implements OnItemClickListener, OnClickListener {
+    private View mView;
+    private Editable mText;
+    private String mOptions;
+    private boolean mInsert;
+    private LayoutInflater mInflater;
+    private Button mCancelButton;
+    public CharacterPickerDialog(Context context, View view,
+                                 Editable text, String options,
+                                 boolean insert) {
+        super(context, com.android.internal.R.style.Theme_Panel);
+        mView = view;
+        mText = text;
+        mOptions = options;
+        mInsert = insert;
+        mInflater = LayoutInflater.from(context);
+    }
+    @Override
+    protected void onCreate(Bundle savedInstanceState) {
+        super.onCreate(savedInstanceState);
+        WindowManager.LayoutParams params = getWindow().getAttributes();
+        params.token = mView.getApplicationWindowToken();
+        params.type = params.TYPE_APPLICATION_ATTACHED_DIALOG;
+        params.flags = params.flags | Window.FEATURE_NO_TITLE;
+        setContentView(R.layout.character_picker);
+        GridView grid = (GridView) findViewById(R.id.characterPicker);
+        grid.setAdapter(new OptionsAdapter(getContext()));
+        grid.setOnItemClickListener(this);
+        mCancelButton = (Button) findViewById(R.id.cancel);
+        mCancelButton.setOnClickListener(this);
+    }
+    public void onItemClick(AdapterView parent, View view, int position, long id) {
+        String result = String.valueOf(mOptions.charAt(position));
+        replaceCharacterAndClose(result);
+    }
+    private void replaceCharacterAndClose(CharSequence replace) {
+        int selEnd = Selection.getSelectionEnd(mText);
+        if (mInsert || selEnd == 0) {
+            mText.insert(selEnd, replace);
+        } else {
+            mText.replace(selEnd - 1, selEnd, replace);
+        }
+        dismiss();
+    }
+    public void onClick(View v) {
+        if (v == mCancelButton) {
+            dismiss();
+        } else if (v instanceof Button) {
+            CharSequence result = ((Button) v).getText();
+            replaceCharacterAndClose(result);
+        }
+    }
+    private class OptionsAdapter extends BaseAdapter {
+        public OptionsAdapter(Context context) {
+            super();
+        }
+        public View getView(int position, View convertView, ViewGroup parent) {
+            Button b = (Button)
+                mInflater.inflate(R.layout.character_picker_button, null);
+            b.setText(String.valueOf(mOptions.charAt(position)));
+            b.setOnClickListener(CharacterPickerDialog.this);
+            return b;
+        }
+        public final int getCount() {
+            return mOptions.length();
+        }
+        public final Object getItem(int position) {
+            return String.valueOf(mOptions.charAt(position));
+        }
+        public final long getItemId(int position) {
+            return position;
+        }
+    }
+}",class,
+"    private class OptionsAdapter extends BaseAdapter {
+        public OptionsAdapter(Context context) {
+            super();
+        }
+        public View getView(int position, View convertView, ViewGroup parent) {
+            Button b = (Button)
+                mInflater.inflate(R.layout.character_picker_button, null);
+            b.setText(String.valueOf(mOptions.charAt(position)));
+            b.setOnClickListener(CharacterPickerDialog.this);
+            return b;
+        }
+        public final int getCount() {
+            return mOptions.length();
+        }
+        public final Object getItem(int position) {
+            return String.valueOf(mOptions.charAt(position));
+        }
+        public final long getItemId(int position) {
+            return position;
+        }
+    }",class,
+"    public CharacterPickerDialog(Context context, View view,
+                                 Editable text, String options,
+                                 boolean insert) {
+        super(context, com.android.internal.R.style.Theme_Panel);
+        mView = view;
+        mText = text;
+        mOptions = options;
+        mInsert = insert;
+        mInflater = LayoutInflater.from(context);
+    }",method,
+"    @Override
+    protected void onCreate(Bundle savedInstanceState) {
+        super.onCreate(savedInstanceState);
+        WindowManager.LayoutParams params = getWindow().getAttributes();
+        params.token = mView.getApplicationWindowToken();
+        params.type = params.TYPE_APPLICATION_ATTACHED_DIALOG;
+        params.flags = params.flags | Window.FEATURE_NO_TITLE;
+        setContentView(R.layout.character_picker);
+        GridView grid = (GridView) findViewById(R.id.characterPicker);
+        grid.setAdapter(new OptionsAdapter(getContext()));
+        grid.setOnItemClickListener(this);
+        mCancelButton = (Button) findViewById(R.id.cancel);
+        mCancelButton.setOnClickListener(this);
+    }",method,
+"    public void onItemClick(AdapterView parent, View view, int position, long id) {
+        String result = String.valueOf(mOptions.charAt(position));
+        replaceCharacterAndClose(result);
+    }",method,
+"    private void replaceCharacterAndClose(CharSequence replace) {
+        int selEnd = Selection.getSelectionEnd(mText);
+        if (mInsert || selEnd == 0) {
+            mText.insert(selEnd, replace);
+        } else {
+            mText.replace(selEnd - 1, selEnd, replace);
+        }
+        dismiss();
+    }",method,
+"        if (mInsert || selEnd == 0) {
+            mText.insert(selEnd, replace);
+        }",method,
+"    public void onClick(View v) {
+        if (v == mCancelButton) {
+            dismiss();
+        } else if (v instanceof Button) {
+            CharSequence result = ((Button) v).getText();
+            replaceCharacterAndClose(result);
+        }
+    }",method,
+"        if (v == mCancelButton) {
+            dismiss();
+        }",method,
+"        public OptionsAdapter(Context context) {
+            super();
+        }",method,
+"        public View getView(int position, View convertView, ViewGroup parent) {
+            Button b = (Button)
+                mInflater.inflate(R.layout.character_picker_button, null);
+            b.setText(String.valueOf(mOptions.charAt(position)));
+            b.setOnClickListener(CharacterPickerDialog.this);
+            return b;
+        }",method,
+"        public final int getCount() {
+            return mOptions.length();
+        }",method,
+"        public final Object getItem(int position) {
+            return String.valueOf(mOptions.charAt(position));
+        }",method,
+"        public final long getItemId(int position) {
+            return position;
+        }",method,
+"public class FitCenterTest {
+  @Mock Resource<Bitmap> resource;
+  @Mock Transformation<Bitmap> transformation;
+  private FitCenter fitCenter;
+  private int bitmapWidth;
+  private int bitmapHeight;
+  private Application context;
+  @Before
+  public void setUp() {
+    MockitoAnnotations.initMocks(this);
+    bitmapWidth = 100;
+    bitmapHeight = 100;
+    Bitmap bitmap = Bitmap.createBitmap(bitmapWidth, bitmapHeight, Bitmap.Config.ARGB_8888);
+    when(resource.get()).thenReturn(bitmap);
+    BitmapPool pool = new BitmapPoolAdapter();
+    context = RuntimeEnvironment.application;
+    Glide.init(new GlideBuilder().setBitmapPool(pool).build(context));
+    fitCenter = new FitCenter();
+  }
+  @After
+  public void tearDown() {
+    Glide.tearDown();
+  }
+  @Test
+  public void testReturnsGivenResourceIfMatchesSizeExactly() {
+    Resource<Bitmap> result =
+        fitCenter.transform(context, resource, bitmapWidth, bitmapHeight);
+    assertEquals(resource, result);
+  }
+  @Test
+  public void testDoesNotRecycleGivenResourceIfMatchesSizeExactly() {
+    fitCenter.transform(context, resource, bitmapWidth, bitmapHeight);
+    verify(resource, never()).recycle();
+  }
+  @Test
+  public void testDoesNotRecycleGivenResource() {
+    fitCenter.transform(context, resource, 50, 50);
+    verify(resource, never()).recycle();
+  }
+  @Test
+  public void testEquals() throws NoSuchAlgorithmException {
+    KeyAssertions.assertSame(fitCenter, new FitCenter());
+    doAnswer(new Util.WriteDigest(""other"")).when(transformation)
+        .updateDiskCacheKey(any(MessageDigest.class));
+    KeyAssertions.assertDifferent(fitCenter, transformation);
+  }
+  @Implements(Canvas.class)
+  public static final class DrawNothingCanvas extends ShadowCanvas {
+    @Implementation
+    @Override
+    public void drawBitmap(Bitmap bitmap, Matrix matrix, Paint paint) {
+      // Do nothing.
+    }
+  }
+}",class,
+"  public static final class DrawNothingCanvas extends ShadowCanvas {
+    @Implementation
+    @Override
+    public void drawBitmap(Bitmap bitmap, Matrix matrix, Paint paint) {
+      // Do nothing.
+    }
+  }",class,
+"  @Before
+  public void setUp() {
+    MockitoAnnotations.initMocks(this);
+    bitmapWidth = 100;
+    bitmapHeight = 100;
+    Bitmap bitmap = Bitmap.createBitmap(bitmapWidth, bitmapHeight, Bitmap.Config.ARGB_8888);
+    when(resource.get()).thenReturn(bitmap);
+    BitmapPool pool = new BitmapPoolAdapter();
+    context = RuntimeEnvironment.application;
+    Glide.init(new GlideBuilder().setBitmapPool(pool).build(context));
+    fitCenter = new FitCenter();
+  }",method,
+"  @After
+  public void tearDown() {
+    Glide.tearDown();
+  }",method,
+"  @Test
+  public void testReturnsGivenResourceIfMatchesSizeExactly() {
+    Resource<Bitmap> result =
+        fitCenter.transform(context, resource, bitmapWidth, bitmapHeight);
+    assertEquals(resource, result);
+  }",method,
+"  @Test
+  public void testDoesNotRecycleGivenResourceIfMatchesSizeExactly() {
+    fitCenter.transform(context, resource, bitmapWidth, bitmapHeight);
+    verify(resource, never()).recycle();
+  }",method,
+"  @Test
+  public void testDoesNotRecycleGivenResource() {
+    fitCenter.transform(context, resource, 50, 50);
+    verify(resource, never()).recycle();
+  }",method,
+"  @Test
+  public void testEquals() throws NoSuchAlgorithmException {
+    KeyAssertions.assertSame(fitCenter, new FitCenter());
+    doAnswer(new Util.WriteDigest(""other"")).when(transformation)
+        .updateDiskCacheKey(any(MessageDigest.class));
+    KeyAssertions.assertDifferent(fitCenter, transformation);
+  }",method,
+"    @Implementation
+    @Override
+    public void drawBitmap(Bitmap bitmap, Matrix matrix, Paint paint) {
+      // Do nothing.
+    }",method,
+"public class ResourcesExoHelper {
+  @VisibleForTesting public static final Path RESOURCES_DIR = Paths.get(""resources"");
+  private final SourcePathResolver pathResolver;
+  private final ProjectFilesystem projectFilesystem;
+  private final ExopackageInfo.ResourcesInfo resourcesInfo;
+  ResourcesExoHelper(
+      SourcePathResolver pathResolver,
+      ProjectFilesystem projectFilesystem,
+      ExopackageInfo.ResourcesInfo resourcesInfo) {
+    this.pathResolver = pathResolver;
+    this.projectFilesystem = projectFilesystem;
+    this.resourcesInfo = resourcesInfo;
+  }
+  public ImmutableMap<Path, Path> getFilesToInstall() {
+    return ExopackageUtil.applyFilenameFormat(getResourceFilesByHash(), RESOURCES_DIR, ""%s.apk"");
+  }
+  public ImmutableMap<Path, String> getMetadataToInstall() {
+    return ImmutableMap.of(
+        RESOURCES_DIR.resolve(""metadata.txt""),
+        getResourceMetadataContents(getResourceFilesByHash()));
+  }
+  private ImmutableMap<String, Path> getResourceFilesByHash() {
+    return resourcesInfo
+        .getResourcesPaths()
+        .stream()
+        .collect(
+            MoreCollectors.toImmutableMap(
+                pathAndHash ->
+                    projectFilesystem
+                        .readFileIfItExists(pathResolver.getAbsolutePath(pathAndHash.getHashPath()))
+                        .get(),
+                i -> projectFilesystem.resolve(pathResolver.getAbsolutePath(i.getPath()))));
+  }
+  private String getResourceMetadataContents(ImmutableMap<String, Path> filesByHash) {
+    return Joiner.on(""\n"")
+        .join(RichStream.from(filesByHash.keySet()).map(h -> ""resources "" + h).toOnceIterable());
+  }
+}",class,
+"  ResourcesExoHelper(
+      SourcePathResolver pathResolver,
+      ProjectFilesystem projectFilesystem,
+      ExopackageInfo.ResourcesInfo resourcesInfo) {
+    this.pathResolver = pathResolver;
+    this.projectFilesystem = projectFilesystem;
+    this.resourcesInfo = resourcesInfo;
+  }",method,
+"  public ImmutableMap<Path, Path> getFilesToInstall() {
+    return ExopackageUtil.applyFilenameFormat(getResourceFilesByHash(), RESOURCES_DIR, ""%s.apk"");
+  }",method,
+"  public ImmutableMap<Path, String> getMetadataToInstall() {
+    return ImmutableMap.of(
+        RESOURCES_DIR.resolve(""metadata.txt""),
+        getResourceMetadataContents(getResourceFilesByHash()));
+  }",method,
+"  private ImmutableMap<String, Path> getResourceFilesByHash() {
+    return resourcesInfo
+        .getResourcesPaths()
+        .stream()
+        .collect(
+            MoreCollectors.toImmutableMap(
+                pathAndHash ->
+                    projectFilesystem
+                        .readFileIfItExists(pathResolver.getAbsolutePath(pathAndHash.getHashPath()))
+                        .get(),
+                i -> projectFilesystem.resolve(pathResolver.getAbsolutePath(i.getPath()))));
+  }",method,
+"  private String getResourceMetadataContents(ImmutableMap<String, Path> filesByHash) {
+    return Joiner.on(""\n"")
+        .join(RichStream.from(filesByHash.keySet()).map(h -> ""resources "" + h).toOnceIterable());
+  }",method,
+"public abstract class PythonService extends Service implements Runnable {
+    private static String TAG = PythonService.class.getSimpleName();
+    private Intent startIntent = null;
+    private Thread pythonThread = null;
+    // Python environment variables
+    private String androidPrivate;
+    private String androidArgument;
+    private String pythonName;
+    private String pythonHome;
+    private String pythonPath;
+    private String androidUnpack;
+    private String serviceEntrypoint;
+    private String pythonServiceArgument;
+    public int getStartType() {
+        return START_NOT_STICKY;
+    }
+    public boolean getStartForeground() {
+        return false;
+    }
+    public boolean getAutoRestart() {
+        return false;
+    }
+    @Override
+    public void onCreate() {
+        Log.v(TAG, ""Device: "" + android.os.Build.DEVICE);
+        Log.v(TAG, ""Model: "" + android.os.Build.MODEL);
+        AssetExtract.extractAsset(getApplicationContext(), ""private.mp3"", getFilesDir());
+        super.onCreate();
+    }
+    @Override
+    public int onStartCommand(Intent intent, int flags, int startId) {
+        if (pythonThread != null) {
+            Log.v(TAG, ""Service exists, do not start again"");
+            return START_NOT_STICKY;
+        }
+        startIntent = intent;
+        Bundle extras = intent.getExtras();
+        androidPrivate = extras.getString(""androidPrivate"");
+        androidArgument = extras.getString(""androidArgument"");
+        serviceEntrypoint = extras.getString(""serviceEntrypoint"");
+        pythonName = extras.getString(""pythonName"");
+        pythonHome = extras.getString(""pythonHome"");
+        pythonPath = extras.getString(""pythonPath"");
+        androidUnpack = extras.getString(""androidUnpack"");
+        pythonServiceArgument = extras.getString(""pythonServiceArgument"");
+        Log.v(TAG, ""Starting Python thread"");
+        pythonThread = new Thread(this);
+        pythonThread.start();
+        if (getStartForeground()) {
+            doStartForeground(extras);
+        }
+        return getStartType();
+    }
+    protected void doStartForeground(Bundle extras) {
+        Context appContext = getApplicationContext();
+        ApplicationInfo appInfo = appContext.getApplicationInfo();
+        String serviceTitle = extras.getString(""serviceTitle"", TAG);
+        String serviceDescription = extras.getString(""serviceDescription"", """");
+        int serviceIconId = extras.getInt(""serviceIconId"", appInfo.icon);
+        NotificationCompat.Builder builder =
+                new NotificationCompat.Builder(this)
+                        .setSmallIcon(serviceIconId)
+                        .setContentTitle(serviceTitle)
+                        .setContentText(serviceDescription);
+        int NOTIFICATION_ID = 1;
+        Intent targetIntent = new Intent(this, MainActivity.class);
+        PendingIntent contentIntent = PendingIntent.getActivity(this, 0, targetIntent, PendingIntent.FLAG_UPDATE_CURRENT);
+        builder.setContentIntent(contentIntent);
+        startForeground(NOTIFICATION_ID, builder.build());
+    }
+    @Override
+    public void onDestroy() {
+        super.onDestroy();
+        pythonThread = null;
+        if (getAutoRestart() && startIntent != null) {
+            Log.v(TAG, ""Service restart requested"");
+            startService(startIntent);
+        }
+        Process.killProcess(Process.myPid());
+    }
+    @Override
+    public void run() {
+        PythonUtil.loadLibraries(getFilesDir());
+        nativeStart(androidPrivate, androidArgument, serviceEntrypoint, pythonName, pythonHome,
+                pythonPath, pythonServiceArgument, androidUnpack);
+        stopSelf();
+    }
+    public static native void nativeStart(String androidPrivate, String androidArgument,
+                                          String serviceEntrypoint, String pythonName,
+                                          String pythonHome, String pythonPath,
+                                          String pythonServiceArgument, String androidUnpack);
+}",class,
+"    public int getStartType() {
+        return START_NOT_STICKY;
+    }",method,
+"    public boolean getStartForeground() {
+        return false;
+    }",method,
+"    public boolean getAutoRestart() {
+        return false;
+    }",method,
+"    @Override
+    public void onCreate() {
+        Log.v(TAG, ""Device: "" + android.os.Build.DEVICE);
+        Log.v(TAG, ""Model: "" + android.os.Build.MODEL);
+        AssetExtract.extractAsset(getApplicationContext(), ""private.mp3"", getFilesDir());
+        super.onCreate();
+    }",method,
+"    @Override
+    public int onStartCommand(Intent intent, int flags, int startId) {
+        if (pythonThread != null) {
+            Log.v(TAG, ""Service exists, do not start again"");
+            return START_NOT_STICKY;
+        }
+        startIntent = intent;
+        Bundle extras = intent.getExtras();
+        androidPrivate = extras.getString(""androidPrivate"");
+        androidArgument = extras.getString(""androidArgument"");
+        serviceEntrypoint = extras.getString(""serviceEntrypoint"");
+        pythonName = extras.getString(""pythonName"");
+        pythonHome = extras.getString(""pythonHome"");
+        pythonPath = extras.getString(""pythonPath"");
+        androidUnpack = extras.getString(""androidUnpack"");
+        pythonServiceArgument = extras.getString(""pythonServiceArgument"");
+        Log.v(TAG, ""Starting Python thread"");
+        pythonThread = new Thread(this);
+        pythonThread.start();
+        if (getStartForeground()) {
+            doStartForeground(extras);
+        }
+        return getStartType();
+    }",method,
+"        if (pythonThread != null) {
+            Log.v(TAG, ""Service exists, do not start again"");
+            return START_NOT_STICKY;
+        }",method,
+"    protected void doStartForeground(Bundle extras) {
+        Context appContext = getApplicationContext();
+        ApplicationInfo appInfo = appContext.getApplicationInfo();
+        String serviceTitle = extras.getString(""serviceTitle"", TAG);
+        String serviceDescription = extras.getString(""serviceDescription"", """");
+        int serviceIconId = extras.getInt(""serviceIconId"", appInfo.icon);
+        NotificationCompat.Builder builder =
+                new NotificationCompat.Builder(this)
+                        .setSmallIcon(serviceIconId)
+                        .setContentTitle(serviceTitle)
+                        .setContentText(serviceDescription);
+        int NOTIFICATION_ID = 1;
+        Intent targetIntent = new Intent(this, MainActivity.class);
+        PendingIntent contentIntent = PendingIntent.getActivity(this, 0, targetIntent, PendingIntent.FLAG_UPDATE_CURRENT);
+        builder.setContentIntent(contentIntent);
+        startForeground(NOTIFICATION_ID, builder.build());
+    }",method,
+"    @Override
+    public void onDestroy() {
+        super.onDestroy();
+        pythonThread = null;
+        if (getAutoRestart() && startIntent != null) {
+            Log.v(TAG, ""Service restart requested"");
+            startService(startIntent);
+        }
+        Process.killProcess(Process.myPid());
+    }",method,
+"    @Override
+    public void run() {
+        PythonUtil.loadLibraries(getFilesDir());
+        nativeStart(androidPrivate, androidArgument, serviceEntrypoint, pythonName, pythonHome,
+                pythonPath, pythonServiceArgument, androidUnpack);
+        stopSelf();
+    }",method,
+"public final class Leb128 {
+    private Leb128() {
+    }
+    public static int unsignedLeb128Size(int value) {
+        // TODO: This could be much cleverer.
+        int remaining = value >> 7;
+        int count = 0;
+        while (remaining != 0) {
+            remaining >>= 7;
+            count++;
+        }
+        return count + 1;
+    }
+    public static int signedLeb128Size(int value) {
+        // TODO: This could be much cleverer.
+        int remaining = value >> 7;
+        int count = 0;
+        boolean hasMore = true;
+        int end = ((value & Integer.MIN_VALUE) == 0) ? 0 : -1;
+        while (hasMore) {
+            hasMore = (remaining != end)
+                || ((remaining & 1) != ((value >> 6) & 1));
+            value = remaining;
+            remaining >>= 7;
+            count++;
+        }
+        return count;
+    }
+    public static int readSignedLeb128(ByteInput in) {
+        int result = 0;
+        int cur;
+        int count = 0;
+        int signBits = -1;
+        do {
+            cur = in.readByte() & 0xff;
+            result |= (cur & 0x7f) << (count * 7);
+            signBits <<= 7;
+            count++;
+        } while (((cur & 0x80) == 0x80) && count < 5);
+        if ((cur & 0x80) == 0x80) {
+            throw new DexException(""invalid LEB128 sequence"");
+        }
+        // Sign extend if appropriate
+        if (((signBits >> 1) & result) != 0 ) {
+            result |= signBits;
+        }
+        return result;
+    }
+    public static int readUnsignedLeb128(ByteInput in) {
+        int result = 0;
+        int cur;
+        int count = 0;
+        do {
+            cur = in.readByte() & 0xff;
+            result |= (cur & 0x7f) << (count * 7);
+            count++;
+        } while (((cur & 0x80) == 0x80) && count < 5);
+        if ((cur & 0x80) == 0x80) {
+            throw new DexException(""invalid LEB128 sequence"");
+        }
+        return result;
+    }
+    public static void writeUnsignedLeb128(ByteOutput out, int value) {
+        int remaining = value >>> 7;
+        while (remaining != 0) {
+            out.writeByte((byte) ((value & 0x7f) | 0x80));
+            value = remaining;
+            remaining >>>= 7;
+        }
+        out.writeByte((byte) (value & 0x7f));
+    }
+    public static void writeSignedLeb128(ByteOutput out, int value) {
+        int remaining = value >> 7;
+        boolean hasMore = true;
+        int end = ((value & Integer.MIN_VALUE) == 0) ? 0 : -1;
+        while (hasMore) {
+            hasMore = (remaining != end)
+                    || ((remaining & 1) != ((value >> 6) & 1));
+            out.writeByte((byte) ((value & 0x7f) | (hasMore ? 0x80 : 0)));
+            value = remaining;
+            remaining >>= 7;
+        }
+    }
+}",class,
+"    private Leb128() {
+    }",method,
+"    public static int unsignedLeb128Size(int value) {
+        // TODO: This could be much cleverer.
+        int remaining = value >> 7;
+        int count = 0;
+        while (remaining != 0) {
+            remaining >>= 7;
+            count++;
+        }
+        return count + 1;
+    }",method,
+"        while (remaining != 0) {
+            remaining >>= 7;
+            count++;
+        }",method,
+"    public static int signedLeb128Size(int value) {
+        // TODO: This could be much cleverer.
+        int remaining = value >> 7;
+        int count = 0;
+        boolean hasMore = true;
+        int end = ((value & Integer.MIN_VALUE) == 0) ? 0 : -1;
+        while (hasMore) {
+            hasMore = (remaining != end)
+                || ((remaining & 1) != ((value >> 6) & 1));
+            value = remaining;
+            remaining >>= 7;
+            count++;
+        }
+        return count;
+    }",method,
+"        while (hasMore) {
+            hasMore = (remaining != end)
+                || ((remaining & 1) != ((value >> 6) & 1));
+            value = remaining;
+            remaining >>= 7;
+            count++;
+        }",method,
+"    public static int readSignedLeb128(ByteInput in) {
+        int result = 0;
+        int cur;
+        int count = 0;
+        int signBits = -1;
+        do {
+            cur = in.readByte() & 0xff;
+            result |= (cur & 0x7f) << (count * 7);
+            signBits <<= 7;
+            count++;
+        } while (((cur & 0x80) == 0x80) && count < 5);
+        if ((cur & 0x80) == 0x80) {
+            throw new DexException(""invalid LEB128 sequence"");
+        }
+        // Sign extend if appropriate
+        if (((signBits >> 1) & result) != 0 ) {
+            result |= signBits;
+        }
+        return result;
+    }",method,
+"    public static int readUnsignedLeb128(ByteInput in) {
+        int result = 0;
+        int cur;
+        int count = 0;
+        do {
+            cur = in.readByte() & 0xff;
+            result |= (cur & 0x7f) << (count * 7);
+            count++;
+        } while (((cur & 0x80) == 0x80) && count < 5);
+        if ((cur & 0x80) == 0x80) {
+            throw new DexException(""invalid LEB128 sequence"");
+        }
+        return result;
+    }",method,
+"    public static void writeUnsignedLeb128(ByteOutput out, int value) {
+        int remaining = value >>> 7;
+        while (remaining != 0) {
+            out.writeByte((byte) ((value & 0x7f) | 0x80));
+            value = remaining;
+            remaining >>>= 7;
+        }
+        out.writeByte((byte) (value & 0x7f));
+    }",method,
+"        while (remaining != 0) {
+            out.writeByte((byte) ((value & 0x7f) | 0x80));
+            value = remaining;
+            remaining >>>= 7;
+        }",method,
+"    public static void writeSignedLeb128(ByteOutput out, int value) {
+        int remaining = value >> 7;
+        boolean hasMore = true;
+        int end = ((value & Integer.MIN_VALUE) == 0) ? 0 : -1;
+        while (hasMore) {
+            hasMore = (remaining != end)
+                    || ((remaining & 1) != ((value >> 6) & 1));
+            out.writeByte((byte) ((value & 0x7f) | (hasMore ? 0x80 : 0)));
+            value = remaining;
+            remaining >>= 7;
+        }
+    }",method,
+"        while (hasMore) {
+            hasMore = (remaining != end)
+                    || ((remaining & 1) != ((value >> 6) & 1));
+            out.writeByte((byte) ((value & 0x7f) | (hasMore ? 0x80 : 0)));
+            value = remaining;
+            remaining >>= 7;
+        }",method,
+"public class FontsContractE2ETest {
+    private static final String AUTHORITY = ""android.provider.fonts.font"";
+    private static final String PACKAGE = ""com.android.frameworks.coretests"";
+    // Signature to be used for authentication to access content provider.
+    // In this test case, the content provider and consumer live in the same package, self package's
+    // signature works.
+    private static List<List<byte[]>> SIGNATURE;
+    static {
+        final Context context = InstrumentationRegistry.getInstrumentation().getTargetContext();
+        try {
+            PackageManager manager = context.getPackageManager();
+            PackageInfo info = manager.getPackageInfo(
+                    context.getPackageName(), PackageManager.GET_SIGNATURES);
+            ArrayList<byte[]> out = new ArrayList<>();
+            for (Signature sig : info.signatures) {
+                out.add(sig.toByteArray());
+            }
+            SIGNATURE = new ArrayList<>();
+            SIGNATURE.add(out);
+        } catch (PackageManager.NameNotFoundException e) {
+            throw new RuntimeException(e);
+        }
+    }
+    @Before
+    public void setUp() {
+        MockFontProvider.prepareFontFiles(
+                InstrumentationRegistry.getInstrumentation().getTargetContext());
+    }
+    @After
+    public void tearDown() {
+        MockFontProvider.cleanUpFontFiles(
+                InstrumentationRegistry.getInstrumentation().getTargetContext());
+    }
+    private static class TestCallback extends FontsContract.FontRequestCallback {
+        private Typeface mTypeface;
+        private int mSuccessCallCount;
+        private int mFailedCallCount;
+        public void onTypefaceRetrieved(Typeface typeface) {
+            mTypeface = typeface;
+            mSuccessCallCount++;
+        }
+        public void onTypefaceRequestFailed(int reason) {
+            mFailedCallCount++;
+        }
+        public Typeface getTypeface() {
+            return mTypeface;
+        }
+        public int getSuccessCallCount() {
+            return mSuccessCallCount;
+        }
+        public int getFailedCallCount() {
+            return mFailedCallCount;
+        }
+    }
+    @Test
+    public void typefaceCacheTest() throws NameNotFoundException {
+        Instrumentation inst = InstrumentationRegistry.getInstrumentation();
+        Context ctx = inst.getTargetContext();
+        final TestCallback callback = new TestCallback();
+        inst.runOnMainSync(() -> {
+            FontRequest request = new FontRequest(
+                    AUTHORITY, PACKAGE, ""singleFontFamily"", SIGNATURE);
+            FontsContract.requestFonts(ctx, request, new Handler(), null, callback);
+        });
+        inst.waitForIdleSync();
+        assertEquals(1, callback.getSuccessCallCount());
+        assertEquals(0, callback.getFailedCallCount());
+        assertNotNull(callback.getTypeface());
+        final TestCallback callback2 = new TestCallback();
+        inst.runOnMainSync(() -> {
+            FontRequest request = new FontRequest(
+                    AUTHORITY, PACKAGE, ""singleFontFamily"", SIGNATURE);
+            FontsContract.requestFonts(ctx, request, new Handler(), null, callback2);
+        });
+        inst.waitForIdleSync();
+        assertEquals(1, callback2.getSuccessCallCount());
+        assertEquals(0, callback2.getFailedCallCount());
+        assertSame(callback.getTypeface(), callback2.getTypeface());
+        final TestCallback callback3 = new TestCallback();
+        inst.runOnMainSync(() -> {
+            FontRequest request = new FontRequest(
+                    AUTHORITY, PACKAGE, ""singleFontFamily2"", SIGNATURE);
+            FontsContract.requestFonts(ctx, request, new Handler(), null, callback3);
+        });
+        inst.waitForIdleSync();
+        assertEquals(1, callback3.getSuccessCallCount());
+        assertEquals(0, callback3.getFailedCallCount());
+        assertNotSame(callback.getTypeface(), callback3.getTypeface());
+    }
+    @Test
+    public void typefaceNotCacheTest() throws NameNotFoundException {
+        Instrumentation inst = InstrumentationRegistry.getInstrumentation();
+        Context ctx = inst.getTargetContext();
+        FontRequest request = new FontRequest(
+                AUTHORITY, PACKAGE, ""singleFontFamily"", SIGNATURE);
+        FontFamilyResult result = FontsContract.fetchFonts(
+                ctx, null , request);
+        assertEquals(FontFamilyResult.STATUS_OK, result.getStatusCode());
+        Typeface typeface = FontsContract.buildTypeface(
+                ctx, null , result.getFonts());
+        FontFamilyResult result2 = FontsContract.fetchFonts(
+                ctx, null , request);
+        assertEquals(FontFamilyResult.STATUS_OK, result2.getStatusCode());
+        Typeface typeface2 = FontsContract.buildTypeface(
+                ctx, null , result2.getFonts());
+        // Neighter fetchFonts nor buildTypeface should cache the Typeface.
+        assertNotSame(typeface, typeface2);
+    }
+    @Test
+    public void typefaceNullFdTest() throws NameNotFoundException {
+        Instrumentation inst = InstrumentationRegistry.getInstrumentation();
+        Context ctx = inst.getTargetContext();
+        FontRequest request = new FontRequest(
+                AUTHORITY, PACKAGE, MockFontProvider.NULL_FD_QUERY, SIGNATURE);
+        FontFamilyResult result = FontsContract.fetchFonts(
+                ctx, null , request);
+        assertNull(FontsContract.buildTypeface(
+                ctx, null , result.getFonts()));
+    }
+    @Test
+    public void getFontSyncTest() {
+        FontRequest request = new FontRequest(AUTHORITY, PACKAGE, ""singleFontFamily"", SIGNATURE);
+        assertNotNull(FontsContract.getFontSync(request));
+    }
+    @Test
+    public void getFontSyncTest_timeout() {
+        FontRequest request = new FontRequest(
+                AUTHORITY, PACKAGE, MockFontProvider.BLOCKING_QUERY, SIGNATURE);
+        assertNull(FontsContract.getFontSync(request));
+        MockFontProvider.unblock();
+    }
+}",class,
+"    private static class TestCallback extends FontsContract.FontRequestCallback {
+        private Typeface mTypeface;
+        private int mSuccessCallCount;
+        private int mFailedCallCount;
+        public void onTypefaceRetrieved(Typeface typeface) {
+            mTypeface = typeface;
+            mSuccessCallCount++;
+        }
+        public void onTypefaceRequestFailed(int reason) {
+            mFailedCallCount++;
+        }
+        public Typeface getTypeface() {
+            return mTypeface;
+        }
+        public int getSuccessCallCount() {
+            return mSuccessCallCount;
+        }
+        public int getFailedCallCount() {
+            return mFailedCallCount;
+        }
+    }",class,
+"            for (Signature sig : info.signatures) {
+                out.add(sig.toByteArray());
+            }",method,
+"    @Before
+    public void setUp() {
+        MockFontProvider.prepareFontFiles(
+                InstrumentationRegistry.getInstrumentation().getTargetContext());
+    }",method,

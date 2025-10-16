@@ -1,0 +1,1632 @@
+code_snippet,type,score
+"	 if(tos != null) {
+	   try {
+	     timeout = Integer.parseInt(tos);
+           } catch(Exception e) {
+	     Timeout.this.error(""timeout (""+timeout+"") ""
+	                       +""is not an integer, timeout disabled"");
+	   }
+	   timeoutCommand = 
+	     config.getProperty(""Timeout"", id, ""command"");
+	   timeoutWarning = 
+	     config.getProperty(""Timeout"", id, ""warning"");
+	 }",method,
+"  public void run() {
+    boolean ok = false;
+    // loop around until the thread is kicked down the stream ...
+    while(timeoutThread != null) {
+      try {
+        ok = false;
+        timeoutThread.sleep(1000*timeout);
+      } catch(InterruptedException e) {
+	ok = true;
+      }
+      // if the timeout finished sucessfully close the connection
+      if(!ok) {
+        error(""data connection timeout, shutting down"");
+	// first try it gracefully by sending the configured exit command
+	if(timeoutCommand != null) {
+	  error(""sending graceful exit command ..."");
+	  try {
+	    write(timeoutCommand.getBytes());
+	  } catch(IOException e) {
+	    error(""could not send exit command"");
+	  }
+	  timeoutThread = null;
+	  final Thread grace = new Thread(new Runnable() {
+	    public void run() {
+	      try {
+                Thread.currentThread().sleep(1000*timeout); 
+	        Timeout.this.pluginBus.broadcast(new SocketRequest());
+              } catch(InterruptedException e) {
+	        // ignore exception
+	      }
+	    }
+	  });
+	  grace.start();
+	} else // if not graceful exit exists, be rude
+	  bus.broadcast(new SocketRequest());
+      }
+    }
+  }",method,
+"    while(timeoutThread != null) {
+      try {
+        ok = false;
+        timeoutThread.sleep(1000*timeout);
+      } catch(InterruptedException e) {
+	ok = true;
+      }
+      // if the timeout finished sucessfully close the connection
+      if(!ok) {
+        error(""data connection timeout, shutting down"");
+	// first try it gracefully by sending the configured exit command
+	if(timeoutCommand != null) {
+	  error(""sending graceful exit command ..."");
+	  try {
+	    write(timeoutCommand.getBytes());
+	  } catch(IOException e) {
+	    error(""could not send exit command"");
+	  }
+	  timeoutThread = null;
+	  final Thread grace = new Thread(new Runnable() {
+	    public void run() {
+	      try {
+                Thread.currentThread().sleep(1000*timeout); 
+	        Timeout.this.pluginBus.broadcast(new SocketRequest());
+              } catch(InterruptedException e) {
+	        // ignore exception
+	      }
+	    }
+	  });
+	  grace.start();
+	} else // if not graceful exit exists, be rude
+	  bus.broadcast(new SocketRequest());
+      }
+    }",method,
+"      if(!ok) {
+        error(""data connection timeout, shutting down"");
+	// first try it gracefully by sending the configured exit command
+	if(timeoutCommand != null) {
+	  error(""sending graceful exit command ..."");
+	  try {
+	    write(timeoutCommand.getBytes());
+	  } catch(IOException e) {
+	    error(""could not send exit command"");
+	  }
+	  timeoutThread = null;
+	  final Thread grace = new Thread(new Runnable() {
+	    public void run() {
+	      try {
+                Thread.currentThread().sleep(1000*timeout); 
+	        Timeout.this.pluginBus.broadcast(new SocketRequest());
+              } catch(InterruptedException e) {
+	        // ignore exception
+	      }
+	    }
+	  });
+	  grace.start();
+	} else // if not graceful exit exists, be rude
+	  bus.broadcast(new SocketRequest());
+      }",method,
+"	if(timeoutCommand != null) {
+	  error(""sending graceful exit command ..."");
+	  try {
+	    write(timeoutCommand.getBytes());
+	  } catch(IOException e) {
+	    error(""could not send exit command"");
+	  }
+	  timeoutThread = null;
+	  final Thread grace = new Thread(new Runnable() {
+	    public void run() {
+	      try {
+                Thread.currentThread().sleep(1000*timeout); 
+	        Timeout.this.pluginBus.broadcast(new SocketRequest());
+              } catch(InterruptedException e) {
+	        // ignore exception
+	      }
+	    }
+	  });
+	  grace.start();
+	}",method,
+"	    public void run() {
+	      try {
+                Thread.currentThread().sleep(1000*timeout); 
+	        Timeout.this.pluginBus.broadcast(new SocketRequest());
+              } catch(InterruptedException e) {
+	        // ignore exception
+	      }
+	    }",method,
+"  public void connect(String host, int port) throws IOException {
+    if(timeout > 0) {
+      timeoutThread = new Thread(Timeout.this);
+      timeoutThread.start();
+    }
+  }",method,
+"    if(timeout > 0) {
+      timeoutThread = new Thread(Timeout.this);
+      timeoutThread.start();
+    }",method,
+"  public void disconnect() throws IOException {
+    if(timeoutThread != null) {
+      Thread tmp = timeoutThread;
+      timeoutThread = null;
+      tmp.interrupt();
+    }
+  }",method,
+"    if(timeoutThread != null) {
+      Thread tmp = timeoutThread;
+      timeoutThread = null;
+      tmp.interrupt();
+    }",method,
+"  public void setFilterSource(FilterPlugin plugin) {
+    source = plugin;
+  }",method,
+"  public FilterPlugin getFilterSource() {
+    return source;
+  }",method,
+"  public int read(byte[] b) throws IOException {
+    int n = source.read(b);
+    if(n > 0 && timeoutThread != null) timeoutThread.interrupt();
+    return n;
+  }",method,
+"  public void write(byte[] b) throws IOException {
+      source.write(b);
+      if(timeoutThread != null) timeoutThread.interrupt();
+  }",method,
+"public class AStar {
+	// ===========================================================
+	// Constants
+	// ===========================================================
+	// ===========================================================
+	// Fields
+	// ===========================================================
+	private GridLoc[][] grid;
+	private int rowMax, colMax;
+	private int cellWidth, cellHeight;
+	private String tag = ""AStar:"";
+	// ===========================================================
+	// Constructors
+	// ===========================================================
+	public AStar(int pRows, int pCols, int pWidth, int pHeight) {
+		// pWidth = total width in pixels
+		// pHeight = total height in pixels
+		grid = new GridLoc[pRows][pCols];
+		rowMax = pRows-1;
+		colMax = pCols-1;
+		cellWidth = pWidth/pCols;
+		cellHeight = pHeight/pRows;
+	    for (int i=0; i<pRows; i++) {
+	    	for (int j=0; j<pCols; j++) {
+	    		grid[i][j] = new GridLoc();
+	    	}
+	   	}
+	}
+	// ===========================================================
+	// Getter & Setter
+	// ===========================================================
+	public Path getPath(float pStartX, int pTargetCol, float pStartY, int pTargetRow, float pSpriteWidth, float pSpriteHeight){
+		// Use A* pathfinding to find the near optimal path
+		int nextCol, nextRow;
+		int startCol, startRow;
+		ArrayList<Integer> pathCols = new ArrayList<Integer>();
+		ArrayList<Integer> pathRows = new ArrayList<Integer>();
+		startCol = (int)pStartX/cellWidth;
+		startRow = (int)pStartY/cellHeight;
+		int currCol = startCol;
+		int currRow = startRow;
+		float[] f = new float[8];
+		grid[currRow][currCol].g = 0.0f;
+		grid[currRow][currCol].h = pTargetCol - currCol + pTargetRow - currRow;
+		grid[currRow][currCol].footprint = true;
+		while ((currCol != pTargetCol) || (currRow != pTargetRow)){
+			//Consider the eight surrounding locations
+			for (int i=0; i<8; i++) f[i] = 0;
+			f[0] = fComp(currRow, currCol, -1, -1, 1.4f, pTargetRow, pTargetCol);
+			f[1] = fComp(currRow, currCol, 0, -1, 1.0f, pTargetRow, pTargetCol);
+			f[2] = fComp(currRow, currCol, +1, -1, 1.4f, pTargetRow, pTargetCol);
+			f[3] = fComp(currRow, currCol, -1, 0, 1.0f, pTargetRow, pTargetCol);
+			f[4] = fComp(currRow, currCol, +1, 0, 1.0f, pTargetRow, pTargetCol);
+			f[5] = fComp(currRow, currCol, -1, +1, 1.4f, pTargetRow, pTargetCol);
+			f[6] = fComp(currRow, currCol, 0, +1, 1.0f, pTargetRow, pTargetCol);
+			f[7] = fComp(currRow, currCol, +1, +1, 1.4f, pTargetRow, pTargetCol);
+			int lowidx = 0;
+			float pos = 10000.0f;
+			for (int j=0; j<8; j++){
+				if (f[j]<pos){
+					pos = f[j];
+					lowidx = j;
+				}
+			}
+			nextCol = currCol;
+			nextRow = currRow;
+			switch (lowidx){
+				case (0):
+					nextRow = currRow - 1;
+					nextCol = currCol - 1;
+					break;
+				case (1):
+					nextRow = currRow;
+					nextCol = currCol - 1;
+					break;
+				case (2):
+					nextRow = currRow + 1;
+					nextCol = currCol - 1;
+					break;
+				case (3):
+					nextRow = currRow - 1;
+					nextCol = currCol;
+					break;
+				case (4):
+					nextRow = currRow + 1;
+					nextCol = currCol;
+					break;
+				case (5):
+					nextRow = currRow - 1;
+					nextCol = currCol + 1;
+					break;
+				case (6):
+					nextRow = currRow;
+					nextCol = currCol + 1;
+					break;
+				case (7):
+					nextRow = currRow + 1;
+					nextCol = currCol + 1;
+					break;
+			}
+			//Add next location to Path, set footprint and update currCol, currRow
+			pathCols.add(nextCol);
+			pathRows.add(nextRow);
+			if ((currRow > 0) && (currRow < rowMax) && (currCol > 0) && (currCol < colMax)) {
+				grid[currRow][currCol].footprint = true;
+			}
+			currCol = nextCol;
+			currRow = nextRow;
+			Log.d(tag, ""currCol: ""+currCol+"" currRow: ""+currRow);
+		}
+		float[] xArray = new float[pathCols.size()+1];
+		float[] yArray = new float[pathRows.size()+1];
+		xArray[0] = pStartX;
+		yArray[0] = pStartY;
+		for (int i = 1; i < xArray.length; i++) {
+		    Float tmpX = (float)pathCols.get(i-1) * cellWidth - pSpriteWidth/2;
+		    xArray[i] = (tmpX != null ? tmpX : 0.0f); 
+		    Float tmpY = (float)pathRows.get(i-1) * cellHeight - pSpriteHeight/2;
+		    yArray[i] = (tmpY != null ? tmpY : 0.0f); 
+		}
+		return (new Path(xArray, yArray));
+	}
+	public void setObstacle(int pObstacleRow, int pObstacleCol){
+		if (grid != null){
+			grid[pObstacleRow][pObstacleCol].obstacle = true;
+		}
+	}
+	// ===========================================================
+	// Methods for/from SuperClass/Interfaces
+	// ===========================================================
+	// ===========================================================
+	// Methods
+	// ===========================================================
+	private float fComp(int pCurrRow, int pCurrCol, int pRowDiff, int pColDiff, float pDx, int pTargetRow, int pTargetCol){
+		// Computes the A* values for a grid location:
+		// 	g: distance from start
+		//  h: distance to target
+		// returns f = g + h
+		// If the grid location is marked as an obstacle, footprint is true, or it is outside the grid, returns a high number (5,000)
+		if (((pCurrRow + pRowDiff) > rowMax) || 
+				((pCurrCol + pColDiff) > colMax) ||
+				((pCurrRow + pRowDiff) < 0) ||
+				((pCurrCol + pColDiff) < 0)) {
+			return 5000.0f;
+		}
+		if((grid[pCurrRow + pRowDiff][pCurrCol + pColDiff].obstacle) ||
+			(grid[pCurrRow + pRowDiff][pCurrCol + pColDiff].footprint)){
+			return 5000.0f;
+		}
+		grid[pCurrRow + pRowDiff][pCurrCol + pColDiff].g = grid[pCurrRow][pCurrCol].g + pDx;
+		grid[pCurrRow + pRowDiff][pCurrCol + pColDiff].h = Math.abs(pTargetRow - (pCurrRow + pRowDiff)) + Math.abs(pTargetCol - (pCurrCol + pColDiff));
+		return (grid[pCurrRow + pRowDiff][pCurrCol + pColDiff].g + grid[pCurrRow + pRowDiff][pCurrCol + pColDiff].h);
+	}
+	// ===========================================================
+	// Inner and Anonymous Classes
+	// ===========================================================
+}",class,
+"	public AStar(int pRows, int pCols, int pWidth, int pHeight) {
+		// pWidth = total width in pixels
+		// pHeight = total height in pixels
+		grid = new GridLoc[pRows][pCols];
+		rowMax = pRows-1;
+		colMax = pCols-1;
+		cellWidth = pWidth/pCols;
+		cellHeight = pHeight/pRows;
+	    for (int i=0; i<pRows; i++) {
+	    	for (int j=0; j<pCols; j++) {
+	    		grid[i][j] = new GridLoc();
+	    	}
+	   	}
+	}",method,
+"	    for (int i=0; i<pRows; i++) {
+	    	for (int j=0; j<pCols; j++) {
+	    		grid[i][j] = new GridLoc();
+	    	}
+	   	}",method,
+"	    	for (int j=0; j<pCols; j++) {
+	    		grid[i][j] = new GridLoc();
+	    	}",method,
+"	public Path getPath(float pStartX, int pTargetCol, float pStartY, int pTargetRow, float pSpriteWidth, float pSpriteHeight){
+		// Use A* pathfinding to find the near optimal path
+		int nextCol, nextRow;
+		int startCol, startRow;
+		ArrayList<Integer> pathCols = new ArrayList<Integer>();
+		ArrayList<Integer> pathRows = new ArrayList<Integer>();
+		startCol = (int)pStartX/cellWidth;
+		startRow = (int)pStartY/cellHeight;
+		int currCol = startCol;
+		int currRow = startRow;
+		float[] f = new float[8];
+		grid[currRow][currCol].g = 0.0f;
+		grid[currRow][currCol].h = pTargetCol - currCol + pTargetRow - currRow;
+		grid[currRow][currCol].footprint = true;
+		while ((currCol != pTargetCol) || (currRow != pTargetRow)){
+			//Consider the eight surrounding locations
+			for (int i=0; i<8; i++) f[i] = 0;
+			f[0] = fComp(currRow, currCol, -1, -1, 1.4f, pTargetRow, pTargetCol);
+			f[1] = fComp(currRow, currCol, 0, -1, 1.0f, pTargetRow, pTargetCol);
+			f[2] = fComp(currRow, currCol, +1, -1, 1.4f, pTargetRow, pTargetCol);
+			f[3] = fComp(currRow, currCol, -1, 0, 1.0f, pTargetRow, pTargetCol);
+			f[4] = fComp(currRow, currCol, +1, 0, 1.0f, pTargetRow, pTargetCol);
+			f[5] = fComp(currRow, currCol, -1, +1, 1.4f, pTargetRow, pTargetCol);
+			f[6] = fComp(currRow, currCol, 0, +1, 1.0f, pTargetRow, pTargetCol);
+			f[7] = fComp(currRow, currCol, +1, +1, 1.4f, pTargetRow, pTargetCol);
+			int lowidx = 0;
+			float pos = 10000.0f;
+			for (int j=0; j<8; j++){
+				if (f[j]<pos){
+					pos = f[j];
+					lowidx = j;
+				}
+			}
+			nextCol = currCol;
+			nextRow = currRow;
+			switch (lowidx){
+				case (0):
+					nextRow = currRow - 1;
+					nextCol = currCol - 1;
+					break;
+				case (1):
+					nextRow = currRow;
+					nextCol = currCol - 1;
+					break;
+				case (2):
+					nextRow = currRow + 1;
+					nextCol = currCol - 1;
+					break;
+				case (3):
+					nextRow = currRow - 1;
+					nextCol = currCol;
+					break;
+				case (4):
+					nextRow = currRow + 1;
+					nextCol = currCol;
+					break;
+				case (5):
+					nextRow = currRow - 1;
+					nextCol = currCol + 1;
+					break;
+				case (6):
+					nextRow = currRow;
+					nextCol = currCol + 1;
+					break;
+				case (7):
+					nextRow = currRow + 1;
+					nextCol = currCol + 1;
+					break;
+			}
+			//Add next location to Path, set footprint and update currCol, currRow
+			pathCols.add(nextCol);
+			pathRows.add(nextRow);
+			if ((currRow > 0) && (currRow < rowMax) && (currCol > 0) && (currCol < colMax)) {
+				grid[currRow][currCol].footprint = true;
+			}
+			currCol = nextCol;
+			currRow = nextRow;
+			Log.d(tag, ""currCol: ""+currCol+"" currRow: ""+currRow);
+		}
+		float[] xArray = new float[pathCols.size()+1];
+		float[] yArray = new float[pathRows.size()+1];
+		xArray[0] = pStartX;
+		yArray[0] = pStartY;
+		for (int i = 1; i < xArray.length; i++) {
+		    Float tmpX = (float)pathCols.get(i-1) * cellWidth - pSpriteWidth/2;
+		    xArray[i] = (tmpX != null ? tmpX : 0.0f); 
+		    Float tmpY = (float)pathRows.get(i-1) * cellHeight - pSpriteHeight/2;
+		    yArray[i] = (tmpY != null ? tmpY : 0.0f); 
+		}
+		return (new Path(xArray, yArray));
+	}",method,
+"			for (int j=0; j<8; j++){
+				if (f[j]<pos){
+					pos = f[j];
+					lowidx = j;
+				}
+			}",method,
+"				if (f[j]<pos){
+					pos = f[j];
+					lowidx = j;
+				}",method,
+"			switch (lowidx){
+				case (0):
+					nextRow = currRow - 1;
+					nextCol = currCol - 1;
+					break;
+				case (1):
+					nextRow = currRow;
+					nextCol = currCol - 1;
+					break;
+				case (2):
+					nextRow = currRow + 1;
+					nextCol = currCol - 1;
+					break;
+				case (3):
+					nextRow = currRow - 1;
+					nextCol = currCol;
+					break;
+				case (4):
+					nextRow = currRow + 1;
+					nextCol = currCol;
+					break;
+				case (5):
+					nextRow = currRow - 1;
+					nextCol = currCol + 1;
+					break;
+				case (6):
+					nextRow = currRow;
+					nextCol = currCol + 1;
+					break;
+				case (7):
+					nextRow = currRow + 1;
+					nextCol = currCol + 1;
+					break;
+			}",method,
+"		for (int i = 1; i < xArray.length; i++) {
+		    Float tmpX = (float)pathCols.get(i-1) * cellWidth - pSpriteWidth/2;
+		    xArray[i] = (tmpX != null ? tmpX : 0.0f); 
+		    Float tmpY = (float)pathRows.get(i-1) * cellHeight - pSpriteHeight/2;
+		    yArray[i] = (tmpY != null ? tmpY : 0.0f); 
+		}",method,
+"	public void setObstacle(int pObstacleRow, int pObstacleCol){
+		if (grid != null){
+			grid[pObstacleRow][pObstacleCol].obstacle = true;
+		}
+	}",method,
+"		if (grid != null){
+			grid[pObstacleRow][pObstacleCol].obstacle = true;
+		}",method,
+"	private float fComp(int pCurrRow, int pCurrCol, int pRowDiff, int pColDiff, float pDx, int pTargetRow, int pTargetCol){
+		// Computes the A* values for a grid location:
+		// 	g: distance from start
+		//  h: distance to target
+		// returns f = g + h
+		// If the grid location is marked as an obstacle, footprint is true, or it is outside the grid, returns a high number (5,000)
+		if (((pCurrRow + pRowDiff) > rowMax) || 
+				((pCurrCol + pColDiff) > colMax) ||
+				((pCurrRow + pRowDiff) < 0) ||
+				((pCurrCol + pColDiff) < 0)) {
+			return 5000.0f;
+		}
+		if((grid[pCurrRow + pRowDiff][pCurrCol + pColDiff].obstacle) ||
+			(grid[pCurrRow + pRowDiff][pCurrCol + pColDiff].footprint)){
+			return 5000.0f;
+		}
+		grid[pCurrRow + pRowDiff][pCurrCol + pColDiff].g = grid[pCurrRow][pCurrCol].g + pDx;
+		grid[pCurrRow + pRowDiff][pCurrCol + pColDiff].h = Math.abs(pTargetRow - (pCurrRow + pRowDiff)) + Math.abs(pTargetCol - (pCurrCol + pColDiff));
+		return (grid[pCurrRow + pRowDiff][pCurrCol + pColDiff].g + grid[pCurrRow + pRowDiff][pCurrCol + pColDiff].h);
+	}",method,
+"public class ReceiverRegistrationDelegate<T extends EComponentHolder & HasReceiverRegistration> extends GeneratedClassHolderDelegate<T> {
+	private Map<IntentFilterData, JFieldVar> intentFilterFields = new HashMap<>();
+	private IllegalStateException illegalStateException = new IllegalStateException(""This shouldn't happen unless the validation is bad"");
+	public ReceiverRegistrationDelegate(T holder) {
+		super(holder);
+	}
+	public JFieldVar getIntentFilterField(IntentFilterData intentFilterData) {
+		JFieldVar intentFilterField = intentFilterFields.get(intentFilterData);
+		if (intentFilterField == null) {
+			intentFilterField = createIntentFilterField(intentFilterData);
+			intentFilterFields.put(intentFilterData, intentFilterField);
+		}
+		return intentFilterField;
+	}
+	private JFieldVar createIntentFilterField(IntentFilterData intentFilterData) {
+		String intentFilterName = ""intentFilter"" + (intentFilterFields.size() + 1) + generationSuffix();
+		IJExpression newIntentFilterExpr = _new(getClasses().INTENT_FILTER);
+		JFieldVar intentFilterField = getGeneratedClass().field(PRIVATE | FINAL, getClasses().INTENT_FILTER, intentFilterName, newIntentFilterExpr);
+		JBlock intentFilterTarget = holder.getIntentFilterInitializationBlock(intentFilterData);
+		for (String action : intentFilterData.getActionSet()) {
+			intentFilterTarget.invoke(intentFilterField, ""addAction"").arg(action);
+		}
+		for (String dataScheme : intentFilterData.getDataSchemeSet()) {
+			intentFilterTarget.invoke(intentFilterField, ""addDataScheme"").arg(dataScheme);
+		}
+		return intentFilterField;
+	}
+	public JBlock getOnStartAfterSuperBlock() {
+		throw illegalStateException;
+	}
+	public JBlock getOnStopBeforeSuperBlock() {
+		throw illegalStateException;
+	}
+	public JBlock getOnPauseBeforeSuperBlock() {
+		throw illegalStateException;
+	}
+	public JBlock getOnAttachAfterSuperBlock() {
+		throw illegalStateException;
+	}
+	public JBlock getOnDetachBeforeSuperBlock() {
+		throw illegalStateException;
+	}
+	public JBlock getOnResumeAfterSuperBlock() {
+		throw illegalStateException;
+	}
+	public JBlock getOnCreateAfterSuperBlock() {
+		throw illegalStateException;
+	}
+	public JBlock getOnDestroyBeforeSuperBlock() {
+		throw illegalStateException;
+	}
+	public static class IntentFilterData {
+		private final RegisterAt registerAt;
+		private final Set<String> actionSet;
+		private final Set<String> dataSchemeSet;
+		public IntentFilterData(String[] actions, String[] dataSchemes, RegisterAt registerAt) {
+			this.registerAt = registerAt;
+			actionSet = new HashSet<>(Arrays.asList(actions));
+			dataSchemeSet = new HashSet<>(Arrays.asList(dataSchemes));
+		}
+		public RegisterAt getRegisterAt() {
+			return registerAt;
+		}
+		public Set<String> getActionSet() {
+			return actionSet;
+		}
+		public Set<String> getDataSchemeSet() {
+			return dataSchemeSet;
+		}
+		@Override
+		public int hashCode() {
+			final int prime = 31;
+			int result = 1;
+			result = prime * result + (actionSet == null ? 0 : actionSet.hashCode());
+			result = prime * result + (registerAt == null ? 0 : registerAt.hashCode());
+			result = prime * result + (dataSchemeSet == null ? 0 : dataSchemeSet.hashCode());
+			return result;
+		}
+		@Override
+		public boolean equals(Object obj) {
+			if (this == obj) {
+				return true;
+			}
+			if (obj == null) {
+				return false;
+			}
+			if (getClass() != obj.getClass()) {
+				return false;
+			}
+			IntentFilterData other = (IntentFilterData) obj;
+			if (actionSet == null) {
+				if (other.actionSet != null) {
+					return false;
+				}
+			} else if (!actionSet.equals(other.actionSet)) {
+				return false;
+			}
+			if (registerAt == null) {
+				if (other.registerAt != null) {
+					return false;
+				}
+			} else if (!registerAt.equals(other.registerAt)) {
+				return false;
+			}
+			if (dataSchemeSet == null) {
+				if (other.dataSchemeSet != null) {
+					return false;
+				}
+			} else if (!dataSchemeSet.equals(other.dataSchemeSet)) {
+				return false;
+			}
+			return true;
+		}
+	}
+}",class,
+"	public static class IntentFilterData {
+		private final RegisterAt registerAt;
+		private final Set<String> actionSet;
+		private final Set<String> dataSchemeSet;
+		public IntentFilterData(String[] actions, String[] dataSchemes, RegisterAt registerAt) {
+			this.registerAt = registerAt;
+			actionSet = new HashSet<>(Arrays.asList(actions));
+			dataSchemeSet = new HashSet<>(Arrays.asList(dataSchemes));
+		}
+		public RegisterAt getRegisterAt() {
+			return registerAt;
+		}
+		public Set<String> getActionSet() {
+			return actionSet;
+		}
+		public Set<String> getDataSchemeSet() {
+			return dataSchemeSet;
+		}
+		@Override
+		public int hashCode() {
+			final int prime = 31;
+			int result = 1;
+			result = prime * result + (actionSet == null ? 0 : actionSet.hashCode());
+			result = prime * result + (registerAt == null ? 0 : registerAt.hashCode());
+			result = prime * result + (dataSchemeSet == null ? 0 : dataSchemeSet.hashCode());
+			return result;
+		}
+		@Override
+		public boolean equals(Object obj) {
+			if (this == obj) {
+				return true;
+			}
+			if (obj == null) {
+				return false;
+			}
+			if (getClass() != obj.getClass()) {
+				return false;
+			}
+			IntentFilterData other = (IntentFilterData) obj;
+			if (actionSet == null) {
+				if (other.actionSet != null) {
+					return false;
+				}
+			} else if (!actionSet.equals(other.actionSet)) {
+				return false;
+			}
+			if (registerAt == null) {
+				if (other.registerAt != null) {
+					return false;
+				}
+			} else if (!registerAt.equals(other.registerAt)) {
+				return false;
+			}
+			if (dataSchemeSet == null) {
+				if (other.dataSchemeSet != null) {
+					return false;
+				}
+			} else if (!dataSchemeSet.equals(other.dataSchemeSet)) {
+				return false;
+			}
+			return true;
+		}
+	}",class,
+"	public ReceiverRegistrationDelegate(T holder) {
+		super(holder);
+	}",method,
+"	public JFieldVar getIntentFilterField(IntentFilterData intentFilterData) {
+		JFieldVar intentFilterField = intentFilterFields.get(intentFilterData);
+		if (intentFilterField == null) {
+			intentFilterField = createIntentFilterField(intentFilterData);
+			intentFilterFields.put(intentFilterData, intentFilterField);
+		}
+		return intentFilterField;
+	}",method,
+"		if (intentFilterField == null) {
+			intentFilterField = createIntentFilterField(intentFilterData);
+			intentFilterFields.put(intentFilterData, intentFilterField);
+		}",method,
+"	private JFieldVar createIntentFilterField(IntentFilterData intentFilterData) {
+		String intentFilterName = ""intentFilter"" + (intentFilterFields.size() + 1) + generationSuffix();
+		IJExpression newIntentFilterExpr = _new(getClasses().INTENT_FILTER);
+		JFieldVar intentFilterField = getGeneratedClass().field(PRIVATE | FINAL, getClasses().INTENT_FILTER, intentFilterName, newIntentFilterExpr);
+		JBlock intentFilterTarget = holder.getIntentFilterInitializationBlock(intentFilterData);
+		for (String action : intentFilterData.getActionSet()) {
+			intentFilterTarget.invoke(intentFilterField, ""addAction"").arg(action);
+		}
+		for (String dataScheme : intentFilterData.getDataSchemeSet()) {
+			intentFilterTarget.invoke(intentFilterField, ""addDataScheme"").arg(dataScheme);
+		}
+		return intentFilterField;
+	}",method,
+"	public JBlock getOnStartAfterSuperBlock() {
+		throw illegalStateException;
+	}",method,
+"	public JBlock getOnStopBeforeSuperBlock() {
+		throw illegalStateException;
+	}",method,
+"	public JBlock getOnPauseBeforeSuperBlock() {
+		throw illegalStateException;
+	}",method,
+"	public JBlock getOnAttachAfterSuperBlock() {
+		throw illegalStateException;
+	}",method,
+"	public JBlock getOnDetachBeforeSuperBlock() {
+		throw illegalStateException;
+	}",method,
+"	public JBlock getOnResumeAfterSuperBlock() {
+		throw illegalStateException;
+	}",method,
+"	public JBlock getOnCreateAfterSuperBlock() {
+		throw illegalStateException;
+	}",method,
+"	public JBlock getOnDestroyBeforeSuperBlock() {
+		throw illegalStateException;
+	}",method,
+"		public IntentFilterData(String[] actions, String[] dataSchemes, RegisterAt registerAt) {
+			this.registerAt = registerAt;
+			actionSet = new HashSet<>(Arrays.asList(actions));
+			dataSchemeSet = new HashSet<>(Arrays.asList(dataSchemes));
+		}",method,
+"		public RegisterAt getRegisterAt() {
+			return registerAt;
+		}",method,
+"		public Set<String> getActionSet() {
+			return actionSet;
+		}",method,
+"		public Set<String> getDataSchemeSet() {
+			return dataSchemeSet;
+		}",method,
+"		@Override
+		public int hashCode() {
+			final int prime = 31;
+			int result = 1;
+			result = prime * result + (actionSet == null ? 0 : actionSet.hashCode());
+			result = prime * result + (registerAt == null ? 0 : registerAt.hashCode());
+			result = prime * result + (dataSchemeSet == null ? 0 : dataSchemeSet.hashCode());
+			return result;
+		}",method,
+"		@Override
+		public boolean equals(Object obj) {
+			if (this == obj) {
+				return true;
+			}
+			if (obj == null) {
+				return false;
+			}
+			if (getClass() != obj.getClass()) {
+				return false;
+			}
+			IntentFilterData other = (IntentFilterData) obj;
+			if (actionSet == null) {
+				if (other.actionSet != null) {
+					return false;
+				}
+			} else if (!actionSet.equals(other.actionSet)) {
+				return false;
+			}
+			if (registerAt == null) {
+				if (other.registerAt != null) {
+					return false;
+				}
+			} else if (!registerAt.equals(other.registerAt)) {
+				return false;
+			}
+			if (dataSchemeSet == null) {
+				if (other.dataSchemeSet != null) {
+					return false;
+				}
+			} else if (!dataSchemeSet.equals(other.dataSchemeSet)) {
+				return false;
+			}
+			return true;
+		}",method,
+"			if (this == obj) {
+				return true;
+			}",method,
+"			if (obj == null) {
+				return false;
+			}",method,
+"			if (actionSet == null) {
+				if (other.actionSet != null) {
+					return false;
+				}
+			}",method,
+"				if (other.actionSet != null) {
+					return false;
+				}",method,
+"			if (registerAt == null) {
+				if (other.registerAt != null) {
+					return false;
+				}
+			}",method,
+"				if (other.registerAt != null) {
+					return false;
+				}",method,
+"			if (dataSchemeSet == null) {
+				if (other.dataSchemeSet != null) {
+					return false;
+				}
+			}",method,
+"				if (other.dataSchemeSet != null) {
+					return false;
+				}",method,
+"public class UntargettedBindingImpl<T> extends BindingImpl<T> implements UntargettedBinding<T> {
+    public UntargettedBindingImpl(Injector injector, Key<T> key, Object source) {
+        super(injector, key, source, new InternalFactory<T>() {
+            @Override
+            public T get(Errors errors, InternalContext context, Dependency<?> dependency) {
+                throw new AssertionError();
+            }
+        }, Scoping.UNSCOPED);
+    }
+    public UntargettedBindingImpl(Object source, Key<T> key, Scoping scoping) {
+        super(source, key, scoping);
+    }
+    @Override
+    public <V> V acceptTargetVisitor(BindingTargetVisitor<? super T, V> visitor) {
+        return visitor.visit(this);
+    }
+    @Override
+    public BindingImpl<T> withScoping(Scoping scoping) {
+        return new UntargettedBindingImpl<>(getSource(), getKey(), scoping);
+    }
+    @Override
+    public BindingImpl<T> withKey(Key<T> key) {
+        return new UntargettedBindingImpl<>(getSource(), key, getScoping());
+    }
+    @Override
+    public void applyTo(Binder binder) {
+        getScoping().applyTo(binder.withSource(getSource()).bind(getKey()));
+    }
+    @Override
+    public String toString() {
+        return new ToStringBuilder(UntargettedBinding.class)
+                .add(""key"", getKey())
+                .add(""source"", getSource())
+                .toString();
+    }
+}",class,
+"public abstract class AbstractMatcher<T> implements Matcher<T> {
+    @Override
+    public Matcher<T> and(final Matcher<? super T> other) {
+        return new AndMatcher<>(this, other);
+    }
+    @Override
+    public Matcher<T> or(Matcher<? super T> other) {
+        return new OrMatcher<>(this, other);
+    }
+    private static class AndMatcher<T> extends AbstractMatcher<T> {
+        private final Matcher<? super T> a, b;
+        AndMatcher(Matcher<? super T> a, Matcher<? super T> b) {
+            this.a = a;
+            this.b = b;
+        }
+        @Override
+        public boolean matches(T t) {
+            return a.matches(t) && b.matches(t);
+        }
+        @Override
+        public boolean equals(Object other) {
+            return other instanceof AndMatcher
+                    && ((AndMatcher<?>) other).a.equals(a)
+                    && ((AndMatcher<?>) other).b.equals(b);
+        }
+        @Override
+        public int hashCode() {
+            return 41 * (a.hashCode() ^ b.hashCode());
+        }
+        @Override
+        public String toString() {
+            return ""and("" + a + "", "" + b + "")"";
+        }
+    }
+    private static class OrMatcher<T> extends AbstractMatcher<T> {
+        private final Matcher<? super T> a, b;
+        OrMatcher(Matcher<? super T> a, Matcher<? super T> b) {
+            this.a = a;
+            this.b = b;
+        }
+        @Override
+        public boolean matches(T t) {
+            return a.matches(t) || b.matches(t);
+        }
+        @Override
+        public boolean equals(Object other) {
+            return other instanceof OrMatcher
+                    && ((OrMatcher<?>) other).a.equals(a)
+                    && ((OrMatcher<?>) other).b.equals(b);
+        }
+        @Override
+        public int hashCode() {
+            return 37 * (a.hashCode() ^ b.hashCode());
+        }
+        @Override
+        public String toString() {
+            return ""or("" + a + "", "" + b + "")"";
+        }
+    }
+}",class,
+"    private static class AndMatcher<T> extends AbstractMatcher<T> {
+        private final Matcher<? super T> a, b;
+        AndMatcher(Matcher<? super T> a, Matcher<? super T> b) {
+            this.a = a;
+            this.b = b;
+        }
+        @Override
+        public boolean matches(T t) {
+            return a.matches(t) && b.matches(t);
+        }
+        @Override
+        public boolean equals(Object other) {
+            return other instanceof AndMatcher
+                    && ((AndMatcher<?>) other).a.equals(a)
+                    && ((AndMatcher<?>) other).b.equals(b);
+        }
+        @Override
+        public int hashCode() {
+            return 41 * (a.hashCode() ^ b.hashCode());
+        }
+        @Override
+        public String toString() {
+            return ""and("" + a + "", "" + b + "")"";
+        }
+    }",class,
+"    private static class OrMatcher<T> extends AbstractMatcher<T> {
+        private final Matcher<? super T> a, b;
+        OrMatcher(Matcher<? super T> a, Matcher<? super T> b) {
+            this.a = a;
+            this.b = b;
+        }
+        @Override
+        public boolean matches(T t) {
+            return a.matches(t) || b.matches(t);
+        }
+        @Override
+        public boolean equals(Object other) {
+            return other instanceof OrMatcher
+                    && ((OrMatcher<?>) other).a.equals(a)
+                    && ((OrMatcher<?>) other).b.equals(b);
+        }
+        @Override
+        public int hashCode() {
+            return 37 * (a.hashCode() ^ b.hashCode());
+        }
+        @Override
+        public String toString() {
+            return ""or("" + a + "", "" + b + "")"";
+        }
+    }",class,
+"    public UntargettedBindingImpl(Injector injector, Key<T> key, Object source) {
+        super(injector, key, source, new InternalFactory<T>() {
+            @Override
+            public T get(Errors errors, InternalContext context, Dependency<?> dependency) {
+                throw new AssertionError();
+            }
+        }, Scoping.UNSCOPED);
+    }",method,
+"        super(injector, key, source, new InternalFactory<T>() {
+            @Override
+            public T get(Errors errors, InternalContext context, Dependency<?> dependency) {
+                throw new AssertionError();
+            }
+        }",method,
+"            @Override
+            public T get(Errors errors, InternalContext context, Dependency<?> dependency) {
+                throw new AssertionError();
+            }",method,
+"    public UntargettedBindingImpl(Object source, Key<T> key, Scoping scoping) {
+        super(source, key, scoping);
+    }",method,
+"    @Override
+    public <V> V acceptTargetVisitor(BindingTargetVisitor<? super T, V> visitor) {
+        return visitor.visit(this);
+    }",method,
+"    @Override
+    public BindingImpl<T> withScoping(Scoping scoping) {
+        return new UntargettedBindingImpl<>(getSource(), getKey(), scoping);
+    }",method,
+"    @Override
+    public BindingImpl<T> withKey(Key<T> key) {
+        return new UntargettedBindingImpl<>(getSource(), key, getScoping());
+    }",method,
+"    @Override
+    public void applyTo(Binder binder) {
+        getScoping().applyTo(binder.withSource(getSource()).bind(getKey()));
+    }",method,
+"    @Override
+    public String toString() {
+        return new ToStringBuilder(UntargettedBinding.class)
+                .add(""key"", getKey())
+                .add(""source"", getSource())
+                .toString();
+    }",method,
+"    @Override
+    public Matcher<T> and(final Matcher<? super T> other) {
+        return new AndMatcher<>(this, other);
+    }",method,
+"    @Override
+    public Matcher<T> or(Matcher<? super T> other) {
+        return new OrMatcher<>(this, other);
+    }",method,
+"        AndMatcher(Matcher<? super T> a, Matcher<? super T> b) {
+            this.a = a;
+            this.b = b;
+        }",method,
+"        @Override
+        public boolean matches(T t) {
+            return a.matches(t) && b.matches(t);
+        }",method,
+"        @Override
+        public boolean equals(Object other) {
+            return other instanceof AndMatcher
+                    && ((AndMatcher<?>) other).a.equals(a)
+                    && ((AndMatcher<?>) other).b.equals(b);
+        }",method,
+"        @Override
+        public int hashCode() {
+            return 41 * (a.hashCode() ^ b.hashCode());
+        }",method,
+"        @Override
+        public String toString() {
+            return ""and("" + a + "", "" + b + "")"";
+        }",method,
+"        OrMatcher(Matcher<? super T> a, Matcher<? super T> b) {
+            this.a = a;
+            this.b = b;
+        }",method,
+"        @Override
+        public boolean matches(T t) {
+            return a.matches(t) || b.matches(t);
+        }",method,
+"        @Override
+        public boolean equals(Object other) {
+            return other instanceof OrMatcher
+                    && ((OrMatcher<?>) other).a.equals(a)
+                    && ((OrMatcher<?>) other).b.equals(b);
+        }",method,
+"        @Override
+        public int hashCode() {
+            return 37 * (a.hashCode() ^ b.hashCode());
+        }",method,
+"        @Override
+        public String toString() {
+            return ""or("" + a + "", "" + b + "")"";
+        }",method,
+"public class lua {
+	private static final String version = Lua._VERSION + ""Copyright (c) 2009 Luaj.org.org"";
+	private static final String usage = 
+		""usage: java -cp luaj-jse.jar lua [options] [script [args]].\n"" +
+		""Available options are:\n"" +
+		""  -e stat  execute string 'stat'\n"" +
+		""  -l name  require library 'name'\n"" +
+		""  -i       enter interactive mode after executing 'script'\n"" +
+		""  -v       show version information\n"" +
+		""  -j      	use lua2java source-to-source compiler\n"" +
+		""  -b      	use luajc bytecode-to-bytecode compiler (requires bcel on class path)\n"" +
+		""  -n      	nodebug - do not load debug library by default\n"" +
+		""  --       stop handling options\n"" +
+		""  -        execute stdin and stop handling options"";
+	private static void usageExit() {
+		System.out.println(usage);
+		System.exit(-1);		
+	}
+	private static LuaValue _G;
+	public static void main( String[] args ) throws IOException {
+		// process args
+		boolean interactive = (args.length == 0);
+		boolean versioninfo = false;
+		boolean processing = true;
+		boolean nodebug = false;
+		boolean luajc = false;
+		boolean lua2java = false;
+		Vector libs = null;
+		try {
+			// stateful argument processing
+			for ( int i=0; i<args.length; i++ ) {
+				if ( ! processing || ! args[i].startsWith(""-"") ) {
+					// input file - defer to last stage
+					break;
+				} else if ( args[i].length() <= 1 ) {
+					// input file - defer to last stage
+					break;
+				} else {
+					switch ( args[i].charAt(1) ) {
+					case 'e':
+						if ( ++i >= args.length )
+							usageExit();
+						// input script - defer to last stage
+						break;
+					case 'b':
+						luajc = true;
+						break;
+					case 'j':
+						lua2java = true;
+						break;
+					case 'l':
+						if ( ++i >= args.length )
+							usageExit();
+						libs = libs!=null? libs: new Vector();
+						libs.addElement( args[i] );
+						break;
+					case 'i':
+						interactive = true;
+						break;
+					case 'v':
+						versioninfo = true;
+						break;
+					case 'n':
+						nodebug = true;
+						break;
+					case '-':
+						if ( args[i].length() > 2 )
+							usageExit();
+						processing = false;
+						break;
+					default:
+						usageExit();
+						break;
+					}
+				}
+			}
+			// echo version
+			if ( versioninfo )
+				System.out.println(version);
+			// new lua state
+			_G = nodebug? JsePlatform.standardGlobals(): JsePlatform.debugGlobals();
+			if ( luajc ) LuaJC.install();
+			if ( lua2java) Lua2Java.install();
+			for ( int i=0, n=libs!=null? libs.size(): 0; i<n; i++ )
+				loadLibrary( (String) libs.elementAt(i) );
+			// input script processing
+			processing = true;
+			for ( int i=0; i<args.length; i++ ) {
+				if ( ! processing || ! args[i].startsWith(""-"") ) {
+					processScript( new FileInputStream(args[i]), args[i], args, i );
+					break;
+				} else if ( ""-"".equals( args[i] ) ) {
+					processScript( System.in, ""=stdin"", args, i );
+					break;
+				} else {
+					switch ( args[i].charAt(1) ) {
+					case 'l':
+						++i;
+						break;
+					case 'e':
+						++i;
+						processScript( new ByteArrayInputStream(args[i].getBytes()), ""string"", args, i );
+						break;
+					case '-':
+						processing = false;
+						break;
+					}
+				}
+			}
+			if ( interactive )
+				interactiveMode();
+		} catch ( IOException ioe ) {
+			System.err.println( ioe.toString() );
+			System.exit(-2);
+		}
+	}
+	private static void loadLibrary( String libname ) throws IOException {
+		LuaValue slibname =LuaValue.valueOf(libname); 
+		try {
+			// load via plain require
+			_G.get(""require"").call(slibname);
+		} catch ( Exception e ) {
+			try {
+				// load as java class
+				LuaValue v = (LuaValue) Class.forName(libname).newInstance(); 
+				v.setfenv(_G);
+				v.call(slibname, _G);
+			} catch ( Exception f ) {
+				throw new IOException(""loadLibrary(""+libname+"") failed: ""+e+"",""+f );
+			}
+		}
+	}
+	private static void processScript( InputStream script, String chunkname, String[] args, int firstarg ) throws IOException {
+		try {
+			LuaFunction c;
+			try {
+				c = LoadState.load(script, chunkname, _G);
+			} finally {
+				script.close();
+			}
+			Varargs scriptargs = (args!=null? setGlobalArg(args, firstarg): LuaValue.NONE);
+			c.invoke( scriptargs );
+		} catch ( Exception e ) {
+			e.printStackTrace( System.err );
+		}
+	}
+	private static Varargs setGlobalArg(String[] args, int i) {
+		LuaTable arg = LuaValue.tableOf();
+		for ( int j=0; j<args.length; j++ )
+			arg.set( j-i, LuaValue.valueOf(args[j]) );
+		_G.set( ""arg"", arg );
+		return _G.get(""unpack"").invoke(arg);
+	}
+	private static void interactiveMode( ) throws IOException {
+		BufferedReader reader = new BufferedReader( new InputStreamReader( System.in ) );
+		while ( true ) {
+			System.out.print(""> "");
+			System.out.flush();
+			String line = reader.readLine();
+			if ( line == null )
+				return;
+			processScript( new ByteArrayInputStream(line.getBytes()), ""=stdin"", null, 0 );
+		}
+	}
+}",class,
+"		""  -b      	use luajc bytecode-to-bytecode compiler (requires bcel on class path)\n"" +
+		""  -n      	nodebug - do not load debug library by default\n"" +
+		""  --       stop handling options\n"" +
+		""  -        execute stdin and stop handling options"";
+	private static void usageExit() {
+		System.out.println(usage);
+		System.exit(-1);		
+	}",class,
+"				// load as java class
+				LuaValue v = (LuaValue) Class.forName(libname).newInstance(); 
+				v.setfenv(_G);
+				v.call(slibname, _G);
+			} catch ( Exception f ) {
+				throw new IOException(""loadLibrary(""+libname+"") failed: ""+e+"",""+f );
+			}",class,
+"	private static void usageExit() {
+		System.out.println(usage);
+		System.exit(-1);		
+	}",method,
+"	public static void main( String[] args ) throws IOException {
+		// process args
+		boolean interactive = (args.length == 0);
+		boolean versioninfo = false;
+		boolean processing = true;
+		boolean nodebug = false;
+		boolean luajc = false;
+		boolean lua2java = false;
+		Vector libs = null;
+		try {
+			// stateful argument processing
+			for ( int i=0; i<args.length; i++ ) {
+				if ( ! processing || ! args[i].startsWith(""-"") ) {
+					// input file - defer to last stage
+					break;
+				} else if ( args[i].length() <= 1 ) {
+					// input file - defer to last stage
+					break;
+				} else {
+					switch ( args[i].charAt(1) ) {
+					case 'e':
+						if ( ++i >= args.length )
+							usageExit();
+						// input script - defer to last stage
+						break;
+					case 'b':
+						luajc = true;
+						break;
+					case 'j':
+						lua2java = true;
+						break;
+					case 'l':
+						if ( ++i >= args.length )
+							usageExit();
+						libs = libs!=null? libs: new Vector();
+						libs.addElement( args[i] );
+						break;
+					case 'i':
+						interactive = true;
+						break;
+					case 'v':
+						versioninfo = true;
+						break;
+					case 'n':
+						nodebug = true;
+						break;
+					case '-':
+						if ( args[i].length() > 2 )
+							usageExit();
+						processing = false;
+						break;
+					default:
+						usageExit();
+						break;
+					}
+				}
+			}
+			// echo version
+			if ( versioninfo )
+				System.out.println(version);
+			// new lua state
+			_G = nodebug? JsePlatform.standardGlobals(): JsePlatform.debugGlobals();
+			if ( luajc ) LuaJC.install();
+			if ( lua2java) Lua2Java.install();
+			for ( int i=0, n=libs!=null? libs.size(): 0; i<n; i++ )
+				loadLibrary( (String) libs.elementAt(i) );
+			// input script processing
+			processing = true;
+			for ( int i=0; i<args.length; i++ ) {
+				if ( ! processing || ! args[i].startsWith(""-"") ) {
+					processScript( new FileInputStream(args[i]), args[i], args, i );
+					break;
+				} else if ( ""-"".equals( args[i] ) ) {
+					processScript( System.in, ""=stdin"", args, i );
+					break;
+				} else {
+					switch ( args[i].charAt(1) ) {
+					case 'l':
+						++i;
+						break;
+					case 'e':
+						++i;
+						processScript( new ByteArrayInputStream(args[i].getBytes()), ""string"", args, i );
+						break;
+					case '-':
+						processing = false;
+						break;
+					}
+				}
+			}
+			if ( interactive )
+				interactiveMode();
+		} catch ( IOException ioe ) {
+			System.err.println( ioe.toString() );
+			System.exit(-2);
+		}
+	}",method,
+"			for ( int i=0; i<args.length; i++ ) {
+				if ( ! processing || ! args[i].startsWith(""-"") ) {
+					// input file - defer to last stage
+					break;
+				} else if ( args[i].length() <= 1 ) {
+					// input file - defer to last stage
+					break;
+				} else {
+					switch ( args[i].charAt(1) ) {
+					case 'e':
+						if ( ++i >= args.length )
+							usageExit();
+						// input script - defer to last stage
+						break;
+					case 'b':
+						luajc = true;
+						break;
+					case 'j':
+						lua2java = true;
+						break;
+					case 'l':
+						if ( ++i >= args.length )
+							usageExit();
+						libs = libs!=null? libs: new Vector();
+						libs.addElement( args[i] );
+						break;
+					case 'i':
+						interactive = true;
+						break;
+					case 'v':
+						versioninfo = true;
+						break;
+					case 'n':
+						nodebug = true;
+						break;
+					case '-':
+						if ( args[i].length() > 2 )
+							usageExit();
+						processing = false;
+						break;
+					default:
+						usageExit();
+						break;
+					}
+				}
+			}",method,
+"			for ( int i=0; i<args.length; i++ ) {
+				if ( ! processing || ! args[i].startsWith(""-"") ) {
+					processScript( new FileInputStream(args[i]), args[i], args, i );
+					break;
+				} else if ( ""-"".equals( args[i] ) ) {
+					processScript( System.in, ""=stdin"", args, i );
+					break;
+				} else {
+					switch ( args[i].charAt(1) ) {
+					case 'l':
+						++i;
+						break;
+					case 'e':
+						++i;
+						processScript( new ByteArrayInputStream(args[i].getBytes()), ""string"", args, i );
+						break;
+					case '-':
+						processing = false;
+						break;
+					}
+				}
+			}",method,
+"	private static void loadLibrary( String libname ) throws IOException {
+		LuaValue slibname =LuaValue.valueOf(libname); 
+		try {
+			// load via plain require
+			_G.get(""require"").call(slibname);
+		} catch ( Exception e ) {
+			try {
+				// load as java class
+				LuaValue v = (LuaValue) Class.forName(libname).newInstance(); 
+				v.setfenv(_G);
+				v.call(slibname, _G);
+			} catch ( Exception f ) {
+				throw new IOException(""loadLibrary(""+libname+"") failed: ""+e+"",""+f );
+			}
+		}
+	}",method,
+"	private static void processScript( InputStream script, String chunkname, String[] args, int firstarg ) throws IOException {
+		try {
+			LuaFunction c;
+			try {
+				c = LoadState.load(script, chunkname, _G);
+			} finally {
+				script.close();
+			}
+			Varargs scriptargs = (args!=null? setGlobalArg(args, firstarg): LuaValue.NONE);
+			c.invoke( scriptargs );
+		} catch ( Exception e ) {
+			e.printStackTrace( System.err );
+		}
+	}",method,
+"	private static Varargs setGlobalArg(String[] args, int i) {
+		LuaTable arg = LuaValue.tableOf();
+		for ( int j=0; j<args.length; j++ )
+			arg.set( j-i, LuaValue.valueOf(args[j]) );
+		_G.set( ""arg"", arg );
+		return _G.get(""unpack"").invoke(arg);
+	}",method,
+"	private static void interactiveMode( ) throws IOException {
+		BufferedReader reader = new BufferedReader( new InputStreamReader( System.in ) );
+		while ( true ) {
+			System.out.print(""> "");
+			System.out.flush();
+			String line = reader.readLine();
+			if ( line == null )
+				return;
+			processScript( new ByteArrayInputStream(line.getBytes()), ""=stdin"", null, 0 );
+		}
+	}",method,
+"		while ( true ) {
+			System.out.print(""> "");
+			System.out.flush();
+			String line = reader.readLine();
+			if ( line == null )
+				return;
+			processScript( new ByteArrayInputStream(line.getBytes()), ""=stdin"", null, 0 );
+		}",method,
+"public class XPathException extends Exception {
+    private final Throwable cause;
+    private static final long serialVersionUID = -1837080260374986980L;
+    public XPathException(String message) {
+        super(message);
+        if (message == null) {
+            throw new NullPointerException(""message == null"");
+        }
+        this.cause = null;
+    }
+    public XPathException(Throwable cause) {
+        super(cause == null ? null : cause.toString());
+        this.cause = cause;
+        if (cause == null) {
+            throw new NullPointerException(""cause == null"");
+        }
+    }
+    public Throwable getCause() {
+        return cause;
+    }
+    public void printStackTrace( java.io.PrintStream s ) {
+        if( getCause() != null ) {
+            getCause().printStackTrace(s);
+          s.println(""--------------- linked to ------------------"");
+        }
+        super.printStackTrace(s);
+    }
+    public void printStackTrace() {
+        printStackTrace(System.err);
+    }
+    public void printStackTrace(PrintWriter s) {
+        if( getCause() != null ) {
+            getCause().printStackTrace(s);
+          s.println(""--------------- linked to ------------------"");
+        }
+        super.printStackTrace(s);
+    }
+}",class,
+"    public XPathException(String message) {
+        super(message);
+        if (message == null) {
+            throw new NullPointerException(""message == null"");
+        }
+        this.cause = null;
+    }",method,
+"        if (message == null) {
+            throw new NullPointerException(""message == null"");
+        }",method,
+"    public XPathException(Throwable cause) {
+        super(cause == null ? null : cause.toString());
+        this.cause = cause;
+        if (cause == null) {
+            throw new NullPointerException(""cause == null"");
+        }
+    }",method,
+"        if (cause == null) {
+            throw new NullPointerException(""cause == null"");
+        }",method,
+"    public Throwable getCause() {
+        return cause;
+    }",method,
+"    public void printStackTrace( java.io.PrintStream s ) {
+        if( getCause() != null ) {
+            getCause().printStackTrace(s);
+          s.println(""--------------- linked to ------------------"");
+        }
+        super.printStackTrace(s);
+    }",method,
+"    public void printStackTrace() {
+        printStackTrace(System.err);
+    }",method,
+"    public void printStackTrace(PrintWriter s) {
+        if( getCause() != null ) {
+            getCause().printStackTrace(s);
+          s.println(""--------------- linked to ------------------"");
+        }
+        super.printStackTrace(s);
+    }",method,
+"public final class CodeSigner implements Serializable {
+    private static final long serialVersionUID = 6819288105193937581L;
+    private CertPath signerCertPath;
+    private Timestamp timestamp;
+    private transient int myhash = -1;
+    public CodeSigner(CertPath signerCertPath, Timestamp timestamp) {
+        if (signerCertPath == null) {
+            throw new NullPointerException();
+        }
+        this.signerCertPath = signerCertPath;
+        this.timestamp = timestamp;
+    }
+    public CertPath getSignerCertPath() {
+        return signerCertPath;
+    }
+    public Timestamp getTimestamp() {
+        return timestamp;
+    }
+    public int hashCode() {
+        if (myhash == -1) {
+            if (timestamp == null) {
+                myhash = signerCertPath.hashCode();
+            } else {
+                myhash = signerCertPath.hashCode() + timestamp.hashCode();
+            }
+        }
+        return myhash;
+    }
+    public boolean equals(Object obj) {
+        if (obj == null || (!(obj instanceof CodeSigner))) {
+            return false;
+        }
+        CodeSigner that = (CodeSigner)obj;
+        if (this == that) {
+            return true;
+        }
+        Timestamp thatTimestamp = that.getTimestamp();
+        if (timestamp == null) {
+            if (thatTimestamp != null) {
+                return false;
+            }
+        } else {
+            if (thatTimestamp == null ||
+                (! timestamp.equals(thatTimestamp))) {
+                return false;
+            }
+        }
+        return signerCertPath.equals(that.getSignerCertPath());
+    }
+    public String toString() {
+        StringBuffer sb = new StringBuffer();
+        sb.append(""("");
+        sb.append(""Signer: "" + signerCertPath.getCertificates().get(0));
+        if (timestamp != null) {
+            sb.append(""timestamp: "" + timestamp);
+        }
+        sb.append("")"");
+        return sb.toString();
+    }
+    // Explicitly reset hash code value to -1
+    private void readObject(ObjectInputStream ois)
+        throws IOException, ClassNotFoundException {
+     ois.defaultReadObject();
+     myhash = -1;
+    }
+}",class,

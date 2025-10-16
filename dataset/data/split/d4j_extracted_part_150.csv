@@ -1,0 +1,1463 @@
+code_snippet,type,score
+"    @Override
+    public boolean equals(Object obj) {
+      if (this == obj)
+        return true;
+      if (obj == null)
+        return false;
+      if (getClass() != obj.getClass())
+        return false;
+      Msg2 other = (Msg2) obj;
+      if (value == null) {
+        if (other.value != null)
+          return false;
+      } else if (!value.equals(other.value))
+        return false;
+      return true;
+    }",method,
+"      if (value == null) {
+        if (other.value != null)
+          return false;
+      }",method,
+"    @Override
+    public String toString() {
+      return ""Msg2 [value="" + value + ""]"";
+    }",method,
+"  private String result() {
+    String r = result;
+    result = """";
+    return r;
+  }",method,
+"  private void result(String r) {
+    result = r;
+  }",method,
+"  @Before
+  public void beforeEach() {
+    result = """";
+   }",method,
+"  @Test
+  public void shouldNotMatchWhenEmpty() {
+    Receive rcv = ReceiveBuilder.create().build();
+    assertFalse(rcv.onMessage().isDefinedAt(""hello""));
+    assertFalse(rcv.onMessage().isDefinedAt(42));
+  }",method,
+"  @Test
+  public void shouldMatchByClass() {
+    Receive rcv = ReceiveBuilder.create()
+        .match(Msg1.class, m -> result(""match Msg1""))
+        .build();
+    assertTrue(rcv.onMessage().isDefinedAt(new Msg1()));
+    rcv.onMessage().apply(new Msg1());
+    assertEquals(""match Msg1"", result());
+    assertFalse(rcv.onMessage().isDefinedAt(new Msg2(""foo"")));
+    assertFalse(rcv.onMessage().isDefinedAt(""hello""));
+    assertFalse(rcv.onMessage().isDefinedAt(42));
+  }",method,
+"  @Test
+  public void shouldMatchBySubclass() {
+    Receive rcv = ReceiveBuilder.create()
+        .match(Msg.class, m -> result(""match Msg""))
+        .build();
+    assertTrue(rcv.onMessage().isDefinedAt(new Msg1()));
+    rcv.onMessage().apply(new Msg1());
+    assertEquals(""match Msg"", result());
+    assertTrue(rcv.onMessage().isDefinedAt(new Msg2(""foo"")));
+    rcv.onMessage().apply(new Msg2(""foo""));
+    assertEquals(""match Msg"", result());
+    assertFalse(rcv.onMessage().isDefinedAt(""hello""));
+    assertFalse(rcv.onMessage().isDefinedAt(42));
+  }",method,
+"  private void handleMsg(Msg msg) {
+    result(""match Msg"");
+  }",method,
+"  private void handleMsg(Msg1 msg) {
+    result(""match Msg1"");
+  }",method,
+"  private void handleMsg(Msg2 msg) {
+    result(""match Msg2"");
+  }",method,
+"  @Test
+  public void shouldMatchDelegatingToSpecificMethod() {
+    Receive rcv = ReceiveBuilder.create()
+        .match(Msg1.class, this::handleMsg)
+        .match(Msg2.class, this::handleMsg)
+        .match(Msg.class, this::handleMsg)
+        .build();
+    assertTrue(rcv.onMessage().isDefinedAt(new Msg1()));
+    rcv.onMessage().apply(new Msg1());
+    assertEquals(""match Msg1"", result());
+    assertTrue(rcv.onMessage().isDefinedAt(new Msg2(""foo"")));
+    rcv.onMessage().apply(new Msg2(""foo""));
+    assertEquals(""match Msg2"", result());
+  }",method,
+"  private void anotherHandleMsg(Msg msg) {
+    result(""match Msg"");
+  }",method,
+"  private void anotherHandleMsg(Msg1 msg) {
+    result(""match Msg1"");
+  }",method,
+"  @Test
+  public void shouldMatchDelegatingToGeneralMethod() {
+    Receive rcv = ReceiveBuilder.create()
+        .match(Msg1.class, this::anotherHandleMsg)
+        .match(Msg2.class, this::anotherHandleMsg)
+        .build();
+    assertTrue(rcv.onMessage().isDefinedAt(new Msg1()));
+    rcv.onMessage().apply(new Msg1());
+    assertEquals(""match Msg1"", result());
+    assertTrue(rcv.onMessage().isDefinedAt(new Msg2(""foo"")));
+    rcv.onMessage().apply(new Msg2(""foo""));
+    assertEquals(""match Msg"", result());
+  }",method,
+"  @Test
+  public void shouldMatchByPredicate() {
+    Receive rcv = ReceiveBuilder.create()
+        .match(Msg1.class, m -> true, m -> result(""match Msg1""))
+        .match(Msg2.class, m -> m.value.equals(""foo""), m -> result(""match Msg2""))
+        .build();
+    assertTrue(rcv.onMessage().isDefinedAt(new Msg1()));
+    rcv.onMessage().apply(new Msg1());
+    assertEquals(""match Msg1"", result());
+    assertTrue(rcv.onMessage().isDefinedAt(new Msg2(""foo"")));
+    rcv.onMessage().apply(new Msg2(""foo""));
+    assertEquals(""match Msg2"", result());
+    assertFalse(rcv.onMessage().isDefinedAt(new Msg2(""bar"")));
+    assertFalse(rcv.onMessage().isDefinedAt(""hello""));
+    assertFalse(rcv.onMessage().isDefinedAt(42));
+  }",method,
+"  @Test
+  public void shouldMatchEquals() {
+    Msg2 msg2 = new Msg2(""foo"");
+    Receive rcv = ReceiveBuilder.create()
+        .matchEquals(msg2, m -> result(""match msg2""))
+        .matchEquals(""foo"", m -> result(""match foo""))
+        .matchEquals(17, m -> result(""match 17""))
+        .build();
+    assertTrue(rcv.onMessage().isDefinedAt(new Msg2(""foo"")));
+    rcv.onMessage().apply(new Msg2(""foo""));
+    assertEquals(""match msg2"", result());
+    assertTrue(rcv.onMessage().isDefinedAt(""foo""));
+    rcv.onMessage().apply(""foo"");
+    assertEquals(""match foo"", result());
+    assertTrue(rcv.onMessage().isDefinedAt(17));
+    rcv.onMessage().apply(17);
+    assertEquals(""match 17"", result());
+    assertFalse(rcv.onMessage().isDefinedAt(new Msg2(""bar"")));
+    assertFalse(rcv.onMessage().isDefinedAt(""hello""));
+    assertFalse(rcv.onMessage().isDefinedAt(42));
+  }",method,
+"  @Test
+  public void shouldMatchAny() {
+    Receive rcv = ReceiveBuilder.create()
+        .match(Msg1.class, m -> result(""match Msg1""))
+        .matchAny(m -> result(""match any""))
+        .build();
+    assertTrue(rcv.onMessage().isDefinedAt(new Msg1()));
+    rcv.onMessage().apply(new Msg1());
+    assertEquals(""match Msg1"", result());
+    assertTrue(rcv.onMessage().isDefinedAt(new Msg2(""foo"")));
+    rcv.onMessage().apply(new Msg2(""foo""));
+    assertEquals(""match any"", result());
+    assertTrue(rcv.onMessage().isDefinedAt(""hello""));
+    assertTrue(rcv.onMessage().isDefinedAt(42));
+  }",method,
+"  @Test
+  public void shouldMatchUnchecked() {
+    Receive rcv = ReceiveBuilder.create()
+        .matchUnchecked(List.class, (List<String> list) -> {
+          result(""match List"");
+        })
+        .build();
+    List<String> list = Arrays.asList(""foo"");
+    assertTrue(rcv.onMessage().isDefinedAt(list));
+    rcv.onMessage().apply(list);
+    assertEquals(""match List"", result());
+  }",method,
+"  @Test(expected = ClassCastException.class)
+  public void shouldThrowWhenUncheckedWithWrongTypes() {
+    // note that this doesn't compile with ordinary match
+    Receive rcv = ReceiveBuilder.create()
+      .matchUnchecked(String.class, (Integer i) -> {
+        result(String.valueOf(i + 2));
+      })
+      .build();
+    assertTrue(rcv.onMessage().isDefinedAt(""foo""));
+    rcv.onMessage().apply(""foo"");
+  }",method,
+"public class Xsd2InstanceUtils {
+    public static String generate(String[] args) {
+        Set flags = new HashSet();
+        Set opts = new HashSet();
+        flags.add(""h"");
+        flags.add(""help"");
+        flags.add(""usage"");
+        flags.add(""license"");
+        flags.add(""version"");
+        flags.add(""dl"");
+        flags.add(""noupa"");
+        flags.add(""nopvr"");
+        flags.add(""partial"");
+        opts.add(""name"");
+        CommandLine cl = new CommandLine(args, flags, opts);
+        String[] badOpts = cl.getBadOpts();
+        if (badOpts.length > 0) {
+                throw new IllegalArgumentException(""Unrecognized option: "" + badOpts[0]);
+        }
+        boolean dl = (cl.getOpt(""dl"") != null);
+        boolean nopvr = (cl.getOpt(""nopvr"") != null);
+        boolean noupa = (cl.getOpt(""noupa"") != null);
+        File[] schemaFiles = cl.filesEndingWith("".xsd"");
+        String rootName = cl.getOpt(""name"");
+        if (rootName == null) {
+            throw new IllegalArgumentException(""Required option \""-name\"" must be present"");
+        }
+        // Process Schema files
+        List sdocs = new ArrayList();
+      for (File schemaFile : schemaFiles) {
+        try {
+          sdocs.add(XmlObject.Factory.parse(schemaFile,
+                                            (new XmlOptions()).setLoadLineNumbers().setLoadMessageDigest()));
+        }
+        catch (Exception e) {
+          throw new IllegalArgumentException(""Can not load schema file: "" + schemaFile + "": "" + e.getLocalizedMessage());
+        }
+      }
+        XmlObject[] schemas = (XmlObject[]) sdocs.toArray(new XmlObject[sdocs.size()]);
+        SchemaTypeSystem sts = null;
+        if (schemas.length > 0)
+        {
+            XmlOptions compileOptions = new XmlOptions();
+            if (dl)
+                compileOptions.setCompileDownloadUrls();
+            if (nopvr)
+                compileOptions.setCompileNoPvrRule();
+            if (noupa)
+                compileOptions.setCompileNoUpaRule();
+          try {
+            sts = XmlBeans.compileXsd(schemas, XmlBeans.getBuiltinTypeSystem(), compileOptions);
+          }
+          catch (XmlException e) {
+            StringBuilder out = new StringBuilder(""Schema compilation errors: "");
+            Collection errors = e.getErrors();
+            for (Object error : errors) out.append(""\n"").append(error);
+              throw new IllegalArgumentException(out.toString());
+          }
+        }
+        if (sts == null)
+        {
+            throw new IllegalArgumentException(""No Schemas to process."");
+        }
+        SchemaType[] globalElems = sts.documentTypes();
+        SchemaType elem = null;
+      for (SchemaType globalElem : globalElems) {
+        if (rootName.equals(globalElem.getDocumentElementName().getLocalPart())) {
+          elem = globalElem;
+          break;
+        }
+      }
+        if (elem == null) {
+            throw new IllegalArgumentException(""Could not find a global element with name \"""" + rootName + ""\"""");
+        }
+        // Now generate it
+        return SampleXmlUtil.createSampleForType(elem);
+    }
+  public static XmlElementDescriptor getDescriptor(XmlTag tag, String elementName) {
+    final PsiMetaData metaData = tag.getMetaData();
+    if (metaData instanceof XmlNSDescriptorImpl) {
+      final XmlNSDescriptorImpl nsDescriptor = (XmlNSDescriptorImpl) metaData;
+      return nsDescriptor.getElementDescriptor(elementName, nsDescriptor.getDefaultNamespace());
+    }
+    return null;
+  }
+  public static List<String> addVariantsFromRootTag(XmlTag rootTag) {
+    PsiMetaData metaData = rootTag.getMetaData();
+    if (metaData instanceof XmlNSDescriptorImpl) {
+      XmlNSDescriptorImpl nsDescriptor = (XmlNSDescriptorImpl) metaData;
+      List<String> elementDescriptors = new ArrayList<>();
+      XmlElementDescriptor[] rootElementsDescriptors = nsDescriptor.getRootElementsDescriptors(PsiTreeUtil.getParentOfType(rootTag, XmlDocument.class));
+      for(XmlElementDescriptor e:rootElementsDescriptors) {
+        elementDescriptors.add(e.getName());
+      }
+      return elementDescriptors;
+    }
+    return Collections.emptyList();
+  }
+  public static String processAndSaveAllSchemas(@NotNull XmlFile file, @NotNull final Map<String, String> scannedToFileName,
+                                          final @NotNull SchemaReferenceProcessor schemaReferenceProcessor) {
+    final String fileName = file.getName();
+    String previous = scannedToFileName.get(fileName);
+    if (previous != null) return previous;
+    scannedToFileName.put(fileName, fileName);
+    final StringBuilder result = new StringBuilder();
+    file.acceptChildren(new XmlRecursiveElementVisitor() {
+      @Override public void visitElement(PsiElement psiElement) {
+        super.visitElement(psiElement);
+        if (psiElement instanceof LeafPsiElement) {
+          final String text = psiElement.getText();
+          result.append(text);
+        }
+      }
+      @Override public void visitXmlAttribute(XmlAttribute xmlAttribute) {
+        boolean replaced = false;
+        if (xmlAttribute.isNamespaceDeclaration()) {
+          replaced = true;
+          final String value = xmlAttribute.getValue();
+          result.append(xmlAttribute.getText()).append("" "");
+          if (!scannedToFileName.containsKey(value)) {
+            final XmlNSDescriptor nsDescriptor = xmlAttribute.getParent().getNSDescriptor(value, true);
+            if (nsDescriptor != null) {
+              processAndSaveAllSchemas(nsDescriptor.getDescriptorFile(), scannedToFileName, schemaReferenceProcessor);
+            }
+          }
+        } else if (""schemaLocation"".equals(xmlAttribute.getName())) {
+          final PsiReference[] references = xmlAttribute.getValueElement().getReferences();
+          if (references.length > 0) {
+            PsiElement psiElement = references[0].resolve();
+            if (psiElement instanceof XmlFile) {
+              final String s = processAndSaveAllSchemas(((XmlFile) psiElement), scannedToFileName, schemaReferenceProcessor);
+              if (s != null) {
+                result.append(xmlAttribute.getName()).append(""='"").append(s).append('\'');
+                replaced = true;
+              }
+            }
+          }
+        }
+        if (!replaced) result.append(xmlAttribute.getText());
+      }
+    });
+    final VirtualFile virtualFile = file.getVirtualFile();
+    final String content = result.toString();
+    byte[] bytes;
+    if (virtualFile != null) {
+      bytes = content.getBytes(virtualFile.getCharset());
+    } else {
+      try {
+        final String charsetName = XmlUtil.extractXmlEncodingFromProlog(content.getBytes());
+        bytes = charsetName != null ? content.getBytes(charsetName) : content.getBytes();
+      } catch (UnsupportedEncodingException e) {
+        bytes = content.getBytes();
+      }
+    }
+    schemaReferenceProcessor.processSchema(fileName, bytes);
+    return fileName;
+  }
+  public interface SchemaReferenceProcessor {
+    void processSchema(String schemaFileName, byte[] schemaContent);
+  }
+}",class,
+"    public static String generate(String[] args) {
+        Set flags = new HashSet();
+        Set opts = new HashSet();
+        flags.add(""h"");
+        flags.add(""help"");
+        flags.add(""usage"");
+        flags.add(""license"");
+        flags.add(""version"");
+        flags.add(""dl"");
+        flags.add(""noupa"");
+        flags.add(""nopvr"");
+        flags.add(""partial"");
+        opts.add(""name"");
+        CommandLine cl = new CommandLine(args, flags, opts);
+        String[] badOpts = cl.getBadOpts();
+        if (badOpts.length > 0) {
+                throw new IllegalArgumentException(""Unrecognized option: "" + badOpts[0]);
+        }
+        boolean dl = (cl.getOpt(""dl"") != null);
+        boolean nopvr = (cl.getOpt(""nopvr"") != null);
+        boolean noupa = (cl.getOpt(""noupa"") != null);
+        File[] schemaFiles = cl.filesEndingWith("".xsd"");
+        String rootName = cl.getOpt(""name"");
+        if (rootName == null) {
+            throw new IllegalArgumentException(""Required option \""-name\"" must be present"");
+        }
+        // Process Schema files
+        List sdocs = new ArrayList();
+      for (File schemaFile : schemaFiles) {
+        try {
+          sdocs.add(XmlObject.Factory.parse(schemaFile,
+                                            (new XmlOptions()).setLoadLineNumbers().setLoadMessageDigest()));
+        }
+        catch (Exception e) {
+          throw new IllegalArgumentException(""Can not load schema file: "" + schemaFile + "": "" + e.getLocalizedMessage());
+        }
+      }
+        XmlObject[] schemas = (XmlObject[]) sdocs.toArray(new XmlObject[sdocs.size()]);
+        SchemaTypeSystem sts = null;
+        if (schemas.length > 0)
+        {
+            XmlOptions compileOptions = new XmlOptions();
+            if (dl)
+                compileOptions.setCompileDownloadUrls();
+            if (nopvr)
+                compileOptions.setCompileNoPvrRule();
+            if (noupa)
+                compileOptions.setCompileNoUpaRule();
+          try {
+            sts = XmlBeans.compileXsd(schemas, XmlBeans.getBuiltinTypeSystem(), compileOptions);
+          }
+          catch (XmlException e) {
+            StringBuilder out = new StringBuilder(""Schema compilation errors: "");
+            Collection errors = e.getErrors();
+            for (Object error : errors) out.append(""\n"").append(error);
+              throw new IllegalArgumentException(out.toString());
+          }
+        }
+        if (sts == null)
+        {
+            throw new IllegalArgumentException(""No Schemas to process."");
+        }
+        SchemaType[] globalElems = sts.documentTypes();
+        SchemaType elem = null;
+      for (SchemaType globalElem : globalElems) {
+        if (rootName.equals(globalElem.getDocumentElementName().getLocalPart())) {
+          elem = globalElem;
+          break;
+        }
+      }
+        if (elem == null) {
+            throw new IllegalArgumentException(""Could not find a global element with name \"""" + rootName + ""\"""");
+        }
+        // Now generate it
+        return SampleXmlUtil.createSampleForType(elem);
+    }",method,
+"        if (badOpts.length > 0) {
+                throw new IllegalArgumentException(""Unrecognized option: "" + badOpts[0]);
+        }",method,
+"        if (rootName == null) {
+            throw new IllegalArgumentException(""Required option \""-name\"" must be present"");
+        }",method,
+"      for (File schemaFile : schemaFiles) {
+        try {
+          sdocs.add(XmlObject.Factory.parse(schemaFile,
+                                            (new XmlOptions()).setLoadLineNumbers().setLoadMessageDigest()));
+        }
+        catch (Exception e) {
+          throw new IllegalArgumentException(""Can not load schema file: "" + schemaFile + "": "" + e.getLocalizedMessage());
+        }
+      }",method,
+"        catch (Exception e) {
+          throw new IllegalArgumentException(""Can not load schema file: "" + schemaFile + "": "" + e.getLocalizedMessage());
+        }",method,
+"        if (schemas.length > 0)
+        {
+            XmlOptions compileOptions = new XmlOptions();
+            if (dl)
+                compileOptions.setCompileDownloadUrls();
+            if (nopvr)
+                compileOptions.setCompileNoPvrRule();
+            if (noupa)
+                compileOptions.setCompileNoUpaRule();
+          try {
+            sts = XmlBeans.compileXsd(schemas, XmlBeans.getBuiltinTypeSystem(), compileOptions);
+          }
+          catch (XmlException e) {
+            StringBuilder out = new StringBuilder(""Schema compilation errors: "");
+            Collection errors = e.getErrors();
+            for (Object error : errors) out.append(""\n"").append(error);
+              throw new IllegalArgumentException(out.toString());
+          }
+        }",method,
+"          catch (XmlException e) {
+            StringBuilder out = new StringBuilder(""Schema compilation errors: "");
+            Collection errors = e.getErrors();
+            for (Object error : errors) out.append(""\n"").append(error);
+              throw new IllegalArgumentException(out.toString());
+          }",method,
+"        if (sts == null)
+        {
+            throw new IllegalArgumentException(""No Schemas to process."");
+        }",method,
+"      for (SchemaType globalElem : globalElems) {
+        if (rootName.equals(globalElem.getDocumentElementName().getLocalPart())) {
+          elem = globalElem;
+          break;
+        }
+      }",method,
+"        if (elem == null) {
+            throw new IllegalArgumentException(""Could not find a global element with name \"""" + rootName + ""\"""");
+        }",method,
+"  public static XmlElementDescriptor getDescriptor(XmlTag tag, String elementName) {
+    final PsiMetaData metaData = tag.getMetaData();
+    if (metaData instanceof XmlNSDescriptorImpl) {
+      final XmlNSDescriptorImpl nsDescriptor = (XmlNSDescriptorImpl) metaData;
+      return nsDescriptor.getElementDescriptor(elementName, nsDescriptor.getDefaultNamespace());
+    }
+    return null;
+  }",method,
+"    if (metaData instanceof XmlNSDescriptorImpl) {
+      final XmlNSDescriptorImpl nsDescriptor = (XmlNSDescriptorImpl) metaData;
+      return nsDescriptor.getElementDescriptor(elementName, nsDescriptor.getDefaultNamespace());
+    }",method,
+"  public static List<String> addVariantsFromRootTag(XmlTag rootTag) {
+    PsiMetaData metaData = rootTag.getMetaData();
+    if (metaData instanceof XmlNSDescriptorImpl) {
+      XmlNSDescriptorImpl nsDescriptor = (XmlNSDescriptorImpl) metaData;
+      List<String> elementDescriptors = new ArrayList<>();
+      XmlElementDescriptor[] rootElementsDescriptors = nsDescriptor.getRootElementsDescriptors(PsiTreeUtil.getParentOfType(rootTag, XmlDocument.class));
+      for(XmlElementDescriptor e:rootElementsDescriptors) {
+        elementDescriptors.add(e.getName());
+      }
+      return elementDescriptors;
+    }
+    return Collections.emptyList();
+  }",method,
+"    if (metaData instanceof XmlNSDescriptorImpl) {
+      XmlNSDescriptorImpl nsDescriptor = (XmlNSDescriptorImpl) metaData;
+      List<String> elementDescriptors = new ArrayList<>();
+      XmlElementDescriptor[] rootElementsDescriptors = nsDescriptor.getRootElementsDescriptors(PsiTreeUtil.getParentOfType(rootTag, XmlDocument.class));
+      for(XmlElementDescriptor e:rootElementsDescriptors) {
+        elementDescriptors.add(e.getName());
+      }
+      return elementDescriptors;
+    }",method,
+"      for(XmlElementDescriptor e:rootElementsDescriptors) {
+        elementDescriptors.add(e.getName());
+      }",method,
+"  public static String processAndSaveAllSchemas(@NotNull XmlFile file, @NotNull final Map<String, String> scannedToFileName,
+                                          final @NotNull SchemaReferenceProcessor schemaReferenceProcessor) {
+    final String fileName = file.getName();
+    String previous = scannedToFileName.get(fileName);
+    if (previous != null) return previous;
+    scannedToFileName.put(fileName, fileName);
+    final StringBuilder result = new StringBuilder();
+    file.acceptChildren(new XmlRecursiveElementVisitor() {
+      @Override public void visitElement(PsiElement psiElement) {
+        super.visitElement(psiElement);
+        if (psiElement instanceof LeafPsiElement) {
+          final String text = psiElement.getText();
+          result.append(text);
+        }
+      }
+      @Override public void visitXmlAttribute(XmlAttribute xmlAttribute) {
+        boolean replaced = false;
+        if (xmlAttribute.isNamespaceDeclaration()) {
+          replaced = true;
+          final String value = xmlAttribute.getValue();
+          result.append(xmlAttribute.getText()).append("" "");
+          if (!scannedToFileName.containsKey(value)) {
+            final XmlNSDescriptor nsDescriptor = xmlAttribute.getParent().getNSDescriptor(value, true);
+            if (nsDescriptor != null) {
+              processAndSaveAllSchemas(nsDescriptor.getDescriptorFile(), scannedToFileName, schemaReferenceProcessor);
+            }
+          }
+        } else if (""schemaLocation"".equals(xmlAttribute.getName())) {
+          final PsiReference[] references = xmlAttribute.getValueElement().getReferences();
+          if (references.length > 0) {
+            PsiElement psiElement = references[0].resolve();
+            if (psiElement instanceof XmlFile) {
+              final String s = processAndSaveAllSchemas(((XmlFile) psiElement), scannedToFileName, schemaReferenceProcessor);
+              if (s != null) {
+                result.append(xmlAttribute.getName()).append(""='"").append(s).append('\'');
+                replaced = true;
+              }
+            }
+          }
+        }
+        if (!replaced) result.append(xmlAttribute.getText());
+      }
+    });
+    final VirtualFile virtualFile = file.getVirtualFile();
+    final String content = result.toString();
+    byte[] bytes;
+    if (virtualFile != null) {
+      bytes = content.getBytes(virtualFile.getCharset());
+    } else {
+      try {
+        final String charsetName = XmlUtil.extractXmlEncodingFromProlog(content.getBytes());
+        bytes = charsetName != null ? content.getBytes(charsetName) : content.getBytes();
+      } catch (UnsupportedEncodingException e) {
+        bytes = content.getBytes();
+      }
+    }
+    schemaReferenceProcessor.processSchema(fileName, bytes);
+    return fileName;
+  }",method,
+"    file.acceptChildren(new XmlRecursiveElementVisitor() {
+      @Override public void visitElement(PsiElement psiElement) {
+        super.visitElement(psiElement);
+        if (psiElement instanceof LeafPsiElement) {
+          final String text = psiElement.getText();
+          result.append(text);
+        }
+      }
+      @Override public void visitXmlAttribute(XmlAttribute xmlAttribute) {
+        boolean replaced = false;
+        if (xmlAttribute.isNamespaceDeclaration()) {
+          replaced = true;
+          final String value = xmlAttribute.getValue();
+          result.append(xmlAttribute.getText()).append("" "");
+          if (!scannedToFileName.containsKey(value)) {
+            final XmlNSDescriptor nsDescriptor = xmlAttribute.getParent().getNSDescriptor(value, true);
+            if (nsDescriptor != null) {
+              processAndSaveAllSchemas(nsDescriptor.getDescriptorFile(), scannedToFileName, schemaReferenceProcessor);
+            }
+          }
+        } else if (""schemaLocation"".equals(xmlAttribute.getName())) {
+          final PsiReference[] references = xmlAttribute.getValueElement().getReferences();
+          if (references.length > 0) {
+            PsiElement psiElement = references[0].resolve();
+            if (psiElement instanceof XmlFile) {
+              final String s = processAndSaveAllSchemas(((XmlFile) psiElement), scannedToFileName, schemaReferenceProcessor);
+              if (s != null) {
+                result.append(xmlAttribute.getName()).append(""='"").append(s).append('\'');
+                replaced = true;
+              }
+            }
+          }
+        }
+        if (!replaced) result.append(xmlAttribute.getText());
+      }
+    }",method,
+"        if (psiElement instanceof LeafPsiElement) {
+          final String text = psiElement.getText();
+          result.append(text);
+        }",method,
+"            if (nsDescriptor != null) {
+              processAndSaveAllSchemas(nsDescriptor.getDescriptorFile(), scannedToFileName, schemaReferenceProcessor);
+            }",method,
+"          if (references.length > 0) {
+            PsiElement psiElement = references[0].resolve();
+            if (psiElement instanceof XmlFile) {
+              final String s = processAndSaveAllSchemas(((XmlFile) psiElement), scannedToFileName, schemaReferenceProcessor);
+              if (s != null) {
+                result.append(xmlAttribute.getName()).append(""='"").append(s).append('\'');
+                replaced = true;
+              }
+            }
+          }",method,
+"            if (psiElement instanceof XmlFile) {
+              final String s = processAndSaveAllSchemas(((XmlFile) psiElement), scannedToFileName, schemaReferenceProcessor);
+              if (s != null) {
+                result.append(xmlAttribute.getName()).append(""='"").append(s).append('\'');
+                replaced = true;
+              }
+            }",method,
+"              if (s != null) {
+                result.append(xmlAttribute.getName()).append(""='"").append(s).append('\'');
+                replaced = true;
+              }",method,
+"    if (virtualFile != null) {
+      bytes = content.getBytes(virtualFile.getCharset());
+    }",method,
+"public class OuterComposite   {
+  @JsonProperty(""my_number"")
+  private BigDecimal myNumber = null;
+  @JsonProperty(""my_string"")
+  private String myString = null;
+  @JsonProperty(""my_boolean"")
+  private Boolean myBoolean = null;
+  public OuterComposite myNumber(BigDecimal myNumber) {
+    this.myNumber = myNumber;
+    return this;
+  }
+  @JsonProperty(""my_number"")
+  @ApiModelProperty(value = """")
+  public BigDecimal getMyNumber() {
+    return myNumber;
+  }
+  public void setMyNumber(BigDecimal myNumber) {
+    this.myNumber = myNumber;
+  }
+  public OuterComposite myString(String myString) {
+    this.myString = myString;
+    return this;
+  }
+  @JsonProperty(""my_string"")
+  @ApiModelProperty(value = """")
+  public String getMyString() {
+    return myString;
+  }
+  public void setMyString(String myString) {
+    this.myString = myString;
+  }
+  public OuterComposite myBoolean(Boolean myBoolean) {
+    this.myBoolean = myBoolean;
+    return this;
+  }
+  @JsonProperty(""my_boolean"")
+  @ApiModelProperty(value = """")
+  public Boolean getMyBoolean() {
+    return myBoolean;
+  }
+  public void setMyBoolean(Boolean myBoolean) {
+    this.myBoolean = myBoolean;
+  }
+  @Override
+  public boolean equals(java.lang.Object o) {
+    if (this == o) {
+      return true;
+    }
+    if (o == null || getClass() != o.getClass()) {
+      return false;
+    }
+    OuterComposite outerComposite = (OuterComposite) o;
+    return Objects.equals(this.myNumber, outerComposite.myNumber) &&
+        Objects.equals(this.myString, outerComposite.myString) &&
+        Objects.equals(this.myBoolean, outerComposite.myBoolean);
+  }
+  @Override
+  public int hashCode() {
+    return Objects.hash(myNumber, myString, myBoolean);
+  }
+  @Override
+  public String toString() {
+    StringBuilder sb = new StringBuilder();
+    sb.append(""class OuterComposite {\n"");
+    sb.append(""    myNumber: "").append(toIndentedString(myNumber)).append(""\n"");
+    sb.append(""    myString: "").append(toIndentedString(myString)).append(""\n"");
+    sb.append(""    myBoolean: "").append(toIndentedString(myBoolean)).append(""\n"");
+    sb.append(""}"");
+    return sb.toString();
+  }
+  private String toIndentedString(java.lang.Object o) {
+    if (o == null) {
+      return ""null"";
+    }
+    return o.toString().replace(""\n"", ""\n    "");
+  }
+}",class,
+"    sb.append(""class OuterComposite {\n"");
+    sb.append(""    myNumber: "").append(toIndentedString(myNumber)).append(""\n"");
+    sb.append(""    myString: "").append(toIndentedString(myString)).append(""\n"");
+    sb.append(""    myBoolean: "").append(toIndentedString(myBoolean)).append(""\n"");
+    sb.append(""}"");
+    return sb.toString();
+  }
+  private String toIndentedString(java.lang.Object o) {
+    if (o == null) {
+      return ""null"";
+    }
+    return o.toString().replace(""\n"", ""\n    "");
+  }",class,
+"  public OuterComposite myNumber(BigDecimal myNumber) {
+    this.myNumber = myNumber;
+    return this;
+  }",method,
+"  @JsonProperty(""my_number"")
+  @ApiModelProperty(value = """")
+  public BigDecimal getMyNumber() {
+    return myNumber;
+  }",method,
+"  public void setMyNumber(BigDecimal myNumber) {
+    this.myNumber = myNumber;
+  }",method,
+"  public OuterComposite myString(String myString) {
+    this.myString = myString;
+    return this;
+  }",method,
+"  @JsonProperty(""my_string"")
+  @ApiModelProperty(value = """")
+  public String getMyString() {
+    return myString;
+  }",method,
+"  public void setMyString(String myString) {
+    this.myString = myString;
+  }",method,
+"  public OuterComposite myBoolean(Boolean myBoolean) {
+    this.myBoolean = myBoolean;
+    return this;
+  }",method,
+"  @JsonProperty(""my_boolean"")
+  @ApiModelProperty(value = """")
+  public Boolean getMyBoolean() {
+    return myBoolean;
+  }",method,
+"  public void setMyBoolean(Boolean myBoolean) {
+    this.myBoolean = myBoolean;
+  }",method,
+"  @Override
+  public boolean equals(java.lang.Object o) {
+    if (this == o) {
+      return true;
+    }
+    if (o == null || getClass() != o.getClass()) {
+      return false;
+    }
+    OuterComposite outerComposite = (OuterComposite) o;
+    return Objects.equals(this.myNumber, outerComposite.myNumber) &&
+        Objects.equals(this.myString, outerComposite.myString) &&
+        Objects.equals(this.myBoolean, outerComposite.myBoolean);
+  }",method,
+"    if (this == o) {
+      return true;
+    }",method,
+"  @Override
+  public int hashCode() {
+    return Objects.hash(myNumber, myString, myBoolean);
+  }",method,
+"  @Override
+  public String toString() {
+    StringBuilder sb = new StringBuilder();
+    sb.append(""class OuterComposite {\n"");
+    sb.append(""    myNumber: "").append(toIndentedString(myNumber)).append(""\n"");
+    sb.append(""    myString: "").append(toIndentedString(myString)).append(""\n"");
+    sb.append(""    myBoolean: "").append(toIndentedString(myBoolean)).append(""\n"");
+    sb.append(""}"");
+    return sb.toString();
+  }",method,
+"  private String toIndentedString(java.lang.Object o) {
+    if (o == null) {
+      return ""null"";
+    }
+    return o.toString().replace(""\n"", ""\n    "");
+  }",method,
+"    if (o == null) {
+      return ""null"";
+    }",method,
+"public class MavenPluginInfo {
+  private final String myGroupId;
+  private final String myArtifactId;
+  private final String myVersion;
+  private final String myGoalPrefix;
+  private final Map<String, Mojo> myMojos;
+  public MavenPluginInfo(byte[] text) {
+    Element plugin = MavenJDOMUtil.read(text, null);
+    myGroupId = MavenJDOMUtil.findChildValueByPath(plugin, ""groupId"", MavenId.UNKNOWN_VALUE);
+    myArtifactId = MavenJDOMUtil.findChildValueByPath(plugin, ""artifactId"", MavenId.UNKNOWN_VALUE);
+    myVersion = MavenJDOMUtil.findChildValueByPath(plugin, ""version"", MavenId.UNKNOWN_VALUE);
+    myGoalPrefix = MavenJDOMUtil.findChildValueByPath(plugin, ""goalPrefix"", ""unknown"");
+    myMojos = readMojos(plugin);
+  }
+  private Map<String, Mojo> readMojos(Element plugin) {
+    Map<String, Mojo> result = new LinkedHashMap<>();
+    for (Element each : MavenJDOMUtil.findChildrenByPath(plugin, ""mojos"", ""mojo"")) {
+      String goal = MavenJDOMUtil.findChildValueByPath(each, ""goal"", ""unknown"");
+      result.put(goal, new Mojo(goal));
+    }
+    return result;
+  }
+  public String getGroupId() {
+    return myGroupId;
+  }
+  public String getArtifactId() {
+    return myArtifactId;
+  }
+  public String getVersion() {
+    return myVersion;
+  }
+  public String getGoalPrefix() {
+    return myGoalPrefix;
+  }
+  public Collection<Mojo> getMojos() {
+    return myMojos.values();
+  }
+  public Mojo findMojo(String name) {
+    return myMojos.get(name);
+  }
+  public class Mojo {
+    private final String myGoal;
+    private Mojo(String goal) {
+      myGoal = goal;
+    }
+    public String getGoal() {
+      return myGoal;
+    }
+    public String getDisplayName() {
+      return myGoalPrefix + "":"" + myGoal;
+    }
+    public String getQualifiedGoal() {
+      StringBuilder builder = new StringBuilder();
+      append(builder, myGroupId);
+      append(builder, myArtifactId);
+      append(builder, myVersion);
+      append(builder, myGoal);
+      return builder.toString();
+    }
+  }
+}",class,
+"  public class Mojo {
+    private final String myGoal;
+    private Mojo(String goal) {
+      myGoal = goal;
+    }
+    public String getGoal() {
+      return myGoal;
+    }
+    public String getDisplayName() {
+      return myGoalPrefix + "":"" + myGoal;
+    }
+    public String getQualifiedGoal() {
+      StringBuilder builder = new StringBuilder();
+      append(builder, myGroupId);
+      append(builder, myArtifactId);
+      append(builder, myVersion);
+      append(builder, myGoal);
+      return builder.toString();
+    }
+  }",class,
+"  public MavenPluginInfo(byte[] text) {
+    Element plugin = MavenJDOMUtil.read(text, null);
+    myGroupId = MavenJDOMUtil.findChildValueByPath(plugin, ""groupId"", MavenId.UNKNOWN_VALUE);
+    myArtifactId = MavenJDOMUtil.findChildValueByPath(plugin, ""artifactId"", MavenId.UNKNOWN_VALUE);
+    myVersion = MavenJDOMUtil.findChildValueByPath(plugin, ""version"", MavenId.UNKNOWN_VALUE);
+    myGoalPrefix = MavenJDOMUtil.findChildValueByPath(plugin, ""goalPrefix"", ""unknown"");
+    myMojos = readMojos(plugin);
+  }",method,
+"  private Map<String, Mojo> readMojos(Element plugin) {
+    Map<String, Mojo> result = new LinkedHashMap<>();
+    for (Element each : MavenJDOMUtil.findChildrenByPath(plugin, ""mojos"", ""mojo"")) {
+      String goal = MavenJDOMUtil.findChildValueByPath(each, ""goal"", ""unknown"");
+      result.put(goal, new Mojo(goal));
+    }
+    return result;
+  }",method,
+"  public String getGroupId() {
+    return myGroupId;
+  }",method,
+"  public String getArtifactId() {
+    return myArtifactId;
+  }",method,
+"  public String getVersion() {
+    return myVersion;
+  }",method,
+"  public String getGoalPrefix() {
+    return myGoalPrefix;
+  }",method,
+"  public Collection<Mojo> getMojos() {
+    return myMojos.values();
+  }",method,
+"  public Mojo findMojo(String name) {
+    return myMojos.get(name);
+  }",method,
+"    private Mojo(String goal) {
+      myGoal = goal;
+    }",method,
+"    public String getGoal() {
+      return myGoal;
+    }",method,
+"    public String getDisplayName() {
+      return myGoalPrefix + "":"" + myGoal;
+    }",method,
+"    public String getQualifiedGoal() {
+      StringBuilder builder = new StringBuilder();
+      append(builder, myGroupId);
+      append(builder, myArtifactId);
+      append(builder, myVersion);
+      append(builder, myGoal);
+      return builder.toString();
+    }",method,
+"public class StructColumnWriter
+        implements ColumnWriter
+{
+    private static final int INSTANCE_SIZE = ClassLayout.parseClass(StructColumnWriter.class).instanceSize();
+    private static final ColumnEncoding COLUMN_ENCODING = new ColumnEncoding(DIRECT, 0);
+    private final int column;
+    private final boolean compressed;
+    private final PresentOutputStream presentStream;
+    private final List<ColumnWriter> structFields;
+    private final List<ColumnStatistics> rowGroupColumnStatistics = new ArrayList<>();
+    private int nonNullValueCount;
+    private boolean closed;
+    public StructColumnWriter(int column, CompressionKind compression, int bufferSize, List<ColumnWriter> structFields)
+    {
+        checkArgument(column >= 0, ""column is negative"");
+        this.column = column;
+        this.compressed = requireNonNull(compression, ""compression is null"") != NONE;
+        this.structFields = ImmutableList.copyOf(requireNonNull(structFields, ""structFields is null""));
+        this.presentStream = new PresentOutputStream(compression, bufferSize);
+    }
+    @Override
+    public List<ColumnWriter> getNestedColumnWriters()
+    {
+        ImmutableList.Builder<ColumnWriter> nestedColumnWriters = ImmutableList.builder();
+        for (ColumnWriter structField : structFields) {
+            nestedColumnWriters
+                    .add(structField)
+                    .addAll(structField.getNestedColumnWriters());
+        }
+        return nestedColumnWriters.build();
+    }
+    @Override
+    public Map<Integer, ColumnEncoding> getColumnEncodings()
+    {
+        ImmutableMap.Builder<Integer, ColumnEncoding> encodings = ImmutableMap.builder();
+        encodings.put(column, COLUMN_ENCODING);
+        structFields.stream()
+                .map(ColumnWriter::getColumnEncodings)
+                .forEach(encodings::putAll);
+        return encodings.build();
+    }
+    @Override
+    public void beginRowGroup()
+    {
+        presentStream.recordCheckpoint();
+        structFields.forEach(ColumnWriter::beginRowGroup);
+    }
+    @Override
+    public void writeBlock(Block block)
+    {
+        checkState(!closed);
+        checkArgument(block.getPositionCount() > 0, ""Block is empty"");
+        ColumnarRow columnarRow = toColumnarRow(block);
+        writeColumnarRow(columnarRow);
+    }
+    private void writeColumnarRow(ColumnarRow columnarRow)
+    {
+        // record nulls
+        for (int position = 0; position < columnarRow.getPositionCount(); position++) {
+            boolean present = !columnarRow.isNull(position);
+            presentStream.writeBoolean(present);
+            if (present) {
+                nonNullValueCount++;
+            }
+        }
+        // write field values
+        for (int i = 0; i < structFields.size(); i++) {
+            ColumnWriter columnWriter = structFields.get(i);
+            Block fieldBlock = columnarRow.getField(i);
+            if (fieldBlock.getPositionCount() > 0) {
+                columnWriter.writeBlock(fieldBlock);
+            }
+        }
+    }
+    @Override
+    public Map<Integer, ColumnStatistics> finishRowGroup()
+    {
+        checkState(!closed);
+        ColumnStatistics statistics = new ColumnStatistics((long) nonNullValueCount, 0, null, null, null, null, null, null, null, null);
+        rowGroupColumnStatistics.add(statistics);
+        nonNullValueCount = 0;
+        ImmutableMap.Builder<Integer, ColumnStatistics> columnStatistics = ImmutableMap.builder();
+        columnStatistics.put(column, statistics);
+        structFields.stream()
+                .map(ColumnWriter::finishRowGroup)
+                .forEach(columnStatistics::putAll);
+        return columnStatistics.build();
+    }
+    @Override
+    public void close()
+    {
+        closed = true;
+        structFields.forEach(ColumnWriter::close);
+        presentStream.close();
+    }
+    @Override
+    public Map<Integer, ColumnStatistics> getColumnStripeStatistics()
+    {
+        checkState(closed);
+        ImmutableMap.Builder<Integer, ColumnStatistics> columnStatistics = ImmutableMap.builder();
+        columnStatistics.put(column, ColumnStatistics.mergeColumnStatistics(rowGroupColumnStatistics));
+        structFields.stream()
+                .map(ColumnWriter::getColumnStripeStatistics)
+                .forEach(columnStatistics::putAll);
+        return columnStatistics.build();
+    }
+    @Override
+    public List<Stream> writeIndexStreams(SliceOutput outputStream, MetadataWriter metadataWriter)
+            throws IOException
+    {
+        checkState(closed);
+        ImmutableList.Builder<RowGroupIndex> rowGroupIndexes = ImmutableList.builder();
+        Optional<List<BooleanStreamCheckpoint>> presentCheckpoints = presentStream.getCheckpoints();
+        for (int i = 0; i < rowGroupColumnStatistics.size(); i++) {
+            int groupId = i;
+            ColumnStatistics columnStatistics = rowGroupColumnStatistics.get(groupId);
+            Optional<BooleanStreamCheckpoint> presentCheckpoint = presentCheckpoints.map(checkpoints -> checkpoints.get(groupId));
+            List<Integer> positions = createStructColumnPositionList(compressed, presentCheckpoint);
+            rowGroupIndexes.add(new RowGroupIndex(positions, columnStatistics));
+        }
+        int length = metadataWriter.writeRowIndexes(outputStream, rowGroupIndexes.build());
+        Stream stream = new Stream(column, StreamKind.ROW_INDEX, length, false);
+        ImmutableList.Builder<Stream> indexStreams = ImmutableList.builder();
+        indexStreams.add(stream);
+        for (ColumnWriter structField : structFields) {
+            indexStreams.addAll(structField.writeIndexStreams(outputStream, metadataWriter));
+        }
+        return indexStreams.build();
+    }
+    private static List<Integer> createStructColumnPositionList(
+            boolean compressed,
+            Optional<BooleanStreamCheckpoint> presentCheckpoint)
+    {
+        ImmutableList.Builder<Integer> positionList = ImmutableList.builder();
+        presentCheckpoint.ifPresent(booleanStreamCheckpoint -> positionList.addAll(booleanStreamCheckpoint.toPositionList(compressed)));
+        return positionList.build();
+    }
+    @Override
+    public List<Stream> writeDataStreams(SliceOutput outputStream)
+            throws IOException
+    {
+        checkState(closed);
+        ImmutableList.Builder<Stream> dataStreams = ImmutableList.builder();
+        presentStream.writeDataStreams(column, outputStream).ifPresent(dataStreams::add);
+        for (ColumnWriter structField : structFields) {
+            dataStreams.addAll(structField.writeDataStreams(outputStream));
+        }
+        return dataStreams.build();
+    }
+    @Override
+    public long getBufferedBytes()
+    {
+        long bufferedBytes = presentStream.getBufferedBytes();
+        for (ColumnWriter structField : structFields) {
+            bufferedBytes += structField.getBufferedBytes();
+        }
+        return bufferedBytes;
+    }
+    @Override
+    public long getRetainedBytes()
+    {
+        // NOTE: we do not include stats because they should be small and it would be annoying to calculate the size
+        long retainedBytes = INSTANCE_SIZE + presentStream.getRetainedBytes();
+        for (ColumnWriter structField : structFields) {
+            retainedBytes += structField.getRetainedBytes();
+        }
+        return retainedBytes;
+    }
+    @Override
+    public void reset()
+    {
+        closed = false;
+        presentStream.reset();
+        structFields.forEach(ColumnWriter::reset);
+        rowGroupColumnStatistics.clear();
+        nonNullValueCount = 0;
+    }
+}",class,
+"    public StructColumnWriter(int column, CompressionKind compression, int bufferSize, List<ColumnWriter> structFields)
+    {
+        checkArgument(column >= 0, ""column is negative"");
+        this.column = column;
+        this.compressed = requireNonNull(compression, ""compression is null"") != NONE;
+        this.structFields = ImmutableList.copyOf(requireNonNull(structFields, ""structFields is null""));
+        this.presentStream = new PresentOutputStream(compression, bufferSize);
+    }",method,
+"    @Override
+    public List<ColumnWriter> getNestedColumnWriters()
+    {
+        ImmutableList.Builder<ColumnWriter> nestedColumnWriters = ImmutableList.builder();
+        for (ColumnWriter structField : structFields) {
+            nestedColumnWriters
+                    .add(structField)
+                    .addAll(structField.getNestedColumnWriters());
+        }
+        return nestedColumnWriters.build();
+    }",method,
+"        for (ColumnWriter structField : structFields) {
+            nestedColumnWriters
+                    .add(structField)
+                    .addAll(structField.getNestedColumnWriters());
+        }",method,
+"    @Override
+    public Map<Integer, ColumnEncoding> getColumnEncodings()
+    {
+        ImmutableMap.Builder<Integer, ColumnEncoding> encodings = ImmutableMap.builder();
+        encodings.put(column, COLUMN_ENCODING);
+        structFields.stream()
+                .map(ColumnWriter::getColumnEncodings)
+                .forEach(encodings::putAll);
+        return encodings.build();
+    }",method,
+"    @Override
+    public void beginRowGroup()
+    {
+        presentStream.recordCheckpoint();
+        structFields.forEach(ColumnWriter::beginRowGroup);
+    }",method,
+"    @Override
+    public void writeBlock(Block block)
+    {
+        checkState(!closed);
+        checkArgument(block.getPositionCount() > 0, ""Block is empty"");
+        ColumnarRow columnarRow = toColumnarRow(block);
+        writeColumnarRow(columnarRow);
+    }",method,
+"    private void writeColumnarRow(ColumnarRow columnarRow)
+    {
+        // record nulls
+        for (int position = 0; position < columnarRow.getPositionCount(); position++) {
+            boolean present = !columnarRow.isNull(position);
+            presentStream.writeBoolean(present);
+            if (present) {
+                nonNullValueCount++;
+            }
+        }
+        // write field values
+        for (int i = 0; i < structFields.size(); i++) {
+            ColumnWriter columnWriter = structFields.get(i);
+            Block fieldBlock = columnarRow.getField(i);
+            if (fieldBlock.getPositionCount() > 0) {
+                columnWriter.writeBlock(fieldBlock);
+            }
+        }
+    }",method,
+"            if (present) {
+                nonNullValueCount++;
+            }",method,
+"    @Override
+    public Map<Integer, ColumnStatistics> finishRowGroup()
+    {
+        checkState(!closed);
+        ColumnStatistics statistics = new ColumnStatistics((long) nonNullValueCount, 0, null, null, null, null, null, null, null, null);
+        rowGroupColumnStatistics.add(statistics);
+        nonNullValueCount = 0;
+        ImmutableMap.Builder<Integer, ColumnStatistics> columnStatistics = ImmutableMap.builder();
+        columnStatistics.put(column, statistics);
+        structFields.stream()
+                .map(ColumnWriter::finishRowGroup)
+                .forEach(columnStatistics::putAll);
+        return columnStatistics.build();
+    }",method,
+"    @Override
+    public void close()
+    {
+        closed = true;
+        structFields.forEach(ColumnWriter::close);
+        presentStream.close();
+    }",method,
+"    @Override
+    public Map<Integer, ColumnStatistics> getColumnStripeStatistics()
+    {
+        checkState(closed);
+        ImmutableMap.Builder<Integer, ColumnStatistics> columnStatistics = ImmutableMap.builder();
+        columnStatistics.put(column, ColumnStatistics.mergeColumnStatistics(rowGroupColumnStatistics));
+        structFields.stream()
+                .map(ColumnWriter::getColumnStripeStatistics)
+                .forEach(columnStatistics::putAll);
+        return columnStatistics.build();
+    }",method,
+"    @Override
+    public List<Stream> writeIndexStreams(SliceOutput outputStream, MetadataWriter metadataWriter)
+            throws IOException
+    {
+        checkState(closed);
+        ImmutableList.Builder<RowGroupIndex> rowGroupIndexes = ImmutableList.builder();
+        Optional<List<BooleanStreamCheckpoint>> presentCheckpoints = presentStream.getCheckpoints();
+        for (int i = 0; i < rowGroupColumnStatistics.size(); i++) {
+            int groupId = i;
+            ColumnStatistics columnStatistics = rowGroupColumnStatistics.get(groupId);
+            Optional<BooleanStreamCheckpoint> presentCheckpoint = presentCheckpoints.map(checkpoints -> checkpoints.get(groupId));
+            List<Integer> positions = createStructColumnPositionList(compressed, presentCheckpoint);
+            rowGroupIndexes.add(new RowGroupIndex(positions, columnStatistics));
+        }
+        int length = metadataWriter.writeRowIndexes(outputStream, rowGroupIndexes.build());
+        Stream stream = new Stream(column, StreamKind.ROW_INDEX, length, false);
+        ImmutableList.Builder<Stream> indexStreams = ImmutableList.builder();
+        indexStreams.add(stream);
+        for (ColumnWriter structField : structFields) {
+            indexStreams.addAll(structField.writeIndexStreams(outputStream, metadataWriter));
+        }
+        return indexStreams.build();
+    }",method,
+"        for (ColumnWriter structField : structFields) {
+            indexStreams.addAll(structField.writeIndexStreams(outputStream, metadataWriter));
+        }",method,
+"    private static List<Integer> createStructColumnPositionList(
+            boolean compressed,
+            Optional<BooleanStreamCheckpoint> presentCheckpoint)
+    {
+        ImmutableList.Builder<Integer> positionList = ImmutableList.builder();
+        presentCheckpoint.ifPresent(booleanStreamCheckpoint -> positionList.addAll(booleanStreamCheckpoint.toPositionList(compressed)));
+        return positionList.build();
+    }",method,
+"    @Override
+    public List<Stream> writeDataStreams(SliceOutput outputStream)
+            throws IOException
+    {
+        checkState(closed);
+        ImmutableList.Builder<Stream> dataStreams = ImmutableList.builder();
+        presentStream.writeDataStreams(column, outputStream).ifPresent(dataStreams::add);
+        for (ColumnWriter structField : structFields) {
+            dataStreams.addAll(structField.writeDataStreams(outputStream));
+        }
+        return dataStreams.build();
+    }",method,
+"        for (ColumnWriter structField : structFields) {
+            dataStreams.addAll(structField.writeDataStreams(outputStream));
+        }",method,
+"    @Override
+    public long getBufferedBytes()
+    {
+        long bufferedBytes = presentStream.getBufferedBytes();
+        for (ColumnWriter structField : structFields) {
+            bufferedBytes += structField.getBufferedBytes();
+        }
+        return bufferedBytes;
+    }",method,
+"        for (ColumnWriter structField : structFields) {
+            bufferedBytes += structField.getBufferedBytes();
+        }",method,
+"    @Override
+    public long getRetainedBytes()
+    {
+        // NOTE: we do not include stats because they should be small and it would be annoying to calculate the size
+        long retainedBytes = INSTANCE_SIZE + presentStream.getRetainedBytes();
+        for (ColumnWriter structField : structFields) {
+            retainedBytes += structField.getRetainedBytes();
+        }
+        return retainedBytes;
+    }",method,
+"        for (ColumnWriter structField : structFields) {
+            retainedBytes += structField.getRetainedBytes();
+        }",method,
+"    @Override
+    public void reset()
+    {
+        closed = false;
+        presentStream.reset();
+        structFields.forEach(ColumnWriter::reset);
+        rowGroupColumnStatistics.clear();
+        nonNullValueCount = 0;
+    }",method,
+"public class GrClosureType extends GrLiteralClassType {
+  private final GrSignature mySignature;
+  private volatile PsiType[] myTypeArgs;
+  private GrClosureType(LanguageLevel languageLevel,
+                        @NotNull GlobalSearchScope scope,
+                        @NotNull JavaPsiFacade facade,
+                        @NotNull GrSignature closureSignature,
+                        boolean shouldInferTypeParameters) {
+    super(languageLevel, scope, facade);
+    mySignature = closureSignature;
+    if (!shouldInferTypeParameters) myTypeArgs = PsiType.EMPTY_ARRAY;
+  }
+  private GrClosureType(LanguageLevel level,
+                        @NotNull GlobalSearchScope scope,
+                        @NotNull JavaPsiFacade facade,
+                        @NotNull GrSignature signature,
+                        @Nullable PsiType[] typeArgs) {
+    super(level, scope, facade);
+    mySignature = signature;
+    myTypeArgs = typeArgs;
+  }
+  @Override
+  @NotNull
+  public String getClassName() {
+    return ""Closure"";
+  }
+  @Override
+  public int getParameterCount() {
+    PsiClass resolved = resolve();
+    return resolved != null && resolved.getTypeParameters().length == 1 ? 1 : 0;
+  }
+  @Override
+  @NotNull
+  public PsiType[] getParameters() {
+    if (myTypeArgs == null) {
+      myTypeArgs = inferParameters();
+    }
+    return myTypeArgs;
+  }
+  @NotNull
+  private PsiType[] inferParameters() {
+    final PsiClass psiClass = resolve();
+    if (psiClass != null && psiClass.getTypeParameters().length == 1) {
+      final PsiType type = GrClosureSignatureUtil.getReturnType(mySignature);
+      if (type == PsiType.NULL || type == null) {
+        return new PsiType[]{null};
+      }
+      else {
+        return new PsiType[]{TypesUtil.boxPrimitiveType(type, getPsiManager(), getResolveScope(), true)};
+      }
+    }
+    else {
+      return PsiType.EMPTY_ARRAY;
+    }
+  }
+  @NotNull
+  @Override
+  protected String getJavaClassName() {
+    return GroovyCommonClassNames.GROOVY_LANG_CLOSURE;
+  }
+  @Override
+  @NotNull
+  public PsiClassType rawType() {
+    if (myTypeArgs != null && myTypeArgs.length == 0) {
+      return this;
+    }
+    return new GrClosureType(getLanguageLevel(), getResolveScope(), myFacade, mySignature, false);
+  }
+  @Override
+  public boolean isValid() {
+    return mySignature.isValid();
+  }
+  public boolean equals(Object obj) {
+    if (obj instanceof GrClosureType) {
+      return Comparing.equal(mySignature, ((GrClosureType)obj).mySignature);
+    }
+    return super.equals(obj);
+  }
+  @Override
+  @NotNull
+  public PsiClassType setLanguageLevel(@NotNull final LanguageLevel languageLevel) {
+    return new GrClosureType(languageLevel, myScope, myFacade, mySignature, myTypeArgs);
+  }
+  public static GrClosureType create(GroovyResolveResult[] results, GroovyPsiElement context) {
+    List<GrClosureSignature> signatures = new ArrayList<>();
+    for (GroovyResolveResult result : results) {
+      if (result.getElement() instanceof PsiMethod) {
+        signatures.add(GrClosureSignatureUtil.createSignature((PsiMethod)result.getElement(), result.getSubstitutor()));
+      }
+    }
+    final GlobalSearchScope resolveScope = context.getResolveScope();
+    final JavaPsiFacade facade = JavaPsiFacade.getInstance(context.getProject());
+    if (signatures.size() == 1) {
+      return create(signatures.get(0), resolveScope, facade, LanguageLevel.JDK_1_5, true);
+    }
+    else {
+      return create(GrClosureSignatureUtil.createMultiSignature(signatures.toArray(new GrClosureSignature[signatures.size()])),
+                    resolveScope, facade, LanguageLevel.JDK_1_5, true);
+    }
+  }
+  public static GrClosureType create(@NotNull GrClosableBlock closure, boolean shouldInferTypeParameters) {
+    final GrClosureSignature signature = GrClosureSignatureUtil.createSignature(closure);
+    final GlobalSearchScope resolveScope = closure.getResolveScope();
+    final JavaPsiFacade facade = JavaPsiFacade.getInstance(closure.getProject());
+    return create(signature, resolveScope, facade,LanguageLevel.JDK_1_5, shouldInferTypeParameters);
+  }
+  @Deprecated
+  public static GrClosureType create(@NotNull PsiMethod method, @NotNull PsiSubstitutor substitutor) {
+    final GrClosureSignature signature = GrClosureSignatureUtil.createSignature(method, substitutor);
+    final GlobalSearchScope scope = GlobalSearchScope.allScope(method.getProject());
+    final JavaPsiFacade facade = JavaPsiFacade.getInstance(method.getProject());
+    return create(signature, scope, facade, LanguageLevel.JDK_1_5, true);
+  }
+  @Deprecated
+  public static GrClosureType create(@NotNull PsiParameter[] parameters,
+                                     @Nullable PsiType returnType,
+                                     JavaPsiFacade facade,
+                                     GlobalSearchScope scope,
+                                     LanguageLevel languageLevel) {
+    return create(GrClosureSignatureUtil.createSignature(parameters, returnType), scope, facade, languageLevel, true);
+  }
+  public static GrClosureType create(@NotNull GrSignature signature,
+                                     GlobalSearchScope scope,
+                                     JavaPsiFacade facade,
+                                     LanguageLevel languageLevel,
+                                     boolean shouldInferTypeParameters) {
+    return new GrClosureType(languageLevel, scope, facade, signature, shouldInferTypeParameters);
+  }
+  @Nullable
+  public PsiType curry(@NotNull PsiType[] args, int position, @NotNull GroovyPsiElement context) {
+    final GrSignature newSignature = mySignature.curry(args, position, context);
+    if (newSignature == null) return null;
+    return new GrClosureType(myLanguageLevel, myScope, myFacade, newSignature, myTypeArgs);
+  }
+  @NotNull
+  public GrSignature getSignature() {
+    return mySignature;
+  }
+  @Override
+  public String toString() {
+    return ""PsiType: Closure<*>"";
+  }
+}",class,
+"  private GrClosureType(LanguageLevel languageLevel,
+                        @NotNull GlobalSearchScope scope,
+                        @NotNull JavaPsiFacade facade,
+                        @NotNull GrSignature closureSignature,
+                        boolean shouldInferTypeParameters) {
+    super(languageLevel, scope, facade);
+    mySignature = closureSignature;
+    if (!shouldInferTypeParameters) myTypeArgs = PsiType.EMPTY_ARRAY;
+  }",method,
+"  private GrClosureType(LanguageLevel level,
+                        @NotNull GlobalSearchScope scope,
+                        @NotNull JavaPsiFacade facade,
+                        @NotNull GrSignature signature,
+                        @Nullable PsiType[] typeArgs) {
+    super(level, scope, facade);
+    mySignature = signature;
+    myTypeArgs = typeArgs;
+  }",method,

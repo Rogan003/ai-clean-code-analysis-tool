@@ -1,0 +1,1081 @@
+code_snippet,type,score
+"    if (this.tags == null) {
+      this.tags = new ArrayList<Tag>();
+    }",method,
+"  @Valid
+  @ApiModelProperty(value = """")
+  public List<Tag> getTags() {
+    return tags;
+  }",method,
+"  public void setTags(List<Tag> tags) {
+    this.tags = tags;
+  }",method,
+"  public Pet status(StatusEnum status) {
+    this.status = status;
+    return this;
+  }",method,
+"  @ApiModelProperty(value = ""pet status in the store"")
+  public StatusEnum getStatus() {
+    return status;
+  }",method,
+"  public void setStatus(StatusEnum status) {
+    this.status = status;
+  }",method,
+"  @Override
+  public boolean equals(java.lang.Object o) {
+    if (this == o) {
+      return true;
+    }
+    if (o == null || getClass() != o.getClass()) {
+      return false;
+    }
+    Pet pet = (Pet) o;
+    return Objects.equals(this.id, pet.id) &&
+        Objects.equals(this.category, pet.category) &&
+        Objects.equals(this.name, pet.name) &&
+        Objects.equals(this.photoUrls, pet.photoUrls) &&
+        Objects.equals(this.tags, pet.tags) &&
+        Objects.equals(this.status, pet.status);
+  }",method,
+"    if (this == o) {
+      return true;
+    }",method,
+"  @Override
+  public int hashCode() {
+    return Objects.hash(id, category, name, photoUrls, tags, status);
+  }",method,
+"  @Override
+  public String toString() {
+    StringBuilder sb = new StringBuilder();
+    sb.append(""class Pet {\n"");
+    sb.append(""    id: "").append(toIndentedString(id)).append(""\n"");
+    sb.append(""    category: "").append(toIndentedString(category)).append(""\n"");
+    sb.append(""    name: "").append(toIndentedString(name)).append(""\n"");
+    sb.append(""    photoUrls: "").append(toIndentedString(photoUrls)).append(""\n"");
+    sb.append(""    tags: "").append(toIndentedString(tags)).append(""\n"");
+    sb.append(""    status: "").append(toIndentedString(status)).append(""\n"");
+    sb.append(""}"");
+    return sb.toString();
+  }",method,
+"  private String toIndentedString(java.lang.Object o) {
+    if (o == null) {
+      return ""null"";
+    }
+    return o.toString().replace(""\n"", ""\n    "");
+  }",method,
+"    if (o == null) {
+      return ""null"";
+    }",method,
+"public class CachingResourceTransformer implements ResourceTransformer {
+	private static final Log logger = LogFactory.getLog(CachingResourceTransformer.class);
+	private final Cache cache;
+	public CachingResourceTransformer(Cache cache) {
+		Assert.notNull(cache, ""Cache is required"");
+		this.cache = cache;
+	}
+	public CachingResourceTransformer(CacheManager cacheManager, String cacheName) {
+		Cache cache = cacheManager.getCache(cacheName);
+		if (cache == null) {
+			throw new IllegalArgumentException(""Cache '"" + cacheName + ""' not found"");
+		}
+		this.cache = cache;
+	}
+	public Cache getCache() {
+		return this.cache;
+	}
+	@Override
+	public Mono<Resource> transform(ServerWebExchange exchange, Resource resource,
+			ResourceTransformerChain transformerChain) {
+		Resource cachedResource = this.cache.get(resource, Resource.class);
+		if (cachedResource != null) {
+			if (logger.isTraceEnabled()) {
+				logger.trace(""Found match: "" + cachedResource);
+			}
+			return Mono.just(cachedResource);
+		}
+		return transformerChain.transform(exchange, resource)
+				.doOnNext(transformed -> {
+					if (logger.isTraceEnabled()) {
+						logger.trace(""Putting transformed resource in cache: "" + transformed);
+					}
+					this.cache.put(resource, transformed);
+				});
+	}
+}",class,
+"	public CachingResourceTransformer(Cache cache) {
+		Assert.notNull(cache, ""Cache is required"");
+		this.cache = cache;
+	}",method,
+"	public CachingResourceTransformer(CacheManager cacheManager, String cacheName) {
+		Cache cache = cacheManager.getCache(cacheName);
+		if (cache == null) {
+			throw new IllegalArgumentException(""Cache '"" + cacheName + ""' not found"");
+		}
+		this.cache = cache;
+	}",method,
+"		if (cache == null) {
+			throw new IllegalArgumentException(""Cache '"" + cacheName + ""' not found"");
+		}",method,
+"	public Cache getCache() {
+		return this.cache;
+	}",method,
+"	@Override
+	public Mono<Resource> transform(ServerWebExchange exchange, Resource resource,
+			ResourceTransformerChain transformerChain) {
+		Resource cachedResource = this.cache.get(resource, Resource.class);
+		if (cachedResource != null) {
+			if (logger.isTraceEnabled()) {
+				logger.trace(""Found match: "" + cachedResource);
+			}
+			return Mono.just(cachedResource);
+		}
+		return transformerChain.transform(exchange, resource)
+				.doOnNext(transformed -> {
+					if (logger.isTraceEnabled()) {
+						logger.trace(""Putting transformed resource in cache: "" + transformed);
+					}
+					this.cache.put(resource, transformed);
+				});
+	}",method,
+"		if (cachedResource != null) {
+			if (logger.isTraceEnabled()) {
+				logger.trace(""Found match: "" + cachedResource);
+			}
+			return Mono.just(cachedResource);
+		}",method,
+"public class AllNamesVisitor extends SexpVisitor<StringVector> {
+  private StringVector.Builder names = StringVector.newBuilder();
+  private Set<Symbol> set = Sets.newIdentityHashSet();
+  private boolean includeFunctionNames;
+  private int maxNames;
+  private boolean unique;
+  @Override
+  public void visit(ExpressionVector vector) {
+    for(SEXP expr : vector) {
+      expr.accept(this);
+    }
+  }
+  @Override
+  public void visit(FunctionCall call) {
+    if(includeFunctionNames) {
+      call.getFunction().accept(this);
+    }
+    for(SEXP expr : call.getArguments().values()) {
+      expr.accept(this);
+    }
+  }
+  @Override
+  public void visit(Symbol name) {
+    if(!unique || !set.contains(name)) {
+      if(maxNames == -1 || names.length() < maxNames) {
+        names.add(StringArrayVector.valueOf(name.getPrintName()));
+        set.add(name);
+      }
+    }
+  }
+  @Internal(""all.names"")
+  public static StringVector allNames(SEXP expr, boolean function, int maxNames, boolean unique) {
+    AllNamesVisitor visitor = new AllNamesVisitor();
+    visitor.includeFunctionNames = function;
+    visitor.maxNames = maxNames;
+    visitor.unique = unique;
+    expr.accept(visitor);
+    return visitor.names.build();
+  }
+}",class,
+"  @Override
+  public void visit(ExpressionVector vector) {
+    for(SEXP expr : vector) {
+      expr.accept(this);
+    }
+  }",method,
+"    for(SEXP expr : vector) {
+      expr.accept(this);
+    }",method,
+"  @Override
+  public void visit(FunctionCall call) {
+    if(includeFunctionNames) {
+      call.getFunction().accept(this);
+    }
+    for(SEXP expr : call.getArguments().values()) {
+      expr.accept(this);
+    }
+  }",method,
+"    if(includeFunctionNames) {
+      call.getFunction().accept(this);
+    }",method,
+"  @Override
+  public void visit(Symbol name) {
+    if(!unique || !set.contains(name)) {
+      if(maxNames == -1 || names.length() < maxNames) {
+        names.add(StringArrayVector.valueOf(name.getPrintName()));
+        set.add(name);
+      }
+    }
+  }",method,
+"  @Internal(""all.names"")
+  public static StringVector allNames(SEXP expr, boolean function, int maxNames, boolean unique) {
+    AllNamesVisitor visitor = new AllNamesVisitor();
+    visitor.includeFunctionNames = function;
+    visitor.maxNames = maxNames;
+    visitor.unique = unique;
+    expr.accept(visitor);
+    return visitor.names.build();
+  }",method,
+"public class MethodOrFunctionalExpressionCellRenderer extends PsiElementListCellRenderer<NavigatablePsiElement> {
+  private final PsiClassListCellRenderer myClassListCellRenderer = new PsiClassListCellRenderer();
+  private final MethodCellRenderer myMethodCellRenderer;
+  public MethodOrFunctionalExpressionCellRenderer(boolean showMethodNames) {
+    this(showMethodNames, PsiFormatUtilBase.SHOW_NAME | PsiFormatUtilBase.SHOW_PARAMETERS);
+  }
+  public MethodOrFunctionalExpressionCellRenderer(boolean showMethodNames, @PsiFormatUtil.FormatMethodOptions int options) {
+    myMethodCellRenderer = new MethodCellRenderer(showMethodNames, options);
+  }
+  public String getElementText(NavigatablePsiElement element) {
+    return element instanceof PsiMethod ? myMethodCellRenderer.getElementText((PsiMethod)element)
+                                        : ClassPresentationUtil.getFunctionalExpressionPresentation((PsiFunctionalExpression)element, false);
+  }
+  protected Icon getIcon(PsiElement element) {
+    return element instanceof PsiMethod ? myMethodCellRenderer.getIcon(element) : super.getIcon(element);
+  }
+  public String getContainerText(final NavigatablePsiElement element, final String name) {
+    return element instanceof PsiMethod ? myMethodCellRenderer.getContainerText((PsiMethod)element, name) 
+                                        : PsiClassListCellRenderer.getContainerTextStatic(element);
+  }
+  public int getIconFlags() {
+    return myClassListCellRenderer.getIconFlags();
+  }
+}",class,
+"  public MethodOrFunctionalExpressionCellRenderer(boolean showMethodNames) {
+    this(showMethodNames, PsiFormatUtilBase.SHOW_NAME | PsiFormatUtilBase.SHOW_PARAMETERS);
+  }",method,
+"  public MethodOrFunctionalExpressionCellRenderer(boolean showMethodNames, @PsiFormatUtil.FormatMethodOptions int options) {
+    myMethodCellRenderer = new MethodCellRenderer(showMethodNames, options);
+  }",method,
+"  public String getElementText(NavigatablePsiElement element) {
+    return element instanceof PsiMethod ? myMethodCellRenderer.getElementText((PsiMethod)element)
+                                        : ClassPresentationUtil.getFunctionalExpressionPresentation((PsiFunctionalExpression)element, false);
+  }",method,
+"  protected Icon getIcon(PsiElement element) {
+    return element instanceof PsiMethod ? myMethodCellRenderer.getIcon(element) : super.getIcon(element);
+  }",method,
+"  public String getContainerText(final NavigatablePsiElement element, final String name) {
+    return element instanceof PsiMethod ? myMethodCellRenderer.getContainerText((PsiMethod)element, name) 
+                                        : PsiClassListCellRenderer.getContainerTextStatic(element);
+  }",method,
+"  public int getIconFlags() {
+    return myClassListCellRenderer.getIconFlags();
+  }",method,
+"public class TimeTest {
+    private static final GregorianCalendar EPOCH;
+    private static final GregorianCalendar EPOCH_PLUS_DATE_COMPONENT;
+    private static final GregorianCalendar EPOCH_PLUS_TEN_THOUSAND_MILLIS;
+    static {
+        EPOCH = new GregorianCalendar(1970, Calendar.JANUARY, 1, 0, 0, 0);
+        EPOCH.setTimeZone(TimeZone.getTimeZone(""UTC""));
+        EPOCH_PLUS_TEN_THOUSAND_MILLIS = new GregorianCalendar(1970, Calendar.JANUARY, 1, 0, 0, 0);
+        EPOCH_PLUS_TEN_THOUSAND_MILLIS.setTimeZone(TimeZone.getTimeZone(""UTC""));
+        EPOCH_PLUS_TEN_THOUSAND_MILLIS.add(Calendar.MILLISECOND, 10000);
+        EPOCH_PLUS_DATE_COMPONENT = new GregorianCalendar(1970, Calendar.JANUARY, 1, 0, 0, 0);
+        EPOCH_PLUS_DATE_COMPONENT.setTimeZone(TimeZone.getTimeZone(""UTC""));
+        EPOCH_PLUS_DATE_COMPONENT.add(Calendar.DATE, 10000);
+    }
+    @Test
+    public void testBuilder() {
+        Schema plain = Time.SCHEMA;
+        assertEquals(Time.LOGICAL_NAME, plain.name());
+        assertEquals(1, (Object) plain.version());
+    }
+    @Test
+    public void testFromLogical() {
+        assertEquals(0, Time.fromLogical(Time.SCHEMA, EPOCH.getTime()));
+        assertEquals(10000, Time.fromLogical(Time.SCHEMA, EPOCH_PLUS_TEN_THOUSAND_MILLIS.getTime()));
+    }
+    @Test(expected = DataException.class)
+    public void testFromLogicalInvalidSchema() {
+        Time.fromLogical(Time.builder().name(""invalid"").build(), EPOCH.getTime());
+    }
+    @Test(expected = DataException.class)
+    public void testFromLogicalInvalidHasDateComponents() {
+        Time.fromLogical(Time.SCHEMA, EPOCH_PLUS_DATE_COMPONENT.getTime());
+    }
+    @Test
+    public void testToLogical() {
+        assertEquals(EPOCH.getTime(), Time.toLogical(Time.SCHEMA, 0));
+        assertEquals(EPOCH_PLUS_TEN_THOUSAND_MILLIS.getTime(), Time.toLogical(Time.SCHEMA, 10000));
+    }
+    @Test(expected = DataException.class)
+    public void testToLogicalInvalidSchema() {
+        Time.toLogical(Time.builder().name(""invalid"").build(), 0);
+    }
+}",class,
+"    @Test
+    public void testBuilder() {
+        Schema plain = Time.SCHEMA;
+        assertEquals(Time.LOGICAL_NAME, plain.name());
+        assertEquals(1, (Object) plain.version());
+    }",method,
+"    @Test
+    public void testFromLogical() {
+        assertEquals(0, Time.fromLogical(Time.SCHEMA, EPOCH.getTime()));
+        assertEquals(10000, Time.fromLogical(Time.SCHEMA, EPOCH_PLUS_TEN_THOUSAND_MILLIS.getTime()));
+    }",method,
+"    @Test(expected = DataException.class)
+    public void testFromLogicalInvalidSchema() {
+        Time.fromLogical(Time.builder().name(""invalid"").build(), EPOCH.getTime());
+    }",method,
+"    @Test(expected = DataException.class)
+    public void testFromLogicalInvalidHasDateComponents() {
+        Time.fromLogical(Time.SCHEMA, EPOCH_PLUS_DATE_COMPONENT.getTime());
+    }",method,
+"    @Test
+    public void testToLogical() {
+        assertEquals(EPOCH.getTime(), Time.toLogical(Time.SCHEMA, 0));
+        assertEquals(EPOCH_PLUS_TEN_THOUSAND_MILLIS.getTime(), Time.toLogical(Time.SCHEMA, 10000));
+    }",method,
+"    @Test(expected = DataException.class)
+    public void testToLogicalInvalidSchema() {
+        Time.toLogical(Time.builder().name(""invalid"").build(), 0);
+    }",method,
+"abstract public class LongRunningProcess extends Process {
+    final protected String       _description;
+    protected ProcessManager     _manager;
+    protected Thread             _thread;
+    protected int                _progress; // out of 100
+    protected boolean            _canceled;
+    protected LongRunningProcess(String description) {
+        _description = description;
+    }
+    @Override
+    public void cancel() {
+        _canceled = true;
+        if (_thread != null && _thread.isAlive()) {
+            _thread.interrupt();
+        }
+    }
+    @Override
+    public void write(JSONWriter writer, Properties options)
+            throws JSONException {
+        writer.object();
+        writer.key(""id""); writer.value(hashCode());
+        writer.key(""description""); writer.value(_description);
+        writer.key(""immediate""); writer.value(false);
+        writer.key(""status""); writer.value(_thread == null ? ""pending"" : (_thread.isAlive() ? ""running"" : ""done""));
+        writer.key(""progress""); writer.value(_progress);
+        writer.endObject();
+    }
+    @Override
+    public boolean isImmediate() {
+        return false;
+    }
+    @Override
+    public boolean isRunning() {
+        return _thread != null && _thread.isAlive();
+    }
+    @Override
+    public boolean isDone() {
+        return _thread != null && !_thread.isAlive();
+    }
+    @Override
+    public HistoryEntry performImmediate() {
+        throw new RuntimeException(""Not an immediate process"");
+    }
+    @Override
+    public void startPerforming(ProcessManager manager) {
+        if (_thread == null) {
+            _manager = manager;
+            _thread = new Thread(getRunnable());
+            _thread.start();
+        }
+    }
+    abstract protected Runnable getRunnable();
+}",class,
+"    protected LongRunningProcess(String description) {
+        _description = description;
+    }",method,
+"    @Override
+    public void cancel() {
+        _canceled = true;
+        if (_thread != null && _thread.isAlive()) {
+            _thread.interrupt();
+        }
+    }",method,
+"    @Override
+    public void write(JSONWriter writer, Properties options)
+            throws JSONException {
+        writer.object();
+        writer.key(""id""); writer.value(hashCode());
+        writer.key(""description""); writer.value(_description);
+        writer.key(""immediate""); writer.value(false);
+        writer.key(""status""); writer.value(_thread == null ? ""pending"" : (_thread.isAlive() ? ""running"" : ""done""));
+        writer.key(""progress""); writer.value(_progress);
+        writer.endObject();
+    }",method,
+"    @Override
+    public boolean isImmediate() {
+        return false;
+    }",method,
+"    @Override
+    public boolean isRunning() {
+        return _thread != null && _thread.isAlive();
+    }",method,
+"    @Override
+    public boolean isDone() {
+        return _thread != null && !_thread.isAlive();
+    }",method,
+"    @Override
+    public HistoryEntry performImmediate() {
+        throw new RuntimeException(""Not an immediate process"");
+    }",method,
+"    @Override
+    public void startPerforming(ProcessManager manager) {
+        if (_thread == null) {
+            _manager = manager;
+            _thread = new Thread(getRunnable());
+            _thread.start();
+        }
+    }",method,
+"        if (_thread == null) {
+            _manager = manager;
+            _thread = new Thread(getRunnable());
+            _thread.start();
+        }",method,
+"public class FrequenciesTest {
+    private static final double DELTA = 0.0001d;
+    private MetricConfig config;
+    private Time time;
+    private Metrics metrics;
+    @Before
+    public void setup() {
+        config = new MetricConfig().eventWindow(50).samples(2);
+        time = new MockTime();
+        metrics = new Metrics(config, Arrays.asList((MetricsReporter) new JmxReporter()), time, true);
+    }
+    @After
+    public void tearDown() {
+        metrics.close();
+    }
+    @Test(expected = IllegalArgumentException.class)
+    public void testFrequencyCenterValueAboveMax() {
+        new Frequencies(4, 1.0, 4.0,
+                        freq(""1"", 1.0), freq(""2"", 20.0));
+    }
+    @Test(expected = IllegalArgumentException.class)
+    public void testFrequencyCenterValueBelowMin() {
+        new Frequencies(4, 1.0, 4.0,
+                        freq(""1"", 1.0), freq(""2"", -20.0));
+    }
+    @Test(expected = IllegalArgumentException.class)
+    public void testMoreFrequencyParametersThanBuckets() {
+        new Frequencies(1, 1.0, 4.0,
+                        freq(""1"", 1.0), freq(""2"", -20.0));
+    }
+    @Test
+    public void testBooleanFrequencies() {
+        MetricName metricTrue = name(""true"");
+        MetricName metricFalse = name(""false"");
+        Frequencies frequencies = Frequencies.forBooleanValues(metricFalse, metricTrue);
+        final NamedMeasurable falseMetric = frequencies.stats().get(0);
+        final NamedMeasurable trueMetric = frequencies.stats().get(1);
+        // Record 2 windows worth of values
+        for (int i = 0; i != 25; ++i) {
+            frequencies.record(config, 0.0, time.milliseconds());
+        }
+        for (int i = 0; i != 75; ++i) {
+            frequencies.record(config, 1.0, time.milliseconds());
+        }
+        assertEquals(0.25, falseMetric.stat().measure(config, time.milliseconds()), DELTA);
+        assertEquals(0.75, trueMetric.stat().measure(config, time.milliseconds()), DELTA);
+        // Record 2 more windows worth of values
+        for (int i = 0; i != 40; ++i) {
+            frequencies.record(config, 0.0, time.milliseconds());
+        }
+        for (int i = 0; i != 60; ++i) {
+            frequencies.record(config, 1.0, time.milliseconds());
+        }
+        assertEquals(0.40, falseMetric.stat().measure(config, time.milliseconds()), DELTA);
+        assertEquals(0.60, trueMetric.stat().measure(config, time.milliseconds()), DELTA);
+    }
+    @Test
+    @SuppressWarnings(""deprecation"")
+    public void testUseWithMetrics() {
+        MetricName name1 = name(""1"");
+        MetricName name2 = name(""2"");
+        MetricName name3 = name(""3"");
+        MetricName name4 = name(""4"");
+        Frequencies frequencies = new Frequencies(4, 1.0, 4.0,
+                                                  new Frequency(name1, 1.0),
+                                                  new Frequency(name2, 2.0),
+                                                  new Frequency(name3, 3.0),
+                                                  new Frequency(name4, 4.0));
+        Sensor sensor = metrics.sensor(""test"", config);
+        sensor.add(frequencies);
+        Metric metric1 = this.metrics.metrics().get(name1);
+        Metric metric2 = this.metrics.metrics().get(name2);
+        Metric metric3 = this.metrics.metrics().get(name3);
+        Metric metric4 = this.metrics.metrics().get(name4);
+        // Record 2 windows worth of values
+        for (int i = 0; i != 100; ++i) {
+            frequencies.record(config, i % 4 + 1, time.milliseconds());
+        }
+        assertEquals(0.25, metric1.value(), DELTA);
+        assertEquals(0.25, metric2.value(), DELTA);
+        assertEquals(0.25, metric3.value(), DELTA);
+        assertEquals(0.25, metric4.value(), DELTA);
+        // Record 2 windows worth of values
+        for (int i = 0; i != 100; ++i) {
+            frequencies.record(config, i % 2 + 1, time.milliseconds());
+        }
+        assertEquals(0.50, metric1.value(), DELTA);
+        assertEquals(0.50, metric2.value(), DELTA);
+        assertEquals(0.00, metric3.value(), DELTA);
+        assertEquals(0.00, metric4.value(), DELTA);
+        // Record 1 window worth of values to overlap with the last window
+        // that is half 1.0 and half 2.0
+        for (int i = 0; i != 50; ++i) {
+            frequencies.record(config, 4.0, time.milliseconds());
+        }
+        assertEquals(0.25, metric1.value(), DELTA);
+        assertEquals(0.25, metric2.value(), DELTA);
+        assertEquals(0.00, metric3.value(), DELTA);
+        assertEquals(0.50, metric4.value(), DELTA);
+    }
+    protected MetricName name(String metricName) {
+        return new MetricName(metricName, ""group-id"", ""desc"", Collections.<String, String>emptyMap());
+    }
+    protected Frequency freq(String name, double value) {
+        return new Frequency(name(name), value);
+    }
+}",class,
+"    @Before
+    public void setup() {
+        config = new MetricConfig().eventWindow(50).samples(2);
+        time = new MockTime();
+        metrics = new Metrics(config, Arrays.asList((MetricsReporter) new JmxReporter()), time, true);
+    }",method,
+"    @After
+    public void tearDown() {
+        metrics.close();
+    }",method,
+"    @Test(expected = IllegalArgumentException.class)
+    public void testFrequencyCenterValueAboveMax() {
+        new Frequencies(4, 1.0, 4.0,
+                        freq(""1"", 1.0), freq(""2"", 20.0));
+    }",method,
+"    @Test(expected = IllegalArgumentException.class)
+    public void testFrequencyCenterValueBelowMin() {
+        new Frequencies(4, 1.0, 4.0,
+                        freq(""1"", 1.0), freq(""2"", -20.0));
+    }",method,
+"    @Test(expected = IllegalArgumentException.class)
+    public void testMoreFrequencyParametersThanBuckets() {
+        new Frequencies(1, 1.0, 4.0,
+                        freq(""1"", 1.0), freq(""2"", -20.0));
+    }",method,
+"    @Test
+    public void testBooleanFrequencies() {
+        MetricName metricTrue = name(""true"");
+        MetricName metricFalse = name(""false"");
+        Frequencies frequencies = Frequencies.forBooleanValues(metricFalse, metricTrue);
+        final NamedMeasurable falseMetric = frequencies.stats().get(0);
+        final NamedMeasurable trueMetric = frequencies.stats().get(1);
+        // Record 2 windows worth of values
+        for (int i = 0; i != 25; ++i) {
+            frequencies.record(config, 0.0, time.milliseconds());
+        }
+        for (int i = 0; i != 75; ++i) {
+            frequencies.record(config, 1.0, time.milliseconds());
+        }
+        assertEquals(0.25, falseMetric.stat().measure(config, time.milliseconds()), DELTA);
+        assertEquals(0.75, trueMetric.stat().measure(config, time.milliseconds()), DELTA);
+        // Record 2 more windows worth of values
+        for (int i = 0; i != 40; ++i) {
+            frequencies.record(config, 0.0, time.milliseconds());
+        }
+        for (int i = 0; i != 60; ++i) {
+            frequencies.record(config, 1.0, time.milliseconds());
+        }
+        assertEquals(0.40, falseMetric.stat().measure(config, time.milliseconds()), DELTA);
+        assertEquals(0.60, trueMetric.stat().measure(config, time.milliseconds()), DELTA);
+    }",method,
+"        for (int i = 0; i != 25; ++i) {
+            frequencies.record(config, 0.0, time.milliseconds());
+        }",method,
+"        for (int i = 0; i != 75; ++i) {
+            frequencies.record(config, 1.0, time.milliseconds());
+        }",method,
+"        for (int i = 0; i != 40; ++i) {
+            frequencies.record(config, 0.0, time.milliseconds());
+        }",method,
+"        for (int i = 0; i != 60; ++i) {
+            frequencies.record(config, 1.0, time.milliseconds());
+        }",method,
+"    @Test
+    @SuppressWarnings(""deprecation"")
+    public void testUseWithMetrics() {
+        MetricName name1 = name(""1"");
+        MetricName name2 = name(""2"");
+        MetricName name3 = name(""3"");
+        MetricName name4 = name(""4"");
+        Frequencies frequencies = new Frequencies(4, 1.0, 4.0,
+                                                  new Frequency(name1, 1.0),
+                                                  new Frequency(name2, 2.0),
+                                                  new Frequency(name3, 3.0),
+                                                  new Frequency(name4, 4.0));
+        Sensor sensor = metrics.sensor(""test"", config);
+        sensor.add(frequencies);
+        Metric metric1 = this.metrics.metrics().get(name1);
+        Metric metric2 = this.metrics.metrics().get(name2);
+        Metric metric3 = this.metrics.metrics().get(name3);
+        Metric metric4 = this.metrics.metrics().get(name4);
+        // Record 2 windows worth of values
+        for (int i = 0; i != 100; ++i) {
+            frequencies.record(config, i % 4 + 1, time.milliseconds());
+        }
+        assertEquals(0.25, metric1.value(), DELTA);
+        assertEquals(0.25, metric2.value(), DELTA);
+        assertEquals(0.25, metric3.value(), DELTA);
+        assertEquals(0.25, metric4.value(), DELTA);
+        // Record 2 windows worth of values
+        for (int i = 0; i != 100; ++i) {
+            frequencies.record(config, i % 2 + 1, time.milliseconds());
+        }
+        assertEquals(0.50, metric1.value(), DELTA);
+        assertEquals(0.50, metric2.value(), DELTA);
+        assertEquals(0.00, metric3.value(), DELTA);
+        assertEquals(0.00, metric4.value(), DELTA);
+        // Record 1 window worth of values to overlap with the last window
+        // that is half 1.0 and half 2.0
+        for (int i = 0; i != 50; ++i) {
+            frequencies.record(config, 4.0, time.milliseconds());
+        }
+        assertEquals(0.25, metric1.value(), DELTA);
+        assertEquals(0.25, metric2.value(), DELTA);
+        assertEquals(0.00, metric3.value(), DELTA);
+        assertEquals(0.50, metric4.value(), DELTA);
+    }",method,
+"        for (int i = 0; i != 100; ++i) {
+            frequencies.record(config, i % 4 + 1, time.milliseconds());
+        }",method,
+"        for (int i = 0; i != 100; ++i) {
+            frequencies.record(config, i % 2 + 1, time.milliseconds());
+        }",method,
+"        for (int i = 0; i != 50; ++i) {
+            frequencies.record(config, 4.0, time.milliseconds());
+        }",method,
+"    protected MetricName name(String metricName) {
+        return new MetricName(metricName, ""group-id"", ""desc"", Collections.<String, String>emptyMap());
+    }",method,
+"    protected Frequency freq(String name, double value) {
+        return new Frequency(name(name), value);
+    }",method,
+"public class EnvJsEvaluateWorker implements EnvJvEvaluateProtocol {
+    @Override
+    public String process(EnvJsEvaluateSpec spec) {
+        final String targetUrl = spec.getUrl();
+        return parseRhino(spec.getEnvJs(), new DefaultScopeOperation<String>() {
+            @Override
+            public void initContext(Context context) {
+                context.setOptimizationLevel(-1);
+            }
+            @Override
+            public String action(Scriptable scope, Context context) {
+                scope.put(""targetUrl"", scope, targetUrl);
+                context.evaluateString(scope, ""Envjs({scriptTypes: {'': true, 'text/javascript': true}});"", targetUrl, 0, null);
+                Object html = context.evaluateString(scope, ""window.location = targetUrl; document.getElementsByTagName('html')[0].innerHTML;"", targetUrl, 0, null);
+                return (String) html;
+            }
+        });
+    }
+}",class,
+"    @Override
+    public String process(EnvJsEvaluateSpec spec) {
+        final String targetUrl = spec.getUrl();
+        return parseRhino(spec.getEnvJs(), new DefaultScopeOperation<String>() {
+            @Override
+            public void initContext(Context context) {
+                context.setOptimizationLevel(-1);
+            }
+            @Override
+            public String action(Scriptable scope, Context context) {
+                scope.put(""targetUrl"", scope, targetUrl);
+                context.evaluateString(scope, ""Envjs({scriptTypes: {'': true, 'text/javascript': true}});"", targetUrl, 0, null);
+                Object html = context.evaluateString(scope, ""window.location = targetUrl; document.getElementsByTagName('html')[0].innerHTML;"", targetUrl, 0, null);
+                return (String) html;
+            }
+        });
+    }",method,
+"            @Override
+            public void initContext(Context context) {
+                context.setOptimizationLevel(-1);
+            }",method,
+"            @Override
+            public String action(Scriptable scope, Context context) {
+                scope.put(""targetUrl"", scope, targetUrl);
+                context.evaluateString(scope, ""Envjs({scriptTypes: {'': true, 'text/javascript': true}});"", targetUrl, 0, null);
+                Object html = context.evaluateString(scope, ""window.location = targetUrl; document.getElementsByTagName('html')[0].innerHTML;"", targetUrl, 0, null);
+                return (String) html;
+            }",method,
+"public class FileDescriptorByteChannel implements ByteChannel {
+    private final LibC libc;
+    private final int fd;
+    private volatile boolean isOpen = true;
+    private static LibC libc(Ruby runtime) {
+        LibC libc = runtime.getPosix().libc();
+        if (libc == null) {
+            throw runtime.newNotImplementedError(""native access not enabled"");
+        }
+        return libc;
+    }
+    public FileDescriptorByteChannel(Ruby runtime, int fd) {
+        this.fd = fd;
+        this.libc = libc(runtime);
+    }
+    public int read(ByteBuffer dst) throws IOException {
+        if (!isOpen) {
+            throw new IOException(""Not open"");
+        }
+        int n = libc.read(fd, dst, dst.remaining());
+        if (n > 0) {
+            dst.position(dst.position() + n);
+        } else if (n == 0) {
+            return -1; // EOF
+        }
+        return n;
+    }
+    public int write(ByteBuffer src) throws IOException {
+        if (!isOpen) {
+            throw new IOException(""Not open"");
+        }
+        int n = libc.write(fd, src, src.remaining());
+        if (n > 0) {
+            src.position(src.position() + n);
+        }
+        return n;
+    }
+    public boolean isOpen() {
+        return isOpen;
+    }
+    public void close() throws IOException {
+        if (!isOpen) {
+            throw new IllegalStateException(""file already closed"");
+        }
+        isOpen = false;
+        libc.close(fd);
+    }
+}",class,
+"    private static LibC libc(Ruby runtime) {
+        LibC libc = runtime.getPosix().libc();
+        if (libc == null) {
+            throw runtime.newNotImplementedError(""native access not enabled"");
+        }
+        return libc;
+    }",method,
+"        if (libc == null) {
+            throw runtime.newNotImplementedError(""native access not enabled"");
+        }",method,
+"    public FileDescriptorByteChannel(Ruby runtime, int fd) {
+        this.fd = fd;
+        this.libc = libc(runtime);
+    }",method,
+"    public int read(ByteBuffer dst) throws IOException {
+        if (!isOpen) {
+            throw new IOException(""Not open"");
+        }
+        int n = libc.read(fd, dst, dst.remaining());
+        if (n > 0) {
+            dst.position(dst.position() + n);
+        } else if (n == 0) {
+            return -1; // EOF
+        }
+        return n;
+    }",method,
+"        if (!isOpen) {
+            throw new IOException(""Not open"");
+        }",method,
+"        if (n > 0) {
+            dst.position(dst.position() + n);
+        }",method,
+"    public int write(ByteBuffer src) throws IOException {
+        if (!isOpen) {
+            throw new IOException(""Not open"");
+        }
+        int n = libc.write(fd, src, src.remaining());
+        if (n > 0) {
+            src.position(src.position() + n);
+        }
+        return n;
+    }",method,
+"        if (!isOpen) {
+            throw new IOException(""Not open"");
+        }",method,
+"        if (n > 0) {
+            src.position(src.position() + n);
+        }",method,
+"    public boolean isOpen() {
+        return isOpen;
+    }",method,
+"    public void close() throws IOException {
+        if (!isOpen) {
+            throw new IllegalStateException(""file already closed"");
+        }
+        isOpen = false;
+        libc.close(fd);
+    }",method,
+"        if (!isOpen) {
+            throw new IllegalStateException(""file already closed"");
+        }",method,
+"public class IRManager {
+    public static final String SAFE_COMPILER_PASSES = """";
+    public static final String DEFAULT_BUILD_PASSES = """";
+    public static final String DEFAULT_JIT_PASSES = ""LocalOptimizationPass,DeadCodeElimination,OptimizeDynScopesPass,OptimizeDelegationPass,AddCallProtocolInstructions,AddMissingInitsPass"";
+    public static final String DEFAULT_INLINING_COMPILER_PASSES = ""LocalOptimizationPass"";
+    private final CompilerPass deadCodeEliminationPass = new DeadCodeElimination();
+    private final CompilerPass optimizeDynScopesPass = new OptimizeDynScopesPass();
+    private final CompilerPass optimizeDelegationPass = new OptimizeDelegationPass();
+    private int dummyMetaClassCount = 0;
+    private final IRModuleBody object = new IRClassBody(this, null, ""Object"", 0, null);
+    private final Nil nil = new Nil();
+    private final Boolean tru = new Boolean(true);
+    private final Boolean fals = new Boolean(false);
+    private final StandardError standardError = new StandardError();
+    public final ToggleBacktraceInstr needsBacktrace = new ToggleBacktraceInstr(true);
+    public final ToggleBacktraceInstr needsNoBacktrace = new ToggleBacktraceInstr(false);
+    // Listeners for debugging and testing of IR
+    private Set<CompilerPassListener> passListeners = new HashSet<CompilerPassListener>();
+    private CompilerPassListener defaultListener = new BasicCompilerPassListener();
+    private InstructionsListener instrsListener = null;
+    private IRScopeListener irScopeListener = null;
+    // FIXME: Eventually make these attrs into either a) set b) part of state machine
+    private List<CompilerPass> compilerPasses;
+    private List<CompilerPass> inliningCompilerPasses;
+    private List<CompilerPass> jitPasses;
+    private List<CompilerPass> safePasses;
+    private final RubyInstanceConfig config;
+    // If true then code will not execute (see ir/ast tool)
+    private boolean dryRun = false;
+    public IRManager(RubyInstanceConfig config) {
+        this.config = config;
+        compilerPasses = CompilerPass.getPassesFromString(RubyInstanceConfig.IR_COMPILER_PASSES, DEFAULT_BUILD_PASSES);
+        inliningCompilerPasses = CompilerPass.getPassesFromString(RubyInstanceConfig.IR_COMPILER_PASSES, DEFAULT_INLINING_COMPILER_PASSES);
+        jitPasses = CompilerPass.getPassesFromString(RubyInstanceConfig.IR_JIT_PASSES, DEFAULT_JIT_PASSES);
+        safePasses = CompilerPass.getPassesFromString(null, SAFE_COMPILER_PASSES);
+        if (RubyInstanceConfig.IR_DEBUG_IGV != null) instrsListener = new IGVInstrListener();
+    }
+    public boolean isDryRun() {
+        return dryRun;
+    }
+    public void setDryRun(boolean value) {
+        this.dryRun = value;
+    }
+    public Nil getNil() {
+        return nil;
+    }
+    public StandardError getStandardError() {
+        return standardError;
+    }
+    public org.jruby.ir.operands.Boolean getTrue() {
+        return tru;
+    }
+    public org.jruby.ir.operands.Boolean getFalse() {
+        return fals;
+    }
+    public IRModuleBody getObject() {
+        return object;
+    }
+    public ToggleBacktraceInstr needsBacktrace(boolean needsIt) {
+        return needsIt ? needsBacktrace : needsNoBacktrace;
+    }
+    public CompilerPassScheduler schedulePasses() {
+        return schedulePasses(compilerPasses);
+    }
+    public static CompilerPassScheduler schedulePasses(final List<CompilerPass> passes) {
+        CompilerPassScheduler scheduler = new CompilerPassScheduler() {
+            private Iterator<CompilerPass> iterator;
+            {
+                this.iterator = passes.iterator();
+            }
+            @Override
+            public Iterator<CompilerPass> iterator() {
+                return this.iterator;
+            }
+        };
+        return scheduler;
+    }
+    public List<CompilerPass> getCompilerPasses(IRScope scope) {
+        return compilerPasses;
+    }
+    public List<CompilerPass> getInliningCompilerPasses(IRScope scope) {
+        return inliningCompilerPasses;
+    }
+    public List<CompilerPass> getJITPasses(IRScope scope) {
+        return jitPasses;
+    }
+    public List<CompilerPass> getSafePasses(IRScope scope) {
+        return safePasses;
+    }
+    public Set<CompilerPassListener> getListeners() {
+        // FIXME: This is ugly but we want to conditionalize output based on JRuby module setting/unsetting
+        if (RubyInstanceConfig.IR_COMPILER_DEBUG) {
+            addListener(defaultListener);
+        } else {
+            removeListener(defaultListener);
+        }
+        return passListeners;
+    }
+    public InstructionsListener getInstructionsListener() {
+        return instrsListener;
+    }
+    public IRScopeListener getIRScopeListener() {
+        return irScopeListener;
+    }
+    public void addListener(CompilerPassListener listener) {
+        passListeners.add(listener);
+    }
+    public void removeListener(CompilerPassListener listener) {
+        passListeners.remove(listener);
+    }
+    public void addListener(InstructionsListener listener) {
+        if (RubyInstanceConfig.IR_COMPILER_DEBUG || RubyInstanceConfig.IR_VISUALIZER) {
+            if (instrsListener != null) {
+                throw new RuntimeException(""InstructionsListener is set and other are currently not allowed"");
+            }
+            instrsListener = listener;
+        }
+    }
+    public void removeListener(InstructionsListener listener) {
+        if (instrsListener.equals(listener)) instrsListener = null;
+    }
+    public void addListener(IRScopeListener listener) {
+        if (RubyInstanceConfig.IR_COMPILER_DEBUG || RubyInstanceConfig.IR_VISUALIZER) {
+            if (irScopeListener != null) {
+                throw new RuntimeException(""IRScopeListener is set and other are currently not allowed"");
+            }
+            irScopeListener = listener;
+        }
+    }
+    public LineNumberInstr newLineNumber(int line) {
+        if (line >= lineNumbers.length-1) growLineNumbersPool(line);
+        if (line < 0) line = 0;
+        LineNumberInstr tempVar = lineNumbers[line];
+        if (tempVar == null) {
+            tempVar = new LineNumberInstr(line);
+            lineNumbers[line] = tempVar;
+        }
+        return tempVar;
+    }
+    private ReceiveSelfInstr receiveSelfInstr = new ReceiveSelfInstr(Self.SELF);
+    public ReceiveSelfInstr getReceiveSelfInstr() {
+        return receiveSelfInstr;
+    }
+    private LineNumberInstr[] lineNumbers = new LineNumberInstr[3000];
+    protected LineNumberInstr[] growLineNumbersPool(int index) {
+        int newLength = index * 2;
+        LineNumberInstr[] newPool = new LineNumberInstr[newLength];
+        System.arraycopy(lineNumbers, 0, newPool, 0, lineNumbers.length);
+        lineNumbers = newPool;
+        return newPool;
+    }
+    public void removeListener(IRScopeListener listener) {
+        if (irScopeListener.equals(listener)) irScopeListener = null;
+    }
+    public String getMetaClassName() {
+        return ""<DUMMY_MC:"" + dummyMetaClassCount++ + "">"";
+    }
+    private TemporaryLocalVariable[] temporaryLocalVariables = new TemporaryLocalVariable[1600];
+    protected TemporaryLocalVariable[] growTemporaryVariablePool(int index) {
+        int newLength = index * 2;
+        TemporaryLocalVariable[] newPool = new TemporaryLocalVariable[newLength];
+        System.arraycopy(temporaryLocalVariables, 0, newPool, 0, temporaryLocalVariables.length);
+        temporaryLocalVariables = newPool;
+        return newPool;
+    }
+    // FIXME: Consider IRBuilder not using so many temporary variables for literal initialization.  This is the
+    // vast majority of high index temp variables.
+    public TemporaryLocalVariable newTemporaryLocalVariable(int index) {
+        if (index >= temporaryLocalVariables.length-1) growTemporaryVariablePool(index);
+        TemporaryLocalVariable tempVar = temporaryLocalVariables[index];
+        if (tempVar == null) {
+            tempVar = new TemporaryLocalVariable(index);
+            temporaryLocalVariables[index] = tempVar;
+        }
+        return tempVar;
+    }
+    protected void optimizeIfSimpleScope(IRScope scope) {
+        // We cannot pick the passes if we want an explicit set to run.
+        if (RubyInstanceConfig.IR_COMPILER_PASSES != null) return;
+        EnumSet<IRFlags> flags = scope.getFlags();
+        if (!scope.isUnsafeScope() && !flags.contains(REQUIRES_DYNSCOPE)) {
+            if (flags.contains(RECEIVES_CLOSURE_ARG)) optimizeDelegationPass.run(scope);
+            deadCodeEliminationPass.run(scope);
+            optimizeDynScopesPass.run(scope);
+        }
+    }
+    public RubyInstanceConfig getInstanceConfig() {
+        return config;
+    }
+}",class,
+"    public IRManager(RubyInstanceConfig config) {
+        this.config = config;
+        compilerPasses = CompilerPass.getPassesFromString(RubyInstanceConfig.IR_COMPILER_PASSES, DEFAULT_BUILD_PASSES);
+        inliningCompilerPasses = CompilerPass.getPassesFromString(RubyInstanceConfig.IR_COMPILER_PASSES, DEFAULT_INLINING_COMPILER_PASSES);
+        jitPasses = CompilerPass.getPassesFromString(RubyInstanceConfig.IR_JIT_PASSES, DEFAULT_JIT_PASSES);
+        safePasses = CompilerPass.getPassesFromString(null, SAFE_COMPILER_PASSES);
+        if (RubyInstanceConfig.IR_DEBUG_IGV != null) instrsListener = new IGVInstrListener();
+    }",method,
+"    public boolean isDryRun() {
+        return dryRun;
+    }",method,
+"    public void setDryRun(boolean value) {
+        this.dryRun = value;
+    }",method,
+"    public Nil getNil() {
+        return nil;
+    }",method,
+"    public StandardError getStandardError() {
+        return standardError;
+    }",method,
+"    public org.jruby.ir.operands.Boolean getTrue() {
+        return tru;
+    }",method,
+"    public org.jruby.ir.operands.Boolean getFalse() {
+        return fals;
+    }",method,
+"    public IRModuleBody getObject() {
+        return object;
+    }",method,
+"    public ToggleBacktraceInstr needsBacktrace(boolean needsIt) {
+        return needsIt ? needsBacktrace : needsNoBacktrace;
+    }",method,
+"    public CompilerPassScheduler schedulePasses() {
+        return schedulePasses(compilerPasses);
+    }",method,
+"    public static CompilerPassScheduler schedulePasses(final List<CompilerPass> passes) {
+        CompilerPassScheduler scheduler = new CompilerPassScheduler() {
+            private Iterator<CompilerPass> iterator;
+            {
+                this.iterator = passes.iterator();
+            }
+            @Override
+            public Iterator<CompilerPass> iterator() {
+                return this.iterator;
+            }
+        };
+        return scheduler;
+    }",method,
+"            @Override
+            public Iterator<CompilerPass> iterator() {
+                return this.iterator;
+            }",method,
+"    public List<CompilerPass> getCompilerPasses(IRScope scope) {
+        return compilerPasses;
+    }",method,
+"    public List<CompilerPass> getInliningCompilerPasses(IRScope scope) {
+        return inliningCompilerPasses;
+    }",method,
+"    public List<CompilerPass> getJITPasses(IRScope scope) {
+        return jitPasses;
+    }",method,
+"    public List<CompilerPass> getSafePasses(IRScope scope) {
+        return safePasses;
+    }",method,

@@ -1,0 +1,1347 @@
+code_snippet,type,score
+"    public void test_1() throws Exception {
+        Model object = new Model();
+        object.value = ""<"";
+        String text = JSON.toJSONString(object, SerializerFeature.BrowserSecure);
+//        assertEquals(""{\""value\"":\""&lt;script&gt;alert(1);&lt;\\/script&gt;\""}"", text);
+        assertEquals(""{\""value\"":\""\\u003C\""}"", text);
+        Model object1 = JSON.parseObject(text, Model.class);
+        assertEquals(object.value, object1.value);
+    }",method,
+"    public void test_2() throws Exception {
+        Model object = new Model();
+        object.value = ""<script>"";
+        String text = JSON.toJSONString(object, SerializerFeature.BrowserSecure);
+//        assertEquals(""{\""value\"":\""&lt;script&gt;alert(1);&lt;\\/script&gt;\""}"", text);
+        assertEquals(""{\""value\"":\""\\u003Cscript\\u003E\""}"", text);
+        Model object1 = JSON.parseObject(text, Model.class);
+        assertEquals(object.value, object1.value);
+    }",method,
+"    public void test_3() throws Exception {
+        StringBuilder buf = new StringBuilder();
+        for (int i = 0; i < 500; i++) {
+            buf.append(""<script>"");
+        }
+        StringBuilder buf1 = new StringBuilder();
+        buf1.append(""{\""value\"":\"""");
+        for (int i = 0; i < 500; i++) {
+            buf1.append(""\\u003Cscript\\u003E"");
+        }
+        buf1.append(""\""}"");
+        Model object = new Model();
+        object.value = buf.toString();
+        StringWriter out = new StringWriter();
+        JSONWriter writer = new JSONWriter(out);
+        writer.config(SerializerFeature.BrowserSecure, true);
+        writer.writeObject(object);
+        writer.flush();
+        assertEquals(buf1.toString(), out.toString());
+    }",method,
+"        for (int i = 0; i < 500; i++) {
+            buf.append(""<script>"");
+        }",method,
+"        for (int i = 0; i < 500; i++) {
+            buf1.append(""\\u003Cscript\\u003E"");
+        }",method,
+"    public void test_4() throws Exception {
+        String text = JSON.toJSONString(new Model(""(""), SerializerFeature.BrowserSecure);
+        assertEquals(""{\""value\"":\""\\u0028\""}"", text);
+    }",method,
+"    public void test_5() throws Exception {
+        String text = JSON.toJSONString(new Model("")""), SerializerFeature.BrowserSecure);
+        assertEquals(""{\""value\"":\""\\u0029\""}"", text);
+    }",method,
+"        public Model() {
+        }",method,
+"        public Model(String value) {
+            this.value = value;
+        }",method,
+"	public CompcPreLink(Map<String, VirtualFile> rbFiles, List<String> defaults, 
+			boolean hidePotentialMissingSkinsWarning)
+	{
+		this.rbFiles = rbFiles;
+		this.defaults = defaults;
+		this.hidePotentialMissingSkinsWarning = hidePotentialMissingSkinsWarning;
+	}",method,
+"    public boolean run(List<Source> sources, List<CompilationUnit> units,
+                    FileSpec fileSpec, SourceList sourceList, SourcePath sourcePath, ResourceBundlePath bundlePath,
+                    ResourceContainer resources, SymbolTable symbolTable, CompilerSwcContext swcContext,
+                    NameMappings nameMappings, Configuration configuration)
+    {
+    	postGenerateExtraSwcCode(sources, units, symbolTable, sourceList, sourcePath, bundlePath, resources, swcContext, configuration);
+	    processResourceBundles(rbFiles, configuration, sources, defaults, symbolTable, bundlePath, swcContext);
+        // SDK-17411 - return false so that we run preLink only once for compc.
+	    return false;
+    }",method,
+"    public void postRun(List<Source> sources, List<CompilationUnit> units,
+                        ResourceContainer resources,
+                        SymbolTable symbolTable,
+                        CompilerSwcContext swcContext,
+                        NameMappings nameMappings,
+                        Configuration configuration)
+    {
+        int highestMinimumSupportedVersion = (MxmlConfiguration.EARLIEST_MAJOR_VERSION << 24);
+        boolean isMinimumSupportedVersionConfigured = 
+            configuration.getCompilerConfiguration().getMxmlConfiguration().isMinimumSupportedVersionConfigured();
+        Set<String> processedSwcs = new HashSet<String>();
+        Set externs = configuration.getExterns();
+        for (CompilationUnit u : units)
+        {
+            Set<Name> dependencies = new HashSet<Name>();
+            dependencies.addAll(u.inheritance);
+            dependencies.addAll(u.namespaces);
+            dependencies.addAll(u.expressions);
+            dependencies.addAll(u.types);
+            for (Name name : dependencies)
+            {
+                if (name instanceof QName)
+                {
+                    Source dependent = symbolTable.findSourceByQName((QName) name);
+                    if ((dependent != null) && dependent.isSwcScriptOwner())
+                    {
+                        SwcScript swcScript = (SwcScript) dependent.getOwner();
+                        Swc swc = swcScript.getLibrary().getSwc();
+                        // Make sure each dependency's minimum
+                        // supported version is less than or equal to
+                        // the compatibility version.
+                        if (highestMinimumSupportedVersion < swc.getVersions().getMinimumVersion() &&
+                            configuration.getCompilerConfiguration().enableSwcVersionFiltering())
+                        {
+                            highestMinimumSupportedVersion = swc.getVersions().getMinimumVersion();
+                            if (isMinimumSupportedVersionConfigured &&
+                                configuration.getMinimumSupportedVersion() < highestMinimumSupportedVersion)
+                            {
+                                HigherMinimumSupportedVersionRequired message =
+                                    new HigherMinimumSupportedVersionRequired(swc.getLocation(),
+                                                                              swc.getVersions().getMinimumVersionString());
+                                ThreadLocalToolkit.log(message, u.getSource());
+                            }
+                        }
+                    }
+                }
+            }
+            // Warn about linked in dependent SWC's, which have style
+            // defaults.  Linking in dependent SWC's pulls in
+            // definitions without their associated style defaults and
+            // their dependencies.  This can lead to missing skins at
+            // runtime for applications, which compile against the
+            // output SWC.  Merging the style defaults isn't enough,
+            // because styles can bring in additional dependencies, so
+            // in order to get a complete dependency set, we would
+            // have to compile the style defaults and our current
+            // design requires deferring that until application
+            // compile time.  Therefore the best option is to
+            // recommend that the user put the dependent SWC in the
+            // external-library-path of the output SWC compilation and
+            // in the library-path of downstream application
+            // compilations.
+            Source source = u.getSource();
+            if (source.isSwcScriptOwner() &&
+                !PreLink.isCompilationUnitExternal(u, externs) &&
+                !source.isInternal() && !hidePotentialMissingSkinsWarning)
+            {
+                SwcScript swcScript = (SwcScript) source.getOwner();
+                Swc swc = swcScript.getLibrary().getSwc();
+                String location = swc.getLocation();
+                if (!processedSwcs.contains(location))
+                {
+                    processedSwcs.add(location);
+                    boolean foundDefaultsCss = false;
+                    for (VirtualFile catalogFile : swc.getCatalogFiles().values())
+                    {
+                        String catalogFileName = catalogFile.getName();
+                        int dollarSignIndex = catalogFileName.indexOf(""$"");
+                        if ((dollarSignIndex != -1) &&
+                            catalogFileName.startsWith(DEFAULTS, dollarSignIndex + 1) &&
+                            catalogFileName.endsWith(DOT_CSS))
+                        {
+                            foundDefaultsCss = true;
+                        }
+                    }
+                    if (foundDefaultsCss)
+                    {
+                        PotentialForMissingSkins message = new PotentialForMissingSkins(swc.getLocation());
+                        ThreadLocalToolkit.log(message);
+                    }
+                }                        
+            }
+        }
+        if (!isMinimumSupportedVersionConfigured)
+        {
+            configuration.getCompilerConfiguration().getMxmlConfiguration().setMinimumSupportedVersion(highestMinimumSupportedVersion);
+        }
+    }",method,
+"        for (CompilationUnit u : units)
+        {
+            Set<Name> dependencies = new HashSet<Name>();
+            dependencies.addAll(u.inheritance);
+            dependencies.addAll(u.namespaces);
+            dependencies.addAll(u.expressions);
+            dependencies.addAll(u.types);
+            for (Name name : dependencies)
+            {
+                if (name instanceof QName)
+                {
+                    Source dependent = symbolTable.findSourceByQName((QName) name);
+                    if ((dependent != null) && dependent.isSwcScriptOwner())
+                    {
+                        SwcScript swcScript = (SwcScript) dependent.getOwner();
+                        Swc swc = swcScript.getLibrary().getSwc();
+                        // Make sure each dependency's minimum
+                        // supported version is less than or equal to
+                        // the compatibility version.
+                        if (highestMinimumSupportedVersion < swc.getVersions().getMinimumVersion() &&
+                            configuration.getCompilerConfiguration().enableSwcVersionFiltering())
+                        {
+                            highestMinimumSupportedVersion = swc.getVersions().getMinimumVersion();
+                            if (isMinimumSupportedVersionConfigured &&
+                                configuration.getMinimumSupportedVersion() < highestMinimumSupportedVersion)
+                            {
+                                HigherMinimumSupportedVersionRequired message =
+                                    new HigherMinimumSupportedVersionRequired(swc.getLocation(),
+                                                                              swc.getVersions().getMinimumVersionString());
+                                ThreadLocalToolkit.log(message, u.getSource());
+                            }
+                        }
+                    }
+                }
+            }
+            // Warn about linked in dependent SWC's, which have style
+            // defaults.  Linking in dependent SWC's pulls in
+            // definitions without their associated style defaults and
+            // their dependencies.  This can lead to missing skins at
+            // runtime for applications, which compile against the
+            // output SWC.  Merging the style defaults isn't enough,
+            // because styles can bring in additional dependencies, so
+            // in order to get a complete dependency set, we would
+            // have to compile the style defaults and our current
+            // design requires deferring that until application
+            // compile time.  Therefore the best option is to
+            // recommend that the user put the dependent SWC in the
+            // external-library-path of the output SWC compilation and
+            // in the library-path of downstream application
+            // compilations.
+            Source source = u.getSource();
+            if (source.isSwcScriptOwner() &&
+                !PreLink.isCompilationUnitExternal(u, externs) &&
+                !source.isInternal() && !hidePotentialMissingSkinsWarning)
+            {
+                SwcScript swcScript = (SwcScript) source.getOwner();
+                Swc swc = swcScript.getLibrary().getSwc();
+                String location = swc.getLocation();
+                if (!processedSwcs.contains(location))
+                {
+                    processedSwcs.add(location);
+                    boolean foundDefaultsCss = false;
+                    for (VirtualFile catalogFile : swc.getCatalogFiles().values())
+                    {
+                        String catalogFileName = catalogFile.getName();
+                        int dollarSignIndex = catalogFileName.indexOf(""$"");
+                        if ((dollarSignIndex != -1) &&
+                            catalogFileName.startsWith(DEFAULTS, dollarSignIndex + 1) &&
+                            catalogFileName.endsWith(DOT_CSS))
+                        {
+                            foundDefaultsCss = true;
+                        }
+                    }
+                    if (foundDefaultsCss)
+                    {
+                        PotentialForMissingSkins message = new PotentialForMissingSkins(swc.getLocation());
+                        ThreadLocalToolkit.log(message);
+                    }
+                }                        
+            }
+        }",method,
+"            for (Name name : dependencies)
+            {
+                if (name instanceof QName)
+                {
+                    Source dependent = symbolTable.findSourceByQName((QName) name);
+                    if ((dependent != null) && dependent.isSwcScriptOwner())
+                    {
+                        SwcScript swcScript = (SwcScript) dependent.getOwner();
+                        Swc swc = swcScript.getLibrary().getSwc();
+                        // Make sure each dependency's minimum
+                        // supported version is less than or equal to
+                        // the compatibility version.
+                        if (highestMinimumSupportedVersion < swc.getVersions().getMinimumVersion() &&
+                            configuration.getCompilerConfiguration().enableSwcVersionFiltering())
+                        {
+                            highestMinimumSupportedVersion = swc.getVersions().getMinimumVersion();
+                            if (isMinimumSupportedVersionConfigured &&
+                                configuration.getMinimumSupportedVersion() < highestMinimumSupportedVersion)
+                            {
+                                HigherMinimumSupportedVersionRequired message =
+                                    new HigherMinimumSupportedVersionRequired(swc.getLocation(),
+                                                                              swc.getVersions().getMinimumVersionString());
+                                ThreadLocalToolkit.log(message, u.getSource());
+                            }
+                        }
+                    }
+                }
+            }",method,
+"                if (name instanceof QName)
+                {
+                    Source dependent = symbolTable.findSourceByQName((QName) name);
+                    if ((dependent != null) && dependent.isSwcScriptOwner())
+                    {
+                        SwcScript swcScript = (SwcScript) dependent.getOwner();
+                        Swc swc = swcScript.getLibrary().getSwc();
+                        // Make sure each dependency's minimum
+                        // supported version is less than or equal to
+                        // the compatibility version.
+                        if (highestMinimumSupportedVersion < swc.getVersions().getMinimumVersion() &&
+                            configuration.getCompilerConfiguration().enableSwcVersionFiltering())
+                        {
+                            highestMinimumSupportedVersion = swc.getVersions().getMinimumVersion();
+                            if (isMinimumSupportedVersionConfigured &&
+                                configuration.getMinimumSupportedVersion() < highestMinimumSupportedVersion)
+                            {
+                                HigherMinimumSupportedVersionRequired message =
+                                    new HigherMinimumSupportedVersionRequired(swc.getLocation(),
+                                                                              swc.getVersions().getMinimumVersionString());
+                                ThreadLocalToolkit.log(message, u.getSource());
+                            }
+                        }
+                    }
+                }",method,
+"                    if (foundDefaultsCss)
+                    {
+                        PotentialForMissingSkins message = new PotentialForMissingSkins(swc.getLocation());
+                        ThreadLocalToolkit.log(message);
+                    }",method,
+"        if (!isMinimumSupportedVersionConfigured)
+        {
+            configuration.getCompilerConfiguration().getMxmlConfiguration().setMinimumSupportedVersion(highestMinimumSupportedVersion);
+        }",method,
+"    			if (isAccessible) {
+        			Set<String> unitAccessibilityList = u.getAccessibilityClasses();
+        			if (unitAccessibilityList != null)
+        			{
+        				accessibilityList.addAll(unitAccessibilityList);
+        			}
+    			}",method,
+"        			if (unitAccessibilityList != null)
+        			{
+        				accessibilityList.addAll(unitAccessibilityList);
+        			}",method,
+"public class WebpTranscodeProducer implements Producer<EncodedImage> {
+  public static final String PRODUCER_NAME = ""WebpTranscodeProducer"";
+  private static final int DEFAULT_JPEG_QUALITY = 80;
+  private final Executor mExecutor;
+  private final PooledByteBufferFactory mPooledByteBufferFactory;
+  private final Producer<EncodedImage> mInputProducer;
+  public WebpTranscodeProducer(
+      Executor executor,
+      PooledByteBufferFactory pooledByteBufferFactory,
+      Producer<EncodedImage> inputProducer) {
+    mExecutor = Preconditions.checkNotNull(executor);
+    mPooledByteBufferFactory = Preconditions.checkNotNull(pooledByteBufferFactory);
+    mInputProducer = Preconditions.checkNotNull(inputProducer);
+  }
+  @Override
+  public void produceResults(final Consumer<EncodedImage> consumer, final ProducerContext context) {
+    mInputProducer.produceResults(new WebpTranscodeConsumer(consumer, context), context);
+  }
+  private class WebpTranscodeConsumer extends DelegatingConsumer<EncodedImage, EncodedImage> {
+    private final ProducerContext mContext;
+    private TriState mShouldTranscodeWhenFinished;
+    public WebpTranscodeConsumer(
+        final Consumer<EncodedImage> consumer,
+        final ProducerContext context) {
+      super(consumer);
+      mContext = context;
+      mShouldTranscodeWhenFinished = TriState.UNSET;
+    }
+    @Override
+    protected void onNewResultImpl(@Nullable EncodedImage newResult, @Status int status) {
+      // try to determine if the last result should be transformed
+      if (mShouldTranscodeWhenFinished == TriState.UNSET && newResult != null) {
+        mShouldTranscodeWhenFinished = shouldTranscode(newResult);
+      }
+      // just propagate result if it shouldn't be transformed
+      if (mShouldTranscodeWhenFinished == TriState.NO) {
+        getConsumer().onNewResult(newResult, status);
+        return;
+      }
+      if (isLast(status)) {
+        if (mShouldTranscodeWhenFinished == TriState.YES && newResult != null) {
+          transcodeLastResult(newResult, getConsumer(), mContext);
+        } else {
+          getConsumer().onNewResult(newResult, status);
+        }
+      }
+    }
+  }
+  private void transcodeLastResult(
+      final EncodedImage originalResult,
+      final Consumer<EncodedImage> consumer,
+      final ProducerContext producerContext) {
+    Preconditions.checkNotNull(originalResult);
+    final EncodedImage encodedImageCopy = EncodedImage.cloneOrNull(originalResult);
+    final StatefulProducerRunnable<EncodedImage> runnable =
+        new StatefulProducerRunnable<EncodedImage>(
+            consumer,
+            producerContext.getListener(),
+            PRODUCER_NAME,
+            producerContext.getId()) {
+          @Override
+          protected EncodedImage getResult() throws Exception {
+            PooledByteBufferOutputStream outputStream = mPooledByteBufferFactory.newOutputStream();
+            try {
+              doTranscode(encodedImageCopy, outputStream);
+              CloseableReference<PooledByteBuffer> ref =
+                  CloseableReference.of(outputStream.toByteBuffer());
+              try {
+                EncodedImage encodedImage = new EncodedImage(ref);
+                encodedImage.copyMetaDataFrom(encodedImageCopy);
+                return encodedImage;
+              } finally {
+                CloseableReference.closeSafely(ref);
+              }
+            } finally {
+              outputStream.close();
+            }
+          }
+          @Override
+          protected void disposeResult(EncodedImage result) {
+            EncodedImage.closeSafely(result);
+          }
+          @Override
+          protected void onSuccess(EncodedImage result) {
+            EncodedImage.closeSafely(encodedImageCopy);
+            super.onSuccess(result);
+          }
+          @Override
+          protected void onFailure(Exception e) {
+            EncodedImage.closeSafely(encodedImageCopy);
+            super.onFailure(e);
+          }
+          @Override
+          protected void onCancellation() {
+            EncodedImage.closeSafely(encodedImageCopy);
+            super.onCancellation();
+          }
+        };
+    mExecutor.execute(runnable);
+  }
+  private static TriState shouldTranscode(final EncodedImage encodedImage) {
+    Preconditions.checkNotNull(encodedImage);
+    ImageFormat imageFormat = ImageFormatChecker.getImageFormat_WrapIOException(
+        encodedImage.getInputStream());
+    if (DefaultImageFormats.isStaticWebpFormat(imageFormat)) {
+      final WebpTranscoder webpTranscoder = WebpTranscoderFactory.getWebpTranscoder();
+      if (webpTranscoder == null) {
+        return TriState.NO;
+      }
+      return TriState.valueOf(
+              !webpTranscoder.isWebpNativelySupported(imageFormat));
+    } else if (imageFormat == ImageFormat.UNKNOWN) {
+      // the image format might be unknown because we haven't fetched the whole header yet,
+      // in which case the decision whether to transcode or not cannot be made yet
+      return TriState.UNSET;
+    }
+    // if the image format is known, but it is not WebP, then the image shouldn't be transcoded
+    return TriState.NO;
+  }
+  private static void doTranscode(
+      final EncodedImage encodedImage,
+      final PooledByteBufferOutputStream outputStream) throws Exception {
+    InputStream imageInputStream = encodedImage.getInputStream();
+    ImageFormat imageFormat = ImageFormatChecker.getImageFormat_WrapIOException(imageInputStream);
+    if (imageFormat == DefaultImageFormats.WEBP_SIMPLE ||
+        imageFormat == DefaultImageFormats.WEBP_EXTENDED) {
+        WebpTranscoderFactory.getWebpTranscoder().transcodeWebpToJpeg(
+            imageInputStream,
+            outputStream,
+            DEFAULT_JPEG_QUALITY);
+      encodedImage.setImageFormat(DefaultImageFormats.JPEG);
+    } else if (imageFormat == DefaultImageFormats.WEBP_LOSSLESS ||
+        imageFormat == DefaultImageFormats.WEBP_EXTENDED_WITH_ALPHA) {
+      // In this case we always transcode to PNG
+      WebpTranscoderFactory.getWebpTranscoder()
+          .transcodeWebpToPng(imageInputStream, outputStream);
+      encodedImage.setImageFormat(DefaultImageFormats.PNG);
+    } else {
+      throw new IllegalArgumentException(""Wrong image format"");
+    }
+  }
+}",class,
+"  private class WebpTranscodeConsumer extends DelegatingConsumer<EncodedImage, EncodedImage> {
+    private final ProducerContext mContext;
+    private TriState mShouldTranscodeWhenFinished;
+    public WebpTranscodeConsumer(
+        final Consumer<EncodedImage> consumer,
+        final ProducerContext context) {
+      super(consumer);
+      mContext = context;
+      mShouldTranscodeWhenFinished = TriState.UNSET;
+    }
+    @Override
+    protected void onNewResultImpl(@Nullable EncodedImage newResult, @Status int status) {
+      // try to determine if the last result should be transformed
+      if (mShouldTranscodeWhenFinished == TriState.UNSET && newResult != null) {
+        mShouldTranscodeWhenFinished = shouldTranscode(newResult);
+      }
+      // just propagate result if it shouldn't be transformed
+      if (mShouldTranscodeWhenFinished == TriState.NO) {
+        getConsumer().onNewResult(newResult, status);
+        return;
+      }
+      if (isLast(status)) {
+        if (mShouldTranscodeWhenFinished == TriState.YES && newResult != null) {
+          transcodeLastResult(newResult, getConsumer(), mContext);
+        } else {
+          getConsumer().onNewResult(newResult, status);
+        }
+      }
+    }
+  }",class,
+"  public WebpTranscodeProducer(
+      Executor executor,
+      PooledByteBufferFactory pooledByteBufferFactory,
+      Producer<EncodedImage> inputProducer) {
+    mExecutor = Preconditions.checkNotNull(executor);
+    mPooledByteBufferFactory = Preconditions.checkNotNull(pooledByteBufferFactory);
+    mInputProducer = Preconditions.checkNotNull(inputProducer);
+  }",method,
+"  @Override
+  public void produceResults(final Consumer<EncodedImage> consumer, final ProducerContext context) {
+    mInputProducer.produceResults(new WebpTranscodeConsumer(consumer, context), context);
+  }",method,
+"    public WebpTranscodeConsumer(
+        final Consumer<EncodedImage> consumer,
+        final ProducerContext context) {
+      super(consumer);
+      mContext = context;
+      mShouldTranscodeWhenFinished = TriState.UNSET;
+    }",method,
+"    @Override
+    protected void onNewResultImpl(@Nullable EncodedImage newResult, @Status int status) {
+      // try to determine if the last result should be transformed
+      if (mShouldTranscodeWhenFinished == TriState.UNSET && newResult != null) {
+        mShouldTranscodeWhenFinished = shouldTranscode(newResult);
+      }
+      // just propagate result if it shouldn't be transformed
+      if (mShouldTranscodeWhenFinished == TriState.NO) {
+        getConsumer().onNewResult(newResult, status);
+        return;
+      }
+      if (isLast(status)) {
+        if (mShouldTranscodeWhenFinished == TriState.YES && newResult != null) {
+          transcodeLastResult(newResult, getConsumer(), mContext);
+        } else {
+          getConsumer().onNewResult(newResult, status);
+        }
+      }
+    }",method,
+"      if (mShouldTranscodeWhenFinished == TriState.UNSET && newResult != null) {
+        mShouldTranscodeWhenFinished = shouldTranscode(newResult);
+      }",method,
+"      if (mShouldTranscodeWhenFinished == TriState.NO) {
+        getConsumer().onNewResult(newResult, status);
+        return;
+      }",method,
+"        if (mShouldTranscodeWhenFinished == TriState.YES && newResult != null) {
+          transcodeLastResult(newResult, getConsumer(), mContext);
+        }",method,
+"  private void transcodeLastResult(
+      final EncodedImage originalResult,
+      final Consumer<EncodedImage> consumer,
+      final ProducerContext producerContext) {
+    Preconditions.checkNotNull(originalResult);
+    final EncodedImage encodedImageCopy = EncodedImage.cloneOrNull(originalResult);
+    final StatefulProducerRunnable<EncodedImage> runnable =
+        new StatefulProducerRunnable<EncodedImage>(
+            consumer,
+            producerContext.getListener(),
+            PRODUCER_NAME,
+            producerContext.getId()) {
+          @Override
+          protected EncodedImage getResult() throws Exception {
+            PooledByteBufferOutputStream outputStream = mPooledByteBufferFactory.newOutputStream();
+            try {
+              doTranscode(encodedImageCopy, outputStream);
+              CloseableReference<PooledByteBuffer> ref =
+                  CloseableReference.of(outputStream.toByteBuffer());
+              try {
+                EncodedImage encodedImage = new EncodedImage(ref);
+                encodedImage.copyMetaDataFrom(encodedImageCopy);
+                return encodedImage;
+              } finally {
+                CloseableReference.closeSafely(ref);
+              }
+            } finally {
+              outputStream.close();
+            }
+          }
+          @Override
+          protected void disposeResult(EncodedImage result) {
+            EncodedImage.closeSafely(result);
+          }
+          @Override
+          protected void onSuccess(EncodedImage result) {
+            EncodedImage.closeSafely(encodedImageCopy);
+            super.onSuccess(result);
+          }
+          @Override
+          protected void onFailure(Exception e) {
+            EncodedImage.closeSafely(encodedImageCopy);
+            super.onFailure(e);
+          }
+          @Override
+          protected void onCancellation() {
+            EncodedImage.closeSafely(encodedImageCopy);
+            super.onCancellation();
+          }
+        };
+    mExecutor.execute(runnable);
+  }",method,
+"          @Override
+          protected EncodedImage getResult() throws Exception {
+            PooledByteBufferOutputStream outputStream = mPooledByteBufferFactory.newOutputStream();
+            try {
+              doTranscode(encodedImageCopy, outputStream);
+              CloseableReference<PooledByteBuffer> ref =
+                  CloseableReference.of(outputStream.toByteBuffer());
+              try {
+                EncodedImage encodedImage = new EncodedImage(ref);
+                encodedImage.copyMetaDataFrom(encodedImageCopy);
+                return encodedImage;
+              } finally {
+                CloseableReference.closeSafely(ref);
+              }
+            } finally {
+              outputStream.close();
+            }
+          }",method,
+"          @Override
+          protected void disposeResult(EncodedImage result) {
+            EncodedImage.closeSafely(result);
+          }",method,
+"          @Override
+          protected void onSuccess(EncodedImage result) {
+            EncodedImage.closeSafely(encodedImageCopy);
+            super.onSuccess(result);
+          }",method,
+"          @Override
+          protected void onFailure(Exception e) {
+            EncodedImage.closeSafely(encodedImageCopy);
+            super.onFailure(e);
+          }",method,
+"          @Override
+          protected void onCancellation() {
+            EncodedImage.closeSafely(encodedImageCopy);
+            super.onCancellation();
+          }",method,
+"  private static TriState shouldTranscode(final EncodedImage encodedImage) {
+    Preconditions.checkNotNull(encodedImage);
+    ImageFormat imageFormat = ImageFormatChecker.getImageFormat_WrapIOException(
+        encodedImage.getInputStream());
+    if (DefaultImageFormats.isStaticWebpFormat(imageFormat)) {
+      final WebpTranscoder webpTranscoder = WebpTranscoderFactory.getWebpTranscoder();
+      if (webpTranscoder == null) {
+        return TriState.NO;
+      }
+      return TriState.valueOf(
+              !webpTranscoder.isWebpNativelySupported(imageFormat));
+    } else if (imageFormat == ImageFormat.UNKNOWN) {
+      // the image format might be unknown because we haven't fetched the whole header yet,
+      // in which case the decision whether to transcode or not cannot be made yet
+      return TriState.UNSET;
+    }
+    // if the image format is known, but it is not WebP, then the image shouldn't be transcoded
+    return TriState.NO;
+  }",method,
+"      if (webpTranscoder == null) {
+        return TriState.NO;
+      }",method,
+"  private static void doTranscode(
+      final EncodedImage encodedImage,
+      final PooledByteBufferOutputStream outputStream) throws Exception {
+    InputStream imageInputStream = encodedImage.getInputStream();
+    ImageFormat imageFormat = ImageFormatChecker.getImageFormat_WrapIOException(imageInputStream);
+    if (imageFormat == DefaultImageFormats.WEBP_SIMPLE ||
+        imageFormat == DefaultImageFormats.WEBP_EXTENDED) {
+        WebpTranscoderFactory.getWebpTranscoder().transcodeWebpToJpeg(
+            imageInputStream,
+            outputStream,
+            DEFAULT_JPEG_QUALITY);
+      encodedImage.setImageFormat(DefaultImageFormats.JPEG);
+    } else if (imageFormat == DefaultImageFormats.WEBP_LOSSLESS ||
+        imageFormat == DefaultImageFormats.WEBP_EXTENDED_WITH_ALPHA) {
+      // In this case we always transcode to PNG
+      WebpTranscoderFactory.getWebpTranscoder()
+          .transcodeWebpToPng(imageInputStream, outputStream);
+      encodedImage.setImageFormat(DefaultImageFormats.PNG);
+    } else {
+      throw new IllegalArgumentException(""Wrong image format"");
+    }
+  }",method,
+"    if (imageFormat == DefaultImageFormats.WEBP_SIMPLE ||
+        imageFormat == DefaultImageFormats.WEBP_EXTENDED) {
+        WebpTranscoderFactory.getWebpTranscoder().transcodeWebpToJpeg(
+            imageInputStream,
+            outputStream,
+            DEFAULT_JPEG_QUALITY);
+      encodedImage.setImageFormat(DefaultImageFormats.JPEG);
+    }",method,
+"    @Override
+    public CodegenType getTag() {
+        return CodegenType.CLIENT;
+    }",method,
+"    @Override
+    public String getName() {
+        return ""groovy"";
+    }",method,
+"    @Override
+    public String getHelp() {
+        return ""Generates a Groovy API client (beta)."";
+    }",method,
+"    @Override
+    public void processOpts() {
+        super.processOpts();
+        if (additionalProperties.containsKey(CONFIG_PACKAGE)) {
+            this.setConfigPackage((String) additionalProperties.get(CONFIG_PACKAGE));
+        }
+        supportingFiles.add(new SupportingFile(""build.gradle.mustache"", """", ""build.gradle""));
+        // TODO readme to be added later
+        //supportingFiles.add(new SupportingFile(""README.mustache"", """", ""README.md""));
+        supportingFiles.add(new SupportingFile(""ApiUtils.mustache"",
+                (sourceFolder + File.separator + apiPackage).replace(""."", java.io.File.separator), ""ApiUtils.groovy""));
+    }",method,
+"    @Override
+    public String toApiName(String name) {
+        if (name.length() == 0) {
+            return ""DefaultApi"";
+        }
+        name = sanitizeName(name);
+        return camelize(name) + ""Api"";
+    }",method,
+"    public void setConfigPackage(String configPackage) {
+        this.configPackage = configPackage;
+    }",method,
+"    @Override
+    public String escapeQuotationMark(String input) {
+        // remove ' to avoid code injection
+        return input.replace(""'"", """");
+    }",method,
+"    @Override
+    public String escapeUnsafeCharacters(String input) {
+        return input.replace(""*/"", ""*_/"").replace(""/*"", ""/_*"");
+    }",method,
+"public class BreakInstr extends OneOperandInstr implements FixedArityInstr {
+    private final String scopeName; // Primarily a debugging aid
+    public BreakInstr(Operand returnValue, String scopeName) {
+        super(Operation.BREAK, returnValue);
+        this.scopeName = scopeName;
+    }
+    public String getScopeName() {
+        return scopeName;
+    }
+    public Operand getReturnValue() {
+        return getOperand1();
+    }
+    @Override
+    public boolean computeScopeFlags(IRScope scope) {
+        scope.getFlags().add(IRFlags.HAS_BREAK_INSTRS);
+        scope.getFlags().add(IRFlags.REQUIRES_DYNSCOPE);
+        return true;
+    }
+    @Override
+    public String[] toStringNonOperandArgs() {
+        return new String[] {""scope_name: "" + scopeName};
+    }
+    @Override
+    public Instr clone(CloneInfo info) {
+        if (info instanceof SimpleCloneInfo) return new BreakInstr(getReturnValue().cloneForInlining(info), scopeName);
+        InlineCloneInfo ii = (InlineCloneInfo) info;
+        if (ii.isClosure()) {
+            // SSS FIXME: This is buggy!
+            //
+            // If scopeIdToReturnTo is a closure, it could have
+            // been cloned as well!! This is only an issue if we
+            // inline in closures. But, if we always inline in methods,
+            // this will continue to work.
+            //
+            // Hmm ... we need to figure out the required inlining info here.
+            //
+            // if (ii.getHostScope().getScopeId() == scopeIdToReturnTo) {
+            //
+            if (false) {
+                // If the break got inlined into the scope we had to break to, replace the break
+                // with a COPY of the break-value into the call's result var.
+                // Ex: v = foo { ..; break n; ..}.  So, ""break n"" is replaced with ""v = n""
+                // The CFG for the closure will be such that after break, control goes to the
+                // scope exit block.  So, we know that after the copy, we'll continue with the
+                // instruction after the call.
+                Variable v = ii.getCallResultVariable();
+                return (v == null) ? null : new CopyInstr(v, getReturnValue().cloneForInlining(ii));
+            }
+            return new BreakInstr(getReturnValue().cloneForInlining(ii), scopeName);
+        } else {
+            throw new UnsupportedOperationException(""Break instructions shouldn't show up outside closures."");
+        }
+    }
+    @Override
+    public void encode(IRWriterEncoder e) {
+        super.encode(e);
+        e.encode(getReturnValue());
+        e.encode(getScopeName());
+    }
+    public static BreakInstr decode(IRReaderDecoder d) {
+        return new BreakInstr(d.decodeOperand(), d.decodeString());
+    }
+    @Override
+    public void visit(IRVisitor visitor) {
+        visitor.BreakInstr(this);
+    }
+}",class,
+"    public BreakInstr(Operand returnValue, String scopeName) {
+        super(Operation.BREAK, returnValue);
+        this.scopeName = scopeName;
+    }",method,
+"    public String getScopeName() {
+        return scopeName;
+    }",method,
+"    public Operand getReturnValue() {
+        return getOperand1();
+    }",method,
+"    @Override
+    public boolean computeScopeFlags(IRScope scope) {
+        scope.getFlags().add(IRFlags.HAS_BREAK_INSTRS);
+        scope.getFlags().add(IRFlags.REQUIRES_DYNSCOPE);
+        return true;
+    }",method,
+"    @Override
+    public String[] toStringNonOperandArgs() {
+        return new String[] {""scope_name: "" + scopeName};
+    }",method,
+"    @Override
+    public Instr clone(CloneInfo info) {
+        if (info instanceof SimpleCloneInfo) return new BreakInstr(getReturnValue().cloneForInlining(info), scopeName);
+        InlineCloneInfo ii = (InlineCloneInfo) info;
+        if (ii.isClosure()) {
+            // SSS FIXME: This is buggy!
+            //
+            // If scopeIdToReturnTo is a closure, it could have
+            // been cloned as well!! This is only an issue if we
+            // inline in closures. But, if we always inline in methods,
+            // this will continue to work.
+            //
+            // Hmm ... we need to figure out the required inlining info here.
+            //
+            // if (ii.getHostScope().getScopeId() == scopeIdToReturnTo) {
+            //
+            if (false) {
+                // If the break got inlined into the scope we had to break to, replace the break
+                // with a COPY of the break-value into the call's result var.
+                // Ex: v = foo { ..; break n; ..}.  So, ""break n"" is replaced with ""v = n""
+                // The CFG for the closure will be such that after break, control goes to the
+                // scope exit block.  So, we know that after the copy, we'll continue with the
+                // instruction after the call.
+                Variable v = ii.getCallResultVariable();
+                return (v == null) ? null : new CopyInstr(v, getReturnValue().cloneForInlining(ii));
+            }
+            return new BreakInstr(getReturnValue().cloneForInlining(ii), scopeName);
+        } else {
+            throw new UnsupportedOperationException(""Break instructions shouldn't show up outside closures."");
+        }
+    }",method,
+"            if (false) {
+                // If the break got inlined into the scope we had to break to, replace the break
+                // with a COPY of the break-value into the call's result var.
+                // Ex: v = foo { ..; break n; ..}.  So, ""break n"" is replaced with ""v = n""
+                // The CFG for the closure will be such that after break, control goes to the
+                // scope exit block.  So, we know that after the copy, we'll continue with the
+                // instruction after the call.
+                Variable v = ii.getCallResultVariable();
+                return (v == null) ? null : new CopyInstr(v, getReturnValue().cloneForInlining(ii));
+            }",method,
+"    @Override
+    public void encode(IRWriterEncoder e) {
+        super.encode(e);
+        e.encode(getReturnValue());
+        e.encode(getScopeName());
+    }",method,
+"    public static BreakInstr decode(IRReaderDecoder d) {
+        return new BreakInstr(d.decodeOperand(), d.decodeString());
+    }",method,
+"    @Override
+    public void visit(IRVisitor visitor) {
+        visitor.BreakInstr(this);
+    }",method,
+"public class FreeMarkerConfigurationFactoryBean extends FreeMarkerConfigurationFactory
+		implements FactoryBean<Configuration>, InitializingBean, ResourceLoaderAware {
+	@Nullable
+	private Configuration configuration;
+	@Override
+	public void afterPropertiesSet() throws IOException, TemplateException {
+		this.configuration = createConfiguration();
+	}
+	@Override
+	@Nullable
+	public Configuration getObject() {
+		return this.configuration;
+	}
+	@Override
+	public Class<? extends Configuration> getObjectType() {
+		return Configuration.class;
+	}
+	@Override
+	public boolean isSingleton() {
+		return true;
+	}
+}",class,
+"	@Override
+	public void afterPropertiesSet() throws IOException, TemplateException {
+		this.configuration = createConfiguration();
+	}",method,
+"	@Override
+	@Nullable
+	public Configuration getObject() {
+		return this.configuration;
+	}",method,
+"	@Override
+	public Class<? extends Configuration> getObjectType() {
+		return Configuration.class;
+	}",method,
+"	@Override
+	public boolean isSingleton() {
+		return true;
+	}",method,
+"public class CachedXmlDocumentSet {
+  private final Map<String, String> nameToDir = new THashMap<>();
+  @Nullable
+  public Element load(@NotNull String name, boolean refresh) throws IOException, JDOMException {
+    assert nameToDir.containsKey(name) : name;
+    VirtualFile file = getFile(name, refresh);
+    if (file == null) {
+      return null;
+    }
+    InputStream inputStream = file.getInputStream();
+    try {
+      return JDOMUtil.load(inputStream);
+    }
+    finally {
+      inputStream.close();
+    }
+  }
+  public String getParent(@NotNull String name) {
+    return nameToDir.get(name);
+  }
+  public void register(@NotNull String name, @NotNull String path) {
+    nameToDir.put(name, path);
+  }
+  public void unregister(@NotNull String name) {
+    nameToDir.remove(name);
+  }
+  public boolean exists(@NotNull String name) {
+    return getFile(name, false) != null;
+  }
+  @Nullable
+  VirtualFile getFile(@NotNull String name, boolean refresh) {
+    VirtualFile file = LocalFileSystem.getInstance().findFileByIoFile(new File(getParent(name), name));
+    if (file != null && refresh) {
+      file.refresh(false, true);
+      if (!file.isValid()) {
+        return null;
+      }
+    }
+    return file;
+  }
+  @NotNull
+  public List<String> getFilePaths() {
+    List<String> list = new ArrayList<>(nameToDir.size());
+    for (String name : nameToDir.keySet()) {
+      list.add(getParent(name) + '/' + name);
+    }
+    return list;
+  }
+}",class,
+"  @Nullable
+  public Element load(@NotNull String name, boolean refresh) throws IOException, JDOMException {
+    assert nameToDir.containsKey(name) : name;
+    VirtualFile file = getFile(name, refresh);
+    if (file == null) {
+      return null;
+    }
+    InputStream inputStream = file.getInputStream();
+    try {
+      return JDOMUtil.load(inputStream);
+    }
+    finally {
+      inputStream.close();
+    }
+  }",method,
+"    if (file == null) {
+      return null;
+    }",method,
+"  public String getParent(@NotNull String name) {
+    return nameToDir.get(name);
+  }",method,
+"  public void register(@NotNull String name, @NotNull String path) {
+    nameToDir.put(name, path);
+  }",method,
+"  public void unregister(@NotNull String name) {
+    nameToDir.remove(name);
+  }",method,
+"  public boolean exists(@NotNull String name) {
+    return getFile(name, false) != null;
+  }",method,
+"  @Nullable
+  VirtualFile getFile(@NotNull String name, boolean refresh) {
+    VirtualFile file = LocalFileSystem.getInstance().findFileByIoFile(new File(getParent(name), name));
+    if (file != null && refresh) {
+      file.refresh(false, true);
+      if (!file.isValid()) {
+        return null;
+      }
+    }
+    return file;
+  }",method,
+"    if (file != null && refresh) {
+      file.refresh(false, true);
+      if (!file.isValid()) {
+        return null;
+      }
+    }",method,
+"  @NotNull
+  public List<String> getFilePaths() {
+    List<String> list = new ArrayList<>(nameToDir.size());
+    for (String name : nameToDir.keySet()) {
+      list.add(getParent(name) + '/' + name);
+    }
+    return list;
+  }",method,
+"public class GrImplicitVariableImpl extends LightVariableBase implements GrImplicitVariable {
+  public GrImplicitVariableImpl(PsiManager manager, PsiIdentifier nameIdentifier, @NotNull PsiType type, boolean writable, PsiElement scope) {
+    super(manager, nameIdentifier, GroovyLanguage.INSTANCE, type, writable, scope);
+  }
+  public GrImplicitVariableImpl(PsiManager manager, @NonNls String name, @NonNls @NotNull String type, PsiElement scope) {
+    this(manager, new GrLightIdentifier(manager, name), JavaPsiFacade.getElementFactory(manager.getProject()).
+      createTypeFromText(type, scope), false, scope);
+  }
+  @Override
+  protected PsiModifierList createModifierList() {
+    return new GrLightModifierList(this);
+  }
+  public String toString() {
+    return ""Specific implicit variable: "" + getName();
+  }
+  @Override
+  @NotNull
+  public GrLightModifierList getModifierList() {
+    return (GrLightModifierList)myModifierList;
+  }
+  @Override
+  public boolean isEquivalentTo(PsiElement another) {
+    return another == getNavigationElement() || super.isEquivalentTo(another);
+  }
+  protected static class GrLightIdentifier extends LightIdentifier {
+    private String myTextInternal;
+    public GrLightIdentifier(PsiManager manager, String name) {
+      super(manager, name);
+      myTextInternal = name;
+    }
+    @Override
+    public PsiElement replace(@NotNull PsiElement newElement) throws IncorrectOperationException {
+      myTextInternal = newElement.getText();
+      return newElement;
+    }
+    @Override
+    public String getText() {
+      return myTextInternal;
+    }
+    @Override
+    public PsiElement copy() {
+      return new GrLightIdentifier(getManager(), myTextInternal);
+    }
+  }
+}",class,
+"  protected static class GrLightIdentifier extends LightIdentifier {
+    private String myTextInternal;
+    public GrLightIdentifier(PsiManager manager, String name) {
+      super(manager, name);
+      myTextInternal = name;
+    }
+    @Override
+    public PsiElement replace(@NotNull PsiElement newElement) throws IncorrectOperationException {
+      myTextInternal = newElement.getText();
+      return newElement;
+    }
+    @Override
+    public String getText() {
+      return myTextInternal;
+    }
+    @Override
+    public PsiElement copy() {
+      return new GrLightIdentifier(getManager(), myTextInternal);
+    }
+  }",class,
+"  public GrImplicitVariableImpl(PsiManager manager, PsiIdentifier nameIdentifier, @NotNull PsiType type, boolean writable, PsiElement scope) {
+    super(manager, nameIdentifier, GroovyLanguage.INSTANCE, type, writable, scope);
+  }",method,
+"  public GrImplicitVariableImpl(PsiManager manager, @NonNls String name, @NonNls @NotNull String type, PsiElement scope) {
+    this(manager, new GrLightIdentifier(manager, name), JavaPsiFacade.getElementFactory(manager.getProject()).
+      createTypeFromText(type, scope), false, scope);
+  }",method,
+"  @Override
+  protected PsiModifierList createModifierList() {
+    return new GrLightModifierList(this);
+  }",method,
+"  public String toString() {
+    return ""Specific implicit variable: "" + getName();
+  }",method,
+"  @Override
+  @NotNull
+  public GrLightModifierList getModifierList() {
+    return (GrLightModifierList)myModifierList;
+  }",method,
+"  @Override
+  public boolean isEquivalentTo(PsiElement another) {
+    return another == getNavigationElement() || super.isEquivalentTo(another);
+  }",method,
+"    public GrLightIdentifier(PsiManager manager, String name) {
+      super(manager, name);
+      myTextInternal = name;
+    }",method,
+"    @Override
+    public PsiElement replace(@NotNull PsiElement newElement) throws IncorrectOperationException {
+      myTextInternal = newElement.getText();
+      return newElement;
+    }",method,
+"    @Override
+    public String getText() {
+      return myTextInternal;
+    }",method,
+"    @Override
+    public PsiElement copy() {
+      return new GrLightIdentifier(getManager(), myTextInternal);
+    }",method,
+"public abstract class SiblingPipelineAggregator extends PipelineAggregator {
+    protected SiblingPipelineAggregator(String name, String[] bucketsPaths, Map<String, Object> metaData) {
+        super(name, bucketsPaths, metaData);
+    }
+    protected SiblingPipelineAggregator(StreamInput in) throws IOException {
+        super(in);
+    }
+    @SuppressWarnings(""unchecked"")
+    @Override
+    public InternalAggregation reduce(InternalAggregation aggregation, ReduceContext reduceContext) {
+        if (aggregation instanceof InternalMultiBucketAggregation) {
+            @SuppressWarnings(""rawtypes"")
+            InternalMultiBucketAggregation multiBucketsAgg = (InternalMultiBucketAggregation) aggregation;
+            List<? extends Bucket> buckets = multiBucketsAgg.getBuckets();
+            List<Bucket> newBuckets = new ArrayList<>();
+            for (int i = 0; i < buckets.size(); i++) {
+                InternalMultiBucketAggregation.InternalBucket bucket = (InternalMultiBucketAggregation.InternalBucket) buckets.get(i);
+                InternalAggregation aggToAdd = doReduce(bucket.getAggregations(), reduceContext);
+                List<InternalAggregation> aggs = StreamSupport.stream(bucket.getAggregations().spliterator(), false).map((p) -> {
+                    return (InternalAggregation) p;
+                }).collect(Collectors.toList());
+                aggs.add(aggToAdd);
+                InternalMultiBucketAggregation.InternalBucket newBucket = multiBucketsAgg.createBucket(new InternalAggregations(aggs),
+                        bucket);
+                newBuckets.add(newBucket);
+            }
+            return multiBucketsAgg.create(newBuckets);
+        } else if (aggregation instanceof InternalSingleBucketAggregation) {
+            InternalSingleBucketAggregation singleBucketAgg = (InternalSingleBucketAggregation) aggregation;
+            InternalAggregation aggToAdd = doReduce(singleBucketAgg.getAggregations(), reduceContext);
+            List<InternalAggregation> aggs = StreamSupport.stream(singleBucketAgg.getAggregations().spliterator(), false).map((p) -> {
+                return (InternalAggregation) p;
+            }).collect(Collectors.toList());
+            aggs.add(aggToAdd);
+            return singleBucketAgg.create(new InternalAggregations(aggs));
+        } else {
+            throw new IllegalStateException(""Aggregation ["" + aggregation.getName() + ""] must be a bucket aggregation [""
+                    + aggregation.getWriteableName() + ""]"");
+        }
+    }
+    public abstract InternalAggregation doReduce(Aggregations aggregations, ReduceContext context);
+}",class,
+"    protected SiblingPipelineAggregator(String name, String[] bucketsPaths, Map<String, Object> metaData) {
+        super(name, bucketsPaths, metaData);
+    }",method,
+"    protected SiblingPipelineAggregator(StreamInput in) throws IOException {
+        super(in);
+    }",method,
+"    @SuppressWarnings(""unchecked"")
+    @Override
+    public InternalAggregation reduce(InternalAggregation aggregation, ReduceContext reduceContext) {
+        if (aggregation instanceof InternalMultiBucketAggregation) {
+            @SuppressWarnings(""rawtypes"")
+            InternalMultiBucketAggregation multiBucketsAgg = (InternalMultiBucketAggregation) aggregation;
+            List<? extends Bucket> buckets = multiBucketsAgg.getBuckets();
+            List<Bucket> newBuckets = new ArrayList<>();
+            for (int i = 0; i < buckets.size(); i++) {
+                InternalMultiBucketAggregation.InternalBucket bucket = (InternalMultiBucketAggregation.InternalBucket) buckets.get(i);
+                InternalAggregation aggToAdd = doReduce(bucket.getAggregations(), reduceContext);
+                List<InternalAggregation> aggs = StreamSupport.stream(bucket.getAggregations().spliterator(), false).map((p) -> {
+                    return (InternalAggregation) p;
+                }).collect(Collectors.toList());
+                aggs.add(aggToAdd);
+                InternalMultiBucketAggregation.InternalBucket newBucket = multiBucketsAgg.createBucket(new InternalAggregations(aggs),
+                        bucket);
+                newBuckets.add(newBucket);
+            }
+            return multiBucketsAgg.create(newBuckets);
+        } else if (aggregation instanceof InternalSingleBucketAggregation) {
+            InternalSingleBucketAggregation singleBucketAgg = (InternalSingleBucketAggregation) aggregation;
+            InternalAggregation aggToAdd = doReduce(singleBucketAgg.getAggregations(), reduceContext);
+            List<InternalAggregation> aggs = StreamSupport.stream(singleBucketAgg.getAggregations().spliterator(), false).map((p) -> {
+                return (InternalAggregation) p;
+            }).collect(Collectors.toList());
+            aggs.add(aggToAdd);
+            return singleBucketAgg.create(new InternalAggregations(aggs));
+        } else {
+            throw new IllegalStateException(""Aggregation ["" + aggregation.getName() + ""] must be a bucket aggregation [""
+                    + aggregation.getWriteableName() + ""]"");
+        }
+    }",method,
+"        if (aggregation instanceof InternalMultiBucketAggregation) {
+            @SuppressWarnings(""rawtypes"")
+            InternalMultiBucketAggregation multiBucketsAgg = (InternalMultiBucketAggregation) aggregation;
+            List<? extends Bucket> buckets = multiBucketsAgg.getBuckets();
+            List<Bucket> newBuckets = new ArrayList<>();
+            for (int i = 0; i < buckets.size(); i++) {
+                InternalMultiBucketAggregation.InternalBucket bucket = (InternalMultiBucketAggregation.InternalBucket) buckets.get(i);
+                InternalAggregation aggToAdd = doReduce(bucket.getAggregations(), reduceContext);
+                List<InternalAggregation> aggs = StreamSupport.stream(bucket.getAggregations().spliterator(), false).map((p) -> {
+                    return (InternalAggregation) p;
+                }).collect(Collectors.toList());
+                aggs.add(aggToAdd);
+                InternalMultiBucketAggregation.InternalBucket newBucket = multiBucketsAgg.createBucket(new InternalAggregations(aggs),
+                        bucket);
+                newBuckets.add(newBucket);
+            }
+            return multiBucketsAgg.create(newBuckets);
+        }",method,
+"public final class BufferedChecksumStreamInput extends StreamInput {
+    private static final int SKIP_BUFFER_SIZE = 1024;
+    private byte[] skipBuffer;
+    private final StreamInput in;
+    private final Checksum digest;
+    public BufferedChecksumStreamInput(StreamInput in) {
+        this.in = in;
+        this.digest = new BufferedChecksum(new CRC32());
+    }
+    public long getChecksum() {
+        return this.digest.getValue();
+    }
+    @Override
+    public byte readByte() throws IOException {
+        final byte b = in.readByte();
+        digest.update(b);
+        return b;
+    }
+    @Override
+    public void readBytes(byte[] b, int offset, int len) throws IOException {
+        in.readBytes(b, offset, len);
+        digest.update(b, offset, len);
+    }
+    @Override
+    public void reset() throws IOException {
+        in.reset();
+        digest.reset();
+    }
+    @Override
+    public int read() throws IOException {
+        return readByte() & 0xFF;
+    }
+    @Override
+    public void close() throws IOException {
+        in.close();
+    }
+    @Override
+    public boolean markSupported() {
+        return in.markSupported();
+    }
+    @Override
+    public long skip(long numBytes) throws IOException {
+        if (numBytes < 0) {
+            throw new IllegalArgumentException(""numBytes must be >= 0, got "" + numBytes);
+        }
+        if (skipBuffer == null) {
+            skipBuffer = new byte[SKIP_BUFFER_SIZE];
+        }
+        assert skipBuffer.length == SKIP_BUFFER_SIZE;
+        long skipped = 0;
+        for (; skipped < numBytes; ) {
+            final int step = (int) Math.min(SKIP_BUFFER_SIZE, numBytes - skipped);
+            readBytes(skipBuffer, 0, step);
+            skipped += step;
+        }
+        return skipped;
+    }
+    @Override
+    public int available() throws IOException {
+        return in.available();
+    }
+    @Override
+    public synchronized void mark(int readlimit) {
+        in.mark(readlimit);
+    }
+    public void resetDigest() {
+        digest.reset();
+    }
+}",class,
+"    public BufferedChecksumStreamInput(StreamInput in) {
+        this.in = in;
+        this.digest = new BufferedChecksum(new CRC32());
+    }",method,
+"    public long getChecksum() {
+        return this.digest.getValue();
+    }",method,
+"    @Override
+    public byte readByte() throws IOException {
+        final byte b = in.readByte();
+        digest.update(b);
+        return b;
+    }",method,
+"    @Override
+    public void readBytes(byte[] b, int offset, int len) throws IOException {
+        in.readBytes(b, offset, len);
+        digest.update(b, offset, len);
+    }",method,
+"    @Override
+    public void reset() throws IOException {
+        in.reset();
+        digest.reset();
+    }",method,
+"    @Override
+    public int read() throws IOException {
+        return readByte() & 0xFF;
+    }",method,
+"    @Override
+    public void close() throws IOException {
+        in.close();
+    }",method,
+"    @Override
+    public boolean markSupported() {
+        return in.markSupported();
+    }",method,
+"    @Override
+    public long skip(long numBytes) throws IOException {
+        if (numBytes < 0) {
+            throw new IllegalArgumentException(""numBytes must be >= 0, got "" + numBytes);
+        }
+        if (skipBuffer == null) {
+            skipBuffer = new byte[SKIP_BUFFER_SIZE];
+        }
+        assert skipBuffer.length == SKIP_BUFFER_SIZE;
+        long skipped = 0;
+        for (; skipped < numBytes; ) {
+            final int step = (int) Math.min(SKIP_BUFFER_SIZE, numBytes - skipped);
+            readBytes(skipBuffer, 0, step);
+            skipped += step;
+        }
+        return skipped;
+    }",method,
+"        if (numBytes < 0) {
+            throw new IllegalArgumentException(""numBytes must be >= 0, got "" + numBytes);
+        }",method,
+"        if (skipBuffer == null) {
+            skipBuffer = new byte[SKIP_BUFFER_SIZE];
+        }",method,

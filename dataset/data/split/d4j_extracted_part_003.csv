@@ -1,0 +1,1076 @@
+code_snippet,type,score
+"public class SVGGraphics2DIOException extends IOException {
+    private IOException embedded;
+    public SVGGraphics2DIOException(String s) {
+        this(s, null);
+    }
+    public SVGGraphics2DIOException(IOException ex) {
+        this(null, ex);
+    }
+    public SVGGraphics2DIOException(String s, IOException ex) {
+        super(s);
+        embedded = ex;
+    }
+    public String getMessage() {
+        String msg = super.getMessage();
+        if (msg != null) {
+            return msg;
+        } else if (embedded != null) {
+            return embedded.getMessage();
+        } else {
+            return null;
+        }
+    }
+    public IOException getException() {
+        return embedded;
+    }
+}",class,good
+"public class SVGGraphics2DRuntimeException extends RuntimeException {
+    private Exception embedded;
+    public SVGGraphics2DRuntimeException(String s) {
+        this(s, null);
+    }
+    public SVGGraphics2DRuntimeException(Exception ex) {
+        this(null, ex);
+    }
+    public SVGGraphics2DRuntimeException(String s, Exception ex) {
+        super(s);
+        embedded = ex;
+    }
+    public String getMessage() {
+        String msg = super.getMessage();
+        if (msg != null) {
+            return msg;
+        } else if (embedded != null) {
+            return embedded.getMessage();
+        } else {
+            return null;
+        }
+    }
+    public Exception getException() {
+        return embedded;
+    }
+}",class,good
+"    public SVGGraphics2DIOException(String s) {
+        this(s, null);
+    }",method,good
+"    public SVGGraphics2DIOException(IOException ex) {
+        this(null, ex);
+    }",method,good
+"    public SVGGraphics2DIOException(String s, IOException ex) {
+        super(s);
+        embedded = ex;
+    }",method,good
+"    public String getMessage() {
+        String msg = super.getMessage();
+        if (msg != null) {
+            return msg;
+        } else if (embedded != null) {
+            return embedded.getMessage();
+        } else {
+            return null;
+        }
+    }",method,good
+"        if (msg != null) {
+            return msg;
+        }",method,good
+"    public IOException getException() {
+        return embedded;
+    }",method,good
+"    public SVGGraphics2DRuntimeException(String s) {
+        this(s, null);
+    }",method,good
+"    public SVGGraphics2DRuntimeException(Exception ex) {
+        this(null, ex);
+    }",method,good
+"    public SVGGraphics2DRuntimeException(String s, Exception ex) {
+        super(s);
+        embedded = ex;
+    }",method,good
+"    public String getMessage() {
+        String msg = super.getMessage();
+        if (msg != null) {
+            return msg;
+        } else if (embedded != null) {
+            return embedded.getMessage();
+        } else {
+            return null;
+        }
+    }",method,good
+"        if (msg != null) {
+            return msg;
+        }",method,good
+"    public Exception getException() {
+        return embedded;
+    }",method,good
+"  @Override
+  protected String getTestDataPath() {
+    return PythonTestUtil.getTestDataPath() + ""/stubs/"";
+  }",method,good
+"  public void testStubStructure() {
+    // vfile is problematic, but we need an SDK to check builtins
+    final Project project = myFixture.getProject();
+    PythonLanguageLevelPusher.setForcedLanguageLevel(project, LanguageLevel.PYTHON26); // we need 2.6+ for @foo.setter
+    try {
+      final PyFile file = getTestFile();
+      final List<PyClass> classes = file.getTopLevelClasses();
+      assertEquals(3, classes.size());
+      PyClass pyClass = classes.get(0);
+      assertEquals(""FooClass"", pyClass.getName());
+      assertEquals(""StubStructure.FooClass"", pyClass.getQualifiedName());
+      final List<PyTargetExpression> attrs = pyClass.getClassAttributes();
+      assertEquals(2, attrs.size());
+      assertEquals(""staticField"", attrs.get(0).getName());
+      assertTrue(attrs.get(0).getAssignedQName().matches(""deco""));
+      final PyFunction[] methods = pyClass.getMethods();
+      assertEquals(2, methods.length);
+      assertEquals(""__init__"", methods [0].getName());
+      assertEquals(""fooFunction"", methods [1].getName());
+      final PyParameter[] parameters = methods[1].getParameterList().getParameters();
+      assertFalse(parameters [0].hasDefaultValue());
+      assertTrue(parameters [1].hasDefaultValue());
+      // decorators
+      PyFunction decorated = methods[1];
+      PyDecoratorList decos = decorated.getDecoratorList();
+      assertNotNull(decos);
+      assertNotParsed(file);
+      PyDecorator[] da = decos.getDecorators();
+      assertNotNull(da);
+      assertEquals(1, da.length);
+      assertNotParsed(file);
+      PyDecorator deco = da[0];
+      assertNotNull(deco);
+      assertEquals(""deco"", deco.getName());
+      assertNotParsed(file);
+      final List<PyTargetExpression> instanceAttrs = pyClass.getInstanceAttributes();
+      assertEquals(1, instanceAttrs.size());
+      assertEquals(""instanceField"", instanceAttrs.get(0).getName());
+      final List<PyFunction> functions = file.getTopLevelFunctions();
+      assertEquals(2, functions.size()); // ""deco"" and ""topLevelFunction""
+      PyFunction func = functions.get(0);
+      assertEquals(""deco"", func.getName());
+      func = functions.get(1);
+      assertEquals(""topLevelFunction"", func.getName());
+      final List<PyTargetExpression> exprs = file.getTopLevelAttributes();
+      assertEquals(2, exprs.size());
+      assertEquals(""top1"", exprs.get(0).getName());
+      assertEquals(""top2"", exprs.get(1).getName());
+      // properties by call
+      pyClass = classes.get(1);
+      assertEquals(""BarClass"", pyClass.getName());
+      Property prop = pyClass.findProperty(""value"", true, null);
+      Maybe<PyCallable> maybe_function = prop.getGetter();
+      assertTrue(maybe_function.isDefined());
+      assertEquals(pyClass.getMethods()[0], maybe_function.value());
+      Property setvalueProp = pyClass.findProperty(""setvalue"", true, null);
+      Maybe<PyCallable> setter = setvalueProp.getSetter();
+      assertTrue(setter.isDefined());
+      assertEquals(""__set"", setter.value().getName());
+      // properties by decorator
+      pyClass = classes.get(2);
+      assertEquals(""BazClass"", pyClass.getName());
+      prop = pyClass.findProperty(""x"", true, null);
+      maybe_function = prop.getGetter();
+      assertTrue(maybe_function.isDefined());
+      assertEquals(pyClass.getMethods()[0], maybe_function.value());
+      maybe_function = prop.getSetter();
+      assertTrue(maybe_function.isDefined());
+      assertEquals(pyClass.getMethods()[1], maybe_function.value());
+      // ...and the juice:
+      assertNotParsed(file);
+    }
+    finally {
+      PythonLanguageLevelPusher.setForcedLanguageLevel(project, LanguageLevel.getDefault());
+    }
+  }",method,changes_recommended
+"  public void testLoadingDeeperTreeRemainsKnownPsiElement() {
+    final PyFile file = getTestFile();
+    final List<PyClass> classes = file.getTopLevelClasses();
+    assertEquals(1, classes.size());
+    PyClass pyClass = classes.get(0);
+    assertEquals(""SomeClass"", pyClass.getName());
+    assertNotParsed(file);
+    // load the tree now
+    final PyStatementList statements = pyClass.getStatementList();
+    assertNotNull(((PyFileImpl)file).getTreeElement());
+    final PsiElement[] children = file.getChildren();
+    assertEquals(1, children.length);
+    assertSame(pyClass, children[0]);
+  }",method,good
+"  public void testLoadingTreeRetainsKnownPsiElement() {
+    final PyFile file = getTestFile();
+    final List<PyClass> classes = file.getTopLevelClasses();
+    assertEquals(1, classes.size());
+    PyClass pyClass = classes.get(0);
+    assertEquals(""SomeClass"", pyClass.getName());
+    assertNotParsed(file);
+    final PsiElement[] children = file.getChildren(); // Load the tree
+    assertNotNull(((PyFileImpl)file).getTreeElement());
+    assertEquals(1, children.length);
+    assertSame(pyClass, children[0]);
+  }",method,good
+"  public void testRenamingUpdatesTheStub() {
+    final PyFile file = getTestFile(""LoadingTreeRetainsKnownPsiElement.py"");
+    final List<PyClass> classes = file.getTopLevelClasses();
+    assertEquals(1, classes.size());
+    final PyClass pyClass = classes.get(0);
+    assertEquals(""SomeClass"", pyClass.getName());
+    // Ensure we haven't loaded the tree yet.
+    final PyFileImpl fileImpl = (PyFileImpl)file;
+    assertNull(fileImpl.getTreeElement());
+    final PsiElement[] children = file.getChildren(); // Load the tree
+    assertNotNull(fileImpl.getTreeElement());
+    assertEquals(1, children.length);
+    assertSame(pyClass, children[0]);
+    new WriteCommandAction(myFixture.getProject(), fileImpl) {
+      @Override
+      protected void run(@NotNull final Result result) {
+        pyClass.setName(""RenamedClass"");
+        assertEquals(""RenamedClass"", pyClass.getName());
+      }
+    }.execute();
+    StubElement fileStub = fileImpl.getStub();
+    assertNull(""There should be no stub if file holds tree element"", fileStub);
+    new WriteCommandAction(myFixture.getProject(), fileImpl) {
+      @Override
+      protected void run(@NotNull Result result) {
+        ((SingleRootFileViewProvider)fileImpl.getViewProvider()).onContentReload();
+      }
+    }.execute();
+    assertNull(fileImpl.getTreeElement()); // Test unload succeeded.
+    assertEquals(""RenamedClass"", fileImpl.getTopLevelClasses().get(0).getName());
+  }",method,good
+"      @Override
+      protected void run(@NotNull final Result result) {
+        pyClass.setName(""RenamedClass"");
+        assertEquals(""RenamedClass"", pyClass.getName());
+      }",method,good
+"      @Override
+      protected void run(@NotNull Result result) {
+        ((SingleRootFileViewProvider)fileImpl.getViewProvider()).onContentReload();
+      }",method,good
+"public class ShellCommand {
+  Runtime rt;
+  String[] command;
+  String tag = """";
+  public static final String TAG = ""SPC_NetworkLog"";
+  Process process;
+  BufferedReader stdout;
+  public int exit;
+  public ShellCommand(String[] command, String tag) {
+    this(command);
+    this.tag = tag;
+  }
+  public ShellCommand(String[] command) {
+    this.command = command;
+    rt = Runtime.getRuntime();
+  }
+  public String start(boolean waitForExit) {
+    Log.d(TAG, ""ShellCommand: starting ["" + tag + ""] "" + Arrays.toString(command));
+    try {
+      process = new ProcessBuilder()
+        .command(command)
+        .redirectErrorStream(true)
+        .start();
+      stdout = new BufferedReader(new InputStreamReader(process.getInputStream()));
+    } catch(Exception e) {
+      Log.e(""NetworkLog"", ""Failure starting shell command ["" + tag + ""]"", e);
+      return e.getCause().getMessage();
+    }
+    if(waitForExit) {
+      waitForExit();
+    }
+    return null;
+  }
+  public void waitForExit() {
+    while(checkForExit() == false) {
+      if(stdoutAvailable()) {
+        if(MyLog.enabled) {
+          MyLog.d(""ShellCommand waitForExit ["" + tag + ""] discarding read: "" + readStdout());
+        }
+      } else {
+        try {
+          Thread.sleep(100);
+        } catch(Exception e) {
+          Log.d(""NetworkLog"", ""waitForExit"", e);
+        }
+      }
+    }
+  }
+  public void finish() {
+    MyLog.d(""ShellCommand: finishing ["" + tag + ""] "" + Arrays.toString(command));
+    try {
+      if(stdout != null) {
+        stdout.close();
+      }
+    } catch(Exception e) {
+      Log.e(""NetworkLog"", ""Exception finishing ["" + tag + ""]"", e);
+    }
+    process.destroy();
+    process = null;
+  }
+  public boolean checkForExit() {
+    try {
+      exit = process.exitValue();
+      MyLog.d(""ShellCommand exited: ["" + tag + ""] exit "" + exit);
+    } catch(Exception IllegalThreadStateException) {
+      return false;
+    }
+    finish();
+    return true;
+  }
+  public boolean stdoutAvailable() {
+    try {
+      Log.i(""SPC_NetworkLog"", ""ShellCommand.stdoutAvailable()"");
+      return stdout.ready();
+    } catch(java.io.IOException e) {
+      Log.e(""SPC_NetworkLog"", ""stdoutAvailable error"", e);
+      return false;
+    }
+  }
+  public String readStdoutBlocking() {
+    if(MyLog.enabled) {
+      Log.e(TAG, ""readStdoutBlocking ["" + tag + ""]"");
+    }
+    String line;
+    if(stdout == null) {
+      return null;
+    }
+    try {
+      line = stdout.readLine();
+    } catch(Exception e) {
+      Log.e( ""SPC_NetworkLog"", ""readStdoutBlocking error""+ e.getMessage());
+      return null;
+    }
+    if(MyLog.enabled) {
+      Log.e(TAG, ""readStdoutBlocking ["" + tag + ""] return ["" + line + ""]"");
+    }
+    if(line == null) {
+      return null;
+    }
+    else {
+      return line + ""\n"";
+    }
+  }
+  public String readStdout() {
+    Log.e(""SPC_NetworkLog"", ""ShellCommand.readStdout ["" + tag + ""]"");
+    if(stdout == null) {
+      return null;
+    }
+    try {
+      if(stdout.ready()) {
+        String line = stdout.readLine();
+        Log.e(""SPC_NetworkLog"", ""ShellCommand.readStdout() - Read: ""+line);
+        if(MyLog.enabled) {
+          Log.e(TAG, ""read line: ["" + line + ""]"");
+        }
+        if(line == null) {
+          return null;
+        }
+        else {
+          return line + ""\n"";
+        }
+      } else {
+        Log.e(TAG, ""readStdout ["" + tag + ""] no data"");
+        return """";
+      }
+    } catch(Exception e) {
+      Log.e(TAG, ""readStdout error"", e);
+      return null;
+    }
+  }
+}",class,changes_recommended
+"  public ShellCommand(String[] command, String tag) {
+    this(command);
+    this.tag = tag;
+  }",method,good
+"  public ShellCommand(String[] command) {
+    this.command = command;
+    rt = Runtime.getRuntime();
+  }",method,good
+"  public String start(boolean waitForExit) {
+    Log.d(TAG, ""ShellCommand: starting ["" + tag + ""] "" + Arrays.toString(command));
+    try {
+      process = new ProcessBuilder()
+        .command(command)
+        .redirectErrorStream(true)
+        .start();
+      stdout = new BufferedReader(new InputStreamReader(process.getInputStream()));
+    } catch(Exception e) {
+      Log.e(""NetworkLog"", ""Failure starting shell command ["" + tag + ""]"", e);
+      return e.getCause().getMessage();
+    }
+    if(waitForExit) {
+      waitForExit();
+    }
+    return null;
+  }",method,good
+"    if(waitForExit) {
+      waitForExit();
+    }",method,good
+"  public void waitForExit() {
+    while(checkForExit() == false) {
+      if(stdoutAvailable()) {
+        if(MyLog.enabled) {
+          MyLog.d(""ShellCommand waitForExit ["" + tag + ""] discarding read: "" + readStdout());
+        }
+      } else {
+        try {
+          Thread.sleep(100);
+        } catch(Exception e) {
+          Log.d(""NetworkLog"", ""waitForExit"", e);
+        }
+      }
+    }
+  }",method,good
+"        if(MyLog.enabled) {
+          MyLog.d(""ShellCommand waitForExit ["" + tag + ""] discarding read: "" + readStdout());
+        }",method,good
+"  public void finish() {
+    MyLog.d(""ShellCommand: finishing ["" + tag + ""] "" + Arrays.toString(command));
+    try {
+      if(stdout != null) {
+        stdout.close();
+      }
+    } catch(Exception e) {
+      Log.e(""NetworkLog"", ""Exception finishing ["" + tag + ""]"", e);
+    }
+    process.destroy();
+    process = null;
+  }",method,good
+"      if(stdout != null) {
+        stdout.close();
+      }",method,good
+"  public boolean checkForExit() {
+    try {
+      exit = process.exitValue();
+      MyLog.d(""ShellCommand exited: ["" + tag + ""] exit "" + exit);
+    } catch(Exception IllegalThreadStateException) {
+      return false;
+    }
+    finish();
+    return true;
+  }",method,good
+"  public boolean stdoutAvailable() {
+    try {
+      Log.i(""SPC_NetworkLog"", ""ShellCommand.stdoutAvailable()"");
+      return stdout.ready();
+    } catch(java.io.IOException e) {
+      Log.e(""SPC_NetworkLog"", ""stdoutAvailable error"", e);
+      return false;
+    }
+  }",method,good
+"  public String readStdoutBlocking() {
+    if(MyLog.enabled) {
+      Log.e(TAG, ""readStdoutBlocking ["" + tag + ""]"");
+    }
+    String line;
+    if(stdout == null) {
+      return null;
+    }
+    try {
+      line = stdout.readLine();
+    } catch(Exception e) {
+      Log.e( ""SPC_NetworkLog"", ""readStdoutBlocking error""+ e.getMessage());
+      return null;
+    }
+    if(MyLog.enabled) {
+      Log.e(TAG, ""readStdoutBlocking ["" + tag + ""] return ["" + line + ""]"");
+    }
+    if(line == null) {
+      return null;
+    }
+    else {
+      return line + ""\n"";
+    }
+  }",method,good
+"    if(MyLog.enabled) {
+      Log.e(TAG, ""readStdoutBlocking ["" + tag + ""]"");
+    }",method,good
+"    if(stdout == null) {
+      return null;
+    }",method,good
+"    if(MyLog.enabled) {
+      Log.e(TAG, ""readStdoutBlocking ["" + tag + ""] return ["" + line + ""]"");
+    }",method,good
+"    if(line == null) {
+      return null;
+    }",method,good
+"  public String readStdout() {
+    Log.e(""SPC_NetworkLog"", ""ShellCommand.readStdout ["" + tag + ""]"");
+    if(stdout == null) {
+      return null;
+    }
+    try {
+      if(stdout.ready()) {
+        String line = stdout.readLine();
+        Log.e(""SPC_NetworkLog"", ""ShellCommand.readStdout() - Read: ""+line);
+        if(MyLog.enabled) {
+          Log.e(TAG, ""read line: ["" + line + ""]"");
+        }
+        if(line == null) {
+          return null;
+        }
+        else {
+          return line + ""\n"";
+        }
+      } else {
+        Log.e(TAG, ""readStdout ["" + tag + ""] no data"");
+        return """";
+      }
+    } catch(Exception e) {
+      Log.e(TAG, ""readStdout error"", e);
+      return null;
+    }
+  }",method,good
+"    if(stdout == null) {
+      return null;
+    }",method,good
+"        if(MyLog.enabled) {
+          Log.e(TAG, ""read line: ["" + line + ""]"");
+        }",method,good
+"        if(line == null) {
+          return null;
+        }",method,good
+"public class ProgramMemberFilter implements MemberVisitor
+{
+    private final MemberVisitor memberVisitor;
+    public ProgramMemberFilter(MemberVisitor memberVisitor)
+    {
+        this.memberVisitor = memberVisitor;
+    }
+    // Implementations for MemberVisitor.
+    public void visitProgramField(ProgramClass programClass, ProgramField programField)
+    {
+        memberVisitor.visitProgramField(programClass, programField);
+    }
+    public void visitProgramMethod(ProgramClass programClass, ProgramMethod programMethod)
+    {
+        memberVisitor.visitProgramMethod(programClass, programMethod);
+    }
+    public void visitLibraryField(LibraryClass libraryClass, LibraryField libraryField)
+    {
+        // Don't delegate visits to library members.
+    }
+    public void visitLibraryMethod(LibraryClass libraryClass, LibraryMethod libraryMethod)
+    {
+        // Don't delegate visits to library members.
+    }
+}",class,good
+"    public ProgramMemberFilter(MemberVisitor memberVisitor)
+    {
+        this.memberVisitor = memberVisitor;
+    }",method,good
+"    public void visitProgramField(ProgramClass programClass, ProgramField programField)
+    {
+        memberVisitor.visitProgramField(programClass, programField);
+    }",method,good
+"    public void visitProgramMethod(ProgramClass programClass, ProgramMethod programMethod)
+    {
+        memberVisitor.visitProgramMethod(programClass, programMethod);
+    }",method,good
+"    public void visitLibraryField(LibraryClass libraryClass, LibraryField libraryField)
+    {
+        // Don't delegate visits to library members.
+    }",method,good
+"    public void visitLibraryMethod(LibraryClass libraryClass, LibraryMethod libraryMethod)
+    {
+        // Don't delegate visits to library members.
+    }",method,good
+"public class RequestParamMapMethodArgumentResolver implements HandlerMethodArgumentResolver {
+	@Override
+	public boolean supportsParameter(MethodParameter parameter) {
+		RequestParam requestParam = parameter.getParameterAnnotation(RequestParam.class);
+		if (requestParam != null) {
+			if (Map.class.isAssignableFrom(parameter.getParameterType())) {
+				return !StringUtils.hasText(requestParam.name());
+			}
+		}
+		return false;
+	}
+	@Override
+	public Object resolveArgument(MethodParameter parameter, @Nullable ModelAndViewContainer mavContainer,
+			NativeWebRequest webRequest, @Nullable WebDataBinderFactory binderFactory) throws Exception {
+		Class<?> paramType = parameter.getParameterType();
+		Map<String, String[]> parameterMap = webRequest.getParameterMap();
+		if (MultiValueMap.class.isAssignableFrom(paramType)) {
+			MultiValueMap<String, String> result = new LinkedMultiValueMap<>(parameterMap.size());
+			for (Map.Entry<String, String[]> entry : parameterMap.entrySet()) {
+				for (String value : entry.getValue()) {
+					result.add(entry.getKey(), value);
+				}
+			}
+			return result;
+		}
+		else {
+			Map<String, String> result = new LinkedHashMap<>(parameterMap.size());
+			for (Map.Entry<String, String[]> entry : parameterMap.entrySet()) {
+				if (entry.getValue().length > 0) {
+					result.put(entry.getKey(), entry.getValue()[0]);
+				}
+			}
+			return result;
+		}
+	}
+}",class,good
+"	@Override
+	public boolean supportsParameter(MethodParameter parameter) {
+		RequestParam requestParam = parameter.getParameterAnnotation(RequestParam.class);
+		if (requestParam != null) {
+			if (Map.class.isAssignableFrom(parameter.getParameterType())) {
+				return !StringUtils.hasText(requestParam.name());
+			}
+		}
+		return false;
+	}",method,good
+"		if (requestParam != null) {
+			if (Map.class.isAssignableFrom(parameter.getParameterType())) {
+				return !StringUtils.hasText(requestParam.name());
+			}
+		}",method,good
+"	@Override
+	public Object resolveArgument(MethodParameter parameter, @Nullable ModelAndViewContainer mavContainer,
+			NativeWebRequest webRequest, @Nullable WebDataBinderFactory binderFactory) throws Exception {
+		Class<?> paramType = parameter.getParameterType();
+		Map<String, String[]> parameterMap = webRequest.getParameterMap();
+		if (MultiValueMap.class.isAssignableFrom(paramType)) {
+			MultiValueMap<String, String> result = new LinkedMultiValueMap<>(parameterMap.size());
+			for (Map.Entry<String, String[]> entry : parameterMap.entrySet()) {
+				for (String value : entry.getValue()) {
+					result.add(entry.getKey(), value);
+				}
+			}
+			return result;
+		}
+		else {
+			Map<String, String> result = new LinkedHashMap<>(parameterMap.size());
+			for (Map.Entry<String, String[]> entry : parameterMap.entrySet()) {
+				if (entry.getValue().length > 0) {
+					result.put(entry.getKey(), entry.getValue()[0]);
+				}
+			}
+			return result;
+		}
+	}",method,good
+"public class CrossDomainRpcLoader {
+  public CrossDomainRpc loadRpc(HttpServletRequest request) throws IOException {
+    JsonObject json;
+    InputStream stream = null;
+    try {
+      stream = request.getInputStream();
+      byte[] data = ByteStreams.toByteArray(stream);
+      json = new JsonParser().parse(new String(data, Charsets.UTF_8)).getAsJsonObject();
+    } catch (JsonSyntaxException e) {
+      throw new IllegalArgumentException(
+          ""Failed to parse JSON request: "" + e.getMessage(), e);
+    } finally {
+      if (stream != null) {
+        stream.close();
+      }
+    }
+    return new CrossDomainRpc(
+        getField(json, Field.METHOD),
+        getField(json, Field.PATH),
+        getField(json, Field.DATA));
+  }
+  private String getField(JsonObject json, String key) {
+    if (!json.has(key) || json.get(key).isJsonNull()) {
+      throw new IllegalArgumentException(""Missing required parameter: "" + key);
+    }
+    if (json.get(key).isJsonPrimitive() && json.get(key).getAsJsonPrimitive().isString()) {
+      return json.get(key).getAsString();
+    }
+    return json.get(key).toString();
+  }
+  private static class Field {
+    private Field() {}  // Utility class.
+    public static final String METHOD = ""method"";
+    public static final String PATH = ""path"";
+    public static final String DATA = ""data"";
+  }
+}",class,good
+"  private static class Field {
+    private Field() {}  // Utility class.
+    public static final String METHOD = ""method"";
+    public static final String PATH = ""path"";
+    public static final String DATA = ""data"";
+  }",class,good
+"public class CoreRunnerError extends Error {
+  public CoreRunnerError(String message, Object... args) {
+    super(String.format(message, args));
+  }
+}",class,good
+"  public CrossDomainRpc loadRpc(HttpServletRequest request) throws IOException {
+    JsonObject json;
+    InputStream stream = null;
+    try {
+      stream = request.getInputStream();
+      byte[] data = ByteStreams.toByteArray(stream);
+      json = new JsonParser().parse(new String(data, Charsets.UTF_8)).getAsJsonObject();
+    } catch (JsonSyntaxException e) {
+      throw new IllegalArgumentException(
+          ""Failed to parse JSON request: "" + e.getMessage(), e);
+    } finally {
+      if (stream != null) {
+        stream.close();
+      }
+    }
+    return new CrossDomainRpc(
+        getField(json, Field.METHOD),
+        getField(json, Field.PATH),
+        getField(json, Field.DATA));
+  }",method,good
+"      if (stream != null) {
+        stream.close();
+      }",method,good
+"  private String getField(JsonObject json, String key) {
+    if (!json.has(key) || json.get(key).isJsonNull()) {
+      throw new IllegalArgumentException(""Missing required parameter: "" + key);
+    }
+    if (json.get(key).isJsonPrimitive() && json.get(key).getAsJsonPrimitive().isString()) {
+      return json.get(key).getAsString();
+    }
+    return json.get(key).toString();
+  }",method,good
+    private Field() {},method,good
+"  public CoreRunnerError(String message, Object... args) {
+    super(String.format(message, args));
+  }",method,good
+"public class PerfTest extends TestCase {
+    public void test_perf() throws Exception {
+        for (int i = 0; i < 10; ++i) {
+            // perf(""SELECT * FROM my_table WHERE TRUNC(SYSDATE) = DATE '2002-10-03';"");
+            perfOracle(""SELECT a.ID, a.GMT_CREATE, a.GMT_MODIFIED, a.COMPANY_NAME, a.BIZ_TYPE , b.SERVICE_TYPE, b.SERVICE_LEVEL, b.BUSINESS_ROLE, a.STATUS, a.RECOMMENDED , a.COUNTRY, a.PROVINCE, a.CITY, a.ADDRESS, a.ZIP , a.LOGO_FILE, a.EMAIL, a.BRIEF_PROFILE, a.DOMAIN_ID, a.IS_PASS_AV , a.KEYWORDS, a.PROVIDE_PRODUCTS, a.PURCHASE_PRODUCTS, a.BRAND_NAME, a.PROMOTION_VALUE , a.OWNER_MEMBER_ID, a.OWNER_SEQ, a.EMPLOYEES_COUNT, a.ANNUAL_REVENUE, a.HOMEPAGE_URL , a.REG_ADDRESS, a.TRADE_REGION, a.TRADE_REGION_USER, a.REG_CAPITAL, a.OWNERSHIP_TYPE , a.ESTABLISHED_YEAR, a.PRINCIPAL, a.ANNUAL_PURCHASE, a.CERTIFICATION, a.CERTIFICATION_2 , a.CONTACT_MANUFACTURING, a.YEARS_OEM, b.STAGE, a.VIDEO_PATH, a.ABOUTUS_IMAGE_PATH , a.ABOUTUS_IMAGE_TITLE, a.CHINESE_NAME, a.IMAGE_VERSION FROM COMPANY a, VACCOUNT b WHERE a.ID = b.ID AND a.id IN (?)"");
+            perfMySql(""SELECT a.ID, a.GMT_CREATE, a.GMT_MODIFIED, a.COMPANY_NAME, a.BIZ_TYPE , b.SERVICE_TYPE, b.SERVICE_LEVEL, b.BUSINESS_ROLE, a.STATUS, a.RECOMMENDED , a.COUNTRY, a.PROVINCE, a.CITY, a.ADDRESS, a.ZIP , a.LOGO_FILE, a.EMAIL, a.BRIEF_PROFILE, a.DOMAIN_ID, a.IS_PASS_AV , a.KEYWORDS, a.PROVIDE_PRODUCTS, a.PURCHASE_PRODUCTS, a.BRAND_NAME, a.PROMOTION_VALUE , a.OWNER_MEMBER_ID, a.OWNER_SEQ, a.EMPLOYEES_COUNT, a.ANNUAL_REVENUE, a.HOMEPAGE_URL , a.REG_ADDRESS, a.TRADE_REGION, a.TRADE_REGION_USER, a.REG_CAPITAL, a.OWNERSHIP_TYPE , a.ESTABLISHED_YEAR, a.PRINCIPAL, a.ANNUAL_PURCHASE, a.CERTIFICATION, a.CERTIFICATION_2 , a.CONTACT_MANUFACTURING, a.YEARS_OEM, b.STAGE, a.VIDEO_PATH, a.ABOUTUS_IMAGE_PATH , a.ABOUTUS_IMAGE_TITLE, a.CHINESE_NAME, a.IMAGE_VERSION FROM COMPANY a, VACCOUNT b WHERE a.ID = b.ID AND a.id IN (?)"");
+            // perf(loadSql(""bvt/parser/oracle-23.txt""));
+        }
+    }
+    String loadSql(String resource) throws Exception {
+        InputStream is = Thread.currentThread().getContextClassLoader().getResourceAsStream(resource);
+        Reader reader = new InputStreamReader(is, ""UTF-8"");
+        String input = Utils.read(reader);
+        JdbcUtils.close(reader);
+        String[] items = input.split(""---------------------------"");
+        String sql = items[1].trim();
+        return sql;
+    }
+    void perfOracle(String sql) {
+        long startMillis = System.currentTimeMillis();
+        for (int i = 0; i < 1000 * 1000; ++i) {
+            execOracle(sql);
+        }
+        long millis = System.currentTimeMillis() - startMillis;
+        System.out.println(""Oracle\t"" + millis);
+    }
+    void perfMySql(String sql) {
+        long startMillis = System.currentTimeMillis();
+        for (int i = 0; i < 1000 * 1000; ++i) {
+            execMySql(sql);
+        }
+        long millis = System.currentTimeMillis() - startMillis;
+        System.out.println(""MySql\t"" + millis);
+    }
+    private String execOracle(String sql) {
+        StringBuilder out = new StringBuilder();
+        OracleOutputVisitor visitor = new OracleOutputVisitor(out);
+        OracleStatementParser parser = new OracleStatementParser(sql);
+        List<SQLStatement> statementList = parser.parseStatementList();
+        for (SQLStatement statement : statementList) {
+            statement.accept(visitor);
+            visitor.println();
+        }
+        return out.toString();
+    }
+    private String execMySql(String sql) {
+        StringBuilder out = new StringBuilder();
+        MySqlOutputVisitor visitor = new MySqlOutputVisitor(out);
+        MySqlStatementParser parser = new MySqlStatementParser(sql);
+        List<SQLStatement> statementList = parser.parseStatementList();
+        for (SQLStatement statement : statementList) {
+            statement.accept(visitor);
+            visitor.println();
+        }
+        return out.toString();
+    }
+}",class,changes_required
+"    public void test_perf() throws Exception {
+        for (int i = 0; i < 10; ++i) {
+            // perf(""SELECT * FROM my_table WHERE TRUNC(SYSDATE) = DATE '2002-10-03';"");
+            perfOracle(""SELECT a.ID, a.GMT_CREATE, a.GMT_MODIFIED, a.COMPANY_NAME, a.BIZ_TYPE , b.SERVICE_TYPE, b.SERVICE_LEVEL, b.BUSINESS_ROLE, a.STATUS, a.RECOMMENDED , a.COUNTRY, a.PROVINCE, a.CITY, a.ADDRESS, a.ZIP , a.LOGO_FILE, a.EMAIL, a.BRIEF_PROFILE, a.DOMAIN_ID, a.IS_PASS_AV , a.KEYWORDS, a.PROVIDE_PRODUCTS, a.PURCHASE_PRODUCTS, a.BRAND_NAME, a.PROMOTION_VALUE , a.OWNER_MEMBER_ID, a.OWNER_SEQ, a.EMPLOYEES_COUNT, a.ANNUAL_REVENUE, a.HOMEPAGE_URL , a.REG_ADDRESS, a.TRADE_REGION, a.TRADE_REGION_USER, a.REG_CAPITAL, a.OWNERSHIP_TYPE , a.ESTABLISHED_YEAR, a.PRINCIPAL, a.ANNUAL_PURCHASE, a.CERTIFICATION, a.CERTIFICATION_2 , a.CONTACT_MANUFACTURING, a.YEARS_OEM, b.STAGE, a.VIDEO_PATH, a.ABOUTUS_IMAGE_PATH , a.ABOUTUS_IMAGE_TITLE, a.CHINESE_NAME, a.IMAGE_VERSION FROM COMPANY a, VACCOUNT b WHERE a.ID = b.ID AND a.id IN (?)"");
+            perfMySql(""SELECT a.ID, a.GMT_CREATE, a.GMT_MODIFIED, a.COMPANY_NAME, a.BIZ_TYPE , b.SERVICE_TYPE, b.SERVICE_LEVEL, b.BUSINESS_ROLE, a.STATUS, a.RECOMMENDED , a.COUNTRY, a.PROVINCE, a.CITY, a.ADDRESS, a.ZIP , a.LOGO_FILE, a.EMAIL, a.BRIEF_PROFILE, a.DOMAIN_ID, a.IS_PASS_AV , a.KEYWORDS, a.PROVIDE_PRODUCTS, a.PURCHASE_PRODUCTS, a.BRAND_NAME, a.PROMOTION_VALUE , a.OWNER_MEMBER_ID, a.OWNER_SEQ, a.EMPLOYEES_COUNT, a.ANNUAL_REVENUE, a.HOMEPAGE_URL , a.REG_ADDRESS, a.TRADE_REGION, a.TRADE_REGION_USER, a.REG_CAPITAL, a.OWNERSHIP_TYPE , a.ESTABLISHED_YEAR, a.PRINCIPAL, a.ANNUAL_PURCHASE, a.CERTIFICATION, a.CERTIFICATION_2 , a.CONTACT_MANUFACTURING, a.YEARS_OEM, b.STAGE, a.VIDEO_PATH, a.ABOUTUS_IMAGE_PATH , a.ABOUTUS_IMAGE_TITLE, a.CHINESE_NAME, a.IMAGE_VERSION FROM COMPANY a, VACCOUNT b WHERE a.ID = b.ID AND a.id IN (?)"");
+            // perf(loadSql(""bvt/parser/oracle-23.txt""));
+        }
+    }",method,changes_recommended
+"        for (int i = 0; i < 10; ++i) {
+            // perf(""SELECT * FROM my_table WHERE TRUNC(SYSDATE) = DATE '2002-10-03';"");
+            perfOracle(""SELECT a.ID, a.GMT_CREATE, a.GMT_MODIFIED, a.COMPANY_NAME, a.BIZ_TYPE , b.SERVICE_TYPE, b.SERVICE_LEVEL, b.BUSINESS_ROLE, a.STATUS, a.RECOMMENDED , a.COUNTRY, a.PROVINCE, a.CITY, a.ADDRESS, a.ZIP , a.LOGO_FILE, a.EMAIL, a.BRIEF_PROFILE, a.DOMAIN_ID, a.IS_PASS_AV , a.KEYWORDS, a.PROVIDE_PRODUCTS, a.PURCHASE_PRODUCTS, a.BRAND_NAME, a.PROMOTION_VALUE , a.OWNER_MEMBER_ID, a.OWNER_SEQ, a.EMPLOYEES_COUNT, a.ANNUAL_REVENUE, a.HOMEPAGE_URL , a.REG_ADDRESS, a.TRADE_REGION, a.TRADE_REGION_USER, a.REG_CAPITAL, a.OWNERSHIP_TYPE , a.ESTABLISHED_YEAR, a.PRINCIPAL, a.ANNUAL_PURCHASE, a.CERTIFICATION, a.CERTIFICATION_2 , a.CONTACT_MANUFACTURING, a.YEARS_OEM, b.STAGE, a.VIDEO_PATH, a.ABOUTUS_IMAGE_PATH , a.ABOUTUS_IMAGE_TITLE, a.CHINESE_NAME, a.IMAGE_VERSION FROM COMPANY a, VACCOUNT b WHERE a.ID = b.ID AND a.id IN (?)"");
+            perfMySql(""SELECT a.ID, a.GMT_CREATE, a.GMT_MODIFIED, a.COMPANY_NAME, a.BIZ_TYPE , b.SERVICE_TYPE, b.SERVICE_LEVEL, b.BUSINESS_ROLE, a.STATUS, a.RECOMMENDED , a.COUNTRY, a.PROVINCE, a.CITY, a.ADDRESS, a.ZIP , a.LOGO_FILE, a.EMAIL, a.BRIEF_PROFILE, a.DOMAIN_ID, a.IS_PASS_AV , a.KEYWORDS, a.PROVIDE_PRODUCTS, a.PURCHASE_PRODUCTS, a.BRAND_NAME, a.PROMOTION_VALUE , a.OWNER_MEMBER_ID, a.OWNER_SEQ, a.EMPLOYEES_COUNT, a.ANNUAL_REVENUE, a.HOMEPAGE_URL , a.REG_ADDRESS, a.TRADE_REGION, a.TRADE_REGION_USER, a.REG_CAPITAL, a.OWNERSHIP_TYPE , a.ESTABLISHED_YEAR, a.PRINCIPAL, a.ANNUAL_PURCHASE, a.CERTIFICATION, a.CERTIFICATION_2 , a.CONTACT_MANUFACTURING, a.YEARS_OEM, b.STAGE, a.VIDEO_PATH, a.ABOUTUS_IMAGE_PATH , a.ABOUTUS_IMAGE_TITLE, a.CHINESE_NAME, a.IMAGE_VERSION FROM COMPANY a, VACCOUNT b WHERE a.ID = b.ID AND a.id IN (?)"");
+            // perf(loadSql(""bvt/parser/oracle-23.txt""));
+        }",method,changes_recommended
+"    String loadSql(String resource) throws Exception {
+        InputStream is = Thread.currentThread().getContextClassLoader().getResourceAsStream(resource);
+        Reader reader = new InputStreamReader(is, ""UTF-8"");
+        String input = Utils.read(reader);
+        JdbcUtils.close(reader);
+        String[] items = input.split(""---------------------------"");
+        String sql = items[1].trim();
+        return sql;
+    }",method,good
+"    void perfOracle(String sql) {
+        long startMillis = System.currentTimeMillis();
+        for (int i = 0; i < 1000 * 1000; ++i) {
+            execOracle(sql);
+        }
+        long millis = System.currentTimeMillis() - startMillis;
+        System.out.println(""Oracle\t"" + millis);
+    }",method,good
+"        for (int i = 0; i < 1000 * 1000; ++i) {
+            execOracle(sql);
+        }",method,good
+"    void perfMySql(String sql) {
+        long startMillis = System.currentTimeMillis();
+        for (int i = 0; i < 1000 * 1000; ++i) {
+            execMySql(sql);
+        }
+        long millis = System.currentTimeMillis() - startMillis;
+        System.out.println(""MySql\t"" + millis);
+    }",method,good
+"        for (int i = 0; i < 1000 * 1000; ++i) {
+            execMySql(sql);
+        }",method,good
+"    private String execOracle(String sql) {
+        StringBuilder out = new StringBuilder();
+        OracleOutputVisitor visitor = new OracleOutputVisitor(out);
+        OracleStatementParser parser = new OracleStatementParser(sql);
+        List<SQLStatement> statementList = parser.parseStatementList();
+        for (SQLStatement statement : statementList) {
+            statement.accept(visitor);
+            visitor.println();
+        }
+        return out.toString();
+    }",method,good
+"        for (SQLStatement statement : statementList) {
+            statement.accept(visitor);
+            visitor.println();
+        }",method,good
+"    private String execMySql(String sql) {
+        StringBuilder out = new StringBuilder();
+        MySqlOutputVisitor visitor = new MySqlOutputVisitor(out);
+        MySqlStatementParser parser = new MySqlStatementParser(sql);
+        List<SQLStatement> statementList = parser.parseStatementList();
+        for (SQLStatement statement : statementList) {
+            statement.accept(visitor);
+            visitor.println();
+        }
+        return out.toString();
+    }",method,good
+"        for (SQLStatement statement : statementList) {
+            statement.accept(visitor);
+            visitor.println();
+        }",method,good
+"    @JsonAnySetter
+    public CodegenConfigurator addDynamicProperty(String name, Object value) {
+        dynamicProperties.put(name, value);
+        return this;
+    }",method,good
+"    @JsonAnyGetter
+    public Map<String, Object> getDynamicProperties() {
+        return dynamicProperties;
+    }",method,good
+"    private void handleDynamicProperties(CodegenConfig codegenConfig) {
+        for (CliOption langCliOption : codegenConfig.cliOptions()) {
+            String opt = langCliOption.getOpt();
+            if (dynamicProperties.containsKey(opt)) {
+                codegenConfig.additionalProperties().put(opt, dynamicProperties.get(opt));
+            }
+            else if(systemProperties.containsKey(opt)) {
+                codegenConfig.additionalProperties().put(opt, systemProperties.get(opt));
+            }
+        }
+    }",method,good
+"    private void setVerboseFlags() {
+        if (!verbose) {
+            return;
+        }
+        LOGGER.info(""\nVERBOSE MODE: ON. Additional debug options are injected"" +
+                ""\n - [debugSwagger] prints the swagger specification as interpreted by the codegen"" +
+                ""\n - [debugModels] prints models passed to the template engine"" +
+                ""\n - [debugOperations] prints operations passed to the template engine"" +
+                ""\n - [debugSupportingFiles] prints additional data passed to the template engine"");
+        System.setProperty(""debugSwagger"", """");
+        System.setProperty(""debugModels"", """");
+        System.setProperty(""debugOperations"", """");
+        System.setProperty(""debugSupportingFiles"", """");
+    }",method,good
+"        if (!verbose) {
+            return;
+        }",method,good
+"    private void setSystemProperties() {
+        for (Map.Entry<String, String> entry : systemProperties.entrySet()) {
+            System.setProperty(entry.getKey(), entry.getValue());
+        }
+    }",method,good
+"    private static String toAbsolutePathStr(String path) {
+        if (isNotEmpty(path)) {
+            return Paths.get(path).toAbsolutePath().toString();
+        }
+        return path;
+    }",method,good
+"    private void checkAndSetAdditionalProperty(String property, String propertyKey) {
+        checkAndSetAdditionalProperty(property, property, propertyKey);
+    }",method,good
+"    private void checkAndSetAdditionalProperty(String property, String valueToSet, String propertyKey) {
+        if (isNotEmpty(property)) {
+            additionalProperties.put(propertyKey, valueToSet);
+        }
+    }",method,good
+"    public static CodegenConfigurator fromFile(String configFile) {
+        if (isNotEmpty(configFile)) {
+            try {
+                return Json.mapper().readValue(new File(configFile), CodegenConfigurator.class);
+            } catch (IOException e) {
+                LOGGER.error(""Unable to deserialize config file: "" + configFile, e);
+            }
+        }
+        return null;
+    }",method,good
+"final class CommandModeConsumer implements Consumer<String> {
+  @NotNull
+  private static final Pattern EMPTY_SPACE = Pattern.compile(""\\s+"");
+  @NotNull
+  private final Collection<Command> myCommands;
+  @NotNull
+  private final Module myModule;
+  @NotNull
+  private final LanguageConsoleImpl myConsole;
+  @Nullable
+  private final CommandExecutor myDefaultExecutor;
+  CommandModeConsumer(@Nullable final Collection<Command> commands,
+                      @NotNull final Module module,
+                      @NotNull final LanguageConsoleImpl console,
+                      @Nullable final CommandExecutor defaultExecutor) {
+    myCommands = commands != null ? new ArrayList<>(commands) : Collections.emptyList();
+    myModule = module;
+    myConsole = console;
+    myDefaultExecutor = defaultExecutor;
+  }
+  @Override
+  public void consume(final String t) {
+    final PsiFileFactory fileFactory = PsiFileFactory.getInstance(myModule.getProject());
+    final CommandLineFile file = PyUtil.as(fileFactory.createFileFromText(CommandLineLanguage.INSTANCE, t), CommandLineFile.class);
+    if (file == null) {
+      return;
+    }
+    final String commandName = file.getCommand();
+    final List<String> commandAndArgs = Arrays.asList(EMPTY_SPACE.split(file.getText().trim()));
+    // 1 because we need to remove command which is on the first place
+    final List<String> args =
+      (commandAndArgs.size() > 1 ? commandAndArgs.subList(1, commandAndArgs.size()) : Collections.emptyList());
+    for (final Command command : myCommands) {
+      if (command.getName().equals(commandName)) {
+        command.execute(commandName, myModule, args, myConsole);
+        return;
+      }
+    }
+    if (myDefaultExecutor != null && !commandAndArgs.isEmpty()) {
+      // Unknown command execution is delegated to default executor
+      myDefaultExecutor.execute(commandAndArgs.get(0), myModule, args, myConsole);
+    }
+    else {
+      myConsole.print(PyBundle.message(""commandLine.commandNotFound"", commandName), ConsoleViewContentType.ERROR_OUTPUT);
+      myConsole.print("""", ConsoleViewContentType.SYSTEM_OUTPUT);
+    }
+  }
+}",class,changes_recommended
+"  CommandModeConsumer(@Nullable final Collection<Command> commands,
+                      @NotNull final Module module,
+                      @NotNull final LanguageConsoleImpl console,
+                      @Nullable final CommandExecutor defaultExecutor) {
+    myCommands = commands != null ? new ArrayList<>(commands) : Collections.emptyList();
+    myModule = module;
+    myConsole = console;
+    myDefaultExecutor = defaultExecutor;
+  }",method,good
+"  @Override
+  public void consume(final String t) {
+    final PsiFileFactory fileFactory = PsiFileFactory.getInstance(myModule.getProject());
+    final CommandLineFile file = PyUtil.as(fileFactory.createFileFromText(CommandLineLanguage.INSTANCE, t), CommandLineFile.class);
+    if (file == null) {
+      return;
+    }
+    final String commandName = file.getCommand();
+    final List<String> commandAndArgs = Arrays.asList(EMPTY_SPACE.split(file.getText().trim()));
+    // 1 because we need to remove command which is on the first place
+    final List<String> args =
+      (commandAndArgs.size() > 1 ? commandAndArgs.subList(1, commandAndArgs.size()) : Collections.emptyList());
+    for (final Command command : myCommands) {
+      if (command.getName().equals(commandName)) {
+        command.execute(commandName, myModule, args, myConsole);
+        return;
+      }
+    }
+    if (myDefaultExecutor != null && !commandAndArgs.isEmpty()) {
+      // Unknown command execution is delegated to default executor
+      myDefaultExecutor.execute(commandAndArgs.get(0), myModule, args, myConsole);
+    }
+    else {
+      myConsole.print(PyBundle.message(""commandLine.commandNotFound"", commandName), ConsoleViewContentType.ERROR_OUTPUT);
+      myConsole.print("""", ConsoleViewContentType.SYSTEM_OUTPUT);
+    }
+  }",method,good
+"    if (file == null) {
+      return;
+    }",method,good
+"    for (final Command command : myCommands) {
+      if (command.getName().equals(commandName)) {
+        command.execute(commandName, myModule, args, myConsole);
+        return;
+      }
+    }",method,good
+"    @Override
+    public String getHelp()
+    {
+        return ""Generates a Java JAXRS Server application based on Apache CXF framework."";
+    }",method,good
+"    public void setGenerateSpringApplication(boolean generateSpringApplication) {
+        this.generateSpringApplication = generateSpringApplication;
+    }",method,good
+"    public void setUseSpringAnnotationConfig(boolean useSpringAnnotationConfig) {
+        this.useSpringAnnotationConfig = useSpringAnnotationConfig;
+    }",method,good
+"    public void setUseSwaggerFeature(boolean useSwaggerFeature) {
+        this.useSwaggerFeature = useSwaggerFeature;
+    }",method,good
+"    public void setUseWadlFeature(boolean useWadlFeature) {
+        this.useWadlFeature = useWadlFeature;
+    }",method,good
+"    public void setUseMultipartFeature(boolean useMultipartFeature) {
+        this.useMultipartFeature = useMultipartFeature;
+    }",method,good
+"    public void setUseGzipFeature(boolean useGzipFeature) {
+        this.useGzipFeature = useGzipFeature;
+    }",method,good
+"    public void setUseLoggingFeature(boolean useLoggingFeature) {
+        this.useLoggingFeature = useLoggingFeature;
+    }",method,good
+"    public void setUseBeanValidationFeature(boolean useBeanValidationFeature) {
+        this.useBeanValidationFeature = useBeanValidationFeature;
+    }",method,good
+"    public void setGenerateSpringBootApplication(boolean generateSpringBootApplication) {
+        this.generateSpringBootApplication = generateSpringBootApplication;
+    }",method,good
+"    public void setGenerateJbossDeploymentDescriptor(boolean generateJbossDeploymentDescriptor) {
+        this.generateJbossDeploymentDescriptor = generateJbossDeploymentDescriptor;
+    }",method,good
+"    public void setUseGzipFeatureForTests(boolean useGzipFeatureForTests) {
+        this.useGzipFeatureForTests = useGzipFeatureForTests;
+    }",method,good
+"    public void setUseLoggingFeatureForTests(boolean useLoggingFeatureForTests) {
+        this.useLoggingFeatureForTests = useLoggingFeatureForTests;
+    }",method,good
+"    public void setUseSwaggerUI(boolean useSwaggerUI) {
+        this.useSwaggerUI = useSwaggerUI;
+    }",method,good
+"    public void setAddConsumesProducesJson(boolean addConsumesProducesJson) {
+        this.addConsumesProducesJson = addConsumesProducesJson;
+    }",method,good

@@ -1,0 +1,1765 @@
+code_snippet,type,score
+"  private static class ChangeListKey extends Trinity<String, String, String> {
+    public ChangeListKey(final String branch, final String author, final String message) {
+      super(branch, author, message);
+    }
+  }",class,
+"    public ChangeListKey(final String branch, final String author, final String message) {
+      super(branch, author, message);
+    }",method,
+"  public CvsChangeListsBuilder(final String rootPath, final CvsEnvironment environment, final Project project, final VirtualFile rootFile) {
+    myRootPath = rootPath;
+    myEnvironment = environment;
+    myProject = project;
+    myRootFile = rootFile;
+  }",method,
+"  public List<CvsChangeList> getVersions() {
+    final ArrayList<CvsChangeList> result = new ArrayList<>();
+    for (List<CvsChangeList> versions : myCache.values()) {
+      result.addAll(versions);
+    }
+    return result;
+  }",method,
+"  public CvsChangeList addRevision(RevisionWrapper revisionWrapper) {
+    final Revision revision = revisionWrapper.getRevision();
+    final CvsChangeList version = findOrCreateVersionFor(revision.getMessage(),
+                                                         revisionWrapper.getTime(),
+                                                         revision.getAuthor(),
+                                                         revisionWrapper.getBranch(),
+                                                         revisionWrapper.getFile());
+    version.addFileRevision(revisionWrapper);
+    return version;
+  }",method,
+"  private CvsChangeList findOrCreateVersionFor(final String message, final long date, final String author,
+                                               final String branch, final String path) {
+    final ChangeListKey key = new ChangeListKey(branch, author, message);
+    final List<CvsChangeList> versions = myCache.get(key);
+    if (versions != null) {
+      for (int i = versions.size() - 1; i >= 0; i--) {
+        final CvsChangeList version = versions.get(i);
+        if (version.containsDate(date) && !version.containsFile(path)) {
+          return version;
+        }
+      }
+    }
+    final CvsChangeList result =
+      new CvsChangeList(myProject, myEnvironment, myRootFile, myLastNumber, message, date, author, myRootPath);
+    myLastNumber += 1;
+    if (!myCache.containsKey(key)) {
+      myCache.put(key, new ArrayList<>());
+    }
+    myCache.get(key).add(result);
+    return result;
+  }",method,
+"    if (versions != null) {
+      for (int i = versions.size() - 1; i >= 0; i--) {
+        final CvsChangeList version = versions.get(i);
+        if (version.containsDate(date) && !version.containsFile(path)) {
+          return version;
+        }
+      }
+    }",method,
+"  @Nullable
+  public List<RevisionWrapper> revisionWrappersFromLog(final LogInformationWrapper log) {
+    final String file = log.getFile();
+    if (!CvsChangeList.isAncestor(myRootPath, file)) {
+      return null;
+    }
+    final List<RevisionWrapper> result = new ArrayList<>();
+    for (Revision revision : log.getRevisions()) {
+      if (revision != null) {
+        if (CvsChangeList.DEAD_STATE.equals(revision.getState()) &&
+            revision.getMessage().contains(INITIALLY_ADDED_ON_BRANCH)) {
+          // ignore dead revision (otherwise it'll get stuck in incoming changes forever - it's considered a deletion and
+          // the file is never actually deleted)
+          continue;
+        }
+        final String branchName = getBranchName(revision, log.getSymbolicNames());
+        result.add(new RevisionWrapper(file, revision, branchName));
+      }
+    }
+    return result;
+  }",method,
+"      if (revision != null) {
+        if (CvsChangeList.DEAD_STATE.equals(revision.getState()) &&
+            revision.getMessage().contains(INITIALLY_ADDED_ON_BRANCH)) {
+          // ignore dead revision (otherwise it'll get stuck in incoming changes forever - it's considered a deletion and
+          // the file is never actually deleted)
+          continue;
+        }
+        final String branchName = getBranchName(revision, log.getSymbolicNames());
+        result.add(new RevisionWrapper(file, revision, branchName));
+      }",method,
+"  public void add(LogInformationWrapper log) {
+    final List<RevisionWrapper> wrappers = revisionWrappersFromLog(log);
+    if (wrappers == null) {
+      return;
+    }
+    for (RevisionWrapper wrapper : wrappers) {
+      addRevision(wrapper);
+    }
+  }",method,
+"    if (wrappers == null) {
+      return;
+    }",method,
+"    for (RevisionWrapper wrapper : wrappers) {
+      addRevision(wrapper);
+    }",method,
+"  @Nullable
+  private static String getBranchName(final Revision revision, final List<SymbolicName> symbolicNames) {
+    final CvsRevisionNumber number = new CvsRevisionNumber(revision.getNumber().trim());
+    final int[] subRevisions = number.getSubRevisions();
+    String branchNumberString = null;
+    if (subRevisions != null && subRevisions.length >= 4) {
+      final int branchRevNumber = subRevisions [subRevisions.length-2];
+      final CvsRevisionNumber branchNumber = number.removeTailVersions(2).addTailVersions(0, branchRevNumber);
+      branchNumberString = branchNumber.asString();
+    }
+    if (branchNumberString == null) {
+      final String branches = revision.getBranches();
+      if (branches != null && branches.length() > 0) {
+        final String[] branchNames = branches.split("";"");
+        final CvsRevisionNumber revisionNumber = new CvsRevisionNumber(branchNames [0].trim());
+        final int[] branchSubRevisions = revisionNumber.getSubRevisions();
+        assert branchSubRevisions != null;
+        final int rev = branchSubRevisions [branchSubRevisions.length-1];
+        final CvsRevisionNumber branchNumber = revisionNumber.removeTailVersions(1).addTailVersions(0, rev);
+        branchNumberString = branchNumber.asString();
+      }
+    }
+    if (branchNumberString != null) {
+      for(SymbolicName name: symbolicNames) {
+        if (name.getRevision().equals(branchNumberString)) {
+          return name.getName();
+        }
+      }
+    }
+    return null;
+  }",method,
+"    if (subRevisions != null && subRevisions.length >= 4) {
+      final int branchRevNumber = subRevisions [subRevisions.length-2];
+      final CvsRevisionNumber branchNumber = number.removeTailVersions(2).addTailVersions(0, branchRevNumber);
+      branchNumberString = branchNumber.asString();
+    }",method,
+"    if (branchNumberString == null) {
+      final String branches = revision.getBranches();
+      if (branches != null && branches.length() > 0) {
+        final String[] branchNames = branches.split("";"");
+        final CvsRevisionNumber revisionNumber = new CvsRevisionNumber(branchNames [0].trim());
+        final int[] branchSubRevisions = revisionNumber.getSubRevisions();
+        assert branchSubRevisions != null;
+        final int rev = branchSubRevisions [branchSubRevisions.length-1];
+        final CvsRevisionNumber branchNumber = revisionNumber.removeTailVersions(1).addTailVersions(0, rev);
+        branchNumberString = branchNumber.asString();
+      }
+    }",method,
+"    if (branchNumberString != null) {
+      for(SymbolicName name: symbolicNames) {
+        if (name.getRevision().equals(branchNumberString)) {
+          return name.getName();
+        }
+      }
+    }",method,
+"      for(SymbolicName name: symbolicNames) {
+        if (name.getRevision().equals(branchNumberString)) {
+          return name.getName();
+        }
+      }",method,
+"  private static class PyInplaceParameterIntroducer extends InplaceVariableIntroducer<PsiElement> {
+    private final PyNamedParameter myTarget;
+    public PyInplaceParameterIntroducer(PyNamedParameter target,
+                                       IntroduceOperation operation,
+                                       List<PsiElement> occurrences) {
+      super(target, operation.getEditor(), operation.getProject(), ""Introduce Parameter"",
+            occurrences.toArray(new PsiElement[occurrences.size()]), null);
+      myTarget = target;
+    }
+    @Override
+    protected PsiElement checkLocalScope() {
+      return myTarget.getContainingFile();
+    }
+  }",class,
+"  private static boolean isResolvedToParameter(PsiElement element) {
+    while (element instanceof PyReferenceExpression) {
+      final PsiReference reference = element.getReference();
+      if (reference != null && reference.resolve() instanceof PyNamedParameter)
+        return true;
+      element = ((PyReferenceExpression)element).getQualifier();
+    }
+    return false;
+  }",method,
+"    while (element instanceof PyReferenceExpression) {
+      final PsiReference reference = element.getReference();
+      if (reference != null && reference.resolve() instanceof PyNamedParameter)
+        return true;
+      element = ((PyReferenceExpression)element).getQualifier();
+    }",method,
+"  @Override
+  protected void performInplaceIntroduce(IntroduceOperation operation) {
+    final PsiElement statement = performRefactoring(operation);
+    if (statement instanceof PyNamedParameter) {
+      final List<PsiElement> occurrences = operation.getOccurrences();
+      final PsiElement occurrence = findOccurrenceUnderCaret(occurrences, operation.getEditor());
+      PsiElement elementForCaret = occurrence != null ? occurrence : statement;
+      operation.getEditor().getCaretModel().moveToOffset(elementForCaret.getTextRange().getStartOffset());
+      final InplaceVariableIntroducer<PsiElement> introducer =
+        new PyInplaceParameterIntroducer((PyNamedParameter)statement, operation, occurrences);
+      introducer.performInplaceRefactoring(new LinkedHashSet<>(operation.getSuggestedNames()));
+    }
+  }",method,
+"    if (statement instanceof PyNamedParameter) {
+      final List<PsiElement> occurrences = operation.getOccurrences();
+      final PsiElement occurrence = findOccurrenceUnderCaret(occurrences, operation.getEditor());
+      PsiElement elementForCaret = occurrence != null ? occurrence : statement;
+      operation.getEditor().getCaretModel().moveToOffset(elementForCaret.getTextRange().getStartOffset());
+      final InplaceVariableIntroducer<PsiElement> introducer =
+        new PyInplaceParameterIntroducer((PyNamedParameter)statement, operation, occurrences);
+      introducer.performInplaceRefactoring(new LinkedHashSet<>(operation.getSuggestedNames()));
+    }",method,
+"    public PyInplaceParameterIntroducer(PyNamedParameter target,
+                                       IntroduceOperation operation,
+                                       List<PsiElement> occurrences) {
+      super(target, operation.getEditor(), operation.getProject(), ""Introduce Parameter"",
+            occurrences.toArray(new PsiElement[occurrences.size()]), null);
+      myTarget = target;
+    }",method,
+"    @Override
+    protected PsiElement checkLocalScope() {
+      return myTarget.getContainingFile();
+    }",method,
+"  @Override
+  protected String getRefactoringId() {
+    return ""refactoring.python.introduce.parameter"";
+  }",method,
+"public class BuckQueryEnvironmentTest {
+  @Rule public TemporaryPaths tmp = new TemporaryPaths();
+  private BuckQueryEnvironment buckQueryEnvironment;
+  private Path cellRoot;
+  private ListeningExecutorService executor;
+  private PerBuildState parserState;
+  private QueryTarget createQueryBuildTarget(String baseName, String shortName) {
+    return QueryBuildTarget.of(BuildTargetFactory.newInstance(cellRoot, baseName, shortName));
+  }
+  @Before
+  public void setUp() throws IOException, InterruptedException {
+    ProjectWorkspace workspace =
+        TestDataHelper.createProjectWorkspaceForScenario(this, ""query_command"", tmp);
+    workspace.setUp();
+    Cell cell =
+        new TestCellBuilder()
+            .setFilesystem(TestProjectFilesystems.createProjectFilesystem(workspace.getDestPath()))
+            .build();
+    TypeCoercerFactory typeCoercerFactory = new DefaultTypeCoercerFactory();
+    Parser parser =
+        new Parser(
+            new BroadcastEventListener(),
+            cell.getBuckConfig().getView(ParserConfig.class),
+            typeCoercerFactory,
+            new ConstructorArgMarshaller(typeCoercerFactory));
+    BuckEventBus eventBus = BuckEventBusForTests.newInstance();
+    parserState =
+        new PerBuildState(
+            parser,
+            eventBus,
+            executor,
+            cell,
+             false,
+            PerBuildState.SpeculativeParsing.ENABLED);
+    TargetPatternEvaluator targetPatternEvaluator =
+        new TargetPatternEvaluator(
+            cell, FakeBuckConfig.builder().build(), parser, eventBus,  false);
+    OwnersReport.Builder ownersReportBuilder = OwnersReport.builder(cell, parser, eventBus);
+    executor = MoreExecutors.listeningDecorator(Executors.newSingleThreadExecutor());
+    buckQueryEnvironment =
+        BuckQueryEnvironment.from(
+            cell, ownersReportBuilder, parserState, executor, targetPatternEvaluator);
+    cellRoot = workspace.getDestPath();
+  }
+  @After
+  public void cleanUp() throws Exception {
+    parserState.close();
+    executor.shutdown();
+  }
+  @Test
+  public void testResolveSingleTargets() throws QueryException {
+    ImmutableSet<QueryTarget> targets;
+    ImmutableSet<QueryTarget> expectedTargets;
+    targets = buckQueryEnvironment.getTargetsMatchingPattern(""//example:six"");
+    expectedTargets = ImmutableSortedSet.of(createQueryBuildTarget(""//example"", ""six""));
+    assertThat(targets, is(equalTo(expectedTargets)));
+    targets = buckQueryEnvironment.getTargetsMatchingPattern(""//example/app:seven"");
+    expectedTargets = ImmutableSortedSet.of(createQueryBuildTarget(""//example/app"", ""seven""));
+    assertThat(targets, is(equalTo(expectedTargets)));
+  }
+  @Test
+  public void testResolveTargetPattern() throws QueryException {
+    ImmutableSet<QueryTarget> expectedTargets =
+        ImmutableSortedSet.of(
+            createQueryBuildTarget(""//example"", ""one""),
+            createQueryBuildTarget(""//example"", ""two""),
+            createQueryBuildTarget(""//example"", ""three""),
+            createQueryBuildTarget(""//example"", ""four""),
+            createQueryBuildTarget(""//example"", ""five""),
+            createQueryBuildTarget(""//example"", ""six""),
+            createQueryBuildTarget(""//example"", ""application-test-lib""),
+            createQueryBuildTarget(""//example"", ""test-lib-lib""),
+            createQueryBuildTarget(""//example"", ""one-tests""),
+            createQueryBuildTarget(""//example"", ""four-tests""),
+            createQueryBuildTarget(""//example"", ""four-application-tests""),
+            createQueryBuildTarget(""//example"", ""six-tests""));
+    assertThat(
+        buckQueryEnvironment.getTargetsMatchingPattern(""//example:""), is(equalTo(expectedTargets)));
+  }
+}",class,
+"  private QueryTarget createQueryBuildTarget(String baseName, String shortName) {
+    return QueryBuildTarget.of(BuildTargetFactory.newInstance(cellRoot, baseName, shortName));
+  }",method,
+"  @Before
+  public void setUp() throws IOException, InterruptedException {
+    ProjectWorkspace workspace =
+        TestDataHelper.createProjectWorkspaceForScenario(this, ""query_command"", tmp);
+    workspace.setUp();
+    Cell cell =
+        new TestCellBuilder()
+            .setFilesystem(TestProjectFilesystems.createProjectFilesystem(workspace.getDestPath()))
+            .build();
+    TypeCoercerFactory typeCoercerFactory = new DefaultTypeCoercerFactory();
+    Parser parser =
+        new Parser(
+            new BroadcastEventListener(),
+            cell.getBuckConfig().getView(ParserConfig.class),
+            typeCoercerFactory,
+            new ConstructorArgMarshaller(typeCoercerFactory));
+    BuckEventBus eventBus = BuckEventBusForTests.newInstance();
+    parserState =
+        new PerBuildState(
+            parser,
+            eventBus,
+            executor,
+            cell,
+             false,
+            PerBuildState.SpeculativeParsing.ENABLED);
+    TargetPatternEvaluator targetPatternEvaluator =
+        new TargetPatternEvaluator(
+            cell, FakeBuckConfig.builder().build(), parser, eventBus,  false);
+    OwnersReport.Builder ownersReportBuilder = OwnersReport.builder(cell, parser, eventBus);
+    executor = MoreExecutors.listeningDecorator(Executors.newSingleThreadExecutor());
+    buckQueryEnvironment =
+        BuckQueryEnvironment.from(
+            cell, ownersReportBuilder, parserState, executor, targetPatternEvaluator);
+    cellRoot = workspace.getDestPath();
+  }",method,
+"  @After
+  public void cleanUp() throws Exception {
+    parserState.close();
+    executor.shutdown();
+  }",method,
+"  @Test
+  public void testResolveSingleTargets() throws QueryException {
+    ImmutableSet<QueryTarget> targets;
+    ImmutableSet<QueryTarget> expectedTargets;
+    targets = buckQueryEnvironment.getTargetsMatchingPattern(""//example:six"");
+    expectedTargets = ImmutableSortedSet.of(createQueryBuildTarget(""//example"", ""six""));
+    assertThat(targets, is(equalTo(expectedTargets)));
+    targets = buckQueryEnvironment.getTargetsMatchingPattern(""//example/app:seven"");
+    expectedTargets = ImmutableSortedSet.of(createQueryBuildTarget(""//example/app"", ""seven""));
+    assertThat(targets, is(equalTo(expectedTargets)));
+  }",method,
+"  @Test
+  public void testResolveTargetPattern() throws QueryException {
+    ImmutableSet<QueryTarget> expectedTargets =
+        ImmutableSortedSet.of(
+            createQueryBuildTarget(""//example"", ""one""),
+            createQueryBuildTarget(""//example"", ""two""),
+            createQueryBuildTarget(""//example"", ""three""),
+            createQueryBuildTarget(""//example"", ""four""),
+            createQueryBuildTarget(""//example"", ""five""),
+            createQueryBuildTarget(""//example"", ""six""),
+            createQueryBuildTarget(""//example"", ""application-test-lib""),
+            createQueryBuildTarget(""//example"", ""test-lib-lib""),
+            createQueryBuildTarget(""//example"", ""one-tests""),
+            createQueryBuildTarget(""//example"", ""four-tests""),
+            createQueryBuildTarget(""//example"", ""four-application-tests""),
+            createQueryBuildTarget(""//example"", ""six-tests""));
+    assertThat(
+        buckQueryEnvironment.getTargetsMatchingPattern(""//example:""), is(equalTo(expectedTargets)));
+  }",method,
+"public class KtParameterList extends KtElementImplStub<KotlinPlaceHolderStub<KtParameterList>> {
+    public KtParameterList(@NotNull ASTNode node) {
+        super(node);
+    }
+    public KtParameterList(@NotNull KotlinPlaceHolderStub<KtParameterList> stub) {
+        super(stub, KtStubElementTypes.VALUE_PARAMETER_LIST);
+    }
+    @Override
+    public <R, D> R accept(@NotNull KtVisitor<R, D> visitor, D data) {
+        return visitor.visitParameterList(this, data);
+    }
+    @Override
+    public PsiElement getParent() {
+        KotlinPlaceHolderStub<KtParameterList> stub = getStub();
+        return stub != null ? stub.getParentStub().getPsi() : super.getParent();
+    }
+    @NotNull
+    public List<KtParameter> getParameters() {
+        return getStubOrPsiChildrenAsList(KtStubElementTypes.VALUE_PARAMETER);
+    }
+    @NotNull
+    public KtParameter addParameter(@NotNull KtParameter parameter) {
+        return EditCommaSeparatedListHelper.INSTANCE.addItem(this, getParameters(), parameter);
+    }
+    @NotNull
+    public KtParameter addParameterBefore(@NotNull KtParameter parameter, @Nullable KtParameter anchor) {
+        return EditCommaSeparatedListHelper.INSTANCE.addItemBefore(this, getParameters(), parameter, anchor);
+    }
+    @NotNull
+    public KtParameter addParameterAfter(@NotNull KtParameter parameter, @Nullable KtParameter anchor) {
+        return EditCommaSeparatedListHelper.INSTANCE.addItemAfter(this, getParameters(), parameter, anchor);
+    }
+    public void removeParameter(@NotNull KtParameter parameter) {
+        EditCommaSeparatedListHelper.INSTANCE.removeItem(parameter);
+    }
+    public void removeParameter(int index) {
+        removeParameter(getParameters().get(index));
+    }
+    public KtDeclarationWithBody getOwnerFunction() {
+        PsiElement parent = getParentByStub();
+        if (!(parent instanceof KtDeclarationWithBody)) return null;
+        return (KtDeclarationWithBody) parent;
+    }
+    @Nullable
+    public PsiElement getRightParenthesis() {
+        return findChildByType(KtTokens.RPAR);
+    }
+    @Nullable
+    public PsiElement getLeftParenthesis() {
+        return findChildByType(KtTokens.LPAR);
+    }
+}",class,
+"    public KtParameterList(@NotNull ASTNode node) {
+        super(node);
+    }",method,
+"    public KtParameterList(@NotNull KotlinPlaceHolderStub<KtParameterList> stub) {
+        super(stub, KtStubElementTypes.VALUE_PARAMETER_LIST);
+    }",method,
+"    @Override
+    public <R, D> R accept(@NotNull KtVisitor<R, D> visitor, D data) {
+        return visitor.visitParameterList(this, data);
+    }",method,
+"    @Override
+    public PsiElement getParent() {
+        KotlinPlaceHolderStub<KtParameterList> stub = getStub();
+        return stub != null ? stub.getParentStub().getPsi() : super.getParent();
+    }",method,
+"    @NotNull
+    public List<KtParameter> getParameters() {
+        return getStubOrPsiChildrenAsList(KtStubElementTypes.VALUE_PARAMETER);
+    }",method,
+"    @NotNull
+    public KtParameter addParameter(@NotNull KtParameter parameter) {
+        return EditCommaSeparatedListHelper.INSTANCE.addItem(this, getParameters(), parameter);
+    }",method,
+"    @NotNull
+    public KtParameter addParameterBefore(@NotNull KtParameter parameter, @Nullable KtParameter anchor) {
+        return EditCommaSeparatedListHelper.INSTANCE.addItemBefore(this, getParameters(), parameter, anchor);
+    }",method,
+"    @NotNull
+    public KtParameter addParameterAfter(@NotNull KtParameter parameter, @Nullable KtParameter anchor) {
+        return EditCommaSeparatedListHelper.INSTANCE.addItemAfter(this, getParameters(), parameter, anchor);
+    }",method,
+"    public void removeParameter(@NotNull KtParameter parameter) {
+        EditCommaSeparatedListHelper.INSTANCE.removeItem(parameter);
+    }",method,
+"    public void removeParameter(int index) {
+        removeParameter(getParameters().get(index));
+    }",method,
+"    public KtDeclarationWithBody getOwnerFunction() {
+        PsiElement parent = getParentByStub();
+        if (!(parent instanceof KtDeclarationWithBody)) return null;
+        return (KtDeclarationWithBody) parent;
+    }",method,
+"    @Nullable
+    public PsiElement getRightParenthesis() {
+        return findChildByType(KtTokens.RPAR);
+    }",method,
+"    @Nullable
+    public PsiElement getLeftParenthesis() {
+        return findChildByType(KtTokens.LPAR);
+    }",method,
+"public class KeyboardShortcutAppItemLayout extends RelativeLayout {
+    private static final double MAX_WIDTH_PERCENT_FOR_KEYWORDS = 0.70;
+    public KeyboardShortcutAppItemLayout(Context context) {
+        super(context);
+    }
+    public KeyboardShortcutAppItemLayout(Context context, AttributeSet attrs) {
+        super(context, attrs);
+    }
+    @Override
+    protected void onMeasure(int widthMeasureSpec, int heightMeasureSpec) {
+        if (MeasureSpec.getMode(widthMeasureSpec) == MeasureSpec.EXACTLY) {
+            ImageView shortcutIcon = findViewById(R.id.keyboard_shortcuts_icon);
+            TextView shortcutKeyword = findViewById(R.id.keyboard_shortcuts_keyword);
+            int totalMeasuredWidth = MeasureSpec.getSize(widthMeasureSpec);
+            int totalPadding = getPaddingLeft() + getPaddingRight();
+            int availableWidth = totalMeasuredWidth - totalPadding;
+            if (shortcutIcon.getVisibility() == View.VISIBLE) {
+                availableWidth = availableWidth - shortcutIcon.getMeasuredWidth();
+            }
+            shortcutKeyword.setMaxWidth((int)
+                    Math.round(availableWidth * MAX_WIDTH_PERCENT_FOR_KEYWORDS));
+        }
+        super.onMeasure(widthMeasureSpec, heightMeasureSpec);
+    }
+}",class,
+"    public KeyboardShortcutAppItemLayout(Context context) {
+        super(context);
+    }",method,
+"    public KeyboardShortcutAppItemLayout(Context context, AttributeSet attrs) {
+        super(context, attrs);
+    }",method,
+"    @Override
+    protected void onMeasure(int widthMeasureSpec, int heightMeasureSpec) {
+        if (MeasureSpec.getMode(widthMeasureSpec) == MeasureSpec.EXACTLY) {
+            ImageView shortcutIcon = findViewById(R.id.keyboard_shortcuts_icon);
+            TextView shortcutKeyword = findViewById(R.id.keyboard_shortcuts_keyword);
+            int totalMeasuredWidth = MeasureSpec.getSize(widthMeasureSpec);
+            int totalPadding = getPaddingLeft() + getPaddingRight();
+            int availableWidth = totalMeasuredWidth - totalPadding;
+            if (shortcutIcon.getVisibility() == View.VISIBLE) {
+                availableWidth = availableWidth - shortcutIcon.getMeasuredWidth();
+            }
+            shortcutKeyword.setMaxWidth((int)
+                    Math.round(availableWidth * MAX_WIDTH_PERCENT_FOR_KEYWORDS));
+        }
+        super.onMeasure(widthMeasureSpec, heightMeasureSpec);
+    }",method,
+"public class CxxDescriptionEnhancerTest {
+  @Test
+  public void libraryTestIncludesPrivateHeadersOfLibraryUnderTest() throws Exception {
+    BuildTarget libTarget = BuildTargetFactory.newInstance(""//:lib"");
+    BuildTarget testTarget = BuildTargetFactory.newInstance(""//:test"");
+    BuildRuleParams libParams = TestBuildRuleParams.create();
+    FakeCxxLibrary libRule =
+        new FakeCxxLibrary(
+            libTarget,
+            new FakeProjectFilesystem(),
+            libParams,
+            BuildTargetFactory.newInstance(""//:header""),
+            BuildTargetFactory.newInstance(""//:symlink""),
+            BuildTargetFactory.newInstance(""//:privateheader""),
+            BuildTargetFactory.newInstance(""//:privatesymlink""),
+            new FakeBuildRule(""//:archive""),
+            new FakeBuildRule(""//:shared""),
+            Paths.get(""output/path/lib.so""),
+            ""lib.so"",
+            // Ensure the test is listed as a dep of the lib.
+            ImmutableSortedSet.of(testTarget));
+    ImmutableSet<BuildRule> deps = ImmutableSortedSet.of(libRule);
+    ImmutableList<CxxPreprocessorInput> combinedInput =
+        CxxDescriptionEnhancer.collectCxxPreprocessorInput(
+            testTarget,
+            CxxPlatformUtils.DEFAULT_PLATFORM,
+            deps,
+            ImmutableMultimap.of(),
+            ImmutableList.of(),
+            ImmutableSet.of(),
+            CxxPreprocessables.getTransitiveCxxPreprocessorInput(
+                CxxPlatformUtils.DEFAULT_PLATFORM, deps),
+            ImmutableList.of(),
+            Optional.empty(),
+            ImmutableSortedSet.of());
+    Set<SourcePath> roots = new HashSet<>();
+    for (CxxHeaders headers : CxxPreprocessorInput.concat(combinedInput).getIncludes()) {
+      roots.add(headers.getRoot());
+    }
+    assertThat(
+        ""Test of library should include both public and private headers"",
+        roots,
+        Matchers.hasItems(
+            DefaultBuildTargetSourcePath.of(BuildTargetFactory.newInstance(""//:symlink"")),
+            DefaultBuildTargetSourcePath.of(BuildTargetFactory.newInstance(""//:privatesymlink""))));
+  }
+  @Test
+  public void libraryTestIncludesPublicHeadersOfDependenciesOfLibraryUnderTest() throws Exception {
+    BuildTarget libTarget = BuildTargetFactory.newInstance(""//:lib"");
+    BuildTarget otherlibTarget = BuildTargetFactory.newInstance(""//:otherlib"");
+    BuildTarget testTarget = BuildTargetFactory.newInstance(""//:test"");
+    BuildRuleParams otherlibParams = TestBuildRuleParams.create();
+    FakeCxxLibrary otherlibRule =
+        new FakeCxxLibrary(
+            otherlibTarget,
+            new FakeProjectFilesystem(),
+            otherlibParams,
+            BuildTargetFactory.newInstance(""//:otherheader""),
+            BuildTargetFactory.newInstance(""//:othersymlink""),
+            BuildTargetFactory.newInstance(""//:otherprivateheader""),
+            BuildTargetFactory.newInstance(""//:otherprivatesymlink""),
+            new FakeBuildRule(""//:archive""),
+            new FakeBuildRule(""//:shared""),
+            Paths.get(""output/path/lib.so""),
+            ""lib.so"",
+            // This library has no tests.
+            ImmutableSortedSet.of());
+    BuildRuleParams libParams =
+        TestBuildRuleParams.create().withDeclaredDeps(ImmutableSortedSet.of(otherlibRule));
+    FakeCxxLibrary libRule =
+        new FakeCxxLibrary(
+            libTarget,
+            new FakeProjectFilesystem(),
+            libParams,
+            BuildTargetFactory.newInstance(""//:header""),
+            BuildTargetFactory.newInstance(""//:symlink""),
+            BuildTargetFactory.newInstance(""//:privateheader""),
+            BuildTargetFactory.newInstance(""//:privatesymlink""),
+            new FakeBuildRule(""//:archive""),
+            new FakeBuildRule(""//:shared""),
+            Paths.get(""output/path/lib.so""),
+            ""lib.so"",
+            // Ensure the test is listed as a dep of the lib.
+            ImmutableSortedSet.of(testTarget));
+    ImmutableSortedSet<BuildRule> deps = ImmutableSortedSet.of(libRule);
+    ImmutableList<CxxPreprocessorInput> combinedInput =
+        CxxDescriptionEnhancer.collectCxxPreprocessorInput(
+            testTarget,
+            CxxPlatformUtils.DEFAULT_PLATFORM,
+            deps,
+            ImmutableMultimap.of(),
+            ImmutableList.of(),
+            ImmutableSet.of(),
+            CxxPreprocessables.getTransitiveCxxPreprocessorInput(
+                CxxPlatformUtils.DEFAULT_PLATFORM, deps),
+            ImmutableList.of(),
+            Optional.empty(),
+            ImmutableSortedSet.of());
+    Set<SourcePath> roots = new HashSet<>();
+    for (CxxHeaders headers : CxxPreprocessorInput.concat(combinedInput).getIncludes()) {
+      roots.add(headers.getRoot());
+    }
+    assertThat(
+        ""Test of library should include public dependency headers"",
+        Iterables.transform(
+            CxxPreprocessorInput.concat(combinedInput).getIncludes(), CxxHeaders::getRoot),
+        allOf(
+            hasItem(
+                DefaultBuildTargetSourcePath.of(BuildTargetFactory.newInstance(""//:othersymlink""))),
+            not(
+                hasItem(
+                    DefaultBuildTargetSourcePath.of(
+                        BuildTargetFactory.newInstance(""//:otherprivatesymlink""))))));
+  }
+  @Test
+  public void nonTestLibraryDepDoesNotIncludePrivateHeadersOfLibrary() throws Exception {
+    BuildTarget libTarget = BuildTargetFactory.newInstance(""//:lib"");
+    BuildRuleParams libParams = TestBuildRuleParams.create();
+    FakeCxxLibrary libRule =
+        new FakeCxxLibrary(
+            libTarget,
+            new FakeProjectFilesystem(),
+            libParams,
+            BuildTargetFactory.newInstance(""//:header""),
+            BuildTargetFactory.newInstance(""//:symlink""),
+            BuildTargetFactory.newInstance(""//:privateheader""),
+            BuildTargetFactory.newInstance(""//:privatesymlink""),
+            new FakeBuildRule(""//:archive""),
+            new FakeBuildRule(""//:shared""),
+            Paths.get(""output/path/lib.so""),
+            ""lib.so"",
+            // This library has no tests.
+            ImmutableSortedSet.of());
+    BuildTarget otherLibDepTarget = BuildTargetFactory.newInstance(""//:other"");
+    ImmutableSortedSet<BuildRule> deps = ImmutableSortedSet.of(libRule);
+    ImmutableList<CxxPreprocessorInput> otherInput =
+        CxxDescriptionEnhancer.collectCxxPreprocessorInput(
+            otherLibDepTarget,
+            CxxPlatformUtils.DEFAULT_PLATFORM,
+            deps,
+            ImmutableMultimap.of(),
+            ImmutableList.of(),
+            ImmutableSet.of(),
+            CxxPreprocessables.getTransitiveCxxPreprocessorInput(
+                CxxPlatformUtils.DEFAULT_PLATFORM, deps),
+            ImmutableList.of(),
+            Optional.empty(),
+            ImmutableSortedSet.of());
+    Set<SourcePath> roots = new HashSet<>();
+    for (CxxHeaders headers : CxxPreprocessorInput.concat(otherInput).getIncludes()) {
+      roots.add(headers.getRoot());
+    }
+    assertThat(
+        ""Non-test rule with library dep should include public and not private headers"",
+        roots,
+        allOf(
+            hasItem(DefaultBuildTargetSourcePath.of(BuildTargetFactory.newInstance(""//:symlink""))),
+            not(
+                hasItem(
+                    DefaultBuildTargetSourcePath.of(
+                        BuildTargetFactory.newInstance(""//:privatesymlink""))))));
+  }
+  @Test
+  public void testSonameExpansion() {
+    assertThat(soname(""libfoo.so"", ""dylib"", ""%s.dylib""), equalTo(""libfoo.so""));
+    assertThat(soname(""libfoo.$(ext)"", ""good"", ""%s.bad""), equalTo(""libfoo.good""));
+    assertThat(soname(""libfoo.$(ext 2.3)"", ""bad"", ""%s.good""), equalTo(""libfoo.2.3.good""));
+    assertThat(soname(""libfoo.$(ext 2.3)"", ""bad"", ""good.%s""), equalTo(""libfoo.good.2.3""));
+    assertThat(soname(""libfoo.$(ext 2.3)"", ""bad"", ""windows""), equalTo(""libfoo.windows""));
+  }
+  private static String soname(String declared, String extension, String versionedFormat) {
+    return CxxDescriptionEnhancer.getNonDefaultSharedLibrarySoname(
+        declared, extension, versionedFormat);
+  }
+}",class,
+"  @Test
+  public void libraryTestIncludesPrivateHeadersOfLibraryUnderTest() throws Exception {
+    BuildTarget libTarget = BuildTargetFactory.newInstance(""//:lib"");
+    BuildTarget testTarget = BuildTargetFactory.newInstance(""//:test"");
+    BuildRuleParams libParams = TestBuildRuleParams.create();
+    FakeCxxLibrary libRule =
+        new FakeCxxLibrary(
+            libTarget,
+            new FakeProjectFilesystem(),
+            libParams,
+            BuildTargetFactory.newInstance(""//:header""),
+            BuildTargetFactory.newInstance(""//:symlink""),
+            BuildTargetFactory.newInstance(""//:privateheader""),
+            BuildTargetFactory.newInstance(""//:privatesymlink""),
+            new FakeBuildRule(""//:archive""),
+            new FakeBuildRule(""//:shared""),
+            Paths.get(""output/path/lib.so""),
+            ""lib.so"",
+            // Ensure the test is listed as a dep of the lib.
+            ImmutableSortedSet.of(testTarget));
+    ImmutableSet<BuildRule> deps = ImmutableSortedSet.of(libRule);
+    ImmutableList<CxxPreprocessorInput> combinedInput =
+        CxxDescriptionEnhancer.collectCxxPreprocessorInput(
+            testTarget,
+            CxxPlatformUtils.DEFAULT_PLATFORM,
+            deps,
+            ImmutableMultimap.of(),
+            ImmutableList.of(),
+            ImmutableSet.of(),
+            CxxPreprocessables.getTransitiveCxxPreprocessorInput(
+                CxxPlatformUtils.DEFAULT_PLATFORM, deps),
+            ImmutableList.of(),
+            Optional.empty(),
+            ImmutableSortedSet.of());
+    Set<SourcePath> roots = new HashSet<>();
+    for (CxxHeaders headers : CxxPreprocessorInput.concat(combinedInput).getIncludes()) {
+      roots.add(headers.getRoot());
+    }
+    assertThat(
+        ""Test of library should include both public and private headers"",
+        roots,
+        Matchers.hasItems(
+            DefaultBuildTargetSourcePath.of(BuildTargetFactory.newInstance(""//:symlink"")),
+            DefaultBuildTargetSourcePath.of(BuildTargetFactory.newInstance(""//:privatesymlink""))));
+  }",method,
+"  @Test
+  public void libraryTestIncludesPublicHeadersOfDependenciesOfLibraryUnderTest() throws Exception {
+    BuildTarget libTarget = BuildTargetFactory.newInstance(""//:lib"");
+    BuildTarget otherlibTarget = BuildTargetFactory.newInstance(""//:otherlib"");
+    BuildTarget testTarget = BuildTargetFactory.newInstance(""//:test"");
+    BuildRuleParams otherlibParams = TestBuildRuleParams.create();
+    FakeCxxLibrary otherlibRule =
+        new FakeCxxLibrary(
+            otherlibTarget,
+            new FakeProjectFilesystem(),
+            otherlibParams,
+            BuildTargetFactory.newInstance(""//:otherheader""),
+            BuildTargetFactory.newInstance(""//:othersymlink""),
+            BuildTargetFactory.newInstance(""//:otherprivateheader""),
+            BuildTargetFactory.newInstance(""//:otherprivatesymlink""),
+            new FakeBuildRule(""//:archive""),
+            new FakeBuildRule(""//:shared""),
+            Paths.get(""output/path/lib.so""),
+            ""lib.so"",
+            // This library has no tests.
+            ImmutableSortedSet.of());
+    BuildRuleParams libParams =
+        TestBuildRuleParams.create().withDeclaredDeps(ImmutableSortedSet.of(otherlibRule));
+    FakeCxxLibrary libRule =
+        new FakeCxxLibrary(
+            libTarget,
+            new FakeProjectFilesystem(),
+            libParams,
+            BuildTargetFactory.newInstance(""//:header""),
+            BuildTargetFactory.newInstance(""//:symlink""),
+            BuildTargetFactory.newInstance(""//:privateheader""),
+            BuildTargetFactory.newInstance(""//:privatesymlink""),
+            new FakeBuildRule(""//:archive""),
+            new FakeBuildRule(""//:shared""),
+            Paths.get(""output/path/lib.so""),
+            ""lib.so"",
+            // Ensure the test is listed as a dep of the lib.
+            ImmutableSortedSet.of(testTarget));
+    ImmutableSortedSet<BuildRule> deps = ImmutableSortedSet.of(libRule);
+    ImmutableList<CxxPreprocessorInput> combinedInput =
+        CxxDescriptionEnhancer.collectCxxPreprocessorInput(
+            testTarget,
+            CxxPlatformUtils.DEFAULT_PLATFORM,
+            deps,
+            ImmutableMultimap.of(),
+            ImmutableList.of(),
+            ImmutableSet.of(),
+            CxxPreprocessables.getTransitiveCxxPreprocessorInput(
+                CxxPlatformUtils.DEFAULT_PLATFORM, deps),
+            ImmutableList.of(),
+            Optional.empty(),
+            ImmutableSortedSet.of());
+    Set<SourcePath> roots = new HashSet<>();
+    for (CxxHeaders headers : CxxPreprocessorInput.concat(combinedInput).getIncludes()) {
+      roots.add(headers.getRoot());
+    }
+    assertThat(
+        ""Test of library should include public dependency headers"",
+        Iterables.transform(
+            CxxPreprocessorInput.concat(combinedInput).getIncludes(), CxxHeaders::getRoot),
+        allOf(
+            hasItem(
+                DefaultBuildTargetSourcePath.of(BuildTargetFactory.newInstance(""//:othersymlink""))),
+            not(
+                hasItem(
+                    DefaultBuildTargetSourcePath.of(
+                        BuildTargetFactory.newInstance(""//:otherprivatesymlink""))))));
+  }
+  @Test
+  public void nonTestLibraryDepDoesNotIncludePrivateHeadersOfLibrary() throws Exception {
+    BuildTarget libTarget = BuildTargetFactory.newInstance(""//:lib"");
+    BuildRuleParams libParams = TestBuildRuleParams.create();
+    FakeCxxLibrary libRule =
+        new FakeCxxLibrary(
+            libTarget,
+            new FakeProjectFilesystem(),
+            libParams,
+            BuildTargetFactory.newInstance(""//:header""),
+            BuildTargetFactory.newInstance(""//:symlink""),
+            BuildTargetFactory.newInstance(""//:privateheader""),
+            BuildTargetFactory.newInstance(""//:privatesymlink""),
+            new FakeBuildRule(""//:archive""),
+            new FakeBuildRule(""//:shared""),
+            Paths.get(""output/path/lib.so""),
+            ""lib.so"",
+            // This library has no tests.
+            ImmutableSortedSet.of());
+    BuildTarget otherLibDepTarget = BuildTargetFactory.newInstance(""//:other"");
+    ImmutableSortedSet<BuildRule> deps = ImmutableSortedSet.of(libRule);
+    ImmutableList<CxxPreprocessorInput> otherInput =
+        CxxDescriptionEnhancer.collectCxxPreprocessorInput(
+            otherLibDepTarget,
+            CxxPlatformUtils.DEFAULT_PLATFORM,
+            deps,
+            ImmutableMultimap.of(),
+            ImmutableList.of(),
+            ImmutableSet.of(),
+            CxxPreprocessables.getTransitiveCxxPreprocessorInput(
+                CxxPlatformUtils.DEFAULT_PLATFORM, deps),
+            ImmutableList.of(),
+            Optional.empty(),
+            ImmutableSortedSet.of());
+    Set<SourcePath> roots = new HashSet<>();
+    for (CxxHeaders headers : CxxPreprocessorInput.concat(otherInput).getIncludes()) {
+      roots.add(headers.getRoot());
+    }
+    assertThat(
+        ""Non-test rule with library dep should include public and not private headers"",
+        roots,
+        allOf(
+            hasItem(DefaultBuildTargetSourcePath.of(BuildTargetFactory.newInstance(""//:symlink""))),
+            not(
+                hasItem(
+                    DefaultBuildTargetSourcePath.of(
+                        BuildTargetFactory.newInstance(""//:privatesymlink""))))));
+  }
+  @Test
+  public void testSonameExpansion() {
+    assertThat(soname(""libfoo.so"", ""dylib"", ""%s.dylib""), equalTo(""libfoo.so""));
+    assertThat(soname(""libfoo.$(ext)"", ""good"", ""%s.bad""), equalTo(""libfoo.good""));
+    assertThat(soname(""libfoo.$(ext 2.3)"", ""bad"", ""%s.good""), equalTo(""libfoo.2.3.good""));
+    assertThat(soname(""libfoo.$(ext 2.3)"", ""bad"", ""good.%s""), equalTo(""libfoo.good.2.3""));
+    assertThat(soname(""libfoo.$(ext 2.3)"", ""bad"", ""windows""), equalTo(""libfoo.windows""));
+  }",method,
+"  @Test
+  public void nonTestLibraryDepDoesNotIncludePrivateHeadersOfLibrary() throws Exception {
+    BuildTarget libTarget = BuildTargetFactory.newInstance(""//:lib"");
+    BuildRuleParams libParams = TestBuildRuleParams.create();
+    FakeCxxLibrary libRule =
+        new FakeCxxLibrary(
+            libTarget,
+            new FakeProjectFilesystem(),
+            libParams,
+            BuildTargetFactory.newInstance(""//:header""),
+            BuildTargetFactory.newInstance(""//:symlink""),
+            BuildTargetFactory.newInstance(""//:privateheader""),
+            BuildTargetFactory.newInstance(""//:privatesymlink""),
+            new FakeBuildRule(""//:archive""),
+            new FakeBuildRule(""//:shared""),
+            Paths.get(""output/path/lib.so""),
+            ""lib.so"",
+            // This library has no tests.
+            ImmutableSortedSet.of());
+    BuildTarget otherLibDepTarget = BuildTargetFactory.newInstance(""//:other"");
+    ImmutableSortedSet<BuildRule> deps = ImmutableSortedSet.of(libRule);
+    ImmutableList<CxxPreprocessorInput> otherInput =
+        CxxDescriptionEnhancer.collectCxxPreprocessorInput(
+            otherLibDepTarget,
+            CxxPlatformUtils.DEFAULT_PLATFORM,
+            deps,
+            ImmutableMultimap.of(),
+            ImmutableList.of(),
+            ImmutableSet.of(),
+            CxxPreprocessables.getTransitiveCxxPreprocessorInput(
+                CxxPlatformUtils.DEFAULT_PLATFORM, deps),
+            ImmutableList.of(),
+            Optional.empty(),
+            ImmutableSortedSet.of());
+    Set<SourcePath> roots = new HashSet<>();
+    for (CxxHeaders headers : CxxPreprocessorInput.concat(otherInput).getIncludes()) {
+      roots.add(headers.getRoot());
+    }
+    assertThat(
+        ""Non-test rule with library dep should include public and not private headers"",
+        roots,
+        allOf(
+            hasItem(DefaultBuildTargetSourcePath.of(BuildTargetFactory.newInstance(""//:symlink""))),
+            not(
+                hasItem(
+                    DefaultBuildTargetSourcePath.of(
+                        BuildTargetFactory.newInstance(""//:privatesymlink""))))));
+  }
+  @Test
+  public void testSonameExpansion() {
+    assertThat(soname(""libfoo.so"", ""dylib"", ""%s.dylib""), equalTo(""libfoo.so""));
+    assertThat(soname(""libfoo.$(ext)"", ""good"", ""%s.bad""), equalTo(""libfoo.good""));
+    assertThat(soname(""libfoo.$(ext 2.3)"", ""bad"", ""%s.good""), equalTo(""libfoo.2.3.good""));
+    assertThat(soname(""libfoo.$(ext 2.3)"", ""bad"", ""good.%s""), equalTo(""libfoo.good.2.3""));
+    assertThat(soname(""libfoo.$(ext 2.3)"", ""bad"", ""windows""), equalTo(""libfoo.windows""));
+  }
+  private static String soname(String declared, String extension, String versionedFormat) {
+    return CxxDescriptionEnhancer.getNonDefaultSharedLibrarySoname(
+        declared, extension, versionedFormat);
+  }",method,
+"  @Test
+  public void testSonameExpansion() {
+    assertThat(soname(""libfoo.so"", ""dylib"", ""%s.dylib""), equalTo(""libfoo.so""));
+    assertThat(soname(""libfoo.$(ext)"", ""good"", ""%s.bad""), equalTo(""libfoo.good""));
+    assertThat(soname(""libfoo.$(ext 2.3)"", ""bad"", ""%s.good""), equalTo(""libfoo.2.3.good""));
+    assertThat(soname(""libfoo.$(ext 2.3)"", ""bad"", ""good.%s""), equalTo(""libfoo.good.2.3""));
+    assertThat(soname(""libfoo.$(ext 2.3)"", ""bad"", ""windows""), equalTo(""libfoo.windows""));
+  }
+  private static String soname(String declared, String extension, String versionedFormat) {
+    return CxxDescriptionEnhancer.getNonDefaultSharedLibrarySoname(
+        declared, extension, versionedFormat);
+  }",method,
+"  private static String soname(String declared, String extension, String versionedFormat) {
+    return CxxDescriptionEnhancer.getNonDefaultSharedLibrarySoname(
+        declared, extension, versionedFormat);
+  }",method,
+"public final class FlowableAny<T> extends AbstractFlowableWithUpstream<T, Boolean> {
+    final Predicate<? super T> predicate;
+    public FlowableAny(Flowable<T> source, Predicate<? super T> predicate) {
+        super(source);
+        this.predicate = predicate;
+    }
+    @Override
+    protected void subscribeActual(Subscriber<? super Boolean> s) {
+        source.subscribe(new AnySubscriber<T>(s, predicate));
+    }
+    static final class AnySubscriber<T> extends DeferredScalarSubscription<Boolean> implements FlowableSubscriber<T> {
+        private static final long serialVersionUID = -2311252482644620661L;
+        final Predicate<? super T> predicate;
+        Subscription s;
+        boolean done;
+        AnySubscriber(Subscriber<? super Boolean> actual, Predicate<? super T> predicate) {
+            super(actual);
+            this.predicate = predicate;
+        }
+        @Override
+        public void onSubscribe(Subscription s) {
+            if (SubscriptionHelper.validate(this.s, s)) {
+                this.s = s;
+                actual.onSubscribe(this);
+                s.request(Long.MAX_VALUE);
+            }
+        }
+        @Override
+        public void onNext(T t) {
+            if (done) {
+                return;
+            }
+            boolean b;
+            try {
+                b = predicate.test(t);
+            } catch (Throwable e) {
+                Exceptions.throwIfFatal(e);
+                s.cancel();
+                onError(e);
+                return;
+            }
+            if (b) {
+                done = true;
+                s.cancel();
+                complete(true);
+            }
+        }
+        @Override
+        public void onError(Throwable t) {
+            if (done) {
+                RxJavaPlugins.onError(t);
+                return;
+            }
+            done = true;
+            actual.onError(t);
+        }
+        @Override
+        public void onComplete() {
+            if (!done) {
+                done = true;
+                complete(false);
+            }
+        }
+        @Override
+        public void cancel() {
+            super.cancel();
+            s.cancel();
+        }
+    }
+}",class,
+"    static final class AnySubscriber<T> extends DeferredScalarSubscription<Boolean> implements FlowableSubscriber<T> {
+        private static final long serialVersionUID = -2311252482644620661L;
+        final Predicate<? super T> predicate;
+        Subscription s;
+        boolean done;
+        AnySubscriber(Subscriber<? super Boolean> actual, Predicate<? super T> predicate) {
+            super(actual);
+            this.predicate = predicate;
+        }
+        @Override
+        public void onSubscribe(Subscription s) {
+            if (SubscriptionHelper.validate(this.s, s)) {
+                this.s = s;
+                actual.onSubscribe(this);
+                s.request(Long.MAX_VALUE);
+            }
+        }
+        @Override
+        public void onNext(T t) {
+            if (done) {
+                return;
+            }
+            boolean b;
+            try {
+                b = predicate.test(t);
+            } catch (Throwable e) {
+                Exceptions.throwIfFatal(e);
+                s.cancel();
+                onError(e);
+                return;
+            }
+            if (b) {
+                done = true;
+                s.cancel();
+                complete(true);
+            }
+        }
+        @Override
+        public void onError(Throwable t) {
+            if (done) {
+                RxJavaPlugins.onError(t);
+                return;
+            }
+            done = true;
+            actual.onError(t);
+        }
+        @Override
+        public void onComplete() {
+            if (!done) {
+                done = true;
+                complete(false);
+            }
+        }
+        @Override
+        public void cancel() {
+            super.cancel();
+            s.cancel();
+        }
+    }",class,
+"    public FlowableAny(Flowable<T> source, Predicate<? super T> predicate) {
+        super(source);
+        this.predicate = predicate;
+    }",method,
+"    @Override
+    protected void subscribeActual(Subscriber<? super Boolean> s) {
+        source.subscribe(new AnySubscriber<T>(s, predicate));
+    }",method,
+"        AnySubscriber(Subscriber<? super Boolean> actual, Predicate<? super T> predicate) {
+            super(actual);
+            this.predicate = predicate;
+        }",method,
+"        @Override
+        public void onSubscribe(Subscription s) {
+            if (SubscriptionHelper.validate(this.s, s)) {
+                this.s = s;
+                actual.onSubscribe(this);
+                s.request(Long.MAX_VALUE);
+            }
+        }",method,
+"        @Override
+        public void onNext(T t) {
+            if (done) {
+                return;
+            }
+            boolean b;
+            try {
+                b = predicate.test(t);
+            } catch (Throwable e) {
+                Exceptions.throwIfFatal(e);
+                s.cancel();
+                onError(e);
+                return;
+            }
+            if (b) {
+                done = true;
+                s.cancel();
+                complete(true);
+            }
+        }",method,
+"            if (done) {
+                return;
+            }",method,
+"            if (b) {
+                done = true;
+                s.cancel();
+                complete(true);
+            }",method,
+"        @Override
+        public void onError(Throwable t) {
+            if (done) {
+                RxJavaPlugins.onError(t);
+                return;
+            }
+            done = true;
+            actual.onError(t);
+        }",method,
+"            if (done) {
+                RxJavaPlugins.onError(t);
+                return;
+            }",method,
+"        @Override
+        public void onComplete() {
+            if (!done) {
+                done = true;
+                complete(false);
+            }
+        }",method,
+"            if (!done) {
+                done = true;
+                complete(false);
+            }",method,
+"        @Override
+        public void cancel() {
+            super.cancel();
+            s.cancel();
+        }",method,
+"public class MapFileConcurrentReader {
+  private static final Log LOG = LogFactory.getLog(MapFileConcurrentReader.class);
+  private int INDEX_SKIP = 0;
+  private WritableComparator comparator;
+  // the data, on disk
+  private ThreadLocal<SequenceFile.Reader> data;
+  private ArrayList<SequenceFile.Reader> allDataFiles = new ArrayList<SequenceFile.Reader>();
+  private SequenceFile.Reader index;
+  long firstPosition = -1;
+  // whether the index Reader was closed
+  private boolean indexClosed = false;
+  // the index, in memory
+  private int count = -1;
+  private WritableComparable[] keys;
+  private long[] positions;
+  public MapFileConcurrentReader(Path dir, Configuration conf,
+                SequenceFile.Reader.Option... opts) throws IOException {
+    INDEX_SKIP = conf.getInt(""io.map.index.skip"", 0);
+    open(dir, comparator, conf, opts);
+  }
+  protected synchronized void open(Path dir,
+                                   WritableComparator comparator,
+                                   final Configuration conf,
+                                   final SequenceFile.Reader.Option... options
+                                   ) throws IOException {
+    final Path dataFile = new Path(dir, MapFile.DATA_FILE_NAME);
+    final Path indexFile = new Path(dir, MapFile.INDEX_FILE_NAME);
+    // open the data
+    this.data = new ThreadLocal<SequenceFile.Reader>() {
+      protected SequenceFile.Reader initialValue() {
+        try {
+          SequenceFile.Reader r = createDataFileReader(dataFile, conf, options);
+          LOG.info(""opened new SequenceFile.Reader for "" + dataFile);
+          synchronized(this) {
+            allDataFiles.add(r);
+          }
+          return r;
+        } catch (IOException ioe) {
+          throw new RuntimeException(ioe);
+        }
+      }
+    };
+    this.firstPosition = data.get().getPosition();
+    this.comparator =
+      WritableComparator.get(data.get().getKeyClass().
+                               asSubclass(WritableComparable.class));
+    // open the index
+    SequenceFile.Reader.Option[] indexOptions =
+      Options.prependOptions(options, SequenceFile.Reader.file(indexFile));
+    this.index = new SequenceFile.Reader(conf, indexOptions);
+  }
+  protected SequenceFile.Reader
+    createDataFileReader(Path dataFile, Configuration conf,
+                         SequenceFile.Reader.Option... options
+                         ) throws IOException {
+    SequenceFile.Reader.Option[] newOptions =
+      Options.prependOptions(options, SequenceFile.Reader.file(dataFile));
+    return new SequenceFile.Reader(conf, newOptions);
+  }
+  private void readIndex() throws IOException {
+    // read the index entirely into memory
+    if (this.keys != null)
+      return;
+    this.count = 0;
+    this.positions = new long[1024];
+    try {
+      int skip = INDEX_SKIP;
+      LongWritable position = new LongWritable();
+      WritableComparable lastKey = null;
+      long lastIndex = -1;
+      ArrayList<WritableComparable> keyBuilder = new ArrayList<WritableComparable>(1024);
+      while (true) {
+        WritableComparable k = comparator.newKey();
+        if (!index.next(k, position))
+          break;
+        // check order to make sure comparator is compatible
+        if (lastKey != null && comparator.compare(lastKey, k) > 0)
+          throw new IOException(""key out of order: ""+k+"" after ""+lastKey);
+        lastKey = k;
+        if (skip > 0) {
+          skip--;
+          continue;                             // skip this entry
+        } else {
+          skip = INDEX_SKIP;                    // reset skip
+        }
+	  // don't read an index that is the same as the previous one. Block
+	  // compressed map files used to do this (multiple entries would point
+	  // at the same block)
+	  if (position.get() == lastIndex)
+	    continue;
+        if (count == positions.length) {
+	    positions = Arrays.copyOf(positions, positions.length * 2);
+        }
+        keyBuilder.add(k);
+        positions[count] = position.get();
+        count++;
+      }
+      this.keys = keyBuilder.toArray(new WritableComparable[count]);
+      positions = Arrays.copyOf(positions, count);
+    } catch (EOFException e) {
+      LOG.warn(""Unexpected EOF reading "" + index +
+                            "" at entry #"" + count + "".  Ignoring."");
+    } finally {
+	indexClosed = true;
+      index.close();
+    }
+  }
+  public synchronized void reset() throws IOException {
+    data.get().seek(firstPosition);
+  }
+  public synchronized WritableComparable midKey() throws IOException {
+    readIndex();
+    if (count == 0) {
+      return null;
+    }
+    return keys[(count - 1) / 2];
+  }
+  public synchronized void finalKey(WritableComparable key)
+    throws IOException {
+    readIndex();                              // make sure index is valid
+    if (count > 0) {
+      data.get().seek(positions[count-1]);          // skip to last indexed entry
+    } else {
+      reset();                                // start at the beginning
+    }
+    while (data.get().next(key)) {}                 // scan to eof
+  }
+  private long findPosition(WritableComparable key)
+    throws IOException {
+    readIndex();                                // make sure index is read
+    long seekPosition = -1;
+    int seekIndex = binarySearch(key);
+    if (seekIndex < 0)                        // decode insertion point
+      seekIndex = -seekIndex-2;
+    if (seekIndex == -1)                      // belongs before first entry
+      seekPosition = firstPosition;           // use beginning of file
+    else
+      seekPosition = positions[seekIndex];    // else use index
+    data.get().seek(seekPosition);
+    WritableComparable nextKey = comparator.newKey();
+    while (data.get().next(nextKey)) {
+      int c = comparator.compare(key, nextKey);
+      if (c < 0) {                             // at or beyond desired
+        return -1;
+      } else if (c == 0) {
+        return data.get().getPosition();
+      }
+    }
+    return -1;
+  }
+  private int binarySearch(WritableComparable key) {
+    int low = 0;
+    int high = count-1;
+    while (low <= high) {
+      int mid = (low + high) >>> 1;
+      WritableComparable midVal = keys[mid];
+      int cmp = comparator.compare(midVal, key);
+      if (cmp < 0)
+        low = mid + 1;
+      else if (cmp > 0)
+        high = mid - 1;
+      else
+        return mid;                             // key found
+    }
+    return -(low + 1);                          // key not found.
+  }
+  public Writable get(WritableComparable key, Writable val)
+    throws IOException {
+    long position = findPosition(key);
+    if (position >= 0) {
+      SequenceFile.Reader threadLocalData = data.get();
+      threadLocalData.seek(position);
+      threadLocalData.getCurrentValue(val);
+      return val;
+    } else
+      return null;
+  }
+  public synchronized void close() throws IOException {
+    if (!indexClosed) {
+      index.close();
+    }
+    for (SequenceFile.Reader dataFile : allDataFiles) {
+      dataFile.close();
+    }
+  }
+}",class,
+"  public MapFileConcurrentReader(Path dir, Configuration conf,
+                SequenceFile.Reader.Option... opts) throws IOException {
+    INDEX_SKIP = conf.getInt(""io.map.index.skip"", 0);
+    open(dir, comparator, conf, opts);
+  }",method,
+"  protected synchronized void open(Path dir,
+                                   WritableComparator comparator,
+                                   final Configuration conf,
+                                   final SequenceFile.Reader.Option... options
+                                   ) throws IOException {
+    final Path dataFile = new Path(dir, MapFile.DATA_FILE_NAME);
+    final Path indexFile = new Path(dir, MapFile.INDEX_FILE_NAME);
+    // open the data
+    this.data = new ThreadLocal<SequenceFile.Reader>() {
+      protected SequenceFile.Reader initialValue() {
+        try {
+          SequenceFile.Reader r = createDataFileReader(dataFile, conf, options);
+          LOG.info(""opened new SequenceFile.Reader for "" + dataFile);
+          synchronized(this) {
+            allDataFiles.add(r);
+          }
+          return r;
+        } catch (IOException ioe) {
+          throw new RuntimeException(ioe);
+        }
+      }
+    };
+    this.firstPosition = data.get().getPosition();
+    this.comparator =
+      WritableComparator.get(data.get().getKeyClass().
+                               asSubclass(WritableComparable.class));
+    // open the index
+    SequenceFile.Reader.Option[] indexOptions =
+      Options.prependOptions(options, SequenceFile.Reader.file(indexFile));
+    this.index = new SequenceFile.Reader(conf, indexOptions);
+  }",method,
+"      protected SequenceFile.Reader initialValue() {
+        try {
+          SequenceFile.Reader r = createDataFileReader(dataFile, conf, options);
+          LOG.info(""opened new SequenceFile.Reader for "" + dataFile);
+          synchronized(this) {
+            allDataFiles.add(r);
+          }
+          return r;
+        } catch (IOException ioe) {
+          throw new RuntimeException(ioe);
+        }
+      }",method,
+"          synchronized(this) {
+            allDataFiles.add(r);
+          }",method,
+"  protected SequenceFile.Reader
+    createDataFileReader(Path dataFile, Configuration conf,
+                         SequenceFile.Reader.Option... options
+                         ) throws IOException {
+    SequenceFile.Reader.Option[] newOptions =
+      Options.prependOptions(options, SequenceFile.Reader.file(dataFile));
+    return new SequenceFile.Reader(conf, newOptions);
+  }",method,
+"  private void readIndex() throws IOException {
+    // read the index entirely into memory
+    if (this.keys != null)
+      return;
+    this.count = 0;
+    this.positions = new long[1024];
+    try {
+      int skip = INDEX_SKIP;
+      LongWritable position = new LongWritable();
+      WritableComparable lastKey = null;
+      long lastIndex = -1;
+      ArrayList<WritableComparable> keyBuilder = new ArrayList<WritableComparable>(1024);
+      while (true) {
+        WritableComparable k = comparator.newKey();
+        if (!index.next(k, position))
+          break;
+        // check order to make sure comparator is compatible
+        if (lastKey != null && comparator.compare(lastKey, k) > 0)
+          throw new IOException(""key out of order: ""+k+"" after ""+lastKey);
+        lastKey = k;
+        if (skip > 0) {
+          skip--;
+          continue;                             // skip this entry
+        } else {
+          skip = INDEX_SKIP;                    // reset skip
+        }
+	  // don't read an index that is the same as the previous one. Block
+	  // compressed map files used to do this (multiple entries would point
+	  // at the same block)
+	  if (position.get() == lastIndex)
+	    continue;
+        if (count == positions.length) {
+	    positions = Arrays.copyOf(positions, positions.length * 2);
+        }
+        keyBuilder.add(k);
+        positions[count] = position.get();
+        count++;
+      }
+      this.keys = keyBuilder.toArray(new WritableComparable[count]);
+      positions = Arrays.copyOf(positions, count);
+    } catch (EOFException e) {
+      LOG.warn(""Unexpected EOF reading "" + index +
+                            "" at entry #"" + count + "".  Ignoring."");
+    } finally {
+	indexClosed = true;
+      index.close();
+    }
+  }",method,
+"      while (true) {
+        WritableComparable k = comparator.newKey();
+        if (!index.next(k, position))
+          break;
+        // check order to make sure comparator is compatible
+        if (lastKey != null && comparator.compare(lastKey, k) > 0)
+          throw new IOException(""key out of order: ""+k+"" after ""+lastKey);
+        lastKey = k;
+        if (skip > 0) {
+          skip--;
+          continue;                             // skip this entry
+        } else {
+          skip = INDEX_SKIP;                    // reset skip
+        }
+	  // don't read an index that is the same as the previous one. Block
+	  // compressed map files used to do this (multiple entries would point
+	  // at the same block)
+	  if (position.get() == lastIndex)
+	    continue;
+        if (count == positions.length) {
+	    positions = Arrays.copyOf(positions, positions.length * 2);
+        }
+        keyBuilder.add(k);
+        positions[count] = position.get();
+        count++;
+      }",method,
+"        if (skip > 0) {
+          skip--;
+          continue;                             // skip this entry
+        }",method,
+"        if (count == positions.length) {
+	    positions = Arrays.copyOf(positions, positions.length * 2);
+        }",method,
+"  public synchronized void reset() throws IOException {
+    data.get().seek(firstPosition);
+  }",method,
+"  public synchronized WritableComparable midKey() throws IOException {
+    readIndex();
+    if (count == 0) {
+      return null;
+    }
+    return keys[(count - 1) / 2];
+  }",method,
+"    if (count == 0) {
+      return null;
+    }",method,
+"  public synchronized void finalKey(WritableComparable key)
+    throws IOException {
+    readIndex();                              // make sure index is valid
+    if (count > 0) {
+      data.get().seek(positions[count-1]);          // skip to last indexed entry
+    } else {
+      reset();                                // start at the beginning
+    }
+    while (data.get().next(key)) {}                 // scan to eof
+  }",method,
+"    if (count > 0) {
+      data.get().seek(positions[count-1]);          // skip to last indexed entry
+    }",method,
+"  private long findPosition(WritableComparable key)
+    throws IOException {
+    readIndex();                                // make sure index is read
+    long seekPosition = -1;
+    int seekIndex = binarySearch(key);
+    if (seekIndex < 0)                        // decode insertion point
+      seekIndex = -seekIndex-2;
+    if (seekIndex == -1)                      // belongs before first entry
+      seekPosition = firstPosition;           // use beginning of file
+    else
+      seekPosition = positions[seekIndex];    // else use index
+    data.get().seek(seekPosition);
+    WritableComparable nextKey = comparator.newKey();
+    while (data.get().next(nextKey)) {
+      int c = comparator.compare(key, nextKey);
+      if (c < 0) {                             // at or beyond desired
+        return -1;
+      } else if (c == 0) {
+        return data.get().getPosition();
+      }
+    }
+    return -1;
+  }",method,
+"      if (c < 0) {                             // at or beyond desired
+        return -1;
+      }",method,
+"  private int binarySearch(WritableComparable key) {
+    int low = 0;
+    int high = count-1;
+    while (low <= high) {
+      int mid = (low + high) >>> 1;
+      WritableComparable midVal = keys[mid];
+      int cmp = comparator.compare(midVal, key);
+      if (cmp < 0)
+        low = mid + 1;
+      else if (cmp > 0)
+        high = mid - 1;
+      else
+        return mid;                             // key found
+    }
+    return -(low + 1);                          // key not found.
+  }",method,
+"    while (low <= high) {
+      int mid = (low + high) >>> 1;
+      WritableComparable midVal = keys[mid];
+      int cmp = comparator.compare(midVal, key);
+      if (cmp < 0)
+        low = mid + 1;
+      else if (cmp > 0)
+        high = mid - 1;
+      else
+        return mid;                             // key found
+    }",method,
+"  public Writable get(WritableComparable key, Writable val)
+    throws IOException {
+    long position = findPosition(key);
+    if (position >= 0) {
+      SequenceFile.Reader threadLocalData = data.get();
+      threadLocalData.seek(position);
+      threadLocalData.getCurrentValue(val);
+      return val;
+    } else
+      return null;
+  }",method,
+"    if (position >= 0) {
+      SequenceFile.Reader threadLocalData = data.get();
+      threadLocalData.seek(position);
+      threadLocalData.getCurrentValue(val);
+      return val;
+    }",method,
+"  public synchronized void close() throws IOException {
+    if (!indexClosed) {
+      index.close();
+    }
+    for (SequenceFile.Reader dataFile : allDataFiles) {
+      dataFile.close();
+    }
+  }",method,
+"    if (!indexClosed) {
+      index.close();
+    }",method,
+"    for (SequenceFile.Reader dataFile : allDataFiles) {
+      dataFile.close();
+    }",method,
+"    createDataFileReader(Path dataFile, Configuration conf,
+                         SequenceFile.Reader.Option... options
+                         ) throws IOException {
+    SequenceFile.Reader.Option[] newOptions =
+      Options.prependOptions(options, SequenceFile.Reader.file(dataFile));
+    return new SequenceFile.Reader(conf, newOptions);
+  }",method,
+"public class TribeDiscovery extends SingleNodeDiscovery implements Discovery {
+    @Inject
+    public TribeDiscovery(Settings settings, TransportService transportService,
+                          MasterService masterService, ClusterApplier clusterApplier) {
+        super(settings, transportService, masterService, clusterApplier);
+    }
+    @Override
+    protected ClusterState createInitialState(DiscoveryNode localNode) {
+        ClusterBlocks.Builder clusterBlocks = ClusterBlocks.builder(); // don't add no_master / state recovery block
+        if (BLOCKS_WRITE_SETTING.get(settings)) {
+            clusterBlocks.addGlobalBlock(TRIBE_WRITE_BLOCK);
+        }
+        if (BLOCKS_METADATA_SETTING.get(settings)) {
+            clusterBlocks.addGlobalBlock(TRIBE_METADATA_BLOCK);
+        }
+        return ClusterState.builder(ClusterName.CLUSTER_NAME_SETTING.get(settings))
+            .nodes(DiscoveryNodes.builder().add(localNode).localNodeId(localNode.getId()).build())
+            .blocks(clusterBlocks).build();
+    }
+    @Override
+    public synchronized void startInitialJoin() {
+        // no state recovery required as tribe nodes don't persist cluster state
+    }
+}",class,
+"    @Inject
+    public TribeDiscovery(Settings settings, TransportService transportService,
+                          MasterService masterService, ClusterApplier clusterApplier) {
+        super(settings, transportService, masterService, clusterApplier);
+    }",method,
+"    @Override
+    protected ClusterState createInitialState(DiscoveryNode localNode) {
+        ClusterBlocks.Builder clusterBlocks = ClusterBlocks.builder(); // don't add no_master / state recovery block
+        if (BLOCKS_WRITE_SETTING.get(settings)) {
+            clusterBlocks.addGlobalBlock(TRIBE_WRITE_BLOCK);
+        }
+        if (BLOCKS_METADATA_SETTING.get(settings)) {
+            clusterBlocks.addGlobalBlock(TRIBE_METADATA_BLOCK);
+        }
+        return ClusterState.builder(ClusterName.CLUSTER_NAME_SETTING.get(settings))
+            .nodes(DiscoveryNodes.builder().add(localNode).localNodeId(localNode.getId()).build())
+            .blocks(clusterBlocks).build();
+    }",method,
+"    @Override
+    public synchronized void startInitialJoin() {
+        // no state recovery required as tribe nodes don't persist cluster state
+    }",method,
+"public class Conditions {
+    public static Condition<Throwable> onlyThoseClassesInStackTrace(final String... classes) {
+        return new Condition<Throwable>() {
+            @Override
+            public boolean matches(Throwable traceElements) {
+                StackTraceElement[] trace = traceElements.getStackTrace();
+                Assertions.assertThat(trace.length)
+                          .describedAs(""Number of classes does not match.\nExpected: %s\nGot: %s"",
+                                       Arrays.toString(classes),
+                                       Arrays.toString(traceElements.getStackTrace()))
+                          .isEqualTo(classes.length);
+                for (int i = 0; i < trace.length; i++) {
+                    Assertions.assertThat(trace[i].getClassName()).isEqualTo(classes[i]);
+                }
+                return true;
+            }
+        };
+    }
+    public static Condition<StackTraceElement[]> onlyThoseClasses(final String... classes) {
+        return new Condition<StackTraceElement[]>() {
+            @Override
+            public boolean matches(StackTraceElement[] traceElements) {
+                Assertions.assertThat(traceElements.length)
+                          .describedAs(""Number of classes does not match.\nExpected: %s\nGot: %s"",
+                                       Arrays.toString(classes),
+                                       Arrays.toString(traceElements))
+                          .isEqualTo(classes.length);
+                for (int i = 0; i < traceElements.length; i++) {
+                    Assertions.assertThat(traceElements[i].getClassName()).isEqualTo(classes[i]);
+                }
+                return true;
+            }
+        };
+    }
+    public static Condition<Throwable> firstMethodInStackTrace(final String method) {
+        return methodInStackTraceAt(0, method);
+    }
+    public static Condition<Throwable> methodInStackTraceAt(final int stackTraceIndex, final String method) {
+        return new Condition<Throwable>() {
+            private String actualMethodAtIndex;
+            @Override
+            public boolean matches(Throwable throwable) {
+                actualMethodAtIndex = throwable.getStackTrace()[stackTraceIndex].getMethodName();
+                return actualMethodAtIndex.equals(method);
+            }
+            @Override
+            public Description description() {
+                return new TextDescription(""Method at index: %d\nexpected to be: %s\nbut is: %s"", stackTraceIndex, method, actualMethodAtIndex);
+            }
+        };
+    }
+    public static Condition<Object> bridgeMethod(final String methodName) {
+        return new Condition<Object>() {
+            public boolean matches(Object o) {
+                Class<?> clazz = null;
+                if (o instanceof Class) {
+                    clazz = (Class<?>) o;
+                } else {
+                    clazz = o.getClass();
+                }
+                for (Method m : clazz.getMethods()) {
+                    if (m.isBridge() && m.getName().equals(methodName)) {
+                        return true;
+                    }
+                }
+                Assertions.fail(""Bridge method ["" + methodName + ""]\nnot found in:\n"" + o);
+                return false;
+            }
+        };
+    }
+    public static org.hamcrest.Matcher<Object> clazz(Class<?> type) {
+        return CoreMatchers.instanceOf(type);
+    }
+    public static Condition<Throwable> methodsInStackTrace(final String... methods) {
+        return new Condition<Throwable>() {
+            public boolean matches(Throwable value) {
+                StackTraceElement[] trace = value.getStackTrace();
+                for (int i = 0; i < methods.length; i++) {
+                    Assertions.assertThat(trace[i].getMethodName()).describedAs(""Expected methods[%d] to be in the stack trace."", i).isEqualTo(methods[i]);
+                }
+                return true;
+            }
+        };
+    }
+}",class,
+"    public static Condition<Throwable> onlyThoseClassesInStackTrace(final String... classes) {
+        return new Condition<Throwable>() {
+            @Override
+            public boolean matches(Throwable traceElements) {
+                StackTraceElement[] trace = traceElements.getStackTrace();
+                Assertions.assertThat(trace.length)
+                          .describedAs(""Number of classes does not match.\nExpected: %s\nGot: %s"",
+                                       Arrays.toString(classes),
+                                       Arrays.toString(traceElements.getStackTrace()))
+                          .isEqualTo(classes.length);
+                for (int i = 0; i < trace.length; i++) {
+                    Assertions.assertThat(trace[i].getClassName()).isEqualTo(classes[i]);
+                }
+                return true;
+            }
+        };
+    }",method,
+"            @Override
+            public boolean matches(Throwable traceElements) {
+                StackTraceElement[] trace = traceElements.getStackTrace();
+                Assertions.assertThat(trace.length)
+                          .describedAs(""Number of classes does not match.\nExpected: %s\nGot: %s"",
+                                       Arrays.toString(classes),
+                                       Arrays.toString(traceElements.getStackTrace()))
+                          .isEqualTo(classes.length);
+                for (int i = 0; i < trace.length; i++) {
+                    Assertions.assertThat(trace[i].getClassName()).isEqualTo(classes[i]);
+                }
+                return true;
+            }",method,

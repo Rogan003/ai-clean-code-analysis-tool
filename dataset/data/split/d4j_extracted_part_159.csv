@@ -1,0 +1,1259 @@
+code_snippet,type,score
+"  @NotNull
+  private SVNLogClient getLogClient() {
+    ISVNAuthenticationManager authManager = myIsActive
+                                            ? myVcs.getSvnConfiguration().getInteractiveManager(myVcs)
+                                            : myVcs.getSvnConfiguration().getPassiveAuthenticationManager(myVcs);
+    return myVcs.getSvnKitManager().createLogClient(authManager);
+  }",method,
+"  @Nullable
+  private static ISVNDirEntryHandler wrapHandler(@Nullable DirectoryEntryConsumer handler) {
+    return handler == null ? null : new SkipEmptyNameDirectoriesHandler(handler);
+  }",method,
+"    @NotNull private final DirectoryEntryConsumer handler;
+    public SkipEmptyNameDirectoriesHandler(@NotNull DirectoryEntryConsumer handler) {
+      this.handler = handler;
+    }",method,
+"    @Override
+    public void handleDirEntry(SVNDirEntry dirEntry) throws SVNException {
+      if (!isEmptyNameDirectory(dirEntry)) {
+        handler.consume(DirectoryEntry.create(dirEntry));
+      }
+    }",method,
+"    private static boolean isEmptyNameDirectory(@NotNull SVNDirEntry dirEntry) {
+      return SVNNodeKind.DIR.equals(dirEntry.getKind()) && StringUtil.isEmpty(dirEntry.getName());
+    }",method,
+"public class JUnit4TestAdapter implements Test, Filterable, Sortable, Describable {
+    private final Class<?> fNewTestClass;
+    private final Runner fRunner;
+    private final JUnit4TestAdapterCache fCache;
+    public JUnit4TestAdapter(Class<?> newTestClass) {
+        this(newTestClass, JUnit4TestAdapterCache.getDefault());
+    }
+    public JUnit4TestAdapter(final Class<?> newTestClass, JUnit4TestAdapterCache cache) {
+        fCache = cache;
+        fNewTestClass = newTestClass;
+        fRunner = Request.classWithoutSuiteMethod(newTestClass).getRunner();
+    }
+    public int countTestCases() {
+        return fRunner.testCount();
+    }
+    public void run(TestResult result) {
+        fRunner.run(fCache.getNotifier(result, this));
+    }
+    // reflective interface for Eclipse
+    public List<Test> getTests() {
+        return fCache.asTestList(getDescription());
+    }
+    // reflective interface for Eclipse
+    public Class<?> getTestClass() {
+        return fNewTestClass;
+    }
+    public Description getDescription() {
+        Description description = fRunner.getDescription();
+        return removeIgnored(description);
+    }
+    private Description removeIgnored(Description description) {
+        if (isIgnored(description)) {
+            return Description.EMPTY;
+        }
+        Description result = description.childlessCopy();
+        for (Description each : description.getChildren()) {
+            Description child = removeIgnored(each);
+            if (!child.isEmpty()) {
+                result.addChild(child);
+            }
+        }
+        return result;
+    }
+    private boolean isIgnored(Description description) {
+        return description.getAnnotation(Ignore.class) != null;
+    }
+    @Override
+    public String toString() {
+        return fNewTestClass.getName();
+    }
+    public void filter(Filter filter) throws NoTestsRemainException {
+        filter.apply(fRunner);
+    }
+    public void sort(Sorter sorter) {
+        sorter.apply(fRunner);
+    }
+}",class,
+"    public JUnit4TestAdapter(Class<?> newTestClass) {
+        this(newTestClass, JUnit4TestAdapterCache.getDefault());
+    }",method,
+"    public JUnit4TestAdapter(final Class<?> newTestClass, JUnit4TestAdapterCache cache) {
+        fCache = cache;
+        fNewTestClass = newTestClass;
+        fRunner = Request.classWithoutSuiteMethod(newTestClass).getRunner();
+    }",method,
+"    public int countTestCases() {
+        return fRunner.testCount();
+    }",method,
+"    public void run(TestResult result) {
+        fRunner.run(fCache.getNotifier(result, this));
+    }",method,
+"    public List<Test> getTests() {
+        return fCache.asTestList(getDescription());
+    }",method,
+"    public Class<?> getTestClass() {
+        return fNewTestClass;
+    }",method,
+"    public Description getDescription() {
+        Description description = fRunner.getDescription();
+        return removeIgnored(description);
+    }",method,
+"    private Description removeIgnored(Description description) {
+        if (isIgnored(description)) {
+            return Description.EMPTY;
+        }
+        Description result = description.childlessCopy();
+        for (Description each : description.getChildren()) {
+            Description child = removeIgnored(each);
+            if (!child.isEmpty()) {
+                result.addChild(child);
+            }
+        }
+        return result;
+    }",method,
+"    private boolean isIgnored(Description description) {
+        return description.getAnnotation(Ignore.class) != null;
+    }",method,
+"    @Override
+    public String toString() {
+        return fNewTestClass.getName();
+    }",method,
+"    public void filter(Filter filter) throws NoTestsRemainException {
+        filter.apply(fRunner);
+    }",method,
+"    public void sort(Sorter sorter) {
+        sorter.apply(fRunner);
+    }",method,
+"public class InvalidateDaemon implements Runnable {
+	static Logger log = Logger.getLogger(""InvalidateDaemon"");
+	private static AmazonSimpleDB sdb;
+	public void run() {
+		log.info(""InvalidateDaemon started"");
+		sdb = AdWhirlUtil.getSDB();
+		//We're a makeshift daemon, let's loop forever
+		while(true) {
+			Date date = new Date();
+			Calendar c = new GregorianCalendar();
+			c.setTime(date);
+			c.add(Calendar.SECOND, -60);
+			date = c.getTime();
+		    SimpleDateFormat sdf = new SimpleDateFormat(""yyyy-MM-dd, HH:mm:ss"");
+		    sdf.setTimeZone(TimeZone.getTimeZone(""GMT""));
+		    String dateTime = sdf.format(date);
+		    log.info(""Cutoff is: "" + dateTime);
+		    invalidateApps(dateTime);
+		    invalidateCustoms(dateTime);
+			try {
+				Thread.sleep(30000);
+			} catch (InterruptedException e) {
+				log.error(""Unable to sleep... continuing"");
+			}
+		}
+	}
+	private void invalidateApps(String dateTime) {
+		String invalidsNextToken = null;
+		do {
+			SelectRequest invalidsRequest = new SelectRequest(""select `itemName()` from `"" + AdWhirlUtil.DOMAIN_APPS_INVALID + ""` where dateTime < '"" + dateTime + ""'"");
+			invalidsRequest.setNextToken(invalidsNextToken);
+			try {
+			    SelectResult invalidsResult = sdb.select(invalidsRequest);
+			    invalidsNextToken = invalidsResult.getNextToken();
+			    List<Item> invalidsList = invalidsResult.getItems();
+				for(Item item : invalidsList) {
+					String aid = item.getName();
+					deleteInvalid(AdWhirlUtil.DOMAIN_APPS_INVALID, aid);
+				}
+			}
+			catch(Exception e) {
+				AdWhirlUtil.logException(e, log);
+				// Eventually we'll get a 'stale request' error and need to start over.
+				invalidsNextToken = null;
+			}
+		}
+		while(invalidsNextToken != null);
+	}
+	private void invalidateCustoms(String dateTime) {
+		String invalidsNextToken = null;
+		do {
+			SelectRequest invalidsRequest = new SelectRequest(""select `itemName()` from `"" + AdWhirlUtil.DOMAIN_CUSTOMS_INVALID + ""` where dateTime < '"" + dateTime + ""'"");
+			invalidsRequest.setNextToken(invalidsNextToken);
+			try {
+			    SelectResult invalidsResult = sdb.select(invalidsRequest);
+			    invalidsNextToken = invalidsResult.getNextToken();
+			    List<Item> invalidsList = invalidsResult.getItems();
+				for(Item item : invalidsList) {
+					String aid = item.getName();
+					deleteInvalid(AdWhirlUtil.DOMAIN_CUSTOMS_INVALID, aid);
+				}
+			}
+			catch(Exception e) {
+				AdWhirlUtil.logException(e, log);
+				// Eventually we'll get a 'stale request' error and need to start over.
+				invalidsNextToken = null;
+			}
+		}
+		while(invalidsNextToken != null);
+	}
+	private void deleteInvalid(String domain, String id) {
+			log.debug(""Deleting invalid <"" + domain + "", "" + id + "">"");
+			DeleteAttributesRequest deleteRequest = new DeleteAttributesRequest(domain, id);
+			try {
+				sdb.deleteAttributes(deleteRequest);
+			} catch (Exception e) {
+				AdWhirlUtil.logException(e, log);
+				return;
+			}
+		}
+}",class,
+"	public void run() {
+		log.info(""InvalidateDaemon started"");
+		sdb = AdWhirlUtil.getSDB();
+		//We're a makeshift daemon, let's loop forever
+		while(true) {
+			Date date = new Date();
+			Calendar c = new GregorianCalendar();
+			c.setTime(date);
+			c.add(Calendar.SECOND, -60);
+			date = c.getTime();
+		    SimpleDateFormat sdf = new SimpleDateFormat(""yyyy-MM-dd, HH:mm:ss"");
+		    sdf.setTimeZone(TimeZone.getTimeZone(""GMT""));
+		    String dateTime = sdf.format(date);
+		    log.info(""Cutoff is: "" + dateTime);
+		    invalidateApps(dateTime);
+		    invalidateCustoms(dateTime);
+			try {
+				Thread.sleep(30000);
+			} catch (InterruptedException e) {
+				log.error(""Unable to sleep... continuing"");
+			}
+		}
+	}",method,
+"		while(true) {
+			Date date = new Date();
+			Calendar c = new GregorianCalendar();
+			c.setTime(date);
+			c.add(Calendar.SECOND, -60);
+			date = c.getTime();
+		    SimpleDateFormat sdf = new SimpleDateFormat(""yyyy-MM-dd, HH:mm:ss"");
+		    sdf.setTimeZone(TimeZone.getTimeZone(""GMT""));
+		    String dateTime = sdf.format(date);
+		    log.info(""Cutoff is: "" + dateTime);
+		    invalidateApps(dateTime);
+		    invalidateCustoms(dateTime);
+			try {
+				Thread.sleep(30000);
+			} catch (InterruptedException e) {
+				log.error(""Unable to sleep... continuing"");
+			}
+		}",method,
+"	private void invalidateApps(String dateTime) {
+		String invalidsNextToken = null;
+		do {
+			SelectRequest invalidsRequest = new SelectRequest(""select `itemName()` from `"" + AdWhirlUtil.DOMAIN_APPS_INVALID + ""` where dateTime < '"" + dateTime + ""'"");
+			invalidsRequest.setNextToken(invalidsNextToken);
+			try {
+			    SelectResult invalidsResult = sdb.select(invalidsRequest);
+			    invalidsNextToken = invalidsResult.getNextToken();
+			    List<Item> invalidsList = invalidsResult.getItems();
+				for(Item item : invalidsList) {
+					String aid = item.getName();
+					deleteInvalid(AdWhirlUtil.DOMAIN_APPS_INVALID, aid);
+				}
+			}
+			catch(Exception e) {
+				AdWhirlUtil.logException(e, log);
+				// Eventually we'll get a 'stale request' error and need to start over.
+				invalidsNextToken = null;
+			}
+		}
+		while(invalidsNextToken != null);
+	}",method,
+"				for(Item item : invalidsList) {
+					String aid = item.getName();
+					deleteInvalid(AdWhirlUtil.DOMAIN_APPS_INVALID, aid);
+				}",method,
+"			catch(Exception e) {
+				AdWhirlUtil.logException(e, log);
+				// Eventually we'll get a 'stale request' error and need to start over.
+				invalidsNextToken = null;
+			}",method,
+"	private void invalidateCustoms(String dateTime) {
+		String invalidsNextToken = null;
+		do {
+			SelectRequest invalidsRequest = new SelectRequest(""select `itemName()` from `"" + AdWhirlUtil.DOMAIN_CUSTOMS_INVALID + ""` where dateTime < '"" + dateTime + ""'"");
+			invalidsRequest.setNextToken(invalidsNextToken);
+			try {
+			    SelectResult invalidsResult = sdb.select(invalidsRequest);
+			    invalidsNextToken = invalidsResult.getNextToken();
+			    List<Item> invalidsList = invalidsResult.getItems();
+				for(Item item : invalidsList) {
+					String aid = item.getName();
+					deleteInvalid(AdWhirlUtil.DOMAIN_CUSTOMS_INVALID, aid);
+				}
+			}
+			catch(Exception e) {
+				AdWhirlUtil.logException(e, log);
+				// Eventually we'll get a 'stale request' error and need to start over.
+				invalidsNextToken = null;
+			}
+		}
+		while(invalidsNextToken != null);
+	}",method,
+"				for(Item item : invalidsList) {
+					String aid = item.getName();
+					deleteInvalid(AdWhirlUtil.DOMAIN_CUSTOMS_INVALID, aid);
+				}",method,
+"			catch(Exception e) {
+				AdWhirlUtil.logException(e, log);
+				// Eventually we'll get a 'stale request' error and need to start over.
+				invalidsNextToken = null;
+			}",method,
+"	private void deleteInvalid(String domain, String id) {
+			log.debug(""Deleting invalid <"" + domain + "", "" + id + "">"");
+			DeleteAttributesRequest deleteRequest = new DeleteAttributesRequest(domain, id);
+			try {
+				sdb.deleteAttributes(deleteRequest);
+			} catch (Exception e) {
+				AdWhirlUtil.logException(e, log);
+				return;
+			}
+		}",method,
+"public class JavaCheckApiTest {
+    @Test
+    public void canAccessClasspathConfigurationBuilder() {
+        classpath();
+    }
+    @Test
+    public void canProvideCustomClasspath() {
+        customClasspath(""foo:bar"");
+    }
+    @Test
+    public void canAccessNoJars() {
+        classpath().noJars();
+    }
+	@Test
+	public void canDefineSlices() {
+		classpath().withSlicing(""blah"", ""whatever"");
+	}
+	@Test
+	public void canUseAllow() {
+		classpath().withSlicing(""blah"", ""whatever"").allow(""a"", ""b"", ""c"");
+	}
+	@Test
+	public void canUseAllowDirect() {
+		classpath().withSlicing(""blah"", ""whatever"").allowDirect(""a"", ""b"", ""c"");
+	}
+	@Test
+	public void canUseAnyOf() {
+		JLayer.anyOf(""b"", ""c"", ""d"");
+	}
+	@Test
+	public void canUseOneOf() {
+		JLayer.oneOf(""b"", ""c"", ""d"");
+	}
+	@Test
+	public void degraphHonoursItsConstraintsJavaStyle() {
+		assertThat(
+				classpath()
+						.including(""de.schauderhaft.**"")
+						.withSlicing(""part"", ""de.schauderhaft.*.(*).**"")
+						.withSlicing(
+								""lib"",
+								""de.schauderhaft.**(Test)"",
+								new NamedPattern(""main"", ""de.schauderhaft.*.**""))
+						.withSlicing(
+								""internalExternal"",
+								new NamedPattern(""internal"",
+										""de.schauderhaft.**""),
+								new NamedPattern(""external"", ""**"")),
+				is(violationFree()));
+	}
+}",class,
+"public class AnImplementation implements AnInterface {
+}",class,
+"public class ClassWithAnnotationWithArrayOfClasses {
+}",class,
+"public class DependsOnArray {
+	String[] strings = null;
+}",class,
+"    @Test
+    public void canAccessClasspathConfigurationBuilder() {
+        classpath();
+    }",method,
+"    @Test
+    public void canProvideCustomClasspath() {
+        customClasspath(""foo:bar"");
+    }",method,
+"    @Test
+    public void canAccessNoJars() {
+        classpath().noJars();
+    }",method,
+"	@Test
+	public void canDefineSlices() {
+		classpath().withSlicing(""blah"", ""whatever"");
+	}",method,
+"	@Test
+	public void canUseAllow() {
+		classpath().withSlicing(""blah"", ""whatever"").allow(""a"", ""b"", ""c"");
+	}",method,
+"	@Test
+	public void canUseAllowDirect() {
+		classpath().withSlicing(""blah"", ""whatever"").allowDirect(""a"", ""b"", ""c"");
+	}",method,
+"	@Test
+	public void canUseAnyOf() {
+		JLayer.anyOf(""b"", ""c"", ""d"");
+	}",method,
+"	@Test
+	public void canUseOneOf() {
+		JLayer.oneOf(""b"", ""c"", ""d"");
+	}",method,
+"	@Test
+	public void degraphHonoursItsConstraintsJavaStyle() {
+		assertThat(
+				classpath()
+						.including(""de.schauderhaft.**"")
+						.withSlicing(""part"", ""de.schauderhaft.*.(*).**"")
+						.withSlicing(
+								""lib"",
+								""de.schauderhaft.**(Test)"",
+								new NamedPattern(""main"", ""de.schauderhaft.*.**""))
+						.withSlicing(
+								""internalExternal"",
+								new NamedPattern(""internal"",
+										""de.schauderhaft.**""),
+								new NamedPattern(""external"", ""**"")),
+				is(violationFree()));
+	}",method,
+"public class TCPEchoServerTest implements Test {
+    private TCPEchoServer _server;
+    private TCPEchoClient _client;
+    private int _port = 4444;
+    private String _host = ""127.0.0.1"";
+    private String _message = ""TCP Echo Message!"";
+    private boolean _server_ok = false;
+    private boolean _client_ok = false;
+    /////////////////////
+    // TCP Echo Server //
+    /////////////////////
+    public class TCPEchoServer extends Thread {
+        public void run() {
+            try {
+                System.out.println(""[~] Server: creating socket"");
+                ServerSocket ss = new ServerSocket();
+                ss.bind(new InetSocketAddress(_port));
+                System.out.println(""[~] Server: calling accept..."");
+                Socket cs = ss.accept();
+                System.out.println(""[~] Server: new connection!"");
+                BufferedReader in = new BufferedReader( 
+                        new InputStreamReader(cs.getInputStream()));
+                BufferedWriter out = new BufferedWriter(
+                        new OutputStreamWriter(cs.getOutputStream()));
+                System.out.println(""[~] Server: reading message..."");
+                char[] buf = new char[512];
+                in.read(buf);
+                System.out.println(""[~] Server: echoing back..."");
+                out.write(buf);
+                out.flush();
+                // Clean up...
+                System.out.println(""[~] Server: closing connection"");
+                out.close(); 
+                in.close();
+                cs.close(); 
+                ss.close();
+                _server_ok = true;
+            } catch (Exception ex) {
+                System.out.println(""[-] Exception in TCPEchoServer!"");
+                System.out.println(ex.getMessage());
+                ex.printStackTrace();
+            }
+        }
+    }
+    /////////////////////
+    // TCP Echo Client //
+    /////////////////////
+    public class TCPEchoClient extends Thread {
+        public void run() {
+            try {
+                System.out.println(""[~] Client: connecting to server..."");
+                Socket s = new Socket(InetAddress.getByName(_host), _port);
+                s.setSoTimeout(2000);
+                BufferedReader in = new BufferedReader( 
+                        new InputStreamReader(s.getInputStream()));
+                BufferedWriter out = new BufferedWriter(
+                        new OutputStreamWriter(s.getOutputStream()));
+                System.out.println(""[~] Client: writing message..."");
+                out.write(_message);
+                out.flush();
+                System.out.println(""[~] Client: reading response..."");
+                char[] buf = new char[512];
+                in.read(buf);
+                System.out.println(""[~] Client: message received:"");
+                System.out.println(buf);
+                System.out.println(""[~] Client: closing connection"");
+                out.close(); 
+                in.close();
+                s.close();
+                _client_ok = true;
+            } catch (Exception ex) {
+                System.out.println(""[-] Exception in TCPEchoClient!"");
+                System.out.println(ex.getMessage());
+                ex.printStackTrace();
+            }
+        }
+    }
+    public boolean run() {
+        try {
+            _server = new TCPEchoServer();
+            _client = new TCPEchoClient();
+            _server.start();
+            Thread.sleep(100);
+            _client.start();
+            _server.join();
+            _client.join();
+        } catch (Exception ex) {
+            ex.printStackTrace();
+        }
+        return (_client_ok && _server_ok);
+    }
+}",class,
+"    public class TCPEchoServer extends Thread {
+        public void run() {
+            try {
+                System.out.println(""[~] Server: creating socket"");
+                ServerSocket ss = new ServerSocket();
+                ss.bind(new InetSocketAddress(_port));
+                System.out.println(""[~] Server: calling accept..."");
+                Socket cs = ss.accept();
+                System.out.println(""[~] Server: new connection!"");
+                BufferedReader in = new BufferedReader( 
+                        new InputStreamReader(cs.getInputStream()));
+                BufferedWriter out = new BufferedWriter(
+                        new OutputStreamWriter(cs.getOutputStream()));
+                System.out.println(""[~] Server: reading message..."");
+                char[] buf = new char[512];
+                in.read(buf);
+                System.out.println(""[~] Server: echoing back..."");
+                out.write(buf);
+                out.flush();
+                // Clean up...
+                System.out.println(""[~] Server: closing connection"");
+                out.close(); 
+                in.close();
+                cs.close(); 
+                ss.close();
+                _server_ok = true;
+            } catch (Exception ex) {
+                System.out.println(""[-] Exception in TCPEchoServer!"");
+                System.out.println(ex.getMessage());
+                ex.printStackTrace();
+            }
+        }
+    }",class,
+"    public class TCPEchoClient extends Thread {
+        public void run() {
+            try {
+                System.out.println(""[~] Client: connecting to server..."");
+                Socket s = new Socket(InetAddress.getByName(_host), _port);
+                s.setSoTimeout(2000);
+                BufferedReader in = new BufferedReader( 
+                        new InputStreamReader(s.getInputStream()));
+                BufferedWriter out = new BufferedWriter(
+                        new OutputStreamWriter(s.getOutputStream()));
+                System.out.println(""[~] Client: writing message..."");
+                out.write(_message);
+                out.flush();
+                System.out.println(""[~] Client: reading response..."");
+                char[] buf = new char[512];
+                in.read(buf);
+                System.out.println(""[~] Client: message received:"");
+                System.out.println(buf);
+                System.out.println(""[~] Client: closing connection"");
+                out.close(); 
+                in.close();
+                s.close();
+                _client_ok = true;
+            } catch (Exception ex) {
+                System.out.println(""[-] Exception in TCPEchoClient!"");
+                System.out.println(ex.getMessage());
+                ex.printStackTrace();
+            }
+        }
+    }",class,
+"        public void run() {
+            try {
+                System.out.println(""[~] Server: creating socket"");
+                ServerSocket ss = new ServerSocket();
+                ss.bind(new InetSocketAddress(_port));
+                System.out.println(""[~] Server: calling accept..."");
+                Socket cs = ss.accept();
+                System.out.println(""[~] Server: new connection!"");
+                BufferedReader in = new BufferedReader( 
+                        new InputStreamReader(cs.getInputStream()));
+                BufferedWriter out = new BufferedWriter(
+                        new OutputStreamWriter(cs.getOutputStream()));
+                System.out.println(""[~] Server: reading message..."");
+                char[] buf = new char[512];
+                in.read(buf);
+                System.out.println(""[~] Server: echoing back..."");
+                out.write(buf);
+                out.flush();
+                // Clean up...
+                System.out.println(""[~] Server: closing connection"");
+                out.close(); 
+                in.close();
+                cs.close(); 
+                ss.close();
+                _server_ok = true;
+            } catch (Exception ex) {
+                System.out.println(""[-] Exception in TCPEchoServer!"");
+                System.out.println(ex.getMessage());
+                ex.printStackTrace();
+            }
+        }",method,
+"        public void run() {
+            try {
+                System.out.println(""[~] Client: connecting to server..."");
+                Socket s = new Socket(InetAddress.getByName(_host), _port);
+                s.setSoTimeout(2000);
+                BufferedReader in = new BufferedReader( 
+                        new InputStreamReader(s.getInputStream()));
+                BufferedWriter out = new BufferedWriter(
+                        new OutputStreamWriter(s.getOutputStream()));
+                System.out.println(""[~] Client: writing message..."");
+                out.write(_message);
+                out.flush();
+                System.out.println(""[~] Client: reading response..."");
+                char[] buf = new char[512];
+                in.read(buf);
+                System.out.println(""[~] Client: message received:"");
+                System.out.println(buf);
+                System.out.println(""[~] Client: closing connection"");
+                out.close(); 
+                in.close();
+                s.close();
+                _client_ok = true;
+            } catch (Exception ex) {
+                System.out.println(""[-] Exception in TCPEchoClient!"");
+                System.out.println(ex.getMessage());
+                ex.printStackTrace();
+            }
+        }",method,
+"    public boolean run() {
+        try {
+            _server = new TCPEchoServer();
+            _client = new TCPEchoClient();
+            _server.start();
+            Thread.sleep(100);
+            _client.start();
+            _server.join();
+            _client.join();
+        } catch (Exception ex) {
+            ex.printStackTrace();
+        }
+        return (_client_ok && _server_ok);
+    }",method,
+"  public static final class TargetLicense {
+    private final Label label;
+    private final License license;
+    public TargetLicense(Label label, License license) {
+      Preconditions.checkNotNull(label);
+      Preconditions.checkNotNull(license);
+      this.label = label;
+      this.license = license;
+    }
+    public Label getLabel() {
+      return label;
+    }
+    public License getLicense() {
+      return license;
+    }
+    @Override
+    public int hashCode() {
+      return Objects.hash(label, license);
+    }
+    @Override
+    public boolean equals(Object obj) {
+      if (this == obj) {
+        return true;
+      }
+      if (!(obj instanceof TargetLicense)) {
+        return false;
+      }
+      TargetLicense other = (TargetLicense) obj;
+      return label.equals(other.label) && license.equals(other.license);
+    }
+    @Override
+    public String toString() {
+      return label + "" => "" + license;
+    }
+  }",class,
+"    public TargetLicense(Label label, License license) {
+      Preconditions.checkNotNull(label);
+      Preconditions.checkNotNull(license);
+      this.label = label;
+      this.license = license;
+    }",method,
+"    public Label getLabel() {
+      return label;
+    }",method,
+"    public License getLicense() {
+      return license;
+    }",method,
+"    @Override
+    public int hashCode() {
+      return Objects.hash(label, license);
+    }",method,
+"    @Override
+    public boolean equals(Object obj) {
+      if (this == obj) {
+        return true;
+      }
+      if (!(obj instanceof TargetLicense)) {
+        return false;
+      }
+      TargetLicense other = (TargetLicense) obj;
+      return label.equals(other.label) && license.equals(other.license);
+    }",method,
+"      if (this == obj) {
+        return true;
+      }",method,
+"    @Override
+    public String toString() {
+      return label + "" => "" + license;
+    }",method,
+"public class StoreApi  {
+   private final StoreApiService delegate = StoreApiServiceFactory.getStoreApi();
+    @DELETE
+    @Path(""/order/{orderId}"")
+    @Produces({ ""application/xml"", ""application/json"" })
+    @io.swagger.annotations.ApiOperation(value = ""Delete purchase order by ID"", notes = ""For valid response try integer IDs with value < 1000. Anything above 1000 or nonintegers will generate API errors"", response = Void.class, tags={ ""store"", })
+    @io.swagger.annotations.ApiResponses(value = { 
+        @io.swagger.annotations.ApiResponse(code = 400, message = ""Invalid ID supplied"", response = Void.class),
+        @io.swagger.annotations.ApiResponse(code = 404, message = ""Order not found"", response = Void.class) })
+    public Response deleteOrder( @PathParam(""orderId"") String orderId,@Context SecurityContext securityContext)
+    throws NotFoundException {
+        return delegate.deleteOrder(orderId,securityContext);
+    }
+    @GET
+    @Path(""/inventory"")
+    @Produces({ ""application/json"" })
+    @io.swagger.annotations.ApiOperation(value = ""Returns pet inventories by status"", notes = ""Returns a map of status codes to quantities"", response = Integer.class, responseContainer = ""Map"", authorizations = {
+        @io.swagger.annotations.Authorization(value = ""api_key"")
+    }, tags={ ""store"", })
+    @io.swagger.annotations.ApiResponses(value = { 
+        @io.swagger.annotations.ApiResponse(code = 200, message = ""successful operation"", response = Map.class, responseContainer = ""Map"") })
+    public Response getInventory(@Context SecurityContext securityContext)
+    throws NotFoundException {
+        return delegate.getInventory(securityContext);
+    }
+    @GET
+    @Path(""/order/{orderId}"")
+    @Produces({ ""application/xml"", ""application/json"" })
+    @io.swagger.annotations.ApiOperation(value = ""Find purchase order by ID"", notes = ""For valid response try integer IDs with value <= 5 or > 10. Other values will generated exceptions"", response = Order.class, tags={ ""store"", })
+    @io.swagger.annotations.ApiResponses(value = { 
+        @io.swagger.annotations.ApiResponse(code = 200, message = ""successful operation"", response = Order.class),
+        @io.swagger.annotations.ApiResponse(code = 400, message = ""Invalid ID supplied"", response = Void.class),
+        @io.swagger.annotations.ApiResponse(code = 404, message = ""Order not found"", response = Void.class) })
+    public Response getOrderById( @Min(1) @Max(5) @PathParam(""orderId"") Long orderId,@Context SecurityContext securityContext)
+    throws NotFoundException {
+        return delegate.getOrderById(orderId,securityContext);
+    }
+    @POST
+    @Path(""/order"")
+    @Produces({ ""application/xml"", ""application/json"" })
+    @io.swagger.annotations.ApiOperation(value = ""Place an order for a pet"", notes = """", response = Order.class, tags={ ""store"", })
+    @io.swagger.annotations.ApiResponses(value = { 
+        @io.swagger.annotations.ApiResponse(code = 200, message = ""successful operation"", response = Order.class),
+        @io.swagger.annotations.ApiResponse(code = 400, message = ""Invalid Order"", response = Void.class) })
+    public Response placeOrder(@ApiParam(value = ""order placed for purchasing the pet"" ,required=true) Order body,@Context SecurityContext securityContext)
+    throws NotFoundException {
+        return delegate.placeOrder(body,securityContext);
+    }
+}",class,
+"    @io.swagger.annotations.ApiResponses(value = { 
+        @io.swagger.annotations.ApiResponse(code = 200, message = ""successful operation"", response = Map.class, responseContainer = ""Map"") })
+    public Response getInventory(@Context SecurityContext securityContext)
+    throws NotFoundException {
+        return delegate.getInventory(securityContext);
+    }",method,
+"import org.jetbrains.annotations.NotNull;
+class DebugProcessListener extends ProcessAdapter {
+  private final Project myProject;
+  private final int myPort;
+  public DebugProcessListener(Project project, int port) {
+    myProject = project;
+    myPort = port;
+  }
+  @Override
+  public void startNotified(@NotNull ProcessEvent event) {
+    final DebuggerConnector connector = new DebuggerConnector(myProject, event.getProcessHandler(), myPort);
+    ApplicationManager.getApplication().executeOnPooledThread(connector);
+  }
+  @Override
+  public void processWillTerminate(@NotNull ProcessEvent event, boolean willBeDestroyed) {
+    try {
+      final XsltDebuggerSession session = XsltDebuggerSession.getInstance(event.getProcessHandler());
+      if (session != null) {
+        session.stop();
+      }
+    } catch (VMPausedException e) {
+      // VM is paused, no way for a ""clean"" shutdown
+    } catch (DebuggerStoppedException e) {
+      // OK
+    }
+    super.processWillTerminate(event, willBeDestroyed);
+  }
+  @Override
+  public void processTerminated(@NotNull ProcessEvent event) {
+    super.processTerminated(event);
+    final XsltDebuggerSession session = XsltDebuggerSession.getInstance(event.getProcessHandler());
+    if (session != null) {
+      session.close();
+    }
+  }
+}",class,
+"  public DebugProcessListener(Project project, int port) {
+    myProject = project;
+    myPort = port;
+  }",method,
+"  @Override
+  public void startNotified(@NotNull ProcessEvent event) {
+    final DebuggerConnector connector = new DebuggerConnector(myProject, event.getProcessHandler(), myPort);
+    ApplicationManager.getApplication().executeOnPooledThread(connector);
+  }",method,
+"  @Override
+  public void processWillTerminate(@NotNull ProcessEvent event, boolean willBeDestroyed) {
+    try {
+      final XsltDebuggerSession session = XsltDebuggerSession.getInstance(event.getProcessHandler());
+      if (session != null) {
+        session.stop();
+      }
+    } catch (VMPausedException e) {
+      // VM is paused, no way for a ""clean"" shutdown
+    } catch (DebuggerStoppedException e) {
+      // OK
+    }
+    super.processWillTerminate(event, willBeDestroyed);
+  }",method,
+"      if (session != null) {
+        session.stop();
+      }",method,
+"  @Override
+  public void processTerminated(@NotNull ProcessEvent event) {
+    super.processTerminated(event);
+    final XsltDebuggerSession session = XsltDebuggerSession.getInstance(event.getProcessHandler());
+    if (session != null) {
+      session.close();
+    }
+  }",method,
+"    if (session != null) {
+      session.close();
+    }",method,
+"public abstract class SimpleTarget<Z> extends BaseTarget<Z> {
+  private final int width;
+  private final int height;
+  public SimpleTarget() {
+    this(SIZE_ORIGINAL, SIZE_ORIGINAL);
+  }
+  public SimpleTarget(int width, int height) {
+    this.width = width;
+    this.height = height;
+  }
+  @Override
+  public final void getSize(SizeReadyCallback cb) {
+    if (!Util.isValidDimensions(width, height)) {
+      throw new IllegalArgumentException(
+          ""Width and height must both be > 0 or Target#SIZE_ORIGINAL, but given"" + "" width: ""
+              + width + "" and height: "" + height + "", either provide dimensions in the constructor""
+              + "" or call override()"");
+    }
+    cb.onSizeReady(width, height);
+  }
+  @Override
+  public void removeCallback(SizeReadyCallback cb) {
+    // Do nothing, we never retain a reference to the callback.
+  }
+}",class,
+"  public SimpleTarget() {
+    this(SIZE_ORIGINAL, SIZE_ORIGINAL);
+  }",method,
+"  public SimpleTarget(int width, int height) {
+    this.width = width;
+    this.height = height;
+  }",method,
+"  @Override
+  public final void getSize(SizeReadyCallback cb) {
+    if (!Util.isValidDimensions(width, height)) {
+      throw new IllegalArgumentException(
+          ""Width and height must both be > 0 or Target#SIZE_ORIGINAL, but given"" + "" width: ""
+              + width + "" and height: "" + height + "", either provide dimensions in the constructor""
+              + "" or call override()"");
+    }
+    cb.onSizeReady(width, height);
+  }",method,
+"  @Override
+  public void removeCallback(SizeReadyCallback cb) {
+    // Do nothing, we never retain a reference to the callback.
+  }",method,
+"public class ConfigurationPropertiesBindingPostProcessor implements BeanPostProcessor,
+		BeanFactoryAware, EnvironmentAware, ApplicationContextAware, InitializingBean,
+		DisposableBean, ApplicationListener<ContextRefreshedEvent>, PriorityOrdered {
+	private static final Log logger = LogFactory
+			.getLog(ConfigurationPropertiesBindingPostProcessor.class);
+	private ConfigurationBeanFactoryMetaData beans = new ConfigurationBeanFactoryMetaData();
+	private Iterable<PropertySource<?>> propertySources;
+	private Validator validator;
+	private ConversionService conversionService;
+	private BeanFactory beanFactory;
+	private Environment environment = new StandardEnvironment();
+	private ApplicationContext applicationContext;
+	private int order = Ordered.HIGHEST_PRECEDENCE + 1;
+	private ConfigurationPropertiesBinder configurationPropertiesBinder;
+	public void setOrder(int order) {
+		this.order = order;
+	}
+	@Override
+	public int getOrder() {
+		return this.order;
+	}
+	public void setPropertySources(Iterable<PropertySource<?>> propertySources) {
+		this.propertySources = propertySources;
+	}
+	public void setValidator(Validator validator) {
+		this.validator = validator;
+	}
+	public void setConversionService(ConversionService conversionService) {
+		this.conversionService = conversionService;
+	}
+	public void setBeanMetaDataStore(ConfigurationBeanFactoryMetaData beans) {
+		this.beans = beans;
+	}
+	@Override
+	public void setBeanFactory(BeanFactory beanFactory) throws BeansException {
+		this.beanFactory = beanFactory;
+	}
+	@Override
+	public void setEnvironment(Environment environment) {
+		this.environment = environment;
+	}
+	@Override
+	public void setApplicationContext(ApplicationContext applicationContext) {
+		this.applicationContext = applicationContext;
+	}
+	@Override
+	public void afterPropertiesSet() throws Exception {
+		if (this.propertySources == null) {
+			this.propertySources = deducePropertySources();
+		}
+	}
+	@Override
+	public void onApplicationEvent(ContextRefreshedEvent event) {
+		freeBinder();
+	}
+	@Override
+	public void destroy() {
+		freeBinder();
+	}
+	private void freeBinder() {
+		if (this.configurationPropertiesBinder != null) {
+			this.configurationPropertiesBinder.destroy();
+		}
+		this.configurationPropertiesBinder = null;
+	}
+	private PropertySources deducePropertySources() {
+		PropertySourcesPlaceholderConfigurer configurer = getSinglePropertySourcesPlaceholderConfigurer();
+		if (configurer != null) {
+			return configurer.getAppliedPropertySources();
+		}
+		if (this.environment instanceof ConfigurableEnvironment) {
+			return ((ConfigurableEnvironment) this.environment).getPropertySources();
+		}
+		throw new IllegalStateException(""Unable to obtain PropertySources from ""
+				+ ""PropertySourcesPlaceholderConfigurer or Environment"");
+	}
+	private PropertySourcesPlaceholderConfigurer getSinglePropertySourcesPlaceholderConfigurer() {
+		// Take care not to cause early instantiation of all FactoryBeans
+		if (this.beanFactory instanceof ListableBeanFactory) {
+			ListableBeanFactory listableBeanFactory = (ListableBeanFactory) this.beanFactory;
+			Map<String, PropertySourcesPlaceholderConfigurer> beans = listableBeanFactory
+					.getBeansOfType(PropertySourcesPlaceholderConfigurer.class, false,
+							false);
+			if (beans.size() == 1) {
+				return beans.values().iterator().next();
+			}
+			if (beans.size() > 1 && logger.isWarnEnabled()) {
+				logger.warn(""Multiple PropertySourcesPlaceholderConfigurer ""
+						+ ""beans registered "" + beans.keySet()
+						+ "", falling back to Environment"");
+			}
+		}
+		return null;
+	}
+	@Override
+	public Object postProcessBeforeInitialization(Object bean, String beanName)
+			throws BeansException {
+		ConfigurationProperties annotation = getAnnotation(bean, beanName);
+		if (annotation != null) {
+			try {
+				getBinder().bind(bean, annotation);
+			}
+			catch (ConfigurationPropertiesBindingException ex) {
+				throw new BeanCreationException(beanName, ex.getMessage(), ex.getCause());
+			}
+		}
+		return bean;
+	}
+	@Override
+	public Object postProcessAfterInitialization(Object bean, String beanName)
+			throws BeansException {
+		return bean;
+	}
+	private ConfigurationProperties getAnnotation(Object bean, String beanName) {
+		ConfigurationProperties annotation = this.beans.findFactoryAnnotation(beanName,
+				ConfigurationProperties.class);
+		if (annotation == null) {
+			annotation = AnnotationUtils.findAnnotation(bean.getClass(),
+					ConfigurationProperties.class);
+		}
+		return annotation;
+	}
+	private ConfigurationPropertiesBinder getBinder() {
+		if (this.configurationPropertiesBinder == null) {
+			this.configurationPropertiesBinder = new ConfigurationPropertiesBinderBuilder(
+					this.applicationContext).withConversionService(this.conversionService)
+							.withValidator(this.validator)
+							.withPropertySources(this.propertySources).build();
+		}
+		return this.configurationPropertiesBinder;
+	}
+}",class,
+"	public void setOrder(int order) {
+		this.order = order;
+	}",method,
+"	@Override
+	public int getOrder() {
+		return this.order;
+	}",method,
+"	public void setPropertySources(Iterable<PropertySource<?>> propertySources) {
+		this.propertySources = propertySources;
+	}",method,
+"	public void setValidator(Validator validator) {
+		this.validator = validator;
+	}",method,
+"	public void setConversionService(ConversionService conversionService) {
+		this.conversionService = conversionService;
+	}",method,
+"	public void setBeanMetaDataStore(ConfigurationBeanFactoryMetaData beans) {
+		this.beans = beans;
+	}",method,
+"	@Override
+	public void setBeanFactory(BeanFactory beanFactory) throws BeansException {
+		this.beanFactory = beanFactory;
+	}",method,
+"	@Override
+	public void setEnvironment(Environment environment) {
+		this.environment = environment;
+	}",method,
+"	@Override
+	public void setApplicationContext(ApplicationContext applicationContext) {
+		this.applicationContext = applicationContext;
+	}",method,
+"	@Override
+	public void afterPropertiesSet() throws Exception {
+		if (this.propertySources == null) {
+			this.propertySources = deducePropertySources();
+		}
+	}",method,
+"		if (this.propertySources == null) {
+			this.propertySources = deducePropertySources();
+		}",method,
+"	@Override
+	public void onApplicationEvent(ContextRefreshedEvent event) {
+		freeBinder();
+	}",method,
+"	@Override
+	public void destroy() {
+		freeBinder();
+	}",method,
+"	private void freeBinder() {
+		if (this.configurationPropertiesBinder != null) {
+			this.configurationPropertiesBinder.destroy();
+		}
+		this.configurationPropertiesBinder = null;
+	}",method,
+"		if (this.configurationPropertiesBinder != null) {
+			this.configurationPropertiesBinder.destroy();
+		}",method,
+"	private PropertySources deducePropertySources() {
+		PropertySourcesPlaceholderConfigurer configurer = getSinglePropertySourcesPlaceholderConfigurer();
+		if (configurer != null) {
+			return configurer.getAppliedPropertySources();
+		}
+		if (this.environment instanceof ConfigurableEnvironment) {
+			return ((ConfigurableEnvironment) this.environment).getPropertySources();
+		}
+		throw new IllegalStateException(""Unable to obtain PropertySources from ""
+				+ ""PropertySourcesPlaceholderConfigurer or Environment"");
+	}",method,
+"		if (configurer != null) {
+			return configurer.getAppliedPropertySources();
+		}",method,
+"		if (this.environment instanceof ConfigurableEnvironment) {
+			return ((ConfigurableEnvironment) this.environment).getPropertySources();
+		}",method,
+"	private PropertySourcesPlaceholderConfigurer getSinglePropertySourcesPlaceholderConfigurer() {
+		// Take care not to cause early instantiation of all FactoryBeans
+		if (this.beanFactory instanceof ListableBeanFactory) {
+			ListableBeanFactory listableBeanFactory = (ListableBeanFactory) this.beanFactory;
+			Map<String, PropertySourcesPlaceholderConfigurer> beans = listableBeanFactory
+					.getBeansOfType(PropertySourcesPlaceholderConfigurer.class, false,
+							false);
+			if (beans.size() == 1) {
+				return beans.values().iterator().next();
+			}
+			if (beans.size() > 1 && logger.isWarnEnabled()) {
+				logger.warn(""Multiple PropertySourcesPlaceholderConfigurer ""
+						+ ""beans registered "" + beans.keySet()
+						+ "", falling back to Environment"");
+			}
+		}
+		return null;
+	}",method,
+"		if (this.beanFactory instanceof ListableBeanFactory) {
+			ListableBeanFactory listableBeanFactory = (ListableBeanFactory) this.beanFactory;
+			Map<String, PropertySourcesPlaceholderConfigurer> beans = listableBeanFactory
+					.getBeansOfType(PropertySourcesPlaceholderConfigurer.class, false,
+							false);
+			if (beans.size() == 1) {
+				return beans.values().iterator().next();
+			}
+			if (beans.size() > 1 && logger.isWarnEnabled()) {
+				logger.warn(""Multiple PropertySourcesPlaceholderConfigurer ""
+						+ ""beans registered "" + beans.keySet()
+						+ "", falling back to Environment"");
+			}
+		}",method,
+"	@Override
+	public Object postProcessBeforeInitialization(Object bean, String beanName)
+			throws BeansException {
+		ConfigurationProperties annotation = getAnnotation(bean, beanName);
+		if (annotation != null) {
+			try {
+				getBinder().bind(bean, annotation);
+			}
+			catch (ConfigurationPropertiesBindingException ex) {
+				throw new BeanCreationException(beanName, ex.getMessage(), ex.getCause());
+			}
+		}
+		return bean;
+	}",method,
+"		if (annotation != null) {
+			try {
+				getBinder().bind(bean, annotation);
+			}
+			catch (ConfigurationPropertiesBindingException ex) {
+				throw new BeanCreationException(beanName, ex.getMessage(), ex.getCause());
+			}
+		}",method,
+"			catch (ConfigurationPropertiesBindingException ex) {
+				throw new BeanCreationException(beanName, ex.getMessage(), ex.getCause());
+			}",method,
+"	@Override
+	public Object postProcessAfterInitialization(Object bean, String beanName)
+			throws BeansException {
+		return bean;
+	}",method,
+"	private ConfigurationProperties getAnnotation(Object bean, String beanName) {
+		ConfigurationProperties annotation = this.beans.findFactoryAnnotation(beanName,
+				ConfigurationProperties.class);
+		if (annotation == null) {
+			annotation = AnnotationUtils.findAnnotation(bean.getClass(),
+					ConfigurationProperties.class);
+		}
+		return annotation;
+	}",method,
+"		if (annotation == null) {
+			annotation = AnnotationUtils.findAnnotation(bean.getClass(),
+					ConfigurationProperties.class);
+		}",method,
+"	private ConfigurationPropertiesBinder getBinder() {
+		if (this.configurationPropertiesBinder == null) {
+			this.configurationPropertiesBinder = new ConfigurationPropertiesBinderBuilder(
+					this.applicationContext).withConversionService(this.conversionService)
+							.withValidator(this.validator)
+							.withPropertySources(this.propertySources).build();
+		}
+		return this.configurationPropertiesBinder;
+	}",method,
+"		if (this.configurationPropertiesBinder == null) {
+			this.configurationPropertiesBinder = new ConfigurationPropertiesBinderBuilder(
+					this.applicationContext).withConversionService(this.conversionService)
+							.withValidator(this.validator)
+							.withPropertySources(this.propertySources).build();
+		}",method,
+"public class Main {
+    public static void main(String[] args) throws NoSuchAlgorithmException {
+        String input = ""admin"";
+        MessageDigest md = MessageDigest.getInstance(""MD5"");
+        md.update(input.getBytes(), 0, input.length());
+        String output = new BigInteger(1, md.digest()).toString(16);
+        System.out.println(""MD5 : "" + output);
+    }
+}",class,
+"public class ArrayListQueue<T> implements Queue<T> {
+    private T[] data = null;
+    private int head = 0;
+    private int tail = 0;
+    public ArrayListQueue(int capacity){
+        data = (T[]) new Object[capacity];
+    }
+    private void resize(int capacity){
+        T[] copy = (T[]) new Object[capacity];
+        for(int i = 0; i<data.length;i++){
+            copy[i] = data[i];
+        }
+        data = copy;
+    }
+    public void enqueue(T t){
+        if (tail==data.length) resize(data.length*2);
+        data[tail++] = t;
+    }
+    public T dequeue(){
+        T t = data[head];
+        data[head++] = null;
+        return t;
+    }
+}",class,
+"public class ArrayListStack<T> implements Stack<T> {
+    private T[] data;
+    private int n;
+    public ArrayListStack(int capacity){
+        data = (T[]) new Object[capacity];
+    }
+    private void resize(int capacity){
+        T[] copy = (T[])new Object[capacity];
+        for (int i=0;i<n;i++){
+            copy[i] = data[i];
+        }
+        data = copy;
+    }
+    @Override
+    public void push(T t) {
+        if (data.length==n) resize(n*2);
+        data[n++] = t;
+    }
+    @Override
+    public T pop() {
+        T itm = data[--n];
+        data[n] = null;
+        if (n>0 && n==data.length/4) resize(data.length/2);
+        return itm;
+    }
+}",class,

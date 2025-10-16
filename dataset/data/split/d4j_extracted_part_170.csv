@@ -1,0 +1,1023 @@
+code_snippet,type,score
+"    public PrimitiveNodeConstructor getPrimitive(String name) {
+        final PrimitiveNodeConstructor constructor = primitives.get(name);
+        if (constructor != null) {
+            return constructor;
+        }
+        if (!TruffleOptions.AOT) {
+            final String lazyPrimitive = lazyPrimitiveClasses.get(name);
+            if (lazyPrimitive != null) {
+                return loadLazyPrimitive(lazyPrimitive);
+            }
+        }
+        return undefinedPrimitive;
+    }",method,
+"        if (constructor != null) {
+            return constructor;
+        }",method,
+"        if (!TruffleOptions.AOT) {
+            final String lazyPrimitive = lazyPrimitiveClasses.get(name);
+            if (lazyPrimitive != null) {
+                return loadLazyPrimitive(lazyPrimitive);
+            }
+        }",method,
+"            if (lazyPrimitive != null) {
+                return loadLazyPrimitive(lazyPrimitive);
+            }",method,
+"    public void addLazyPrimitive(String primitive, String nodeFactoryClass) {
+        lazyPrimitiveClasses.put(primitive, nodeFactoryClass);
+    }",method,
+"    private PrimitiveNodeConstructor loadLazyPrimitive(String lazyPrimitive) {
+        final NodeFactory<? extends RubyNode> nodeFactory = CoreMethodNodeManager.loadNodeFactory(lazyPrimitive);
+        final Primitive annotation = nodeFactory.getNodeClass().getAnnotation(Primitive.class);
+        return addPrimitive(nodeFactory, annotation);
+    }",method,
+"    public PrimitiveNodeConstructor addPrimitive(NodeFactory<? extends RubyNode> nodeFactory, Primitive annotation) {
+        return ConcurrentOperations.getOrCompute(primitives, annotation.name(),
+                k -> new PrimitiveNodeConstructor(annotation, nodeFactory));
+    }",method,
+"import java.util.Collection;
+class TestDirectory extends TestPackage {
+  public TestDirectory(JUnitConfiguration configuration, ExecutionEnvironment environment) {
+    super(configuration, environment);
+  }
+  @Nullable
+  @Override
+  public SourceScope getSourceScope() {
+    final String dirName = getConfiguration().getPersistentData().getDirName();
+    final VirtualFile file = LocalFileSystem.getInstance().findFileByPath(FileUtil.toSystemIndependentName(dirName));
+    final GlobalSearchScope globalSearchScope = file == null ? GlobalSearchScope.EMPTY_SCOPE : GlobalSearchScopesCore.directoryScope(
+      getConfiguration().getProject(), file, true);
+    return new SourceScope() {
+      @Override
+      public GlobalSearchScope getGlobalSearchScope() {
+        return globalSearchScope;
+      }
+      @Override
+      public Project getProject() {
+        return getConfiguration().getProject();
+      }
+      @Override
+      public GlobalSearchScope getLibrariesScope() {
+        final Module module = getConfiguration().getConfigurationModule().getModule();
+        return module != null ? GlobalSearchScope.moduleWithLibrariesScope(module) : GlobalSearchScope.allScope(
+          getConfiguration().getProject());
+      }
+      @Override
+      public Module[] getModulesToCompile() {
+        final Collection<Module> validModules = getConfiguration().getValidModules();
+        return validModules.toArray(new Module[validModules.size()]);
+      }
+    };
+  }
+  @Nullable
+  @Override
+  protected Path getRootPath() {
+    final VirtualFile file = LocalFileSystem.getInstance().findFileByPath(FileUtil.toSystemIndependentName(getConfiguration().getPersistentData().getDirName()));
+    if (file == null) return null;
+    Module dirModule = ModuleUtilCore.findModuleForFile(file, getConfiguration().getProject());
+    if (dirModule == null) return null;
+    return TestClassCollector.getRootPath(dirModule, true);
+  }
+  @Override
+  protected boolean configureByModule(Module module) {
+    return module != null;
+  }
+  @Override
+  public void checkConfiguration() throws RuntimeConfigurationException {
+    JavaParametersUtil.checkAlternativeJRE(getConfiguration());
+    ProgramParametersUtil.checkWorkingDirectoryExist(
+      getConfiguration(), getConfiguration().getProject(), getConfiguration().getConfigurationModule().getModule());
+    final String dirName = getConfiguration().getPersistentData().getDirName();
+    if (dirName == null || dirName.isEmpty()) {
+      throw new RuntimeConfigurationError(""Directory is not specified"");
+    }
+    final VirtualFile file = LocalFileSystem.getInstance().findFileByPath(FileUtil.toSystemIndependentName(dirName));
+    if (file == null) {
+      throw new RuntimeConfigurationWarning(""Directory \'"" + dirName + ""\' is not found"");
+    }
+    final Module module = getConfiguration().getConfigurationModule().getModule();
+    if (module == null) {
+      throw new RuntimeConfigurationError(""Module to choose classpath from is not specified"");
+    }
+  }
+  @Override
+  protected GlobalSearchScope filterScope(JUnitConfiguration.Data data) throws CantRunException {
+    return GlobalSearchScope.allScope(getConfiguration().getProject());
+  }
+  @Override
+  protected String getPackageName(JUnitConfiguration.Data data) throws CantRunException {
+    return """";
+  }
+  @Override
+  protected PsiPackage getPackage(JUnitConfiguration.Data data) throws CantRunException {
+    final String dirName = data.getDirName();
+    final VirtualFile file = LocalFileSystem.getInstance().findFileByPath(FileUtil.toSystemIndependentName(dirName));
+    if (file == null) {
+      throw new CantRunException(""Directory \'"" + dirName + ""\' is not found"");
+    }
+    final PsiDirectory directory = PsiManager.getInstance(getConfiguration().getProject()).findDirectory(file);
+    if (directory == null) {
+      throw new CantRunException(""Directory \'"" + dirName + ""\' is not found"");
+    }
+    return null;
+  }
+  @Override
+  public String suggestActionName() {
+    final JUnitConfiguration.Data data = getConfiguration().getPersistentData();
+    final String dirName = data.getDirName();
+    return dirName.isEmpty() ? ExecutionBundle.message(""all.tests.scope.presentable.text"") 
+                             : ExecutionBundle.message(""test.in.scope.presentable.text"", StringUtil.getShortName(dirName, '/'));
+  }
+  @Override
+  public boolean isConfiguredByElement(JUnitConfiguration configuration,
+                                       PsiClass testClass,
+                                       PsiMethod testMethod,
+                                       PsiPackage testPackage,
+                                       PsiDirectory testDir) {
+    if (JUnitConfiguration.TEST_DIRECTORY.equals(configuration.getPersistentData().TEST_OBJECT) && testDir != null) {
+      if (Comparing.strEqual(FileUtil.toSystemIndependentName(configuration.getPersistentData().getDirName()),
+                             testDir.getVirtualFile().getPath())) {
+        return true;
+      }
+    }
+    return false;
+  }
+}",class,
+"  public TestDirectory(JUnitConfiguration configuration, ExecutionEnvironment environment) {
+    super(configuration, environment);
+  }",method,
+"  @Nullable
+  @Override
+  public SourceScope getSourceScope() {
+    final String dirName = getConfiguration().getPersistentData().getDirName();
+    final VirtualFile file = LocalFileSystem.getInstance().findFileByPath(FileUtil.toSystemIndependentName(dirName));
+    final GlobalSearchScope globalSearchScope = file == null ? GlobalSearchScope.EMPTY_SCOPE : GlobalSearchScopesCore.directoryScope(
+      getConfiguration().getProject(), file, true);
+    return new SourceScope() {
+      @Override
+      public GlobalSearchScope getGlobalSearchScope() {
+        return globalSearchScope;
+      }
+      @Override
+      public Project getProject() {
+        return getConfiguration().getProject();
+      }
+      @Override
+      public GlobalSearchScope getLibrariesScope() {
+        final Module module = getConfiguration().getConfigurationModule().getModule();
+        return module != null ? GlobalSearchScope.moduleWithLibrariesScope(module) : GlobalSearchScope.allScope(
+          getConfiguration().getProject());
+      }
+      @Override
+      public Module[] getModulesToCompile() {
+        final Collection<Module> validModules = getConfiguration().getValidModules();
+        return validModules.toArray(new Module[validModules.size()]);
+      }
+    };
+  }",method,
+"    return new SourceScope() {
+      @Override
+      public GlobalSearchScope getGlobalSearchScope() {
+        return globalSearchScope;
+      }
+      @Override
+      public Project getProject() {
+        return getConfiguration().getProject();
+      }
+      @Override
+      public GlobalSearchScope getLibrariesScope() {
+        final Module module = getConfiguration().getConfigurationModule().getModule();
+        return module != null ? GlobalSearchScope.moduleWithLibrariesScope(module) : GlobalSearchScope.allScope(
+          getConfiguration().getProject());
+      }
+      @Override
+      public Module[] getModulesToCompile() {
+        final Collection<Module> validModules = getConfiguration().getValidModules();
+        return validModules.toArray(new Module[validModules.size()]);
+      }
+    }",method,
+"      @Override
+      public GlobalSearchScope getGlobalSearchScope() {
+        return globalSearchScope;
+      }",method,
+"      @Override
+      public Project getProject() {
+        return getConfiguration().getProject();
+      }",method,
+"      @Override
+      public GlobalSearchScope getLibrariesScope() {
+        final Module module = getConfiguration().getConfigurationModule().getModule();
+        return module != null ? GlobalSearchScope.moduleWithLibrariesScope(module) : GlobalSearchScope.allScope(
+          getConfiguration().getProject());
+      }",method,
+"      @Override
+      public Module[] getModulesToCompile() {
+        final Collection<Module> validModules = getConfiguration().getValidModules();
+        return validModules.toArray(new Module[validModules.size()]);
+      }",method,
+"  @Nullable
+  @Override
+  protected Path getRootPath() {
+    final VirtualFile file = LocalFileSystem.getInstance().findFileByPath(FileUtil.toSystemIndependentName(getConfiguration().getPersistentData().getDirName()));
+    if (file == null) return null;
+    Module dirModule = ModuleUtilCore.findModuleForFile(file, getConfiguration().getProject());
+    if (dirModule == null) return null;
+    return TestClassCollector.getRootPath(dirModule, true);
+  }",method,
+"  @Override
+  protected boolean configureByModule(Module module) {
+    return module != null;
+  }",method,
+"  @Override
+  public void checkConfiguration() throws RuntimeConfigurationException {
+    JavaParametersUtil.checkAlternativeJRE(getConfiguration());
+    ProgramParametersUtil.checkWorkingDirectoryExist(
+      getConfiguration(), getConfiguration().getProject(), getConfiguration().getConfigurationModule().getModule());
+    final String dirName = getConfiguration().getPersistentData().getDirName();
+    if (dirName == null || dirName.isEmpty()) {
+      throw new RuntimeConfigurationError(""Directory is not specified"");
+    }
+    final VirtualFile file = LocalFileSystem.getInstance().findFileByPath(FileUtil.toSystemIndependentName(dirName));
+    if (file == null) {
+      throw new RuntimeConfigurationWarning(""Directory \'"" + dirName + ""\' is not found"");
+    }
+    final Module module = getConfiguration().getConfigurationModule().getModule();
+    if (module == null) {
+      throw new RuntimeConfigurationError(""Module to choose classpath from is not specified"");
+    }
+  }",method,
+"    if (file == null) {
+      throw new RuntimeConfigurationWarning(""Directory \'"" + dirName + ""\' is not found"");
+    }",method,
+"    if (module == null) {
+      throw new RuntimeConfigurationError(""Module to choose classpath from is not specified"");
+    }",method,
+"  @Override
+  protected GlobalSearchScope filterScope(JUnitConfiguration.Data data) throws CantRunException {
+    return GlobalSearchScope.allScope(getConfiguration().getProject());
+  }",method,
+"  @Override
+  protected String getPackageName(JUnitConfiguration.Data data) throws CantRunException {
+    return """";
+  }",method,
+"  @Override
+  protected PsiPackage getPackage(JUnitConfiguration.Data data) throws CantRunException {
+    final String dirName = data.getDirName();
+    final VirtualFile file = LocalFileSystem.getInstance().findFileByPath(FileUtil.toSystemIndependentName(dirName));
+    if (file == null) {
+      throw new CantRunException(""Directory \'"" + dirName + ""\' is not found"");
+    }
+    final PsiDirectory directory = PsiManager.getInstance(getConfiguration().getProject()).findDirectory(file);
+    if (directory == null) {
+      throw new CantRunException(""Directory \'"" + dirName + ""\' is not found"");
+    }
+    return null;
+  }",method,
+"    if (file == null) {
+      throw new CantRunException(""Directory \'"" + dirName + ""\' is not found"");
+    }",method,
+"    if (directory == null) {
+      throw new CantRunException(""Directory \'"" + dirName + ""\' is not found"");
+    }",method,
+"  @Override
+  public String suggestActionName() {
+    final JUnitConfiguration.Data data = getConfiguration().getPersistentData();
+    final String dirName = data.getDirName();
+    return dirName.isEmpty() ? ExecutionBundle.message(""all.tests.scope.presentable.text"") 
+                             : ExecutionBundle.message(""test.in.scope.presentable.text"", StringUtil.getShortName(dirName, '/'));
+  }",method,
+"  @Override
+  public boolean isConfiguredByElement(JUnitConfiguration configuration,
+                                       PsiClass testClass,
+                                       PsiMethod testMethod,
+                                       PsiPackage testPackage,
+                                       PsiDirectory testDir) {
+    if (JUnitConfiguration.TEST_DIRECTORY.equals(configuration.getPersistentData().TEST_OBJECT) && testDir != null) {
+      if (Comparing.strEqual(FileUtil.toSystemIndependentName(configuration.getPersistentData().getDirName()),
+                             testDir.getVirtualFile().getPath())) {
+        return true;
+      }
+    }
+    return false;
+  }",method,
+"public class ConversationListArchiveActivity extends PassphraseRequiredActionBarActivity
+    implements ConversationListFragment.ConversationSelectedListener
+{
+  private final DynamicTheme    dynamicTheme    = new DynamicTheme();
+  private final DynamicLanguage dynamicLanguage = new DynamicLanguage();
+  @Override
+  protected void onPreCreate() {
+    dynamicTheme.onCreate(this);
+    dynamicLanguage.onCreate(this);
+  }
+  @Override
+  protected void onCreate(Bundle icicle, @NonNull MasterSecret masterSecret) {
+    getSupportActionBar().setDisplayHomeAsUpEnabled(true);
+    getSupportActionBar().setTitle(R.string.AndroidManifest_archived_conversations);
+    Bundle bundle = new Bundle();
+    bundle.putBoolean(ConversationListFragment.ARCHIVE, true);
+    initFragment(android.R.id.content, new ConversationListFragment(),
+                 masterSecret, dynamicLanguage.getCurrentLocale(), bundle);
+  }
+  @Override
+  public void onResume() {
+    super.onResume();
+    dynamicTheme.onResume(this);
+    dynamicLanguage.onResume(this);
+  }
+  @Override
+  public boolean onOptionsItemSelected(MenuItem item) {
+    super.onOptionsItemSelected(item);
+    switch (item.getItemId()) {
+      case R.id.home: super.onBackPressed(); return true;
+    }
+    return false;
+  }
+  @Override
+  public void onCreateConversation(long threadId, Recipient recipient, int distributionType, long lastSeenTime) {
+    Intent intent = new Intent(this, ConversationActivity.class);
+    intent.putExtra(ConversationActivity.ADDRESS_EXTRA, recipient.getAddress());
+    intent.putExtra(ConversationActivity.THREAD_ID_EXTRA, threadId);
+    intent.putExtra(ConversationActivity.IS_ARCHIVED_EXTRA, true);
+    intent.putExtra(ConversationActivity.DISTRIBUTION_TYPE_EXTRA, distributionType);
+    intent.putExtra(ConversationActivity.LAST_SEEN_EXTRA, lastSeenTime);
+    startActivity(intent);
+    overridePendingTransition(R.anim.slide_from_right, R.anim.fade_scale_out);
+  }
+  @Override
+  public void onSwitchToArchive() {
+    throw new AssertionError();
+  }
+}",class,
+"  @Override
+  protected void onPreCreate() {
+    dynamicTheme.onCreate(this);
+    dynamicLanguage.onCreate(this);
+  }",method,
+"  @Override
+  protected void onCreate(Bundle icicle, @NonNull MasterSecret masterSecret) {
+    getSupportActionBar().setDisplayHomeAsUpEnabled(true);
+    getSupportActionBar().setTitle(R.string.AndroidManifest_archived_conversations);
+    Bundle bundle = new Bundle();
+    bundle.putBoolean(ConversationListFragment.ARCHIVE, true);
+    initFragment(android.R.id.content, new ConversationListFragment(),
+                 masterSecret, dynamicLanguage.getCurrentLocale(), bundle);
+  }",method,
+"  @Override
+  public void onResume() {
+    super.onResume();
+    dynamicTheme.onResume(this);
+    dynamicLanguage.onResume(this);
+  }",method,
+"  @Override
+  public boolean onOptionsItemSelected(MenuItem item) {
+    super.onOptionsItemSelected(item);
+    switch (item.getItemId()) {
+      case R.id.home: super.onBackPressed(); return true;
+    }
+    return false;
+  }",method,
+"  @Override
+  public void onCreateConversation(long threadId, Recipient recipient, int distributionType, long lastSeenTime) {
+    Intent intent = new Intent(this, ConversationActivity.class);
+    intent.putExtra(ConversationActivity.ADDRESS_EXTRA, recipient.getAddress());
+    intent.putExtra(ConversationActivity.THREAD_ID_EXTRA, threadId);
+    intent.putExtra(ConversationActivity.IS_ARCHIVED_EXTRA, true);
+    intent.putExtra(ConversationActivity.DISTRIBUTION_TYPE_EXTRA, distributionType);
+    intent.putExtra(ConversationActivity.LAST_SEEN_EXTRA, lastSeenTime);
+    startActivity(intent);
+    overridePendingTransition(R.anim.slide_from_right, R.anim.fade_scale_out);
+  }",method,
+"  @Override
+  public void onSwitchToArchive() {
+    throw new AssertionError();
+  }",method,
+"public class HgRunConflictResolverDialog extends DialogWrapper {
+  private JPanel mainPanel;
+  private HgRepositorySelectorComponent repositorySelector;
+  private JList conflictsList;
+  private final Project project;
+  public HgRunConflictResolverDialog(@NotNull Project project,
+                                     @NotNull Collection<HgRepository> repositories,
+                                     @Nullable HgRepository selectedRepo) {
+    super(project, false);
+    this.project = project;
+    repositorySelector.addActionListener(new ActionListener() {
+      public void actionPerformed(ActionEvent e) {
+        onChangeRepository();
+      }
+    });
+    setTitle(""Resolve Conflicts"");
+    init();
+    setRoots(repositories, selectedRepo);
+  }
+  @NotNull
+  public HgRepository getRepository() {
+    return repositorySelector.getRepository();
+  }
+  private void setRoots(@NotNull Collection<HgRepository> repositories, @Nullable HgRepository selectedRepo) {
+    repositorySelector.setRoots(repositories);
+    repositorySelector.setSelectedRoot(selectedRepo);
+    onChangeRepository();
+  }
+  protected JComponent createCenterPanel() {
+    return mainPanel;
+  }
+  private void onChangeRepository() {
+    VirtualFile repo = repositorySelector.getRepository().getRoot();
+    HgResolveCommand command = new HgResolveCommand(project);
+    final ModalityState modalityState = ApplicationManager.getApplication().getModalityStateForComponent(getRootPane());
+    command.getListAsynchronously(repo, status -> {
+      final DefaultListModel model = new DefaultListModel();
+      for (Map.Entry<HgFile, HgResolveStatusEnum> entry : status.entrySet()) {
+        if (entry.getValue() == HgResolveStatusEnum.UNRESOLVED) {
+          model.addElement(entry.getKey().getRelativePath());
+        }
+      }
+      ApplicationManager.getApplication().invokeLater(() -> {
+        setOKActionEnabled(!model.isEmpty());
+        if (model.isEmpty()) {
+          model.addElement(""No conflicts to resolve"");
+        }
+        conflictsList.setModel(model);
+      }, modalityState);
+    });
+  }
+}",class,
+"  public HgRunConflictResolverDialog(@NotNull Project project,
+                                     @NotNull Collection<HgRepository> repositories,
+                                     @Nullable HgRepository selectedRepo) {
+    super(project, false);
+    this.project = project;
+    repositorySelector.addActionListener(new ActionListener() {
+      public void actionPerformed(ActionEvent e) {
+        onChangeRepository();
+      }
+    });
+    setTitle(""Resolve Conflicts"");
+    init();
+    setRoots(repositories, selectedRepo);
+  }",method,
+"    repositorySelector.addActionListener(new ActionListener() {
+      public void actionPerformed(ActionEvent e) {
+        onChangeRepository();
+      }
+    }",method,
+"      public void actionPerformed(ActionEvent e) {
+        onChangeRepository();
+      }",method,
+"  @NotNull
+  public HgRepository getRepository() {
+    return repositorySelector.getRepository();
+  }",method,
+"  private void setRoots(@NotNull Collection<HgRepository> repositories, @Nullable HgRepository selectedRepo) {
+    repositorySelector.setRoots(repositories);
+    repositorySelector.setSelectedRoot(selectedRepo);
+    onChangeRepository();
+  }",method,
+"  protected JComponent createCenterPanel() {
+    return mainPanel;
+  }",method,
+"  private void onChangeRepository() {
+    VirtualFile repo = repositorySelector.getRepository().getRoot();
+    HgResolveCommand command = new HgResolveCommand(project);
+    final ModalityState modalityState = ApplicationManager.getApplication().getModalityStateForComponent(getRootPane());
+    command.getListAsynchronously(repo, status -> {
+      final DefaultListModel model = new DefaultListModel();
+      for (Map.Entry<HgFile, HgResolveStatusEnum> entry : status.entrySet()) {
+        if (entry.getValue() == HgResolveStatusEnum.UNRESOLVED) {
+          model.addElement(entry.getKey().getRelativePath());
+        }
+      }
+      ApplicationManager.getApplication().invokeLater(() -> {
+        setOKActionEnabled(!model.isEmpty());
+        if (model.isEmpty()) {
+          model.addElement(""No conflicts to resolve"");
+        }
+        conflictsList.setModel(model);
+      }, modalityState);
+    });
+  }",method,
+"public class Parsing {
+  private static final Logger LOG = Logger.getInstance(""#com.intellij.lang.properties.parsing.Parsing"");
+  public static void parseProperty(PsiBuilder builder) {
+    if (builder.getTokenType() == PropertiesTokenTypes.KEY_CHARACTERS) {
+      final PsiBuilder.Marker prop = builder.mark();
+      parseKey(builder);
+      if (builder.getTokenType() == PropertiesTokenTypes.KEY_VALUE_SEPARATOR) {
+        parseKeyValueSeparator(builder);
+      }
+      if (builder.getTokenType() == PropertiesTokenTypes.VALUE_CHARACTERS) {
+        parseValue(builder);
+      }
+      prop.done(PropertiesElementTypes.PROPERTY);
+    }
+    else {
+      builder.advanceLexer();
+      builder.error(PropertiesBundle.message(""property.key.expected.parsing.error.message""));
+    }
+  }
+  private static void parseKeyValueSeparator(final PsiBuilder builder) {
+    LOG.assertTrue(builder.getTokenType() == PropertiesTokenTypes.KEY_VALUE_SEPARATOR);
+    builder.advanceLexer();
+  }
+  private static void parseValue(final PsiBuilder builder) {
+    if (builder.getTokenType() == PropertiesTokenTypes.VALUE_CHARACTERS) {
+      builder.advanceLexer();
+    }
+  }
+  private static void parseKey(final PsiBuilder builder) {
+    LOG.assertTrue(builder.getTokenType() == PropertiesTokenTypes.KEY_CHARACTERS);
+    builder.advanceLexer();
+  }
+}",class,
+"  public static void parseProperty(PsiBuilder builder) {
+    if (builder.getTokenType() == PropertiesTokenTypes.KEY_CHARACTERS) {
+      final PsiBuilder.Marker prop = builder.mark();
+      parseKey(builder);
+      if (builder.getTokenType() == PropertiesTokenTypes.KEY_VALUE_SEPARATOR) {
+        parseKeyValueSeparator(builder);
+      }
+      if (builder.getTokenType() == PropertiesTokenTypes.VALUE_CHARACTERS) {
+        parseValue(builder);
+      }
+      prop.done(PropertiesElementTypes.PROPERTY);
+    }
+    else {
+      builder.advanceLexer();
+      builder.error(PropertiesBundle.message(""property.key.expected.parsing.error.message""));
+    }
+  }",method,
+"  private static void parseKeyValueSeparator(final PsiBuilder builder) {
+    LOG.assertTrue(builder.getTokenType() == PropertiesTokenTypes.KEY_VALUE_SEPARATOR);
+    builder.advanceLexer();
+  }",method,
+"  private static void parseValue(final PsiBuilder builder) {
+    if (builder.getTokenType() == PropertiesTokenTypes.VALUE_CHARACTERS) {
+      builder.advanceLexer();
+    }
+  }",method,
+"  private static void parseKey(final PsiBuilder builder) {
+    LOG.assertTrue(builder.getTokenType() == PropertiesTokenTypes.KEY_CHARACTERS);
+    builder.advanceLexer();
+  }",method,
+"public class HeadlessUserSpeechVisualizerView implements UserSpeechVisualizerUIHandler {
+    @Override
+    public void onProcessing() {
+        System.out.println(""Processing"");
+    }
+    @Override
+    public void onListening() {
+        System.out.println(""Listening"");
+    }
+    @Override
+    public void onProcessingFinished() {
+        System.out.println(""Done"");
+    }
+    @Override
+    public void rmsChanged(int rms) {
+    }
+}",class,
+"    @Override
+    public void onProcessing() {
+        System.out.println(""Processing"");
+    }",method,
+"    @Override
+    public void onListening() {
+        System.out.println(""Listening"");
+    }",method,
+"    @Override
+    public void onProcessingFinished() {
+        System.out.println(""Done"");
+    }",method,
+"    @Override
+    public void rmsChanged(int rms) {
+    }",method,
+"public class ByteArrayRandomAccessData implements RandomAccessData {
+	private final byte[] bytes;
+	private final long offset;
+	private final long length;
+	public ByteArrayRandomAccessData(byte[] bytes) {
+		this(bytes, 0, (bytes == null ? 0 : bytes.length));
+	}
+	public ByteArrayRandomAccessData(byte[] bytes, long offset, long length) {
+		this.bytes = (bytes == null ? new byte[0] : bytes);
+		this.offset = offset;
+		this.length = length;
+	}
+	@Override
+	public InputStream getInputStream(ResourceAccess access) {
+		return new ByteArrayInputStream(this.bytes, (int) this.offset, (int) this.length);
+	}
+	@Override
+	public RandomAccessData getSubsection(long offset, long length) {
+		return new ByteArrayRandomAccessData(this.bytes, this.offset + offset, length);
+	}
+	@Override
+	public long getSize() {
+		return this.length;
+	}
+}",class,
+"	public ByteArrayRandomAccessData(byte[] bytes) {
+		this(bytes, 0, (bytes == null ? 0 : bytes.length));
+	}",method,
+"	public ByteArrayRandomAccessData(byte[] bytes, long offset, long length) {
+		this.bytes = (bytes == null ? new byte[0] : bytes);
+		this.offset = offset;
+		this.length = length;
+	}",method,
+"	@Override
+	public InputStream getInputStream(ResourceAccess access) {
+		return new ByteArrayInputStream(this.bytes, (int) this.offset, (int) this.length);
+	}",method,
+"	@Override
+	public RandomAccessData getSubsection(long offset, long length) {
+		return new ByteArrayRandomAccessData(this.bytes, this.offset + offset, length);
+	}",method,
+"	@Override
+	public long getSize() {
+		return this.length;
+	}",method,
+"public class LineWrapperTest {
+  private final LineWrapper.WidthProvider myWidthProvider = new LineWrapper.WidthProvider() {
+    @Override
+    public double getWidth(char[] text, int start, int count, double x) {
+      return count; // char width of 1 pixel for all characters
+    }
+  };
+  @Test
+  public void testEmpty() {
+    doTest("""", false, 0);
+    doTest("""", true, 0);
+    doTest("""", false, 1);
+    doTest("""", true, 1);
+  }
+  @Test
+  public void testSingleChar() {
+    doTest(""a"", false, 0.5,
+           0);
+    doTest(""a"", true, 0.5);
+  }
+  @Test
+  public void testCharSplit() {
+    doTest(""aa"", false, 1.5,
+           0, 1);
+    doTest(""aa"", true, 1.5,
+           1);
+  }
+  @Test
+  public void testExtreme() {
+    doTest(""aa"", false, 0.5,
+           0, 1);
+    doTest(""aa"", true, 0.5,
+           1);
+  }
+  @Test
+  public void testWordSplit() {
+    doTest(""aa  aa  aa"", false, 3.5,
+           2, 4, 6, 8);
+    doTest(""aa  aa  aa"", true, 3.5,
+           2, 4, 6, 8);
+  }
+  private void doTest(String text, boolean atLineStart, double clipWidth, int... expectedBreaks) {
+    IntArrayList actualBreaks = LineWrapper.calcBreakOffsets(text.toCharArray(), 0, text.length(), atLineStart, 0, clipWidth, myWidthProvider);
+    assertArrayEquals(expectedBreaks, actualBreaks.toArray());
+  }
+}",class,
+"    @Override
+    public double getWidth(char[] text, int start, int count, double x) {
+      return count; // char width of 1 pixel for all characters
+    }",method,
+"  @Test
+  public void testEmpty() {
+    doTest("""", false, 0);
+    doTest("""", true, 0);
+    doTest("""", false, 1);
+    doTest("""", true, 1);
+  }",method,
+"  @Test
+  public void testSingleChar() {
+    doTest(""a"", false, 0.5,
+           0);
+    doTest(""a"", true, 0.5);
+  }",method,
+"  @Test
+  public void testCharSplit() {
+    doTest(""aa"", false, 1.5,
+           0, 1);
+    doTest(""aa"", true, 1.5,
+           1);
+  }",method,
+"  @Test
+  public void testExtreme() {
+    doTest(""aa"", false, 0.5,
+           0, 1);
+    doTest(""aa"", true, 0.5,
+           1);
+  }",method,
+"  @Test
+  public void testWordSplit() {
+    doTest(""aa  aa  aa"", false, 3.5,
+           2, 4, 6, 8);
+    doTest(""aa  aa  aa"", true, 3.5,
+           2, 4, 6, 8);
+  }",method,
+"  private void doTest(String text, boolean atLineStart, double clipWidth, int... expectedBreaks) {
+    IntArrayList actualBreaks = LineWrapper.calcBreakOffsets(text.toCharArray(), 0, text.length(), atLineStart, 0, clipWidth, myWidthProvider);
+    assertArrayEquals(expectedBreaks, actualBreaks.toArray());
+  }",method,
+"public class HandlerMethodReturnValueHandlerCompositeTests {
+	private HandlerMethodReturnValueHandlerComposite handlers;
+	private HandlerMethodReturnValueHandler integerHandler;
+	ModelAndViewContainer mavContainer;
+	private MethodParameter integerType;
+	private MethodParameter stringType;
+	@Before
+	public void setUp() throws Exception {
+		this.integerType = new MethodParameter(getClass().getDeclaredMethod(""handleInteger""), -1);
+		this.stringType = new MethodParameter(getClass().getDeclaredMethod(""handleString""), -1);
+		this.integerHandler = mock(HandlerMethodReturnValueHandler.class);
+		when(this.integerHandler.supportsReturnType(this.integerType)).thenReturn(true);
+		this.handlers = new HandlerMethodReturnValueHandlerComposite();
+		this.handlers.addHandler(this.integerHandler);
+		mavContainer = new ModelAndViewContainer();
+	}
+	@Test
+	public void supportsReturnType() throws Exception {
+		assertTrue(this.handlers.supportsReturnType(this.integerType));
+		assertFalse(this.handlers.supportsReturnType(this.stringType));
+	}
+	@Test
+	public void handleReturnValue() throws Exception {
+		this.handlers.handleReturnValue(55, this.integerType, this.mavContainer, null);
+		verify(this.integerHandler).handleReturnValue(55, this.integerType, this.mavContainer, null);
+	}
+	@Test
+	public void handleReturnValueWithMultipleHandlers() throws Exception {
+		HandlerMethodReturnValueHandler anotherIntegerHandler = mock(HandlerMethodReturnValueHandler.class);
+		when(anotherIntegerHandler.supportsReturnType(this.integerType)).thenReturn(true);
+		this.handlers.handleReturnValue(55, this.integerType, this.mavContainer, null);
+		verify(this.integerHandler).handleReturnValue(55, this.integerType, this.mavContainer, null);
+		verifyNoMoreInteractions(anotherIntegerHandler);
+	}
+	@Test // SPR-13083
+	public void handleReturnValueWithAsyncHandler() throws Exception {
+		Promise<Integer> promise = new Promise<>();
+		MethodParameter promiseType = new MethodParameter(getClass().getDeclaredMethod(""handlePromise""), -1);
+		HandlerMethodReturnValueHandler responseBodyHandler = mock(HandlerMethodReturnValueHandler.class);
+		when(responseBodyHandler.supportsReturnType(promiseType)).thenReturn(true);
+		this.handlers.addHandler(responseBodyHandler);
+		AsyncHandlerMethodReturnValueHandler promiseHandler = mock(AsyncHandlerMethodReturnValueHandler.class);
+		when(promiseHandler.supportsReturnType(promiseType)).thenReturn(true);
+		when(promiseHandler.isAsyncReturnValue(promise, promiseType)).thenReturn(true);
+		this.handlers.addHandler(promiseHandler);
+		this.handlers.handleReturnValue(promise, promiseType, this.mavContainer, null);
+		verify(promiseHandler).isAsyncReturnValue(promise, promiseType);
+		verify(promiseHandler).supportsReturnType(promiseType);
+		verify(promiseHandler).handleReturnValue(promise, promiseType, this.mavContainer, null);
+		verifyNoMoreInteractions(promiseHandler);
+		verifyNoMoreInteractions(responseBodyHandler);
+	}
+	@Test(expected = IllegalArgumentException.class)
+	public void noSuitableReturnValueHandler() throws Exception {
+		this.handlers.handleReturnValue(""value"", this.stringType, null, null);
+	}
+	private Integer handleInteger() {
+		return null;
+	}
+	private String handleString() {
+		return null;
+	}
+	private Promise<Integer> handlePromise() {
+		return null;
+	}
+	private static class Promise<T> {}
+}",class,
+	private static class Promise<T> {},class,
+"	@Before
+	public void setUp() throws Exception {
+		this.integerType = new MethodParameter(getClass().getDeclaredMethod(""handleInteger""), -1);
+		this.stringType = new MethodParameter(getClass().getDeclaredMethod(""handleString""), -1);
+		this.integerHandler = mock(HandlerMethodReturnValueHandler.class);
+		when(this.integerHandler.supportsReturnType(this.integerType)).thenReturn(true);
+		this.handlers = new HandlerMethodReturnValueHandlerComposite();
+		this.handlers.addHandler(this.integerHandler);
+		mavContainer = new ModelAndViewContainer();
+	}",method,
+"	@Test
+	public void supportsReturnType() throws Exception {
+		assertTrue(this.handlers.supportsReturnType(this.integerType));
+		assertFalse(this.handlers.supportsReturnType(this.stringType));
+	}",method,
+"	@Test
+	public void handleReturnValue() throws Exception {
+		this.handlers.handleReturnValue(55, this.integerType, this.mavContainer, null);
+		verify(this.integerHandler).handleReturnValue(55, this.integerType, this.mavContainer, null);
+	}",method,
+"	@Test
+	public void handleReturnValueWithMultipleHandlers() throws Exception {
+		HandlerMethodReturnValueHandler anotherIntegerHandler = mock(HandlerMethodReturnValueHandler.class);
+		when(anotherIntegerHandler.supportsReturnType(this.integerType)).thenReturn(true);
+		this.handlers.handleReturnValue(55, this.integerType, this.mavContainer, null);
+		verify(this.integerHandler).handleReturnValue(55, this.integerType, this.mavContainer, null);
+		verifyNoMoreInteractions(anotherIntegerHandler);
+	}",method,
+"	@Test // SPR-13083
+	public void handleReturnValueWithAsyncHandler() throws Exception {
+		Promise<Integer> promise = new Promise<>();
+		MethodParameter promiseType = new MethodParameter(getClass().getDeclaredMethod(""handlePromise""), -1);
+		HandlerMethodReturnValueHandler responseBodyHandler = mock(HandlerMethodReturnValueHandler.class);
+		when(responseBodyHandler.supportsReturnType(promiseType)).thenReturn(true);
+		this.handlers.addHandler(responseBodyHandler);
+		AsyncHandlerMethodReturnValueHandler promiseHandler = mock(AsyncHandlerMethodReturnValueHandler.class);
+		when(promiseHandler.supportsReturnType(promiseType)).thenReturn(true);
+		when(promiseHandler.isAsyncReturnValue(promise, promiseType)).thenReturn(true);
+		this.handlers.addHandler(promiseHandler);
+		this.handlers.handleReturnValue(promise, promiseType, this.mavContainer, null);
+		verify(promiseHandler).isAsyncReturnValue(promise, promiseType);
+		verify(promiseHandler).supportsReturnType(promiseType);
+		verify(promiseHandler).handleReturnValue(promise, promiseType, this.mavContainer, null);
+		verifyNoMoreInteractions(promiseHandler);
+		verifyNoMoreInteractions(responseBodyHandler);
+	}",method,
+"	@Test(expected = IllegalArgumentException.class)
+	public void noSuitableReturnValueHandler() throws Exception {
+		this.handlers.handleReturnValue(""value"", this.stringType, null, null);
+	}",method,
+"	private Integer handleInteger() {
+		return null;
+	}",method,
+"	private String handleString() {
+		return null;
+	}",method,
+"	private Promise<Integer> handlePromise() {
+		return null;
+	}",method,
+"    public VideoProfile(@VideoState int videoState) {
+        this(videoState, QUALITY_DEFAULT);
+    }",method,
+"    public VideoProfile(@VideoState int videoState, @VideoQuality int quality) {
+        mVideoState = videoState;
+        mQuality = quality;
+    }",method,
+"    @VideoState
+    public int getVideoState() {
+        return mVideoState;
+    }",method,
+"    @VideoQuality
+    public int getQuality() {
+        return mQuality;
+    }",method,
+"                @Override
+                public VideoProfile createFromParcel(Parcel source) {
+                    int state = source.readInt();
+                    int quality = source.readInt();
+                    ClassLoader classLoader = VideoProfile.class.getClassLoader();
+                    return new VideoProfile(state, quality);
+                }",method,
+"                @Override
+                public VideoProfile[] newArray(int size) {
+                    return new VideoProfile[size];
+                }",method,
+"    @Override
+    public int describeContents() {
+        return 0;
+    }",method,
+"    @Override
+    public void writeToParcel(Parcel dest, int flags) {
+        dest.writeInt(mVideoState);
+        dest.writeInt(mQuality);
+    }",method,
+"    @Override
+    public String toString() {
+        StringBuilder sb = new StringBuilder();
+        sb.append(""[VideoProfile videoState = "");
+        sb.append(videoStateToString(mVideoState));
+        sb.append("" videoQuality = "");
+        sb.append(mQuality);
+        sb.append(""]"");
+        return sb.toString();
+    }",method,
+"    public static String videoStateToString(@VideoState int videoState) {
+        StringBuilder sb = new StringBuilder();
+        sb.append(""Audio"");
+        if (videoState == STATE_AUDIO_ONLY) {
+            sb.append("" Only"");
+        } else {
+            if (isTransmissionEnabled(videoState)) {
+                sb.append("" Tx"");
+            }
+            if (isReceptionEnabled(videoState)) {
+                sb.append("" Rx"");
+            }
+            if (isPaused(videoState)) {
+                sb.append("" Pause"");
+            }
+        }
+        return sb.toString();
+    }",method,
+"        if (videoState == STATE_AUDIO_ONLY) {
+            sb.append("" Only"");
+        }",method,
+"    public static boolean isAudioOnly(@VideoState int videoState) {
+        return !hasState(videoState, VideoProfile.STATE_TX_ENABLED)
+                && !hasState(videoState, VideoProfile.STATE_RX_ENABLED);
+    }",method,
+"    public static boolean isVideo(@VideoState int videoState) {
+        return hasState(videoState, VideoProfile.STATE_TX_ENABLED)
+                || hasState(videoState, VideoProfile.STATE_RX_ENABLED)
+                || hasState(videoState, VideoProfile.STATE_BIDIRECTIONAL);
+    }",method,
+"    public static boolean isTransmissionEnabled(@VideoState int videoState) {
+        return hasState(videoState, VideoProfile.STATE_TX_ENABLED);
+    }",method,
+"    public static boolean isReceptionEnabled(@VideoState int videoState) {
+        return hasState(videoState, VideoProfile.STATE_RX_ENABLED);
+    }",method,
+"    public static boolean isBidirectional(@VideoState int videoState) {
+        return hasState(videoState, VideoProfile.STATE_BIDIRECTIONAL);
+    }",method,
+"    public static boolean isPaused(@VideoState int videoState) {
+        return hasState(videoState, VideoProfile.STATE_PAUSED);
+    }",method,
+"    private static boolean hasState(@VideoState int videoState, @VideoState int state) {
+        return (videoState & state) == state;
+    }",method,
+"public class GlobalProcessorContextImpl extends AbstractProcessorContext {
+    public GlobalProcessorContextImpl(final StreamsConfig config,
+                                      final StateManager stateMgr,
+                                      final StreamsMetrics metrics,
+                                      final ThreadCache cache) {
+        super(new TaskId(-1, -1), config.getString(StreamsConfig.APPLICATION_ID_CONFIG), config, metrics, stateMgr, cache);
+    }
+    @Override
+    public StateStore getStateStore(final String name) {
+        return stateManager.getGlobalStore(name);
+    }
+    @SuppressWarnings(""unchecked"")
+    @Override
+    public <K, V> void forward(K key, V value) {
+        final ProcessorNode previousNode = currentNode();
+        try {
+            for (ProcessorNode child : (List<ProcessorNode>) currentNode().children()) {
+                setCurrentNode(child);
+                child.process(key, value);
+            }
+        } finally {
+            setCurrentNode(previousNode);
+        }
+    }
+    @Override
+    public <K, V> void forward(K key, V value, int childIndex) {
+        throw new UnsupportedOperationException(""this should not happen: forward() not supported in global processor context."");
+    }
+    @Override
+    public <K, V> void forward(K key, V value, String childName) {
+        throw new UnsupportedOperationException(""this should not happen: forward() not supported in global processor context."");
+    }
+    @Override
+    public void commit() {
+        //no-op
+    }
+    @Override
+    public Cancellable schedule(long interval, PunctuationType type, Punctuator callback) {
+        throw new UnsupportedOperationException(""this should not happen: schedule() not supported in global processor context."");
+    }
+    @SuppressWarnings(""deprecation"")
+    @Override
+    public void schedule(long interval) {
+        throw new UnsupportedOperationException(""this should not happen: schedule() not supported in global processor context."");
+    }
+}",class,
+"    public GlobalProcessorContextImpl(final StreamsConfig config,
+                                      final StateManager stateMgr,
+                                      final StreamsMetrics metrics,
+                                      final ThreadCache cache) {
+        super(new TaskId(-1, -1), config.getString(StreamsConfig.APPLICATION_ID_CONFIG), config, metrics, stateMgr, cache);
+    }",method,
+"    @Override
+    public StateStore getStateStore(final String name) {
+        return stateManager.getGlobalStore(name);
+    }",method,
+"    @SuppressWarnings(""unchecked"")
+    @Override
+    public <K, V> void forward(K key, V value) {
+        final ProcessorNode previousNode = currentNode();
+        try {
+            for (ProcessorNode child : (List<ProcessorNode>) currentNode().children()) {
+                setCurrentNode(child);
+                child.process(key, value);
+            }
+        } finally {
+            setCurrentNode(previousNode);
+        }
+    }",method,
+"    @Override
+    public <K, V> void forward(K key, V value, int childIndex) {
+        throw new UnsupportedOperationException(""this should not happen: forward() not supported in global processor context."");
+    }",method,
+"    @Override
+    public <K, V> void forward(K key, V value, String childName) {
+        throw new UnsupportedOperationException(""this should not happen: forward() not supported in global processor context."");
+    }",method,

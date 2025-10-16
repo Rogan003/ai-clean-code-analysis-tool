@@ -1,0 +1,1245 @@
+code_snippet,type,score
+"public class URLBlobContainer extends AbstractBlobContainer {
+    protected final URLBlobStore blobStore;
+    protected final URL path;
+    public URLBlobContainer(URLBlobStore blobStore, BlobPath blobPath, URL path) {
+        super(blobPath);
+        this.blobStore = blobStore;
+        this.path = path;
+    }
+    public URL url() {
+        return this.path;
+    }
+    @Override
+    public Map<String, BlobMetaData> listBlobs() throws IOException {
+        throw new UnsupportedOperationException(""URL repository doesn't support this operation"");
+    }
+    @Override
+    public Map<String, BlobMetaData> listBlobsByPrefix(String blobNamePrefix) throws IOException {
+        throw new UnsupportedOperationException(""URL repository doesn't support this operation"");
+    }
+    @Override
+    public void move(String from, String to) throws IOException {
+        throw new UnsupportedOperationException(""URL repository doesn't support this operation"");
+    }
+    @Override
+    public void deleteBlob(String blobName) throws IOException {
+        throw new UnsupportedOperationException(""URL repository is read only"");
+    }
+    @Override
+    public boolean blobExists(String blobName) {
+        throw new UnsupportedOperationException(""URL repository doesn't support this operation"");
+    }
+    @Override
+    public InputStream readBlob(String name) throws IOException {
+        try {
+            return new BufferedInputStream(getInputStream(new URL(path, name)), blobStore.bufferSizeInBytes());
+        } catch (FileNotFoundException fnfe) {
+            throw new NoSuchFileException(""["" + name + ""] blob not found"");
+        }
+    }
+    @Override
+    public void writeBlob(String blobName, InputStream inputStream, long blobSize) throws IOException {
+        throw new UnsupportedOperationException(""URL repository doesn't support this operation"");
+    }
+    @SuppressForbidden(reason = ""We call connect in doPrivileged and provide SocketPermission"")
+    private static InputStream getInputStream(URL url) throws IOException {
+        try {
+            return AccessController.doPrivileged((PrivilegedExceptionAction<InputStream>) url::openStream);
+        } catch (PrivilegedActionException e) {
+            throw (IOException) e.getCause();
+        }
+    }
+}",class,
+"    public URLBlobContainer(URLBlobStore blobStore, BlobPath blobPath, URL path) {
+        super(blobPath);
+        this.blobStore = blobStore;
+        this.path = path;
+    }",method,
+"    public URL url() {
+        return this.path;
+    }",method,
+"    @Override
+    public Map<String, BlobMetaData> listBlobs() throws IOException {
+        throw new UnsupportedOperationException(""URL repository doesn't support this operation"");
+    }",method,
+"    @Override
+    public Map<String, BlobMetaData> listBlobsByPrefix(String blobNamePrefix) throws IOException {
+        throw new UnsupportedOperationException(""URL repository doesn't support this operation"");
+    }",method,
+"    @Override
+    public void move(String from, String to) throws IOException {
+        throw new UnsupportedOperationException(""URL repository doesn't support this operation"");
+    }",method,
+"    @Override
+    public void deleteBlob(String blobName) throws IOException {
+        throw new UnsupportedOperationException(""URL repository is read only"");
+    }",method,
+"    @Override
+    public boolean blobExists(String blobName) {
+        throw new UnsupportedOperationException(""URL repository doesn't support this operation"");
+    }",method,
+"    @Override
+    public InputStream readBlob(String name) throws IOException {
+        try {
+            return new BufferedInputStream(getInputStream(new URL(path, name)), blobStore.bufferSizeInBytes());
+        } catch (FileNotFoundException fnfe) {
+            throw new NoSuchFileException(""["" + name + ""] blob not found"");
+        }
+    }",method,
+"    @Override
+    public void writeBlob(String blobName, InputStream inputStream, long blobSize) throws IOException {
+        throw new UnsupportedOperationException(""URL repository doesn't support this operation"");
+    }",method,
+"    @SuppressForbidden(reason = ""We call connect in doPrivileged and provide SocketPermission"")
+    private static InputStream getInputStream(URL url) throws IOException {
+        try {
+            return AccessController.doPrivileged((PrivilegedExceptionAction<InputStream>) url::openStream);
+        } catch (PrivilegedActionException e) {
+            throw (IOException) e.getCause();
+        }
+    }",method,
+"public class DanmakuTouchHelper {
+    private final GestureDetector mTouchDelegate;
+    private IDanmakuView danmakuView;
+    private RectF mDanmakuBounds;
+    private float mXOff;
+    private float mYOff;
+    private final android.view.GestureDetector.OnGestureListener mOnGestureListener = new GestureDetector.SimpleOnGestureListener() {
+        @Override
+        public boolean onDown(MotionEvent event) {
+            if (danmakuView != null) {
+                IDanmakuView.OnDanmakuClickListener onDanmakuClickListener = danmakuView.getOnDanmakuClickListener();
+                if (onDanmakuClickListener != null) {
+                    mXOff = danmakuView.getXOff();
+                    mYOff = danmakuView.getYOff();
+                    return true;
+                }
+            }
+            return false;
+        }
+        @Override
+        public boolean onSingleTapConfirmed(MotionEvent event) {
+            IDanmakus clickDanmakus = touchHitDanmaku(event.getX(), event.getY());
+            boolean isEventConsumed = false;
+            if (null != clickDanmakus && !clickDanmakus.isEmpty()) {
+                isEventConsumed = performDanmakuClick(clickDanmakus, false);
+            }
+            if (!isEventConsumed) {
+                isEventConsumed = performViewClick();
+            }
+            return isEventConsumed;
+        }
+        @Override
+        public void onLongPress(MotionEvent event) {
+            IDanmakuView.OnDanmakuClickListener onDanmakuClickListener = danmakuView.getOnDanmakuClickListener();
+            if (onDanmakuClickListener == null) {
+                return;
+            }
+            mXOff = danmakuView.getXOff();
+            mYOff = danmakuView.getYOff();
+            IDanmakus clickDanmakus = touchHitDanmaku(event.getX(), event.getY());
+            if (null != clickDanmakus && !clickDanmakus.isEmpty()) {
+                performDanmakuClick(clickDanmakus, true);
+            }
+        }
+    };
+    private DanmakuTouchHelper(IDanmakuView danmakuView) {
+        this.danmakuView = danmakuView;
+        this.mDanmakuBounds = new RectF();
+        this.mTouchDelegate = new GestureDetector(((View) danmakuView).getContext(), mOnGestureListener);
+    }
+    public static synchronized DanmakuTouchHelper instance(IDanmakuView danmakuView) {
+        return new DanmakuTouchHelper(danmakuView);
+    }
+    public boolean onTouchEvent(MotionEvent event) {
+        return mTouchDelegate.onTouchEvent(event);
+    }
+    private boolean performDanmakuClick(IDanmakus danmakus, boolean isLongClick) {
+        IDanmakuView.OnDanmakuClickListener onDanmakuClickListener = danmakuView.getOnDanmakuClickListener();
+        if (onDanmakuClickListener != null) {
+            if (isLongClick) {
+                return onDanmakuClickListener.onDanmakuLongClick(danmakus);
+            } else {
+                return onDanmakuClickListener.onDanmakuClick(danmakus);
+            }
+        }
+        return false;
+    }
+    private boolean performViewClick() {
+        IDanmakuView.OnDanmakuClickListener onDanmakuClickListener = danmakuView.getOnDanmakuClickListener();
+        if (onDanmakuClickListener != null) {
+            return onDanmakuClickListener.onViewClick(danmakuView);
+        }
+        return false;
+    }
+    private IDanmakus touchHitDanmaku(final float x, final float y) {
+        final IDanmakus hitDanmakus = new Danmakus();
+        mDanmakuBounds.setEmpty();
+        IDanmakus danmakus = danmakuView.getCurrentVisibleDanmakus();
+        if (null != danmakus && !danmakus.isEmpty()) {
+            danmakus.forEachSync(new IDanmakus.DefaultConsumer<BaseDanmaku>() {
+                @Override
+                public int accept(BaseDanmaku danmaku) {
+                    if (null != danmaku) {
+                        mDanmakuBounds.set(danmaku.getLeft(), danmaku.getTop(), danmaku.getRight(), danmaku.getBottom());
+                        if (mDanmakuBounds.intersect(x - mXOff, y - mYOff, x + mXOff, y + mYOff)) {
+                            hitDanmakus.addItem(danmaku);
+                        }
+                    }
+                    return ACTION_CONTINUE;
+                }
+            });
+        }
+        return hitDanmakus;
+    }
+}",class,
+"        @Override
+        public boolean onDown(MotionEvent event) {
+            if (danmakuView != null) {
+                IDanmakuView.OnDanmakuClickListener onDanmakuClickListener = danmakuView.getOnDanmakuClickListener();
+                if (onDanmakuClickListener != null) {
+                    mXOff = danmakuView.getXOff();
+                    mYOff = danmakuView.getYOff();
+                    return true;
+                }
+            }
+            return false;
+        }",method,
+"            if (danmakuView != null) {
+                IDanmakuView.OnDanmakuClickListener onDanmakuClickListener = danmakuView.getOnDanmakuClickListener();
+                if (onDanmakuClickListener != null) {
+                    mXOff = danmakuView.getXOff();
+                    mYOff = danmakuView.getYOff();
+                    return true;
+                }
+            }",method,
+"                if (onDanmakuClickListener != null) {
+                    mXOff = danmakuView.getXOff();
+                    mYOff = danmakuView.getYOff();
+                    return true;
+                }",method,
+"        @Override
+        public boolean onSingleTapConfirmed(MotionEvent event) {
+            IDanmakus clickDanmakus = touchHitDanmaku(event.getX(), event.getY());
+            boolean isEventConsumed = false;
+            if (null != clickDanmakus && !clickDanmakus.isEmpty()) {
+                isEventConsumed = performDanmakuClick(clickDanmakus, false);
+            }
+            if (!isEventConsumed) {
+                isEventConsumed = performViewClick();
+            }
+            return isEventConsumed;
+        }",method,
+"            if (!isEventConsumed) {
+                isEventConsumed = performViewClick();
+            }",method,
+"        @Override
+        public void onLongPress(MotionEvent event) {
+            IDanmakuView.OnDanmakuClickListener onDanmakuClickListener = danmakuView.getOnDanmakuClickListener();
+            if (onDanmakuClickListener == null) {
+                return;
+            }
+            mXOff = danmakuView.getXOff();
+            mYOff = danmakuView.getYOff();
+            IDanmakus clickDanmakus = touchHitDanmaku(event.getX(), event.getY());
+            if (null != clickDanmakus && !clickDanmakus.isEmpty()) {
+                performDanmakuClick(clickDanmakus, true);
+            }
+        }",method,
+"            if (onDanmakuClickListener == null) {
+                return;
+            }",method,
+"    private DanmakuTouchHelper(IDanmakuView danmakuView) {
+        this.danmakuView = danmakuView;
+        this.mDanmakuBounds = new RectF();
+        this.mTouchDelegate = new GestureDetector(((View) danmakuView).getContext(), mOnGestureListener);
+    }",method,
+"    public static synchronized DanmakuTouchHelper instance(IDanmakuView danmakuView) {
+        return new DanmakuTouchHelper(danmakuView);
+    }",method,
+"    public boolean onTouchEvent(MotionEvent event) {
+        return mTouchDelegate.onTouchEvent(event);
+    }",method,
+"    private boolean performDanmakuClick(IDanmakus danmakus, boolean isLongClick) {
+        IDanmakuView.OnDanmakuClickListener onDanmakuClickListener = danmakuView.getOnDanmakuClickListener();
+        if (onDanmakuClickListener != null) {
+            if (isLongClick) {
+                return onDanmakuClickListener.onDanmakuLongClick(danmakus);
+            } else {
+                return onDanmakuClickListener.onDanmakuClick(danmakus);
+            }
+        }
+        return false;
+    }",method,
+"        if (onDanmakuClickListener != null) {
+            if (isLongClick) {
+                return onDanmakuClickListener.onDanmakuLongClick(danmakus);
+            } else {
+                return onDanmakuClickListener.onDanmakuClick(danmakus);
+            }
+        }",method,
+"            if (isLongClick) {
+                return onDanmakuClickListener.onDanmakuLongClick(danmakus);
+            }",method,
+"    private boolean performViewClick() {
+        IDanmakuView.OnDanmakuClickListener onDanmakuClickListener = danmakuView.getOnDanmakuClickListener();
+        if (onDanmakuClickListener != null) {
+            return onDanmakuClickListener.onViewClick(danmakuView);
+        }
+        return false;
+    }",method,
+"        if (onDanmakuClickListener != null) {
+            return onDanmakuClickListener.onViewClick(danmakuView);
+        }",method,
+"    private IDanmakus touchHitDanmaku(final float x, final float y) {
+        final IDanmakus hitDanmakus = new Danmakus();
+        mDanmakuBounds.setEmpty();
+        IDanmakus danmakus = danmakuView.getCurrentVisibleDanmakus();
+        if (null != danmakus && !danmakus.isEmpty()) {
+            danmakus.forEachSync(new IDanmakus.DefaultConsumer<BaseDanmaku>() {
+                @Override
+                public int accept(BaseDanmaku danmaku) {
+                    if (null != danmaku) {
+                        mDanmakuBounds.set(danmaku.getLeft(), danmaku.getTop(), danmaku.getRight(), danmaku.getBottom());
+                        if (mDanmakuBounds.intersect(x - mXOff, y - mYOff, x + mXOff, y + mYOff)) {
+                            hitDanmakus.addItem(danmaku);
+                        }
+                    }
+                    return ACTION_CONTINUE;
+                }
+            });
+        }
+        return hitDanmakus;
+    }",method,
+"            danmakus.forEachSync(new IDanmakus.DefaultConsumer<BaseDanmaku>() {
+                @Override
+                public int accept(BaseDanmaku danmaku) {
+                    if (null != danmaku) {
+                        mDanmakuBounds.set(danmaku.getLeft(), danmaku.getTop(), danmaku.getRight(), danmaku.getBottom());
+                        if (mDanmakuBounds.intersect(x - mXOff, y - mYOff, x + mXOff, y + mYOff)) {
+                            hitDanmakus.addItem(danmaku);
+                        }
+                    }
+                    return ACTION_CONTINUE;
+                }
+            }",method,
+"                @Override
+                public int accept(BaseDanmaku danmaku) {
+                    if (null != danmaku) {
+                        mDanmakuBounds.set(danmaku.getLeft(), danmaku.getTop(), danmaku.getRight(), danmaku.getBottom());
+                        if (mDanmakuBounds.intersect(x - mXOff, y - mYOff, x + mXOff, y + mYOff)) {
+                            hitDanmakus.addItem(danmaku);
+                        }
+                    }
+                    return ACTION_CONTINUE;
+                }",method,
+"                    if (null != danmaku) {
+                        mDanmakuBounds.set(danmaku.getLeft(), danmaku.getTop(), danmaku.getRight(), danmaku.getBottom());
+                        if (mDanmakuBounds.intersect(x - mXOff, y - mYOff, x + mXOff, y + mYOff)) {
+                            hitDanmakus.addItem(danmaku);
+                        }
+                    }",method,
+"public abstract class PsiFileFactory {
+  public static Key<PsiFile> ORIGINAL_FILE = Key.create(""ORIGINAL_FILE"");
+  public static PsiFileFactory getInstance(Project project) {
+    return ServiceManager.getService(project, PsiFileFactory.class);
+  }
+  @Deprecated
+  @NotNull
+  public abstract PsiFile createFileFromText(@NotNull @NonNls String name, @NotNull @NonNls String text);
+  @NotNull
+  public abstract PsiFile createFileFromText(@NonNls @NotNull String fileName, @NotNull FileType fileType, @NotNull CharSequence text);
+  @NotNull
+  public abstract PsiFile createFileFromText(@NonNls @NotNull String name, @NotNull FileType fileType, @NotNull CharSequence text,
+                                             long modificationStamp, boolean eventSystemEnabled);
+  @NotNull
+  public abstract PsiFile createFileFromText(@NonNls @NotNull String name, @NotNull FileType fileType, @NotNull CharSequence text,
+                                             long modificationStamp, boolean eventSystemEnabled, boolean markAsCopy);
+  public abstract PsiFile createFileFromText(@NotNull String name, @NotNull Language language, @NotNull CharSequence text);
+  public PsiFile createFileFromText(@NotNull Language language, @NotNull CharSequence text) {
+    return createFileFromText(""foo.bar"", language, text);
+  }
+  public abstract PsiFile createFileFromText(@NotNull String name, @NotNull Language language, @NotNull CharSequence text,
+                                             boolean eventSystemEnabled, boolean markAsCopy);
+  public abstract PsiFile createFileFromText(@NotNull String name, @NotNull Language language, @NotNull CharSequence text,
+                                             boolean eventSystemEnabled, boolean markAsCopy, boolean noSizeLimit);
+  public abstract PsiFile createFileFromText(@NotNull String name, @NotNull Language language, @NotNull CharSequence text,
+                                             boolean eventSystemEnabled, boolean markAsCopy, boolean noSizeLimit,
+                                             @Nullable VirtualFile original);
+  public abstract PsiFile createFileFromText(FileType fileType, String fileName, CharSequence chars, int startOffset, int endOffset);
+  @Nullable
+  public abstract PsiFile createFileFromText(@NotNull CharSequence chars, @NotNull PsiFile original);
+}",class,
+"  public static PsiFileFactory getInstance(Project project) {
+    return ServiceManager.getService(project, PsiFileFactory.class);
+  }",method,
+"  public PsiFile createFileFromText(@NotNull Language language, @NotNull CharSequence text) {
+    return createFileFromText(""foo.bar"", language, text);
+  }",method,
+"    static KotlinParsing createForTopLevel(SemanticWhitespaceAwarePsiBuilder builder) {
+        KotlinParsing kotlinParsing = new KotlinParsing(builder);
+        kotlinParsing.myExpressionParsing = new KotlinExpressionParsing(builder, kotlinParsing);
+        return kotlinParsing;
+    }",method,
+"    private static KotlinParsing createForByClause(SemanticWhitespaceAwarePsiBuilder builder) {
+        SemanticWhitespaceAwarePsiBuilderForByClause builderForByClause = new SemanticWhitespaceAwarePsiBuilderForByClause(builder);
+        KotlinParsing kotlinParsing = new KotlinParsing(builderForByClause);
+        kotlinParsing.myExpressionParsing = new KotlinExpressionParsing(builderForByClause, kotlinParsing) {
+            @Override
+            protected boolean parseCallWithClosure() {
+                if (builderForByClause.getStackSize() > 0) {
+                    return super.parseCallWithClosure();
+                }
+                return false;
+            }
+            @Override
+            protected KotlinParsing create(SemanticWhitespaceAwarePsiBuilder builder) {
+                return createForByClause(builder);
+            }
+        };
+        return kotlinParsing;
+    }",method,
+"            @Override
+            protected boolean parseCallWithClosure() {
+                if (builderForByClause.getStackSize() > 0) {
+                    return super.parseCallWithClosure();
+                }
+                return false;
+            }",method,
+"            @Override
+            protected KotlinParsing create(SemanticWhitespaceAwarePsiBuilder builder) {
+                return createForByClause(builder);
+            }",method,
+"    private KotlinParsing(SemanticWhitespaceAwarePsiBuilder builder) {
+        super(builder);
+    }",method,
+"    void parseFile() {
+        PsiBuilder.Marker fileMarker = mark();
+        parsePreamble();
+        while (!eof()) {
+            parseTopLevelDeclaration();
+        }
+        checkUnclosedBlockComment();
+        fileMarker.done(KT_FILE);
+    }",method,
+"    private void checkUnclosedBlockComment() {
+        if (TokenSet.create(BLOCK_COMMENT, DOC_COMMENT).contains(myBuilder.rawLookup(-1))) {
+            int startOffset = myBuilder.rawTokenTypeStart(-1);
+            int endOffset = myBuilder.rawTokenTypeStart(0);
+            CharSequence tokenChars = myBuilder.getOriginalText().subSequence(startOffset, endOffset);
+            if (!(tokenChars.length() > 2 && tokenChars.subSequence(tokenChars.length() - 2, tokenChars.length()).toString().equals(""*/""))) {
+                PsiBuilder.Marker marker = myBuilder.mark();
+                marker.error(""Unclosed comment"");
+                marker.setCustomEdgeTokenBinders(WhitespacesBinders.GREEDY_RIGHT_BINDER, null);
+            }
+        }
+    }",method,
+"    void parseTypeCodeFragment() {
+        PsiBuilder.Marker marker = mark();
+        parseTypeRef();
+        checkForUnexpectedSymbols();
+        marker.done(TYPE_CODE_FRAGMENT);
+    }",method,
+"    void parseExpressionCodeFragment() {
+        PsiBuilder.Marker marker = mark();
+        myExpressionParsing.parseExpression();
+        checkForUnexpectedSymbols();
+        marker.done(EXPRESSION_CODE_FRAGMENT);
+    }",method,
+"public class PetApi  {
+   private final PetApiService delegate = PetApiServiceFactory.getPetApi();
+    @POST
+    @Consumes({ ""application/json"", ""application/xml"" })
+    @Produces({ ""application/xml"", ""application/json"" })
+    @io.swagger.annotations.ApiOperation(value = ""Add a new pet to the store"", notes = """", response = Void.class, authorizations = {
+        @io.swagger.annotations.Authorization(value = ""petstore_auth"", scopes = {
+            @io.swagger.annotations.AuthorizationScope(scope = ""write:pets"", description = ""modify pets in your account""),
+            @io.swagger.annotations.AuthorizationScope(scope = ""read:pets"", description = ""read your pets"")
+        })
+    }, tags={ ""pet"",  })
+    @io.swagger.annotations.ApiResponses(value = { 
+        @io.swagger.annotations.ApiResponse(code = 405, message = ""Invalid input"", response = Void.class) })
+    public Response addPet(
+        @ApiParam(value = ""Pet object that needs to be added to the store"" ,required=true) Pet body,
+        @Context SecurityContext securityContext)
+    throws NotFoundException {
+        return delegate.addPet(body,securityContext);
+    }
+    @DELETE
+    @Path(""/{petId}"")
+    @Produces({ ""application/xml"", ""application/json"" })
+    @io.swagger.annotations.ApiOperation(value = ""Deletes a pet"", notes = """", response = Void.class, authorizations = {
+        @io.swagger.annotations.Authorization(value = ""petstore_auth"", scopes = {
+            @io.swagger.annotations.AuthorizationScope(scope = ""write:pets"", description = ""modify pets in your account""),
+            @io.swagger.annotations.AuthorizationScope(scope = ""read:pets"", description = ""read your pets"")
+        })
+    }, tags={ ""pet"",  })
+    @io.swagger.annotations.ApiResponses(value = { 
+        @io.swagger.annotations.ApiResponse(code = 400, message = ""Invalid pet value"", response = Void.class) })
+    public Response deletePet(
+        @ApiParam(value = ""Pet id to delete"",required=true) @PathParam(""petId"") Long petId,
+        @ApiParam(value = """" )@HeaderParam(""api_key"") String apiKey,
+        @Context SecurityContext securityContext)
+    throws NotFoundException {
+        return delegate.deletePet(petId,apiKey,securityContext);
+    }
+    @GET
+    @Path(""/findByStatus"")
+    @Produces({ ""application/xml"", ""application/json"" })
+    @io.swagger.annotations.ApiOperation(value = ""Finds Pets by status"", notes = ""Multiple status values can be provided with comma separated strings"", response = Pet.class, responseContainer = ""List"", authorizations = {
+        @io.swagger.annotations.Authorization(value = ""petstore_auth"", scopes = {
+            @io.swagger.annotations.AuthorizationScope(scope = ""write:pets"", description = ""modify pets in your account""),
+            @io.swagger.annotations.AuthorizationScope(scope = ""read:pets"", description = ""read your pets"")
+        })
+    }, tags={ ""pet"",  })
+    @io.swagger.annotations.ApiResponses(value = { 
+        @io.swagger.annotations.ApiResponse(code = 200, message = ""successful operation"", response = Pet.class, responseContainer = ""List""),
+        @io.swagger.annotations.ApiResponse(code = 400, message = ""Invalid status value"", response = Void.class) })
+    public Response findPetsByStatus(
+        @ApiParam(value = ""Status values that need to be considered for filter"",required=true, allowableValues=""available, pending, sold"") @QueryParam(""status"") List<String> status,
+        @Context SecurityContext securityContext)
+    throws NotFoundException {
+        return delegate.findPetsByStatus(status,securityContext);
+    }
+    @GET
+    @Path(""/findByTags"")
+    @Produces({ ""application/xml"", ""application/json"" })
+    @io.swagger.annotations.ApiOperation(value = ""Finds Pets by tags"", notes = ""Multiple tags can be provided with comma separated strings. Use tag1, tag2, tag3 for testing."", response = Pet.class, responseContainer = ""List"", authorizations = {
+        @io.swagger.annotations.Authorization(value = ""petstore_auth"", scopes = {
+            @io.swagger.annotations.AuthorizationScope(scope = ""write:pets"", description = ""modify pets in your account""),
+            @io.swagger.annotations.AuthorizationScope(scope = ""read:pets"", description = ""read your pets"")
+        })
+    }, tags={ ""pet"",  })
+    @io.swagger.annotations.ApiResponses(value = { 
+        @io.swagger.annotations.ApiResponse(code = 200, message = ""successful operation"", response = Pet.class, responseContainer = ""List""),
+        @io.swagger.annotations.ApiResponse(code = 400, message = ""Invalid tag value"", response = Void.class) })
+    public Response findPetsByTags(
+        @ApiParam(value = ""Tags to filter by"",required=true) @QueryParam(""tags"") List<String> tags,
+        @Context SecurityContext securityContext)
+    throws NotFoundException {
+        return delegate.findPetsByTags(tags,securityContext);
+    }
+    @GET
+    @Path(""/{petId}"")
+    @Produces({ ""application/xml"", ""application/json"" })
+    @io.swagger.annotations.ApiOperation(value = ""Find pet by ID"", notes = ""Returns a single pet"", response = Pet.class, authorizations = {
+        @io.swagger.annotations.Authorization(value = ""api_key"")
+    }, tags={ ""pet"",  })
+    @io.swagger.annotations.ApiResponses(value = { 
+        @io.swagger.annotations.ApiResponse(code = 200, message = ""successful operation"", response = Pet.class),
+        @io.swagger.annotations.ApiResponse(code = 400, message = ""Invalid ID supplied"", response = Void.class),
+        @io.swagger.annotations.ApiResponse(code = 404, message = ""Pet not found"", response = Void.class) })
+    public Response getPetById(
+        @ApiParam(value = ""ID of pet to return"",required=true) @PathParam(""petId"") Long petId,
+        @Context SecurityContext securityContext)
+    throws NotFoundException {
+        return delegate.getPetById(petId,securityContext);
+    }
+    @PUT
+    @Consumes({ ""application/json"", ""application/xml"" })
+    @Produces({ ""application/xml"", ""application/json"" })
+    @io.swagger.annotations.ApiOperation(value = ""Update an existing pet"", notes = """", response = Void.class, authorizations = {
+        @io.swagger.annotations.Authorization(value = ""petstore_auth"", scopes = {
+            @io.swagger.annotations.AuthorizationScope(scope = ""write:pets"", description = ""modify pets in your account""),
+            @io.swagger.annotations.AuthorizationScope(scope = ""read:pets"", description = ""read your pets"")
+        })
+    }, tags={ ""pet"",  })
+    @io.swagger.annotations.ApiResponses(value = { 
+        @io.swagger.annotations.ApiResponse(code = 400, message = ""Invalid ID supplied"", response = Void.class),
+        @io.swagger.annotations.ApiResponse(code = 404, message = ""Pet not found"", response = Void.class),
+        @io.swagger.annotations.ApiResponse(code = 405, message = ""Validation exception"", response = Void.class) })
+    public Response updatePet(
+        @ApiParam(value = ""Pet object that needs to be added to the store"" ,required=true) Pet body,
+        @Context SecurityContext securityContext)
+    throws NotFoundException {
+        return delegate.updatePet(body,securityContext);
+    }
+    @POST
+    @Path(""/{petId}"")
+    @Consumes({ ""application/x-www-form-urlencoded"" })
+    @Produces({ ""application/xml"", ""application/json"" })
+    @io.swagger.annotations.ApiOperation(value = ""Updates a pet in the store with form data"", notes = """", response = Void.class, authorizations = {
+        @io.swagger.annotations.Authorization(value = ""petstore_auth"", scopes = {
+            @io.swagger.annotations.AuthorizationScope(scope = ""write:pets"", description = ""modify pets in your account""),
+            @io.swagger.annotations.AuthorizationScope(scope = ""read:pets"", description = ""read your pets"")
+        })
+    }, tags={ ""pet"",  })
+    @io.swagger.annotations.ApiResponses(value = { 
+        @io.swagger.annotations.ApiResponse(code = 405, message = ""Invalid input"", response = Void.class) })
+    public Response updatePetWithForm(
+        @ApiParam(value = ""ID of pet that needs to be updated"",required=true) @PathParam(""petId"") Long petId,
+        @ApiParam(value = ""Updated name of the pet"")  @FormParam(""name"")  String name,
+        @ApiParam(value = ""Updated status of the pet"")  @FormParam(""status"")  String status,
+        @Context SecurityContext securityContext)
+    throws NotFoundException {
+        return delegate.updatePetWithForm(petId,name,status,securityContext);
+    }
+    @POST
+    @Path(""/{petId}/uploadImage"")
+    @Consumes({ ""multipart/form-data"" })
+    @Produces({ ""application/json"" })
+    @io.swagger.annotations.ApiOperation(value = ""uploads an image"", notes = """", response = ModelApiResponse.class, authorizations = {
+        @io.swagger.annotations.Authorization(value = ""petstore_auth"", scopes = {
+            @io.swagger.annotations.AuthorizationScope(scope = ""write:pets"", description = ""modify pets in your account""),
+            @io.swagger.annotations.AuthorizationScope(scope = ""read:pets"", description = ""read your pets"")
+        })
+    }, tags={ ""pet"" })
+    @io.swagger.annotations.ApiResponses(value = { 
+        @io.swagger.annotations.ApiResponse(code = 200, message = ""successful operation"", response = ModelApiResponse.class) })
+    public Response uploadFile(
+        @ApiParam(value = ""ID of pet to update"",required=true) @PathParam(""petId"") Long petId,
+        @FormDataParam(""additionalMetadata"")  String additionalMetadata,
+        @FormDataParam(""file"") InputStream inputStream,
+        @FormDataParam(""file"") FormDataContentDisposition fileDetail,
+        @Context SecurityContext securityContext)
+    throws NotFoundException {
+        return delegate.uploadFile(petId,additionalMetadata,inputStream, fileDetail,securityContext);
+    }
+}",class,
+"public final class PluginDefinition implements SourceComponent, HashableWithSource {
+    @Override
+    public String hashSource() {
+        try {
+            String serializedArgs =
+                ObjectMappers.JSON_MAPPER.writeValueAsString(this.getArguments());
+            return this.getClass().getCanonicalName() + ""|"" +
+                    this.getType().toString() + ""|"" +
+                    this.getName() + ""|"" +
+                   serializedArgs;
+        } catch (JsonProcessingException e) {
+            throw new IllegalArgumentException(""Could not serialize plugin args as JSON"", e);
+        }
+    }
+    public enum Type {
+        INPUT,
+        FILTER,
+        OUTPUT,
+        CODEC
+    }
+    private final Type type;
+    private final String name;
+    private final Map<String,Object> arguments;
+    public Type getType() {
+        return type;
+    }
+    public String getName() {
+        return name;
+    }
+    public Map<String, Object> getArguments() {
+        return arguments;
+    }
+    public PluginDefinition(Type type, String name, Map<String, Object> arguments) {
+        this.type = type;
+        this.name = name;
+        this.arguments = arguments;
+    }
+    public String toString() {
+        return type.toString().toLowerCase() + ""-"" + name + arguments;
+    }
+    public int hashCode() {
+        return Objects.hash(type, name, arguments);
+    }
+    @Override
+    public boolean equals(Object o) {
+        if (o == null) return false;
+        if (o instanceof PluginDefinition) {
+            PluginDefinition oPlugin = (PluginDefinition) o;
+            return type.equals(oPlugin.type) && name.equals(oPlugin.name) && arguments.equals(oPlugin.arguments);
+        }
+        return false;
+    }
+    @Override
+    public boolean sourceComponentEquals(SourceComponent o) {
+        if (o == null) return false;
+        if (o instanceof PluginDefinition) {
+            PluginDefinition oPluginDefinition = (PluginDefinition) o;
+            Set<String> allArgs = new HashSet<>();
+            allArgs.addAll(getArguments().keySet());
+            allArgs.addAll(oPluginDefinition.getArguments().keySet());
+            // Compare all arguments except the unique id
+            boolean argsMatch = allArgs.stream().
+                    filter(k -> !k.equals(""id"")).
+                    allMatch(k -> Objects.equals(getArguments().get(k), oPluginDefinition.getArguments().get(k)));
+            return argsMatch && type.equals(oPluginDefinition.type) && name.equals(oPluginDefinition.name);
+        }
+        return false;
+    }
+    @Override
+    public SourceWithMetadata getSourceWithMetadata() {
+        return null;
+    }
+}",class,
+"    @Override
+    public String hashSource() {
+        try {
+            String serializedArgs =
+                ObjectMappers.JSON_MAPPER.writeValueAsString(this.getArguments());
+            return this.getClass().getCanonicalName() + ""|"" +
+                    this.getType().toString() + ""|"" +
+                    this.getName() + ""|"" +
+                   serializedArgs;
+        } catch (JsonProcessingException e) {
+            throw new IllegalArgumentException(""Could not serialize plugin args as JSON"", e);
+        }
+    }",method,
+"    public Type getType() {
+        return type;
+    }",method,
+"    public String getName() {
+        return name;
+    }",method,
+"    public Map<String, Object> getArguments() {
+        return arguments;
+    }",method,
+"    public PluginDefinition(Type type, String name, Map<String, Object> arguments) {
+        this.type = type;
+        this.name = name;
+        this.arguments = arguments;
+    }",method,
+"    public String toString() {
+        return type.toString().toLowerCase() + ""-"" + name + arguments;
+    }",method,
+"    public int hashCode() {
+        return Objects.hash(type, name, arguments);
+    }",method,
+"    @Override
+    public boolean equals(Object o) {
+        if (o == null) return false;
+        if (o instanceof PluginDefinition) {
+            PluginDefinition oPlugin = (PluginDefinition) o;
+            return type.equals(oPlugin.type) && name.equals(oPlugin.name) && arguments.equals(oPlugin.arguments);
+        }
+        return false;
+    }",method,
+"        if (o instanceof PluginDefinition) {
+            PluginDefinition oPlugin = (PluginDefinition) o;
+            return type.equals(oPlugin.type) && name.equals(oPlugin.name) && arguments.equals(oPlugin.arguments);
+        }",method,
+"    @Override
+    public boolean sourceComponentEquals(SourceComponent o) {
+        if (o == null) return false;
+        if (o instanceof PluginDefinition) {
+            PluginDefinition oPluginDefinition = (PluginDefinition) o;
+            Set<String> allArgs = new HashSet<>();
+            allArgs.addAll(getArguments().keySet());
+            allArgs.addAll(oPluginDefinition.getArguments().keySet());
+            // Compare all arguments except the unique id
+            boolean argsMatch = allArgs.stream().
+                    filter(k -> !k.equals(""id"")).
+                    allMatch(k -> Objects.equals(getArguments().get(k), oPluginDefinition.getArguments().get(k)));
+            return argsMatch && type.equals(oPluginDefinition.type) && name.equals(oPluginDefinition.name);
+        }
+        return false;
+    }",method,
+"        if (o instanceof PluginDefinition) {
+            PluginDefinition oPluginDefinition = (PluginDefinition) o;
+            Set<String> allArgs = new HashSet<>();
+            allArgs.addAll(getArguments().keySet());
+            allArgs.addAll(oPluginDefinition.getArguments().keySet());
+            // Compare all arguments except the unique id
+            boolean argsMatch = allArgs.stream().
+                    filter(k -> !k.equals(""id"")).
+                    allMatch(k -> Objects.equals(getArguments().get(k), oPluginDefinition.getArguments().get(k)));
+            return argsMatch && type.equals(oPluginDefinition.type) && name.equals(oPluginDefinition.name);
+        }",method,
+"    @Override
+    public SourceWithMetadata getSourceWithMetadata() {
+        return null;
+    }",method,
+"public class DefaultTaskInputFilePropertySpec extends TaskInputsDeprecationSupport implements DeclaredTaskInputFileProperty {
+    private final ValidatingValue value;
+    private final ValidationAction validationAction;
+    private final TaskPropertyFileCollection files;
+    private String propertyName;
+    private boolean skipWhenEmpty;
+    private boolean optional;
+    private PathNormalizationStrategy pathNormalizationStrategy = ABSOLUTE;
+    private Class<? extends FileNormalizer> normalizer = GenericFileNormalizer.class;
+    public DefaultTaskInputFilePropertySpec(String taskName, FileResolver resolver, ValidatingValue paths, ValidationAction validationAction) {
+        this.value = paths;
+        this.validationAction = validationAction;
+        this.files = new TaskPropertyFileCollection(taskName, ""input"", this, resolver, paths);
+    }
+    @Override
+    public String getPropertyName() {
+        return propertyName;
+    }
+    @Override
+    public FileCollection getPropertyFiles() {
+        return files;
+    }
+    @Override
+    public TaskInputFilePropertyBuilderInternal withPropertyName(String propertyName) {
+        this.propertyName = checkPropertyName(propertyName);
+        return this;
+    }
+    public boolean isSkipWhenEmpty() {
+        return skipWhenEmpty;
+    }
+    @Override
+    public TaskInputFilePropertyBuilderInternal skipWhenEmpty(boolean skipWhenEmpty) {
+        this.skipWhenEmpty = skipWhenEmpty;
+        return this;
+    }
+    @Override
+    public TaskInputFilePropertyBuilderInternal skipWhenEmpty() {
+        return skipWhenEmpty(true);
+    }
+    public boolean isOptional() {
+        return optional;
+    }
+    @Override
+    public TaskInputFilePropertyBuilderInternal optional(boolean optional) {
+        this.optional = optional;
+        return this;
+    }
+    @Override
+    public TaskInputFilePropertyBuilderInternal optional() {
+        return optional(true);
+    }
+    @Override
+    public PathNormalizationStrategy getPathNormalizationStrategy() {
+        return pathNormalizationStrategy;
+    }
+    @Override
+    public TaskInputFilePropertyBuilderInternal withPathSensitivity(PathSensitivity sensitivity) {
+        return withPathNormalizationStrategy(InputPathNormalizationStrategy.valueOf(sensitivity));
+    }
+    @Override
+    public TaskInputFilePropertyBuilderInternal withPathNormalizationStrategy(PathNormalizationStrategy pathNormalizationStrategy) {
+        this.pathNormalizationStrategy = pathNormalizationStrategy;
+        return this;
+    }
+    @Override
+    public TaskInputFilePropertyBuilderInternal withNormalizer(Class<? extends FileNormalizer> normalizer) {
+        this.normalizer = normalizer;
+        return this;
+    }
+    @Override
+    public Class<? extends FileNormalizer> getNormalizer() {
+        return normalizer;
+    }
+    @Override
+    public void validate(TaskValidationContext context) {
+        value.validate(getPropertyName(), optional, validationAction, context);
+    }
+    @Override
+    protected TaskInputs getTaskInputs(String method) {
+        throw new UnsupportedOperationException(String.format(""Chaining of the TaskInputs.%s method is not supported since Gradle 4.0."", method));
+    }
+    @Override
+    public String toString() {
+        return getPropertyName() + "" ("" + pathNormalizationStrategy + "")"";
+    }
+    @Override
+    public int compareTo(TaskPropertySpec o) {
+        return getPropertyName().compareTo(o.getPropertyName());
+    }
+}",class,
+"    public DefaultTaskInputFilePropertySpec(String taskName, FileResolver resolver, ValidatingValue paths, ValidationAction validationAction) {
+        this.value = paths;
+        this.validationAction = validationAction;
+        this.files = new TaskPropertyFileCollection(taskName, ""input"", this, resolver, paths);
+    }",method,
+"    @Override
+    public String getPropertyName() {
+        return propertyName;
+    }",method,
+"    @Override
+    public FileCollection getPropertyFiles() {
+        return files;
+    }",method,
+"    @Override
+    public TaskInputFilePropertyBuilderInternal withPropertyName(String propertyName) {
+        this.propertyName = checkPropertyName(propertyName);
+        return this;
+    }",method,
+"    public boolean isSkipWhenEmpty() {
+        return skipWhenEmpty;
+    }",method,
+"    @Override
+    public TaskInputFilePropertyBuilderInternal skipWhenEmpty(boolean skipWhenEmpty) {
+        this.skipWhenEmpty = skipWhenEmpty;
+        return this;
+    }",method,
+"    @Override
+    public TaskInputFilePropertyBuilderInternal skipWhenEmpty() {
+        return skipWhenEmpty(true);
+    }",method,
+"    public boolean isOptional() {
+        return optional;
+    }",method,
+"    @Override
+    public TaskInputFilePropertyBuilderInternal optional(boolean optional) {
+        this.optional = optional;
+        return this;
+    }",method,
+"    @Override
+    public TaskInputFilePropertyBuilderInternal optional() {
+        return optional(true);
+    }",method,
+"    @Override
+    public PathNormalizationStrategy getPathNormalizationStrategy() {
+        return pathNormalizationStrategy;
+    }",method,
+"    @Override
+    public TaskInputFilePropertyBuilderInternal withPathSensitivity(PathSensitivity sensitivity) {
+        return withPathNormalizationStrategy(InputPathNormalizationStrategy.valueOf(sensitivity));
+    }",method,
+"    @Override
+    public TaskInputFilePropertyBuilderInternal withPathNormalizationStrategy(PathNormalizationStrategy pathNormalizationStrategy) {
+        this.pathNormalizationStrategy = pathNormalizationStrategy;
+        return this;
+    }",method,
+"    @Override
+    public TaskInputFilePropertyBuilderInternal withNormalizer(Class<? extends FileNormalizer> normalizer) {
+        this.normalizer = normalizer;
+        return this;
+    }",method,
+"    @Override
+    public Class<? extends FileNormalizer> getNormalizer() {
+        return normalizer;
+    }",method,
+"    @Override
+    public void validate(TaskValidationContext context) {
+        value.validate(getPropertyName(), optional, validationAction, context);
+    }",method,
+"    @Override
+    protected TaskInputs getTaskInputs(String method) {
+        throw new UnsupportedOperationException(String.format(""Chaining of the TaskInputs.%s method is not supported since Gradle 4.0."", method));
+    }",method,
+"    @Override
+    public String toString() {
+        return getPropertyName() + "" ("" + pathNormalizationStrategy + "")"";
+    }",method,
+"    @Override
+    public int compareTo(TaskPropertySpec o) {
+        return getPropertyName().compareTo(o.getPropertyName());
+    }",method,
+"public class BeanFactoryDataSourceLookupTests {
+	private static final String DATASOURCE_BEAN_NAME = ""dataSource"";
+	@Test
+	public void testLookupSunnyDay() {
+		BeanFactory beanFactory = mock(BeanFactory.class);
+		StubDataSource expectedDataSource = new StubDataSource();
+		given(beanFactory.getBean(DATASOURCE_BEAN_NAME, DataSource.class)).willReturn(expectedDataSource);
+		BeanFactoryDataSourceLookup lookup = new BeanFactoryDataSourceLookup();
+		lookup.setBeanFactory(beanFactory);
+		DataSource dataSource = lookup.getDataSource(DATASOURCE_BEAN_NAME);
+		assertNotNull(""A DataSourceLookup implementation must *never* return null from "" +
+				""getDataSource(): this one obviously (and incorrectly) is"", dataSource);
+		assertSame(expectedDataSource, dataSource);
+	}
+	@Test
+	public void testLookupWhereBeanFactoryYieldsNonDataSourceType() throws Exception {
+		final BeanFactory beanFactory = mock(BeanFactory.class);
+		given(beanFactory.getBean(DATASOURCE_BEAN_NAME, DataSource.class)).willThrow(
+				new BeanNotOfRequiredTypeException(DATASOURCE_BEAN_NAME,
+						DataSource.class, String.class));
+		try {
+				BeanFactoryDataSourceLookup lookup = new BeanFactoryDataSourceLookup(beanFactory);
+				lookup.getDataSource(DATASOURCE_BEAN_NAME);
+				fail(""should have thrown DataSourceLookupFailureException"");
+		}
+		catch (DataSourceLookupFailureException ex) {  }
+	}
+	@Test(expected = IllegalStateException.class)
+	public void testLookupWhereBeanFactoryHasNotBeenSupplied() throws Exception {
+		BeanFactoryDataSourceLookup lookup = new BeanFactoryDataSourceLookup();
+		lookup.getDataSource(DATASOURCE_BEAN_NAME);
+	}
+}",class,
+"	@Test
+	public void testLookupSunnyDay() {
+		BeanFactory beanFactory = mock(BeanFactory.class);
+		StubDataSource expectedDataSource = new StubDataSource();
+		given(beanFactory.getBean(DATASOURCE_BEAN_NAME, DataSource.class)).willReturn(expectedDataSource);
+		BeanFactoryDataSourceLookup lookup = new BeanFactoryDataSourceLookup();
+		lookup.setBeanFactory(beanFactory);
+		DataSource dataSource = lookup.getDataSource(DATASOURCE_BEAN_NAME);
+		assertNotNull(""A DataSourceLookup implementation must *never* return null from "" +
+				""getDataSource(): this one obviously (and incorrectly) is"", dataSource);
+		assertSame(expectedDataSource, dataSource);
+	}",method,
+"	@Test
+	public void testLookupWhereBeanFactoryYieldsNonDataSourceType() throws Exception {
+		final BeanFactory beanFactory = mock(BeanFactory.class);
+		given(beanFactory.getBean(DATASOURCE_BEAN_NAME, DataSource.class)).willThrow(
+				new BeanNotOfRequiredTypeException(DATASOURCE_BEAN_NAME,
+						DataSource.class, String.class));
+		try {
+				BeanFactoryDataSourceLookup lookup = new BeanFactoryDataSourceLookup(beanFactory);
+				lookup.getDataSource(DATASOURCE_BEAN_NAME);
+				fail(""should have thrown DataSourceLookupFailureException"");
+		}
+		catch (DataSourceLookupFailureException ex) {  }
+	}",method,
+		catch (DataSourceLookupFailureException ex) {  },method,
+"	@Test(expected = IllegalStateException.class)
+	public void testLookupWhereBeanFactoryHasNotBeenSupplied() throws Exception {
+		BeanFactoryDataSourceLookup lookup = new BeanFactoryDataSourceLookup();
+		lookup.getDataSource(DATASOURCE_BEAN_NAME);
+	}",method,
+"public class AssetDescriptor<T> {
+	public final String fileName;
+	public final Class<T> type;
+	public final AssetLoaderParameters params;
+	public FileHandle file;
+	public AssetDescriptor (String fileName, Class<T> assetType) {
+		this(fileName, assetType, null);
+	}
+	public AssetDescriptor (FileHandle file, Class<T> assetType) {
+		this(file, assetType, null);
+	}
+	public AssetDescriptor (String fileName, Class<T> assetType, AssetLoaderParameters<T> params) {
+		this.fileName = fileName.replaceAll(""\\\\"", ""/"");
+		this.type = assetType;
+		this.params = params;
+	}
+	public AssetDescriptor (FileHandle file, Class<T> assetType, AssetLoaderParameters<T> params) {
+		this.fileName = file.path().replaceAll(""\\\\"", ""/"");
+		this.file = file;
+		this.type = assetType;
+		this.params = params;
+	}
+	@Override
+	public String toString () {
+		StringBuffer buffer = new StringBuffer();
+		buffer.append(fileName);
+		buffer.append("", "");
+		buffer.append(type.getName());
+		return buffer.toString();
+	}
+}",class,
+"public class AssetLoaderParameters<T> {
+	public interface LoadedCallback {
+		public void finishedLoading (AssetManager assetManager, String fileName, Class type);
+	}
+	public LoadedCallback loadedCallback;
+}",class,
+"	public AssetDescriptor (String fileName, Class<T> assetType) {
+		this(fileName, assetType, null);
+	}",method,
+"	public AssetDescriptor (FileHandle file, Class<T> assetType) {
+		this(file, assetType, null);
+	}",method,
+"	public AssetDescriptor (String fileName, Class<T> assetType, AssetLoaderParameters<T> params) {
+		this.fileName = fileName.replaceAll(""\\\\"", ""/"");
+		this.type = assetType;
+		this.params = params;
+	}",method,
+"	public AssetDescriptor (FileHandle file, Class<T> assetType, AssetLoaderParameters<T> params) {
+		this.fileName = file.path().replaceAll(""\\\\"", ""/"");
+		this.file = file;
+		this.type = assetType;
+		this.params = params;
+	}",method,
+"	@Override
+	public String toString () {
+		StringBuffer buffer = new StringBuffer();
+		buffer.append(fileName);
+		buffer.append("", "");
+		buffer.append(type.getName());
+		return buffer.toString();
+	}",method,
+"public class TestDenseRankFunction
+        extends AbstractTestWindowFunction
+{
+    @Test
+    public void testDenseRank()
+    {
+        assertWindowQuery(""dense_rank() OVER (ORDER BY orderstatus)"",
+                resultBuilder(TEST_SESSION, INTEGER, VARCHAR, BIGINT)
+                        .row(3, ""F"", 1L)
+                        .row(5, ""F"", 1L)
+                        .row(6, ""F"", 1L)
+                        .row(33, ""F"", 1L)
+                        .row(1, ""O"", 2L)
+                        .row(2, ""O"", 2L)
+                        .row(4, ""O"", 2L)
+                        .row(7, ""O"", 2L)
+                        .row(32, ""O"", 2L)
+                        .row(34, ""O"", 2L)
+                        .build());
+        assertWindowQueryWithNulls(""dense_rank() OVER (ORDER BY orderstatus)"",
+                resultBuilder(TEST_SESSION, BIGINT, VARCHAR, BIGINT)
+                        .row(3L, ""F"", 1L)
+                        .row(5L, ""F"", 1L)
+                        .row(6L, ""F"", 1L)
+                        .row(null, ""F"", 1L)
+                        .row(34L, ""O"", 2L)
+                        .row(null, ""O"", 2L)
+                        .row(1L, null, 3L)
+                        .row(7L, null, 3L)
+                        .row(null, null, 3L)
+                        .row(null, null, 3L)
+                        .build());
+    }
+}",class,
+"    @Test
+    public void testDenseRank()
+    {
+        assertWindowQuery(""dense_rank() OVER (ORDER BY orderstatus)"",
+                resultBuilder(TEST_SESSION, INTEGER, VARCHAR, BIGINT)
+                        .row(3, ""F"", 1L)
+                        .row(5, ""F"", 1L)
+                        .row(6, ""F"", 1L)
+                        .row(33, ""F"", 1L)
+                        .row(1, ""O"", 2L)
+                        .row(2, ""O"", 2L)
+                        .row(4, ""O"", 2L)
+                        .row(7, ""O"", 2L)
+                        .row(32, ""O"", 2L)
+                        .row(34, ""O"", 2L)
+                        .build());
+        assertWindowQueryWithNulls(""dense_rank() OVER (ORDER BY orderstatus)"",
+                resultBuilder(TEST_SESSION, BIGINT, VARCHAR, BIGINT)
+                        .row(3L, ""F"", 1L)
+                        .row(5L, ""F"", 1L)
+                        .row(6L, ""F"", 1L)
+                        .row(null, ""F"", 1L)
+                        .row(34L, ""O"", 2L)
+                        .row(null, ""O"", 2L)
+                        .row(1L, null, 3L)
+                        .row(7L, null, 3L)
+                        .row(null, null, 3L)
+                        .row(null, null, 3L)
+                        .build());
+    }",method,
+"public class UserApiController implements UserApi {
+    private final ObjectMapper objectMapper;
+    public UserApiController(ObjectMapper objectMapper) {
+        this.objectMapper = objectMapper;
+    }
+    public ResponseEntity<Void> createUser(@ApiParam(value = ""Created user object"" ,required=true )  @Valid @RequestBody User body,
+        @RequestHeader(value = ""Accept"", required = false) String accept) throws Exception {
+        // do some magic!
+        return new ResponseEntity<Void>(HttpStatus.OK);
+    }
+    public ResponseEntity<Void> createUsersWithArrayInput(@ApiParam(value = ""List of user object"" ,required=true )  @Valid @RequestBody List<User> body,
+        @RequestHeader(value = ""Accept"", required = false) String accept) throws Exception {
+        // do some magic!
+        return new ResponseEntity<Void>(HttpStatus.OK);
+    }
+    public ResponseEntity<Void> createUsersWithListInput(@ApiParam(value = ""List of user object"" ,required=true )  @Valid @RequestBody List<User> body,
+        @RequestHeader(value = ""Accept"", required = false) String accept) throws Exception {
+        // do some magic!
+        return new ResponseEntity<Void>(HttpStatus.OK);
+    }
+    public ResponseEntity<Void> deleteUser(@ApiParam(value = ""The name that needs to be deleted"",required=true ) @PathVariable(""username"") String username,
+        @RequestHeader(value = ""Accept"", required = false) String accept) throws Exception {
+        // do some magic!
+        return new ResponseEntity<Void>(HttpStatus.OK);
+    }
+    public ResponseEntity<User> getUserByName(@ApiParam(value = ""The name that needs to be fetched. Use user1 for testing. "",required=true ) @PathVariable(""username"") String username,
+        @RequestHeader(value = ""Accept"", required = false) String accept) throws Exception {
+        // do some magic!
+        if (accept != null && accept.contains(""application/xml"")) {
+            return new ResponseEntity<User>(objectMapper.readValue(""<User>  <id>123456789</id>  <username>aeiou</username>  <firstName>aeiou</firstName>  <lastName>aeiou</lastName>  <email>aeiou</email>  <password>aeiou</password>  <phone>aeiou</phone>  <userStatus>123</userStatus></User>"", User.class), HttpStatus.OK);
+        }
+        if (accept != null && accept.contains(""application/json"")) {
+            return new ResponseEntity<User>(objectMapper.readValue(""{  \""firstName\"" : \""firstName\"",  \""lastName\"" : \""lastName\"",  \""password\"" : \""password\"",  \""userStatus\"" : 6,  \""phone\"" : \""phone\"",  \""id\"" : 0,  \""email\"" : \""email\"",  \""username\"" : \""username\""}"", User.class), HttpStatus.OK);
+        }
+        return new ResponseEntity<User>(HttpStatus.OK);
+    }
+    public ResponseEntity<String> loginUser( @NotNull@ApiParam(value = ""The user name for login"", required = true) @Valid @RequestParam(value = ""username"", required = true) String username,
+         @NotNull@ApiParam(value = ""The password for login in clear text"", required = true) @Valid @RequestParam(value = ""password"", required = true) String password,
+        @RequestHeader(value = ""Accept"", required = false) String accept) throws Exception {
+        // do some magic!
+        if (accept != null && accept.contains(""application/xml"")) {
+            return new ResponseEntity<String>(objectMapper.readValue(""aeiou"", String.class), HttpStatus.OK);
+        }
+        if (accept != null && accept.contains(""application/json"")) {
+            return new ResponseEntity<String>(objectMapper.readValue(""\""\"""", String.class), HttpStatus.OK);
+        }
+        return new ResponseEntity<String>(HttpStatus.OK);
+    }
+    public ResponseEntity<Void> logoutUser(@RequestHeader(value = ""Accept"", required = false) String accept) throws Exception {
+        // do some magic!
+        return new ResponseEntity<Void>(HttpStatus.OK);
+    }
+    public ResponseEntity<Void> updateUser(@ApiParam(value = ""name that need to be deleted"",required=true ) @PathVariable(""username"") String username,
+        @ApiParam(value = ""Updated user object"" ,required=true )  @Valid @RequestBody User body,
+        @RequestHeader(value = ""Accept"", required = false) String accept) throws Exception {
+        // do some magic!
+        return new ResponseEntity<Void>(HttpStatus.OK);
+    }
+}",class,
+"    public UserApiController(ObjectMapper objectMapper) {
+        this.objectMapper = objectMapper;
+    }",method,
+"public class MvcProjectNode extends AbstractProjectNode {
+  private final MvcToolWindowDescriptor myDescriptor;
+  public MvcProjectNode(final Project project, final ViewSettings viewSettings, MvcToolWindowDescriptor descriptor) {
+    super(project, project, viewSettings);
+    myDescriptor = descriptor;
+  }
+  @Override
+  @NotNull
+  public Collection<? extends AbstractTreeNode> getChildren() {
+    List<Module> modules = MvcModuleStructureUtil.getAllModulesWithSupport(myProject, myDescriptor.getFramework());
+    modules = myDescriptor.getFramework().reorderModulesForMvcView(modules);
+    final ArrayList<AbstractTreeNode> nodes = new ArrayList<>();
+    for (Module module : modules) {
+      nodes.add(new MvcModuleNode(module, getSettings(), myDescriptor));
+    }
+    return nodes;
+  }
+  @Override
+  public boolean isAlwaysExpand() {
+    return true;
+  }
+  @Override
+  protected AbstractTreeNode createModuleGroup(final Module module) throws InstantiationException {
+    return createTreeNode(MvcProjectNode.class, getProject(), module, getSettings());
+  }
+  @Override
+  protected AbstractTreeNode createModuleGroupNode(final ModuleGroup moduleGroup) throws InstantiationException {
+    return createTreeNode(MvcProjectNode.class, getProject(), moduleGroup, getSettings());
+  }
+}",class,
+"  public MvcProjectNode(final Project project, final ViewSettings viewSettings, MvcToolWindowDescriptor descriptor) {
+    super(project, project, viewSettings);
+    myDescriptor = descriptor;
+  }",method,
+"  @Override
+  @NotNull
+  public Collection<? extends AbstractTreeNode> getChildren() {
+    List<Module> modules = MvcModuleStructureUtil.getAllModulesWithSupport(myProject, myDescriptor.getFramework());
+    modules = myDescriptor.getFramework().reorderModulesForMvcView(modules);
+    final ArrayList<AbstractTreeNode> nodes = new ArrayList<>();
+    for (Module module : modules) {
+      nodes.add(new MvcModuleNode(module, getSettings(), myDescriptor));
+    }
+    return nodes;
+  }",method,
+"    for (Module module : modules) {
+      nodes.add(new MvcModuleNode(module, getSettings(), myDescriptor));
+    }",method,
+"  @Override
+  public boolean isAlwaysExpand() {
+    return true;
+  }",method,
+"  @Override
+  protected AbstractTreeNode createModuleGroup(final Module module) throws InstantiationException {
+    return createTreeNode(MvcProjectNode.class, getProject(), module, getSettings());
+  }",method,
+"  @Override
+  protected AbstractTreeNode createModuleGroupNode(final ModuleGroup moduleGroup) throws InstantiationException {
+    return createTreeNode(MvcProjectNode.class, getProject(), moduleGroup, getSettings());
+  }",method,
+"public class TextHit {
+    private int charIndex;
+    private boolean leadingEdge;
+    public TextHit(int charIndex, boolean leadingEdge) {
+        this.charIndex = charIndex;
+        this.leadingEdge = leadingEdge;
+    }
+    public int getCharIndex() {
+        return charIndex;
+    }
+    public boolean isLeadingEdge() {
+        return leadingEdge;
+    }
+}",class,

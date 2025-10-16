@@ -1,0 +1,1117 @@
+code_snippet,type,score
+"  private static void addDeclarations(PsiDeclarationStatement statement,
+                                      Collection<String> declaredVariables) {
+    final PsiElement[] elements = statement.getDeclaredElements();
+    for (final PsiElement element : elements) {
+      if (element instanceof PsiVariable) {
+        final PsiVariable variable = (PsiVariable)element;
+        final String name = variable.getName();
+        declaredVariables.add(name);
+      }
+    }
+  }",method,
+"    for (final PsiElement element : elements) {
+      if (element instanceof PsiVariable) {
+        final PsiVariable variable = (PsiVariable)element;
+        final String name = variable.getName();
+        declaredVariables.add(name);
+      }
+    }",method,
+"      if (element instanceof PsiVariable) {
+        final PsiVariable variable = (PsiVariable)element;
+        final String name = variable.getName();
+        declaredVariables.add(name);
+      }",method,
+"    private DeclarationVisitor(Set<String> declarations) {
+      super();
+      this.declarations = new HashSet<>(declarations);
+    }",method,
+"    @Override
+    public void visitVariable(PsiVariable variable) {
+      super.visitVariable(variable);
+      final String name = variable.getName();
+      for (Object declaration : declarations) {
+        final String testName = (String)declaration;
+        if (testName.equals(name)) {
+          hasConflict = true;
+        }
+      }
+    }",method,
+"      for (Object declaration : declarations) {
+        final String testName = (String)declaration;
+        if (testName.equals(name)) {
+          hasConflict = true;
+        }
+      }",method,
+"    public boolean hasConflict() {
+      return hasConflict;
+    }",method,
+"public class StoreStats implements Streamable, ToXContentFragment {
+    private long sizeInBytes;
+    public StoreStats() {
+    }
+    public StoreStats(long sizeInBytes) {
+        this.sizeInBytes = sizeInBytes;
+    }
+    public void add(StoreStats stats) {
+        if (stats == null) {
+            return;
+        }
+        sizeInBytes += stats.sizeInBytes;
+    }
+    public long sizeInBytes() {
+        return sizeInBytes;
+    }
+    public long getSizeInBytes() {
+        return sizeInBytes;
+    }
+    public ByteSizeValue size() {
+        return new ByteSizeValue(sizeInBytes);
+    }
+    public ByteSizeValue getSize() {
+        return size();
+    }
+    @Override
+    public void readFrom(StreamInput in) throws IOException {
+        sizeInBytes = in.readVLong();
+        if (in.getVersion().before(Version.V_6_0_0_alpha1)) {
+            in.readVLong(); // throttleTimeInNanos
+        }
+    }
+    @Override
+    public void writeTo(StreamOutput out) throws IOException {
+        out.writeVLong(sizeInBytes);
+        if (out.getVersion().before(Version.V_6_0_0_alpha1)) {
+            out.writeVLong(0L); // throttleTimeInNanos
+        }
+    }
+    @Override
+    public XContentBuilder toXContent(XContentBuilder builder, Params params) throws IOException {
+        builder.startObject(Fields.STORE);
+        builder.byteSizeField(Fields.SIZE_IN_BYTES, Fields.SIZE, sizeInBytes);
+        builder.endObject();
+        return builder;
+    }
+    static final class Fields {
+        static final String STORE = ""store"";
+        static final String SIZE = ""size"";
+        static final String SIZE_IN_BYTES = ""size_in_bytes"";
+    }
+}",class,
+"    static final class Fields {
+        static final String STORE = ""store"";
+        static final String SIZE = ""size"";
+        static final String SIZE_IN_BYTES = ""size_in_bytes"";
+    }",class,
+"    public StoreStats() {
+    }",method,
+"    public StoreStats(long sizeInBytes) {
+        this.sizeInBytes = sizeInBytes;
+    }",method,
+"    public void add(StoreStats stats) {
+        if (stats == null) {
+            return;
+        }
+        sizeInBytes += stats.sizeInBytes;
+    }",method,
+"        if (stats == null) {
+            return;
+        }",method,
+"    public long sizeInBytes() {
+        return sizeInBytes;
+    }",method,
+"    public long getSizeInBytes() {
+        return sizeInBytes;
+    }",method,
+"    public ByteSizeValue size() {
+        return new ByteSizeValue(sizeInBytes);
+    }",method,
+"    public ByteSizeValue getSize() {
+        return size();
+    }",method,
+"    @Override
+    public void readFrom(StreamInput in) throws IOException {
+        sizeInBytes = in.readVLong();
+        if (in.getVersion().before(Version.V_6_0_0_alpha1)) {
+            in.readVLong(); // throttleTimeInNanos
+        }
+    }",method,
+"    @Override
+    public void writeTo(StreamOutput out) throws IOException {
+        out.writeVLong(sizeInBytes);
+        if (out.getVersion().before(Version.V_6_0_0_alpha1)) {
+            out.writeVLong(0L); // throttleTimeInNanos
+        }
+    }",method,
+"    @Override
+    public XContentBuilder toXContent(XContentBuilder builder, Params params) throws IOException {
+        builder.startObject(Fields.STORE);
+        builder.byteSizeField(Fields.SIZE_IN_BYTES, Fields.SIZE, sizeInBytes);
+        builder.endObject();
+        return builder;
+    }",method,
+"public final class Observables {
+  @NonNull
+  public static Observable compositeObservable(@NonNull final Observable... observables) {
+    return compositeObservable(0, observables);
+  }
+  @NonNull
+  static Observable compositeObservable(final int shortestUpdateWindowMillis,
+      @NonNull final Observable... observables) {
+    if (observables.length == 0) {
+      return new CompositeObservable(shortestUpdateWindowMillis);
+    }
+    if (observables.length == 1) {
+      final Observable singleObservable = observables[0];
+      if (singleObservable instanceof CompositeObservable
+          && ((CompositeObservable) singleObservable).shortestUpdateWindowMillis == 0) {
+        return new CompositeObservable(shortestUpdateWindowMillis,
+            ((CompositeObservable) singleObservable).observables);
+      } else {
+        return new CompositeObservable(shortestUpdateWindowMillis, singleObservable);
+      }
+    }
+    final List<Observable> flattenedDedupedObservables = new ArrayList<>();
+    for (final Observable observable : observables) {
+      if (observable instanceof CompositeObservable
+          && ((CompositeObservable) observable).shortestUpdateWindowMillis == 0) {
+        for (Observable subObservable : ((CompositeObservable) observable).observables) {
+          if (!flattenedDedupedObservables.contains(subObservable)) {
+            flattenedDedupedObservables.add(subObservable);
+          }
+        }
+      } else {
+        if (!flattenedDedupedObservables.contains(observable)) {
+          flattenedDedupedObservables.add(observable);
+        }
+      }
+    }
+    return new CompositeObservable(shortestUpdateWindowMillis,
+        flattenedDedupedObservables.toArray(new Observable[flattenedDedupedObservables.size()]));
+  }
+  @NonNull
+  public static Observable conditionalObservable(
+      @NonNull final Condition condition, @NonNull final Observable... observables) {
+    return new ConditionalObservable(compositeObservable(observables), condition);
+  }
+  @NonNull
+  public static Observable perMillisecondObservable(
+      final int shortestUpdateWindowMillis, @NonNull final Observable... observables) {
+    return compositeObservable(shortestUpdateWindowMillis, observables);
+  }
+  @NonNull
+  public static Observable perLoopObservable(@NonNull final Observable... observables) {
+    return compositeObservable(observables);
+  }
+  @NonNull
+  public static UpdateDispatcher updateDispatcher() {
+    return new AsyncUpdateDispatcher(null);
+  }
+  @NonNull
+  public static UpdateDispatcher updateDispatcher(
+      @NonNull final ActivationHandler activationHandler) {
+    return new AsyncUpdateDispatcher(activationHandler);
+  }
+  private static final class CompositeObservable extends BaseObservable implements Updatable {
+    @NonNull
+    private final Observable[] observables;
+    CompositeObservable(final int shortestUpdateWindowMillis,
+        @NonNull final Observable... observables) {
+      super(shortestUpdateWindowMillis);
+      this.observables = observables;
+    }
+    @Override
+    protected void observableActivated() {
+      for (final Observable observable : observables) {
+        observable.addUpdatable(this);
+      }
+    }
+    @Override
+    protected void observableDeactivated() {
+      for (final Observable observable : observables) {
+        observable.removeUpdatable(this);
+      }
+    }
+    @Override
+    public void update() {
+      dispatchUpdate();
+    }
+  }
+  private static final class ConditionalObservable extends BaseObservable implements Updatable {
+    @NonNull
+    private final Observable observable;
+    @NonNull
+    private final Condition condition;
+    ConditionalObservable(@NonNull final Observable observable,
+        @NonNull final Condition condition) {
+      this.observable = checkNotNull(observable);
+      this.condition = checkNotNull(condition);
+    }
+    @Override
+    protected void observableActivated() {
+      observable.addUpdatable(this);
+    }
+    @Override
+    protected void observableDeactivated() {
+      observable.removeUpdatable(this);
+    }
+    @Override
+    public void update() {
+      if (condition.applies()) {
+        dispatchUpdate();
+      }
+    }
+  }
+  private static final class AsyncUpdateDispatcher extends BaseObservable
+      implements UpdateDispatcher {
+    @Nullable
+    private final ActivationHandler activationHandler;
+    private AsyncUpdateDispatcher(@Nullable final ActivationHandler activationHandler) {
+      this.activationHandler = activationHandler;
+    }
+    @Override
+    protected void observableActivated() {
+      if (activationHandler != null) {
+        activationHandler.observableActivated(this);
+      }
+    }
+    @Override
+    protected void observableDeactivated() {
+      if (activationHandler != null) {
+        activationHandler.observableDeactivated(this);
+      }
+    }
+    @Override
+    public void update() {
+      dispatchUpdate();
+    }
+  }
+  private Observables() {}
+}",class,
+"  private static final class CompositeObservable extends BaseObservable implements Updatable {
+    @NonNull
+    private final Observable[] observables;
+    CompositeObservable(final int shortestUpdateWindowMillis,
+        @NonNull final Observable... observables) {
+      super(shortestUpdateWindowMillis);
+      this.observables = observables;
+    }
+    @Override
+    protected void observableActivated() {
+      for (final Observable observable : observables) {
+        observable.addUpdatable(this);
+      }
+    }
+    @Override
+    protected void observableDeactivated() {
+      for (final Observable observable : observables) {
+        observable.removeUpdatable(this);
+      }
+    }
+    @Override
+    public void update() {
+      dispatchUpdate();
+    }
+  }",class,
+"  private static final class ConditionalObservable extends BaseObservable implements Updatable {
+    @NonNull
+    private final Observable observable;
+    @NonNull
+    private final Condition condition;
+    ConditionalObservable(@NonNull final Observable observable,
+        @NonNull final Condition condition) {
+      this.observable = checkNotNull(observable);
+      this.condition = checkNotNull(condition);
+    }
+    @Override
+    protected void observableActivated() {
+      observable.addUpdatable(this);
+    }
+    @Override
+    protected void observableDeactivated() {
+      observable.removeUpdatable(this);
+    }
+    @Override
+    public void update() {
+      if (condition.applies()) {
+        dispatchUpdate();
+      }
+    }
+  }",class,
+"  private static final class AsyncUpdateDispatcher extends BaseObservable
+      implements UpdateDispatcher {
+    @Nullable
+    private final ActivationHandler activationHandler;
+    private AsyncUpdateDispatcher(@Nullable final ActivationHandler activationHandler) {
+      this.activationHandler = activationHandler;
+    }
+    @Override
+    protected void observableActivated() {
+      if (activationHandler != null) {
+        activationHandler.observableActivated(this);
+      }
+    }
+    @Override
+    protected void observableDeactivated() {
+      if (activationHandler != null) {
+        activationHandler.observableDeactivated(this);
+      }
+    }
+    @Override
+    public void update() {
+      dispatchUpdate();
+    }
+  }",class,
+"  @NonNull
+  public static Observable compositeObservable(@NonNull final Observable... observables) {
+    return compositeObservable(0, observables);
+  }",method,
+"  @NonNull
+  static Observable compositeObservable(final int shortestUpdateWindowMillis,
+      @NonNull final Observable... observables) {
+    if (observables.length == 0) {
+      return new CompositeObservable(shortestUpdateWindowMillis);
+    }
+    if (observables.length == 1) {
+      final Observable singleObservable = observables[0];
+      if (singleObservable instanceof CompositeObservable
+          && ((CompositeObservable) singleObservable).shortestUpdateWindowMillis == 0) {
+        return new CompositeObservable(shortestUpdateWindowMillis,
+            ((CompositeObservable) singleObservable).observables);
+      } else {
+        return new CompositeObservable(shortestUpdateWindowMillis, singleObservable);
+      }
+    }
+    final List<Observable> flattenedDedupedObservables = new ArrayList<>();
+    for (final Observable observable : observables) {
+      if (observable instanceof CompositeObservable
+          && ((CompositeObservable) observable).shortestUpdateWindowMillis == 0) {
+        for (Observable subObservable : ((CompositeObservable) observable).observables) {
+          if (!flattenedDedupedObservables.contains(subObservable)) {
+            flattenedDedupedObservables.add(subObservable);
+          }
+        }
+      } else {
+        if (!flattenedDedupedObservables.contains(observable)) {
+          flattenedDedupedObservables.add(observable);
+        }
+      }
+    }
+    return new CompositeObservable(shortestUpdateWindowMillis,
+        flattenedDedupedObservables.toArray(new Observable[flattenedDedupedObservables.size()]));
+  }",method,
+"    if (observables.length == 0) {
+      return new CompositeObservable(shortestUpdateWindowMillis);
+    }",method,
+"    if (observables.length == 1) {
+      final Observable singleObservable = observables[0];
+      if (singleObservable instanceof CompositeObservable
+          && ((CompositeObservable) singleObservable).shortestUpdateWindowMillis == 0) {
+        return new CompositeObservable(shortestUpdateWindowMillis,
+            ((CompositeObservable) singleObservable).observables);
+      } else {
+        return new CompositeObservable(shortestUpdateWindowMillis, singleObservable);
+      }
+    }",method,
+"    for (final Observable observable : observables) {
+      if (observable instanceof CompositeObservable
+          && ((CompositeObservable) observable).shortestUpdateWindowMillis == 0) {
+        for (Observable subObservable : ((CompositeObservable) observable).observables) {
+          if (!flattenedDedupedObservables.contains(subObservable)) {
+            flattenedDedupedObservables.add(subObservable);
+          }
+        }
+      } else {
+        if (!flattenedDedupedObservables.contains(observable)) {
+          flattenedDedupedObservables.add(observable);
+        }
+      }
+    }",method,
+"  @NonNull
+  public static Observable conditionalObservable(
+      @NonNull final Condition condition, @NonNull final Observable... observables) {
+    return new ConditionalObservable(compositeObservable(observables), condition);
+  }",method,
+"  @NonNull
+  public static Observable perMillisecondObservable(
+      final int shortestUpdateWindowMillis, @NonNull final Observable... observables) {
+    return compositeObservable(shortestUpdateWindowMillis, observables);
+  }",method,
+"  @NonNull
+  public static Observable perLoopObservable(@NonNull final Observable... observables) {
+    return compositeObservable(observables);
+  }",method,
+"  @NonNull
+  public static UpdateDispatcher updateDispatcher() {
+    return new AsyncUpdateDispatcher(null);
+  }",method,
+"  @NonNull
+  public static UpdateDispatcher updateDispatcher(
+      @NonNull final ActivationHandler activationHandler) {
+    return new AsyncUpdateDispatcher(activationHandler);
+  }",method,
+"    CompositeObservable(final int shortestUpdateWindowMillis,
+        @NonNull final Observable... observables) {
+      super(shortestUpdateWindowMillis);
+      this.observables = observables;
+    }",method,
+"    @Override
+    protected void observableActivated() {
+      for (final Observable observable : observables) {
+        observable.addUpdatable(this);
+      }
+    }",method,
+"      for (final Observable observable : observables) {
+        observable.addUpdatable(this);
+      }",method,
+"    @Override
+    protected void observableDeactivated() {
+      for (final Observable observable : observables) {
+        observable.removeUpdatable(this);
+      }
+    }",method,
+"      for (final Observable observable : observables) {
+        observable.removeUpdatable(this);
+      }",method,
+"    @Override
+    public void update() {
+      dispatchUpdate();
+    }",method,
+"    ConditionalObservable(@NonNull final Observable observable,
+        @NonNull final Condition condition) {
+      this.observable = checkNotNull(observable);
+      this.condition = checkNotNull(condition);
+    }",method,
+"    @Override
+    protected void observableActivated() {
+      observable.addUpdatable(this);
+    }",method,
+"    @Override
+    protected void observableDeactivated() {
+      observable.removeUpdatable(this);
+    }",method,
+"    @Override
+    public void update() {
+      if (condition.applies()) {
+        dispatchUpdate();
+      }
+    }",method,
+"    private AsyncUpdateDispatcher(@Nullable final ActivationHandler activationHandler) {
+      this.activationHandler = activationHandler;
+    }",method,
+"    @Override
+    protected void observableActivated() {
+      if (activationHandler != null) {
+        activationHandler.observableActivated(this);
+      }
+    }",method,
+"      if (activationHandler != null) {
+        activationHandler.observableActivated(this);
+      }",method,
+"    @Override
+    protected void observableDeactivated() {
+      if (activationHandler != null) {
+        activationHandler.observableDeactivated(this);
+      }
+    }",method,
+"      if (activationHandler != null) {
+        activationHandler.observableDeactivated(this);
+      }",method,
+"    @Override
+    public void update() {
+      dispatchUpdate();
+    }",method,
+  private Observables() {},method,
+"      @NonNull final Observable... observables) {
+    if (observables.length == 0) {
+      return new CompositeObservable(shortestUpdateWindowMillis);
+    }",method,
+"public class IsolatePlayerSession implements IsolateSession {
+	private IsolateController fSession;
+	private int fIsolateId;
+	public IsolatePlayerSession(int isolateId, IsolateController mainSession) {
+		fIsolateId = isolateId;
+		fSession = mainSession;
+	}
+	@Override
+	public void resume() throws NotSuspendedException, NotConnectedException,
+			NoResponseException {
+		fSession.resumeWorker(fIsolateId);
+	}
+	@Override
+	public void suspend() throws SuspendedException, NotConnectedException,
+			NoResponseException {
+		fSession.suspendWorker(fIsolateId);
+	}
+	@Override
+	public boolean isSuspended() throws NotConnectedException {
+		return fSession.isWorkerSuspended(fIsolateId);
+	}
+	@Override
+	public int suspendReason() throws NotConnectedException {
+		return fSession.suspendReasonWorker(fIsolateId);
+	}
+	@Override
+	public Frame[] getFrames() throws NotConnectedException {
+		return fSession.getFramesWorker(fIsolateId);
+	}
+	@Override
+	public void stepInto() throws NotSuspendedException, NoResponseException,
+			NotConnectedException {
+		fSession.stepIntoWorker(fIsolateId);
+	}
+	@Override
+	public void stepOut() throws NotSuspendedException, NoResponseException,
+			NotConnectedException {
+		fSession.stepOutWorker(fIsolateId);
+	}
+	@Override
+	public void stepOver() throws NotSuspendedException, NoResponseException,
+			NotConnectedException {
+		fSession.stepOverWorker(fIsolateId);
+	}
+	@Override
+	public void stepContinue() throws NotSuspendedException,
+			NoResponseException, NotConnectedException {
+		fSession.stepContinueWorker(fIsolateId);
+	}
+	@Override
+	public SwfInfo[] getSwfs() throws NoResponseException {
+		return fSession.getSwfsWorker(fIsolateId);
+	}
+	@Override
+	public Location setBreakpoint(int fileId, int lineNum)
+			throws NoResponseException, NotConnectedException {
+		return fSession.setBreakpointWorker(fileId, lineNum, fIsolateId);
+	}
+	@Override
+	public Watch[] getWatchList() throws NoResponseException,
+			NotConnectedException {
+		return fSession.getWatchListWorker(fIsolateId);
+	}
+	@Override
+	public Variable[] getVariableList() throws NotSuspendedException,
+			NoResponseException, NotConnectedException, VersionException {
+		return fSession.getVariableListWorker(fIsolateId);
+	}
+	@Override
+	public Value getValue(long valueId) throws NotSuspendedException,
+			NoResponseException, NotConnectedException {
+		return fSession.getValueWorker(valueId, fIsolateId);
+	}
+	@Override
+	public Value getGlobal(String name) throws NotSuspendedException,
+			NoResponseException, NotConnectedException {
+		return fSession.getGlobalWorker(name, fIsolateId);
+	}
+	@Override
+	public boolean evalIs(Value value, Value type) throws PlayerDebugException,
+			PlayerFaultException {
+		return fSession.evalIsWorker(value, type, fIsolateId);
+	}
+	@Override
+	public boolean evalIs(Value value, String type)
+			throws PlayerDebugException, PlayerFaultException {
+		return fSession.evalIsWorker(value, type, fIsolateId);
+	}
+	@Override
+	public boolean evalInstanceof(Value value, Value type)
+			throws PlayerDebugException, PlayerFaultException {
+		return fSession.evalInstanceofWorker(value, type, fIsolateId);
+	}
+	@Override
+	public boolean evalInstanceof(Value value, String type)
+			throws PlayerDebugException, PlayerFaultException {
+		return fSession.evalInstanceofWorker(value, type, fIsolateId);
+	}
+	@Override
+	public boolean evalIn(Value property, Value object)
+			throws PlayerDebugException, PlayerFaultException {
+		return fSession.evalInWorker(property, object, fIsolateId);
+	}
+	@Override
+	public Value evalAs(Value value, Value type) throws PlayerDebugException,
+			PlayerFaultException {
+		return fSession.evalAsWorker(value, type, fIsolateId);
+	}
+	@Override
+	public Value callFunction(Value thisObject, String functionName,
+			Value[] args) throws PlayerDebugException {
+		return fSession.callFunctionWorker(thisObject, functionName, args, fIsolateId);
+	}
+	@Override
+	public Value callConstructor(String classname, Value[] args)
+			throws PlayerDebugException {
+		return fSession.callConstructorWorker(classname, args, fIsolateId);
+	}
+	@Override
+	public boolean setExceptionBreakpoint(String exceptionClass) throws NoResponseException, NotConnectedException {
+		return fSession.setExceptionBreakpointWorker(exceptionClass, fIsolateId);
+	}
+	@Override
+	public boolean clearExceptionBreakpoint(String exceptionClass) throws NoResponseException, NotConnectedException {
+		return fSession.clearExceptionBreakpointWorker(exceptionClass, fIsolateId);
+	}
+	@Override
+	public void breakOnCaughtExceptions(boolean b) throws NotSupportedException, NoResponseException {
+		fSession.breakOnCaughtExceptions(b, fIsolateId);
+	}
+	@Override
+	public boolean supportsWatchpoints() {
+		return fSession.supportsWatchpoints(fIsolateId);
+	}
+	@Override
+	public boolean playerCanBreakOnAllExceptions() {
+		return fSession.playerCanBreakOnAllExceptions(fIsolateId);
+	}
+	@Override
+	public boolean supportsWideLineNumbers() {
+		return fSession.supportsWideLineNumbers(fIsolateId);
+	}
+	@Override
+	public boolean playerCanCallFunctions() {
+		return fSession.playerCanCallFunctions(fIsolateId);
+	}
+}",class,
+"	public IsolatePlayerSession(int isolateId, IsolateController mainSession) {
+		fIsolateId = isolateId;
+		fSession = mainSession;
+	}",method,
+"	@Override
+	public void resume() throws NotSuspendedException, NotConnectedException,
+			NoResponseException {
+		fSession.resumeWorker(fIsolateId);
+	}",method,
+"	@Override
+	public void suspend() throws SuspendedException, NotConnectedException,
+			NoResponseException {
+		fSession.suspendWorker(fIsolateId);
+	}",method,
+"	@Override
+	public boolean isSuspended() throws NotConnectedException {
+		return fSession.isWorkerSuspended(fIsolateId);
+	}",method,
+"	@Override
+	public int suspendReason() throws NotConnectedException {
+		return fSession.suspendReasonWorker(fIsolateId);
+	}",method,
+"	@Override
+	public Frame[] getFrames() throws NotConnectedException {
+		return fSession.getFramesWorker(fIsolateId);
+	}",method,
+"	@Override
+	public void stepInto() throws NotSuspendedException, NoResponseException,
+			NotConnectedException {
+		fSession.stepIntoWorker(fIsolateId);
+	}",method,
+"	@Override
+	public void stepOut() throws NotSuspendedException, NoResponseException,
+			NotConnectedException {
+		fSession.stepOutWorker(fIsolateId);
+	}",method,
+"	@Override
+	public void stepOver() throws NotSuspendedException, NoResponseException,
+			NotConnectedException {
+		fSession.stepOverWorker(fIsolateId);
+	}",method,
+"	@Override
+	public void stepContinue() throws NotSuspendedException,
+			NoResponseException, NotConnectedException {
+		fSession.stepContinueWorker(fIsolateId);
+	}",method,
+"	@Override
+	public SwfInfo[] getSwfs() throws NoResponseException {
+		return fSession.getSwfsWorker(fIsolateId);
+	}",method,
+"	@Override
+	public Location setBreakpoint(int fileId, int lineNum)
+			throws NoResponseException, NotConnectedException {
+		return fSession.setBreakpointWorker(fileId, lineNum, fIsolateId);
+	}",method,
+"	@Override
+	public Watch[] getWatchList() throws NoResponseException,
+			NotConnectedException {
+		return fSession.getWatchListWorker(fIsolateId);
+	}",method,
+"	@Override
+	public Variable[] getVariableList() throws NotSuspendedException,
+			NoResponseException, NotConnectedException, VersionException {
+		return fSession.getVariableListWorker(fIsolateId);
+	}",method,
+"	@Override
+	public Value getValue(long valueId) throws NotSuspendedException,
+			NoResponseException, NotConnectedException {
+		return fSession.getValueWorker(valueId, fIsolateId);
+	}",method,
+"	@Override
+	public Value getGlobal(String name) throws NotSuspendedException,
+			NoResponseException, NotConnectedException {
+		return fSession.getGlobalWorker(name, fIsolateId);
+	}",method,
+"	@Override
+	public boolean evalIs(Value value, Value type) throws PlayerDebugException,
+			PlayerFaultException {
+		return fSession.evalIsWorker(value, type, fIsolateId);
+	}",method,
+"	@Override
+	public boolean evalIs(Value value, String type)
+			throws PlayerDebugException, PlayerFaultException {
+		return fSession.evalIsWorker(value, type, fIsolateId);
+	}",method,
+"	@Override
+	public boolean evalInstanceof(Value value, Value type)
+			throws PlayerDebugException, PlayerFaultException {
+		return fSession.evalInstanceofWorker(value, type, fIsolateId);
+	}",method,
+"	@Override
+	public boolean evalInstanceof(Value value, String type)
+			throws PlayerDebugException, PlayerFaultException {
+		return fSession.evalInstanceofWorker(value, type, fIsolateId);
+	}",method,
+"	@Override
+	public boolean evalIn(Value property, Value object)
+			throws PlayerDebugException, PlayerFaultException {
+		return fSession.evalInWorker(property, object, fIsolateId);
+	}",method,
+"	@Override
+	public Value evalAs(Value value, Value type) throws PlayerDebugException,
+			PlayerFaultException {
+		return fSession.evalAsWorker(value, type, fIsolateId);
+	}",method,
+"	@Override
+	public Value callFunction(Value thisObject, String functionName,
+			Value[] args) throws PlayerDebugException {
+		return fSession.callFunctionWorker(thisObject, functionName, args, fIsolateId);
+	}",method,
+"	@Override
+	public Value callConstructor(String classname, Value[] args)
+			throws PlayerDebugException {
+		return fSession.callConstructorWorker(classname, args, fIsolateId);
+	}",method,
+"	@Override
+	public boolean setExceptionBreakpoint(String exceptionClass) throws NoResponseException, NotConnectedException {
+		return fSession.setExceptionBreakpointWorker(exceptionClass, fIsolateId);
+	}",method,
+"	@Override
+	public boolean clearExceptionBreakpoint(String exceptionClass) throws NoResponseException, NotConnectedException {
+		return fSession.clearExceptionBreakpointWorker(exceptionClass, fIsolateId);
+	}",method,
+"	@Override
+	public void breakOnCaughtExceptions(boolean b) throws NotSupportedException, NoResponseException {
+		fSession.breakOnCaughtExceptions(b, fIsolateId);
+	}",method,
+"	@Override
+	public boolean supportsWatchpoints() {
+		return fSession.supportsWatchpoints(fIsolateId);
+	}",method,
+"	@Override
+	public boolean playerCanBreakOnAllExceptions() {
+		return fSession.playerCanBreakOnAllExceptions(fIsolateId);
+	}",method,
+"	@Override
+	public boolean supportsWideLineNumbers() {
+		return fSession.supportsWideLineNumbers(fIsolateId);
+	}",method,
+"	@Override
+	public boolean playerCanCallFunctions() {
+		return fSession.playerCanCallFunctions(fIsolateId);
+	}",method,
+"public class CircleBuilderTests extends AbstractShapeBuilderTestCase<CircleBuilder> {
+    @Override
+    protected CircleBuilder createTestShapeBuilder() {
+        return createRandomShape();
+    }
+    @Override
+    protected CircleBuilder createMutation(CircleBuilder original) throws IOException {
+        return mutate(original);
+    }
+    static CircleBuilder mutate(CircleBuilder original) throws IOException {
+        CircleBuilder mutation = copyShape(original);
+        double radius = original.radius();
+        DistanceUnit unit = original.unit();
+        if (randomBoolean()) {
+            if (original.center().x > 0.0 || original.center().y > 0.0) {
+                mutation.center(new Coordinate(original.center().x/2, original.center().y/2));
+            } else {
+                // original center was 0.0, 0.0
+                mutation.center(randomDouble() + 0.1, randomDouble() + 0.1);
+            }
+        } else if (randomBoolean()) {
+            if (radius > 0) {
+                radius = radius/2;
+            } else {
+                radius = randomDouble() + 0.1;
+            }
+        } else {
+            DistanceUnit newRandom = unit;
+            while (newRandom == unit) {
+                newRandom = randomFrom(DistanceUnit.values());
+            };
+            unit = newRandom;
+        }
+        return mutation.radius(radius, unit);
+    }
+    static CircleBuilder createRandomShape() {
+        CircleBuilder circle = new CircleBuilder();
+        if (frequently()) {
+            double centerX = randomDoubleBetween(-180, 180, false);
+            double centerY = randomDoubleBetween(-90, 90, false);
+            circle.center(centerX, centerY);
+        }
+        if (randomBoolean()) {
+            circle.radius(randomDoubleBetween(0.1, 10.0, false), randomFrom(DistanceUnit.values()));
+        }
+        return circle;
+    }
+}",class,
+"    @Override
+    protected CircleBuilder createTestShapeBuilder() {
+        return createRandomShape();
+    }",method,
+"    @Override
+    protected CircleBuilder createMutation(CircleBuilder original) throws IOException {
+        return mutate(original);
+    }",method,
+"    static CircleBuilder mutate(CircleBuilder original) throws IOException {
+        CircleBuilder mutation = copyShape(original);
+        double radius = original.radius();
+        DistanceUnit unit = original.unit();
+        if (randomBoolean()) {
+            if (original.center().x > 0.0 || original.center().y > 0.0) {
+                mutation.center(new Coordinate(original.center().x/2, original.center().y/2));
+            } else {
+                // original center was 0.0, 0.0
+                mutation.center(randomDouble() + 0.1, randomDouble() + 0.1);
+            }
+        } else if (randomBoolean()) {
+            if (radius > 0) {
+                radius = radius/2;
+            } else {
+                radius = randomDouble() + 0.1;
+            }
+        } else {
+            DistanceUnit newRandom = unit;
+            while (newRandom == unit) {
+                newRandom = randomFrom(DistanceUnit.values());
+            };
+            unit = newRandom;
+        }
+        return mutation.radius(radius, unit);
+    }",method,
+"            if (radius > 0) {
+                radius = radius/2;
+            }",method,
+"            while (newRandom == unit) {
+                newRandom = randomFrom(DistanceUnit.values());
+            }",method,
+"    static CircleBuilder createRandomShape() {
+        CircleBuilder circle = new CircleBuilder();
+        if (frequently()) {
+            double centerX = randomDoubleBetween(-180, 180, false);
+            double centerY = randomDoubleBetween(-90, 90, false);
+            circle.center(centerX, centerY);
+        }
+        if (randomBoolean()) {
+            circle.radius(randomDoubleBetween(0.1, 10.0, false), randomFrom(DistanceUnit.values()));
+        }
+        return circle;
+    }",method,
+"public class ShowParameterInfoHandler implements CodeInsightActionHandler {
+  private final boolean myRequestFocus;
+  public ShowParameterInfoHandler() {
+    this(false);
+  }
+  public ShowParameterInfoHandler(boolean requestFocus) {
+    myRequestFocus = requestFocus;
+  }
+  @Override
+  public void invoke(@NotNull Project project, @NotNull Editor editor, @NotNull PsiFile file) {
+    invoke(project, editor, file, -1, null, myRequestFocus);
+  }
+  @Override
+  public boolean startInWriteAction() {
+    return false;
+  }
+  @Nullable
+  private static PsiElement findAnyElementAt(@NotNull PsiFile file, int offset) {
+    PsiElement element = file.findElementAt(offset);
+    if (element == null && offset > 0) element = file.findElementAt(offset - 1);
+    return element;
+  }
+  public static void invoke(final Project project, final Editor editor, PsiFile file, int lbraceOffset, PsiElement highlightedElement) {
+    invoke(project, editor, file, lbraceOffset, highlightedElement, false);
+  }
+  public static void invoke(final Project project, final Editor editor, PsiFile file, 
+                            int lbraceOffset, PsiElement highlightedElement, boolean requestFocus) {
+    invoke(project, editor, file, lbraceOffset, highlightedElement, requestFocus, false);
+  }
+  public static void invoke(final Project project, final Editor editor, PsiFile file, 
+                            int lbraceOffset, PsiElement highlightedElement, boolean requestFocus, boolean singleParameterHint) {
+    ApplicationManager.getApplication().assertIsDispatchThread();
+    PsiDocumentManager.getInstance(project).commitAllDocuments();
+    final int offset = editor.getCaretModel().getOffset();
+    final PsiElement psiElement = findAnyElementAt(file, offset);
+    if (psiElement == null) return;
+    final ShowParameterInfoContext context = new ShowParameterInfoContext(
+      editor,
+      project,
+      file,
+      offset,
+      lbraceOffset,
+      requestFocus,
+      singleParameterHint
+    );
+    context.setHighlightedElement(highlightedElement);
+    context.setRequestFocus(requestFocus);
+    final Language language = psiElement.getLanguage();
+    ParameterInfoHandler[] handlers = getHandlers(project, language, file.getViewProvider().getBaseLanguage());
+    if (handlers == null) handlers = new ParameterInfoHandler[0];
+    Lookup lookup = LookupManager.getInstance(project).getActiveLookup();
+    if (lookup != null) {
+      LookupElement item = lookup.getCurrentItem();
+      if (item != null) {
+        for(ParameterInfoHandler handler:handlers) {
+          if (handler.couldShowInLookup()) {
+            final Object[] items = handler.getParametersForLookup(item, context);
+            if (items != null && items.length > 0) {
+              showLookupEditorHint(items, editor, project, handler, requestFocus);
+            }
+            return;
+          }
+        }
+      }
+      return;
+    }
+    DumbService.getInstance(project).setAlternativeResolveEnabled(true);
+    try {
+      for (ParameterInfoHandler<Object, ?> handler : handlers) {
+        Object element = handler.findElementForParameterInfo(context);
+        if (element != null) {
+          handler.showParameterInfo(element, context);
+        }
+      }
+    }
+    finally {
+      DumbService.getInstance(project).setAlternativeResolveEnabled(false);
+    }
+  }
+  private static void showLookupEditorHint(Object[] descriptors,
+                                           final Editor editor,
+                                           final Project project,
+                                           ParameterInfoHandler handler,
+                                           boolean requestFocus) {
+    ParameterInfoComponent component = new ParameterInfoComponent(descriptors, editor, handler, requestFocus, false);
+    component.update(false);
+    final LightweightHint hint = new LightweightHint(component);
+    hint.setSelectingHint(true);
+    final HintManagerImpl hintManager = HintManagerImpl.getInstanceImpl();
+    final Pair<Point, Short> pos = ParameterInfoController.chooseBestHintPosition(project, editor, null, hint, true, HintManager.DEFAULT, true);
+    ApplicationManager.getApplication().invokeLater(() -> {
+      if (!editor.getComponent().isShowing()) return;
+      hintManager.showEditorHint(hint, editor, pos.getFirst(),
+                                 HintManager.HIDE_BY_ANY_KEY | HintManager.HIDE_BY_LOOKUP_ITEM_CHANGE | HintManager.UPDATE_BY_SCROLLING,
+                                 0, false, pos.getSecond());
+    });
+  }
+  @Nullable
+  public static ParameterInfoHandler[] getHandlers(Project project, final Language... languages) {
+    Set<ParameterInfoHandler> handlers = new THashSet<>();
+    for (final Language language : languages) {
+      handlers.addAll(DumbService.getInstance(project).filterByDumbAwareness(LanguageParameterInfo.INSTANCE.allForLanguage(language)));
+    }
+    if (handlers.isEmpty()) return null;
+    return handlers.toArray(new ParameterInfoHandler[handlers.size()]);
+  }
+}",class,
+"  public ShowParameterInfoHandler() {
+    this(false);
+  }",method,
+"  public ShowParameterInfoHandler(boolean requestFocus) {
+    myRequestFocus = requestFocus;
+  }",method,
+"  @Override
+  public void invoke(@NotNull Project project, @NotNull Editor editor, @NotNull PsiFile file) {
+    invoke(project, editor, file, -1, null, myRequestFocus);
+  }",method,
+"  @Override
+  public boolean startInWriteAction() {
+    return false;
+  }",method,
+"  @Nullable
+  private static PsiElement findAnyElementAt(@NotNull PsiFile file, int offset) {
+    PsiElement element = file.findElementAt(offset);
+    if (element == null && offset > 0) element = file.findElementAt(offset - 1);
+    return element;
+  }",method,
+"  public static void invoke(final Project project, final Editor editor, PsiFile file, int lbraceOffset, PsiElement highlightedElement) {
+    invoke(project, editor, file, lbraceOffset, highlightedElement, false);
+  }",method,
+"  public static void invoke(final Project project, final Editor editor, PsiFile file, 
+                            int lbraceOffset, PsiElement highlightedElement, boolean requestFocus) {
+    invoke(project, editor, file, lbraceOffset, highlightedElement, requestFocus, false);
+  }",method,
+"  public static void invoke(final Project project, final Editor editor, PsiFile file, 
+                            int lbraceOffset, PsiElement highlightedElement, boolean requestFocus, boolean singleParameterHint) {
+    ApplicationManager.getApplication().assertIsDispatchThread();
+    PsiDocumentManager.getInstance(project).commitAllDocuments();
+    final int offset = editor.getCaretModel().getOffset();
+    final PsiElement psiElement = findAnyElementAt(file, offset);
+    if (psiElement == null) return;
+    final ShowParameterInfoContext context = new ShowParameterInfoContext(
+      editor,
+      project,
+      file,
+      offset,
+      lbraceOffset,
+      requestFocus,
+      singleParameterHint
+    );
+    context.setHighlightedElement(highlightedElement);
+    context.setRequestFocus(requestFocus);
+    final Language language = psiElement.getLanguage();
+    ParameterInfoHandler[] handlers = getHandlers(project, language, file.getViewProvider().getBaseLanguage());
+    if (handlers == null) handlers = new ParameterInfoHandler[0];
+    Lookup lookup = LookupManager.getInstance(project).getActiveLookup();
+    if (lookup != null) {
+      LookupElement item = lookup.getCurrentItem();
+      if (item != null) {
+        for(ParameterInfoHandler handler:handlers) {
+          if (handler.couldShowInLookup()) {
+            final Object[] items = handler.getParametersForLookup(item, context);
+            if (items != null && items.length > 0) {
+              showLookupEditorHint(items, editor, project, handler, requestFocus);
+            }
+            return;
+          }
+        }
+      }
+      return;
+    }
+    DumbService.getInstance(project).setAlternativeResolveEnabled(true);
+    try {
+      for (ParameterInfoHandler<Object, ?> handler : handlers) {
+        Object element = handler.findElementForParameterInfo(context);
+        if (element != null) {
+          handler.showParameterInfo(element, context);
+        }
+      }
+    }
+    finally {
+      DumbService.getInstance(project).setAlternativeResolveEnabled(false);
+    }
+  }",method,
+"    if (lookup != null) {
+      LookupElement item = lookup.getCurrentItem();
+      if (item != null) {
+        for(ParameterInfoHandler handler:handlers) {
+          if (handler.couldShowInLookup()) {
+            final Object[] items = handler.getParametersForLookup(item, context);
+            if (items != null && items.length > 0) {
+              showLookupEditorHint(items, editor, project, handler, requestFocus);
+            }
+            return;
+          }
+        }
+      }
+      return;
+    }",method,

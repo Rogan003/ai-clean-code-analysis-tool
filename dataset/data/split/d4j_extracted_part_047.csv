@@ -1,0 +1,1754 @@
+code_snippet,type,score
+"public class ConfigurationPropertyStateTests {
+	@Rule
+	public ExpectedException thrown = ExpectedException.none();
+	@Test
+	public void searchWhenIterableIsNullShouldThrowException() throws Exception {
+		this.thrown.expect(IllegalArgumentException.class);
+		this.thrown.expectMessage(""Source must not be null"");
+		ConfigurationPropertyState.search(null, (e) -> true);
+	}
+	@Test
+	public void searchWhenPredicateIsNullShouldThrowException() throws Exception {
+		this.thrown.expect(IllegalArgumentException.class);
+		this.thrown.expectMessage(""Predicate must not be null"");
+		ConfigurationPropertyState.search(Collections.emptyList(), null);
+	}
+	@Test
+	public void searchWhenContainsItemShouldReturnPresent() {
+		List<String> source = Arrays.asList(""a"", ""b"", ""c"");
+		ConfigurationPropertyState result = ConfigurationPropertyState.search(source,
+				""b""::equals);
+		assertThat(result).isEqualTo(ConfigurationPropertyState.PRESENT);
+	}
+	@Test
+	public void searchWhenContainsNoItemShouldReturnAbsent() {
+		List<String> source = Arrays.asList(""a"", ""x"", ""c"");
+		ConfigurationPropertyState result = ConfigurationPropertyState.search(source,
+				""b""::equals);
+		assertThat(result).isEqualTo(ConfigurationPropertyState.ABSENT);
+	}
+}",class,
+"	@Test
+	public void searchWhenIterableIsNullShouldThrowException() throws Exception {
+		this.thrown.expect(IllegalArgumentException.class);
+		this.thrown.expectMessage(""Source must not be null"");
+		ConfigurationPropertyState.search(null, (e) -> true);
+	}",method,
+"	@Test
+	public void searchWhenPredicateIsNullShouldThrowException() throws Exception {
+		this.thrown.expect(IllegalArgumentException.class);
+		this.thrown.expectMessage(""Predicate must not be null"");
+		ConfigurationPropertyState.search(Collections.emptyList(), null);
+	}",method,
+"	@Test
+	public void searchWhenContainsItemShouldReturnPresent() {
+		List<String> source = Arrays.asList(""a"", ""b"", ""c"");
+		ConfigurationPropertyState result = ConfigurationPropertyState.search(source,
+				""b""::equals);
+		assertThat(result).isEqualTo(ConfigurationPropertyState.PRESENT);
+	}",method,
+"	@Test
+	public void searchWhenContainsNoItemShouldReturnAbsent() {
+		List<String> source = Arrays.asList(""a"", ""x"", ""c"");
+		ConfigurationPropertyState result = ConfigurationPropertyState.search(source,
+				""b""::equals);
+		assertThat(result).isEqualTo(ConfigurationPropertyState.ABSENT);
+	}",method,
+"public class ContextIndexSearcher extends IndexSearcher implements Releasable {
+    private final IndexSearcher in;
+    private AggregatedDfs aggregatedDfs;
+    private final Engine.Searcher engineSearcher;
+    // TODO revisit moving the profiler to inheritance or wrapping model in the future
+    private QueryProfiler profiler;
+    private Runnable checkCancelled;
+    public ContextIndexSearcher(Engine.Searcher searcher,
+            QueryCache queryCache, QueryCachingPolicy queryCachingPolicy) {
+        super(searcher.reader());
+        in = searcher.searcher();
+        engineSearcher = searcher;
+        setSimilarity(searcher.searcher().getSimilarity(true));
+        setQueryCache(queryCache);
+        setQueryCachingPolicy(queryCachingPolicy);
+    }
+    @Override
+    public void close() {
+    }
+    public void setProfiler(QueryProfiler profiler) {
+        this.profiler = profiler;
+    }
+    public void setCheckCancelled(Runnable checkCancelled) {
+        this.checkCancelled = checkCancelled;
+    }
+    public void setAggregatedDfs(AggregatedDfs aggregatedDfs) {
+        this.aggregatedDfs = aggregatedDfs;
+    }
+    @Override
+    public Query rewrite(Query original) throws IOException {
+        if (profiler != null) {
+            profiler.startRewriteTime();
+        }
+        try {
+            return in.rewrite(original);
+        } finally {
+            if (profiler != null) {
+                profiler.stopAndAddRewriteTime();
+            }
+        }
+    }
+    @Override
+    public Weight createNormalizedWeight(Query query, boolean needsScores) throws IOException {
+        // During tests we prefer to use the wrapped IndexSearcher, because then we use the AssertingIndexSearcher
+        // it is hacky, because if we perform a dfs search, we don't use the wrapped IndexSearcher...
+        if (aggregatedDfs != null && needsScores) {
+            // if scores are needed and we have dfs data then use it
+            return super.createNormalizedWeight(query, needsScores);
+        } else if (profiler != null) {
+            // we need to use the createWeight method to insert the wrappers
+            return super.createNormalizedWeight(query, needsScores);
+        } else {
+            return in.createNormalizedWeight(query, needsScores);
+        }
+    }
+    @Override
+    public Weight createWeight(Query query, boolean needsScores, float boost) throws IOException {
+        if (profiler != null) {
+            // createWeight() is called for each query in the tree, so we tell the queryProfiler
+            // each invocation so that it can build an internal representation of the query
+            // tree
+            QueryProfileBreakdown profile = profiler.getQueryBreakdown(query);
+            Timer timer = profile.getTimer(QueryTimingType.CREATE_WEIGHT);
+            timer.start();
+            final Weight weight;
+            try {
+                weight = super.createWeight(query, needsScores, boost);
+            } finally {
+                timer.stop();
+                profiler.pollLastElement();
+            }
+            return new ProfileWeight(query, weight, profile);
+        } else {
+            // needs to be 'super', not 'in' in order to use aggregated DFS
+            return super.createWeight(query, needsScores, boost);
+        }
+    }
+    @Override
+    protected void search(List<LeafReaderContext> leaves, Weight weight, Collector collector) throws IOException {
+        final Weight cancellableWeight;
+        if (checkCancelled != null) {
+            cancellableWeight = new Weight(weight.getQuery()) {
+                @Override
+                public void extractTerms(Set<Term> terms) {
+                    throw new UnsupportedOperationException();
+                }
+                @Override
+                public Explanation explain(LeafReaderContext context, int doc) throws IOException {
+                    throw new UnsupportedOperationException();
+                }
+                @Override
+                public Scorer scorer(LeafReaderContext context) throws IOException {
+                    throw new UnsupportedOperationException();
+                }
+                @Override
+                public BulkScorer bulkScorer(LeafReaderContext context) throws IOException {
+                    BulkScorer in = weight.bulkScorer(context);
+                    if (in != null) {
+                        return new CancellableBulkScorer(in, checkCancelled);
+                    } else {
+                        return null;
+                    }
+                }
+            };
+        } else {
+            cancellableWeight = weight;
+        }
+        super.search(leaves, cancellableWeight, collector);
+    }
+    @Override
+    public Explanation explain(Query query, int doc) throws IOException {
+        if (aggregatedDfs != null) {
+            // dfs data is needed to explain the score
+            return super.explain(createNormalizedWeight(query, true), doc);
+        }
+        return in.explain(query, doc);
+    }
+    @Override
+    public TermStatistics termStatistics(Term term, TermContext context) throws IOException {
+        if (aggregatedDfs == null) {
+            // we are either executing the dfs phase or the search_type doesn't include the dfs phase.
+            return super.termStatistics(term, context);
+        }
+        TermStatistics termStatistics = aggregatedDfs.termStatistics().get(term);
+        if (termStatistics == null) {
+            // we don't have stats for this - this might be a must_not clauses etc. that doesn't allow extract terms on the query
+            return super.termStatistics(term, context);
+        }
+        return termStatistics;
+    }
+    @Override
+    public CollectionStatistics collectionStatistics(String field) throws IOException {
+        if (aggregatedDfs == null) {
+            // we are either executing the dfs phase or the search_type doesn't include the dfs phase.
+            return super.collectionStatistics(field);
+        }
+        CollectionStatistics collectionStatistics = aggregatedDfs.fieldStatistics().get(field);
+        if (collectionStatistics == null) {
+            // we don't have stats for this - this might be a must_not clauses etc. that doesn't allow extract terms on the query
+            return super.collectionStatistics(field);
+        }
+        return collectionStatistics;
+    }
+    public DirectoryReader getDirectoryReader() {
+        return engineSearcher.getDirectoryReader();
+    }
+}",class,
+"    public ContextIndexSearcher(Engine.Searcher searcher,
+            QueryCache queryCache, QueryCachingPolicy queryCachingPolicy) {
+        super(searcher.reader());
+        in = searcher.searcher();
+        engineSearcher = searcher;
+        setSimilarity(searcher.searcher().getSimilarity(true));
+        setQueryCache(queryCache);
+        setQueryCachingPolicy(queryCachingPolicy);
+    }",method,
+"    @Override
+    public void close() {
+    }",method,
+"    public void setProfiler(QueryProfiler profiler) {
+        this.profiler = profiler;
+    }",method,
+"    public void setCheckCancelled(Runnable checkCancelled) {
+        this.checkCancelled = checkCancelled;
+    }",method,
+"    public void setAggregatedDfs(AggregatedDfs aggregatedDfs) {
+        this.aggregatedDfs = aggregatedDfs;
+    }",method,
+"    @Override
+    public Query rewrite(Query original) throws IOException {
+        if (profiler != null) {
+            profiler.startRewriteTime();
+        }
+        try {
+            return in.rewrite(original);
+        } finally {
+            if (profiler != null) {
+                profiler.stopAndAddRewriteTime();
+            }
+        }
+    }",method,
+"        if (profiler != null) {
+            profiler.startRewriteTime();
+        }",method,
+"            if (profiler != null) {
+                profiler.stopAndAddRewriteTime();
+            }",method,
+"    @Override
+    public Weight createNormalizedWeight(Query query, boolean needsScores) throws IOException {
+        // During tests we prefer to use the wrapped IndexSearcher, because then we use the AssertingIndexSearcher
+        // it is hacky, because if we perform a dfs search, we don't use the wrapped IndexSearcher...
+        if (aggregatedDfs != null && needsScores) {
+            // if scores are needed and we have dfs data then use it
+            return super.createNormalizedWeight(query, needsScores);
+        } else if (profiler != null) {
+            // we need to use the createWeight method to insert the wrappers
+            return super.createNormalizedWeight(query, needsScores);
+        } else {
+            return in.createNormalizedWeight(query, needsScores);
+        }
+    }",method,
+"        if (aggregatedDfs != null && needsScores) {
+            // if scores are needed and we have dfs data then use it
+            return super.createNormalizedWeight(query, needsScores);
+        }",method,
+"    @Override
+    public Weight createWeight(Query query, boolean needsScores, float boost) throws IOException {
+        if (profiler != null) {
+            // createWeight() is called for each query in the tree, so we tell the queryProfiler
+            // each invocation so that it can build an internal representation of the query
+            // tree
+            QueryProfileBreakdown profile = profiler.getQueryBreakdown(query);
+            Timer timer = profile.getTimer(QueryTimingType.CREATE_WEIGHT);
+            timer.start();
+            final Weight weight;
+            try {
+                weight = super.createWeight(query, needsScores, boost);
+            } finally {
+                timer.stop();
+                profiler.pollLastElement();
+            }
+            return new ProfileWeight(query, weight, profile);
+        } else {
+            // needs to be 'super', not 'in' in order to use aggregated DFS
+            return super.createWeight(query, needsScores, boost);
+        }
+    }",method,
+"        if (profiler != null) {
+            // createWeight() is called for each query in the tree, so we tell the queryProfiler
+            // each invocation so that it can build an internal representation of the query
+            // tree
+            QueryProfileBreakdown profile = profiler.getQueryBreakdown(query);
+            Timer timer = profile.getTimer(QueryTimingType.CREATE_WEIGHT);
+            timer.start();
+            final Weight weight;
+            try {
+                weight = super.createWeight(query, needsScores, boost);
+            } finally {
+                timer.stop();
+                profiler.pollLastElement();
+            }
+            return new ProfileWeight(query, weight, profile);
+        }",method,
+"    @Override
+    protected void search(List<LeafReaderContext> leaves, Weight weight, Collector collector) throws IOException {
+        final Weight cancellableWeight;
+        if (checkCancelled != null) {
+            cancellableWeight = new Weight(weight.getQuery()) {
+                @Override
+                public void extractTerms(Set<Term> terms) {
+                    throw new UnsupportedOperationException();
+                }
+                @Override
+                public Explanation explain(LeafReaderContext context, int doc) throws IOException {
+                    throw new UnsupportedOperationException();
+                }
+                @Override
+                public Scorer scorer(LeafReaderContext context) throws IOException {
+                    throw new UnsupportedOperationException();
+                }
+                @Override
+                public BulkScorer bulkScorer(LeafReaderContext context) throws IOException {
+                    BulkScorer in = weight.bulkScorer(context);
+                    if (in != null) {
+                        return new CancellableBulkScorer(in, checkCancelled);
+                    } else {
+                        return null;
+                    }
+                }
+            };
+        } else {
+            cancellableWeight = weight;
+        }
+        super.search(leaves, cancellableWeight, collector);
+    }",method,
+"        if (checkCancelled != null) {
+            cancellableWeight = new Weight(weight.getQuery()) {
+                @Override
+                public void extractTerms(Set<Term> terms) {
+                    throw new UnsupportedOperationException();
+                }
+                @Override
+                public Explanation explain(LeafReaderContext context, int doc) throws IOException {
+                    throw new UnsupportedOperationException();
+                }
+                @Override
+                public Scorer scorer(LeafReaderContext context) throws IOException {
+                    throw new UnsupportedOperationException();
+                }
+                @Override
+                public BulkScorer bulkScorer(LeafReaderContext context) throws IOException {
+                    BulkScorer in = weight.bulkScorer(context);
+                    if (in != null) {
+                        return new CancellableBulkScorer(in, checkCancelled);
+                    } else {
+                        return null;
+                    }
+                }
+            };
+        }",method,
+"                @Override
+                public void extractTerms(Set<Term> terms) {
+                    throw new UnsupportedOperationException();
+                }",method,
+"                @Override
+                public Explanation explain(LeafReaderContext context, int doc) throws IOException {
+                    throw new UnsupportedOperationException();
+                }",method,
+"                @Override
+                public Scorer scorer(LeafReaderContext context) throws IOException {
+                    throw new UnsupportedOperationException();
+                }",method,
+"                @Override
+                public BulkScorer bulkScorer(LeafReaderContext context) throws IOException {
+                    BulkScorer in = weight.bulkScorer(context);
+                    if (in != null) {
+                        return new CancellableBulkScorer(in, checkCancelled);
+                    } else {
+                        return null;
+                    }
+                }",method,
+"                    if (in != null) {
+                        return new CancellableBulkScorer(in, checkCancelled);
+                    }",method,
+"    @Override
+    public Explanation explain(Query query, int doc) throws IOException {
+        if (aggregatedDfs != null) {
+            // dfs data is needed to explain the score
+            return super.explain(createNormalizedWeight(query, true), doc);
+        }
+        return in.explain(query, doc);
+    }",method,
+"        if (aggregatedDfs != null) {
+            // dfs data is needed to explain the score
+            return super.explain(createNormalizedWeight(query, true), doc);
+        }",method,
+"    @Override
+    public TermStatistics termStatistics(Term term, TermContext context) throws IOException {
+        if (aggregatedDfs == null) {
+            // we are either executing the dfs phase or the search_type doesn't include the dfs phase.
+            return super.termStatistics(term, context);
+        }
+        TermStatistics termStatistics = aggregatedDfs.termStatistics().get(term);
+        if (termStatistics == null) {
+            // we don't have stats for this - this might be a must_not clauses etc. that doesn't allow extract terms on the query
+            return super.termStatistics(term, context);
+        }
+        return termStatistics;
+    }",method,
+"        if (aggregatedDfs == null) {
+            // we are either executing the dfs phase or the search_type doesn't include the dfs phase.
+            return super.termStatistics(term, context);
+        }",method,
+"        if (termStatistics == null) {
+            // we don't have stats for this - this might be a must_not clauses etc. that doesn't allow extract terms on the query
+            return super.termStatistics(term, context);
+        }",method,
+"    @Override
+    public CollectionStatistics collectionStatistics(String field) throws IOException {
+        if (aggregatedDfs == null) {
+            // we are either executing the dfs phase or the search_type doesn't include the dfs phase.
+            return super.collectionStatistics(field);
+        }
+        CollectionStatistics collectionStatistics = aggregatedDfs.fieldStatistics().get(field);
+        if (collectionStatistics == null) {
+            // we don't have stats for this - this might be a must_not clauses etc. that doesn't allow extract terms on the query
+            return super.collectionStatistics(field);
+        }
+        return collectionStatistics;
+    }",method,
+"        if (aggregatedDfs == null) {
+            // we are either executing the dfs phase or the search_type doesn't include the dfs phase.
+            return super.collectionStatistics(field);
+        }",method,
+"        if (collectionStatistics == null) {
+            // we don't have stats for this - this might be a must_not clauses etc. that doesn't allow extract terms on the query
+            return super.collectionStatistics(field);
+        }",method,
+"    public DirectoryReader getDirectoryReader() {
+        return engineSearcher.getDirectoryReader();
+    }",method,
+"// Utility class that provides stored Twitter feed data 
+public class FeedFragmentData {
+	private static final String TAG = ""FeedFragmentData"";
+	private static final int[] IDS = { R.raw.ladygaga, R.raw.rebeccablack,
+			R.raw.taylorswift };
+	private SparseArray<String> mFeeds = new SparseArray<String>();
+	private Context mContext;
+	public FeedFragmentData(Context context) {
+		mContext = context;
+		loadFeeds();
+	}
+	// Load all stored Twitter feeds into the mFeeds SparseArray. 
+	private void loadFeeds() {
+		for (int id : IDS) {
+			InputStream inputStream = mContext.getResources().openRawResource(
+					id);
+			BufferedReader reader = new BufferedReader(new InputStreamReader(
+					inputStream));
+			StringBuffer buffer = new StringBuffer("""");
+			// Read raw data from resource file
+			try {
+				String line = """";
+				while ((line = reader.readLine()) != null) {
+					buffer.append(line);
+				}
+			} catch (IOException e) {
+				Log.i(TAG, ""IOException"");
+			}
+			// Convert raw data into a String
+			JSONArray feed = null;
+			try {
+				feed = new JSONArray(buffer.toString());
+			} catch (JSONException e) {
+				Log.i(TAG, ""JSONException"");
+			}
+			mFeeds.put(id, procFeed(feed));
+		}
+	}
+// Convert JSON formatted data to a String
+	private String procFeed(JSONArray feed) {
+		String name = """";
+		String tweet = """";
+		// string buffer for twitter feeds
+		StringBuffer textFeed = new StringBuffer("""");
+		for (int j = 0; j < feed.length(); j++) {
+			try {
+				tweet = feed.getJSONObject(j).getString(""text"");
+				JSONObject user = (JSONObject) feed.getJSONObject(j)
+						.get(""user"");
+				name = user.getString(""name"");
+			} catch (JSONException e) {
+				Log.i(TAG, ""JSONException while processing feed"");
+			}
+			textFeed.append(name + "" - "" + tweet + ""\n\n"");
+		}
+		return textFeed.toString();
+	}
+// Return the Twitter feed data for the specified position as a single String
+ String getFeed (int position) {
+		return mFeeds.get(IDS[position]);
+	}
+}",class,
+"	public FeedFragmentData(Context context) {
+		mContext = context;
+		loadFeeds();
+	}",method,
+"	private void loadFeeds() {
+		for (int id : IDS) {
+			InputStream inputStream = mContext.getResources().openRawResource(
+					id);
+			BufferedReader reader = new BufferedReader(new InputStreamReader(
+					inputStream));
+			StringBuffer buffer = new StringBuffer("""");
+			// Read raw data from resource file
+			try {
+				String line = """";
+				while ((line = reader.readLine()) != null) {
+					buffer.append(line);
+				}
+			} catch (IOException e) {
+				Log.i(TAG, ""IOException"");
+			}
+			// Convert raw data into a String
+			JSONArray feed = null;
+			try {
+				feed = new JSONArray(buffer.toString());
+			} catch (JSONException e) {
+				Log.i(TAG, ""JSONException"");
+			}
+			mFeeds.put(id, procFeed(feed));
+		}
+	}",method,
+"		for (int id : IDS) {
+			InputStream inputStream = mContext.getResources().openRawResource(
+					id);
+			BufferedReader reader = new BufferedReader(new InputStreamReader(
+					inputStream));
+			StringBuffer buffer = new StringBuffer("""");
+			// Read raw data from resource file
+			try {
+				String line = """";
+				while ((line = reader.readLine()) != null) {
+					buffer.append(line);
+				}
+			} catch (IOException e) {
+				Log.i(TAG, ""IOException"");
+			}
+			// Convert raw data into a String
+			JSONArray feed = null;
+			try {
+				feed = new JSONArray(buffer.toString());
+			} catch (JSONException e) {
+				Log.i(TAG, ""JSONException"");
+			}
+			mFeeds.put(id, procFeed(feed));
+		}",method,
+"	private String procFeed(JSONArray feed) {
+		String name = """";
+		String tweet = """";
+		// string buffer for twitter feeds
+		StringBuffer textFeed = new StringBuffer("""");
+		for (int j = 0; j < feed.length(); j++) {
+			try {
+				tweet = feed.getJSONObject(j).getString(""text"");
+				JSONObject user = (JSONObject) feed.getJSONObject(j)
+						.get(""user"");
+				name = user.getString(""name"");
+			} catch (JSONException e) {
+				Log.i(TAG, ""JSONException while processing feed"");
+			}
+			textFeed.append(name + "" - "" + tweet + ""\n\n"");
+		}
+		return textFeed.toString();
+	}",method,
+" String getFeed (int position) {
+		return mFeeds.get(IDS[position]);
+	}",method,
+"        ""public class Test { ""
+        + ""  void foo(char... chars) {}""
+        + ""  void test() { foo(null); }}"";
+    String translation = translateSourceFile(source, ""Test"", ""Test.m"");
+    assertTranslation(translation, ""[self fooWithCharArray:nil];"");
+    assertNotInTranslation(translation,
+        ""[self fooWithCharArray:[IOSCharArray arrayWithChars:(unichar[]){ nil } count:1]];"");
+  }
+  public void testVarargsOfVariousNodeTypes() throws IOException {
+    String translation = translateSourceFile(
+        ""interface Foo { void foo(int i); }""
+        + ""enum E { VALUE1(1); E(int... i) {} }""
+        + ""class A { A(int... i) {} A() { this(2); } void foo(int... i) {} }""
+        + ""class Test extends A { Test() { super(3); } void foo(int... i) {}""
+        + ""void test() { A a = new A(4); foo(5); super.foo(6); Foo f = this::foo; } }"",
+        ""Test"", ""Test.m"");
+    // EnumConstantDeclaration
+    assertTranslation(translation,
+        ""E_initWithIntArray_withNSString_withInt_(e, [IOSIntArray arrayWithInts:""
+        + ""(jint[]){ 1 } count:1], @\""VALUE1\"", 0);"");
+    // ConstructorInvocation
+    assertTranslatedLines(translation,
+        ""void A_init(A *self) {"",
+        ""  A_initWithIntArray_(self, [IOSIntArray arrayWithInts:(jint[]){ 2 } count:1]);"",
+        ""}"");
+    // SuperConstructorInvocation
+    assertTranslatedLines(translation,
+        ""void Test_init(Test *self) {"",
+        ""  A_initWithIntArray_(self, [IOSIntArray arrayWithInts:(jint[]){ 3 } count:1]);"",
+        ""}"");
+    assertTranslatedLines(translation,
+        // ClassInstanceCreation
+        ""A *a = create_A_initWithIntArray_([IOSIntArray arrayWithInts:(jint[]){ 4 } count:1]);"",
+        // MethodInvocation
+        ""[self fooWithIntArray:[IOSIntArray arrayWithInts:(jint[]){ 5 } count:1]];"",
+        // SuperMethodInvocation
+        ""A_fooWithIntArray_(self, [IOSIntArray arrayWithInts:(jint[]){ 6 } count:1]);"");
+    // MethodReference
+    assertTranslatedLines(translation,
+        ""- (void)fooWithInt:(jint)a {"",
+        ""  [target$_ fooWithIntArray:[IOSIntArray arrayWithInts:(jint[]){ a } count:1]];"",
+        ""}"");
+  }",class,
+"  public void testNilVarargs() throws IOException {
+    String source =
+        ""public class Test { ""
+        + ""  void foo(char... chars) {}""
+        + ""  void test() { foo(null); }}"";
+    String translation = translateSourceFile(source, ""Test"", ""Test.m"");
+    assertTranslation(translation, ""[self fooWithCharArray:nil];"");
+    assertNotInTranslation(translation,
+        ""[self fooWithCharArray:[IOSCharArray arrayWithChars:(unichar[]){ nil } count:1]];"");
+  }",method,
+"    assertNotInTranslation(translation,
+        ""[self fooWithCharArray:[IOSCharArray arrayWithChars:(unichar[]){ nil } count:1]];"");
+  }
+  public void testVarargsOfVariousNodeTypes() throws IOException {
+    String translation = translateSourceFile(
+        ""interface Foo { void foo(int i); }""
+        + ""enum E { VALUE1(1); E(int... i) {} }""
+        + ""class A { A(int... i) {} A() { this(2); } void foo(int... i) {} }""
+        + ""class Test extends A { Test() { super(3); } void foo(int... i) {}""
+        + ""void test() { A a = new A(4); foo(5); super.foo(6); Foo f = this::foo; } }"",
+        ""Test"", ""Test.m"");
+    // EnumConstantDeclaration
+    assertTranslation(translation,
+        ""E_initWithIntArray_withNSString_withInt_(e, [IOSIntArray arrayWithInts:""
+        + ""(jint[]){ 1 } count:1], @\""VALUE1\"", 0);"");
+    // ConstructorInvocation
+    assertTranslatedLines(translation,
+        ""void A_init(A *self) {"",
+        ""  A_initWithIntArray_(self, [IOSIntArray arrayWithInts:(jint[]){ 2 } count:1]);"",
+        ""}"");
+    // SuperConstructorInvocation
+    assertTranslatedLines(translation,
+        ""void Test_init(Test *self) {"",
+        ""  A_initWithIntArray_(self, [IOSIntArray arrayWithInts:(jint[]){ 3 } count:1]);"",
+        ""}"");
+    assertTranslatedLines(translation,
+        // ClassInstanceCreation
+        ""A *a = create_A_initWithIntArray_([IOSIntArray arrayWithInts:(jint[]){ 4 } count:1]);"",
+        // MethodInvocation
+        ""[self fooWithIntArray:[IOSIntArray arrayWithInts:(jint[]){ 5 } count:1]];"",
+        // SuperMethodInvocation
+        ""A_fooWithIntArray_(self, [IOSIntArray arrayWithInts:(jint[]){ 6 } count:1]);"");
+    // MethodReference
+    assertTranslatedLines(translation,
+        ""- (void)fooWithInt:(jint)a {"",
+        ""  [target$_ fooWithIntArray:[IOSIntArray arrayWithInts:(jint[]){ a } count:1]];"",
+        ""}"");
+  }",method,
+"  public void testVarargsOfVariousNodeTypes() throws IOException {
+    String translation = translateSourceFile(
+        ""interface Foo { void foo(int i); }""
+        + ""enum E { VALUE1(1); E(int... i) {} }""
+        + ""class A { A(int... i) {} A() { this(2); } void foo(int... i) {} }""
+        + ""class Test extends A { Test() { super(3); } void foo(int... i) {}""
+        + ""void test() { A a = new A(4); foo(5); super.foo(6); Foo f = this::foo; } }"",
+        ""Test"", ""Test.m"");
+    // EnumConstantDeclaration
+    assertTranslation(translation,
+        ""E_initWithIntArray_withNSString_withInt_(e, [IOSIntArray arrayWithInts:""
+        + ""(jint[]){ 1 } count:1], @\""VALUE1\"", 0);"");
+    // ConstructorInvocation
+    assertTranslatedLines(translation,
+        ""void A_init(A *self) {"",
+        ""  A_initWithIntArray_(self, [IOSIntArray arrayWithInts:(jint[]){ 2 } count:1]);"",
+        ""}"");
+    // SuperConstructorInvocation
+    assertTranslatedLines(translation,
+        ""void Test_init(Test *self) {"",
+        ""  A_initWithIntArray_(self, [IOSIntArray arrayWithInts:(jint[]){ 3 } count:1]);"",
+        ""}"");
+    assertTranslatedLines(translation,
+        // ClassInstanceCreation
+        ""A *a = create_A_initWithIntArray_([IOSIntArray arrayWithInts:(jint[]){ 4 } count:1]);"",
+        // MethodInvocation
+        ""[self fooWithIntArray:[IOSIntArray arrayWithInts:(jint[]){ 5 } count:1]];"",
+        // SuperMethodInvocation
+        ""A_fooWithIntArray_(self, [IOSIntArray arrayWithInts:(jint[]){ 6 } count:1]);"");
+    // MethodReference
+    assertTranslatedLines(translation,
+        ""- (void)fooWithInt:(jint)a {"",
+        ""  [target$_ fooWithIntArray:[IOSIntArray arrayWithInts:(jint[]){ a } count:1]];"",
+        ""}"");
+  }",method,
+"public class KerasZeroPadding2DTest {
+    private final String LAYER_NAME = ""zero_padding_2D_layer"";
+    private final int[] ZERO_PADDING = new int[] {2, 3};
+    private Integer keras1 = 1;
+    private Integer keras2 = 2;
+    private Keras1LayerConfiguration conf1 = new Keras1LayerConfiguration();
+    private Keras2LayerConfiguration conf2 = new Keras2LayerConfiguration();
+    @Test
+    public void testZeroPadding2DLayer() throws Exception {
+        buildZeroPadding2DLayer(conf1, keras1);
+        buildZeroPadding2DLayer(conf2, keras2);
+        buildZeroPaddingSingleDim2DLayer(conf1, keras1);
+        buildZeroPaddingSingleDim2DLayer(conf2, keras2);
+    }
+    void buildZeroPadding2DLayer(KerasLayerConfiguration conf, Integer kerasVersion) throws Exception {
+        Map<String, Object> layerConfig = new HashMap<>();
+        layerConfig.put(conf.getLAYER_FIELD_CLASS_NAME(), conf.getLAYER_CLASS_NAME_MAX_POOLING_1D());
+        Map<String, Object> config = new HashMap<>();
+        config.put(conf.getLAYER_FIELD_NAME(), LAYER_NAME);
+        ArrayList padding = new ArrayList<Integer>() {{
+            for (int i : ZERO_PADDING) add(i);
+        }};
+        config.put(conf.getLAYER_FIELD_ZERO_PADDING(), padding);
+        layerConfig.put(conf.getLAYER_FIELD_CONFIG(), config);
+        layerConfig.put(conf.getLAYER_FIELD_KERAS_VERSION(), kerasVersion);
+        ZeroPaddingLayer layer = new KerasZeroPadding2D(layerConfig).getZeroPadding2DLayer();
+        assertEquals(LAYER_NAME, layer.getLayerName());
+        assertEquals(ZERO_PADDING[0], layer.getPadding()[0]);
+        assertEquals(ZERO_PADDING[0], layer.getPadding()[1]);
+        assertEquals(ZERO_PADDING[1], layer.getPadding()[2]);
+        assertEquals(ZERO_PADDING[1], layer.getPadding()[3]);
+    }
+    void buildZeroPaddingSingleDim2DLayer(KerasLayerConfiguration conf, Integer kerasVersion) throws Exception {
+        Map<String, Object> layerConfig = new HashMap<>();
+        layerConfig.put(conf.getLAYER_FIELD_CLASS_NAME(), conf.getLAYER_CLASS_NAME_MAX_POOLING_1D());
+        Map<String, Object> config = new HashMap<>();
+        config.put(conf.getLAYER_FIELD_NAME(), LAYER_NAME);
+        config.put(conf.getLAYER_FIELD_ZERO_PADDING(), ZERO_PADDING[0]);
+        layerConfig.put(conf.getLAYER_FIELD_CONFIG(), config);
+        layerConfig.put(conf.getLAYER_FIELD_KERAS_VERSION(), kerasVersion);
+        ZeroPaddingLayer layer = new KerasZeroPadding2D(layerConfig).getZeroPadding2DLayer();
+        assertEquals(LAYER_NAME, layer.getLayerName());
+        assertEquals(ZERO_PADDING[0], layer.getPadding()[0]);
+        assertEquals(ZERO_PADDING[0], layer.getPadding()[1]);
+    }
+}",class,
+"    @Test
+    public void testZeroPadding2DLayer() throws Exception {
+        buildZeroPadding2DLayer(conf1, keras1);
+        buildZeroPadding2DLayer(conf2, keras2);
+        buildZeroPaddingSingleDim2DLayer(conf1, keras1);
+        buildZeroPaddingSingleDim2DLayer(conf2, keras2);
+    }",method,
+"    void buildZeroPadding2DLayer(KerasLayerConfiguration conf, Integer kerasVersion) throws Exception {
+        Map<String, Object> layerConfig = new HashMap<>();
+        layerConfig.put(conf.getLAYER_FIELD_CLASS_NAME(), conf.getLAYER_CLASS_NAME_MAX_POOLING_1D());
+        Map<String, Object> config = new HashMap<>();
+        config.put(conf.getLAYER_FIELD_NAME(), LAYER_NAME);
+        ArrayList padding = new ArrayList<Integer>() {{
+            for (int i : ZERO_PADDING) add(i);
+        }};
+        config.put(conf.getLAYER_FIELD_ZERO_PADDING(), padding);
+        layerConfig.put(conf.getLAYER_FIELD_CONFIG(), config);
+        layerConfig.put(conf.getLAYER_FIELD_KERAS_VERSION(), kerasVersion);
+        ZeroPaddingLayer layer = new KerasZeroPadding2D(layerConfig).getZeroPadding2DLayer();
+        assertEquals(LAYER_NAME, layer.getLayerName());
+        assertEquals(ZERO_PADDING[0], layer.getPadding()[0]);
+        assertEquals(ZERO_PADDING[0], layer.getPadding()[1]);
+        assertEquals(ZERO_PADDING[1], layer.getPadding()[2]);
+        assertEquals(ZERO_PADDING[1], layer.getPadding()[3]);
+    }",method,
+"    void buildZeroPaddingSingleDim2DLayer(KerasLayerConfiguration conf, Integer kerasVersion) throws Exception {
+        Map<String, Object> layerConfig = new HashMap<>();
+        layerConfig.put(conf.getLAYER_FIELD_CLASS_NAME(), conf.getLAYER_CLASS_NAME_MAX_POOLING_1D());
+        Map<String, Object> config = new HashMap<>();
+        config.put(conf.getLAYER_FIELD_NAME(), LAYER_NAME);
+        config.put(conf.getLAYER_FIELD_ZERO_PADDING(), ZERO_PADDING[0]);
+        layerConfig.put(conf.getLAYER_FIELD_CONFIG(), config);
+        layerConfig.put(conf.getLAYER_FIELD_KERAS_VERSION(), kerasVersion);
+        ZeroPaddingLayer layer = new KerasZeroPadding2D(layerConfig).getZeroPadding2DLayer();
+        assertEquals(LAYER_NAME, layer.getLayerName());
+        assertEquals(ZERO_PADDING[0], layer.getPadding()[0]);
+        assertEquals(ZERO_PADDING[0], layer.getPadding()[1]);
+    }",method,
+"public abstract class JSONHandler {
+    protected Context mContext;
+    public JSONHandler(Context context) {
+        mContext = context;
+    }
+    public abstract void makeContentProviderOperations(ArrayList<ContentProviderOperation> list);
+    public abstract void process(@NonNull Gson gson, @NonNull JsonElement element);
+    public static String parseResource(Context context, int resource) throws IOException {
+        InputStream stream = null;
+        String data;
+        try {
+            stream = context.getResources().openRawResource(resource);
+            data = parseStream(stream);
+        } finally {
+            if (stream != null) {
+                try {
+                    stream.close();
+                } catch (IOException e) {
+                    // Ignore exceptions during stream close, other exceptions thrown earlier will
+                    // be handled by the calling methods
+                }
+            }
+        }
+        return data;
+    }
+    public static String parseFile(String filePath) throws IOException {
+        InputStream stream = null;
+        String data;
+        try {
+            stream = new FileInputStream(filePath);
+            data = parseStream(stream);
+        } finally {
+            if (stream != null) {
+                try {
+                    stream.close();
+                } catch (IOException e) {
+                    // Ignore exceptions during stream close, other exceptions thrown earlier will
+                    // be handled by the calling methods
+                }
+            }
+        }
+        return data;
+    }
+    private static String parseStream(final InputStream stream) throws IOException {
+        Reader reader = null;
+        Writer writer = new StringWriter();
+        char[] buffer = new char[1024];
+        // IO errors are passed up to the calling method and must be caught there.
+        try {
+            reader = new BufferedReader(new InputStreamReader(stream, IOUtils.CHARSET_UTF8));
+            int n;
+            while ((n = reader.read(buffer)) != -1) {
+                writer.write(buffer, 0, n);
+            }
+        } finally {
+            if (reader != null) {
+                try {
+                    reader.close();
+                } catch (IOException e) {
+                    // Ignore exceptions during stream close, other exceptions thrown earlier will
+                    // be handled by the calling methods
+                }
+            }
+        }
+        return writer.toString();
+    }
+}",class,
+"    public JSONHandler(Context context) {
+        mContext = context;
+    }",method,
+"    public static String parseResource(Context context, int resource) throws IOException {
+        InputStream stream = null;
+        String data;
+        try {
+            stream = context.getResources().openRawResource(resource);
+            data = parseStream(stream);
+        } finally {
+            if (stream != null) {
+                try {
+                    stream.close();
+                } catch (IOException e) {
+                    // Ignore exceptions during stream close, other exceptions thrown earlier will
+                    // be handled by the calling methods
+                }
+            }
+        }
+        return data;
+    }",method,
+"            if (stream != null) {
+                try {
+                    stream.close();
+                } catch (IOException e) {
+                    // Ignore exceptions during stream close, other exceptions thrown earlier will
+                    // be handled by the calling methods
+                }
+            }",method,
+"    public static String parseFile(String filePath) throws IOException {
+        InputStream stream = null;
+        String data;
+        try {
+            stream = new FileInputStream(filePath);
+            data = parseStream(stream);
+        } finally {
+            if (stream != null) {
+                try {
+                    stream.close();
+                } catch (IOException e) {
+                    // Ignore exceptions during stream close, other exceptions thrown earlier will
+                    // be handled by the calling methods
+                }
+            }
+        }
+        return data;
+    }",method,
+"            if (stream != null) {
+                try {
+                    stream.close();
+                } catch (IOException e) {
+                    // Ignore exceptions during stream close, other exceptions thrown earlier will
+                    // be handled by the calling methods
+                }
+            }",method,
+"    private static String parseStream(final InputStream stream) throws IOException {
+        Reader reader = null;
+        Writer writer = new StringWriter();
+        char[] buffer = new char[1024];
+        // IO errors are passed up to the calling method and must be caught there.
+        try {
+            reader = new BufferedReader(new InputStreamReader(stream, IOUtils.CHARSET_UTF8));
+            int n;
+            while ((n = reader.read(buffer)) != -1) {
+                writer.write(buffer, 0, n);
+            }
+        } finally {
+            if (reader != null) {
+                try {
+                    reader.close();
+                } catch (IOException e) {
+                    // Ignore exceptions during stream close, other exceptions thrown earlier will
+                    // be handled by the calling methods
+                }
+            }
+        }
+        return writer.toString();
+    }",method,
+"            if (reader != null) {
+                try {
+                    reader.close();
+                } catch (IOException e) {
+                    // Ignore exceptions during stream close, other exceptions thrown earlier will
+                    // be handled by the calling methods
+                }
+            }",method,
+"public class ChooseActionsDialog extends DialogWrapper {
+  private final ActionsTree myActionsTree;
+  private FilterComponent myFilterComponent;
+  private TreeExpansionMonitor myTreeExpansionMonitor;
+  private final ShortcutFilteringPanel myFilteringPanel = new ShortcutFilteringPanel();
+  private Keymap myKeymap;
+  private QuickList[] myQuicklists;
+  public ChooseActionsDialog(Component parent, Keymap keymap, QuickList[] quicklists) {
+    super(parent, true);
+    myKeymap = keymap;
+    myQuicklists = quicklists;
+    myActionsTree = new ActionsTree();
+    myActionsTree.reset(keymap, quicklists);
+    myActionsTree.getTree().getSelectionModel().setSelectionMode(TreeSelectionModel.DISCONTIGUOUS_TREE_SELECTION);
+    new DoubleClickListener() {
+      @Override
+      protected boolean onDoubleClick(MouseEvent e) {
+        doOKAction();
+        return true;
+      }
+    }.installOn(myActionsTree.getTree());
+    myTreeExpansionMonitor = TreeExpansionMonitor.install(myActionsTree.getTree());
+    myFilteringPanel.addPropertyChangeListener(""shortcut"", new PropertyChangeListener() {
+      @Override
+      public void propertyChange(PropertyChangeEvent event) {
+        filterTreeByShortcut(myFilteringPanel.getShortcut());
+      }
+    });
+    setTitle(""Add Actions to Quick List"");
+    init();
+  }
+  @Override
+  protected JComponent createNorthPanel() {
+    return createToolbarPanel();
+  }
+  @Nullable
+  @Override
+  public JComponent getPreferredFocusedComponent() {
+    return myFilterComponent.getTextEditor();
+  }
+  @Override
+  protected JComponent createCenterPanel() {
+    return JBUI.Panels.simplePanel(myActionsTree.getComponent())
+      .withPreferredSize(400, 500);
+  }
+  public String[] getTreeSelectedActionIds() {
+    TreePath[] paths = myActionsTree.getTree().getSelectionPaths();
+    if (paths == null) return ArrayUtil.EMPTY_STRING_ARRAY;
+    ArrayList<String> actions = new ArrayList<>();
+    for (TreePath path : paths) {
+      Object node = path.getLastPathComponent();
+      if (node instanceof DefaultMutableTreeNode) {
+        DefaultMutableTreeNode defNode = (DefaultMutableTreeNode)node;
+        Object userObject = defNode.getUserObject();
+        if (userObject instanceof String) {
+          actions.add((String)userObject);
+        }
+        else if (userObject instanceof QuickList) {
+          actions.add(((QuickList)userObject).getActionId());
+        }
+      }
+    }
+    return ArrayUtil.toStringArray(actions);
+  }
+  private JPanel createToolbarPanel() {
+    final JPanel panel = new JPanel(new BorderLayout());
+    DefaultActionGroup group = new DefaultActionGroup();
+    final JComponent toolbar = ActionManager.getInstance().createActionToolbar(""ChooseActionsDialog"", group, true).getComponent();
+    final CommonActionsManager commonActionsManager = CommonActionsManager.getInstance();
+    final TreeExpander treeExpander = KeymapPanel.createTreeExpander(myActionsTree);
+    group.add(commonActionsManager.createExpandAllAction(treeExpander, myActionsTree.getTree()));
+    group.add(commonActionsManager.createCollapseAllAction(treeExpander, myActionsTree.getTree()));
+    panel.add(toolbar, BorderLayout.WEST);
+    group = new DefaultActionGroup();
+    ActionToolbar actionToolbar = ActionManager.getInstance().createActionToolbar(""ChooseActionsDialog"", group, true);
+    actionToolbar.setReservePlaceAutoPopupIcon(false);
+    final JComponent searchToolbar = actionToolbar.getComponent();
+    final Alarm alarm = new Alarm();
+    myFilterComponent = new FilterComponent(""KEYMAP_IN_QUICK_LISTS"", 5) {
+      public void filter() {
+        alarm.cancelAllRequests();
+        alarm.addRequest(() -> {
+          if (!myFilterComponent.isShowing()) return;
+          if (!myTreeExpansionMonitor.isFreeze()) myTreeExpansionMonitor.freeze();
+          myFilteringPanel.setShortcut(null);
+          final String filter = getFilter();
+          myActionsTree.filter(filter, myQuicklists);
+          final JTree tree = myActionsTree.getTree();
+          TreeUtil.expandAll(tree);
+          if (filter == null || filter.length() == 0) {
+            TreeUtil.collapseAll(tree, 0);
+            myTreeExpansionMonitor.restore();
+          }
+        }, 300);
+      }
+    };
+    myFilterComponent.reset();
+    panel.add(myFilterComponent, BorderLayout.CENTER);
+    group.add(new AnAction(KeyMapBundle.message(""filter.shortcut.action.text""),
+                           KeyMapBundle.message(""filter.shortcut.action.text""),
+                           AllIcons.Actions.ShortcutFilter) {
+      public void actionPerformed(AnActionEvent e) {
+        myFilterComponent.reset();
+        myActionsTree.reset(myKeymap, myQuicklists);
+        myFilteringPanel.showPopup(searchToolbar, e.getInputEvent().getComponent());
+      }
+    });
+    group.add(new AnAction(KeyMapBundle.message(""filter.clear.action.text""),
+                           KeyMapBundle.message(""filter.clear.action.text""), AllIcons.Actions.GC) {
+      @Override
+      public void update(AnActionEvent event) {
+        boolean enabled = null != myFilteringPanel.getShortcut();
+        Presentation presentation = event.getPresentation();
+        presentation.setEnabled(enabled);
+        presentation.setIcon(enabled ? AllIcons.Actions.Cancel : EmptyIcon.ICON_16);
+      }
+      public void actionPerformed(AnActionEvent e) {
+        myFilteringPanel.setShortcut(null);
+        myActionsTree.filter(null, myQuicklists); //clear filtering
+        TreeUtil.collapseAll(myActionsTree.getTree(), 0);
+        myTreeExpansionMonitor.restore();
+      }
+    });
+    panel.add(searchToolbar, BorderLayout.EAST);
+    return panel;
+  }
+  private void filterTreeByShortcut(Shortcut shortcut) {
+    if (!myTreeExpansionMonitor.isFreeze()) myTreeExpansionMonitor.freeze();
+    myActionsTree.reset(myKeymap, myQuicklists);
+    myActionsTree.filterTree(shortcut, myQuicklists);
+    final JTree tree = myActionsTree.getTree();
+    TreeUtil.expandAll(tree);
+  }
+  public void dispose() {
+    super.dispose();
+    myFilteringPanel.hidePopup();
+    if (myFilterComponent != null) {
+      myFilterComponent.dispose();
+    }
+  }
+}",class,
+"  public ChooseActionsDialog(Component parent, Keymap keymap, QuickList[] quicklists) {
+    super(parent, true);
+    myKeymap = keymap;
+    myQuicklists = quicklists;
+    myActionsTree = new ActionsTree();
+    myActionsTree.reset(keymap, quicklists);
+    myActionsTree.getTree().getSelectionModel().setSelectionMode(TreeSelectionModel.DISCONTIGUOUS_TREE_SELECTION);
+    new DoubleClickListener() {
+      @Override
+      protected boolean onDoubleClick(MouseEvent e) {
+        doOKAction();
+        return true;
+      }
+    }.installOn(myActionsTree.getTree());
+    myTreeExpansionMonitor = TreeExpansionMonitor.install(myActionsTree.getTree());
+    myFilteringPanel.addPropertyChangeListener(""shortcut"", new PropertyChangeListener() {
+      @Override
+      public void propertyChange(PropertyChangeEvent event) {
+        filterTreeByShortcut(myFilteringPanel.getShortcut());
+      }
+    });
+    setTitle(""Add Actions to Quick List"");
+    init();
+  }",method,
+"    new DoubleClickListener() {
+      @Override
+      protected boolean onDoubleClick(MouseEvent e) {
+        doOKAction();
+        return true;
+      }
+    }",method,
+"      @Override
+      protected boolean onDoubleClick(MouseEvent e) {
+        doOKAction();
+        return true;
+      }",method,
+"    myFilteringPanel.addPropertyChangeListener(""shortcut"", new PropertyChangeListener() {
+      @Override
+      public void propertyChange(PropertyChangeEvent event) {
+        filterTreeByShortcut(myFilteringPanel.getShortcut());
+      }
+    }",method,
+"      @Override
+      public void propertyChange(PropertyChangeEvent event) {
+        filterTreeByShortcut(myFilteringPanel.getShortcut());
+      }",method,
+"  @Override
+  protected JComponent createNorthPanel() {
+    return createToolbarPanel();
+  }",method,
+"  @Nullable
+  @Override
+  public JComponent getPreferredFocusedComponent() {
+    return myFilterComponent.getTextEditor();
+  }",method,
+"  @Override
+  protected JComponent createCenterPanel() {
+    return JBUI.Panels.simplePanel(myActionsTree.getComponent())
+      .withPreferredSize(400, 500);
+  }",method,
+"  public String[] getTreeSelectedActionIds() {
+    TreePath[] paths = myActionsTree.getTree().getSelectionPaths();
+    if (paths == null) return ArrayUtil.EMPTY_STRING_ARRAY;
+    ArrayList<String> actions = new ArrayList<>();
+    for (TreePath path : paths) {
+      Object node = path.getLastPathComponent();
+      if (node instanceof DefaultMutableTreeNode) {
+        DefaultMutableTreeNode defNode = (DefaultMutableTreeNode)node;
+        Object userObject = defNode.getUserObject();
+        if (userObject instanceof String) {
+          actions.add((String)userObject);
+        }
+        else if (userObject instanceof QuickList) {
+          actions.add(((QuickList)userObject).getActionId());
+        }
+      }
+    }
+    return ArrayUtil.toStringArray(actions);
+  }",method,
+"    for (TreePath path : paths) {
+      Object node = path.getLastPathComponent();
+      if (node instanceof DefaultMutableTreeNode) {
+        DefaultMutableTreeNode defNode = (DefaultMutableTreeNode)node;
+        Object userObject = defNode.getUserObject();
+        if (userObject instanceof String) {
+          actions.add((String)userObject);
+        }
+        else if (userObject instanceof QuickList) {
+          actions.add(((QuickList)userObject).getActionId());
+        }
+      }
+    }",method,
+"      if (node instanceof DefaultMutableTreeNode) {
+        DefaultMutableTreeNode defNode = (DefaultMutableTreeNode)node;
+        Object userObject = defNode.getUserObject();
+        if (userObject instanceof String) {
+          actions.add((String)userObject);
+        }
+        else if (userObject instanceof QuickList) {
+          actions.add(((QuickList)userObject).getActionId());
+        }
+      }",method,
+"        if (userObject instanceof String) {
+          actions.add((String)userObject);
+        }",method,
+"        else if (userObject instanceof QuickList) {
+          actions.add(((QuickList)userObject).getActionId());
+        }",method,
+"  private JPanel createToolbarPanel() {
+    final JPanel panel = new JPanel(new BorderLayout());
+    DefaultActionGroup group = new DefaultActionGroup();
+    final JComponent toolbar = ActionManager.getInstance().createActionToolbar(""ChooseActionsDialog"", group, true).getComponent();
+    final CommonActionsManager commonActionsManager = CommonActionsManager.getInstance();
+    final TreeExpander treeExpander = KeymapPanel.createTreeExpander(myActionsTree);
+    group.add(commonActionsManager.createExpandAllAction(treeExpander, myActionsTree.getTree()));
+    group.add(commonActionsManager.createCollapseAllAction(treeExpander, myActionsTree.getTree()));
+    panel.add(toolbar, BorderLayout.WEST);
+    group = new DefaultActionGroup();
+    ActionToolbar actionToolbar = ActionManager.getInstance().createActionToolbar(""ChooseActionsDialog"", group, true);
+    actionToolbar.setReservePlaceAutoPopupIcon(false);
+    final JComponent searchToolbar = actionToolbar.getComponent();
+    final Alarm alarm = new Alarm();
+    myFilterComponent = new FilterComponent(""KEYMAP_IN_QUICK_LISTS"", 5) {
+      public void filter() {
+        alarm.cancelAllRequests();
+        alarm.addRequest(() -> {
+          if (!myFilterComponent.isShowing()) return;
+          if (!myTreeExpansionMonitor.isFreeze()) myTreeExpansionMonitor.freeze();
+          myFilteringPanel.setShortcut(null);
+          final String filter = getFilter();
+          myActionsTree.filter(filter, myQuicklists);
+          final JTree tree = myActionsTree.getTree();
+          TreeUtil.expandAll(tree);
+          if (filter == null || filter.length() == 0) {
+            TreeUtil.collapseAll(tree, 0);
+            myTreeExpansionMonitor.restore();
+          }
+        }, 300);
+      }
+    };
+    myFilterComponent.reset();
+    panel.add(myFilterComponent, BorderLayout.CENTER);
+    group.add(new AnAction(KeyMapBundle.message(""filter.shortcut.action.text""),
+                           KeyMapBundle.message(""filter.shortcut.action.text""),
+                           AllIcons.Actions.ShortcutFilter) {
+      public void actionPerformed(AnActionEvent e) {
+        myFilterComponent.reset();
+        myActionsTree.reset(myKeymap, myQuicklists);
+        myFilteringPanel.showPopup(searchToolbar, e.getInputEvent().getComponent());
+      }
+    });
+    group.add(new AnAction(KeyMapBundle.message(""filter.clear.action.text""),
+                           KeyMapBundle.message(""filter.clear.action.text""), AllIcons.Actions.GC) {
+      @Override
+      public void update(AnActionEvent event) {
+        boolean enabled = null != myFilteringPanel.getShortcut();
+        Presentation presentation = event.getPresentation();
+        presentation.setEnabled(enabled);
+        presentation.setIcon(enabled ? AllIcons.Actions.Cancel : EmptyIcon.ICON_16);
+      }
+      public void actionPerformed(AnActionEvent e) {
+        myFilteringPanel.setShortcut(null);
+        myActionsTree.filter(null, myQuicklists); //clear filtering
+        TreeUtil.collapseAll(myActionsTree.getTree(), 0);
+        myTreeExpansionMonitor.restore();
+      }
+    });
+    panel.add(searchToolbar, BorderLayout.EAST);
+    return panel;
+  }",method,
+"      public void filter() {
+        alarm.cancelAllRequests();
+        alarm.addRequest(() -> {
+          if (!myFilterComponent.isShowing()) return;
+          if (!myTreeExpansionMonitor.isFreeze()) myTreeExpansionMonitor.freeze();
+          myFilteringPanel.setShortcut(null);
+          final String filter = getFilter();
+          myActionsTree.filter(filter, myQuicklists);
+          final JTree tree = myActionsTree.getTree();
+          TreeUtil.expandAll(tree);
+          if (filter == null || filter.length() == 0) {
+            TreeUtil.collapseAll(tree, 0);
+            myTreeExpansionMonitor.restore();
+          }
+        }, 300);
+      }",method,
+"      public void actionPerformed(AnActionEvent e) {
+        myFilterComponent.reset();
+        myActionsTree.reset(myKeymap, myQuicklists);
+        myFilteringPanel.showPopup(searchToolbar, e.getInputEvent().getComponent());
+      }",method,
+"      @Override
+      public void update(AnActionEvent event) {
+        boolean enabled = null != myFilteringPanel.getShortcut();
+        Presentation presentation = event.getPresentation();
+        presentation.setEnabled(enabled);
+        presentation.setIcon(enabled ? AllIcons.Actions.Cancel : EmptyIcon.ICON_16);
+      }",method,
+"      public void actionPerformed(AnActionEvent e) {
+        myFilteringPanel.setShortcut(null);
+        myActionsTree.filter(null, myQuicklists); //clear filtering
+        TreeUtil.collapseAll(myActionsTree.getTree(), 0);
+        myTreeExpansionMonitor.restore();
+      }",method,
+"  private void filterTreeByShortcut(Shortcut shortcut) {
+    if (!myTreeExpansionMonitor.isFreeze()) myTreeExpansionMonitor.freeze();
+    myActionsTree.reset(myKeymap, myQuicklists);
+    myActionsTree.filterTree(shortcut, myQuicklists);
+    final JTree tree = myActionsTree.getTree();
+    TreeUtil.expandAll(tree);
+  }",method,
+"  public void dispose() {
+    super.dispose();
+    myFilteringPanel.hidePopup();
+    if (myFilterComponent != null) {
+      myFilterComponent.dispose();
+    }
+  }",method,
+"    if (myFilterComponent != null) {
+      myFilterComponent.dispose();
+    }",method,
+"public class ZeroLengthArrayInitializationInspectionBase extends BaseInspection {
+  @Pattern(VALID_ID_PATTERN)
+  @Override
+  @NotNull
+  public String getID() {
+    return ""ZeroLengthArrayAllocation"";
+  }
+  @Override
+  @NotNull
+  public String getDisplayName() {
+    return InspectionGadgetsBundle.message(
+      ""array.allocation.zero.length.display.name"");
+  }
+  @Override
+  @NotNull
+  public String buildErrorString(Object... infos) {
+    return InspectionGadgetsBundle.message(
+      ""array.allocation.zero.length.problem.descriptor"");
+  }
+  @Override
+  public BaseInspectionVisitor buildVisitor() {
+    return new ZeroLengthArrayInitializationVisitor();
+  }
+  @Override
+  protected boolean buildQuickFixesOnlyForOnTheFlyErrors() {
+    return true;
+  }
+  private static class ZeroLengthArrayInitializationVisitor
+    extends BaseInspectionVisitor {
+    @Override
+    public void visitNewExpression(
+      @NotNull PsiNewExpression expression) {
+      super.visitNewExpression(expression);
+      if (!ConstructionUtils.isEmptyArrayInitializer(expression)) {
+        return;
+      }
+      if (ExpressionUtils.isDeclaredConstant(expression)) {
+        return;
+      }
+      registerError(expression);
+    }
+    @Override
+    public void visitArrayInitializerExpression(
+      PsiArrayInitializerExpression expression) {
+      super.visitArrayInitializerExpression(expression);
+      final PsiExpression[] initializers = expression.getInitializers();
+      if (initializers.length > 0) {
+        return;
+      }
+      if (expression.getParent() instanceof PsiNewExpression) {
+        return;
+      }
+      if (ExpressionUtils.isDeclaredConstant(expression)) {
+        return;
+      }
+      registerError(expression);
+    }
+  }
+}",class,
+"  private static class ZeroLengthArrayInitializationVisitor
+    extends BaseInspectionVisitor {
+    @Override
+    public void visitNewExpression(
+      @NotNull PsiNewExpression expression) {
+      super.visitNewExpression(expression);
+      if (!ConstructionUtils.isEmptyArrayInitializer(expression)) {
+        return;
+      }
+      if (ExpressionUtils.isDeclaredConstant(expression)) {
+        return;
+      }
+      registerError(expression);
+    }
+    @Override
+    public void visitArrayInitializerExpression(
+      PsiArrayInitializerExpression expression) {
+      super.visitArrayInitializerExpression(expression);
+      final PsiExpression[] initializers = expression.getInitializers();
+      if (initializers.length > 0) {
+        return;
+      }
+      if (expression.getParent() instanceof PsiNewExpression) {
+        return;
+      }
+      if (ExpressionUtils.isDeclaredConstant(expression)) {
+        return;
+      }
+      registerError(expression);
+    }
+  }",class,
+"  @Pattern(VALID_ID_PATTERN)
+  @Override
+  @NotNull
+  public String getID() {
+    return ""ZeroLengthArrayAllocation"";
+  }",method,
+"  @Override
+  @NotNull
+  public String getDisplayName() {
+    return InspectionGadgetsBundle.message(
+      ""array.allocation.zero.length.display.name"");
+  }",method,
+"  @Override
+  @NotNull
+  public String buildErrorString(Object... infos) {
+    return InspectionGadgetsBundle.message(
+      ""array.allocation.zero.length.problem.descriptor"");
+  }",method,
+"  @Override
+  public BaseInspectionVisitor buildVisitor() {
+    return new ZeroLengthArrayInitializationVisitor();
+  }",method,
+"  @Override
+  protected boolean buildQuickFixesOnlyForOnTheFlyErrors() {
+    return true;
+  }",method,
+"    @Override
+    public void visitNewExpression(
+      @NotNull PsiNewExpression expression) {
+      super.visitNewExpression(expression);
+      if (!ConstructionUtils.isEmptyArrayInitializer(expression)) {
+        return;
+      }
+      if (ExpressionUtils.isDeclaredConstant(expression)) {
+        return;
+      }
+      registerError(expression);
+    }",method,
+"    @Override
+    public void visitArrayInitializerExpression(
+      PsiArrayInitializerExpression expression) {
+      super.visitArrayInitializerExpression(expression);
+      final PsiExpression[] initializers = expression.getInitializers();
+      if (initializers.length > 0) {
+        return;
+      }
+      if (expression.getParent() instanceof PsiNewExpression) {
+        return;
+      }
+      if (ExpressionUtils.isDeclaredConstant(expression)) {
+        return;
+      }
+      registerError(expression);
+    }",method,
+"      if (initializers.length > 0) {
+        return;
+      }",method,
+"public class BasicNetworkTest extends AndroidTestCase {
+    @Override
+    protected void setUp() throws Exception {
+        super.setUp();
+        mContext = getContext();
+    }
+    public void testHeadersAndPostParams() throws Exception {
+        MockHttpStack mockHttpStack = new MockHttpStack();
+        BasicHttpResponse fakeResponse = new BasicHttpResponse(new ProtocolVersion(""HTTP"", 1, 1),
+                200, ""OK"");
+        fakeResponse.setEntity(new StringEntity(""foobar""));
+        mockHttpStack.setResponseToReturn(fakeResponse);
+        BasicNetwork httpNetwork = new BasicNetwork(mockHttpStack);
+        Request<String> request = new Request<String>(Request.Method.GET, ""http://foo"", null) {
+            @Override
+            protected Response<String> parseNetworkResponse(NetworkResponse response) {
+                return null;
+            }
+            @Override
+            protected void deliverResponse(String response) {
+            }
+            @Override
+            public Map<String, String> getHeaders() {
+                Map<String, String> result = new HashMap<String, String>();
+                result.put(""requestheader"", ""foo"");
+                return result;
+            }
+            @Override
+            public Map<String, String> getParams() {
+                Map<String, String> result = new HashMap<String, String>();
+                result.put(""requestpost"", ""foo"");
+                return result;
+            }
+        };
+        httpNetwork.performRequest(request);
+        assertEquals(""foo"", mockHttpStack.getLastHeaders().get(""requestheader""));
+        assertEquals(""requestpost=foo&"", new String(mockHttpStack.getLastPostBody()));
+    }
+}",class,
+"    @Override
+    protected void setUp() throws Exception {
+        super.setUp();
+        mContext = getContext();
+    }",method,
+"    public void testHeadersAndPostParams() throws Exception {
+        MockHttpStack mockHttpStack = new MockHttpStack();
+        BasicHttpResponse fakeResponse = new BasicHttpResponse(new ProtocolVersion(""HTTP"", 1, 1),
+                200, ""OK"");
+        fakeResponse.setEntity(new StringEntity(""foobar""));
+        mockHttpStack.setResponseToReturn(fakeResponse);
+        BasicNetwork httpNetwork = new BasicNetwork(mockHttpStack);
+        Request<String> request = new Request<String>(Request.Method.GET, ""http://foo"", null) {
+            @Override
+            protected Response<String> parseNetworkResponse(NetworkResponse response) {
+                return null;
+            }
+            @Override
+            protected void deliverResponse(String response) {
+            }
+            @Override
+            public Map<String, String> getHeaders() {
+                Map<String, String> result = new HashMap<String, String>();
+                result.put(""requestheader"", ""foo"");
+                return result;
+            }
+            @Override
+            public Map<String, String> getParams() {
+                Map<String, String> result = new HashMap<String, String>();
+                result.put(""requestpost"", ""foo"");
+                return result;
+            }
+        };
+        httpNetwork.performRequest(request);
+        assertEquals(""foo"", mockHttpStack.getLastHeaders().get(""requestheader""));
+        assertEquals(""requestpost=foo&"", new String(mockHttpStack.getLastPostBody()));
+    }",method,
+"public final class RuntimeSharedLibraryPath implements OptionSource, DynamicConfigurator
+{
+    private static final String RUNTIME_SHARED_LIBRARY_PATH = ""-runtime-shared-library-path"";
+    private static final String PATH_ELEMENT = ""path-element"";
+    private static OptionSpec urlSpec = new OptionSpec(""url"");
+    private String pathElement;
+    private ArrayList urlElements = new ArrayList();
+    public RuntimeSharedLibraryPath()
+    {
+    }
+    public void addToCommandline(Commandline commandLine)
+    {
+        commandLine.createArgument().setValue(RUNTIME_SHARED_LIBRARY_PATH);
+        commandLine.createArgument().setValue(pathElement);
+        Iterator it = urlElements.iterator();
+        while (it.hasNext())
+        {
+            ((OptionSource) it.next()).addToCommandline(commandLine);
+        }
+    }
+    public Object createDynamicElement(String name)
+    {
+        URLElement result;
+        if (urlSpec.matches(name))
+        {
+            result = new URLElement();
+            urlElements.add(result);
+        }
+        else
+        {
+            throw new BuildException(""Invalid element: "" + name);
+        }
+        return result;
+    }
+    public void setDynamicAttribute(String name, String value)
+    {
+        if (name.equals(PATH_ELEMENT))
+        {
+            pathElement = value;
+        }
+        else
+        {
+            throw new BuildException(""The <rutime-shared-library-path> type doesn't support the \"""" +
+                                     name + ""\"" attribute."");
+        }
+    }
+}",class,
+"    public RuntimeSharedLibraryPath()
+    {
+    }",method,
+"    public void addToCommandline(Commandline commandLine)
+    {
+        commandLine.createArgument().setValue(RUNTIME_SHARED_LIBRARY_PATH);
+        commandLine.createArgument().setValue(pathElement);
+        Iterator it = urlElements.iterator();
+        while (it.hasNext())
+        {
+            ((OptionSource) it.next()).addToCommandline(commandLine);
+        }
+    }",method,
+"    public Object createDynamicElement(String name)
+    {
+        URLElement result;
+        if (urlSpec.matches(name))
+        {
+            result = new URLElement();
+            urlElements.add(result);
+        }
+        else
+        {
+            throw new BuildException(""Invalid element: "" + name);
+        }
+        return result;
+    }",method,
+"    public void setDynamicAttribute(String name, String value)
+    {
+        if (name.equals(PATH_ELEMENT))
+        {
+            pathElement = value;
+        }
+        else
+        {
+            throw new BuildException(""The <rutime-shared-library-path> type doesn't support the \"""" +
+                                     name + ""\"" attribute."");
+        }
+    }",method,
+"public class NewsTabFragment extends BaseFragment implements SwipeRefreshLayout.OnRefreshListener, BaseQuickAdapter.RequestLoadMoreListener {
+    private static final int PAGE_SIZE = 20;
+    @Bind(R.id.recyclerView) RecyclerView recyclerView;
+    @Bind(R.id.refreshLayout) SwipeRefreshLayout refreshLayout;
+    private Context context;
+    private int currentPage = 2;
+    private NewsAdapter newsAdapter;
+    private String url;
+    private boolean isInitCache = false;
+    public static NewsTabFragment newInstance() {
+        return new NewsTabFragment();
+    }
+    @Override
+    public void onAttach(Context context) {
+        this.context = context;
+        super.onAttach(context);
+    }
+    @Override
+    protected View initView(LayoutInflater inflater, ViewGroup container, Bundle savedInstanceState) {
+        View view = inflater.inflate(R.layout.item_refresh, container, false);
+        ButterKnife.bind(this, view);
+        return view;
+    }
+    @Override
+    protected void initData() {
+        url = Urls.URL_GANK_BASE + fragmentTitle + ""/"" + PAGE_SIZE + ""/"";
+        recyclerView.setItemAnimator(new DefaultItemAnimator());
+        recyclerView.setLayoutManager(new LinearLayoutManager(context));
+        newsAdapter = new NewsAdapter(null);
+        newsAdapter.openLoadAnimation(BaseQuickAdapter.SCALEIN);
+        newsAdapter.isFirstOnly(false);
+        recyclerView.setAdapter(newsAdapter);
+        refreshLayout.setColorSchemeColors(Color.RED, Color.BLUE, Color.GREEN);
+        refreshLayout.setOnRefreshListener(this);
+        newsAdapter.setOnLoadMoreListener(this);
+        //开启loading,获取数据
+        setRefreshing(true);
+        onRefresh();
+    }
+    @Override
+    public void onRefresh() {
+        OkGo.<GankResponse<List<GankModel>>>get(url + ""1"")//
+                .cacheKey(""TabFragment_"" + fragmentTitle)       //由于该fragment会被复用,必须保证key唯一,否则数据会发生覆盖
+                .cacheMode(CacheMode.FIRST_CACHE_THEN_REQUEST)  //缓存模式先使用缓存,然后使用网络数据
+                .execute(new NewsCallback<GankResponse<List<GankModel>>>() {
+                    @Override
+                    public void onSuccess(Response<GankResponse<List<GankModel>>> response) {
+                        List<GankModel> results = response.body().results;
+                        if (results != null) {
+                            currentPage = 2;
+                            newsAdapter.setNewData(results);
+                        }
+                    }
+                    @Override
+                    public void onCacheSuccess(Response<GankResponse<List<GankModel>>> response) {
+                        //一般来说,只需呀第一次初始化界面的时候需要使用缓存刷新界面,以后不需要,所以用一个变量标识
+                        if (!isInitCache) {
+                            //一般来说,缓存回调成功和网络回调成功做的事情是一样的,所以这里直接回调onSuccess
+                            onSuccess(response);
+                            isInitCache = true;
+                        }
+                    }
+                    @Override
+                    public void onError(Response<GankResponse<List<GankModel>>> response) {
+                        //网络请求失败的回调,一般会弹个Toast
+                        showToast(response.getException().getMessage());
+                    }
+                    @Override
+                    public void onFinish() {
+                        //可能需要移除之前添加的布局
+                        newsAdapter.removeAllFooterView();
+                        //最后调用结束刷新的方法
+                        setRefreshing(false);
+                    }
+                });
+    }
+    @Override
+    public void onLoadMoreRequested() {
+        OkGo.<GankResponse<List<GankModel>>>get(url + currentPage)//
+                .cacheMode(CacheMode.NO_CACHE)       //上拉不需要缓存
+                .execute(new NewsCallback<GankResponse<List<GankModel>>>() {
+                    @Override
+                    public void onSuccess(Response<GankResponse<List<GankModel>>> response) {
+                        List<GankModel> results = response.body().results;
+                        if (results != null && results.size() > 0) {
+                            currentPage++;
+                            newsAdapter.addData(results);
+                        } else {
+                            //显示没有更多数据
+                            newsAdapter.loadComplete();
+                            View noDataView = inflater.inflate(R.layout.item_no_data, (ViewGroup) recyclerView.getParent(), false);
+                            newsAdapter.addFooterView(noDataView);
+                        }
+                    }
+                    @Override
+                    public void onError(Response<GankResponse<List<GankModel>>> response) {
+                        //显示数据加载失败,点击重试
+                        newsAdapter.showLoadMoreFailedView();
+                        //网络请求失败的回调,一般会弹个Toast
+                        showToast(response.getException().getMessage());
+                    }
+                });
+    }
+    public void showToast(String msg) {
+        Snackbar.make(recyclerView, msg, Snackbar.LENGTH_SHORT).show();
+    }
+    public void setRefreshing(final boolean refreshing) {
+        refreshLayout.post(new Runnable() {
+            @Override
+            public void run() {
+                refreshLayout.setRefreshing(refreshing);
+            }
+        });
+    }
+}",class,
+"    public static NewsTabFragment newInstance() {
+        return new NewsTabFragment();
+    }",method,
+"    @Override
+    public void onAttach(Context context) {
+        this.context = context;
+        super.onAttach(context);
+    }",method,
+"    @Override
+    protected View initView(LayoutInflater inflater, ViewGroup container, Bundle savedInstanceState) {
+        View view = inflater.inflate(R.layout.item_refresh, container, false);
+        ButterKnife.bind(this, view);
+        return view;
+    }",method,
+"    @Override
+    protected void initData() {
+        url = Urls.URL_GANK_BASE + fragmentTitle + ""/"" + PAGE_SIZE + ""/"";
+        recyclerView.setItemAnimator(new DefaultItemAnimator());
+        recyclerView.setLayoutManager(new LinearLayoutManager(context));
+        newsAdapter = new NewsAdapter(null);
+        newsAdapter.openLoadAnimation(BaseQuickAdapter.SCALEIN);
+        newsAdapter.isFirstOnly(false);
+        recyclerView.setAdapter(newsAdapter);
+        refreshLayout.setColorSchemeColors(Color.RED, Color.BLUE, Color.GREEN);
+        refreshLayout.setOnRefreshListener(this);
+        newsAdapter.setOnLoadMoreListener(this);
+        //开启loading,获取数据
+        setRefreshing(true);
+        onRefresh();
+    }",method,

@@ -1,0 +1,1438 @@
+code_snippet,type,score
+"  private SEXP parseResource(String source) throws IOException {
+    InputStream stream = getClass().getResourceAsStream(source);
+    ExpressionVector result = RParser.parseSource(new InputStreamReader(stream));
+    stream.close();
+    return result;
+  }",method,
+"  @Test
+  public void matrixProduct() throws IOException{ 
+   ExpressionVector result = RParser.parseSource(new StringReader(""c(1,2,3) %*% c(7,8,7)\n""));
+   FunctionCall call = (FunctionCall)result.getElementAsSEXP(0);
+   Symbol function = (Symbol) call.getFunction();
+   assertThat(function.getPrintName(), equalTo(""%*%"")); 
+  }",method,
+"public final class HostActivity extends Activity implements SurfaceHolder.Callback {
+  public interface HostedTest {
+    void onStart(HostActivity host, Surface surface);
+    boolean canStop();
+    void onStop();
+    void onFinished();
+  }
+  private static final String TAG = ""HostActivity"";
+  private WakeLock wakeLock;
+  private WifiLock wifiLock;
+  private SurfaceView surfaceView;
+  private Handler mainHandler;
+  private CheckCanStopRunnable checkCanStopRunnable;
+  private HostedTest hostedTest;
+  private ConditionVariable hostedTestStoppedCondition;
+  private boolean hostedTestStarted;
+  private boolean hostedTestFinished;
+  public void runTest(final HostedTest hostedTest, long timeoutMs) {
+    runTest(hostedTest, timeoutMs, true);
+  }
+  public void runTest(final HostedTest hostedTest, long timeoutMs, boolean failOnTimeout) {
+    Assertions.checkArgument(timeoutMs > 0);
+    Assertions.checkState(Thread.currentThread() != getMainLooper().getThread());
+    Assertions.checkState(this.hostedTest == null);
+    this.hostedTest = Assertions.checkNotNull(hostedTest);
+    hostedTestStoppedCondition = new ConditionVariable();
+    hostedTestStarted = false;
+    hostedTestFinished = false;
+    runOnUiThread(new Runnable() {
+      @Override
+      public void run() {
+        maybeStartHostedTest();
+      }
+    });
+    if (hostedTestStoppedCondition.block(timeoutMs)) {
+      if (hostedTestFinished) {
+        Log.d(TAG, ""Test finished. Checking pass conditions."");
+        hostedTest.onFinished();
+        Log.d(TAG, ""Pass conditions checked."");
+      } else {
+        String message = ""Test released before it finished. Activity may have been paused whilst ""
+            + ""test was in progress."";
+        Log.e(TAG, message);
+        fail(message);
+      }
+    } else {
+      String message = ""Test timed out after "" + timeoutMs + "" ms."";
+      Log.e(TAG, message);
+      if (failOnTimeout) {
+        fail(message);
+      }
+      maybeStopHostedTest();
+      hostedTestStoppedCondition.block();
+    }
+  }
+  // Activity lifecycle
+  @Override
+  public void onCreate(Bundle savedInstanceState) {
+    super.onCreate(savedInstanceState);
+    requestWindowFeature(Window.FEATURE_NO_TITLE);
+    setContentView(getResources().getIdentifier(""host_activity"", ""layout"", getPackageName()));
+    surfaceView = (SurfaceView) findViewById(
+        getResources().getIdentifier(""surface_view"", ""id"", getPackageName()));
+    surfaceView.getHolder().addCallback(this);
+    mainHandler = new Handler();
+    checkCanStopRunnable = new CheckCanStopRunnable();
+  }
+  @Override
+  public void onStart() {
+    Context appContext = getApplicationContext();
+    WifiManager wifiManager = (WifiManager) appContext.getSystemService(Context.WIFI_SERVICE);
+    wifiLock = wifiManager.createWifiLock(getWifiLockMode(), TAG);
+    wifiLock.acquire();
+    PowerManager powerManager = (PowerManager) appContext.getSystemService(Context.POWER_SERVICE);
+    wakeLock = powerManager.newWakeLock(PowerManager.PARTIAL_WAKE_LOCK, TAG);
+    wakeLock.acquire();
+    super.onStart();
+  }
+  @Override
+  public void onResume() {
+    super.onResume();
+    maybeStartHostedTest();
+  }
+  @Override
+  public void onPause() {
+    super.onPause();
+    maybeStopHostedTest();
+  }
+  @Override
+  public void onStop() {
+    super.onStop();
+    wakeLock.release();
+    wakeLock = null;
+    wifiLock.release();
+    wifiLock = null;
+  }
+  // SurfaceHolder.Callback
+  @Override
+  public void surfaceCreated(SurfaceHolder holder) {
+    maybeStartHostedTest();
+  }
+  @Override
+  public void surfaceDestroyed(SurfaceHolder holder) {
+    maybeStopHostedTest();
+  }
+  @Override
+  public void surfaceChanged(SurfaceHolder holder, int format, int width, int height) {
+    // Do nothing.
+  }
+  // Internal logic
+  private void maybeStartHostedTest() {
+    if (hostedTest == null || hostedTestStarted) {
+      return;
+    }
+    Surface surface = surfaceView.getHolder().getSurface();
+    if (surface != null && surface.isValid()) {
+      hostedTestStarted = true;
+      Log.d(TAG, ""Starting test."");
+      hostedTest.onStart(this, surface);
+      checkCanStopRunnable.startChecking();
+    }
+  }
+  private void maybeStopHostedTest() {
+    if (hostedTest != null && hostedTestStarted) {
+      hostedTest.onStop();
+      hostedTest = null;
+      mainHandler.removeCallbacks(checkCanStopRunnable);
+      // We post opening of the stopped condition so that any events posted to the main thread as a
+      // result of hostedTest.onStop() are guaranteed to be handled before hostedTest.onFinished()
+      // is called from runTest.
+      mainHandler.post(new Runnable() {
+        @Override
+        public void run() {
+          hostedTestStoppedCondition.open();
+        }
+      });
+    }
+  }
+  @SuppressLint(""InlinedApi"")
+  private static int getWifiLockMode() {
+    return Util.SDK_INT < 12 ? WifiManager.WIFI_MODE_FULL : WifiManager.WIFI_MODE_FULL_HIGH_PERF;
+  }
+  private final class CheckCanStopRunnable implements Runnable {
+    private static final long CHECK_INTERVAL_MS = 1000;
+    private void startChecking() {
+      mainHandler.post(this);
+    }
+    @Override
+    public void run() {
+      if (hostedTest.canStop()) {
+        hostedTestFinished = true;
+        maybeStopHostedTest();
+      } else {
+        mainHandler.postDelayed(this, CHECK_INTERVAL_MS);
+      }
+    }
+  }
+}",class,
+"  private final class CheckCanStopRunnable implements Runnable {
+    private static final long CHECK_INTERVAL_MS = 1000;
+    private void startChecking() {
+      mainHandler.post(this);
+    }
+    @Override
+    public void run() {
+      if (hostedTest.canStop()) {
+        hostedTestFinished = true;
+        maybeStopHostedTest();
+      } else {
+        mainHandler.postDelayed(this, CHECK_INTERVAL_MS);
+      }
+    }
+  }",class,
+"  public void runTest(final HostedTest hostedTest, long timeoutMs) {
+    runTest(hostedTest, timeoutMs, true);
+  }",method,
+"  public void runTest(final HostedTest hostedTest, long timeoutMs, boolean failOnTimeout) {
+    Assertions.checkArgument(timeoutMs > 0);
+    Assertions.checkState(Thread.currentThread() != getMainLooper().getThread());
+    Assertions.checkState(this.hostedTest == null);
+    this.hostedTest = Assertions.checkNotNull(hostedTest);
+    hostedTestStoppedCondition = new ConditionVariable();
+    hostedTestStarted = false;
+    hostedTestFinished = false;
+    runOnUiThread(new Runnable() {
+      @Override
+      public void run() {
+        maybeStartHostedTest();
+      }
+    });
+    if (hostedTestStoppedCondition.block(timeoutMs)) {
+      if (hostedTestFinished) {
+        Log.d(TAG, ""Test finished. Checking pass conditions."");
+        hostedTest.onFinished();
+        Log.d(TAG, ""Pass conditions checked."");
+      } else {
+        String message = ""Test released before it finished. Activity may have been paused whilst ""
+            + ""test was in progress."";
+        Log.e(TAG, message);
+        fail(message);
+      }
+    } else {
+      String message = ""Test timed out after "" + timeoutMs + "" ms."";
+      Log.e(TAG, message);
+      if (failOnTimeout) {
+        fail(message);
+      }
+      maybeStopHostedTest();
+      hostedTestStoppedCondition.block();
+    }
+  }",method,
+"    runOnUiThread(new Runnable() {
+      @Override
+      public void run() {
+        maybeStartHostedTest();
+      }
+    }",method,
+"      @Override
+      public void run() {
+        maybeStartHostedTest();
+      }",method,
+"      if (hostedTestFinished) {
+        Log.d(TAG, ""Test finished. Checking pass conditions."");
+        hostedTest.onFinished();
+        Log.d(TAG, ""Pass conditions checked."");
+      }",method,
+"      if (failOnTimeout) {
+        fail(message);
+      }",method,
+"  @Override
+  public void onCreate(Bundle savedInstanceState) {
+    super.onCreate(savedInstanceState);
+    requestWindowFeature(Window.FEATURE_NO_TITLE);
+    setContentView(getResources().getIdentifier(""host_activity"", ""layout"", getPackageName()));
+    surfaceView = (SurfaceView) findViewById(
+        getResources().getIdentifier(""surface_view"", ""id"", getPackageName()));
+    surfaceView.getHolder().addCallback(this);
+    mainHandler = new Handler();
+    checkCanStopRunnable = new CheckCanStopRunnable();
+  }",method,
+"  @Override
+  public void onStart() {
+    Context appContext = getApplicationContext();
+    WifiManager wifiManager = (WifiManager) appContext.getSystemService(Context.WIFI_SERVICE);
+    wifiLock = wifiManager.createWifiLock(getWifiLockMode(), TAG);
+    wifiLock.acquire();
+    PowerManager powerManager = (PowerManager) appContext.getSystemService(Context.POWER_SERVICE);
+    wakeLock = powerManager.newWakeLock(PowerManager.PARTIAL_WAKE_LOCK, TAG);
+    wakeLock.acquire();
+    super.onStart();
+  }",method,
+"  @Override
+  public void onResume() {
+    super.onResume();
+    maybeStartHostedTest();
+  }",method,
+"  @Override
+  public void onPause() {
+    super.onPause();
+    maybeStopHostedTest();
+  }",method,
+"  @Override
+  public void onStop() {
+    super.onStop();
+    wakeLock.release();
+    wakeLock = null;
+    wifiLock.release();
+    wifiLock = null;
+  }",method,
+"  @Override
+  public void surfaceCreated(SurfaceHolder holder) {
+    maybeStartHostedTest();
+  }",method,
+"  @Override
+  public void surfaceDestroyed(SurfaceHolder holder) {
+    maybeStopHostedTest();
+  }",method,
+"  @Override
+  public void surfaceChanged(SurfaceHolder holder, int format, int width, int height) {
+    // Do nothing.
+  }",method,
+"  private void maybeStartHostedTest() {
+    if (hostedTest == null || hostedTestStarted) {
+      return;
+    }
+    Surface surface = surfaceView.getHolder().getSurface();
+    if (surface != null && surface.isValid()) {
+      hostedTestStarted = true;
+      Log.d(TAG, ""Starting test."");
+      hostedTest.onStart(this, surface);
+      checkCanStopRunnable.startChecking();
+    }
+  }",method,
+"    if (hostedTest == null || hostedTestStarted) {
+      return;
+    }",method,
+"  private void maybeStopHostedTest() {
+    if (hostedTest != null && hostedTestStarted) {
+      hostedTest.onStop();
+      hostedTest = null;
+      mainHandler.removeCallbacks(checkCanStopRunnable);
+      // We post opening of the stopped condition so that any events posted to the main thread as a
+      // result of hostedTest.onStop() are guaranteed to be handled before hostedTest.onFinished()
+      // is called from runTest.
+      mainHandler.post(new Runnable() {
+        @Override
+        public void run() {
+          hostedTestStoppedCondition.open();
+        }
+      });
+    }
+  }",method,
+"    if (hostedTest != null && hostedTestStarted) {
+      hostedTest.onStop();
+      hostedTest = null;
+      mainHandler.removeCallbacks(checkCanStopRunnable);
+      // We post opening of the stopped condition so that any events posted to the main thread as a
+      // result of hostedTest.onStop() are guaranteed to be handled before hostedTest.onFinished()
+      // is called from runTest.
+      mainHandler.post(new Runnable() {
+        @Override
+        public void run() {
+          hostedTestStoppedCondition.open();
+        }
+      });
+    }",method,
+"      mainHandler.post(new Runnable() {
+        @Override
+        public void run() {
+          hostedTestStoppedCondition.open();
+        }
+      }",method,
+"        @Override
+        public void run() {
+          hostedTestStoppedCondition.open();
+        }",method,
+"  @SuppressLint(""InlinedApi"")
+  private static int getWifiLockMode() {
+    return Util.SDK_INT < 12 ? WifiManager.WIFI_MODE_FULL : WifiManager.WIFI_MODE_FULL_HIGH_PERF;
+  }",method,
+"    private void startChecking() {
+      mainHandler.post(this);
+    }",method,
+"    @Override
+    public void run() {
+      if (hostedTest.canStop()) {
+        hostedTestFinished = true;
+        maybeStopHostedTest();
+      } else {
+        mainHandler.postDelayed(this, CHECK_INTERVAL_MS);
+      }
+    }",method,
+"public class Nd91Wrapper {
+    private static boolean isInited = false;
+    public static void initSDK(Context ctx, int appId, String appKey, String orientation) {
+        if (isInited) {
+            return;
+        }
+        NdAppInfo appInfo = new NdAppInfo();
+        appInfo.setCtx(ctx);
+        appInfo.setAppId(appId);
+        appInfo.setAppKey(appKey);
+        NdCommplatform.getInstance().initial(0, appInfo);
+        if (null != orientation) {
+            if (orientation.equals(""landscape"")) {
+                NdCommplatform.getInstance().ndSetScreenOrientation(NdCommplatform.SCREEN_ORIENTATION_LANDSCAPE);
+            } else
+            if (orientation.equals(""auto"")) {
+                NdCommplatform.getInstance().ndSetScreenOrientation(NdCommplatform.SCREEN_ORIENTATION_AUTO);
+            }
+        }
+        isInited = true;
+    }
+    public static boolean isLogined() {
+        boolean bRet = NdCommplatform.getInstance().isLogined();
+        return bRet;
+    }
+    public static void userLogin(Context ctx, OnLoginProcessListener listener) {
+        NdCommplatform.getInstance().ndLogin(ctx, listener);
+    }
+    public static String getSDKVersion() {
+        return ""20130607_3.2.5.1"";
+    }
+    public static String getPluginVersion() {
+        return ""0.2.0"";
+    }
+    public static boolean networkReachable(Context ctx) {
+        boolean bRet = false;
+        try {
+            ConnectivityManager conn = (ConnectivityManager)ctx.getSystemService(Context.CONNECTIVITY_SERVICE);
+            NetworkInfo netInfo = conn.getActiveNetworkInfo();
+            bRet = (null == netInfo) ? false : netInfo.isAvailable();
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+        return bRet;
+    }
+}",class,
+"    public static void initSDK(Context ctx, int appId, String appKey, String orientation) {
+        if (isInited) {
+            return;
+        }
+        NdAppInfo appInfo = new NdAppInfo();
+        appInfo.setCtx(ctx);
+        appInfo.setAppId(appId);
+        appInfo.setAppKey(appKey);
+        NdCommplatform.getInstance().initial(0, appInfo);
+        if (null != orientation) {
+            if (orientation.equals(""landscape"")) {
+                NdCommplatform.getInstance().ndSetScreenOrientation(NdCommplatform.SCREEN_ORIENTATION_LANDSCAPE);
+            } else
+            if (orientation.equals(""auto"")) {
+                NdCommplatform.getInstance().ndSetScreenOrientation(NdCommplatform.SCREEN_ORIENTATION_AUTO);
+            }
+        }
+        isInited = true;
+    }",method,
+"        if (isInited) {
+            return;
+        }",method,
+"        if (null != orientation) {
+            if (orientation.equals(""landscape"")) {
+                NdCommplatform.getInstance().ndSetScreenOrientation(NdCommplatform.SCREEN_ORIENTATION_LANDSCAPE);
+            } else
+            if (orientation.equals(""auto"")) {
+                NdCommplatform.getInstance().ndSetScreenOrientation(NdCommplatform.SCREEN_ORIENTATION_AUTO);
+            }
+        }",method,
+"    public static boolean isLogined() {
+        boolean bRet = NdCommplatform.getInstance().isLogined();
+        return bRet;
+    }",method,
+"    public static void userLogin(Context ctx, OnLoginProcessListener listener) {
+        NdCommplatform.getInstance().ndLogin(ctx, listener);
+    }",method,
+"    public static String getSDKVersion() {
+        return ""20130607_3.2.5.1"";
+    }",method,
+"    public static String getPluginVersion() {
+        return ""0.2.0"";
+    }",method,
+"    public static boolean networkReachable(Context ctx) {
+        boolean bRet = false;
+        try {
+            ConnectivityManager conn = (ConnectivityManager)ctx.getSystemService(Context.CONNECTIVITY_SERVICE);
+            NetworkInfo netInfo = conn.getActiveNetworkInfo();
+            bRet = (null == netInfo) ? false : netInfo.isAvailable();
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+        return bRet;
+    }",method,
+"public class InExactVariable {
+  public void testMap() {
+      HashMap<String, String> map = new HashMap<>();
+      for (Integer integer2 : Arrays.asList(1, 2, 3, 4)) {
+          String of = String.valueOf(integer2);
+          map.putIfAbsent(of.trim(), of);
+      }
+      Object map1 = map;
+      HashMap<String, String> map2 = new HashMap<>();
+      for (Integer integer1 : Arrays.asList(1, 2, 3, 4)) {
+          String valueOf = String.valueOf(integer1);
+          map2.putIfAbsent(valueOf.trim(), valueOf);
+      }
+      Map<String, String> map3 = new HashMap<>();
+      for (Integer integer : Arrays.asList(1, 2, 3, 4)) {
+          String s = String.valueOf(integer);
+          map3.putIfAbsent(s.trim(), s);
+      }
+  }
+  public void testList() {
+      List<String> result1 = new ArrayList<>();
+      for (Integer integer5 : Arrays.asList(1, 2, 3, 4)) {
+          String valueOf1 = String.valueOf(integer5);
+          result1.add(valueOf1);
+      }
+      Object list1 = result1;
+      List<String> result = new ArrayList<>();
+      for (Integer integer4 : Arrays.asList(1, 2, 3, 4)) {
+          String s1 = String.valueOf(integer4);
+          result.add(s1);
+      }
+      Iterable<String> list2 = result;
+      Collection<String> list3 = new ArrayList<>();
+      for (Integer integer3 : Arrays.asList(1, 2, 3, 4)) {
+          String value = String.valueOf(integer3);
+          list3.add(value);
+      }
+      List<String> list4 = new ArrayList<>();
+      for (Integer integer2 : Arrays.asList(1, 2, 3, 4)) {
+          String of = String.valueOf(integer2);
+          list4.add(of);
+      }
+      Collection<Object> list5 = new ArrayList<>();
+      for (Integer integer1 : Arrays.asList(1, 2, 3, 4)) {
+          String valueOf = String.valueOf(integer1);
+          list5.add(valueOf);
+      }
+      List<String> list = new ArrayList<>();
+      for (Integer integer : Arrays.asList(1, 2, 3, 4)) {
+          String s = String.valueOf(integer);
+          list.add(s);
+      }
+      Collection<?> list6 = list;
+  }
+  public void testPartition() {
+      Map<Boolean, List<String>> map = new HashMap<>();
+      map.put(false, new ArrayList<>());
+      map.put(true, new ArrayList<>());
+      for (Integer integer1 : Arrays.asList(1, 2, 3, 4)) {
+          String s = String.valueOf(integer1);
+          map.get(s.length() > 1).add(s);
+      }
+      Object map1 = map;
+      Map<Boolean, List<String>> map2 = new HashMap<>();
+      map2.put(false, new ArrayList<>());
+      map2.put(true, new ArrayList<>());
+      for (Integer integer : Arrays.asList(1, 2, 3, 4)) {
+          String x = String.valueOf(integer);
+          map2.get(x.length() > 1).add(x);
+      }
+  }
+  public void testGroupingBy() {
+      TreeMap<Integer, Set<String>> result = new TreeMap<>();
+      for (Integer integer4 : Arrays.asList(1, 2, 3, 4)) {
+          String s1 = String.valueOf(integer4);
+          result.computeIfAbsent(s1.length(), k2 -> new HashSet<>()).add(s1);
+      }
+      Object map1 = result;
+      TreeMap<Integer, Set<String>> map2 = new TreeMap<>();
+      for (Integer integer3 : Arrays.asList(1, 2, 3, 4)) {
+          String value = String.valueOf(integer3);
+          map2.computeIfAbsent(value.length(), key1 -> new HashSet<>()).add(value);
+      }
+      NavigableMap<Integer, Set<String>> map3 = new TreeMap<>();
+      for (Integer integer2 : Arrays.asList(1, 2, 3, 4)) {
+          String of = String.valueOf(integer2);
+          map3.computeIfAbsent(of.length(), k1 -> new HashSet<>()).add(of);
+      }
+      SortedMap<Integer, Set<String>> map4 = new TreeMap<>();
+      for (Integer integer1 : Arrays.asList(1, 2, 3, 4)) {
+          String valueOf = String.valueOf(integer1);
+          map4.computeIfAbsent(valueOf.length(), key -> new HashSet<>()).add(valueOf);
+      }
+      TreeMap<Integer, Set<String>> map = new TreeMap<>();
+      for (Integer integer : Arrays.asList(1, 2, 3, 4)) {
+          String s = String.valueOf(integer);
+          map.computeIfAbsent(s.length(), k -> new HashSet<>()).add(s);
+      }
+      Cloneable map5 = map;
+  }
+}",class,
+"  public void testMap() {
+      HashMap<String, String> map = new HashMap<>();
+      for (Integer integer2 : Arrays.asList(1, 2, 3, 4)) {
+          String of = String.valueOf(integer2);
+          map.putIfAbsent(of.trim(), of);
+      }
+      Object map1 = map;
+      HashMap<String, String> map2 = new HashMap<>();
+      for (Integer integer1 : Arrays.asList(1, 2, 3, 4)) {
+          String valueOf = String.valueOf(integer1);
+          map2.putIfAbsent(valueOf.trim(), valueOf);
+      }
+      Map<String, String> map3 = new HashMap<>();
+      for (Integer integer : Arrays.asList(1, 2, 3, 4)) {
+          String s = String.valueOf(integer);
+          map3.putIfAbsent(s.trim(), s);
+      }
+  }",method,
+"  public void testList() {
+      List<String> result1 = new ArrayList<>();
+      for (Integer integer5 : Arrays.asList(1, 2, 3, 4)) {
+          String valueOf1 = String.valueOf(integer5);
+          result1.add(valueOf1);
+      }
+      Object list1 = result1;
+      List<String> result = new ArrayList<>();
+      for (Integer integer4 : Arrays.asList(1, 2, 3, 4)) {
+          String s1 = String.valueOf(integer4);
+          result.add(s1);
+      }
+      Iterable<String> list2 = result;
+      Collection<String> list3 = new ArrayList<>();
+      for (Integer integer3 : Arrays.asList(1, 2, 3, 4)) {
+          String value = String.valueOf(integer3);
+          list3.add(value);
+      }
+      List<String> list4 = new ArrayList<>();
+      for (Integer integer2 : Arrays.asList(1, 2, 3, 4)) {
+          String of = String.valueOf(integer2);
+          list4.add(of);
+      }
+      Collection<Object> list5 = new ArrayList<>();
+      for (Integer integer1 : Arrays.asList(1, 2, 3, 4)) {
+          String valueOf = String.valueOf(integer1);
+          list5.add(valueOf);
+      }
+      List<String> list = new ArrayList<>();
+      for (Integer integer : Arrays.asList(1, 2, 3, 4)) {
+          String s = String.valueOf(integer);
+          list.add(s);
+      }
+      Collection<?> list6 = list;
+  }",method,
+"  public void testPartition() {
+      Map<Boolean, List<String>> map = new HashMap<>();
+      map.put(false, new ArrayList<>());
+      map.put(true, new ArrayList<>());
+      for (Integer integer1 : Arrays.asList(1, 2, 3, 4)) {
+          String s = String.valueOf(integer1);
+          map.get(s.length() > 1).add(s);
+      }
+      Object map1 = map;
+      Map<Boolean, List<String>> map2 = new HashMap<>();
+      map2.put(false, new ArrayList<>());
+      map2.put(true, new ArrayList<>());
+      for (Integer integer : Arrays.asList(1, 2, 3, 4)) {
+          String x = String.valueOf(integer);
+          map2.get(x.length() > 1).add(x);
+      }
+  }",method,
+"  public void testGroupingBy() {
+      TreeMap<Integer, Set<String>> result = new TreeMap<>();
+      for (Integer integer4 : Arrays.asList(1, 2, 3, 4)) {
+          String s1 = String.valueOf(integer4);
+          result.computeIfAbsent(s1.length(), k2 -> new HashSet<>()).add(s1);
+      }
+      Object map1 = result;
+      TreeMap<Integer, Set<String>> map2 = new TreeMap<>();
+      for (Integer integer3 : Arrays.asList(1, 2, 3, 4)) {
+          String value = String.valueOf(integer3);
+          map2.computeIfAbsent(value.length(), key1 -> new HashSet<>()).add(value);
+      }
+      NavigableMap<Integer, Set<String>> map3 = new TreeMap<>();
+      for (Integer integer2 : Arrays.asList(1, 2, 3, 4)) {
+          String of = String.valueOf(integer2);
+          map3.computeIfAbsent(of.length(), k1 -> new HashSet<>()).add(of);
+      }
+      SortedMap<Integer, Set<String>> map4 = new TreeMap<>();
+      for (Integer integer1 : Arrays.asList(1, 2, 3, 4)) {
+          String valueOf = String.valueOf(integer1);
+          map4.computeIfAbsent(valueOf.length(), key -> new HashSet<>()).add(valueOf);
+      }
+      TreeMap<Integer, Set<String>> map = new TreeMap<>();
+      for (Integer integer : Arrays.asList(1, 2, 3, 4)) {
+          String s = String.valueOf(integer);
+          map.computeIfAbsent(s.length(), k -> new HashSet<>()).add(s);
+      }
+      Cloneable map5 = map;
+  }",method,
+"  protected static <K, V> void cacheResult(@Nullable final DomElement context, final Key<Map<K, V>> cacheKind, K key, V value) {
+    if (context != null) {
+      Map<K, V> cachemap = cacheKind.get(context);
+      if (cachemap == null) {
+        cacheKind.set(context, cachemap = Collections.synchronizedMap(new HashMap<K, V>()));
+      }
+      cachemap.put(key, value);
+    }
+  }",method,
+"    if (context != null) {
+      Map<K, V> cachemap = cacheKind.get(context);
+      if (cachemap == null) {
+        cacheKind.set(context, cachemap = Collections.synchronizedMap(new HashMap<K, V>()));
+      }
+      cachemap.put(key, value);
+    }",method,
+"      if (cachemap == null) {
+        cacheKind.set(context, cachemap = Collections.synchronizedMap(new HashMap<K, V>()));
+      }",method,
+"  protected PropertyProviderFinder(DomElement contextElement) {
+    myContextElement = contextElement != null? contextElement.getParentOfType(AntDomElement.class, false) : null;
+  }",method,
+"  public void execute(AntDomProject startProject, String initialTargetName) {
+    myStage = Stage.RESOLVE_MAP_BUILDING_STAGE;
+    startProject.accept(this);
+    stageCompleted(Stage.RESOLVE_MAP_BUILDING_STAGE, Stage.TARGETS_WALKUP_STAGE);
+    if (!myStopped) {
+      myStage = Stage.TARGETS_WALKUP_STAGE;
+      final AntDomTarget target = initialTargetName != null? getTargetByName(initialTargetName) : null;
+      if (target != null) {
+        processTarget(initialTargetName, target);
+      }
+      List<String> unprocessed = null;
+      for (String s : myTargetsResolveMap.keySet()) {
+        if (!myProcessedTargets.contains(s)) {
+          if (unprocessed == null) {
+            unprocessed = new ArrayList<>();
+          }
+          unprocessed.add(s);
+        }
+      }
+      if (unprocessed != null) {
+        for (String targetName : unprocessed) {
+          processTarget(targetName, myTargetsResolveMap.get(targetName));
+        }
+      }
+    }
+  }",method,
+"    if (!myStopped) {
+      myStage = Stage.TARGETS_WALKUP_STAGE;
+      final AntDomTarget target = initialTargetName != null? getTargetByName(initialTargetName) : null;
+      if (target != null) {
+        processTarget(initialTargetName, target);
+      }
+      List<String> unprocessed = null;
+      for (String s : myTargetsResolveMap.keySet()) {
+        if (!myProcessedTargets.contains(s)) {
+          if (unprocessed == null) {
+            unprocessed = new ArrayList<>();
+          }
+          unprocessed.add(s);
+        }
+      }
+      if (unprocessed != null) {
+        for (String targetName : unprocessed) {
+          processTarget(targetName, myTargetsResolveMap.get(targetName));
+        }
+      }
+    }",method,
+"      if (target != null) {
+        processTarget(initialTargetName, target);
+      }",method,
+"          if (unprocessed == null) {
+            unprocessed = new ArrayList<>();
+          }",method,
+"      if (unprocessed != null) {
+        for (String targetName : unprocessed) {
+          processTarget(targetName, myTargetsResolveMap.get(targetName));
+        }
+      }",method,
+"        for (String targetName : unprocessed) {
+          processTarget(targetName, myTargetsResolveMap.get(targetName));
+        }",method,
+"  private void processTarget(String targetEffectiveName, AntDomTarget target) {
+    myCurrentTargetEffectiveName.push(targetEffectiveName);
+    try {
+      target.accept(this);
+    }
+    finally {
+      myCurrentTargetEffectiveName.pop();
+    }
+  }",method,
+"  public void visitTarget(AntDomTarget target) {
+    if (myStage == Stage.TARGETS_WALKUP_STAGE) {
+      final String targetEffectiveName = myCurrentTargetEffectiveName.peek();
+      if (myProcessedTargets.add(targetEffectiveName)) {
+        final List<String> depsList = myDependenciesMap.get(targetEffectiveName);
+        if (depsList != null) {
+          for (String dependencyName : depsList) {
+            final AntDomTarget dependency = getTargetByName(dependencyName);
+            if (dependency != null) {
+              processTarget(dependencyName, dependency);
+            }
+          }
+        }
+        super.visitTarget(target);
+      }
+    }
+    else if (myStage == Stage.RESOLVE_MAP_BUILDING_STAGE){
+      final String declaredTargetName = target.getName().getRawText();
+      String effectiveTargetName = null;
+      final InclusionKind inclusionKind = myNameContext.getCurrentInclusionKind();
+      switch (inclusionKind) {
+        case IMPORT:
+          final String alias = myNameContext.getShortPrefix() + declaredTargetName;
+          if (!myTargetsResolveMap.containsKey(declaredTargetName)) {
+            effectiveTargetName = declaredTargetName;
+            myTargetsResolveMap.put(alias, target); 
+          }
+          else {
+            effectiveTargetName = alias;
+          }
+          break;
+        case INCLUDE:
+          effectiveTargetName = myNameContext.getFQPrefix() + declaredTargetName;
+          break;
+        default:
+          effectiveTargetName = declaredTargetName;
+          break;
+      }
+      if (effectiveTargetName != null) {
+        final AntDomTarget existingTarget = myTargetsResolveMap.get(effectiveTargetName);
+        if (existingTarget != null && Comparing.equal(existingTarget.getAntProject(), target.getAntProject())) {
+          duplicateTargetFound(existingTarget, target, effectiveTargetName);
+        }
+        else {
+          myTargetsResolveMap.put(effectiveTargetName, target);
+          final String dependsStr = target.getDependsList().getRawText();
+          Map<String, Pair<AntDomTarget, String>> depsMap = Collections.emptyMap();
+          if (dependsStr != null) {
+            depsMap = new HashMap<>();
+            final StringTokenizer tokenizer = new StringTokenizer(dependsStr, "","", false);
+            while (tokenizer.hasMoreTokens()) {
+              final String token = tokenizer.nextToken().trim();
+              final String dependentTargetEffectiveName = myNameContext.calcTargetReferenceText(token);
+              final AntDomTarget dependent = getTargetByName(dependentTargetEffectiveName);
+              if (dependent != null) {
+                depsMap.put(token, Pair.create(dependent, dependentTargetEffectiveName));
+              }
+              addDependency(effectiveTargetName, dependentTargetEffectiveName);
+            }
+          }
+          targetDefined(target, effectiveTargetName, depsMap);
+        }
+      }
+    }
+  }",method,
+"    if (myStage == Stage.TARGETS_WALKUP_STAGE) {
+      final String targetEffectiveName = myCurrentTargetEffectiveName.peek();
+      if (myProcessedTargets.add(targetEffectiveName)) {
+        final List<String> depsList = myDependenciesMap.get(targetEffectiveName);
+        if (depsList != null) {
+          for (String dependencyName : depsList) {
+            final AntDomTarget dependency = getTargetByName(dependencyName);
+            if (dependency != null) {
+              processTarget(dependencyName, dependency);
+            }
+          }
+        }
+        super.visitTarget(target);
+      }
+    }",method,
+"        if (depsList != null) {
+          for (String dependencyName : depsList) {
+            final AntDomTarget dependency = getTargetByName(dependencyName);
+            if (dependency != null) {
+              processTarget(dependencyName, dependency);
+            }
+          }
+        }",method,
+"          for (String dependencyName : depsList) {
+            final AntDomTarget dependency = getTargetByName(dependencyName);
+            if (dependency != null) {
+              processTarget(dependencyName, dependency);
+            }
+          }",method,
+"            if (dependency != null) {
+              processTarget(dependencyName, dependency);
+            }",method,
+"    else if (myStage == Stage.RESOLVE_MAP_BUILDING_STAGE){
+      final String declaredTargetName = target.getName().getRawText();
+      String effectiveTargetName = null;
+      final InclusionKind inclusionKind = myNameContext.getCurrentInclusionKind();
+      switch (inclusionKind) {
+        case IMPORT:
+          final String alias = myNameContext.getShortPrefix() + declaredTargetName;
+          if (!myTargetsResolveMap.containsKey(declaredTargetName)) {
+            effectiveTargetName = declaredTargetName;
+            myTargetsResolveMap.put(alias, target); 
+          }
+          else {
+            effectiveTargetName = alias;
+          }
+          break;
+        case INCLUDE:
+          effectiveTargetName = myNameContext.getFQPrefix() + declaredTargetName;
+          break;
+        default:
+          effectiveTargetName = declaredTargetName;
+          break;
+      }
+      if (effectiveTargetName != null) {
+        final AntDomTarget existingTarget = myTargetsResolveMap.get(effectiveTargetName);
+        if (existingTarget != null && Comparing.equal(existingTarget.getAntProject(), target.getAntProject())) {
+          duplicateTargetFound(existingTarget, target, effectiveTargetName);
+        }
+        else {
+          myTargetsResolveMap.put(effectiveTargetName, target);
+          final String dependsStr = target.getDependsList().getRawText();
+          Map<String, Pair<AntDomTarget, String>> depsMap = Collections.emptyMap();
+          if (dependsStr != null) {
+            depsMap = new HashMap<>();
+            final StringTokenizer tokenizer = new StringTokenizer(dependsStr, "","", false);
+            while (tokenizer.hasMoreTokens()) {
+              final String token = tokenizer.nextToken().trim();
+              final String dependentTargetEffectiveName = myNameContext.calcTargetReferenceText(token);
+              final AntDomTarget dependent = getTargetByName(dependentTargetEffectiveName);
+              if (dependent != null) {
+                depsMap.put(token, Pair.create(dependent, dependentTargetEffectiveName));
+              }
+              addDependency(effectiveTargetName, dependentTargetEffectiveName);
+            }
+          }
+          targetDefined(target, effectiveTargetName, depsMap);
+        }
+      }
+    }",method,
+"      switch (inclusionKind) {
+        case IMPORT:
+          final String alias = myNameContext.getShortPrefix() + declaredTargetName;
+          if (!myTargetsResolveMap.containsKey(declaredTargetName)) {
+            effectiveTargetName = declaredTargetName;
+            myTargetsResolveMap.put(alias, target); 
+          }
+          else {
+            effectiveTargetName = alias;
+          }
+          break;
+        case INCLUDE:
+          effectiveTargetName = myNameContext.getFQPrefix() + declaredTargetName;
+          break;
+        default:
+          effectiveTargetName = declaredTargetName;
+          break;
+      }",method,
+"      if (effectiveTargetName != null) {
+        final AntDomTarget existingTarget = myTargetsResolveMap.get(effectiveTargetName);
+        if (existingTarget != null && Comparing.equal(existingTarget.getAntProject(), target.getAntProject())) {
+          duplicateTargetFound(existingTarget, target, effectiveTargetName);
+        }
+        else {
+          myTargetsResolveMap.put(effectiveTargetName, target);
+          final String dependsStr = target.getDependsList().getRawText();
+          Map<String, Pair<AntDomTarget, String>> depsMap = Collections.emptyMap();
+          if (dependsStr != null) {
+            depsMap = new HashMap<>();
+            final StringTokenizer tokenizer = new StringTokenizer(dependsStr, "","", false);
+            while (tokenizer.hasMoreTokens()) {
+              final String token = tokenizer.nextToken().trim();
+              final String dependentTargetEffectiveName = myNameContext.calcTargetReferenceText(token);
+              final AntDomTarget dependent = getTargetByName(dependentTargetEffectiveName);
+              if (dependent != null) {
+                depsMap.put(token, Pair.create(dependent, dependentTargetEffectiveName));
+              }
+              addDependency(effectiveTargetName, dependentTargetEffectiveName);
+            }
+          }
+          targetDefined(target, effectiveTargetName, depsMap);
+        }
+      }",method,
+"          if (dependsStr != null) {
+            depsMap = new HashMap<>();
+            final StringTokenizer tokenizer = new StringTokenizer(dependsStr, "","", false);
+            while (tokenizer.hasMoreTokens()) {
+              final String token = tokenizer.nextToken().trim();
+              final String dependentTargetEffectiveName = myNameContext.calcTargetReferenceText(token);
+              final AntDomTarget dependent = getTargetByName(dependentTargetEffectiveName);
+              if (dependent != null) {
+                depsMap.put(token, Pair.create(dependent, dependentTargetEffectiveName));
+              }
+              addDependency(effectiveTargetName, dependentTargetEffectiveName);
+            }
+          }",method,
+"              if (dependent != null) {
+                depsMap.put(token, Pair.create(dependent, dependentTargetEffectiveName));
+              }",method,
+"  @Override
+  public void visitAntDomElement(AntDomElement element) {
+    if (myStopped) {
+      return; 
+    }
+    if (element.equals(myContextElement)) {
+      stop();
+    }
+    else {
+      if (element instanceof PropertiesProvider) {
+        propertyProviderFound(((PropertiesProvider)element));
+      }
+    }
+    if (!myStopped) {
+      //super.visitAntDomElement(element);
+      for (Iterator<AntDomElement> iterator = element.getAntChildrenIterator(); iterator.hasNext();) {
+        AntDomElement child = iterator.next();
+        child.accept(this);
+        if (myStage == Stage.TARGETS_WALKUP_STAGE) {
+          if (myStopped) {
+            break;
+          }
+        }
+      }
+    }
+  }",method,
+"    if (myStopped) {
+      return; 
+    }",method,
+"      if (element instanceof PropertiesProvider) {
+        propertyProviderFound(((PropertiesProvider)element));
+      }",method,
+"    if (!myStopped) {
+      //super.visitAntDomElement(element);
+      for (Iterator<AntDomElement> iterator = element.getAntChildrenIterator(); iterator.hasNext();) {
+        AntDomElement child = iterator.next();
+        child.accept(this);
+        if (myStage == Stage.TARGETS_WALKUP_STAGE) {
+          if (myStopped) {
+            break;
+          }
+        }
+      }
+    }",method,
+"        if (myStage == Stage.TARGETS_WALKUP_STAGE) {
+          if (myStopped) {
+            break;
+          }
+        }",method,
+"          if (myStopped) {
+            break;
+          }",method,
+"  @Nullable
+  protected AntDomTarget getTargetByName(String effectiveName) {
+    return myTargetsResolveMap.get(effectiveName);
+  }",method,
+"  @NotNull
+  public final Map<String, AntDomTarget> getDiscoveredTargets() {
+    return Collections.unmodifiableMap(myTargetsResolveMap);
+  }",method,
+"  public AntDomElement getContextElement() {
+    return myContextElement;
+  }",method,
+"  protected void stop() {
+    myStopped = true;
+  }",method,
+"  public void visitInclude(AntDomInclude includeTag) {
+    processFileInclusion(includeTag, InclusionKind.INCLUDE);
+  }",method,
+"public class TermQueryBuilder extends BaseTermQueryBuilder<TermQueryBuilder> {
+    public static final String NAME = ""term"";
+    private static final ParseField TERM_FIELD = new ParseField(""term"");
+    private static final ParseField VALUE_FIELD = new ParseField(""value"");
+    public TermQueryBuilder(String fieldName, String value) {
+        super(fieldName, (Object) value);
+    }
+    public TermQueryBuilder(String fieldName, int value) {
+        super(fieldName, (Object) value);
+    }
+    public TermQueryBuilder(String fieldName, long value) {
+        super(fieldName, (Object) value);
+    }
+    public TermQueryBuilder(String fieldName, float value) {
+        super(fieldName, (Object) value);
+    }
+    public TermQueryBuilder(String fieldName, double value) {
+        super(fieldName, (Object) value);
+    }
+    public TermQueryBuilder(String fieldName, boolean value) {
+        super(fieldName, (Object) value);
+    }
+    public TermQueryBuilder(String fieldName, Object value) {
+        super(fieldName, value);
+    }
+    public TermQueryBuilder(StreamInput in) throws IOException {
+        super(in);
+    }
+    public static TermQueryBuilder fromXContent(XContentParser parser) throws IOException {
+        String queryName = null;
+        String fieldName = null;
+        Object value = null;
+        float boost = AbstractQueryBuilder.DEFAULT_BOOST;
+        String currentFieldName = null;
+        XContentParser.Token token;
+        while ((token = parser.nextToken()) != XContentParser.Token.END_OBJECT) {
+            if (token == XContentParser.Token.FIELD_NAME) {
+                currentFieldName = parser.currentName();
+            } else if (token == XContentParser.Token.START_OBJECT) {
+                throwParsingExceptionOnMultipleFields(NAME, parser.getTokenLocation(), fieldName, currentFieldName);
+                fieldName = currentFieldName;
+                while ((token = parser.nextToken()) != XContentParser.Token.END_OBJECT) {
+                    if (token == XContentParser.Token.FIELD_NAME) {
+                        currentFieldName = parser.currentName();
+                    } else {
+                        if (TERM_FIELD.match(currentFieldName)) {
+                            value = parser.objectBytes();
+                        } else if (VALUE_FIELD.match(currentFieldName)) {
+                            value = parser.objectBytes();
+                        } else if (AbstractQueryBuilder.NAME_FIELD.match(currentFieldName)) {
+                            queryName = parser.text();
+                        } else if (AbstractQueryBuilder.BOOST_FIELD.match(currentFieldName)) {
+                            boost = parser.floatValue();
+                        } else {
+                            throw new ParsingException(parser.getTokenLocation(),
+                                    ""[term] query does not support ["" + currentFieldName + ""]"");
+                        }
+                    }
+                }
+            } else if (token.isValue()) {
+                throwParsingExceptionOnMultipleFields(NAME, parser.getTokenLocation(), fieldName, parser.currentName());
+                fieldName = currentFieldName;
+                value = parser.objectBytes();
+            } else if (token == XContentParser.Token.START_ARRAY) {
+                throw new ParsingException(parser.getTokenLocation(), ""[term] query does not support array of values"");
+            }
+        }
+        TermQueryBuilder termQuery = new TermQueryBuilder(fieldName, value);
+        termQuery.boost(boost);
+        if (queryName != null) {
+            termQuery.queryName(queryName);
+        }
+        return termQuery;
+    }
+    @Override
+    protected Query doToQuery(QueryShardContext context) throws IOException {
+        Query query = null;
+        MappedFieldType mapper = context.fieldMapper(this.fieldName);
+        if (mapper != null) {
+            query = mapper.termQuery(this.value, context);
+        }
+        if (query == null) {
+            query = new TermQuery(new Term(this.fieldName, BytesRefs.toBytesRef(this.value)));
+        }
+        return query;
+    }
+    @Override
+    public String getWriteableName() {
+        return NAME;
+    }
+}",class,
+"    public TermQueryBuilder(String fieldName, String value) {
+        super(fieldName, (Object) value);
+    }",method,
+"    public TermQueryBuilder(String fieldName, int value) {
+        super(fieldName, (Object) value);
+    }",method,
+"    public TermQueryBuilder(String fieldName, long value) {
+        super(fieldName, (Object) value);
+    }",method,
+"    public TermQueryBuilder(String fieldName, float value) {
+        super(fieldName, (Object) value);
+    }",method,
+"    public TermQueryBuilder(String fieldName, double value) {
+        super(fieldName, (Object) value);
+    }",method,
+"    public TermQueryBuilder(String fieldName, boolean value) {
+        super(fieldName, (Object) value);
+    }",method,
+"    public TermQueryBuilder(String fieldName, Object value) {
+        super(fieldName, value);
+    }",method,
+"    public TermQueryBuilder(StreamInput in) throws IOException {
+        super(in);
+    }",method,
+"    public static TermQueryBuilder fromXContent(XContentParser parser) throws IOException {
+        String queryName = null;
+        String fieldName = null;
+        Object value = null;
+        float boost = AbstractQueryBuilder.DEFAULT_BOOST;
+        String currentFieldName = null;
+        XContentParser.Token token;
+        while ((token = parser.nextToken()) != XContentParser.Token.END_OBJECT) {
+            if (token == XContentParser.Token.FIELD_NAME) {
+                currentFieldName = parser.currentName();
+            } else if (token == XContentParser.Token.START_OBJECT) {
+                throwParsingExceptionOnMultipleFields(NAME, parser.getTokenLocation(), fieldName, currentFieldName);
+                fieldName = currentFieldName;
+                while ((token = parser.nextToken()) != XContentParser.Token.END_OBJECT) {
+                    if (token == XContentParser.Token.FIELD_NAME) {
+                        currentFieldName = parser.currentName();
+                    } else {
+                        if (TERM_FIELD.match(currentFieldName)) {
+                            value = parser.objectBytes();
+                        } else if (VALUE_FIELD.match(currentFieldName)) {
+                            value = parser.objectBytes();
+                        } else if (AbstractQueryBuilder.NAME_FIELD.match(currentFieldName)) {
+                            queryName = parser.text();
+                        } else if (AbstractQueryBuilder.BOOST_FIELD.match(currentFieldName)) {
+                            boost = parser.floatValue();
+                        } else {
+                            throw new ParsingException(parser.getTokenLocation(),
+                                    ""[term] query does not support ["" + currentFieldName + ""]"");
+                        }
+                    }
+                }
+            } else if (token.isValue()) {
+                throwParsingExceptionOnMultipleFields(NAME, parser.getTokenLocation(), fieldName, parser.currentName());
+                fieldName = currentFieldName;
+                value = parser.objectBytes();
+            } else if (token == XContentParser.Token.START_ARRAY) {
+                throw new ParsingException(parser.getTokenLocation(), ""[term] query does not support array of values"");
+            }
+        }
+        TermQueryBuilder termQuery = new TermQueryBuilder(fieldName, value);
+        termQuery.boost(boost);
+        if (queryName != null) {
+            termQuery.queryName(queryName);
+        }
+        return termQuery;
+    }",method,
+"            if (token == XContentParser.Token.FIELD_NAME) {
+                currentFieldName = parser.currentName();
+            }",method,
+"                    if (token == XContentParser.Token.FIELD_NAME) {
+                        currentFieldName = parser.currentName();
+                    }",method,
+"        if (queryName != null) {
+            termQuery.queryName(queryName);
+        }",method,
+"    @Override
+    protected Query doToQuery(QueryShardContext context) throws IOException {
+        Query query = null;
+        MappedFieldType mapper = context.fieldMapper(this.fieldName);
+        if (mapper != null) {
+            query = mapper.termQuery(this.value, context);
+        }
+        if (query == null) {
+            query = new TermQuery(new Term(this.fieldName, BytesRefs.toBytesRef(this.value)));
+        }
+        return query;
+    }",method,
+"        if (mapper != null) {
+            query = mapper.termQuery(this.value, context);
+        }",method,
+"        if (query == null) {
+            query = new TermQuery(new Term(this.fieldName, BytesRefs.toBytesRef(this.value)));
+        }",method,
+"    @Override
+    public String getWriteableName() {
+        return NAME;
+    }",method,
+"public class SourceExtractor extends Extractor {
+  @Override
+  public Set<Theme> input() {
+    Set<Theme> input = new HashSet<Theme>(
+        Arrays.asList(PersonNameExtractor.PERSONNAMESOURCES, RuleExtractor.RULESOURCES, WikidataLabelExtractor.WIKIPEDIALABELSOURCES,
+            WikidataLabelExtractor.WIKIDATAMULTILABELSOURCES, GeoNamesClassMapper.GEONAMESSOURCES, FlightExtractor.FLIGHTSOURCE,
+            GenderNameExtractor.GENDERSOURCES, WordnetDomainExtractor.WORDNETDOMAINSOURCES, TemporalInfoboxExtractor.TEMPORALINFOBOXSOURCES));
+    input.add(CoordinateExtractor.COORDINATE_SOURCES);
+    input.addAll(GenderExtractor.GENDERBYPRONOUNSOURCES.inLanguages(MultilingualExtractor.wikipediaLanguages));
+    input.addAll(InfoboxMapper.INFOBOXSOURCES.inLanguages(MultilingualExtractor.wikipediaLanguages));
+    input.addAll(InfoboxTypeExtractor.INFOBOXTYPESOURCES.inLanguages(MultilingualExtractor.wikipediaLanguages));
+    input.addAll(CategoryMapper.CATEGORYSOURCES.inLanguages(MultilingualExtractor.wikipediaLanguages));
+    input.addAll(CategoryTypeExtractor.CATEGORYTYPESOURCES.inLanguages(MultilingualExtractor.wikipediaLanguages));
+    return input;
+  }
+  public static final Theme YAGOSOURCES = new Theme(""yagoSources"", ""All sources of YAGO facts"", ThemeGroup.META);
+  @Override
+  public Set<Theme> output() {
+    return new FinalSet<>(YAGOSOURCES);
+  }
+  @Override
+  public void extract() throws Exception {
+    Announce.doing(""Extracting sources"");
+    for (Theme theme : input()) {
+      Announce.doing(""Extracting sources from"", theme);
+      for (Fact fact : theme) {
+        if (fact.getRelation().equals(YAGO.extractionSource) || fact.getRelation().equals(YAGO.extractionTechnique)) {
+          YAGOSOURCES.write(fact);
+        }
+      }
+      Announce.done();
+    }
+    Announce.done();
+  }
+}",class,
+"  @Override
+  public Set<Theme> input() {
+    Set<Theme> input = new HashSet<Theme>(
+        Arrays.asList(PersonNameExtractor.PERSONNAMESOURCES, RuleExtractor.RULESOURCES, WikidataLabelExtractor.WIKIPEDIALABELSOURCES,
+            WikidataLabelExtractor.WIKIDATAMULTILABELSOURCES, GeoNamesClassMapper.GEONAMESSOURCES, FlightExtractor.FLIGHTSOURCE,
+            GenderNameExtractor.GENDERSOURCES, WordnetDomainExtractor.WORDNETDOMAINSOURCES, TemporalInfoboxExtractor.TEMPORALINFOBOXSOURCES));
+    input.add(CoordinateExtractor.COORDINATE_SOURCES);
+    input.addAll(GenderExtractor.GENDERBYPRONOUNSOURCES.inLanguages(MultilingualExtractor.wikipediaLanguages));
+    input.addAll(InfoboxMapper.INFOBOXSOURCES.inLanguages(MultilingualExtractor.wikipediaLanguages));
+    input.addAll(InfoboxTypeExtractor.INFOBOXTYPESOURCES.inLanguages(MultilingualExtractor.wikipediaLanguages));
+    input.addAll(CategoryMapper.CATEGORYSOURCES.inLanguages(MultilingualExtractor.wikipediaLanguages));
+    input.addAll(CategoryTypeExtractor.CATEGORYTYPESOURCES.inLanguages(MultilingualExtractor.wikipediaLanguages));
+    return input;
+  }",method,
+"  @Override
+  public Set<Theme> output() {
+    return new FinalSet<>(YAGOSOURCES);
+  }",method,
+"  @Override
+  public void extract() throws Exception {
+    Announce.doing(""Extracting sources"");
+    for (Theme theme : input()) {
+      Announce.doing(""Extracting sources from"", theme);
+      for (Fact fact : theme) {
+        if (fact.getRelation().equals(YAGO.extractionSource) || fact.getRelation().equals(YAGO.extractionTechnique)) {
+          YAGOSOURCES.write(fact);
+        }
+      }
+      Announce.done();
+    }
+    Announce.done();
+  }",method,
+"      for (Fact fact : theme) {
+        if (fact.getRelation().equals(YAGO.extractionSource) || fact.getRelation().equals(YAGO.extractionTechnique)) {
+          YAGOSOURCES.write(fact);
+        }
+      }",method,
+"    public static Model copyWeightsToModel(Model model, Map<String, KerasLayer> layers)
+            throws InvalidKerasConfigurationException {
+        Layer[] layersFromModel;
+        if (model instanceof MultiLayerNetwork)
+            layersFromModel = ((MultiLayerNetwork) model).getLayers();
+        else
+            layersFromModel = ((ComputationGraph) model).getLayers();
+        Set<String> layerNames = new HashSet<>(layers.keySet());
+        for (org.deeplearning4j.nn.api.Layer layer : layersFromModel) {
+            String layerName = layer.conf().getLayer().getLayerName();
+            if (!layers.containsKey(layerName))
+                throw new InvalidKerasConfigurationException(
+                        ""No weights found for layer in model (named "" + layerName + "")"");
+            layers.get(layerName).copyWeightsToLayer(layer);
+            layerNames.remove(layerName);
+        }
+        for (String layerName : layerNames) {
+            if (layers.get(layerName).getNumParams() > 0)
+                throw new InvalidKerasConfigurationException(
+                        ""Attemping to copy weights for layer not in model (named "" + layerName + "")"");
+        }
+        return model;
+    }",method,
+"        for (org.deeplearning4j.nn.api.Layer layer : layersFromModel) {
+            String layerName = layer.conf().getLayer().getLayerName();
+            if (!layers.containsKey(layerName))
+                throw new InvalidKerasConfigurationException(
+                        ""No weights found for layer in model (named "" + layerName + "")"");
+            layers.get(layerName).copyWeightsToLayer(layer);
+            layerNames.remove(layerName);
+        }",method,
+"        for (String layerName : layerNames) {
+            if (layers.get(layerName).getNumParams() > 0)
+                throw new InvalidKerasConfigurationException(
+                        ""Attemping to copy weights for layer not in model (named "" + layerName + "")"");
+        }",method,
+"    public static int determineKerasMajorVersion(Map<String, Object> modelConfig, KerasModelConfiguration config)
+            throws InvalidKerasConfigurationException {
+        int kerasMajorVersion;
+        if (!modelConfig.containsKey(config.getFieldKerasVersion())) {
+            log.warn(""Could not read keras version used (no ""
+                    + config.getFieldKerasVersion() + "" field found) \n""
+                    + ""assuming keras version is 1.0.7 or earlier.""
+            );
+            kerasMajorVersion = 1;
+        } else {
+            String kerasVersionString = (String) modelConfig.get(config.getFieldKerasVersion());
+            if (Character.isDigit(kerasVersionString.charAt(0))) {
+                kerasMajorVersion = Character.getNumericValue(kerasVersionString.charAt(0));
+            } else {
+                throw new InvalidKerasConfigurationException(
+                        ""Keras version was not readable ("" +  config.getFieldKerasVersion() + "" provided)""
+                );
+            }
+        }
+        return kerasMajorVersion;
+    }",method,
+"    public static String findParameterName(String parameter, String[] fragmentList) {
+        Matcher layerNameMatcher =
+                Pattern.compile(fragmentList[fragmentList.length - 1]).matcher(parameter);
+        if (!(layerNameMatcher.find()))
+            log.warn(""Unable to match layer parameter name "" + parameter + "" for stored weights."");
+        String parameterNameFound = layerNameMatcher.replaceFirst("""");
+        Matcher paramNameMatcher = Pattern.compile(""^_(.+)$"").matcher(parameterNameFound);
+        if (paramNameMatcher.find())
+            parameterNameFound = paramNameMatcher.group(1);
+        Matcher tfSuffixMatcher = Pattern.compile("":\\d+?$"").matcher(parameterNameFound);
+        if (tfSuffixMatcher.find())
+            parameterNameFound = tfSuffixMatcher.replaceFirst("""");
+        Matcher tfParamNbMatcher = Pattern.compile(""_\\d+$"").matcher(parameterNameFound);
+        if (tfParamNbMatcher.find())
+            parameterNameFound = tfParamNbMatcher.replaceFirst("""");
+        return parameterNameFound;
+    }",method,
+"public class PathEditorTests {
+	@Test
+	public void testClasspathPathName() throws Exception {
+		PropertyEditor pathEditor = new PathEditor();
+		pathEditor.setAsText(""classpath:"" + ClassUtils.classPackageAsResourcePath(getClass()) + ""/"" +
+				ClassUtils.getShortName(getClass()) + "".class"");
+		Object value = pathEditor.getValue();
+		assertTrue(value instanceof Path);
+		Path path = (Path) value;
+		assertTrue(path.toFile().exists());
+	}
+	@Test(expected = IllegalArgumentException.class)
+	public void testWithNonExistentResource() throws Exception {
+		PropertyEditor propertyEditor = new PathEditor();
+		propertyEditor.setAsText(""classpath:/no_way_this_file_is_found.doc"");
+	}
+	@Test
+	public void testWithNonExistentPath() throws Exception {
+		PropertyEditor pathEditor = new PathEditor();
+		pathEditor.setAsText(""file:/no_way_this_file_is_found.doc"");
+		Object value = pathEditor.getValue();
+		assertTrue(value instanceof Path);
+		Path path = (Path) value;
+		assertTrue(!path.toFile().exists());
+	}
+	@Test
+	public void testAbsolutePath() throws Exception {
+		PropertyEditor pathEditor = new PathEditor();
+		pathEditor.setAsText(""/no_way_this_file_is_found.doc"");
+		Object value = pathEditor.getValue();
+		assertTrue(value instanceof Path);
+		Path path = (Path) value;
+		assertTrue(!path.toFile().exists());
+	}
+	@Test
+	public void testUnqualifiedPathNameFound() throws Exception {
+		PropertyEditor pathEditor = new PathEditor();
+		String fileName = ClassUtils.classPackageAsResourcePath(getClass()) + ""/"" +
+				ClassUtils.getShortName(getClass()) + "".class"";
+		pathEditor.setAsText(fileName);
+		Object value = pathEditor.getValue();
+		assertTrue(value instanceof Path);
+		Path path = (Path) value;
+		File file = path.toFile();
+		assertTrue(file.exists());
+		String absolutePath = file.getAbsolutePath();
+		if (File.separatorChar == '\\') {
+			absolutePath = absolutePath.replace('\\', '/');
+		}
+		assertTrue(absolutePath.endsWith(fileName));
+	}
+	@Test
+	public void testUnqualifiedPathNameNotFound() throws Exception {
+		PropertyEditor pathEditor = new PathEditor();
+		String fileName = ClassUtils.classPackageAsResourcePath(getClass()) + ""/"" +
+				ClassUtils.getShortName(getClass()) + "".clazz"";
+		pathEditor.setAsText(fileName);
+		Object value = pathEditor.getValue();
+		assertTrue(value instanceof Path);
+		Path path = (Path) value;
+		File file = path.toFile();
+		assertFalse(file.exists());
+		String absolutePath = file.getAbsolutePath();
+		if (File.separatorChar == '\\') {
+			absolutePath = absolutePath.replace('\\', '/');
+		}
+		assertTrue(absolutePath.endsWith(fileName));
+	}
+}",class,

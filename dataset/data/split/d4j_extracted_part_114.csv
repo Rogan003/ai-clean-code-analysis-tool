@@ -1,0 +1,1495 @@
+code_snippet,type,score
+"				if(pStart < pEnd - 1) {
+					return child.contains(pCharSequence, pStart + 1, pEnd);
+				}",method,
+"public class Matrix implements Serializable {
+	private static final long serialVersionUID = 3833742170619524400L;
+	public static final int SIZE = 127;
+	private final String id;
+	private final float[][] scores;
+	public Matrix(String id, float[][] scores) {
+		this.id = id;
+		this.scores = scores;
+	}
+	public String getId() {
+		return this.id;
+	}
+	public float[][] getScores() {
+		return this.scores;
+	}
+	public float getScore(char a, char b) {
+		return this.scores[a][b];
+	}
+}",class,
+"public final class MatrixGenerator {
+    public static Matrix generate(float match, float mismatch) {
+        float[][] scores = new float[Matrix.SIZE][Matrix.SIZE];
+        // Fill the matrix with the scores
+        for (int i = 0; i < Matrix.SIZE; i++) {
+            for (int j = 0; j < Matrix.SIZE; j++) {
+                if (i == j || i == 'N' || j == 'N') {
+                    scores[i][j] = match;
+                } else {
+                    scores[i][j] = mismatch;
+                }
+            }
+        }
+        // Generate some id for the matrix (hopefully to be somehow unique)
+        String id = new Long(System.currentTimeMillis()).toString();
+        Matrix matrix = new Matrix(id, scores);
+        return matrix;
+    }
+}",class,
+"	public Matrix(String id, float[][] scores) {
+		this.id = id;
+		this.scores = scores;
+	}",method,
+"	public String getId() {
+		return this.id;
+	}",method,
+"	public float[][] getScores() {
+		return this.scores;
+	}",method,
+"	public float getScore(char a, char b) {
+		return this.scores[a][b];
+	}",method,
+"    public static Matrix generate(float match, float mismatch) {
+        float[][] scores = new float[Matrix.SIZE][Matrix.SIZE];
+        // Fill the matrix with the scores
+        for (int i = 0; i < Matrix.SIZE; i++) {
+            for (int j = 0; j < Matrix.SIZE; j++) {
+                if (i == j || i == 'N' || j == 'N') {
+                    scores[i][j] = match;
+                } else {
+                    scores[i][j] = mismatch;
+                }
+            }
+        }
+        // Generate some id for the matrix (hopefully to be somehow unique)
+        String id = new Long(System.currentTimeMillis()).toString();
+        Matrix matrix = new Matrix(id, scores);
+        return matrix;
+    }",method,
+"        for (int i = 0; i < Matrix.SIZE; i++) {
+            for (int j = 0; j < Matrix.SIZE; j++) {
+                if (i == j || i == 'N' || j == 'N') {
+                    scores[i][j] = match;
+                } else {
+                    scores[i][j] = mismatch;
+                }
+            }
+        }",method,
+"            for (int j = 0; j < Matrix.SIZE; j++) {
+                if (i == j || i == 'N' || j == 'N') {
+                    scores[i][j] = match;
+                } else {
+                    scores[i][j] = mismatch;
+                }
+            }",method,
+"                if (i == j || i == 'N' || j == 'N') {
+                    scores[i][j] = match;
+                }",method,
+"public class S3Client {
+    private static final Logger LOGGER = LoggerFactory.getLogger(S3Client.class);
+    private S3ResourceResolver resourceResolver = new S3ResourceResolver();
+    private AmazonS3Client amazonS3Client;
+    private final S3ConnectionProperties s3ConnectionProperties;
+    public S3Client(AmazonS3Client amazonS3Client, S3ConnectionProperties s3ConnectionProperties) {
+        this.s3ConnectionProperties = s3ConnectionProperties;
+        this.amazonS3Client = amazonS3Client;
+    }
+    @Incubating
+    public S3Client(S3ConnectionProperties s3ConnectionProperties) {
+        this.s3ConnectionProperties = s3ConnectionProperties;
+        amazonS3Client = new AmazonS3Client(createConnectionProperties());
+        setAmazonS3ConnectionEndpoint();
+    }
+    public S3Client(AwsCredentials awsCredentials, S3ConnectionProperties s3ConnectionProperties) {
+        this.s3ConnectionProperties = s3ConnectionProperties;
+        AWSCredentials credentials = null;
+        if (awsCredentials != null) {
+            if (awsCredentials.getSessionToken() == null) {
+                credentials =  new BasicAWSCredentials(awsCredentials.getAccessKey(), awsCredentials.getSecretKey());
+            } else {
+                credentials =  new BasicSessionCredentials(awsCredentials.getAccessKey(), awsCredentials.getSecretKey(), awsCredentials.getSessionToken());
+            }
+        }
+        amazonS3Client = new AmazonS3Client(credentials, createConnectionProperties());
+        setAmazonS3ConnectionEndpoint();
+    }
+    private void setAmazonS3ConnectionEndpoint() {
+        S3ClientOptions.Builder clientOptionsBuilder = S3ClientOptions.builder();
+        Optional<URI> endpoint = s3ConnectionProperties.getEndpoint();
+        if (endpoint.isPresent()) {
+            amazonS3Client.setEndpoint(endpoint.get().toString());
+            clientOptionsBuilder.setPathStyleAccess(true);
+        }
+        amazonS3Client.setS3ClientOptions(clientOptionsBuilder.build());
+    }
+    private void checkRequiredJigsawModuleIsOnPath() {
+        if (JavaVersion.current().isJava9Compatible()) {
+            try {
+                Class.forName(""javax.xml.bind.DatatypeConverter"");
+            } catch (ClassNotFoundException e) {
+                throw new GradleException(""Cannot publish to S3 since the module 'java.xml.bind' is not available. ""
+                    + ""Please add \""-addmods java.xml.bind '-Dorg.gradle.jvmargs=-addmods java.xml.bind'\"" to your GRADLE_OPTS."");
+            }
+        }
+    }
+    private ClientConfiguration createConnectionProperties() {
+        ClientConfiguration clientConfiguration = new ClientConfiguration();
+        Optional<HttpProxySettings.HttpProxy> proxyOptional = s3ConnectionProperties.getProxy();
+        if (proxyOptional.isPresent()) {
+            HttpProxySettings.HttpProxy proxy = s3ConnectionProperties.getProxy().get();
+            clientConfiguration.setProxyHost(proxy.host);
+            clientConfiguration.setProxyPort(proxy.port);
+            PasswordCredentials credentials = proxy.credentials;
+            if (credentials != null) {
+                clientConfiguration.setProxyUsername(credentials.getUsername());
+                clientConfiguration.setProxyPassword(credentials.getPassword());
+            }
+        }
+        Optional<Integer> maxErrorRetryCount = s3ConnectionProperties.getMaxErrorRetryCount();
+        if (maxErrorRetryCount.isPresent()) {
+            clientConfiguration.setMaxErrorRetry(maxErrorRetryCount.get());
+        }
+        return clientConfiguration;
+    }
+    public void put(InputStream inputStream, Long contentLength, URI destination) {
+        checkRequiredJigsawModuleIsOnPath();
+        try {
+            S3RegionalResource s3RegionalResource = new S3RegionalResource(destination);
+            String bucketName = s3RegionalResource.getBucketName();
+            String s3BucketKey = s3RegionalResource.getKey();
+            configureClient(s3RegionalResource);
+            ObjectMetadata objectMetadata = new ObjectMetadata();
+            objectMetadata.setContentLength(contentLength);
+            PutObjectRequest putObjectRequest = new PutObjectRequest(bucketName, s3BucketKey, inputStream, objectMetadata);
+            LOGGER.debug(""Attempting to put resource:[{}] into s3 bucket [{}]"", s3BucketKey, bucketName);
+            amazonS3Client.putObject(putObjectRequest);
+        } catch (AmazonClientException e) {
+            throw ResourceExceptions.putFailed(destination, e);
+        }
+    }
+    public S3Object getMetaData(URI uri) {
+        LOGGER.debug(""Attempting to get s3 meta-data: [{}]"", uri.toString());
+        //Would typically use GetObjectMetadataRequest but it does not work with v4 signatures
+        return doGetS3Object(uri, true);
+    }
+    public S3Object getResource(URI uri) {
+        LOGGER.debug(""Attempting to get s3 resource: [{}]"", uri.toString());
+        return doGetS3Object(uri, false);
+    }
+    public List<String> listDirectChildren(URI parent) {
+        S3RegionalResource s3RegionalResource = new S3RegionalResource(parent);
+        String bucketName = s3RegionalResource.getBucketName();
+        String s3BucketKey = s3RegionalResource.getKey();
+        configureClient(s3RegionalResource);
+        ListObjectsRequest listObjectsRequest = new ListObjectsRequest()
+            .withBucketName(bucketName)
+            .withPrefix(s3BucketKey)
+            .withMaxKeys(1000)
+            .withDelimiter(""/"");
+        ObjectListing objectListing = amazonS3Client.listObjects(listObjectsRequest);
+        ImmutableList.Builder<String> builder = ImmutableList.builder();
+        builder.addAll(resourceResolver.resolveResourceNames(objectListing));
+        while (objectListing.isTruncated()) {
+            objectListing = amazonS3Client.listNextBatchOfObjects(objectListing);
+            builder.addAll(resourceResolver.resolveResourceNames(objectListing));
+        }
+        return builder.build();
+    }
+    private S3Object doGetS3Object(URI uri, boolean isLightWeight) {
+        S3RegionalResource s3RegionalResource = new S3RegionalResource(uri);
+        String bucketName = s3RegionalResource.getBucketName();
+        String s3BucketKey = s3RegionalResource.getKey();
+        configureClient(s3RegionalResource);
+        GetObjectRequest getObjectRequest = new GetObjectRequest(bucketName, s3BucketKey);
+        if (isLightWeight) {
+            //Skip content download
+            getObjectRequest.setRange(0, 0);
+        }
+        try {
+            return amazonS3Client.getObject(getObjectRequest);
+        } catch (AmazonServiceException e) {
+            String errorCode = e.getErrorCode();
+            if (null != errorCode && errorCode.equalsIgnoreCase(""NoSuchKey"")) {
+                return null;
+            }
+            throw ResourceExceptions.getFailed(uri, e);
+        }
+    }
+    private void configureClient(S3RegionalResource s3RegionalResource) {
+        Optional<URI> endpoint = s3ConnectionProperties.getEndpoint();
+        if (endpoint.isPresent()) {
+            amazonS3Client.setEndpoint(endpoint.get().toString());
+        } else {
+            Optional<Region> region = s3RegionalResource.getRegion();
+            if (region.isPresent()) {
+                amazonS3Client.setRegion(region.get());
+            }
+        }
+    }
+}",class,
+"    public S3Client(AmazonS3Client amazonS3Client, S3ConnectionProperties s3ConnectionProperties) {
+        this.s3ConnectionProperties = s3ConnectionProperties;
+        this.amazonS3Client = amazonS3Client;
+    }",method,
+"    @Incubating
+    public S3Client(S3ConnectionProperties s3ConnectionProperties) {
+        this.s3ConnectionProperties = s3ConnectionProperties;
+        amazonS3Client = new AmazonS3Client(createConnectionProperties());
+        setAmazonS3ConnectionEndpoint();
+    }",method,
+"    public S3Client(AwsCredentials awsCredentials, S3ConnectionProperties s3ConnectionProperties) {
+        this.s3ConnectionProperties = s3ConnectionProperties;
+        AWSCredentials credentials = null;
+        if (awsCredentials != null) {
+            if (awsCredentials.getSessionToken() == null) {
+                credentials =  new BasicAWSCredentials(awsCredentials.getAccessKey(), awsCredentials.getSecretKey());
+            } else {
+                credentials =  new BasicSessionCredentials(awsCredentials.getAccessKey(), awsCredentials.getSecretKey(), awsCredentials.getSessionToken());
+            }
+        }
+        amazonS3Client = new AmazonS3Client(credentials, createConnectionProperties());
+        setAmazonS3ConnectionEndpoint();
+    }",method,
+"        if (awsCredentials != null) {
+            if (awsCredentials.getSessionToken() == null) {
+                credentials =  new BasicAWSCredentials(awsCredentials.getAccessKey(), awsCredentials.getSecretKey());
+            } else {
+                credentials =  new BasicSessionCredentials(awsCredentials.getAccessKey(), awsCredentials.getSecretKey(), awsCredentials.getSessionToken());
+            }
+        }",method,
+"    private void setAmazonS3ConnectionEndpoint() {
+        S3ClientOptions.Builder clientOptionsBuilder = S3ClientOptions.builder();
+        Optional<URI> endpoint = s3ConnectionProperties.getEndpoint();
+        if (endpoint.isPresent()) {
+            amazonS3Client.setEndpoint(endpoint.get().toString());
+            clientOptionsBuilder.setPathStyleAccess(true);
+        }
+        amazonS3Client.setS3ClientOptions(clientOptionsBuilder.build());
+    }",method,
+"    private void checkRequiredJigsawModuleIsOnPath() {
+        if (JavaVersion.current().isJava9Compatible()) {
+            try {
+                Class.forName(""javax.xml.bind.DatatypeConverter"");
+            } catch (ClassNotFoundException e) {
+                throw new GradleException(""Cannot publish to S3 since the module 'java.xml.bind' is not available. ""
+                    + ""Please add \""-addmods java.xml.bind '-Dorg.gradle.jvmargs=-addmods java.xml.bind'\"" to your GRADLE_OPTS."");
+            }
+        }
+    }",method,
+"    private ClientConfiguration createConnectionProperties() {
+        ClientConfiguration clientConfiguration = new ClientConfiguration();
+        Optional<HttpProxySettings.HttpProxy> proxyOptional = s3ConnectionProperties.getProxy();
+        if (proxyOptional.isPresent()) {
+            HttpProxySettings.HttpProxy proxy = s3ConnectionProperties.getProxy().get();
+            clientConfiguration.setProxyHost(proxy.host);
+            clientConfiguration.setProxyPort(proxy.port);
+            PasswordCredentials credentials = proxy.credentials;
+            if (credentials != null) {
+                clientConfiguration.setProxyUsername(credentials.getUsername());
+                clientConfiguration.setProxyPassword(credentials.getPassword());
+            }
+        }
+        Optional<Integer> maxErrorRetryCount = s3ConnectionProperties.getMaxErrorRetryCount();
+        if (maxErrorRetryCount.isPresent()) {
+            clientConfiguration.setMaxErrorRetry(maxErrorRetryCount.get());
+        }
+        return clientConfiguration;
+    }",method,
+"            if (credentials != null) {
+                clientConfiguration.setProxyUsername(credentials.getUsername());
+                clientConfiguration.setProxyPassword(credentials.getPassword());
+            }",method,
+"    public void put(InputStream inputStream, Long contentLength, URI destination) {
+        checkRequiredJigsawModuleIsOnPath();
+        try {
+            S3RegionalResource s3RegionalResource = new S3RegionalResource(destination);
+            String bucketName = s3RegionalResource.getBucketName();
+            String s3BucketKey = s3RegionalResource.getKey();
+            configureClient(s3RegionalResource);
+            ObjectMetadata objectMetadata = new ObjectMetadata();
+            objectMetadata.setContentLength(contentLength);
+            PutObjectRequest putObjectRequest = new PutObjectRequest(bucketName, s3BucketKey, inputStream, objectMetadata);
+            LOGGER.debug(""Attempting to put resource:[{}] into s3 bucket [{}]"", s3BucketKey, bucketName);
+            amazonS3Client.putObject(putObjectRequest);
+        } catch (AmazonClientException e) {
+            throw ResourceExceptions.putFailed(destination, e);
+        }
+    }",method,
+"    public S3Object getMetaData(URI uri) {
+        LOGGER.debug(""Attempting to get s3 meta-data: [{}]"", uri.toString());
+        //Would typically use GetObjectMetadataRequest but it does not work with v4 signatures
+        return doGetS3Object(uri, true);
+    }",method,
+"    public S3Object getResource(URI uri) {
+        LOGGER.debug(""Attempting to get s3 resource: [{}]"", uri.toString());
+        return doGetS3Object(uri, false);
+    }",method,
+"    public List<String> listDirectChildren(URI parent) {
+        S3RegionalResource s3RegionalResource = new S3RegionalResource(parent);
+        String bucketName = s3RegionalResource.getBucketName();
+        String s3BucketKey = s3RegionalResource.getKey();
+        configureClient(s3RegionalResource);
+        ListObjectsRequest listObjectsRequest = new ListObjectsRequest()
+            .withBucketName(bucketName)
+            .withPrefix(s3BucketKey)
+            .withMaxKeys(1000)
+            .withDelimiter(""/"");
+        ObjectListing objectListing = amazonS3Client.listObjects(listObjectsRequest);
+        ImmutableList.Builder<String> builder = ImmutableList.builder();
+        builder.addAll(resourceResolver.resolveResourceNames(objectListing));
+        while (objectListing.isTruncated()) {
+            objectListing = amazonS3Client.listNextBatchOfObjects(objectListing);
+            builder.addAll(resourceResolver.resolveResourceNames(objectListing));
+        }
+        return builder.build();
+    }",method,
+"    private S3Object doGetS3Object(URI uri, boolean isLightWeight) {
+        S3RegionalResource s3RegionalResource = new S3RegionalResource(uri);
+        String bucketName = s3RegionalResource.getBucketName();
+        String s3BucketKey = s3RegionalResource.getKey();
+        configureClient(s3RegionalResource);
+        GetObjectRequest getObjectRequest = new GetObjectRequest(bucketName, s3BucketKey);
+        if (isLightWeight) {
+            //Skip content download
+            getObjectRequest.setRange(0, 0);
+        }
+        try {
+            return amazonS3Client.getObject(getObjectRequest);
+        } catch (AmazonServiceException e) {
+            String errorCode = e.getErrorCode();
+            if (null != errorCode && errorCode.equalsIgnoreCase(""NoSuchKey"")) {
+                return null;
+            }
+            throw ResourceExceptions.getFailed(uri, e);
+        }
+    }",method,
+"        if (isLightWeight) {
+            //Skip content download
+            getObjectRequest.setRange(0, 0);
+        }",method,
+"    private void configureClient(S3RegionalResource s3RegionalResource) {
+        Optional<URI> endpoint = s3ConnectionProperties.getEndpoint();
+        if (endpoint.isPresent()) {
+            amazonS3Client.setEndpoint(endpoint.get().toString());
+        } else {
+            Optional<Region> region = s3RegionalResource.getRegion();
+            if (region.isPresent()) {
+                amazonS3Client.setRegion(region.get());
+            }
+        }
+    }",method,
+"public class SwiftCompile extends AbstractNativeCompileTask {
+    private final Property<String> moduleName;
+    public SwiftCompile() {
+        moduleName = getProject().getObjects().property(String.class);
+    }
+    @Override
+    protected NativeCompileSpec createCompileSpec() {
+        SwiftCompileSpec spec = new DefaultSwiftCompileSpec();
+        spec.setModuleName(moduleName.getOrNull());
+        return spec;
+    }
+    @Override
+    protected IncrementalCompilerBuilder getIncrementalCompilerBuilder() {
+        return new IncrementalCompilerBuilder() {
+            @Override
+            public <T extends NativeCompileSpec> Compiler<T> createIncrementalCompiler(TaskInternal task, Compiler<T> compiler, NativeToolChain toolchain, HeaderDependenciesCollector headerDependenciesCollector) {
+                return compiler;
+            }
+        };
+    }
+    @Optional
+    @Input
+    public String getModuleName() {
+        return moduleName.getOrNull();
+    }
+    public void setModuleName(String moduleName) {
+        this.moduleName.set(moduleName);
+    }
+    public void setModuleName(Provider<String> moduleName) {
+        this.moduleName.set(moduleName);
+    }
+    @Override
+    public void compile(IncrementalTaskInputs inputs) {
+        SimpleStaleClassCleaner cleaner = new SimpleStaleClassCleaner(getOutputs());
+        cleaner.setDestinationDir(getObjectFileDir().getAsFile().get());
+        cleaner.execute();
+        if (getSource().isEmpty()) {
+            setDidWork(cleaner.getDidWork());
+            return;
+        }
+        super.compile(inputs);
+    }
+}",class,
+"    public SwiftCompile() {
+        moduleName = getProject().getObjects().property(String.class);
+    }",method,
+"    @Override
+    protected NativeCompileSpec createCompileSpec() {
+        SwiftCompileSpec spec = new DefaultSwiftCompileSpec();
+        spec.setModuleName(moduleName.getOrNull());
+        return spec;
+    }",method,
+"    @Override
+    protected IncrementalCompilerBuilder getIncrementalCompilerBuilder() {
+        return new IncrementalCompilerBuilder() {
+            @Override
+            public <T extends NativeCompileSpec> Compiler<T> createIncrementalCompiler(TaskInternal task, Compiler<T> compiler, NativeToolChain toolchain, HeaderDependenciesCollector headerDependenciesCollector) {
+                return compiler;
+            }
+        };
+    }",method,
+"        return new IncrementalCompilerBuilder() {
+            @Override
+            public <T extends NativeCompileSpec> Compiler<T> createIncrementalCompiler(TaskInternal task, Compiler<T> compiler, NativeToolChain toolchain, HeaderDependenciesCollector headerDependenciesCollector) {
+                return compiler;
+            }
+        }",method,
+"            @Override
+            public <T extends NativeCompileSpec> Compiler<T> createIncrementalCompiler(TaskInternal task, Compiler<T> compiler, NativeToolChain toolchain, HeaderDependenciesCollector headerDependenciesCollector) {
+                return compiler;
+            }",method,
+"    @Optional
+    @Input
+    public String getModuleName() {
+        return moduleName.getOrNull();
+    }",method,
+"    public void setModuleName(String moduleName) {
+        this.moduleName.set(moduleName);
+    }",method,
+"    public void setModuleName(Provider<String> moduleName) {
+        this.moduleName.set(moduleName);
+    }",method,
+"    @Override
+    public void compile(IncrementalTaskInputs inputs) {
+        SimpleStaleClassCleaner cleaner = new SimpleStaleClassCleaner(getOutputs());
+        cleaner.setDestinationDir(getObjectFileDir().getAsFile().get());
+        cleaner.execute();
+        if (getSource().isEmpty()) {
+            setDidWork(cleaner.getDidWork());
+            return;
+        }
+        super.compile(inputs);
+    }",method,
+"public class ShortPtr extends AbstractPtr {
+  public static final int BYTES = 2;
+  public static final ShortPtr NULL = new ShortPtr();
+  public final short[] array;
+  public final int offset;
+  private ShortPtr() {
+    this.array = null;
+    this.offset = 0;
+  }
+  public ShortPtr(short[] array, int offset) {
+    this.array = array;
+    this.offset = offset;
+  }
+  public ShortPtr(short... array) {
+    this.array = array;
+    this.offset = 0;
+  }
+  public static ShortPtr malloc(int bytes) {
+    return new ShortPtr(new short[AbstractPtr.mallocSize(bytes, BYTES)]);
+  }
+  @Override
+  public short[] getArray() {
+    return array;
+  }
+  @Override
+  public int getOffset() {
+    return offset;
+  }
+  @Override
+  public int getOffsetInBytes() {
+    return offset * BYTES;
+  }
+  @Override
+  public Ptr realloc(int newSizeInBytes) {
+    return new ShortPtr(Realloc.realloc(array, offset, newSizeInBytes / 2));
+  }
+  @Override
+  public Ptr pointerPlus(int bytes) {
+    return new ShortPtr(array, offset + (bytes / 2));
+  }
+  @Override
+  public byte getByte(int offset) {
+    throw new UnsupportedOperationException(""TODO"");
+  }
+  @Override
+  public void setByte(int offset, byte value) {
+    throw new UnsupportedOperationException(""TODO"");
+  }
+  @Override
+  public int toInt() {
+    return offset * BYTES;
+  }
+  @Override
+  public boolean isNull() {
+    return array == null && offset != 0;
+  }
+  public short unwrap() {
+    return array[offset];
+  }
+  @Override
+  public String toString() {
+    return offset + ""+"" + Arrays.toString(array);
+  }
+  public static void memset(short[] array, int offset, int value, int length) {
+    throw new UnsupportedOperationException(""TODO"");
+  }
+  public static short memset(int byteValue) {
+    throw new UnsupportedOperationException(""TODO"");
+  }
+  public static ShortPtr cast(Object voidPointer) {
+    if(voidPointer instanceof MallocThunk) {
+      return ((MallocThunk) voidPointer).shortPtr();
+    }
+    if(voidPointer == null) {
+      return NULL;
+    }
+    return (ShortPtr) voidPointer;  
+  }
+}",class,
+"public class Std {
+  public static void _ZSt20__throw_length_errorPKc(Ptr errorMessage) {
+    throw new RuntimeException(Stdlib.nullTerminatedString(errorMessage));
+  }
+  public static void _ZSt17__throw_bad_allocv(Ptr errorMessage) {
+    throw new RuntimeException(Stdlib.nullTerminatedString(errorMessage));
+  }
+}",class,
+"  private ShortPtr() {
+    this.array = null;
+    this.offset = 0;
+  }",method,
+"  public ShortPtr(short[] array, int offset) {
+    this.array = array;
+    this.offset = offset;
+  }",method,
+"  public ShortPtr(short... array) {
+    this.array = array;
+    this.offset = 0;
+  }",method,
+"  public static ShortPtr malloc(int bytes) {
+    return new ShortPtr(new short[AbstractPtr.mallocSize(bytes, BYTES)]);
+  }",method,
+"  @Override
+  public short[] getArray() {
+    return array;
+  }",method,
+"  @Override
+  public int getOffset() {
+    return offset;
+  }",method,
+"  @Override
+  public int getOffsetInBytes() {
+    return offset * BYTES;
+  }",method,
+"  @Override
+  public Ptr realloc(int newSizeInBytes) {
+    return new ShortPtr(Realloc.realloc(array, offset, newSizeInBytes / 2));
+  }",method,
+"  @Override
+  public Ptr pointerPlus(int bytes) {
+    return new ShortPtr(array, offset + (bytes / 2));
+  }",method,
+"  @Override
+  public byte getByte(int offset) {
+    throw new UnsupportedOperationException(""TODO"");
+  }",method,
+"  @Override
+  public void setByte(int offset, byte value) {
+    throw new UnsupportedOperationException(""TODO"");
+  }",method,
+"  @Override
+  public int toInt() {
+    return offset * BYTES;
+  }",method,
+"  @Override
+  public boolean isNull() {
+    return array == null && offset != 0;
+  }",method,
+"  public short unwrap() {
+    return array[offset];
+  }",method,
+"  @Override
+  public String toString() {
+    return offset + ""+"" + Arrays.toString(array);
+  }",method,
+"  public static void memset(short[] array, int offset, int value, int length) {
+    throw new UnsupportedOperationException(""TODO"");
+  }",method,
+"  public static short memset(int byteValue) {
+    throw new UnsupportedOperationException(""TODO"");
+  }",method,
+"  public static ShortPtr cast(Object voidPointer) {
+    if(voidPointer instanceof MallocThunk) {
+      return ((MallocThunk) voidPointer).shortPtr();
+    }
+    if(voidPointer == null) {
+      return NULL;
+    }
+    return (ShortPtr) voidPointer;  
+  }",method,
+"    if(voidPointer instanceof MallocThunk) {
+      return ((MallocThunk) voidPointer).shortPtr();
+    }",method,
+"    if(voidPointer == null) {
+      return NULL;
+    }",method,
+"  public static void _ZSt20__throw_length_errorPKc(Ptr errorMessage) {
+    throw new RuntimeException(Stdlib.nullTerminatedString(errorMessage));
+  }",method,
+"  public static void _ZSt17__throw_bad_allocv(Ptr errorMessage) {
+    throw new RuntimeException(Stdlib.nullTerminatedString(errorMessage));
+  }",method,
+"public class DuplicatedDataProviderNamesInspection extends AbstractBaseJavaLocalInspectionTool {
+  private final static Logger LOG = Logger.getInstance(DuplicatedDataProviderNamesInspection.class);
+  private final static String NAME_ATTRIBUTE = ""name"";
+  @Nullable
+  @Override
+  public ProblemDescriptor[] checkClass(@NotNull PsiClass aClass, @NotNull InspectionManager manager, boolean isOnTheFly) {
+    final String dataProviderFqn = DataProvider.class.getCanonicalName();
+    final MultiMap<String, PsiMethod> dataProvidersByName = new MultiMap<>();
+    for (HierarchicalMethodSignature signature : aClass.getVisibleSignatures()) { //include only visible signatures to hide overridden methods
+      PsiMethod method = signature.getMethod();
+      final PsiAnnotation annotation = AnnotationUtil.findAnnotation(method, dataProviderFqn);
+      if (annotation != null) {
+        final PsiAnnotationMemberValue value = annotation.findAttributeValue(NAME_ATTRIBUTE);
+        LOG.assertTrue(value != null);
+        final String dataProviderName = PsiTreeUtil.isAncestor(annotation, value, false)
+                                        ? AnnotationUtil.getStringAttributeValue(annotation, NAME_ATTRIBUTE)
+                                        : method.getName();
+        if (dataProviderName != null) {
+          dataProvidersByName.putValue(dataProviderName, method);
+        }
+      }
+    }
+    final List<ProblemDescriptor> descriptors = new SmartList<>();
+    for (Map.Entry<String, Collection<PsiMethod>> entry : dataProvidersByName.entrySet()) {
+      if (entry.getValue().size() > 1) {
+        for (PsiMethod method : entry.getValue()) {
+          if (method.getContainingClass() != aClass) continue; //don't highlight methods in super class
+          final String description = String.format(""Data provider with name '%s' already exists in context"", entry.getKey());
+          final PsiAnnotation annotation = AnnotationUtil.findAnnotation(method, dataProviderFqn);
+          LOG.assertTrue(annotation != null);
+          final PsiAnnotationMemberValue nameElement = annotation.findAttributeValue(NAME_ATTRIBUTE);
+          LOG.assertTrue(nameElement != null);
+          PsiElement problemElement = PsiTreeUtil.isAncestor(aClass, nameElement, false) ? nameElement : method.getNameIdentifier();
+          LOG.assertTrue(problemElement != null);
+          descriptors.add(manager.createProblemDescriptor(problemElement, description, isOnTheFly, LocalQuickFix.EMPTY_ARRAY, ProblemHighlightType.ERROR));
+        }
+      }
+    }
+    return descriptors.isEmpty() ? null : descriptors.toArray(new ProblemDescriptor[descriptors.size()]);
+  }
+}",class,
+"  @Nullable
+  @Override
+  public ProblemDescriptor[] checkClass(@NotNull PsiClass aClass, @NotNull InspectionManager manager, boolean isOnTheFly) {
+    final String dataProviderFqn = DataProvider.class.getCanonicalName();
+    final MultiMap<String, PsiMethod> dataProvidersByName = new MultiMap<>();
+    for (HierarchicalMethodSignature signature : aClass.getVisibleSignatures()) { //include only visible signatures to hide overridden methods
+      PsiMethod method = signature.getMethod();
+      final PsiAnnotation annotation = AnnotationUtil.findAnnotation(method, dataProviderFqn);
+      if (annotation != null) {
+        final PsiAnnotationMemberValue value = annotation.findAttributeValue(NAME_ATTRIBUTE);
+        LOG.assertTrue(value != null);
+        final String dataProviderName = PsiTreeUtil.isAncestor(annotation, value, false)
+                                        ? AnnotationUtil.getStringAttributeValue(annotation, NAME_ATTRIBUTE)
+                                        : method.getName();
+        if (dataProviderName != null) {
+          dataProvidersByName.putValue(dataProviderName, method);
+        }
+      }
+    }
+    final List<ProblemDescriptor> descriptors = new SmartList<>();
+    for (Map.Entry<String, Collection<PsiMethod>> entry : dataProvidersByName.entrySet()) {
+      if (entry.getValue().size() > 1) {
+        for (PsiMethod method : entry.getValue()) {
+          if (method.getContainingClass() != aClass) continue; //don't highlight methods in super class
+          final String description = String.format(""Data provider with name '%s' already exists in context"", entry.getKey());
+          final PsiAnnotation annotation = AnnotationUtil.findAnnotation(method, dataProviderFqn);
+          LOG.assertTrue(annotation != null);
+          final PsiAnnotationMemberValue nameElement = annotation.findAttributeValue(NAME_ATTRIBUTE);
+          LOG.assertTrue(nameElement != null);
+          PsiElement problemElement = PsiTreeUtil.isAncestor(aClass, nameElement, false) ? nameElement : method.getNameIdentifier();
+          LOG.assertTrue(problemElement != null);
+          descriptors.add(manager.createProblemDescriptor(problemElement, description, isOnTheFly, LocalQuickFix.EMPTY_ARRAY, ProblemHighlightType.ERROR));
+        }
+      }
+    }
+    return descriptors.isEmpty() ? null : descriptors.toArray(new ProblemDescriptor[descriptors.size()]);
+  }",method,
+"      if (annotation != null) {
+        final PsiAnnotationMemberValue value = annotation.findAttributeValue(NAME_ATTRIBUTE);
+        LOG.assertTrue(value != null);
+        final String dataProviderName = PsiTreeUtil.isAncestor(annotation, value, false)
+                                        ? AnnotationUtil.getStringAttributeValue(annotation, NAME_ATTRIBUTE)
+                                        : method.getName();
+        if (dataProviderName != null) {
+          dataProvidersByName.putValue(dataProviderName, method);
+        }
+      }",method,
+"        if (dataProviderName != null) {
+          dataProvidersByName.putValue(dataProviderName, method);
+        }",method,
+"public class UsernamesRepositoryTest {
+  private UsernamesFetcher mockUsernamesFetcher;
+  private UsernamesRepository usernamesRepository;
+  private ArgumentCaptor<UsernamesFetcher.UsernamesCallback> fetcherCallbackCaptor;
+  @Before
+  public void setupUsernamesRepository() {
+    // Mockito has a very convenient way to inject mocks by using the @Mock annotation. To
+    // inject the mocks in the test the initMocks method needs to be called.
+    mockUsernamesFetcher = mock(UsernamesFetcher.class);
+    fetcherCallbackCaptor = ArgumentCaptor.forClass(UsernamesFetcher.UsernamesCallback.class);
+    // Get a reference to the class under test
+    getInstrumentation().runOnMainSync(new Runnable() {
+      @Override
+      public void run() {
+        usernamesRepository = new UsernamesRepository(mockUsernamesFetcher);
+      }
+    });
+  }
+  @Test
+  public void updateWithErrorFromUsernamesFetcher_ErrorStatus() {
+    // When the repository is updated
+    usernamesRepository.update();
+    // And the username fetcher returns an error
+    verify(mockUsernamesFetcher).getUsernames(fetcherCallbackCaptor.capture());
+    fetcherCallbackCaptor.getValue().setError();
+    // Then the repository has an error status and no usernames available
+    assertTrue(usernamesRepository.isError());
+    assertNull(usernamesRepository.get());
+  }
+  @Test
+  public void updateWithSuccessFromUsernamesFetcher_UsernamesAvailable() {
+    // Given fake usernames
+    String[] usernames = new String[] {""one"", ""two""};
+    // When the repository is updated
+    usernamesRepository.update();
+    // And the username fetcher returns an error
+    verify(mockUsernamesFetcher).getUsernames(fetcherCallbackCaptor.capture());
+    fetcherCallbackCaptor.getValue().setUsernames(usernames);
+    // Then the repository has a success status and usernames are available
+    assertFalse(usernamesRepository.isError());
+    assertTrue(usernamesRepository.get().length == usernames.length);
+  }
+}",class,
+"    // Get a reference to the class under test
+    getInstrumentation().runOnMainSync(new Runnable() {
+      @Override
+      public void run() {
+        usernamesRepository = new UsernamesRepository(mockUsernamesFetcher);
+      }
+    }",class,
+"  @Before
+  public void setupUsernamesRepository() {
+    // Mockito has a very convenient way to inject mocks by using the @Mock annotation. To
+    // inject the mocks in the test the initMocks method needs to be called.
+    mockUsernamesFetcher = mock(UsernamesFetcher.class);
+    fetcherCallbackCaptor = ArgumentCaptor.forClass(UsernamesFetcher.UsernamesCallback.class);
+    // Get a reference to the class under test
+    getInstrumentation().runOnMainSync(new Runnable() {
+      @Override
+      public void run() {
+        usernamesRepository = new UsernamesRepository(mockUsernamesFetcher);
+      }
+    });
+  }",method,
+"      @Override
+      public void run() {
+        usernamesRepository = new UsernamesRepository(mockUsernamesFetcher);
+      }",method,
+"  @Test
+  public void updateWithErrorFromUsernamesFetcher_ErrorStatus() {
+    // When the repository is updated
+    usernamesRepository.update();
+    // And the username fetcher returns an error
+    verify(mockUsernamesFetcher).getUsernames(fetcherCallbackCaptor.capture());
+    fetcherCallbackCaptor.getValue().setError();
+    // Then the repository has an error status and no usernames available
+    assertTrue(usernamesRepository.isError());
+    assertNull(usernamesRepository.get());
+  }",method,
+"  @Test
+  public void updateWithSuccessFromUsernamesFetcher_UsernamesAvailable() {
+    // Given fake usernames
+    String[] usernames = new String[] {""one"", ""two""};
+    // When the repository is updated
+    usernamesRepository.update();
+    // And the username fetcher returns an error
+    verify(mockUsernamesFetcher).getUsernames(fetcherCallbackCaptor.capture());
+    fetcherCallbackCaptor.getValue().setUsernames(usernames);
+    // Then the repository has a success status and usernames are available
+    assertFalse(usernamesRepository.isError());
+    assertTrue(usernamesRepository.get().length == usernames.length);
+  }",method,
+"final class SniClientJava8TestUtil {
+    private SniClientJava8TestUtil() { }
+    static void testSniClient(SslProvider sslClientProvider, SslProvider sslServerProvider, final boolean match)
+            throws Exception {
+        final String sniHost = ""sni.netty.io"";
+        LocalAddress address = new LocalAddress(""test"");
+        EventLoopGroup group = new DefaultEventLoopGroup(1);
+        Channel sc = null;
+        Channel cc = null;
+        try {
+            SelfSignedCertificate cert = new SelfSignedCertificate();
+            final SslContext sslServerContext = SslContextBuilder.forServer(cert.key(), cert.cert())
+                    .sslProvider(sslServerProvider).build();
+            final Promise<Void> promise = group.next().newPromise();
+            ServerBootstrap sb = new ServerBootstrap();
+            sc = sb.group(group).channel(LocalServerChannel.class).childHandler(new ChannelInitializer<Channel>() {
+                @Override
+                protected void initChannel(Channel ch) throws Exception {
+                    SslHandler handler = sslServerContext.newHandler(ch.alloc());
+                    SSLParameters parameters = handler.engine().getSSLParameters();
+                    SNIMatcher matcher = new SNIMatcher(0) {
+                        @Override
+                        public boolean matches(SNIServerName sniServerName) {
+                            return match;
+                        }
+                    };
+                    parameters.setSNIMatchers(Collections.singleton(matcher));
+                    handler.engine().setSSLParameters(parameters);
+                    ch.pipeline().addFirst(handler);
+                    ch.pipeline().addLast(new ChannelInboundHandlerAdapter() {
+                        @Override
+                        public void userEventTriggered(ChannelHandlerContext ctx, Object evt) throws Exception {
+                            if (evt instanceof SslHandshakeCompletionEvent) {
+                                SslHandshakeCompletionEvent event = (SslHandshakeCompletionEvent) evt;
+                                if (match) {
+                                    if (event.isSuccess()) {
+                                        promise.setSuccess(null);
+                                    } else {
+                                        promise.setFailure(event.cause());
+                                    }
+                                } else {
+                                    if (event.isSuccess()) {
+                                        promise.setFailure(new AssertionError(""expected SSLException""));
+                                    } else {
+                                        Throwable cause = event.cause();
+                                        if (cause instanceof SSLException) {
+                                            promise.setSuccess(null);
+                                        } else {
+                                            promise.setFailure(
+                                                    new AssertionError(""cause not of type SSLException: ""
+                                                            + ThrowableUtil.stackTraceToString(cause)));
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    });
+                }
+            }).bind(address).syncUninterruptibly().channel();
+            SslContext sslContext = SslContextBuilder.forClient().trustManager(InsecureTrustManagerFactory.INSTANCE)
+                    .sslProvider(sslClientProvider).build();
+            SslHandler sslHandler = new SslHandler(
+                    sslContext.newEngine(ByteBufAllocator.DEFAULT, sniHost, -1));
+            Bootstrap cb = new Bootstrap();
+            cc = cb.group(group).channel(LocalChannel.class).handler(sslHandler)
+                    .connect(address).syncUninterruptibly().channel();
+            promise.syncUninterruptibly();
+            sslHandler.handshakeFuture().syncUninterruptibly();
+        } finally {
+            if (cc != null) {
+                cc.close().syncUninterruptibly();
+            }
+            if (sc != null) {
+                sc.close().syncUninterruptibly();
+            }
+            group.shutdownGracefully();
+        }
+    }
+}",class,
+    private SniClientJava8TestUtil() { },method,
+"    static void testSniClient(SslProvider sslClientProvider, SslProvider sslServerProvider, final boolean match)
+            throws Exception {
+        final String sniHost = ""sni.netty.io"";
+        LocalAddress address = new LocalAddress(""test"");
+        EventLoopGroup group = new DefaultEventLoopGroup(1);
+        Channel sc = null;
+        Channel cc = null;
+        try {
+            SelfSignedCertificate cert = new SelfSignedCertificate();
+            final SslContext sslServerContext = SslContextBuilder.forServer(cert.key(), cert.cert())
+                    .sslProvider(sslServerProvider).build();
+            final Promise<Void> promise = group.next().newPromise();
+            ServerBootstrap sb = new ServerBootstrap();
+            sc = sb.group(group).channel(LocalServerChannel.class).childHandler(new ChannelInitializer<Channel>() {
+                @Override
+                protected void initChannel(Channel ch) throws Exception {
+                    SslHandler handler = sslServerContext.newHandler(ch.alloc());
+                    SSLParameters parameters = handler.engine().getSSLParameters();
+                    SNIMatcher matcher = new SNIMatcher(0) {
+                        @Override
+                        public boolean matches(SNIServerName sniServerName) {
+                            return match;
+                        }
+                    };
+                    parameters.setSNIMatchers(Collections.singleton(matcher));
+                    handler.engine().setSSLParameters(parameters);
+                    ch.pipeline().addFirst(handler);
+                    ch.pipeline().addLast(new ChannelInboundHandlerAdapter() {
+                        @Override
+                        public void userEventTriggered(ChannelHandlerContext ctx, Object evt) throws Exception {
+                            if (evt instanceof SslHandshakeCompletionEvent) {
+                                SslHandshakeCompletionEvent event = (SslHandshakeCompletionEvent) evt;
+                                if (match) {
+                                    if (event.isSuccess()) {
+                                        promise.setSuccess(null);
+                                    } else {
+                                        promise.setFailure(event.cause());
+                                    }
+                                } else {
+                                    if (event.isSuccess()) {
+                                        promise.setFailure(new AssertionError(""expected SSLException""));
+                                    } else {
+                                        Throwable cause = event.cause();
+                                        if (cause instanceof SSLException) {
+                                            promise.setSuccess(null);
+                                        } else {
+                                            promise.setFailure(
+                                                    new AssertionError(""cause not of type SSLException: ""
+                                                            + ThrowableUtil.stackTraceToString(cause)));
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    });
+                }
+            }).bind(address).syncUninterruptibly().channel();
+            SslContext sslContext = SslContextBuilder.forClient().trustManager(InsecureTrustManagerFactory.INSTANCE)
+                    .sslProvider(sslClientProvider).build();
+            SslHandler sslHandler = new SslHandler(
+                    sslContext.newEngine(ByteBufAllocator.DEFAULT, sniHost, -1));
+            Bootstrap cb = new Bootstrap();
+            cc = cb.group(group).channel(LocalChannel.class).handler(sslHandler)
+                    .connect(address).syncUninterruptibly().channel();
+            promise.syncUninterruptibly();
+            sslHandler.handshakeFuture().syncUninterruptibly();
+        } finally {
+            if (cc != null) {
+                cc.close().syncUninterruptibly();
+            }
+            if (sc != null) {
+                sc.close().syncUninterruptibly();
+            }
+            group.shutdownGracefully();
+        }
+    }",method,
+"                @Override
+                protected void initChannel(Channel ch) throws Exception {
+                    SslHandler handler = sslServerContext.newHandler(ch.alloc());
+                    SSLParameters parameters = handler.engine().getSSLParameters();
+                    SNIMatcher matcher = new SNIMatcher(0) {
+                        @Override
+                        public boolean matches(SNIServerName sniServerName) {
+                            return match;
+                        }
+                    };
+                    parameters.setSNIMatchers(Collections.singleton(matcher));
+                    handler.engine().setSSLParameters(parameters);
+                    ch.pipeline().addFirst(handler);
+                    ch.pipeline().addLast(new ChannelInboundHandlerAdapter() {
+                        @Override
+                        public void userEventTriggered(ChannelHandlerContext ctx, Object evt) throws Exception {
+                            if (evt instanceof SslHandshakeCompletionEvent) {
+                                SslHandshakeCompletionEvent event = (SslHandshakeCompletionEvent) evt;
+                                if (match) {
+                                    if (event.isSuccess()) {
+                                        promise.setSuccess(null);
+                                    } else {
+                                        promise.setFailure(event.cause());
+                                    }
+                                } else {
+                                    if (event.isSuccess()) {
+                                        promise.setFailure(new AssertionError(""expected SSLException""));
+                                    } else {
+                                        Throwable cause = event.cause();
+                                        if (cause instanceof SSLException) {
+                                            promise.setSuccess(null);
+                                        } else {
+                                            promise.setFailure(
+                                                    new AssertionError(""cause not of type SSLException: ""
+                                                            + ThrowableUtil.stackTraceToString(cause)));
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    });
+                }",method,
+"                        @Override
+                        public boolean matches(SNIServerName sniServerName) {
+                            return match;
+                        }",method,
+"                        @Override
+                        public void userEventTriggered(ChannelHandlerContext ctx, Object evt) throws Exception {
+                            if (evt instanceof SslHandshakeCompletionEvent) {
+                                SslHandshakeCompletionEvent event = (SslHandshakeCompletionEvent) evt;
+                                if (match) {
+                                    if (event.isSuccess()) {
+                                        promise.setSuccess(null);
+                                    } else {
+                                        promise.setFailure(event.cause());
+                                    }
+                                } else {
+                                    if (event.isSuccess()) {
+                                        promise.setFailure(new AssertionError(""expected SSLException""));
+                                    } else {
+                                        Throwable cause = event.cause();
+                                        if (cause instanceof SSLException) {
+                                            promise.setSuccess(null);
+                                        } else {
+                                            promise.setFailure(
+                                                    new AssertionError(""cause not of type SSLException: ""
+                                                            + ThrowableUtil.stackTraceToString(cause)));
+                                        }
+                                    }
+                                }
+                            }
+                        }",method,
+"                            if (evt instanceof SslHandshakeCompletionEvent) {
+                                SslHandshakeCompletionEvent event = (SslHandshakeCompletionEvent) evt;
+                                if (match) {
+                                    if (event.isSuccess()) {
+                                        promise.setSuccess(null);
+                                    } else {
+                                        promise.setFailure(event.cause());
+                                    }
+                                } else {
+                                    if (event.isSuccess()) {
+                                        promise.setFailure(new AssertionError(""expected SSLException""));
+                                    } else {
+                                        Throwable cause = event.cause();
+                                        if (cause instanceof SSLException) {
+                                            promise.setSuccess(null);
+                                        } else {
+                                            promise.setFailure(
+                                                    new AssertionError(""cause not of type SSLException: ""
+                                                            + ThrowableUtil.stackTraceToString(cause)));
+                                        }
+                                    }
+                                }
+                            }",method,
+"                                if (match) {
+                                    if (event.isSuccess()) {
+                                        promise.setSuccess(null);
+                                    } else {
+                                        promise.setFailure(event.cause());
+                                    }
+                                }",method,
+"                                        if (cause instanceof SSLException) {
+                                            promise.setSuccess(null);
+                                        }",method,
+"            if (cc != null) {
+                cc.close().syncUninterruptibly();
+            }",method,
+"            if (sc != null) {
+                sc.close().syncUninterruptibly();
+            }",method,
+"public class LongHashTests extends ESSingleNodeTestCase {
+    LongHash hash;
+    private BigArrays randombigArrays() {
+        return new MockBigArrays(Settings.EMPTY, new NoneCircuitBreakerService());
+    }
+    private void newHash() {
+        if (hash != null) {
+            hash.close();
+        }
+        // Test high load factors to make sure that collision resolution works fine
+        final float maxLoadFactor = 0.6f + randomFloat() * 0.39f;
+        hash = new LongHash(randomIntBetween(0, 100), maxLoadFactor, randombigArrays());
+    }
+    @Override
+    public void setUp() throws Exception {
+        super.setUp();
+        newHash();
+    }
+    public void testDuell() {
+        final Long[] values = new Long[randomIntBetween(1, 100000)];
+        for (int i = 0; i < values.length; ++i) {
+            values[i] = randomLong();
+        }
+        final LongLongMap valueToId = new LongLongHashMap();
+        final long[] idToValue = new long[values.length];
+        final int iters = randomInt(1000000);
+        for (int i = 0; i < iters; ++i) {
+            final Long value = randomFrom(values);
+            if (valueToId.containsKey(value)) {
+                assertEquals(-1 - valueToId.get(value), hash.add(value));
+            } else {
+                assertEquals(valueToId.size(), hash.add(value));
+                idToValue[valueToId.size()] = value;
+                valueToId.put(value, valueToId.size());
+            }
+        }
+        assertEquals(valueToId.size(), hash.size());
+        for (Iterator<LongLongCursor> iterator = valueToId.iterator(); iterator.hasNext(); ) {
+            final LongLongCursor next = iterator.next();
+            assertEquals(next.value, hash.find(next.key));
+        }
+        for (long i = 0; i < hash.capacity(); ++i) {
+            final long id = hash.id(i);
+            if (id >= 0) {
+                assertEquals(idToValue[(int) id], hash.get(id));
+            }
+        }
+        for (long i = 0; i < hash.size(); i++) {
+            assertEquals(idToValue[(int) i], hash.get(i));
+        }
+        hash.close();
+    }
+    public void testSize() {
+        int num = scaledRandomIntBetween(2, 20);
+        for (int j = 0; j < num; j++) {
+            final int mod = 1 + randomInt(40);
+            for (int i = 0; i < 797; i++) {
+                long count = hash.size();
+                long key = hash.add(randomLong());
+                if (key < 0)
+                    assertEquals(hash.size(), count);
+                else
+                    assertEquals(hash.size(), count + 1);
+                if (i % mod == 0) {
+                    newHash();
+                }
+            }
+        }
+        hash.close();
+    }
+    public void testKey() {
+        int num = scaledRandomIntBetween(2, 20);
+        for (int j = 0; j < num; j++) {
+            Map<Long, Long> longs = new HashMap<>();
+            int uniqueCount = 0;
+            for (int i = 0; i < 797; i++) {
+                long ref = randomLong();
+                long count = hash.size();
+                long key = hash.add(ref);
+                if (key >= 0) {
+                    assertNull(longs.put(ref, key));
+                    assertEquals(uniqueCount, key);
+                    uniqueCount++;
+                    assertEquals(hash.size(), count + 1);
+                } else {
+                    assertTrue((-key) - 1L < count);
+                    assertEquals(hash.size(), count);
+                }
+            }
+            for (Map.Entry<Long, Long> entry : longs.entrySet()) {
+                long expected = entry.getKey();
+                long keyIdx = entry.getValue();
+                assertEquals(expected, hash.get(keyIdx));
+            }
+            newHash();
+        }
+        hash.close();
+    }
+    public void testAdd() {
+        int num = scaledRandomIntBetween(2, 20);
+        for (int j = 0; j < num; j++) {
+            Set<Long> longs = new HashSet<>();
+            int uniqueCount = 0;
+            for (int i = 0; i < 797; i++) {
+                long ref = randomLong();
+                long count = hash.size();
+                long key = hash.add(ref);
+                if (key >= 0) {
+                    assertTrue(longs.add(ref));
+                    assertEquals(uniqueCount, key);
+                    assertEquals(hash.size(), count + 1);
+                    uniqueCount++;
+                } else {
+                    assertFalse(longs.add(ref));
+                    assertTrue((-key) - 1 < count);
+                    assertEquals(ref, hash.get((-key) - 1));
+                    assertEquals(count, hash.size());
+                }
+            }
+            assertAllIn(longs, hash);
+            newHash();
+        }
+        hash.close();
+    }
+    public void testFind() throws Exception {
+        int num = scaledRandomIntBetween(2, 20);
+        for (int j = 0; j < num; j++) {
+            Set<Long> longs = new HashSet<>();
+            int uniqueCount = 0;
+            for (int i = 0; i < 797; i++) {
+                long ref = randomLong();
+                long count = hash.size();
+                long key = hash.find(ref);
+                if (key >= 0) { // found in hash
+                    assertFalse(longs.add(ref));
+                    assertTrue(key < count);
+                    assertEquals(ref, hash.get(key));
+                    assertEquals(count, hash.size());
+                } else {
+                    key = hash.add(ref);
+                    assertTrue(longs.add(ref));
+                    assertEquals(uniqueCount, key);
+                    assertEquals(hash.size(), count + 1);
+                    uniqueCount++;
+                }
+            }
+            assertAllIn(longs, hash);
+            newHash();
+        }
+        hash.close();
+    }
+    private static void assertAllIn(Set<Long> longs, LongHash hash) {
+        long count = hash.size();
+        for (Long l : longs) {
+            long key = hash.add(l); // add again to check duplicates
+            assertEquals(l.longValue(), hash.get((-key) - 1));
+            assertEquals(count, hash.size());
+            assertTrue(""key: "" + key + "" count: "" + count + "" long: "" + l, key < count);
+        }
+    }
+}",class,
+"    private BigArrays randombigArrays() {
+        return new MockBigArrays(Settings.EMPTY, new NoneCircuitBreakerService());
+    }",method,
+"    private void newHash() {
+        if (hash != null) {
+            hash.close();
+        }
+        // Test high load factors to make sure that collision resolution works fine
+        final float maxLoadFactor = 0.6f + randomFloat() * 0.39f;
+        hash = new LongHash(randomIntBetween(0, 100), maxLoadFactor, randombigArrays());
+    }",method,
+"        if (hash != null) {
+            hash.close();
+        }",method,
+"    @Override
+    public void setUp() throws Exception {
+        super.setUp();
+        newHash();
+    }",method,
+"    public void testDuell() {
+        final Long[] values = new Long[randomIntBetween(1, 100000)];
+        for (int i = 0; i < values.length; ++i) {
+            values[i] = randomLong();
+        }
+        final LongLongMap valueToId = new LongLongHashMap();
+        final long[] idToValue = new long[values.length];
+        final int iters = randomInt(1000000);
+        for (int i = 0; i < iters; ++i) {
+            final Long value = randomFrom(values);
+            if (valueToId.containsKey(value)) {
+                assertEquals(-1 - valueToId.get(value), hash.add(value));
+            } else {
+                assertEquals(valueToId.size(), hash.add(value));
+                idToValue[valueToId.size()] = value;
+                valueToId.put(value, valueToId.size());
+            }
+        }
+        assertEquals(valueToId.size(), hash.size());
+        for (Iterator<LongLongCursor> iterator = valueToId.iterator(); iterator.hasNext(); ) {
+            final LongLongCursor next = iterator.next();
+            assertEquals(next.value, hash.find(next.key));
+        }
+        for (long i = 0; i < hash.capacity(); ++i) {
+            final long id = hash.id(i);
+            if (id >= 0) {
+                assertEquals(idToValue[(int) id], hash.get(id));
+            }
+        }
+        for (long i = 0; i < hash.size(); i++) {
+            assertEquals(idToValue[(int) i], hash.get(i));
+        }
+        hash.close();
+    }",method,
+"        for (int i = 0; i < values.length; ++i) {
+            values[i] = randomLong();
+        }",method,
+"        for (int i = 0; i < iters; ++i) {
+            final Long value = randomFrom(values);
+            if (valueToId.containsKey(value)) {
+                assertEquals(-1 - valueToId.get(value), hash.add(value));
+            } else {
+                assertEquals(valueToId.size(), hash.add(value));
+                idToValue[valueToId.size()] = value;
+                valueToId.put(value, valueToId.size());
+            }
+        }",method,
+"            if (id >= 0) {
+                assertEquals(idToValue[(int) id], hash.get(id));
+            }",method,
+"    public void testSize() {
+        int num = scaledRandomIntBetween(2, 20);
+        for (int j = 0; j < num; j++) {
+            final int mod = 1 + randomInt(40);
+            for (int i = 0; i < 797; i++) {
+                long count = hash.size();
+                long key = hash.add(randomLong());
+                if (key < 0)
+                    assertEquals(hash.size(), count);
+                else
+                    assertEquals(hash.size(), count + 1);
+                if (i % mod == 0) {
+                    newHash();
+                }
+            }
+        }
+        hash.close();
+    }",method,
+"        for (int j = 0; j < num; j++) {
+            final int mod = 1 + randomInt(40);
+            for (int i = 0; i < 797; i++) {
+                long count = hash.size();
+                long key = hash.add(randomLong());
+                if (key < 0)
+                    assertEquals(hash.size(), count);
+                else
+                    assertEquals(hash.size(), count + 1);
+                if (i % mod == 0) {
+                    newHash();
+                }
+            }
+        }",method,
+"            for (int i = 0; i < 797; i++) {
+                long count = hash.size();
+                long key = hash.add(randomLong());
+                if (key < 0)
+                    assertEquals(hash.size(), count);
+                else
+                    assertEquals(hash.size(), count + 1);
+                if (i % mod == 0) {
+                    newHash();
+                }
+            }",method,
+"                if (i % mod == 0) {
+                    newHash();
+                }",method,
+"    public void testKey() {
+        int num = scaledRandomIntBetween(2, 20);
+        for (int j = 0; j < num; j++) {
+            Map<Long, Long> longs = new HashMap<>();
+            int uniqueCount = 0;
+            for (int i = 0; i < 797; i++) {
+                long ref = randomLong();
+                long count = hash.size();
+                long key = hash.add(ref);
+                if (key >= 0) {
+                    assertNull(longs.put(ref, key));
+                    assertEquals(uniqueCount, key);
+                    uniqueCount++;
+                    assertEquals(hash.size(), count + 1);
+                } else {
+                    assertTrue((-key) - 1L < count);
+                    assertEquals(hash.size(), count);
+                }
+            }
+            for (Map.Entry<Long, Long> entry : longs.entrySet()) {
+                long expected = entry.getKey();
+                long keyIdx = entry.getValue();
+                assertEquals(expected, hash.get(keyIdx));
+            }
+            newHash();
+        }
+        hash.close();
+    }",method,
+"        for (int j = 0; j < num; j++) {
+            Map<Long, Long> longs = new HashMap<>();
+            int uniqueCount = 0;
+            for (int i = 0; i < 797; i++) {
+                long ref = randomLong();
+                long count = hash.size();
+                long key = hash.add(ref);
+                if (key >= 0) {
+                    assertNull(longs.put(ref, key));
+                    assertEquals(uniqueCount, key);
+                    uniqueCount++;
+                    assertEquals(hash.size(), count + 1);
+                } else {
+                    assertTrue((-key) - 1L < count);
+                    assertEquals(hash.size(), count);
+                }
+            }
+            for (Map.Entry<Long, Long> entry : longs.entrySet()) {
+                long expected = entry.getKey();
+                long keyIdx = entry.getValue();
+                assertEquals(expected, hash.get(keyIdx));
+            }
+            newHash();
+        }",method,
+"            for (int i = 0; i < 797; i++) {
+                long ref = randomLong();
+                long count = hash.size();
+                long key = hash.add(ref);
+                if (key >= 0) {
+                    assertNull(longs.put(ref, key));
+                    assertEquals(uniqueCount, key);
+                    uniqueCount++;
+                    assertEquals(hash.size(), count + 1);
+                } else {
+                    assertTrue((-key) - 1L < count);
+                    assertEquals(hash.size(), count);
+                }
+            }",method,
+"                if (key >= 0) {
+                    assertNull(longs.put(ref, key));
+                    assertEquals(uniqueCount, key);
+                    uniqueCount++;
+                    assertEquals(hash.size(), count + 1);
+                }",method,
+"    public void testAdd() {
+        int num = scaledRandomIntBetween(2, 20);
+        for (int j = 0; j < num; j++) {
+            Set<Long> longs = new HashSet<>();
+            int uniqueCount = 0;
+            for (int i = 0; i < 797; i++) {
+                long ref = randomLong();
+                long count = hash.size();
+                long key = hash.add(ref);
+                if (key >= 0) {
+                    assertTrue(longs.add(ref));
+                    assertEquals(uniqueCount, key);
+                    assertEquals(hash.size(), count + 1);
+                    uniqueCount++;
+                } else {
+                    assertFalse(longs.add(ref));
+                    assertTrue((-key) - 1 < count);
+                    assertEquals(ref, hash.get((-key) - 1));
+                    assertEquals(count, hash.size());
+                }
+            }
+            assertAllIn(longs, hash);
+            newHash();
+        }
+        hash.close();
+    }",method,
+"        for (int j = 0; j < num; j++) {
+            Set<Long> longs = new HashSet<>();
+            int uniqueCount = 0;
+            for (int i = 0; i < 797; i++) {
+                long ref = randomLong();
+                long count = hash.size();
+                long key = hash.add(ref);
+                if (key >= 0) {
+                    assertTrue(longs.add(ref));
+                    assertEquals(uniqueCount, key);
+                    assertEquals(hash.size(), count + 1);
+                    uniqueCount++;
+                } else {
+                    assertFalse(longs.add(ref));
+                    assertTrue((-key) - 1 < count);
+                    assertEquals(ref, hash.get((-key) - 1));
+                    assertEquals(count, hash.size());
+                }
+            }
+            assertAllIn(longs, hash);
+            newHash();
+        }",method,

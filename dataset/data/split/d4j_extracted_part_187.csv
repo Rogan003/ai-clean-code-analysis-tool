@@ -1,0 +1,1402 @@
+code_snippet,type,score
+"  @Override
+  @NotNull
+  public Lexer getHighlightingLexer() {
+    return myParserDefinition.createLexer(myProject);
+  }",method,
+"  @Override
+  @NotNull
+  public TextAttributesKey[] getTokenHighlights(IElementType tokenType) {
+    return pack(ourMap.get(tokenType));
+  }",method,
+"public class ExceptionUtils {
+    public static RuntimeException wrap(IOException e) {
+        throw new ParcelableException(e);
+    }
+    public static void maybeUnwrapIOException(RuntimeException e) throws IOException {
+        if (e instanceof ParcelableException) {
+            ((ParcelableException) e).maybeRethrow(IOException.class);
+        }
+    }
+    public static String getCompleteMessage(String msg, Throwable t) {
+        final StringBuilder builder = new StringBuilder();
+        if (msg != null) {
+            builder.append(msg).append("": "");
+        }
+        builder.append(t.getMessage());
+        while ((t = t.getCause()) != null) {
+            builder.append("": "").append(t.getMessage());
+        }
+        return builder.toString();
+    }
+    public static String getCompleteMessage(Throwable t) {
+        return getCompleteMessage(null, t);
+    }
+    public static <E extends Throwable> void propagateIfInstanceOf(
+            @Nullable Throwable t, Class<E> c) throws E {
+        if (t != null && c.isInstance(t)) {
+            throw c.cast(t);
+        }
+    }
+    public static <E extends Exception> RuntimeException propagate(@NonNull Throwable t, Class<E> c)
+            throws E {
+        propagateIfInstanceOf(t, c);
+        return propagate(t);
+    }
+    public static RuntimeException propagate(@NonNull Throwable t) {
+        Preconditions.checkNotNull(t);
+        propagateIfInstanceOf(t, Error.class);
+        propagateIfInstanceOf(t, RuntimeException.class);
+        throw new RuntimeException(t);
+    }
+}",class,
+"    public static RuntimeException wrap(IOException e) {
+        throw new ParcelableException(e);
+    }",method,
+"    public static void maybeUnwrapIOException(RuntimeException e) throws IOException {
+        if (e instanceof ParcelableException) {
+            ((ParcelableException) e).maybeRethrow(IOException.class);
+        }
+    }",method,
+"        if (e instanceof ParcelableException) {
+            ((ParcelableException) e).maybeRethrow(IOException.class);
+        }",method,
+"    public static String getCompleteMessage(String msg, Throwable t) {
+        final StringBuilder builder = new StringBuilder();
+        if (msg != null) {
+            builder.append(msg).append("": "");
+        }
+        builder.append(t.getMessage());
+        while ((t = t.getCause()) != null) {
+            builder.append("": "").append(t.getMessage());
+        }
+        return builder.toString();
+    }",method,
+"        if (msg != null) {
+            builder.append(msg).append("": "");
+        }",method,
+"    public static String getCompleteMessage(Throwable t) {
+        return getCompleteMessage(null, t);
+    }",method,
+"    public static <E extends Throwable> void propagateIfInstanceOf(
+            @Nullable Throwable t, Class<E> c) throws E {
+        if (t != null && c.isInstance(t)) {
+            throw c.cast(t);
+        }
+    }",method,
+"    public static <E extends Exception> RuntimeException propagate(@NonNull Throwable t, Class<E> c)
+            throws E {
+        propagateIfInstanceOf(t, c);
+        return propagate(t);
+    }",method,
+"    public static RuntimeException propagate(@NonNull Throwable t) {
+        Preconditions.checkNotNull(t);
+        propagateIfInstanceOf(t, Error.class);
+        propagateIfInstanceOf(t, RuntimeException.class);
+        throw new RuntimeException(t);
+    }",method,
+"public class ShoveGestureDetector extends TwoFingerGestureDetector {
+    private final OnShoveGestureListener mListener;
+    private float mPrevAverageY;
+    private float mCurrAverageY;
+    private boolean mSloppyGesture;
+    public ShoveGestureDetector(Context context, OnShoveGestureListener listener) {
+        super(context);
+        mListener = listener;
+    }
+    @Override
+    protected void handleStartProgressEvent(int actionCode, MotionEvent event) {
+        switch (actionCode) {
+            case MotionEvent.ACTION_POINTER_DOWN:
+                // At least the second finger is on screen now
+                resetState(); // In case we missed an UP/CANCEL event
+                mPrevEvent = MotionEvent.obtain(event);
+                mTimeDelta = 0;
+                updateStateByEvent(event);
+                // See if we have a sloppy gesture
+                mSloppyGesture = isSloppyGesture(event);
+                if (!mSloppyGesture) {
+                    // No, start gesture now
+                    mGestureInProgress = mListener.onShoveBegin(this);
+                }
+                break;
+            case MotionEvent.ACTION_MOVE:
+                if (!mSloppyGesture) {
+                    break;
+                }
+                // See if we still have a sloppy gesture
+                mSloppyGesture = isSloppyGesture(event);
+                if (!mSloppyGesture) {
+                    // No, start normal gesture now
+                    mGestureInProgress = mListener.onShoveBegin(this);
+                }
+                break;
+            case MotionEvent.ACTION_POINTER_UP:
+                if (!mSloppyGesture) {
+                    break;
+                }
+                break;
+        }
+    }
+    @Override
+    protected void handleInProgressEvent(int actionCode, MotionEvent event) {
+        switch (actionCode) {
+            case MotionEvent.ACTION_POINTER_UP:
+                // Gesture ended but
+                updateStateByEvent(event);
+                if (!mSloppyGesture) {
+                    mListener.onShoveEnd(this);
+                }
+                resetState();
+                break;
+            case MotionEvent.ACTION_CANCEL:
+                if (!mSloppyGesture) {
+                    mListener.onShoveEnd(this);
+                }
+                resetState();
+                break;
+            case MotionEvent.ACTION_MOVE:
+                updateStateByEvent(event);
+                // Only accept the event if our relative pressure is within
+                // a certain limit. This can help filter shaky data as a
+                // finger is lifted. Also check that shove is meaningful.
+                if (mCurrPressure / mPrevPressure > PRESSURE_THRESHOLD
+                        && Math.abs(getShovePixelsDelta()) > 0.5f) {
+                    final boolean updatePrevious = mListener.onShove(this);
+                    if (updatePrevious) {
+                        mPrevEvent.recycle();
+                        mPrevEvent = MotionEvent.obtain(event);
+                    }
+                }
+                break;
+        }
+    }
+    @Override
+    protected void updateStateByEvent(MotionEvent curr) {
+        super.updateStateByEvent(curr);
+        final MotionEvent prev = mPrevEvent;
+        float py0 = prev.getY(0);
+        float py1 = prev.getY(1);
+        mPrevAverageY = (py0 + py1) / 2.0f;
+        float cy0 = curr.getY(0);
+        float cy1 = curr.getY(1);
+        mCurrAverageY = (cy0 + cy1) / 2.0f;
+    }
+    @Override
+    protected boolean isSloppyGesture(MotionEvent event) {
+        boolean sloppy = super.isSloppyGesture(event);
+        if (sloppy)
+            return true;
+        // If it's not traditionally sloppy, we check if the angle between fingers
+        // is acceptable.
+        double angle = Math.abs(Math.atan2(mCurrFingerDiffY, mCurrFingerDiffX));
+        //about 20 degrees, left or right
+        return !((0.0f < angle && angle < 0.35f)
+                || 2.79f < angle && angle < Math.PI);
+    }
+    public float getShovePixelsDelta() {
+        return mCurrAverageY - mPrevAverageY;
+    }
+    @Override
+    protected void resetState() {
+        super.resetState();
+        mSloppyGesture = false;
+        mPrevAverageY = 0.0f;
+        mCurrAverageY = 0.0f;
+    }
+    public interface OnShoveGestureListener {
+        public boolean onShove(ShoveGestureDetector detector);
+        public boolean onShoveBegin(ShoveGestureDetector detector);
+        public void onShoveEnd(ShoveGestureDetector detector);
+    }
+    public static class SimpleOnShoveGestureListener implements OnShoveGestureListener {
+        public boolean onShove(ShoveGestureDetector detector) {
+            return false;
+        }
+        public boolean onShoveBegin(ShoveGestureDetector detector) {
+            return true;
+        }
+        public void onShoveEnd(ShoveGestureDetector detector) {
+            // Do nothing, overridden implementation may be used
+        }
+    }
+}",class,
+"    public static class SimpleOnShoveGestureListener implements OnShoveGestureListener {
+        public boolean onShove(ShoveGestureDetector detector) {
+            return false;
+        }
+        public boolean onShoveBegin(ShoveGestureDetector detector) {
+            return true;
+        }
+        public void onShoveEnd(ShoveGestureDetector detector) {
+            // Do nothing, overridden implementation may be used
+        }
+    }",class,
+"    public ShoveGestureDetector(Context context, OnShoveGestureListener listener) {
+        super(context);
+        mListener = listener;
+    }",method,
+"    @Override
+    protected void handleStartProgressEvent(int actionCode, MotionEvent event) {
+        switch (actionCode) {
+            case MotionEvent.ACTION_POINTER_DOWN:
+                // At least the second finger is on screen now
+                resetState(); // In case we missed an UP/CANCEL event
+                mPrevEvent = MotionEvent.obtain(event);
+                mTimeDelta = 0;
+                updateStateByEvent(event);
+                // See if we have a sloppy gesture
+                mSloppyGesture = isSloppyGesture(event);
+                if (!mSloppyGesture) {
+                    // No, start gesture now
+                    mGestureInProgress = mListener.onShoveBegin(this);
+                }
+                break;
+            case MotionEvent.ACTION_MOVE:
+                if (!mSloppyGesture) {
+                    break;
+                }
+                // See if we still have a sloppy gesture
+                mSloppyGesture = isSloppyGesture(event);
+                if (!mSloppyGesture) {
+                    // No, start normal gesture now
+                    mGestureInProgress = mListener.onShoveBegin(this);
+                }
+                break;
+            case MotionEvent.ACTION_POINTER_UP:
+                if (!mSloppyGesture) {
+                    break;
+                }
+                break;
+        }
+    }",method,
+"        switch (actionCode) {
+            case MotionEvent.ACTION_POINTER_DOWN:
+                // At least the second finger is on screen now
+                resetState(); // In case we missed an UP/CANCEL event
+                mPrevEvent = MotionEvent.obtain(event);
+                mTimeDelta = 0;
+                updateStateByEvent(event);
+                // See if we have a sloppy gesture
+                mSloppyGesture = isSloppyGesture(event);
+                if (!mSloppyGesture) {
+                    // No, start gesture now
+                    mGestureInProgress = mListener.onShoveBegin(this);
+                }
+                break;
+            case MotionEvent.ACTION_MOVE:
+                if (!mSloppyGesture) {
+                    break;
+                }
+                // See if we still have a sloppy gesture
+                mSloppyGesture = isSloppyGesture(event);
+                if (!mSloppyGesture) {
+                    // No, start normal gesture now
+                    mGestureInProgress = mListener.onShoveBegin(this);
+                }
+                break;
+            case MotionEvent.ACTION_POINTER_UP:
+                if (!mSloppyGesture) {
+                    break;
+                }
+                break;
+        }",method,
+"                if (!mSloppyGesture) {
+                    // No, start gesture now
+                    mGestureInProgress = mListener.onShoveBegin(this);
+                }",method,
+"                if (!mSloppyGesture) {
+                    break;
+                }",method,
+"                if (!mSloppyGesture) {
+                    // No, start normal gesture now
+                    mGestureInProgress = mListener.onShoveBegin(this);
+                }",method,
+"                if (!mSloppyGesture) {
+                    break;
+                }",method,
+"    @Override
+    protected void handleInProgressEvent(int actionCode, MotionEvent event) {
+        switch (actionCode) {
+            case MotionEvent.ACTION_POINTER_UP:
+                // Gesture ended but
+                updateStateByEvent(event);
+                if (!mSloppyGesture) {
+                    mListener.onShoveEnd(this);
+                }
+                resetState();
+                break;
+            case MotionEvent.ACTION_CANCEL:
+                if (!mSloppyGesture) {
+                    mListener.onShoveEnd(this);
+                }
+                resetState();
+                break;
+            case MotionEvent.ACTION_MOVE:
+                updateStateByEvent(event);
+                // Only accept the event if our relative pressure is within
+                // a certain limit. This can help filter shaky data as a
+                // finger is lifted. Also check that shove is meaningful.
+                if (mCurrPressure / mPrevPressure > PRESSURE_THRESHOLD
+                        && Math.abs(getShovePixelsDelta()) > 0.5f) {
+                    final boolean updatePrevious = mListener.onShove(this);
+                    if (updatePrevious) {
+                        mPrevEvent.recycle();
+                        mPrevEvent = MotionEvent.obtain(event);
+                    }
+                }
+                break;
+        }
+    }",method,
+"        switch (actionCode) {
+            case MotionEvent.ACTION_POINTER_UP:
+                // Gesture ended but
+                updateStateByEvent(event);
+                if (!mSloppyGesture) {
+                    mListener.onShoveEnd(this);
+                }
+                resetState();
+                break;
+            case MotionEvent.ACTION_CANCEL:
+                if (!mSloppyGesture) {
+                    mListener.onShoveEnd(this);
+                }
+                resetState();
+                break;
+            case MotionEvent.ACTION_MOVE:
+                updateStateByEvent(event);
+                // Only accept the event if our relative pressure is within
+                // a certain limit. This can help filter shaky data as a
+                // finger is lifted. Also check that shove is meaningful.
+                if (mCurrPressure / mPrevPressure > PRESSURE_THRESHOLD
+                        && Math.abs(getShovePixelsDelta()) > 0.5f) {
+                    final boolean updatePrevious = mListener.onShove(this);
+                    if (updatePrevious) {
+                        mPrevEvent.recycle();
+                        mPrevEvent = MotionEvent.obtain(event);
+                    }
+                }
+                break;
+        }",method,
+"                if (!mSloppyGesture) {
+                    mListener.onShoveEnd(this);
+                }",method,
+"                if (!mSloppyGesture) {
+                    mListener.onShoveEnd(this);
+                }",method,
+"                    if (updatePrevious) {
+                        mPrevEvent.recycle();
+                        mPrevEvent = MotionEvent.obtain(event);
+                    }",method,
+"    @Override
+    protected void updateStateByEvent(MotionEvent curr) {
+        super.updateStateByEvent(curr);
+        final MotionEvent prev = mPrevEvent;
+        float py0 = prev.getY(0);
+        float py1 = prev.getY(1);
+        mPrevAverageY = (py0 + py1) / 2.0f;
+        float cy0 = curr.getY(0);
+        float cy1 = curr.getY(1);
+        mCurrAverageY = (cy0 + cy1) / 2.0f;
+    }",method,
+"    @Override
+    protected boolean isSloppyGesture(MotionEvent event) {
+        boolean sloppy = super.isSloppyGesture(event);
+        if (sloppy)
+            return true;
+        // If it's not traditionally sloppy, we check if the angle between fingers
+        // is acceptable.
+        double angle = Math.abs(Math.atan2(mCurrFingerDiffY, mCurrFingerDiffX));
+        //about 20 degrees, left or right
+        return !((0.0f < angle && angle < 0.35f)
+                || 2.79f < angle && angle < Math.PI);
+    }",method,
+"    public float getShovePixelsDelta() {
+        return mCurrAverageY - mPrevAverageY;
+    }",method,
+"    @Override
+    protected void resetState() {
+        super.resetState();
+        mSloppyGesture = false;
+        mPrevAverageY = 0.0f;
+        mCurrAverageY = 0.0f;
+    }",method,
+"        public boolean onShove(ShoveGestureDetector detector) {
+            return false;
+        }",method,
+"        public boolean onShoveBegin(ShoveGestureDetector detector) {
+            return true;
+        }",method,
+"        public void onShoveEnd(ShoveGestureDetector detector) {
+            // Do nothing, overridden implementation may be used
+        }",method,
+"import java.util.Base64;
+class ShortcutPackageInfo {
+    private static final String TAG = ShortcutService.TAG;
+    static final String TAG_ROOT = ""package-info"";
+    private static final String ATTR_VERSION = ""version"";
+    private static final String ATTR_LAST_UPDATE_TIME = ""last_udpate_time"";
+    private static final String ATTR_SHADOW = ""shadow"";
+    private static final String TAG_SIGNATURE = ""signature"";
+    private static final String ATTR_SIGNATURE_HASH = ""hash"";
+    private static final int VERSION_UNKNOWN = -1;
+    private boolean mIsShadow;
+    private int mVersionCode = VERSION_UNKNOWN;
+    private long mLastUpdateTime;
+    private ArrayList<byte[]> mSigHashes;
+    private ShortcutPackageInfo(int versionCode, long lastUpdateTime,
+            ArrayList<byte[]> sigHashes, boolean isShadow) {
+        mVersionCode = versionCode;
+        mLastUpdateTime = lastUpdateTime;
+        mIsShadow = isShadow;
+        mSigHashes = sigHashes;
+    }
+    public static ShortcutPackageInfo newEmpty() {
+        return new ShortcutPackageInfo(VERSION_UNKNOWN,  0,
+                new ArrayList<>(0),  false);
+    }
+    public boolean isShadow() {
+        return mIsShadow;
+    }
+    public void setShadow(boolean shadow) {
+        mIsShadow = shadow;
+    }
+    public int getVersionCode() {
+        return mVersionCode;
+    }
+    public long getLastUpdateTime() {
+        return mLastUpdateTime;
+    }
+    public void updateVersionInfo(@NonNull PackageInfo pi) {
+        if (pi != null) {
+            mVersionCode = pi.versionCode;
+            mLastUpdateTime = pi.lastUpdateTime;
+        }
+    }
+    public boolean hasSignatures() {
+        return mSigHashes.size() > 0;
+    }
+    public boolean canRestoreTo(ShortcutService s, PackageInfo target) {
+        if (!s.shouldBackupApp(target)) {
+            // ""allowBackup"" was true when backed up, but now false.
+            Slog.w(TAG, ""Can't restore: package no longer allows backup"");
+            return false;
+        }
+        if (target.versionCode < mVersionCode) {
+            Slog.w(TAG, String.format(
+                    ""Can't restore: package current version %d < backed up version %d"",
+                    target.versionCode, mVersionCode));
+            return false;
+        }
+        if (!BackupUtils.signaturesMatch(mSigHashes, target)) {
+            Slog.w(TAG, ""Can't restore: Package signature mismatch"");
+            return false;
+        }
+        return true;
+    }
+    @VisibleForTesting
+    public static ShortcutPackageInfo generateForInstalledPackageForTest(
+            ShortcutService s, String packageName, @UserIdInt int packageUserId) {
+        final PackageInfo pi = s.getPackageInfoWithSignatures(packageName, packageUserId);
+        if (pi.signatures == null || pi.signatures.length == 0) {
+            Slog.e(TAG, ""Can't get signatures: package="" + packageName);
+            return null;
+        }
+        final ShortcutPackageInfo ret = new ShortcutPackageInfo(pi.versionCode, pi.lastUpdateTime,
+                BackupUtils.hashSignatureArray(pi.signatures),  false);
+        return ret;
+    }
+    public void refreshSignature(ShortcutService s, ShortcutPackageItem pkg) {
+        if (mIsShadow) {
+            s.wtf(""Attempted to refresh package info for shadow package "" + pkg.getPackageName()
+                    + "", user="" + pkg.getOwnerUserId());
+            return;
+        }
+        // Note use mUserId here, rather than userId.
+        final PackageInfo pi = s.getPackageInfoWithSignatures(
+                pkg.getPackageName(), pkg.getPackageUserId());
+        if (pi == null) {
+            Slog.w(TAG, ""Package not found: "" + pkg.getPackageName());
+            return;
+        }
+        mSigHashes = BackupUtils.hashSignatureArray(pi.signatures);
+    }
+    public void saveToXml(XmlSerializer out) throws IOException {
+        out.startTag(null, TAG_ROOT);
+        ShortcutService.writeAttr(out, ATTR_VERSION, mVersionCode);
+        ShortcutService.writeAttr(out, ATTR_LAST_UPDATE_TIME, mLastUpdateTime);
+        ShortcutService.writeAttr(out, ATTR_SHADOW, mIsShadow);
+        for (int i = 0; i < mSigHashes.size(); i++) {
+            out.startTag(null, TAG_SIGNATURE);
+            final String encoded = Base64.getEncoder().encodeToString(mSigHashes.get(i));
+            ShortcutService.writeAttr(out, ATTR_SIGNATURE_HASH, encoded);
+            out.endTag(null, TAG_SIGNATURE);
+        }
+        out.endTag(null, TAG_ROOT);
+    }
+    public void loadFromXml(XmlPullParser parser, boolean fromBackup)
+            throws IOException, XmlPullParserException {
+        final int versionCode = ShortcutService.parseIntAttribute(parser, ATTR_VERSION);
+        final long lastUpdateTime = ShortcutService.parseLongAttribute(
+                parser, ATTR_LAST_UPDATE_TIME);
+        // When restoring from backup, it's always shadow.
+        final boolean shadow =
+                fromBackup || ShortcutService.parseBooleanAttribute(parser, ATTR_SHADOW);
+        final ArrayList<byte[]> hashes = new ArrayList<>();
+        final int outerDepth = parser.getDepth();
+        int type;
+        while ((type = parser.next()) != XmlPullParser.END_DOCUMENT
+                && (type != XmlPullParser.END_TAG || parser.getDepth() > outerDepth)) {
+            if (type != XmlPullParser.START_TAG) {
+                continue;
+            }
+            final int depth = parser.getDepth();
+            final String tag = parser.getName();
+            if (depth == outerDepth + 1) {
+                switch (tag) {
+                    case TAG_SIGNATURE: {
+                        final String hash = ShortcutService.parseStringAttribute(
+                                parser, ATTR_SIGNATURE_HASH);
+                        // Throws IllegalArgumentException if hash is invalid base64 data
+                        final byte[] decoded = Base64.getDecoder().decode(hash);
+                        hashes.add(decoded);
+                        continue;
+                    }
+                }
+            }
+            ShortcutService.warnForInvalidTag(depth, tag);
+        }
+        // Successfully loaded; replace the feilds.
+        mVersionCode = versionCode;
+        mLastUpdateTime = lastUpdateTime;
+        mIsShadow = shadow;
+        mSigHashes = hashes;
+    }
+    public void dump(PrintWriter pw, String prefix) {
+        pw.println();
+        pw.print(prefix);
+        pw.println(""PackageInfo:"");
+        pw.print(prefix);
+        pw.print(""  IsShadow: "");
+        pw.print(mIsShadow);
+        pw.println();
+        pw.print(prefix);
+        pw.print(""  Version: "");
+        pw.print(mVersionCode);
+        pw.println();
+        pw.print(prefix);
+        pw.print(""  Last package update time: "");
+        pw.print(mLastUpdateTime);
+        pw.println();
+        for (int i = 0; i < mSigHashes.size(); i++) {
+            pw.print(prefix);
+            pw.print(""    "");
+            pw.print(""SigHash: "");
+            pw.println(HexEncoding.encode(mSigHashes.get(i)));
+        }
+    }
+}",class,
+"    private ShortcutPackageInfo(int versionCode, long lastUpdateTime,
+            ArrayList<byte[]> sigHashes, boolean isShadow) {
+        mVersionCode = versionCode;
+        mLastUpdateTime = lastUpdateTime;
+        mIsShadow = isShadow;
+        mSigHashes = sigHashes;
+    }",method,
+"    public static ShortcutPackageInfo newEmpty() {
+        return new ShortcutPackageInfo(VERSION_UNKNOWN,  0,
+                new ArrayList<>(0),  false);
+    }",method,
+"    public boolean isShadow() {
+        return mIsShadow;
+    }",method,
+"    public void setShadow(boolean shadow) {
+        mIsShadow = shadow;
+    }",method,
+"    public int getVersionCode() {
+        return mVersionCode;
+    }",method,
+"    public long getLastUpdateTime() {
+        return mLastUpdateTime;
+    }",method,
+"    public void updateVersionInfo(@NonNull PackageInfo pi) {
+        if (pi != null) {
+            mVersionCode = pi.versionCode;
+            mLastUpdateTime = pi.lastUpdateTime;
+        }
+    }",method,
+"        if (pi != null) {
+            mVersionCode = pi.versionCode;
+            mLastUpdateTime = pi.lastUpdateTime;
+        }",method,
+"    public boolean hasSignatures() {
+        return mSigHashes.size() > 0;
+    }",method,
+"    public boolean canRestoreTo(ShortcutService s, PackageInfo target) {
+        if (!s.shouldBackupApp(target)) {
+            // ""allowBackup"" was true when backed up, but now false.
+            Slog.w(TAG, ""Can't restore: package no longer allows backup"");
+            return false;
+        }
+        if (target.versionCode < mVersionCode) {
+            Slog.w(TAG, String.format(
+                    ""Can't restore: package current version %d < backed up version %d"",
+                    target.versionCode, mVersionCode));
+            return false;
+        }
+        if (!BackupUtils.signaturesMatch(mSigHashes, target)) {
+            Slog.w(TAG, ""Can't restore: Package signature mismatch"");
+            return false;
+        }
+        return true;
+    }",method,
+"        if (target.versionCode < mVersionCode) {
+            Slog.w(TAG, String.format(
+                    ""Can't restore: package current version %d < backed up version %d"",
+                    target.versionCode, mVersionCode));
+            return false;
+        }",method,
+"    @VisibleForTesting
+    public static ShortcutPackageInfo generateForInstalledPackageForTest(
+            ShortcutService s, String packageName, @UserIdInt int packageUserId) {
+        final PackageInfo pi = s.getPackageInfoWithSignatures(packageName, packageUserId);
+        if (pi.signatures == null || pi.signatures.length == 0) {
+            Slog.e(TAG, ""Can't get signatures: package="" + packageName);
+            return null;
+        }
+        final ShortcutPackageInfo ret = new ShortcutPackageInfo(pi.versionCode, pi.lastUpdateTime,
+                BackupUtils.hashSignatureArray(pi.signatures),  false);
+        return ret;
+    }",method,
+"        if (pi.signatures == null || pi.signatures.length == 0) {
+            Slog.e(TAG, ""Can't get signatures: package="" + packageName);
+            return null;
+        }",method,
+"    public void refreshSignature(ShortcutService s, ShortcutPackageItem pkg) {
+        if (mIsShadow) {
+            s.wtf(""Attempted to refresh package info for shadow package "" + pkg.getPackageName()
+                    + "", user="" + pkg.getOwnerUserId());
+            return;
+        }
+        // Note use mUserId here, rather than userId.
+        final PackageInfo pi = s.getPackageInfoWithSignatures(
+                pkg.getPackageName(), pkg.getPackageUserId());
+        if (pi == null) {
+            Slog.w(TAG, ""Package not found: "" + pkg.getPackageName());
+            return;
+        }
+        mSigHashes = BackupUtils.hashSignatureArray(pi.signatures);
+    }",method,
+"        if (mIsShadow) {
+            s.wtf(""Attempted to refresh package info for shadow package "" + pkg.getPackageName()
+                    + "", user="" + pkg.getOwnerUserId());
+            return;
+        }",method,
+"        if (pi == null) {
+            Slog.w(TAG, ""Package not found: "" + pkg.getPackageName());
+            return;
+        }",method,
+"    public void saveToXml(XmlSerializer out) throws IOException {
+        out.startTag(null, TAG_ROOT);
+        ShortcutService.writeAttr(out, ATTR_VERSION, mVersionCode);
+        ShortcutService.writeAttr(out, ATTR_LAST_UPDATE_TIME, mLastUpdateTime);
+        ShortcutService.writeAttr(out, ATTR_SHADOW, mIsShadow);
+        for (int i = 0; i < mSigHashes.size(); i++) {
+            out.startTag(null, TAG_SIGNATURE);
+            final String encoded = Base64.getEncoder().encodeToString(mSigHashes.get(i));
+            ShortcutService.writeAttr(out, ATTR_SIGNATURE_HASH, encoded);
+            out.endTag(null, TAG_SIGNATURE);
+        }
+        out.endTag(null, TAG_ROOT);
+    }",method,
+"    public void loadFromXml(XmlPullParser parser, boolean fromBackup)
+            throws IOException, XmlPullParserException {
+        final int versionCode = ShortcutService.parseIntAttribute(parser, ATTR_VERSION);
+        final long lastUpdateTime = ShortcutService.parseLongAttribute(
+                parser, ATTR_LAST_UPDATE_TIME);
+        // When restoring from backup, it's always shadow.
+        final boolean shadow =
+                fromBackup || ShortcutService.parseBooleanAttribute(parser, ATTR_SHADOW);
+        final ArrayList<byte[]> hashes = new ArrayList<>();
+        final int outerDepth = parser.getDepth();
+        int type;
+        while ((type = parser.next()) != XmlPullParser.END_DOCUMENT
+                && (type != XmlPullParser.END_TAG || parser.getDepth() > outerDepth)) {
+            if (type != XmlPullParser.START_TAG) {
+                continue;
+            }
+            final int depth = parser.getDepth();
+            final String tag = parser.getName();
+            if (depth == outerDepth + 1) {
+                switch (tag) {
+                    case TAG_SIGNATURE: {
+                        final String hash = ShortcutService.parseStringAttribute(
+                                parser, ATTR_SIGNATURE_HASH);
+                        // Throws IllegalArgumentException if hash is invalid base64 data
+                        final byte[] decoded = Base64.getDecoder().decode(hash);
+                        hashes.add(decoded);
+                        continue;
+                    }
+                }
+            }
+            ShortcutService.warnForInvalidTag(depth, tag);
+        }
+        // Successfully loaded; replace the feilds.
+        mVersionCode = versionCode;
+        mLastUpdateTime = lastUpdateTime;
+        mIsShadow = shadow;
+        mSigHashes = hashes;
+    }",method,
+"            if (type != XmlPullParser.START_TAG) {
+                continue;
+            }",method,
+"            if (depth == outerDepth + 1) {
+                switch (tag) {
+                    case TAG_SIGNATURE: {
+                        final String hash = ShortcutService.parseStringAttribute(
+                                parser, ATTR_SIGNATURE_HASH);
+                        // Throws IllegalArgumentException if hash is invalid base64 data
+                        final byte[] decoded = Base64.getDecoder().decode(hash);
+                        hashes.add(decoded);
+                        continue;
+                    }
+                }
+            }",method,
+"                switch (tag) {
+                    case TAG_SIGNATURE: {
+                        final String hash = ShortcutService.parseStringAttribute(
+                                parser, ATTR_SIGNATURE_HASH);
+                        // Throws IllegalArgumentException if hash is invalid base64 data
+                        final byte[] decoded = Base64.getDecoder().decode(hash);
+                        hashes.add(decoded);
+                        continue;
+                    }
+                }",method,
+"    public void dump(PrintWriter pw, String prefix) {
+        pw.println();
+        pw.print(prefix);
+        pw.println(""PackageInfo:"");
+        pw.print(prefix);
+        pw.print(""  IsShadow: "");
+        pw.print(mIsShadow);
+        pw.println();
+        pw.print(prefix);
+        pw.print(""  Version: "");
+        pw.print(mVersionCode);
+        pw.println();
+        pw.print(prefix);
+        pw.print(""  Last package update time: "");
+        pw.print(mLastUpdateTime);
+        pw.println();
+        for (int i = 0; i < mSigHashes.size(); i++) {
+            pw.print(prefix);
+            pw.print(""    "");
+            pw.print(""SigHash: "");
+            pw.println(HexEncoding.encode(mSigHashes.get(i)));
+        }
+    }",method,
+"public class FakeApiServiceImpl extends FakeApiService {
+    @Override
+    public Response fakeOuterBooleanSerialize(Boolean body, SecurityContext securityContext)
+    throws NotFoundException {
+        // do some magic!
+        return Response.ok().entity(new ApiResponseMessage(ApiResponseMessage.OK, ""magic!"")).build();
+    }
+    @Override
+    public Response fakeOuterCompositeSerialize(OuterComposite body, SecurityContext securityContext)
+    throws NotFoundException {
+        // do some magic!
+        return Response.ok().entity(new ApiResponseMessage(ApiResponseMessage.OK, ""magic!"")).build();
+    }
+    @Override
+    public Response fakeOuterNumberSerialize(BigDecimal body, SecurityContext securityContext)
+    throws NotFoundException {
+        // do some magic!
+        return Response.ok().entity(new ApiResponseMessage(ApiResponseMessage.OK, ""magic!"")).build();
+    }
+    @Override
+    public Response fakeOuterStringSerialize(String body, SecurityContext securityContext)
+    throws NotFoundException {
+        // do some magic!
+        return Response.ok().entity(new ApiResponseMessage(ApiResponseMessage.OK, ""magic!"")).build();
+    }
+    @Override
+    public Response testClientModel(Client body, SecurityContext securityContext)
+    throws NotFoundException {
+        // do some magic!
+        return Response.ok().entity(new ApiResponseMessage(ApiResponseMessage.OK, ""magic!"")).build();
+    }
+    @Override
+    public Response testEndpointParameters(BigDecimal number, Double _double, String patternWithoutDelimiter, byte[] _byte, Integer integer, Integer int32, Long int64, Float _float, String string, byte[] binary, Date date, Date dateTime, String password, String paramCallback, SecurityContext securityContext)
+    throws NotFoundException {
+        // do some magic!
+        return Response.ok().entity(new ApiResponseMessage(ApiResponseMessage.OK, ""magic!"")).build();
+    }
+    @Override
+    public Response testEnumParameters(List<String> enumFormStringArray, String enumFormString, List<String> enumHeaderStringArray, String enumHeaderString,  List<String> enumQueryStringArray,  String enumQueryString,  Integer enumQueryInteger, Double enumQueryDouble, SecurityContext securityContext)
+    throws NotFoundException {
+        // do some magic!
+        return Response.ok().entity(new ApiResponseMessage(ApiResponseMessage.OK, ""magic!"")).build();
+    }
+    @Override
+    public Response testJsonFormData(String param, String param2, SecurityContext securityContext)
+    throws NotFoundException {
+        // do some magic!
+        return Response.ok().entity(new ApiResponseMessage(ApiResponseMessage.OK, ""magic!"")).build();
+    }
+}",class,
+"    @Override
+    public Response fakeOuterBooleanSerialize(Boolean body, SecurityContext securityContext)
+    throws NotFoundException {
+        // do some magic!
+        return Response.ok().entity(new ApiResponseMessage(ApiResponseMessage.OK, ""magic!"")).build();
+    }",method,
+"    @Override
+    public Response fakeOuterCompositeSerialize(OuterComposite body, SecurityContext securityContext)
+    throws NotFoundException {
+        // do some magic!
+        return Response.ok().entity(new ApiResponseMessage(ApiResponseMessage.OK, ""magic!"")).build();
+    }",method,
+"    @Override
+    public Response fakeOuterNumberSerialize(BigDecimal body, SecurityContext securityContext)
+    throws NotFoundException {
+        // do some magic!
+        return Response.ok().entity(new ApiResponseMessage(ApiResponseMessage.OK, ""magic!"")).build();
+    }",method,
+"    @Override
+    public Response fakeOuterStringSerialize(String body, SecurityContext securityContext)
+    throws NotFoundException {
+        // do some magic!
+        return Response.ok().entity(new ApiResponseMessage(ApiResponseMessage.OK, ""magic!"")).build();
+    }",method,
+"    @Override
+    public Response testClientModel(Client body, SecurityContext securityContext)
+    throws NotFoundException {
+        // do some magic!
+        return Response.ok().entity(new ApiResponseMessage(ApiResponseMessage.OK, ""magic!"")).build();
+    }",method,
+"    @Override
+    public Response testEndpointParameters(BigDecimal number, Double _double, String patternWithoutDelimiter, byte[] _byte, Integer integer, Integer int32, Long int64, Float _float, String string, byte[] binary, Date date, Date dateTime, String password, String paramCallback, SecurityContext securityContext)
+    throws NotFoundException {
+        // do some magic!
+        return Response.ok().entity(new ApiResponseMessage(ApiResponseMessage.OK, ""magic!"")).build();
+    }",method,
+"    @Override
+    public Response testEnumParameters(List<String> enumFormStringArray, String enumFormString, List<String> enumHeaderStringArray, String enumHeaderString,  List<String> enumQueryStringArray,  String enumQueryString,  Integer enumQueryInteger, Double enumQueryDouble, SecurityContext securityContext)
+    throws NotFoundException {
+        // do some magic!
+        return Response.ok().entity(new ApiResponseMessage(ApiResponseMessage.OK, ""magic!"")).build();
+    }",method,
+"    @Override
+    public Response testJsonFormData(String param, String param2, SecurityContext securityContext)
+    throws NotFoundException {
+        // do some magic!
+        return Response.ok().entity(new ApiResponseMessage(ApiResponseMessage.OK, ""magic!"")).build();
+    }",method,
+"public class FloatColumnWriter
+        implements ColumnWriter
+{
+    private static final int INSTANCE_SIZE = ClassLayout.parseClass(FloatColumnWriter.class).instanceSize();
+    private static final ColumnEncoding COLUMN_ENCODING = new ColumnEncoding(DIRECT, 0);
+    private final int column;
+    private final Type type;
+    private final boolean compressed;
+    private final FloatOutputStream dataStream;
+    private final PresentOutputStream presentStream;
+    private final List<ColumnStatistics> rowGroupColumnStatistics = new ArrayList<>();
+    private DoubleStatisticsBuilder statisticsBuilder = new DoubleStatisticsBuilder();
+    private boolean closed;
+    public FloatColumnWriter(int column, Type type, CompressionKind compression, int bufferSize)
+    {
+        checkArgument(column >= 0, ""column is negative"");
+        this.column = column;
+        this.type = requireNonNull(type, ""type is null"");
+        this.compressed = requireNonNull(compression, ""compression is null"") != NONE;
+        this.dataStream = new FloatOutputStream(compression, bufferSize);
+        this.presentStream = new PresentOutputStream(compression, bufferSize);
+    }
+    @Override
+    public Map<Integer, ColumnEncoding> getColumnEncodings()
+    {
+        return ImmutableMap.of(column, COLUMN_ENCODING);
+    }
+    @Override
+    public void beginRowGroup()
+    {
+        presentStream.recordCheckpoint();
+        dataStream.recordCheckpoint();
+    }
+    @Override
+    public void writeBlock(Block block)
+    {
+        checkState(!closed);
+        checkArgument(block.getPositionCount() > 0, ""Block is empty"");
+        // record nulls
+        for (int position = 0; position < block.getPositionCount(); position++) {
+            presentStream.writeBoolean(!block.isNull(position));
+        }
+        // record values
+        for (int position = 0; position < block.getPositionCount(); position++) {
+            if (!block.isNull(position)) {
+                int intBits = (int) type.getLong(block, position);
+                float value = intBitsToFloat(intBits);
+                dataStream.writeFloat(value);
+                statisticsBuilder.addValue(value);
+            }
+        }
+    }
+    @Override
+    public Map<Integer, ColumnStatistics> finishRowGroup()
+    {
+        checkState(!closed);
+        ColumnStatistics statistics = statisticsBuilder.buildColumnStatistics();
+        rowGroupColumnStatistics.add(statistics);
+        statisticsBuilder = new DoubleStatisticsBuilder();
+        return ImmutableMap.of(column, statistics);
+    }
+    @Override
+    public void close()
+    {
+        closed = true;
+        dataStream.close();
+        presentStream.close();
+    }
+    @Override
+    public Map<Integer, ColumnStatistics> getColumnStripeStatistics()
+    {
+        checkState(closed);
+        return ImmutableMap.of(column, ColumnStatistics.mergeColumnStatistics(rowGroupColumnStatistics));
+    }
+    @Override
+    public List<Stream> writeIndexStreams(SliceOutput outputStream, MetadataWriter metadataWriter)
+            throws IOException
+    {
+        checkState(closed);
+        ImmutableList.Builder<RowGroupIndex> rowGroupIndexes = ImmutableList.builder();
+        List<FloatStreamCheckpoint> dataCheckpoints = dataStream.getCheckpoints();
+        Optional<List<BooleanStreamCheckpoint>> presentCheckpoints = presentStream.getCheckpoints();
+        for (int i = 0; i < rowGroupColumnStatistics.size(); i++) {
+            int groupId = i;
+            ColumnStatistics columnStatistics = rowGroupColumnStatistics.get(groupId);
+            FloatStreamCheckpoint dataCheckpoint = dataCheckpoints.get(groupId);
+            Optional<BooleanStreamCheckpoint> presentCheckpoint = presentCheckpoints.map(checkpoints -> checkpoints.get(groupId));
+            List<Integer> positions = createFloatColumnPositionList(compressed, dataCheckpoint, presentCheckpoint);
+            rowGroupIndexes.add(new RowGroupIndex(positions, columnStatistics));
+        }
+        int length = metadataWriter.writeRowIndexes(outputStream, rowGroupIndexes.build());
+        return ImmutableList.of(new Stream(column, StreamKind.ROW_INDEX, length, false));
+    }
+    private static List<Integer> createFloatColumnPositionList(
+            boolean compressed,
+            FloatStreamCheckpoint dataCheckpoint,
+            Optional<BooleanStreamCheckpoint> presentCheckpoint)
+    {
+        ImmutableList.Builder<Integer> positionList = ImmutableList.builder();
+        presentCheckpoint.ifPresent(booleanStreamCheckpoint -> positionList.addAll(booleanStreamCheckpoint.toPositionList(compressed)));
+        positionList.addAll(dataCheckpoint.toPositionList(compressed));
+        return positionList.build();
+    }
+    @Override
+    public List<Stream> writeDataStreams(SliceOutput outputStream)
+            throws IOException
+    {
+        checkState(closed);
+        ImmutableList.Builder<Stream> dataStreams = ImmutableList.builder();
+        presentStream.writeDataStreams(column, outputStream).ifPresent(dataStreams::add);
+        dataStream.writeDataStreams(column, outputStream).ifPresent(dataStreams::add);
+        return dataStreams.build();
+    }
+    @Override
+    public long getBufferedBytes()
+    {
+        return dataStream.getBufferedBytes() + presentStream.getBufferedBytes();
+    }
+    @Override
+    public long getRetainedBytes()
+    {
+        // NOTE: we do not include stats because they should be small and it would be annoying to calculate the size
+        return INSTANCE_SIZE + dataStream.getRetainedBytes() + presentStream.getRetainedBytes();
+    }
+    @Override
+    public void reset()
+    {
+        closed = false;
+        dataStream.reset();
+        presentStream.reset();
+        rowGroupColumnStatistics.clear();
+        statisticsBuilder = new DoubleStatisticsBuilder();
+    }
+}",class,
+"    public FloatColumnWriter(int column, Type type, CompressionKind compression, int bufferSize)
+    {
+        checkArgument(column >= 0, ""column is negative"");
+        this.column = column;
+        this.type = requireNonNull(type, ""type is null"");
+        this.compressed = requireNonNull(compression, ""compression is null"") != NONE;
+        this.dataStream = new FloatOutputStream(compression, bufferSize);
+        this.presentStream = new PresentOutputStream(compression, bufferSize);
+    }",method,
+"    @Override
+    public Map<Integer, ColumnEncoding> getColumnEncodings()
+    {
+        return ImmutableMap.of(column, COLUMN_ENCODING);
+    }",method,
+"    @Override
+    public void beginRowGroup()
+    {
+        presentStream.recordCheckpoint();
+        dataStream.recordCheckpoint();
+    }",method,
+"    @Override
+    public void writeBlock(Block block)
+    {
+        checkState(!closed);
+        checkArgument(block.getPositionCount() > 0, ""Block is empty"");
+        // record nulls
+        for (int position = 0; position < block.getPositionCount(); position++) {
+            presentStream.writeBoolean(!block.isNull(position));
+        }
+        // record values
+        for (int position = 0; position < block.getPositionCount(); position++) {
+            if (!block.isNull(position)) {
+                int intBits = (int) type.getLong(block, position);
+                float value = intBitsToFloat(intBits);
+                dataStream.writeFloat(value);
+                statisticsBuilder.addValue(value);
+            }
+        }
+    }",method,
+"    @Override
+    public Map<Integer, ColumnStatistics> finishRowGroup()
+    {
+        checkState(!closed);
+        ColumnStatistics statistics = statisticsBuilder.buildColumnStatistics();
+        rowGroupColumnStatistics.add(statistics);
+        statisticsBuilder = new DoubleStatisticsBuilder();
+        return ImmutableMap.of(column, statistics);
+    }",method,
+"    @Override
+    public void close()
+    {
+        closed = true;
+        dataStream.close();
+        presentStream.close();
+    }",method,
+"    @Override
+    public Map<Integer, ColumnStatistics> getColumnStripeStatistics()
+    {
+        checkState(closed);
+        return ImmutableMap.of(column, ColumnStatistics.mergeColumnStatistics(rowGroupColumnStatistics));
+    }",method,
+"    @Override
+    public List<Stream> writeIndexStreams(SliceOutput outputStream, MetadataWriter metadataWriter)
+            throws IOException
+    {
+        checkState(closed);
+        ImmutableList.Builder<RowGroupIndex> rowGroupIndexes = ImmutableList.builder();
+        List<FloatStreamCheckpoint> dataCheckpoints = dataStream.getCheckpoints();
+        Optional<List<BooleanStreamCheckpoint>> presentCheckpoints = presentStream.getCheckpoints();
+        for (int i = 0; i < rowGroupColumnStatistics.size(); i++) {
+            int groupId = i;
+            ColumnStatistics columnStatistics = rowGroupColumnStatistics.get(groupId);
+            FloatStreamCheckpoint dataCheckpoint = dataCheckpoints.get(groupId);
+            Optional<BooleanStreamCheckpoint> presentCheckpoint = presentCheckpoints.map(checkpoints -> checkpoints.get(groupId));
+            List<Integer> positions = createFloatColumnPositionList(compressed, dataCheckpoint, presentCheckpoint);
+            rowGroupIndexes.add(new RowGroupIndex(positions, columnStatistics));
+        }
+        int length = metadataWriter.writeRowIndexes(outputStream, rowGroupIndexes.build());
+        return ImmutableList.of(new Stream(column, StreamKind.ROW_INDEX, length, false));
+    }",method,
+"    private static List<Integer> createFloatColumnPositionList(
+            boolean compressed,
+            FloatStreamCheckpoint dataCheckpoint,
+            Optional<BooleanStreamCheckpoint> presentCheckpoint)
+    {
+        ImmutableList.Builder<Integer> positionList = ImmutableList.builder();
+        presentCheckpoint.ifPresent(booleanStreamCheckpoint -> positionList.addAll(booleanStreamCheckpoint.toPositionList(compressed)));
+        positionList.addAll(dataCheckpoint.toPositionList(compressed));
+        return positionList.build();
+    }",method,
+"    @Override
+    public List<Stream> writeDataStreams(SliceOutput outputStream)
+            throws IOException
+    {
+        checkState(closed);
+        ImmutableList.Builder<Stream> dataStreams = ImmutableList.builder();
+        presentStream.writeDataStreams(column, outputStream).ifPresent(dataStreams::add);
+        dataStream.writeDataStreams(column, outputStream).ifPresent(dataStreams::add);
+        return dataStreams.build();
+    }",method,
+"    @Override
+    public long getBufferedBytes()
+    {
+        return dataStream.getBufferedBytes() + presentStream.getBufferedBytes();
+    }",method,
+"    @Override
+    public long getRetainedBytes()
+    {
+        // NOTE: we do not include stats because they should be small and it would be annoying to calculate the size
+        return INSTANCE_SIZE + dataStream.getRetainedBytes() + presentStream.getRetainedBytes();
+    }",method,
+"    @Override
+    public void reset()
+    {
+        closed = false;
+        dataStream.reset();
+        presentStream.reset();
+        rowGroupColumnStatistics.clear();
+        statisticsBuilder = new DoubleStatisticsBuilder();
+    }",method,
+"public class TransitiveClosure {
+  // @include
+  public static class GraphVertex {
+    public int visitTime = -1;
+    public List<GraphVertex> edges = new ArrayList<>();
+    public List<GraphVertex> extendedContacts = new ArrayList<>();
+  }
+  public static void transitiveClosure(List<GraphVertex> G) {
+    // Build extended contacts for each vertex.
+    for (int i = 0; i < G.size(); ++i) {
+      G.get(i).visitTime = i;
+      DFS(G.get(i), i, G.get(i).extendedContacts);
+    }
+  }
+  private static void DFS(GraphVertex cur, int time,
+                          List<GraphVertex> contacts) {
+    for (GraphVertex next : cur.edges) {
+      if (next.visitTime != time) {
+        next.visitTime = time;
+        contacts.add(next);
+        DFS(next, time, contacts);
+      }
+    }
+  }
+  // @exclude
+  public static void main(String[] args) {
+    Random r = new Random();
+    List<GraphVertex> G = new ArrayList<>();
+    int n;
+    if (args.length == 1) {
+      n = Integer.parseInt(args[0]);
+    } else {
+      n = r.nextInt(1000);
+    }
+    for (int i = 0; i < n; i++) {
+      G.add(new GraphVertex());
+    }
+    System.out.println(G.size());
+    int m = r.nextInt(n * (n - 1) / 2) + 1;
+    boolean[][] isEdgeExist = new boolean[n][n];
+    // Generate edges randomly
+    while (m-- > 0) {
+      int a, b;
+      do {
+        a = r.nextInt(n);
+        b = r.nextInt(n);
+      } while (a == b || isEdgeExist[a][b]);
+      isEdgeExist[a][b] = isEdgeExist[b][a] = true;
+      G.get(a).edges.add(G.get(b));
+      G.get(b).edges.add(G.get(a));
+    }
+    transitiveClosure(G);
+  }
+}",class,
+"  public static class GraphVertex {
+    public int visitTime = -1;
+    public List<GraphVertex> edges = new ArrayList<>();
+    public List<GraphVertex> extendedContacts = new ArrayList<>();
+  }",class,
+"  public static void transitiveClosure(List<GraphVertex> G) {
+    // Build extended contacts for each vertex.
+    for (int i = 0; i < G.size(); ++i) {
+      G.get(i).visitTime = i;
+      DFS(G.get(i), i, G.get(i).extendedContacts);
+    }
+  }",method,
+"  private static void DFS(GraphVertex cur, int time,
+                          List<GraphVertex> contacts) {
+    for (GraphVertex next : cur.edges) {
+      if (next.visitTime != time) {
+        next.visitTime = time;
+        contacts.add(next);
+        DFS(next, time, contacts);
+      }
+    }
+  }",method,
+"    for (GraphVertex next : cur.edges) {
+      if (next.visitTime != time) {
+        next.visitTime = time;
+        contacts.add(next);
+        DFS(next, time, contacts);
+      }
+    }",method,
+"      if (next.visitTime != time) {
+        next.visitTime = time;
+        contacts.add(next);
+        DFS(next, time, contacts);
+      }",method,
+"  public static void main(String[] args) {
+    Random r = new Random();
+    List<GraphVertex> G = new ArrayList<>();
+    int n;
+    if (args.length == 1) {
+      n = Integer.parseInt(args[0]);
+    } else {
+      n = r.nextInt(1000);
+    }
+    for (int i = 0; i < n; i++) {
+      G.add(new GraphVertex());
+    }
+    System.out.println(G.size());
+    int m = r.nextInt(n * (n - 1) / 2) + 1;
+    boolean[][] isEdgeExist = new boolean[n][n];
+    // Generate edges randomly
+    while (m-- > 0) {
+      int a, b;
+      do {
+        a = r.nextInt(n);
+        b = r.nextInt(n);
+      } while (a == b || isEdgeExist[a][b]);
+      isEdgeExist[a][b] = isEdgeExist[b][a] = true;
+      G.get(a).edges.add(G.get(b));
+      G.get(b).edges.add(G.get(a));
+    }
+    transitiveClosure(G);
+  }",method,
+"    if (args.length == 1) {
+      n = Integer.parseInt(args[0]);
+    }",method,
+"    for (int i = 0; i < n; i++) {
+      G.add(new GraphVertex());
+    }",method,
+"    while (m-- > 0) {
+      int a, b;
+      do {
+        a = r.nextInt(n);
+        b = r.nextInt(n);
+      } while (a == b || isEdgeExist[a][b]);
+      isEdgeExist[a][b] = isEdgeExist[b][a] = true;
+      G.get(a).edges.add(G.get(b));
+      G.get(b).edges.add(G.get(a));
+    }",method,
+"public class BlockIndexerStorageForNoInvertedIndexForInt implements IndexStorage<int[]> {
+  private byte[][] dataPage;
+  private int totalSize;
+  private byte[] min;
+  private byte[] max;
+  public BlockIndexerStorageForNoInvertedIndexForInt(byte[][] dataPage) {
+    this.dataPage = dataPage;
+    min = this.dataPage[0];
+    max = this.dataPage[0];
+    totalSize += this.dataPage[0].length;
+    int minCompare = 0;
+    int maxCompare = 0;
+    for (int i = 1; i < this.dataPage.length; i++) {
+      totalSize += this.dataPage[i].length;
+      minCompare = ByteUtil.compare(min, this.dataPage[i]);
+      maxCompare = ByteUtil.compare(max, this.dataPage[i]);
+      if (minCompare > 0) {
+        min = this.dataPage[i];
+      }
+      if (maxCompare < 0) {
+        max = this.dataPage[i];
+      }
+    }
+  }
+  public int[] getDataRlePage() {
+    return new int[0];
+  }
+  @Override
+  public int getDataRlePageLengthInBytes() {
+    return 0;
+  }
+  @Override public int getTotalSize() {
+    return totalSize;
+  }
+  @Override public boolean isAlreadySorted() {
+    return true;
+  }
+  public int[] getRowIdPage() {
+    return new int[0];
+  }
+  @Override
+  public int getRowIdPageLengthInBytes() {
+    return 0;
+  }
+  public int[] getRowIdRlePage() {
+    return new int[0];
+  }
+  @Override
+  public int getRowIdRlePageLengthInBytes() {
+    return 0;
+  }
+  public byte[][] getDataPage() {
+    return dataPage;
+  }
+  @Override public byte[] getMin() {
+    return min;
+  }
+  @Override public byte[] getMax() {
+    return max;
+  }
+}",class,
+"  public BlockIndexerStorageForNoInvertedIndexForInt(byte[][] dataPage) {
+    this.dataPage = dataPage;
+    min = this.dataPage[0];
+    max = this.dataPage[0];
+    totalSize += this.dataPage[0].length;
+    int minCompare = 0;
+    int maxCompare = 0;
+    for (int i = 1; i < this.dataPage.length; i++) {
+      totalSize += this.dataPage[i].length;
+      minCompare = ByteUtil.compare(min, this.dataPage[i]);
+      maxCompare = ByteUtil.compare(max, this.dataPage[i]);
+      if (minCompare > 0) {
+        min = this.dataPage[i];
+      }
+      if (maxCompare < 0) {
+        max = this.dataPage[i];
+      }
+    }
+  }",method,
+"    for (int i = 1; i < this.dataPage.length; i++) {
+      totalSize += this.dataPage[i].length;
+      minCompare = ByteUtil.compare(min, this.dataPage[i]);
+      maxCompare = ByteUtil.compare(max, this.dataPage[i]);
+      if (minCompare > 0) {
+        min = this.dataPage[i];
+      }
+      if (maxCompare < 0) {
+        max = this.dataPage[i];
+      }
+    }",method,
+"      if (minCompare > 0) {
+        min = this.dataPage[i];
+      }",method,
+"      if (maxCompare < 0) {
+        max = this.dataPage[i];
+      }",method,
+"  public int[] getDataRlePage() {
+    return new int[0];
+  }",method,
+"  @Override
+  public int getDataRlePageLengthInBytes() {
+    return 0;
+  }",method,
+"  public int[] getRowIdPage() {
+    return new int[0];
+  }",method,
+"  @Override
+  public int getRowIdPageLengthInBytes() {
+    return 0;
+  }",method,
+"  public int[] getRowIdRlePage() {
+    return new int[0];
+  }",method,
+"  @Override
+  public int getRowIdRlePageLengthInBytes() {
+    return 0;
+  }",method,
+"  public byte[][] getDataPage() {
+    return dataPage;
+  }",method,

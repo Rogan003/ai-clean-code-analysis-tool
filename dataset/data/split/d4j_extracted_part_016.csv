@@ -1,0 +1,1420 @@
+code_snippet,type,score
+"public abstract class InputWithIncrementingInteger {
+    final class DefaultSubscriberImpl extends DefaultSubscriber<Integer> {
+        @Override
+        public void onComplete() {
+        }
+        @Override
+        public void onError(Throwable e) {
+        }
+        @Override
+        public void onNext(Integer t) {
+            bh.consume(t);
+        }
+    }
+    final class IncrementingIterable implements Iterable<Integer> {
+        private final class IncrementingIterator implements Iterator<Integer> {
+            int i;
+            @Override
+            public boolean hasNext() {
+                return i < size;
+            }
+            @Override
+            public Integer next() {
+                Blackhole.consumeCPU(10);
+                return i++;
+            }
+            @Override
+            public void remove() {
+            }
+        }
+        private final int size;
+        private IncrementingIterable(int size) {
+            this.size = size;
+        }
+        @Override
+        public Iterator<Integer> iterator() {
+            return new IncrementingIterator();
+        }
+    }
+    final class IncrementingPublisher implements Publisher<Integer> {
+        private final int size;
+        IncrementingPublisher(int size) {
+            this.size = size;
+        }
+        @Override
+        public void subscribe(Subscriber<? super Integer> s) {
+            s.onSubscribe(EmptySubscription.INSTANCE);
+            for (int i = 0; i < size; i++) {
+                s.onNext(i);
+            }
+            s.onComplete();
+        }
+    }
+    public Iterable<Integer> iterable;
+    public Flowable<Integer> observable;
+    public Flowable<Integer> firehose;
+    public Blackhole bh;
+    public abstract int getSize();
+    @Setup
+    public void setup(final Blackhole bh) {
+        this.bh = bh;
+        final int size = getSize();
+        observable = Flowable.range(0, size);
+        firehose = Flowable.unsafeCreate(new IncrementingPublisher(size));
+        iterable = new IncrementingIterable(size);
+    }
+    public PerfSubscriber newLatchedObserver() {
+        return new PerfSubscriber(bh);
+    }
+    public FlowableSubscriber<Integer> newSubscriber() {
+        return new DefaultSubscriberImpl();
+    }
+}",class,
+"    final class DefaultSubscriberImpl extends DefaultSubscriber<Integer> {
+        @Override
+        public void onComplete() {
+        }
+        @Override
+        public void onError(Throwable e) {
+        }
+        @Override
+        public void onNext(Integer t) {
+            bh.consume(t);
+        }
+    }",class,
+"    final class IncrementingIterable implements Iterable<Integer> {
+        private final class IncrementingIterator implements Iterator<Integer> {
+            int i;
+            @Override
+            public boolean hasNext() {
+                return i < size;
+            }
+            @Override
+            public Integer next() {
+                Blackhole.consumeCPU(10);
+                return i++;
+            }
+            @Override
+            public void remove() {
+            }
+        }
+        private final int size;
+        private IncrementingIterable(int size) {
+            this.size = size;
+        }
+        @Override
+        public Iterator<Integer> iterator() {
+            return new IncrementingIterator();
+        }
+    }",class,
+"        private final class IncrementingIterator implements Iterator<Integer> {
+            int i;
+            @Override
+            public boolean hasNext() {
+                return i < size;
+            }
+            @Override
+            public Integer next() {
+                Blackhole.consumeCPU(10);
+                return i++;
+            }
+            @Override
+            public void remove() {
+            }
+        }",class,
+"    final class IncrementingPublisher implements Publisher<Integer> {
+        private final int size;
+        IncrementingPublisher(int size) {
+            this.size = size;
+        }
+        @Override
+        public void subscribe(Subscriber<? super Integer> s) {
+            s.onSubscribe(EmptySubscription.INSTANCE);
+            for (int i = 0; i < size; i++) {
+                s.onNext(i);
+            }
+            s.onComplete();
+        }
+    }",class,
+"        @Override
+        public void onComplete() {
+        }",method,
+"        @Override
+        public void onError(Throwable e) {
+        }",method,
+"        @Override
+        public void onNext(Integer t) {
+            bh.consume(t);
+        }",method,
+"            @Override
+            public boolean hasNext() {
+                return i < size;
+            }",method,
+"            @Override
+            public Integer next() {
+                Blackhole.consumeCPU(10);
+                return i++;
+            }",method,
+"            @Override
+            public void remove() {
+            }",method,
+"        private IncrementingIterable(int size) {
+            this.size = size;
+        }",method,
+"        @Override
+        public Iterator<Integer> iterator() {
+            return new IncrementingIterator();
+        }",method,
+"        IncrementingPublisher(int size) {
+            this.size = size;
+        }",method,
+"        @Override
+        public void subscribe(Subscriber<? super Integer> s) {
+            s.onSubscribe(EmptySubscription.INSTANCE);
+            for (int i = 0; i < size; i++) {
+                s.onNext(i);
+            }
+            s.onComplete();
+        }",method,
+"            for (int i = 0; i < size; i++) {
+                s.onNext(i);
+            }",method,
+"    @Setup
+    public void setup(final Blackhole bh) {
+        this.bh = bh;
+        final int size = getSize();
+        observable = Flowable.range(0, size);
+        firehose = Flowable.unsafeCreate(new IncrementingPublisher(size));
+        iterable = new IncrementingIterable(size);
+    }",method,
+"    public PerfSubscriber newLatchedObserver() {
+        return new PerfSubscriber(bh);
+    }",method,
+"    public FlowableSubscriber<Integer> newSubscriber() {
+        return new DefaultSubscriberImpl();
+    }",method,
+"public class JsonLineMover extends LineMover {
+  private boolean myShouldAddComma = false;
+  @Override
+  public boolean checkAvailable(@NotNull Editor editor, @NotNull PsiFile file, @NotNull MoveInfo info, boolean down) {
+    myShouldAddComma = false;
+    if (!(file instanceof JsonFile) || !super.checkAvailable(editor, file, info, down)) {
+      return false;
+    }
+    Pair<PsiElement, PsiElement> movedElementRange = getElementRange(editor, file, info.toMove);
+    if (!isValidElementRange(movedElementRange)) {
+      return false;
+    }
+    // Tweak range to move if it's necessary
+    movedElementRange = expandCommentsInRange(movedElementRange);
+    info.toMove = new LineRange(movedElementRange.getFirst(), movedElementRange.getSecond());
+    // Adjust destination range to prevent illegal offsets
+    final int lineCount = editor.getDocument().getLineCount();
+    if (down) {
+      info.toMove2 = new LineRange(info.toMove.endLine, Math.min(info.toMove.endLine + 1, lineCount));
+    }
+    else {
+      info.toMove2 = new LineRange(Math.max(info.toMove.startLine - 1, 0), info.toMove.startLine);
+    }
+    if (movedElementRange.getFirst() instanceof PsiComment && movedElementRange.getSecond() instanceof PsiComment) {
+      return true;
+    }
+    // Check whether additional comma is needed
+    final Pair<PsiElement, PsiElement> destElementRange = getElementRange(editor, file, info.toMove2);
+    if (isValidElementRange(destElementRange) && movedElementRange.getFirst().getParent() == destElementRange.getSecond().getParent()) {
+      final PsiElement commonParent = movedElementRange.getFirst().getParent();
+      final PsiElement lowerRightElement = down ? destElementRange.getSecond() : movedElementRange.getSecond();
+      // Destination rightmost element is not closing brace or bracket
+      if (lowerRightElement instanceof JsonElement) {
+        if (commonParent instanceof JsonArray && notFollowedByNextElementOrComma(lowerRightElement, JsonValue.class) ||
+            commonParent instanceof JsonObject && notFollowedByNextElementOrComma(lowerRightElement, JsonProperty.class)) {
+          myShouldAddComma = true;
+        }
+      }
+    }
+    return true;
+  }
+  @NotNull
+  private Pair<PsiElement, PsiElement> expandCommentsInRange(@NotNull Pair<PsiElement, PsiElement> range) {
+    final PsiElement upper = JsonPsiUtil.findFurthestSiblingOfSameType(range.getFirst(), false);
+    final PsiElement lower = JsonPsiUtil.findFurthestSiblingOfSameType(range.getSecond(), true);
+    return Pair.create(upper, lower);
+  }
+  @Override
+  public void beforeMove(@NotNull Editor editor, @NotNull MoveInfo info, boolean down) {
+    if (myShouldAddComma) {
+      final Document document = editor.getDocument();
+      final int lineBelow = down ? info.toMove2.endLine - 1 : info.toMove.endLine - 1;
+      document.insertString(document.getLineEndOffset(lineBelow), "","");
+      final int lineAbove = down ? info.toMove.endLine - 1 : info.toMove2.endLine - 1;
+      final int lineAboveEndOffset = document.getLineEndOffset(lineAbove);
+      final String aboveLineEnding = document.getText(new TextRange(lineAboveEndOffset - 1, lineAboveEndOffset));
+      if (aboveLineEnding.equals("","")) {
+        document.deleteString(lineAboveEndOffset - 1, lineAboveEndOffset);
+      }
+      final Project project = editor.getProject();
+      assert project != null;
+      PsiDocumentManager.getInstance(project).commitDocument(document);
+    }
+  }
+  private boolean notFollowedByNextElementOrComma(@NotNull PsiElement anchor, @NotNull Class<? extends PsiElement> nextElementType) {
+    return PsiTreeUtil.getNextSiblingOfType(anchor, nextElementType) == null &&
+           TreeUtil.findSibling(anchor.getNode(), JsonElementTypes.COMMA) == null;
+  }
+  private boolean isValidElementRange(@Nullable Pair<PsiElement, PsiElement> elementRange) {
+    if (elementRange == null) {
+      return false;
+    }
+    return elementRange.getFirst().getParent() == elementRange.getSecond().getParent();
+  }
+}",class,
+"  @Override
+  public boolean checkAvailable(@NotNull Editor editor, @NotNull PsiFile file, @NotNull MoveInfo info, boolean down) {
+    myShouldAddComma = false;
+    if (!(file instanceof JsonFile) || !super.checkAvailable(editor, file, info, down)) {
+      return false;
+    }
+    Pair<PsiElement, PsiElement> movedElementRange = getElementRange(editor, file, info.toMove);
+    if (!isValidElementRange(movedElementRange)) {
+      return false;
+    }
+    // Tweak range to move if it's necessary
+    movedElementRange = expandCommentsInRange(movedElementRange);
+    info.toMove = new LineRange(movedElementRange.getFirst(), movedElementRange.getSecond());
+    // Adjust destination range to prevent illegal offsets
+    final int lineCount = editor.getDocument().getLineCount();
+    if (down) {
+      info.toMove2 = new LineRange(info.toMove.endLine, Math.min(info.toMove.endLine + 1, lineCount));
+    }
+    else {
+      info.toMove2 = new LineRange(Math.max(info.toMove.startLine - 1, 0), info.toMove.startLine);
+    }
+    if (movedElementRange.getFirst() instanceof PsiComment && movedElementRange.getSecond() instanceof PsiComment) {
+      return true;
+    }
+    // Check whether additional comma is needed
+    final Pair<PsiElement, PsiElement> destElementRange = getElementRange(editor, file, info.toMove2);
+    if (isValidElementRange(destElementRange) && movedElementRange.getFirst().getParent() == destElementRange.getSecond().getParent()) {
+      final PsiElement commonParent = movedElementRange.getFirst().getParent();
+      final PsiElement lowerRightElement = down ? destElementRange.getSecond() : movedElementRange.getSecond();
+      // Destination rightmost element is not closing brace or bracket
+      if (lowerRightElement instanceof JsonElement) {
+        if (commonParent instanceof JsonArray && notFollowedByNextElementOrComma(lowerRightElement, JsonValue.class) ||
+            commonParent instanceof JsonObject && notFollowedByNextElementOrComma(lowerRightElement, JsonProperty.class)) {
+          myShouldAddComma = true;
+        }
+      }
+    }
+    return true;
+  }",method,
+"    if (down) {
+      info.toMove2 = new LineRange(info.toMove.endLine, Math.min(info.toMove.endLine + 1, lineCount));
+    }",method,
+"      if (lowerRightElement instanceof JsonElement) {
+        if (commonParent instanceof JsonArray && notFollowedByNextElementOrComma(lowerRightElement, JsonValue.class) ||
+            commonParent instanceof JsonObject && notFollowedByNextElementOrComma(lowerRightElement, JsonProperty.class)) {
+          myShouldAddComma = true;
+        }
+      }",method,
+"  @NotNull
+  private Pair<PsiElement, PsiElement> expandCommentsInRange(@NotNull Pair<PsiElement, PsiElement> range) {
+    final PsiElement upper = JsonPsiUtil.findFurthestSiblingOfSameType(range.getFirst(), false);
+    final PsiElement lower = JsonPsiUtil.findFurthestSiblingOfSameType(range.getSecond(), true);
+    return Pair.create(upper, lower);
+  }",method,
+"  @Override
+  public void beforeMove(@NotNull Editor editor, @NotNull MoveInfo info, boolean down) {
+    if (myShouldAddComma) {
+      final Document document = editor.getDocument();
+      final int lineBelow = down ? info.toMove2.endLine - 1 : info.toMove.endLine - 1;
+      document.insertString(document.getLineEndOffset(lineBelow), "","");
+      final int lineAbove = down ? info.toMove.endLine - 1 : info.toMove2.endLine - 1;
+      final int lineAboveEndOffset = document.getLineEndOffset(lineAbove);
+      final String aboveLineEnding = document.getText(new TextRange(lineAboveEndOffset - 1, lineAboveEndOffset));
+      if (aboveLineEnding.equals("","")) {
+        document.deleteString(lineAboveEndOffset - 1, lineAboveEndOffset);
+      }
+      final Project project = editor.getProject();
+      assert project != null;
+      PsiDocumentManager.getInstance(project).commitDocument(document);
+    }
+  }",method,
+"    if (myShouldAddComma) {
+      final Document document = editor.getDocument();
+      final int lineBelow = down ? info.toMove2.endLine - 1 : info.toMove.endLine - 1;
+      document.insertString(document.getLineEndOffset(lineBelow), "","");
+      final int lineAbove = down ? info.toMove.endLine - 1 : info.toMove2.endLine - 1;
+      final int lineAboveEndOffset = document.getLineEndOffset(lineAbove);
+      final String aboveLineEnding = document.getText(new TextRange(lineAboveEndOffset - 1, lineAboveEndOffset));
+      if (aboveLineEnding.equals("","")) {
+        document.deleteString(lineAboveEndOffset - 1, lineAboveEndOffset);
+      }
+      final Project project = editor.getProject();
+      assert project != null;
+      PsiDocumentManager.getInstance(project).commitDocument(document);
+    }",method,
+"  private boolean notFollowedByNextElementOrComma(@NotNull PsiElement anchor, @NotNull Class<? extends PsiElement> nextElementType) {
+    return PsiTreeUtil.getNextSiblingOfType(anchor, nextElementType) == null &&
+           TreeUtil.findSibling(anchor.getNode(), JsonElementTypes.COMMA) == null;
+  }",method,
+"  private boolean isValidElementRange(@Nullable Pair<PsiElement, PsiElement> elementRange) {
+    if (elementRange == null) {
+      return false;
+    }
+    return elementRange.getFirst().getParent() == elementRange.getSecond().getParent();
+  }",method,
+"    if (elementRange == null) {
+      return false;
+    }",method,
+"import java.util.Iterator; public abstract class Test implements Iterator<Test> { ""
+            + ""public boolean hasNext() { return true; } }",class,
+"        ""public class Test {""
+        + ""  public interface I1 { void foo(); } ""
+        + ""  public interface I2 extends I1 { } ""
+        + ""  public abstract class Inner implements I2 { } }"";
+    String translation = translateSourceFile(source, ""Test"", ""Test.m"");
+    assertTranslation(translation, ""#pragma clang diagnostic ignored \""-Wprotocol\"""");
+  }
+  public void testAddsPragmaToAbstractEnum() throws IOException {
+    String interfaceSource = ""interface I { public int foo(); }"";
+    String enumSource =
+        ""enum E implements I { ""
+        + ""  A { public int foo() { return 42; } },""
+        + ""  B { public int foo() { return -1; } } }"";
+    addSourceFile(interfaceSource, ""I.java"");
+    addSourceFile(enumSource, ""E.java"");
+    String translation = translateSourceFile(""E"", ""E.m"");
+    assertTranslation(translation, ""#pragma clang diagnostic ignored \""-Wprotocol\"""");
+  }",class,
+"        + ""  public abstract class Inner implements I2 { } }"";
+    String translation = translateSourceFile(source, ""Test"", ""Test.m"");
+    assertTranslation(translation, ""#pragma clang diagnostic ignored \""-Wprotocol\"""");
+  }
+  public void testAddsPragmaToAbstractEnum() throws IOException {
+    String interfaceSource = ""interface I { public int foo(); }"";
+    String enumSource =
+        ""enum E implements I { ""
+        + ""  A { public int foo() { return 42; } },""
+        + ""  B { public int foo() { return -1; } } }"";
+    addSourceFile(interfaceSource, ""I.java"");
+    addSourceFile(enumSource, ""E.java"");
+    String translation = translateSourceFile(""E"", ""E.m"");
+    assertTranslation(translation, ""#pragma clang diagnostic ignored \""-Wprotocol\"""");
+  }",class,
+"    addSourceFile(""abstract class C implements A<String> {}"", ""C.java"");
+    String aHeader = translateSourceFile(""A"", ""A.h"");
+    String bHeader = translateSourceFile(""B"", ""B.h"");
+    String bSource = getTranslatedFile(""B.m"");
+    String cHeader = translateSourceFile(""C"", ""C.h"");
+    String cSource = getTranslatedFile(""C.m"");
+    assertTranslation(aHeader, ""- (id)foo;"");
+    assertTranslation(bHeader, ""- (NSString *)foo;"");
+    // The added ""foo"" method should not appear in metadata.
+    assertNotInTranslation(bSource, ""foo"");
+    assertTranslation(cHeader, ""- (NSString *)foo;"");
+    // The added ""foo"" method should not appear in metadata or have an implementation.
+    assertNotInTranslation(cSource, ""foo"");
+  }
+  public void testMethodAddedForMethodInheritedFromMultipleInterfaces() throws IOException {
+    addSourceFile(""interface A { java.io.Serializable foo(); }"", ""A.java"");
+    addSourceFile(""interface B { String foo(); }"", ""B.java"");
+    addSourceFile(""abstract class C implements A, B {}"", ""C.java"");
+    String cHeader = translateSourceFile(""C"", ""C.h"");
+    String cSource = translateSourceFile(""C"", ""C.m"");
+    assertTranslation(cHeader, ""- (NSString *)foo;"");
+    assertNotInTranslation(cSource, ""foo"");
+  }",class,
+"    addSourceFile(""abstract class C implements A, B {}"", ""C.java"");
+    String cHeader = translateSourceFile(""C"", ""C.h"");
+    String cSource = translateSourceFile(""C"", ""C.m"");
+    assertTranslation(cHeader, ""- (NSString *)foo;"");
+    assertNotInTranslation(cSource, ""foo"");
+  }
+  public void testGenericPrivateMethodNotAdded() throws IOException {
+    String superSource = ""abstract class Super<T> { ""
+        + ""  private T returnT() { return null; } ""
+        + ""}"";
+    String subSource = ""class Sub extends Super<Void> {}"";
+    addSourceFile(superSource, ""Super.java"");
+    addSourceFile(subSource, ""Sub.java"");
+    String superTranslation = translateSourceFile(""Super"", ""Super.m"");
+    String subTranslation = translateSourceFile(""Sub"", ""Sub.m"");
+    // Super translation should contain the generic private method declaration.
+    assertTranslation(superTranslation, ""- (id)returnT;"");
+    // But Sub translation should not even though the return type is now resolved.
+    assertNotInTranslation(subTranslation, ""returnT"");
+  }",class,
+"  public void testAbstractClassGrandfatherInterface() throws IOException {
+    String source =
+        ""public class Test {""
+        + ""  public interface I1 { void foo(); } ""
+        + ""  public interface I2 extends I1 { } ""
+        + ""  public abstract class Inner implements I2 { } }"";
+    String translation = translateSourceFile(source, ""Test"", ""Test.m"");
+    assertTranslation(translation, ""#pragma clang diagnostic ignored \""-Wprotocol\"""");
+  }",method,
+"  public void testAddsPragmaToAbstractEnum() throws IOException {
+    String interfaceSource = ""interface I { public int foo(); }"";
+    String enumSource =
+        ""enum E implements I { ""
+        + ""  A { public int foo() { return 42; } },""
+        + ""  B { public int foo() { return -1; } } }"";
+    addSourceFile(interfaceSource, ""I.java"");
+    addSourceFile(enumSource, ""E.java"");
+    String translation = translateSourceFile(""E"", ""E.m"");
+    assertTranslation(translation, ""#pragma clang diagnostic ignored \""-Wprotocol\"""");
+  }",method,
+"  public void testMethodAddedForSpecifiedTypeArg() throws IOException {
+    addSourceFile(""interface A<T> { T foo(); }"", ""A.java"");
+    addSourceFile(""interface B extends A<String> {}"", ""B.java"");
+    addSourceFile(""abstract class C implements A<String> {}"", ""C.java"");
+    String aHeader = translateSourceFile(""A"", ""A.h"");
+    String bHeader = translateSourceFile(""B"", ""B.h"");
+    String bSource = getTranslatedFile(""B.m"");
+    String cHeader = translateSourceFile(""C"", ""C.h"");
+    String cSource = getTranslatedFile(""C.m"");
+    assertTranslation(aHeader, ""- (id)foo;"");
+    assertTranslation(bHeader, ""- (NSString *)foo;"");
+    // The added ""foo"" method should not appear in metadata.
+    assertNotInTranslation(bSource, ""foo"");
+    assertTranslation(cHeader, ""- (NSString *)foo;"");
+    // The added ""foo"" method should not appear in metadata or have an implementation.
+    assertNotInTranslation(cSource, ""foo"");
+  }",method,
+"  public void testMethodAddedForMethodInheritedFromMultipleInterfaces() throws IOException {
+    addSourceFile(""interface A { java.io.Serializable foo(); }"", ""A.java"");
+    addSourceFile(""interface B { String foo(); }"", ""B.java"");
+    addSourceFile(""abstract class C implements A, B {}"", ""C.java"");
+    String cHeader = translateSourceFile(""C"", ""C.h"");
+    String cSource = translateSourceFile(""C"", ""C.m"");
+    assertTranslation(cHeader, ""- (NSString *)foo;"");
+    assertNotInTranslation(cSource, ""foo"");
+  }",method,
+"  public void testGenericPrivateMethodNotAdded() throws IOException {
+    String superSource = ""abstract class Super<T> { ""
+        + ""  private T returnT() { return null; } ""
+        + ""}"";
+    String subSource = ""class Sub extends Super<Void> {}"";
+    addSourceFile(superSource, ""Super.java"");
+    addSourceFile(subSource, ""Sub.java"");
+    String superTranslation = translateSourceFile(""Super"", ""Super.m"");
+    String subTranslation = translateSourceFile(""Sub"", ""Sub.m"");
+    // Super translation should contain the generic private method declaration.
+    assertTranslation(superTranslation, ""- (id)returnT;"");
+    // But Sub translation should not even though the return type is now resolved.
+    assertNotInTranslation(subTranslation, ""returnT"");
+  }",method,
+"public class LSTM extends AbstractLSTM {
+    private double forgetGateBiasInit;
+    private IActivation gateActivationFn = new ActivationSigmoid();
+    private LSTM(Builder builder) {
+        super(builder);
+        this.forgetGateBiasInit = builder.forgetGateBiasInit;
+        this.gateActivationFn = builder.gateActivationFn;
+        initializeConstraints(builder);
+    }
+    @Override
+    protected void initializeConstraints(org.deeplearning4j.nn.conf.layers.Layer.Builder<?> builder){
+        super.initializeConstraints(builder);
+        if(((Builder)builder).recurrentConstraints != null){
+            if(constraints == null){
+                constraints = new ArrayList<>();
+            }
+            for (LayerConstraint c : ((Builder) builder).recurrentConstraints) {
+                LayerConstraint c2 = c.clone();
+                c2.setParams(Collections.singleton(LSTMParamInitializer.RECURRENT_WEIGHT_KEY));
+                constraints.add(c2);
+            }
+        }
+    }
+    @Override
+    public Layer instantiate(NeuralNetConfiguration conf, Collection<IterationListener> iterationListeners,
+                    int layerIndex, INDArray layerParamsView, boolean initializeParams) {
+        LayerValidation.assertNInNOutSet(""LSTM"", getLayerName(), layerIndex, getNIn(), getNOut());
+        org.deeplearning4j.nn.layers.recurrent.LSTM ret = new org.deeplearning4j.nn.layers.recurrent.LSTM(conf);
+        ret.setListeners(iterationListeners);
+        ret.setIndex(layerIndex);
+        ret.setParamsViewArray(layerParamsView);
+        Map<String, INDArray> paramTable = initializer().init(conf, layerParamsView, initializeParams);
+        ret.setParamTable(paramTable);
+        ret.setConf(conf);
+        return ret;
+    }
+    @Override
+    public ParamInitializer initializer() {
+        return LSTMParamInitializer.getInstance();
+    }
+    @Override
+    public LayerMemoryReport getMemoryReport(InputType inputType) {
+        //TODO - CuDNN etc
+        return LSTMHelpers.getMemoryReport(this, inputType);
+    }
+    @AllArgsConstructor
+    public static class Builder extends AbstractLSTM.Builder<Builder> {
+        @SuppressWarnings(""unchecked"")
+        public LSTM build() {
+            return new LSTM(this);
+        }
+    }
+}",class,
+"    public static class Builder extends AbstractLSTM.Builder<Builder> {
+        @SuppressWarnings(""unchecked"")
+        public LSTM build() {
+            return new LSTM(this);
+        }
+    }",class,
+"    private LSTM(Builder builder) {
+        super(builder);
+        this.forgetGateBiasInit = builder.forgetGateBiasInit;
+        this.gateActivationFn = builder.gateActivationFn;
+        initializeConstraints(builder);
+    }",method,
+"    @Override
+    protected void initializeConstraints(org.deeplearning4j.nn.conf.layers.Layer.Builder<?> builder){
+        super.initializeConstraints(builder);
+        if(((Builder)builder).recurrentConstraints != null){
+            if(constraints == null){
+                constraints = new ArrayList<>();
+            }
+            for (LayerConstraint c : ((Builder) builder).recurrentConstraints) {
+                LayerConstraint c2 = c.clone();
+                c2.setParams(Collections.singleton(LSTMParamInitializer.RECURRENT_WEIGHT_KEY));
+                constraints.add(c2);
+            }
+        }
+    }",method,
+"            if(constraints == null){
+                constraints = new ArrayList<>();
+            }",method,
+"    @Override
+    public Layer instantiate(NeuralNetConfiguration conf, Collection<IterationListener> iterationListeners,
+                    int layerIndex, INDArray layerParamsView, boolean initializeParams) {
+        LayerValidation.assertNInNOutSet(""LSTM"", getLayerName(), layerIndex, getNIn(), getNOut());
+        org.deeplearning4j.nn.layers.recurrent.LSTM ret = new org.deeplearning4j.nn.layers.recurrent.LSTM(conf);
+        ret.setListeners(iterationListeners);
+        ret.setIndex(layerIndex);
+        ret.setParamsViewArray(layerParamsView);
+        Map<String, INDArray> paramTable = initializer().init(conf, layerParamsView, initializeParams);
+        ret.setParamTable(paramTable);
+        ret.setConf(conf);
+        return ret;
+    }",method,
+"    @Override
+    public ParamInitializer initializer() {
+        return LSTMParamInitializer.getInstance();
+    }",method,
+"    @Override
+    public LayerMemoryReport getMemoryReport(InputType inputType) {
+        //TODO - CuDNN etc
+        return LSTMHelpers.getMemoryReport(this, inputType);
+    }",method,
+"        @SuppressWarnings(""unchecked"")
+        public LSTM build() {
+            return new LSTM(this);
+        }",method,
+"public class ByteBufferReplacerTest {
+  @Test
+  public void charSets() {
+    assumeThat(Charset.defaultCharset(), Matchers.equalTo(Charsets.UTF_8));
+    String blob = ""something \n \ud003\ud001hello/world \n something"";
+    String fixedBlob = ""something \n \ud003\ud001replaced/// \n something"";
+    Path original = Paths.get(""\ud003\ud001hello/world"");
+    Path replacement = Paths.get(""\ud003\ud001replaced"");
+    ImmutableList<Charset> charSets =
+        ImmutableList.of(
+            Charsets.ISO_8859_1,
+            Charsets.US_ASCII,
+            Charsets.UTF_8,
+            Charsets.UTF_16,
+            Charsets.UTF_16BE,
+            Charsets.UTF_16LE);
+    for (Charset charset : charSets) {
+      ByteBufferReplacer replacer =
+          ByteBufferReplacer.fromPaths(
+              ImmutableMap.of(original, replacement), File.separatorChar, charset);
+      byte[] rawBytes = blob.getBytes(charset);
+      int numReplacements = replacer.replace(ByteBuffer.wrap(rawBytes));
+      assertEquals(String.format(""Charset %s"", charset), 1, numReplacements);
+      assertArrayEquals(
+          String.format(
+              ""Charset %s: \'%s\' != \'%s\'"", charset, fixedBlob, new String(rawBytes, charset)),
+          fixedBlob.getBytes(charset),
+          rawBytes);
+    }
+  }",class,
+"  @Test
+  public void charSets() {
+    assumeThat(Charset.defaultCharset(), Matchers.equalTo(Charsets.UTF_8));
+    String blob = ""something \n \ud003\ud001hello/world \n something"";
+    String fixedBlob = ""something \n \ud003\ud001replaced/// \n something"";
+    Path original = Paths.get(""\ud003\ud001hello/world"");
+    Path replacement = Paths.get(""\ud003\ud001replaced"");
+    ImmutableList<Charset> charSets =
+        ImmutableList.of(
+            Charsets.ISO_8859_1,
+            Charsets.US_ASCII,
+            Charsets.UTF_8,
+            Charsets.UTF_16,
+            Charsets.UTF_16BE,
+            Charsets.UTF_16LE);
+    for (Charset charset : charSets) {
+      ByteBufferReplacer replacer =
+          ByteBufferReplacer.fromPaths(
+              ImmutableMap.of(original, replacement), File.separatorChar, charset);
+      byte[] rawBytes = blob.getBytes(charset);
+      int numReplacements = replacer.replace(ByteBuffer.wrap(rawBytes));
+      assertEquals(String.format(""Charset %s"", charset), 1, numReplacements);
+      assertArrayEquals(
+          String.format(
+              ""Charset %s: \'%s\' != \'%s\'"", charset, fixedBlob, new String(rawBytes, charset)),
+          fixedBlob.getBytes(charset),
+          rawBytes);
+    }",method,
+"public class Number extends UnaryOperation
+{
+    static final long serialVersionUID = 7196954482871619765L;
+  public XObject operate(XObject right) throws javax.xml.transform.TransformerException
+  {
+    if (XObject.CLASS_NUMBER == right.getType())
+      return right;
+    else
+      return new XNumber(right.num());
+  }
+  public double num(XPathContext xctxt)
+          throws javax.xml.transform.TransformerException
+  {
+    return m_right.num(xctxt);
+  }
+}",class,
+"  public XObject operate(XObject right) throws javax.xml.transform.TransformerException
+  {
+    if (XObject.CLASS_NUMBER == right.getType())
+      return right;
+    else
+      return new XNumber(right.num());
+  }",method,
+"  public double num(XPathContext xctxt)
+          throws javax.xml.transform.TransformerException
+  {
+    return m_right.num(xctxt);
+  }",method,
+" final class MoveProxy {
+  private @Nullable ReadableArray mMoveTo;
+  private int mSize;
+  private int[] mMapping = new int[8];
+  private ReactShadowNode[] mChildren = new ReactShadowNodeImpl[4];
+  public int size() {
+    return mSize;
+  }
+  public void setChildMoveFrom(int moveFromIndex, ReactShadowNode node) {
+    mChildren[moveFromToIndex(moveFromIndex)] = node;
+  }
+  public ReactShadowNode getChildMoveTo(int moveToIndex) {
+    return mChildren[moveToToIndex(moveToIndex)];
+  }
+  public int getMoveFrom(int moveFromIndex) {
+    return moveFromToValue(moveFromIndex);
+  }
+  public int getMoveTo(int moveToIndex) {
+    return moveToToValue(moveToIndex);
+  }
+  public void setup(ReadableArray moveFrom, ReadableArray moveTo) {
+    mMoveTo = moveTo;
+    if (moveFrom == null) {
+      setSize(0);
+      return;
+    }
+    int size = moveFrom.size();
+    int requiredSpace = size + size;
+    if (mMapping.length < requiredSpace) {
+      mMapping = new int[requiredSpace];
+      mChildren = new FlatShadowNode[size];
+    }
+    setSize(size);
+    // Array contains data in the following way:
+    // [ k0, v0, k1, v1, k2, v2, ... ]
+    //
+    // where vi = moveFrom.getInt(ki)
+    // We don't technically *need* to store vi, but they are accessed so often that it makes sense
+    // to cache it instead of calling ReadableArray.getInt() all the time.
+    // Sorting algorithm will reorder ki/vi pairs in such a way that vi < v(i+1)
+    // Code below is an insertion sort, adapted from DualPivotQuicksort.doSort()
+    // At each step i, we got the following data:
+    // [k0, v0, k1, v2, .. k(i-1), v(i-1), unused...]
+    // where v0 < v1 < v2 ... < v(i-1)
+    //
+    // This holds true for step i = 0 (array of size one is sorted)
+    // Again, k0 = 0, v0 = moveFrom.getInt(k0)
+    setKeyValue(0, 0, moveFrom.getInt(0));
+    // At each of the next steps, we grab a new key and walk back until we find first key that is
+    // less than current, shifting key/value pairs if they are larger than current key.
+    for (int i = 1; i < size; i++) {
+      // this is our next key
+      int current = moveFrom.getInt(i);
+      // this loop will find correct position for it
+      int j;
+      // At this point, array is like this: [ k0, v0, k1, v1, k2, v2, ..., k(i-1), v(i-1), ... ]
+      for (j = i - 1; j >= 0; j--) {
+        if (moveFromToValue(j) < current) {
+          break;
+        }
+        // value at index j is < current value, shift that value and its key
+        setKeyValue(j + 1, moveFromToIndex(j), moveFromToValue(j));
+      }
+      setKeyValue(j + 1, i, current);
+    }
+  }
+  private static int k(int i) {
+    return i * 2;
+  }
+  private static int v(int i) {
+    return i * 2 + 1;
+  }
+  private void setKeyValue(int index, int key, int value) {
+    mMapping[k(index)] = key;
+    mMapping[v(index)] = value;
+  }
+  private int moveFromToIndex(int index) {
+    return mMapping[k(index)];
+  }
+  private int moveFromToValue(int index) {
+    return mMapping[v(index)];
+  }
+  private static int moveToToIndex(int index) {
+    return index;
+  }
+  private int moveToToValue(int index) {
+    return Assertions.assumeNotNull(mMoveTo).getInt(index);
+  }
+  private void setSize(int newSize) {
+    // reset references to null when shrinking to avoid memory leaks
+    for (int i = newSize; i < mSize; ++i) {
+      mChildren[i] = null;
+    }
+    mSize = newSize;
+  }
+}",class,
+"  public int size() {
+    return mSize;
+  }",method,
+"  public void setChildMoveFrom(int moveFromIndex, ReactShadowNode node) {
+    mChildren[moveFromToIndex(moveFromIndex)] = node;
+  }",method,
+"  public ReactShadowNode getChildMoveTo(int moveToIndex) {
+    return mChildren[moveToToIndex(moveToIndex)];
+  }",method,
+"  public int getMoveFrom(int moveFromIndex) {
+    return moveFromToValue(moveFromIndex);
+  }",method,
+"  public int getMoveTo(int moveToIndex) {
+    return moveToToValue(moveToIndex);
+  }",method,
+"  public void setup(ReadableArray moveFrom, ReadableArray moveTo) {
+    mMoveTo = moveTo;
+    if (moveFrom == null) {
+      setSize(0);
+      return;
+    }
+    int size = moveFrom.size();
+    int requiredSpace = size + size;
+    if (mMapping.length < requiredSpace) {
+      mMapping = new int[requiredSpace];
+      mChildren = new FlatShadowNode[size];
+    }
+    setSize(size);
+    // Array contains data in the following way:
+    // [ k0, v0, k1, v1, k2, v2, ... ]
+    //
+    // where vi = moveFrom.getInt(ki)
+    // We don't technically *need* to store vi, but they are accessed so often that it makes sense
+    // to cache it instead of calling ReadableArray.getInt() all the time.
+    // Sorting algorithm will reorder ki/vi pairs in such a way that vi < v(i+1)
+    // Code below is an insertion sort, adapted from DualPivotQuicksort.doSort()
+    // At each step i, we got the following data:
+    // [k0, v0, k1, v2, .. k(i-1), v(i-1), unused...]
+    // where v0 < v1 < v2 ... < v(i-1)
+    //
+    // This holds true for step i = 0 (array of size one is sorted)
+    // Again, k0 = 0, v0 = moveFrom.getInt(k0)
+    setKeyValue(0, 0, moveFrom.getInt(0));
+    // At each of the next steps, we grab a new key and walk back until we find first key that is
+    // less than current, shifting key/value pairs if they are larger than current key.
+    for (int i = 1; i < size; i++) {
+      // this is our next key
+      int current = moveFrom.getInt(i);
+      // this loop will find correct position for it
+      int j;
+      // At this point, array is like this: [ k0, v0, k1, v1, k2, v2, ..., k(i-1), v(i-1), ... ]
+      for (j = i - 1; j >= 0; j--) {
+        if (moveFromToValue(j) < current) {
+          break;
+        }
+        // value at index j is < current value, shift that value and its key
+        setKeyValue(j + 1, moveFromToIndex(j), moveFromToValue(j));
+      }
+      setKeyValue(j + 1, i, current);
+    }
+  }",method,
+"    if (moveFrom == null) {
+      setSize(0);
+      return;
+    }",method,
+"    if (mMapping.length < requiredSpace) {
+      mMapping = new int[requiredSpace];
+      mChildren = new FlatShadowNode[size];
+    }",method,
+"    for (int i = 1; i < size; i++) {
+      // this is our next key
+      int current = moveFrom.getInt(i);
+      // this loop will find correct position for it
+      int j;
+      // At this point, array is like this: [ k0, v0, k1, v1, k2, v2, ..., k(i-1), v(i-1), ... ]
+      for (j = i - 1; j >= 0; j--) {
+        if (moveFromToValue(j) < current) {
+          break;
+        }
+        // value at index j is < current value, shift that value and its key
+        setKeyValue(j + 1, moveFromToIndex(j), moveFromToValue(j));
+      }
+      setKeyValue(j + 1, i, current);
+    }",method,
+"      for (j = i - 1; j >= 0; j--) {
+        if (moveFromToValue(j) < current) {
+          break;
+        }
+        // value at index j is < current value, shift that value and its key
+        setKeyValue(j + 1, moveFromToIndex(j), moveFromToValue(j));
+      }",method,
+"  private static int k(int i) {
+    return i * 2;
+  }",method,
+"  private static int v(int i) {
+    return i * 2 + 1;
+  }",method,
+"  private void setKeyValue(int index, int key, int value) {
+    mMapping[k(index)] = key;
+    mMapping[v(index)] = value;
+  }",method,
+"  private int moveFromToIndex(int index) {
+    return mMapping[k(index)];
+  }",method,
+"  private int moveFromToValue(int index) {
+    return mMapping[v(index)];
+  }",method,
+"  private static int moveToToIndex(int index) {
+    return index;
+  }",method,
+"  private int moveToToValue(int index) {
+    return Assertions.assumeNotNull(mMoveTo).getInt(index);
+  }",method,
+"  private void setSize(int newSize) {
+    // reset references to null when shrinking to avoid memory leaks
+    for (int i = newSize; i < mSize; ++i) {
+      mChildren[i] = null;
+    }
+    mSize = newSize;
+  }",method,
+"    for (int i = newSize; i < mSize; ++i) {
+      mChildren[i] = null;
+    }",method,
+"public class CanvasGraphicsNode extends CompositeGraphicsNode {
+    protected AffineTransform positionTransform;
+    protected AffineTransform viewingTransform;
+    protected Paint backgroundPaint;
+    public CanvasGraphicsNode() {}
+    //
+    // Properties methods
+    //
+    public void setBackgroundPaint(Paint newBackgroundPaint) {
+        this.backgroundPaint = newBackgroundPaint;
+    }
+    public Paint getBackgroundPaint() {
+        return backgroundPaint;
+    }
+    public void setPositionTransform(AffineTransform at) {
+        fireGraphicsNodeChangeStarted();
+        invalidateGeometryCache();
+        this.positionTransform = at;
+        if (positionTransform != null) {
+            transform = new AffineTransform(positionTransform);
+            if (viewingTransform != null)
+                transform.concatenate(viewingTransform);
+        } else if (viewingTransform != null)
+            transform = new AffineTransform(viewingTransform);
+        else
+            transform = new AffineTransform();
+        if (transform.getDeterminant() != 0){
+            try{
+                inverseTransform = transform.createInverse();
+            }catch(NoninvertibleTransformException e){
+                // Should never happen.
+                throw new Error( e.getMessage() );
+            }
+        }
+        else{
+            // The transform is not invertible. Use the same
+            // transform.
+            inverseTransform = transform;
+        }
+        fireGraphicsNodeChangeCompleted();
+    }
+    public AffineTransform getPositionTransform() {
+        return positionTransform;
+    }
+    public void setViewingTransform(AffineTransform at) {
+        fireGraphicsNodeChangeStarted();
+        invalidateGeometryCache();
+        this.viewingTransform = at;
+        if (positionTransform != null) {
+            transform = new AffineTransform(positionTransform);
+            if (viewingTransform != null)
+                transform.concatenate(viewingTransform);
+        } else if (viewingTransform != null)
+            transform = new AffineTransform(viewingTransform);
+        else
+            transform = new AffineTransform();
+        if(transform.getDeterminant() != 0){
+            try{
+                inverseTransform = transform.createInverse();
+            }catch(NoninvertibleTransformException e){
+                // Should never happen.
+                throw new Error( e.getMessage() );
+            }
+        }
+        else{
+            // The transform is not invertible. Use the same
+            // transform.
+            inverseTransform = transform;
+        }
+        fireGraphicsNodeChangeCompleted();
+    }
+    public AffineTransform getViewingTransform() {
+        return viewingTransform;
+    }
+    //
+    // Drawing methods
+    //
+    public void primitivePaint(Graphics2D g2d) {
+        if (backgroundPaint != null) {
+            g2d.setPaint(backgroundPaint);
+            g2d.fill(g2d.getClip()); // Fast paint for huge background area
+        }
+        super.primitivePaint(g2d);
+    }
+}",class,
+    public CanvasGraphicsNode() {},method,
+"    public void setBackgroundPaint(Paint newBackgroundPaint) {
+        this.backgroundPaint = newBackgroundPaint;
+    }",method,
+"    public Paint getBackgroundPaint() {
+        return backgroundPaint;
+    }",method,
+"    public void setPositionTransform(AffineTransform at) {
+        fireGraphicsNodeChangeStarted();
+        invalidateGeometryCache();
+        this.positionTransform = at;
+        if (positionTransform != null) {
+            transform = new AffineTransform(positionTransform);
+            if (viewingTransform != null)
+                transform.concatenate(viewingTransform);
+        } else if (viewingTransform != null)
+            transform = new AffineTransform(viewingTransform);
+        else
+            transform = new AffineTransform();
+        if (transform.getDeterminant() != 0){
+            try{
+                inverseTransform = transform.createInverse();
+            }catch(NoninvertibleTransformException e){
+                // Should never happen.
+                throw new Error( e.getMessage() );
+            }
+        }
+        else{
+            // The transform is not invertible. Use the same
+            // transform.
+            inverseTransform = transform;
+        }
+        fireGraphicsNodeChangeCompleted();
+    }",method,
+"        if (positionTransform != null) {
+            transform = new AffineTransform(positionTransform);
+            if (viewingTransform != null)
+                transform.concatenate(viewingTransform);
+        }",method,
+"    public AffineTransform getPositionTransform() {
+        return positionTransform;
+    }",method,
+"    public void setViewingTransform(AffineTransform at) {
+        fireGraphicsNodeChangeStarted();
+        invalidateGeometryCache();
+        this.viewingTransform = at;
+        if (positionTransform != null) {
+            transform = new AffineTransform(positionTransform);
+            if (viewingTransform != null)
+                transform.concatenate(viewingTransform);
+        } else if (viewingTransform != null)
+            transform = new AffineTransform(viewingTransform);
+        else
+            transform = new AffineTransform();
+        if(transform.getDeterminant() != 0){
+            try{
+                inverseTransform = transform.createInverse();
+            }catch(NoninvertibleTransformException e){
+                // Should never happen.
+                throw new Error( e.getMessage() );
+            }
+        }
+        else{
+            // The transform is not invertible. Use the same
+            // transform.
+            inverseTransform = transform;
+        }
+        fireGraphicsNodeChangeCompleted();
+    }",method,
+"        if (positionTransform != null) {
+            transform = new AffineTransform(positionTransform);
+            if (viewingTransform != null)
+                transform.concatenate(viewingTransform);
+        }",method,
+"    public AffineTransform getViewingTransform() {
+        return viewingTransform;
+    }",method,
+"    public void primitivePaint(Graphics2D g2d) {
+        if (backgroundPaint != null) {
+            g2d.setPaint(backgroundPaint);
+            g2d.fill(g2d.getClip()); // Fast paint for huge background area
+        }
+        super.primitivePaint(g2d);
+    }",method,
+"        if (backgroundPaint != null) {
+            g2d.setPaint(backgroundPaint);
+            g2d.fill(g2d.getClip()); // Fast paint for huge background area
+        }",method,
+"public class MarshalRegistry {
+    public static <T> void registerMarshalQueryable(MarshalQueryable<T> queryable) {
+        synchronized(sMarshalLock) {
+            sRegisteredMarshalQueryables.add(queryable);
+        }
+    }
+    @SuppressWarnings(""unchecked"")
+    public static <T> Marshaler<T> getMarshaler(TypeReference<T> typeToken, int nativeType) {
+        synchronized(sMarshalLock) {
+            // TODO: can avoid making a new token each time by code-genning
+            // the list of type tokens and native types from the keys (at the call sites)
+            MarshalToken<T> marshalToken = new MarshalToken<T>(typeToken, nativeType);
+            Marshaler<T> marshaler =
+                    (Marshaler<T>) sMarshalerMap.get(marshalToken);
+            if (marshaler == null) {
+                if (sRegisteredMarshalQueryables.size() == 0) {
+                    throw new AssertionError(""No available query marshalers registered"");
+                }
+                // Query each marshaler to see if they support the native/managed type combination
+                for (MarshalQueryable<?> potentialMarshaler : sRegisteredMarshalQueryables) {
+                    MarshalQueryable<T> castedPotential =
+                            (MarshalQueryable<T>)potentialMarshaler;
+                    if (castedPotential.isTypeMappingSupported(typeToken, nativeType)) {
+                        marshaler = castedPotential.createMarshaler(typeToken, nativeType);
+                        break;
+                    }
+                }
+                if (marshaler == null) {
+                    throw new UnsupportedOperationException(
+                        ""Could not find marshaler that matches the requested "" +
+                        ""combination of type reference "" +
+                        typeToken + "" and native type "" +
+                        MarshalHelpers.toStringNativeType(nativeType));
+                }
+                // Only put when no cached version exists to avoid +0.5ms lookup per call.
+                sMarshalerMap.put(marshalToken, marshaler);
+            }
+            return marshaler;
+        }
+    }
+    private static class MarshalToken<T> {
+        public MarshalToken(TypeReference<T> typeReference, int nativeType) {
+            this.typeReference = typeReference;
+            this.nativeType = nativeType;
+            this.hash = typeReference.hashCode() ^ nativeType;
+        }
+        final TypeReference<T> typeReference;
+        final int nativeType;
+        private final int hash;
+        @Override
+        public boolean equals(Object other) {
+            if (other instanceof MarshalToken<?>) {
+                MarshalToken<?> otherToken = (MarshalToken<?>)other;
+                return typeReference.equals(otherToken.typeReference) &&
+                        nativeType == otherToken.nativeType;
+            }
+            return false;
+        }
+        @Override
+        public int hashCode() {
+            return hash;
+        }
+    }
+    // Control access to the static data structures below
+    private static final Object sMarshalLock = new Object();
+    private static final List<MarshalQueryable<?>> sRegisteredMarshalQueryables =
+            new ArrayList<MarshalQueryable<?>>();
+    private static final HashMap<MarshalToken<?>, Marshaler<?>> sMarshalerMap =
+            new HashMap<MarshalToken<?>, Marshaler<?>>();
+    private MarshalRegistry() {
+        throw new AssertionError();
+    }
+}",class,
+"    private static class MarshalToken<T> {
+        public MarshalToken(TypeReference<T> typeReference, int nativeType) {
+            this.typeReference = typeReference;
+            this.nativeType = nativeType;
+            this.hash = typeReference.hashCode() ^ nativeType;
+        }
+        final TypeReference<T> typeReference;
+        final int nativeType;
+        private final int hash;
+        @Override
+        public boolean equals(Object other) {
+            if (other instanceof MarshalToken<?>) {
+                MarshalToken<?> otherToken = (MarshalToken<?>)other;
+                return typeReference.equals(otherToken.typeReference) &&
+                        nativeType == otherToken.nativeType;
+            }
+            return false;
+        }
+        @Override
+        public int hashCode() {
+            return hash;
+        }
+    }",class,
+"    public static <T> void registerMarshalQueryable(MarshalQueryable<T> queryable) {
+        synchronized(sMarshalLock) {
+            sRegisteredMarshalQueryables.add(queryable);
+        }
+    }",method,
+"        synchronized(sMarshalLock) {
+            sRegisteredMarshalQueryables.add(queryable);
+        }",method,
+"    @SuppressWarnings(""unchecked"")
+    public static <T> Marshaler<T> getMarshaler(TypeReference<T> typeToken, int nativeType) {
+        synchronized(sMarshalLock) {
+            // TODO: can avoid making a new token each time by code-genning
+            // the list of type tokens and native types from the keys (at the call sites)
+            MarshalToken<T> marshalToken = new MarshalToken<T>(typeToken, nativeType);
+            Marshaler<T> marshaler =
+                    (Marshaler<T>) sMarshalerMap.get(marshalToken);
+            if (marshaler == null) {
+                if (sRegisteredMarshalQueryables.size() == 0) {
+                    throw new AssertionError(""No available query marshalers registered"");
+                }
+                // Query each marshaler to see if they support the native/managed type combination
+                for (MarshalQueryable<?> potentialMarshaler : sRegisteredMarshalQueryables) {
+                    MarshalQueryable<T> castedPotential =
+                            (MarshalQueryable<T>)potentialMarshaler;
+                    if (castedPotential.isTypeMappingSupported(typeToken, nativeType)) {
+                        marshaler = castedPotential.createMarshaler(typeToken, nativeType);
+                        break;
+                    }
+                }
+                if (marshaler == null) {
+                    throw new UnsupportedOperationException(
+                        ""Could not find marshaler that matches the requested "" +
+                        ""combination of type reference "" +
+                        typeToken + "" and native type "" +
+                        MarshalHelpers.toStringNativeType(nativeType));
+                }
+                // Only put when no cached version exists to avoid +0.5ms lookup per call.
+                sMarshalerMap.put(marshalToken, marshaler);
+            }
+            return marshaler;
+        }
+    }",method,
+"        synchronized(sMarshalLock) {
+            // TODO: can avoid making a new token each time by code-genning
+            // the list of type tokens and native types from the keys (at the call sites)
+            MarshalToken<T> marshalToken = new MarshalToken<T>(typeToken, nativeType);
+            Marshaler<T> marshaler =
+                    (Marshaler<T>) sMarshalerMap.get(marshalToken);
+            if (marshaler == null) {
+                if (sRegisteredMarshalQueryables.size() == 0) {
+                    throw new AssertionError(""No available query marshalers registered"");
+                }
+                // Query each marshaler to see if they support the native/managed type combination
+                for (MarshalQueryable<?> potentialMarshaler : sRegisteredMarshalQueryables) {
+                    MarshalQueryable<T> castedPotential =
+                            (MarshalQueryable<T>)potentialMarshaler;
+                    if (castedPotential.isTypeMappingSupported(typeToken, nativeType)) {
+                        marshaler = castedPotential.createMarshaler(typeToken, nativeType);
+                        break;
+                    }
+                }
+                if (marshaler == null) {
+                    throw new UnsupportedOperationException(
+                        ""Could not find marshaler that matches the requested "" +
+                        ""combination of type reference "" +
+                        typeToken + "" and native type "" +
+                        MarshalHelpers.toStringNativeType(nativeType));
+                }
+                // Only put when no cached version exists to avoid +0.5ms lookup per call.
+                sMarshalerMap.put(marshalToken, marshaler);
+            }
+            return marshaler;
+        }",method,
+"            if (marshaler == null) {
+                if (sRegisteredMarshalQueryables.size() == 0) {
+                    throw new AssertionError(""No available query marshalers registered"");
+                }
+                // Query each marshaler to see if they support the native/managed type combination
+                for (MarshalQueryable<?> potentialMarshaler : sRegisteredMarshalQueryables) {
+                    MarshalQueryable<T> castedPotential =
+                            (MarshalQueryable<T>)potentialMarshaler;
+                    if (castedPotential.isTypeMappingSupported(typeToken, nativeType)) {
+                        marshaler = castedPotential.createMarshaler(typeToken, nativeType);
+                        break;
+                    }
+                }
+                if (marshaler == null) {
+                    throw new UnsupportedOperationException(
+                        ""Could not find marshaler that matches the requested "" +
+                        ""combination of type reference "" +
+                        typeToken + "" and native type "" +
+                        MarshalHelpers.toStringNativeType(nativeType));
+                }
+                // Only put when no cached version exists to avoid +0.5ms lookup per call.
+                sMarshalerMap.put(marshalToken, marshaler);
+            }",method,
+"                for (MarshalQueryable<?> potentialMarshaler : sRegisteredMarshalQueryables) {
+                    MarshalQueryable<T> castedPotential =
+                            (MarshalQueryable<T>)potentialMarshaler;
+                    if (castedPotential.isTypeMappingSupported(typeToken, nativeType)) {
+                        marshaler = castedPotential.createMarshaler(typeToken, nativeType);
+                        break;
+                    }
+                }",method,
+"                if (marshaler == null) {
+                    throw new UnsupportedOperationException(
+                        ""Could not find marshaler that matches the requested "" +
+                        ""combination of type reference "" +
+                        typeToken + "" and native type "" +
+                        MarshalHelpers.toStringNativeType(nativeType));
+                }",method,
+"        public MarshalToken(TypeReference<T> typeReference, int nativeType) {
+            this.typeReference = typeReference;
+            this.nativeType = nativeType;
+            this.hash = typeReference.hashCode() ^ nativeType;
+        }",method,
+"        @Override
+        public boolean equals(Object other) {
+            if (other instanceof MarshalToken<?>) {
+                MarshalToken<?> otherToken = (MarshalToken<?>)other;
+                return typeReference.equals(otherToken.typeReference) &&
+                        nativeType == otherToken.nativeType;
+            }
+            return false;
+        }",method,
+"            if (other instanceof MarshalToken<?>) {
+                MarshalToken<?> otherToken = (MarshalToken<?>)other;
+                return typeReference.equals(otherToken.typeReference) &&
+                        nativeType == otherToken.nativeType;
+            }",method,
+"        @Override
+        public int hashCode() {
+            return hash;
+        }",method,
+"    private MarshalRegistry() {
+        throw new AssertionError();
+    }",method,
+"public class UcenterUserOauth implements Serializable {
+    private Integer userOauthId;
+    private Integer userId;
+    private Integer oauthId;
+    private Byte status;
+    private Date createTime;
+    private byte[] openId;
+    private static final long serialVersionUID = 1L;
+    public Integer getUserOauthId() {
+        return userOauthId;
+    }
+    public void setUserOauthId(Integer userOauthId) {
+        this.userOauthId = userOauthId;
+    }
+    public Integer getUserId() {
+        return userId;
+    }
+    public void setUserId(Integer userId) {
+        this.userId = userId;
+    }
+    public Integer getOauthId() {
+        return oauthId;
+    }
+    public void setOauthId(Integer oauthId) {
+        this.oauthId = oauthId;
+    }
+    public Byte getStatus() {
+        return status;
+    }
+    public void setStatus(Byte status) {
+        this.status = status;
+    }
+    public Date getCreateTime() {
+        return createTime;
+    }
+    public void setCreateTime(Date createTime) {
+        this.createTime = createTime;
+    }
+    public byte[] getOpenId() {
+        return openId;
+    }
+    public void setOpenId(byte[] openId) {
+        this.openId = openId;
+    }
+    @Override
+    public String toString() {
+        StringBuilder sb = new StringBuilder();
+        sb.append(getClass().getSimpleName());
+        sb.append("" ["");
+        sb.append(""Hash = "").append(hashCode());
+        sb.append("", userOauthId="").append(userOauthId);
+        sb.append("", userId="").append(userId);
+        sb.append("", oauthId="").append(oauthId);
+        sb.append("", status="").append(status);
+        sb.append("", createTime="").append(createTime);
+        sb.append("", openId="").append(openId);
+        sb.append(""]"");
+        return sb.toString();
+    }
+    @Override
+    public boolean equals(Object that) {
+        if (this == that) {
+            return true;
+        }
+        if (that == null) {
+            return false;
+        }
+        if (getClass() != that.getClass()) {
+            return false;
+        }
+        UcenterUserOauth other = (UcenterUserOauth) that;
+        return (this.getUserOauthId() == null ? other.getUserOauthId() == null : this.getUserOauthId().equals(other.getUserOauthId()))
+            && (this.getUserId() == null ? other.getUserId() == null : this.getUserId().equals(other.getUserId()))
+            && (this.getOauthId() == null ? other.getOauthId() == null : this.getOauthId().equals(other.getOauthId()))
+            && (this.getStatus() == null ? other.getStatus() == null : this.getStatus().equals(other.getStatus()))
+            && (this.getCreateTime() == null ? other.getCreateTime() == null : this.getCreateTime().equals(other.getCreateTime()))
+            && (Arrays.equals(this.getOpenId(), other.getOpenId()));
+    }
+    @Override
+    public int hashCode() {
+        final int prime = 31;
+        int result = 1;
+        result = prime * result + ((getUserOauthId() == null) ? 0 : getUserOauthId().hashCode());
+        result = prime * result + ((getUserId() == null) ? 0 : getUserId().hashCode());
+        result = prime * result + ((getOauthId() == null) ? 0 : getOauthId().hashCode());
+        result = prime * result + ((getStatus() == null) ? 0 : getStatus().hashCode());
+        result = prime * result + ((getCreateTime() == null) ? 0 : getCreateTime().hashCode());
+        result = prime * result + (Arrays.hashCode(getOpenId()));
+        return result;
+    }
+}",class,
+"    public Integer getUserOauthId() {
+        return userOauthId;
+    }",method,

@@ -1,0 +1,1153 @@
+code_snippet,type,score
+"        catch (NumberFormatException nfe) {
+          myValues = null;
+          return;
+        }",method,
+"  @NotNull
+  List<Integer> getValues() {
+    return myValues != null ? myValues : Collections.emptyList();
+  }",method,
+"  void setValues(List<Integer> values) {
+    if (values != null) {
+      myValues = new ArrayList<>(values);
+      Collections.sort(myValues);
+    }
+    else {
+      myValues = null;
+    }
+  }",method,
+"    if (values != null) {
+      myValues = new ArrayList<>(values);
+      Collections.sort(myValues);
+    }",method,
+"  @SuppressWarnings(""MethodDoesntCallSuperMethod"")
+  @Override
+  public Object clone() {
+    SoftMargins copy = new SoftMargins();
+    copy.setValues(myValues);
+    return copy;
+  }",method,
+"  @Override
+  public boolean equals(Object obj) {
+    if (obj instanceof SoftMargins) {
+      List<Integer> otherMargins = ((SoftMargins)obj).getValues();
+      return otherMargins.equals(getValues());
+    }
+    return false;
+  }",method,
+"    if (obj instanceof SoftMargins) {
+      List<Integer> otherMargins = ((SoftMargins)obj).getValues();
+      return otherMargins.equals(getValues());
+    }",method,
+"  @Override
+  public String toString() {
+    StringBuilder sb = new StringBuilder();
+    if (myValues != null) {
+      for (int margin: myValues) {
+        if (sb.length() > 0) sb.append("","");
+        sb.append(margin);
+      }
+    }
+    return sb.toString();
+  }",method,
+"    if (myValues != null) {
+      for (int margin: myValues) {
+        if (sb.length() > 0) sb.append("","");
+        sb.append(margin);
+      }
+    }",method,
+"      for (int margin: myValues) {
+        if (sb.length() > 0) sb.append("","");
+        sb.append(margin);
+      }",method,
+"  public void serializeInto(@NotNull Element element) {
+    if (myValues != null && myValues.size() > 0) {
+      XmlSerializer.serializeInto(this, element);
+    }
+  }",method,
+"  public void deserializeFrom(@NotNull Element element) {
+    XmlSerializer.deserializeInto(this, element);
+  }",method,
+"public class RemoveUnusedVariableFix implements IntentionAction {
+  private static final Logger LOG = Logger.getInstance(""#com.intellij.codeInsight.daemon.impl.quickfix.RemoveUnusedVariableFix"");
+  private final PsiVariable myVariable;
+  public RemoveUnusedVariableFix(PsiVariable variable) {
+    myVariable = variable;
+  }
+  @Override
+  @NotNull
+  public String getText() {
+    return QuickFixBundle.message(myVariable instanceof PsiField ? ""remove.unused.field"" : ""remove.unused.variable"",
+                                  myVariable.getName());
+  }
+  @Override
+  @NotNull
+  public String getFamilyName() {
+    return QuickFixBundle.message(""remove.unused.variable.family"");
+  }
+  @Override
+  public boolean isAvailable(@NotNull Project project, Editor editor, PsiFile file) {
+    return
+      myVariable != null
+      && myVariable.isValid()
+      && myVariable.getManager().isInProject(myVariable)
+      ;
+  }
+  @Override
+  public void invoke(@NotNull Project project, Editor editor, PsiFile file) {
+    if (!FileModificationService.getInstance().prepareFileForWrite(myVariable.getContainingFile())) return;
+    removeVariableAndReferencingStatements(editor);
+  }
+  private void removeVariableAndReferencingStatements(Editor editor) {
+    final List<PsiElement> references = new ArrayList<>();
+    final List<PsiElement> sideEffects = new ArrayList<>();
+    final boolean[] canCopeWithSideEffects = {true};
+    try {
+      PsiElement context = myVariable instanceof PsiField ? ((PsiField)myVariable).getContainingClass() : PsiUtil.getVariableCodeBlock(myVariable, null);
+      if (context != null) {
+        RemoveUnusedVariableUtil.collectReferences(context, myVariable, references);
+      }
+      // do not forget to delete variable declaration
+      references.add(myVariable);
+      // check for side effects
+      for (PsiElement element : references) {
+        Boolean result = RemoveUnusedVariableUtil.processUsage(element, myVariable, sideEffects, RemoveUnusedVariableUtil.RemoveMode.CANCEL);
+        if (result == null) return;
+        canCopeWithSideEffects[0] &= result;
+      }
+    }
+    catch (IncorrectOperationException e) {
+      LOG.error(e);
+    }
+    final RemoveUnusedVariableUtil.RemoveMode
+      deleteMode = showSideEffectsWarning(sideEffects, myVariable, editor, canCopeWithSideEffects[0]);
+    ApplicationManager.getApplication().runWriteAction(() -> {
+      try {
+        RemoveUnusedVariableUtil.deleteReferences(myVariable, references, deleteMode);
+      }
+      catch (IncorrectOperationException e) {
+        LOG.error(e);
+      }
+    });
+  }
+  public static RemoveUnusedVariableUtil.RemoveMode showSideEffectsWarning(List<PsiElement> sideEffects,
+                                           PsiVariable variable,
+                                           Editor editor,
+                                           boolean canCopeWithSideEffects,
+                                           @NonNls String beforeText,
+                                           @NonNls String afterText) {
+    if (sideEffects.isEmpty()) return RemoveUnusedVariableUtil.RemoveMode.DELETE_ALL;
+    if (ApplicationManager.getApplication().isUnitTestMode()) {
+      return canCopeWithSideEffects
+             ? RemoveUnusedVariableUtil.RemoveMode.MAKE_STATEMENT
+             : RemoveUnusedVariableUtil.RemoveMode.DELETE_ALL;
+    }
+    Project project = editor.getProject();
+    HighlightManager highlightManager = HighlightManager.getInstance(project);
+    PsiElement[] elements = PsiUtilCore.toPsiElementArray(sideEffects);
+    EditorColorsManager manager = EditorColorsManager.getInstance();
+    TextAttributes attributes = manager.getGlobalScheme().getAttributes(EditorColors.SEARCH_RESULT_ATTRIBUTES);
+    highlightManager.addOccurrenceHighlights(editor, elements, attributes, true, null);
+    SideEffectWarningDialog dialog = new SideEffectWarningDialog(project, false, variable, beforeText, afterText, canCopeWithSideEffects);
+    dialog.show();
+    int code = dialog.getExitCode();
+    return RemoveUnusedVariableUtil.RemoveMode.values()[code];
+  }
+  private static RemoveUnusedVariableUtil.RemoveMode showSideEffectsWarning(List<PsiElement> sideEffects,
+                                            PsiVariable variable,
+                                            Editor editor,
+                                            boolean canCopeWithSideEffects) {
+    String text;
+    if (sideEffects.isEmpty()) {
+      text = """";
+    }
+    else {
+      final PsiElement sideEffect = sideEffects.get(0);
+      if (sideEffect instanceof PsiExpression) {
+        text = PsiExpressionTrimRenderer.render((PsiExpression)sideEffect);
+      }
+      else {
+        text = sideEffect.getText();
+      }
+    }
+    return showSideEffectsWarning(sideEffects, variable, editor, canCopeWithSideEffects, text, text);
+  }
+  @Override
+  public boolean startInWriteAction() {
+    return false;
+  }
+}",class,
+"  public RemoveUnusedVariableFix(PsiVariable variable) {
+    myVariable = variable;
+  }",method,
+"  @Override
+  @NotNull
+  public String getText() {
+    return QuickFixBundle.message(myVariable instanceof PsiField ? ""remove.unused.field"" : ""remove.unused.variable"",
+                                  myVariable.getName());
+  }",method,
+"  @Override
+  @NotNull
+  public String getFamilyName() {
+    return QuickFixBundle.message(""remove.unused.variable.family"");
+  }",method,
+"  @Override
+  public boolean isAvailable(@NotNull Project project, Editor editor, PsiFile file) {
+    return
+      myVariable != null
+      && myVariable.isValid()
+      && myVariable.getManager().isInProject(myVariable)
+      ;
+  }",method,
+"  @Override
+  public void invoke(@NotNull Project project, Editor editor, PsiFile file) {
+    if (!FileModificationService.getInstance().prepareFileForWrite(myVariable.getContainingFile())) return;
+    removeVariableAndReferencingStatements(editor);
+  }",method,
+"  private void removeVariableAndReferencingStatements(Editor editor) {
+    final List<PsiElement> references = new ArrayList<>();
+    final List<PsiElement> sideEffects = new ArrayList<>();
+    final boolean[] canCopeWithSideEffects = {true};
+    try {
+      PsiElement context = myVariable instanceof PsiField ? ((PsiField)myVariable).getContainingClass() : PsiUtil.getVariableCodeBlock(myVariable, null);
+      if (context != null) {
+        RemoveUnusedVariableUtil.collectReferences(context, myVariable, references);
+      }
+      // do not forget to delete variable declaration
+      references.add(myVariable);
+      // check for side effects
+      for (PsiElement element : references) {
+        Boolean result = RemoveUnusedVariableUtil.processUsage(element, myVariable, sideEffects, RemoveUnusedVariableUtil.RemoveMode.CANCEL);
+        if (result == null) return;
+        canCopeWithSideEffects[0] &= result;
+      }
+    }
+    catch (IncorrectOperationException e) {
+      LOG.error(e);
+    }
+    final RemoveUnusedVariableUtil.RemoveMode
+      deleteMode = showSideEffectsWarning(sideEffects, myVariable, editor, canCopeWithSideEffects[0]);
+    ApplicationManager.getApplication().runWriteAction(() -> {
+      try {
+        RemoveUnusedVariableUtil.deleteReferences(myVariable, references, deleteMode);
+      }
+      catch (IncorrectOperationException e) {
+        LOG.error(e);
+      }
+    });
+  }",method,
+"      if (context != null) {
+        RemoveUnusedVariableUtil.collectReferences(context, myVariable, references);
+      }",method,
+"      for (PsiElement element : references) {
+        Boolean result = RemoveUnusedVariableUtil.processUsage(element, myVariable, sideEffects, RemoveUnusedVariableUtil.RemoveMode.CANCEL);
+        if (result == null) return;
+        canCopeWithSideEffects[0] &= result;
+      }",method,
+"    catch (IncorrectOperationException e) {
+      LOG.error(e);
+    }",method,
+"      catch (IncorrectOperationException e) {
+        LOG.error(e);
+      }",method,
+"  public static RemoveUnusedVariableUtil.RemoveMode showSideEffectsWarning(List<PsiElement> sideEffects,
+                                           PsiVariable variable,
+                                           Editor editor,
+                                           boolean canCopeWithSideEffects,
+                                           @NonNls String beforeText,
+                                           @NonNls String afterText) {
+    if (sideEffects.isEmpty()) return RemoveUnusedVariableUtil.RemoveMode.DELETE_ALL;
+    if (ApplicationManager.getApplication().isUnitTestMode()) {
+      return canCopeWithSideEffects
+             ? RemoveUnusedVariableUtil.RemoveMode.MAKE_STATEMENT
+             : RemoveUnusedVariableUtil.RemoveMode.DELETE_ALL;
+    }
+    Project project = editor.getProject();
+    HighlightManager highlightManager = HighlightManager.getInstance(project);
+    PsiElement[] elements = PsiUtilCore.toPsiElementArray(sideEffects);
+    EditorColorsManager manager = EditorColorsManager.getInstance();
+    TextAttributes attributes = manager.getGlobalScheme().getAttributes(EditorColors.SEARCH_RESULT_ATTRIBUTES);
+    highlightManager.addOccurrenceHighlights(editor, elements, attributes, true, null);
+    SideEffectWarningDialog dialog = new SideEffectWarningDialog(project, false, variable, beforeText, afterText, canCopeWithSideEffects);
+    dialog.show();
+    int code = dialog.getExitCode();
+    return RemoveUnusedVariableUtil.RemoveMode.values()[code];
+  }",method,
+"  private static RemoveUnusedVariableUtil.RemoveMode showSideEffectsWarning(List<PsiElement> sideEffects,
+                                            PsiVariable variable,
+                                            Editor editor,
+                                            boolean canCopeWithSideEffects) {
+    String text;
+    if (sideEffects.isEmpty()) {
+      text = """";
+    }
+    else {
+      final PsiElement sideEffect = sideEffects.get(0);
+      if (sideEffect instanceof PsiExpression) {
+        text = PsiExpressionTrimRenderer.render((PsiExpression)sideEffect);
+      }
+      else {
+        text = sideEffect.getText();
+      }
+    }
+    return showSideEffectsWarning(sideEffects, variable, editor, canCopeWithSideEffects, text, text);
+  }",method,
+"      if (sideEffect instanceof PsiExpression) {
+        text = PsiExpressionTrimRenderer.render((PsiExpression)sideEffect);
+      }",method,
+"  @Override
+  public boolean startInWriteAction() {
+    return false;
+  }",method,
+"public class JavaAPITests {
+    @Test
+    public void createIntegerRef() {
+        Ref.View<Integer> ref = newRef(0);
+        int unboxed = ref.get();
+        assertEquals(0, unboxed);
+    }
+    @Test
+    public void atomicWithRunnable() {
+        final Ref.View<Integer> ref = newRef(0);
+        atomic(new Runnable() {
+            public void run() {
+                ref.set(10);
+            }
+        });
+        int value = ref.get();
+        assertEquals(10, value);
+    }
+    @Test
+    public void atomicWithCallable() {
+        final Ref.View<Integer> ref = newRef(0);
+        int oldValue = atomic(new Callable<Integer>() {
+            public Integer call() {
+                return ref.swap(10);
+            }
+        });
+        assertEquals(0, oldValue);
+        int newValue = ref.get();
+        assertEquals(10, newValue);
+    }
+    @Test(expected = TestException.class)
+    public void failingTransaction() {
+        final Ref.View<Integer> ref = newRef(0);
+        try {
+            atomic(new Runnable() {
+                public void run() {
+                    ref.set(10);
+                    throw new TestException();
+                }
+            });
+        } catch (TestException e) {
+            int value = ref.get();
+            assertEquals(0, value);
+            throw e;
+        }
+    }
+    @Test
+    public void transformInteger() {
+        Ref.View<Integer> ref = newRef(0);
+        transform(ref, new Transformer<Integer>() {
+            public Integer apply(Integer i) {
+                return i + 10;
+            }
+        });
+        int value = ref.get();
+        assertEquals(10, value);
+    }
+    @Test
+    public void getAndTransformInteger() {
+        Ref.View<Integer> ref = newRef(0);
+        int value = getAndTransform(ref, new Transformer<Integer>() {
+            public Integer apply(Integer i) {
+                return i + 10;
+            }
+        });
+        assertEquals(0, value);
+    }
+    @Test
+    public void transformAndGetInteger() {
+        Ref.View<Integer> ref = newRef(0);
+        int value = transformAndGet(ref, new Transformer<Integer>() {
+            public Integer apply(Integer i) {
+                return i + 10;
+            }
+        });
+        assertEquals(10, value);
+    }
+    @Test
+    public void incrementInteger() {
+        Ref.View<Integer> ref = newRef(0);
+        increment(ref, 10);
+        int value = ref.get();
+        assertEquals(10, value);
+    }
+    @Test
+    public void incrementLong() {
+        Ref.View<Long> ref = newRef(0L);
+        increment(ref, 10L);
+        long value = ref.get();
+        assertEquals(10L, value);
+    }
+    @Test
+    public void createAndUseTMap() {
+        Map<Integer, String> map = newMap();
+        map.put(1, ""one"");
+        map.put(2, ""two"");
+        assertEquals(""one"", map.get(1));
+        assertEquals(""two"", map.get(2));
+        assertTrue(map.containsKey(2));
+        map.remove(2);
+        assertFalse(map.containsKey(2));
+    }
+    @Test(expected = TestException.class)
+    public void failingTMapTransaction() {
+        final Map<Integer, String> map = newMap();
+        try {
+            atomic(new Runnable() {
+                public void run() {
+                    map.put(1, ""one"");
+                    map.put(2, ""two"");
+                    assertTrue(map.containsKey(1));
+                    assertTrue(map.containsKey(2));
+                    throw new TestException();
+                }
+            });
+        } catch (TestException e) {
+            assertFalse(map.containsKey(1));
+            assertFalse(map.containsKey(2));
+            throw e;
+        }
+    }
+    @Test
+    public void createAndUseTSet() {
+        Set<String> set = newSet();
+        set.add(""one"");
+        set.add(""two"");
+        assertTrue(set.contains(""one""));
+        assertTrue(set.contains(""two""));
+        assertEquals(2, set.size());
+        set.add(""one"");
+        assertEquals(2, set.size());
+        set.remove(""two"");
+        assertFalse(set.contains(""two""));
+        assertEquals(1, set.size());
+    }
+    @Test
+    public void createAndUseTArray() {
+        List<String> list = newArrayAsList(3);
+        assertEquals(null, list.get(0));
+        assertEquals(null, list.get(1));
+        assertEquals(null, list.get(2));
+        list.set(0, ""zero"");
+        list.set(1, ""one"");
+        list.set(2, ""two"");
+        assertEquals(""zero"", list.get(0));
+        assertEquals(""one"", list.get(1));
+        assertEquals(""two"", list.get(2));
+    }
+}",class,
+"public class TestException extends RuntimeException {
+    public TestException() {
+        super(""Expected failure"");
+    }
+}",class,
+"    @Test
+    public void createIntegerRef() {
+        Ref.View<Integer> ref = newRef(0);
+        int unboxed = ref.get();
+        assertEquals(0, unboxed);
+    }",method,
+"    @Test
+    public void atomicWithRunnable() {
+        final Ref.View<Integer> ref = newRef(0);
+        atomic(new Runnable() {
+            public void run() {
+                ref.set(10);
+            }
+        });
+        int value = ref.get();
+        assertEquals(10, value);
+    }",method,
+"        atomic(new Runnable() {
+            public void run() {
+                ref.set(10);
+            }
+        }",method,
+"            public void run() {
+                ref.set(10);
+            }",method,
+"    @Test
+    public void atomicWithCallable() {
+        final Ref.View<Integer> ref = newRef(0);
+        int oldValue = atomic(new Callable<Integer>() {
+            public Integer call() {
+                return ref.swap(10);
+            }
+        });
+        assertEquals(0, oldValue);
+        int newValue = ref.get();
+        assertEquals(10, newValue);
+    }",method,
+"            public Integer call() {
+                return ref.swap(10);
+            }",method,
+"    @Test(expected = TestException.class)
+    public void failingTransaction() {
+        final Ref.View<Integer> ref = newRef(0);
+        try {
+            atomic(new Runnable() {
+                public void run() {
+                    ref.set(10);
+                    throw new TestException();
+                }
+            });
+        } catch (TestException e) {
+            int value = ref.get();
+            assertEquals(0, value);
+            throw e;
+        }
+    }",method,
+"            atomic(new Runnable() {
+                public void run() {
+                    ref.set(10);
+                    throw new TestException();
+                }
+            }",method,
+"                public void run() {
+                    ref.set(10);
+                    throw new TestException();
+                }",method,
+"    @Test
+    public void transformInteger() {
+        Ref.View<Integer> ref = newRef(0);
+        transform(ref, new Transformer<Integer>() {
+            public Integer apply(Integer i) {
+                return i + 10;
+            }
+        });
+        int value = ref.get();
+        assertEquals(10, value);
+    }",method,
+"        transform(ref, new Transformer<Integer>() {
+            public Integer apply(Integer i) {
+                return i + 10;
+            }
+        }",method,
+"            public Integer apply(Integer i) {
+                return i + 10;
+            }",method,
+"    @Test
+    public void getAndTransformInteger() {
+        Ref.View<Integer> ref = newRef(0);
+        int value = getAndTransform(ref, new Transformer<Integer>() {
+            public Integer apply(Integer i) {
+                return i + 10;
+            }
+        });
+        assertEquals(0, value);
+    }",method,
+"            public Integer apply(Integer i) {
+                return i + 10;
+            }",method,
+"    @Test
+    public void transformAndGetInteger() {
+        Ref.View<Integer> ref = newRef(0);
+        int value = transformAndGet(ref, new Transformer<Integer>() {
+            public Integer apply(Integer i) {
+                return i + 10;
+            }
+        });
+        assertEquals(10, value);
+    }",method,
+"            public Integer apply(Integer i) {
+                return i + 10;
+            }",method,
+"    @Test
+    public void incrementInteger() {
+        Ref.View<Integer> ref = newRef(0);
+        increment(ref, 10);
+        int value = ref.get();
+        assertEquals(10, value);
+    }",method,
+"    @Test
+    public void incrementLong() {
+        Ref.View<Long> ref = newRef(0L);
+        increment(ref, 10L);
+        long value = ref.get();
+        assertEquals(10L, value);
+    }",method,
+"    @Test
+    public void createAndUseTMap() {
+        Map<Integer, String> map = newMap();
+        map.put(1, ""one"");
+        map.put(2, ""two"");
+        assertEquals(""one"", map.get(1));
+        assertEquals(""two"", map.get(2));
+        assertTrue(map.containsKey(2));
+        map.remove(2);
+        assertFalse(map.containsKey(2));
+    }",method,
+"    @Test(expected = TestException.class)
+    public void failingTMapTransaction() {
+        final Map<Integer, String> map = newMap();
+        try {
+            atomic(new Runnable() {
+                public void run() {
+                    map.put(1, ""one"");
+                    map.put(2, ""two"");
+                    assertTrue(map.containsKey(1));
+                    assertTrue(map.containsKey(2));
+                    throw new TestException();
+                }
+            });
+        } catch (TestException e) {
+            assertFalse(map.containsKey(1));
+            assertFalse(map.containsKey(2));
+            throw e;
+        }
+    }",method,
+"            atomic(new Runnable() {
+                public void run() {
+                    map.put(1, ""one"");
+                    map.put(2, ""two"");
+                    assertTrue(map.containsKey(1));
+                    assertTrue(map.containsKey(2));
+                    throw new TestException();
+                }
+            }",method,
+"                public void run() {
+                    map.put(1, ""one"");
+                    map.put(2, ""two"");
+                    assertTrue(map.containsKey(1));
+                    assertTrue(map.containsKey(2));
+                    throw new TestException();
+                }",method,
+"    @Test
+    public void createAndUseTSet() {
+        Set<String> set = newSet();
+        set.add(""one"");
+        set.add(""two"");
+        assertTrue(set.contains(""one""));
+        assertTrue(set.contains(""two""));
+        assertEquals(2, set.size());
+        set.add(""one"");
+        assertEquals(2, set.size());
+        set.remove(""two"");
+        assertFalse(set.contains(""two""));
+        assertEquals(1, set.size());
+    }",method,
+"    @Test
+    public void createAndUseTArray() {
+        List<String> list = newArrayAsList(3);
+        assertEquals(null, list.get(0));
+        assertEquals(null, list.get(1));
+        assertEquals(null, list.get(2));
+        list.set(0, ""zero"");
+        list.set(1, ""one"");
+        list.set(2, ""two"");
+        assertEquals(""zero"", list.get(0));
+        assertEquals(""one"", list.get(1));
+        assertEquals(""two"", list.get(2));
+    }",method,
+"    public TestException() {
+        super(""Expected failure"");
+    }",method,
+"public final class MidiDeviceStatus implements Parcelable {
+    private static final String TAG = ""MidiDeviceStatus"";
+    private final MidiDeviceInfo mDeviceInfo;
+    // true if input ports are open
+    private final boolean mInputPortOpen[];
+    // open counts for output ports
+    private final int mOutputPortOpenCount[];
+    public MidiDeviceStatus(MidiDeviceInfo deviceInfo, boolean inputPortOpen[],
+            int outputPortOpenCount[]) {
+        // MidiDeviceInfo is immutable so we can share references
+        mDeviceInfo = deviceInfo;
+        // make copies of the arrays
+        mInputPortOpen = new boolean[inputPortOpen.length];
+        System.arraycopy(inputPortOpen, 0, mInputPortOpen, 0, inputPortOpen.length);
+        mOutputPortOpenCount = new int[outputPortOpenCount.length];
+        System.arraycopy(outputPortOpenCount, 0, mOutputPortOpenCount, 0,
+                outputPortOpenCount.length);
+    }
+    public MidiDeviceStatus(MidiDeviceInfo deviceInfo) {
+        mDeviceInfo = deviceInfo;
+        mInputPortOpen = new boolean[deviceInfo.getInputPortCount()];
+        mOutputPortOpenCount = new int[deviceInfo.getOutputPortCount()];
+    }
+    public MidiDeviceInfo getDeviceInfo() {
+        return mDeviceInfo;
+    }
+    public boolean isInputPortOpen(int portNumber) {
+        return mInputPortOpen[portNumber];
+    }
+    public int getOutputPortOpenCount(int portNumber) {
+        return mOutputPortOpenCount[portNumber];
+    }
+    @Override
+    public String toString() {
+        int inputPortCount = mDeviceInfo.getInputPortCount();
+        int outputPortCount = mDeviceInfo.getOutputPortCount();
+        StringBuilder builder = new StringBuilder(""mInputPortOpen=["");
+        for (int i = 0; i < inputPortCount; i++) {
+            builder.append(mInputPortOpen[i]);
+            if (i < inputPortCount -1) {
+                builder.append("","");
+            }
+        }
+        builder.append(""] mOutputPortOpenCount=["");
+        for (int i = 0; i < outputPortCount; i++) {
+            builder.append(mOutputPortOpenCount[i]);
+            if (i < outputPortCount -1) {
+                builder.append("","");
+            }
+        }
+        builder.append(""]"");
+        return builder.toString();
+    }
+    public static final Parcelable.Creator<MidiDeviceStatus> CREATOR =
+        new Parcelable.Creator<MidiDeviceStatus>() {
+        public MidiDeviceStatus createFromParcel(Parcel in) {
+            ClassLoader classLoader = MidiDeviceInfo.class.getClassLoader();
+            MidiDeviceInfo deviceInfo = in.readParcelable(classLoader);
+            boolean[] inputPortOpen = in.createBooleanArray();
+            int[] outputPortOpenCount = in.createIntArray();
+            return new MidiDeviceStatus(deviceInfo, inputPortOpen, outputPortOpenCount);
+        }
+        public MidiDeviceStatus[] newArray(int size) {
+            return new MidiDeviceStatus[size];
+        }
+    };
+    public int describeContents() {
+        return 0;
+    }
+    public void writeToParcel(Parcel parcel, int flags) {
+        parcel.writeParcelable(mDeviceInfo, flags);
+        parcel.writeBooleanArray(mInputPortOpen);
+        parcel.writeIntArray(mOutputPortOpenCount);
+   }
+}",class,
+"    public MidiDeviceStatus(MidiDeviceInfo deviceInfo, boolean inputPortOpen[],
+            int outputPortOpenCount[]) {
+        // MidiDeviceInfo is immutable so we can share references
+        mDeviceInfo = deviceInfo;
+        // make copies of the arrays
+        mInputPortOpen = new boolean[inputPortOpen.length];
+        System.arraycopy(inputPortOpen, 0, mInputPortOpen, 0, inputPortOpen.length);
+        mOutputPortOpenCount = new int[outputPortOpenCount.length];
+        System.arraycopy(outputPortOpenCount, 0, mOutputPortOpenCount, 0,
+                outputPortOpenCount.length);
+    }",method,
+"    public MidiDeviceStatus(MidiDeviceInfo deviceInfo) {
+        mDeviceInfo = deviceInfo;
+        mInputPortOpen = new boolean[deviceInfo.getInputPortCount()];
+        mOutputPortOpenCount = new int[deviceInfo.getOutputPortCount()];
+    }",method,
+"    public MidiDeviceInfo getDeviceInfo() {
+        return mDeviceInfo;
+    }",method,
+"    public boolean isInputPortOpen(int portNumber) {
+        return mInputPortOpen[portNumber];
+    }",method,
+"    public int getOutputPortOpenCount(int portNumber) {
+        return mOutputPortOpenCount[portNumber];
+    }",method,
+"    @Override
+    public String toString() {
+        int inputPortCount = mDeviceInfo.getInputPortCount();
+        int outputPortCount = mDeviceInfo.getOutputPortCount();
+        StringBuilder builder = new StringBuilder(""mInputPortOpen=["");
+        for (int i = 0; i < inputPortCount; i++) {
+            builder.append(mInputPortOpen[i]);
+            if (i < inputPortCount -1) {
+                builder.append("","");
+            }
+        }
+        builder.append(""] mOutputPortOpenCount=["");
+        for (int i = 0; i < outputPortCount; i++) {
+            builder.append(mOutputPortOpenCount[i]);
+            if (i < outputPortCount -1) {
+                builder.append("","");
+            }
+        }
+        builder.append(""]"");
+        return builder.toString();
+    }",method,
+"        for (int i = 0; i < inputPortCount; i++) {
+            builder.append(mInputPortOpen[i]);
+            if (i < inputPortCount -1) {
+                builder.append("","");
+            }
+        }",method,
+"            if (i < inputPortCount -1) {
+                builder.append("","");
+            }",method,
+"        for (int i = 0; i < outputPortCount; i++) {
+            builder.append(mOutputPortOpenCount[i]);
+            if (i < outputPortCount -1) {
+                builder.append("","");
+            }
+        }",method,
+"            if (i < outputPortCount -1) {
+                builder.append("","");
+            }",method,
+"        public MidiDeviceStatus createFromParcel(Parcel in) {
+            ClassLoader classLoader = MidiDeviceInfo.class.getClassLoader();
+            MidiDeviceInfo deviceInfo = in.readParcelable(classLoader);
+            boolean[] inputPortOpen = in.createBooleanArray();
+            int[] outputPortOpenCount = in.createIntArray();
+            return new MidiDeviceStatus(deviceInfo, inputPortOpen, outputPortOpenCount);
+        }",method,
+"        public MidiDeviceStatus[] newArray(int size) {
+            return new MidiDeviceStatus[size];
+        }",method,
+"    public int describeContents() {
+        return 0;
+    }",method,
+"    public void writeToParcel(Parcel parcel, int flags) {
+        parcel.writeParcelable(mDeviceInfo, flags);
+        parcel.writeBooleanArray(mInputPortOpen);
+        parcel.writeIntArray(mOutputPortOpenCount);
+   }",method,
+"public class WeakList<T> extends UnsafeWeakList<T> {
+  public WeakList() {
+  }
+  public WeakList(int initialCapacity) {
+    super(initialCapacity);
+  }
+  @Override
+  public boolean add(@NotNull T element) {
+    synchronized (myList) {
+      return super.add(element);
+    }
+  }
+  @Override
+  public boolean addAll(@NotNull Collection<? extends T> c) {
+    synchronized (myList) {
+      return super.addAll(c);
+    }
+  }
+  @Override
+  public boolean addIfAbsent(@NotNull T element) {
+    synchronized (myList) {
+      return super.addIfAbsent(element);
+    }
+  }
+  @Override
+  public void clear() {
+    synchronized (myList) {
+      super.clear();
+    }
+  }
+  @Override
+  public boolean contains(@NotNull Object o) {
+    synchronized (myList) {
+      return super.contains(o);
+    }
+  }
+  @Override
+  public boolean remove(@NotNull Object o) {
+    synchronized (myList) {
+      return super.remove(o);
+    }
+  }
+  @Override
+  public boolean removeAll(@NotNull Collection<?> c) {
+    synchronized (myList) {
+      return super.removeAll(c);
+    }
+  }
+  @Override
+  public boolean isEmpty() {
+    synchronized (myList) {
+      return super.isEmpty();
+    }
+  }
+  @Override
+  @NotNull
+  public Iterator<T> iterator() {
+    final Iterator<T> iterator;
+    synchronized (myList) {
+      iterator = super.iterator();
+    }
+    return new Iterator<T>(){
+      @Override
+      public boolean hasNext() {
+        synchronized (myList) {
+          return iterator.hasNext();
+        }
+      }
+      @Override
+      public T next() {
+        synchronized (myList) {
+          return iterator.next();
+        }
+      }
+      @Override
+      public void remove() {
+        synchronized (myList) {
+          iterator.remove();
+        }
+      }
+    };
+  }
+  @NotNull
+  @Override
+  public List<T> toStrongList() {
+    synchronized (myList) {
+      return super.toStrongList();
+    }
+  }
+  @NotNull
+  public List<T> copyAndClear() {
+    synchronized (myList) {
+      List<T> result = toStrongList();
+      clear();
+      return result;
+    }
+  }
+}",class,
+"  public WeakList() {
+  }",method,
+"  public WeakList(int initialCapacity) {
+    super(initialCapacity);
+  }",method,
+"  @Override
+  public boolean add(@NotNull T element) {
+    synchronized (myList) {
+      return super.add(element);
+    }
+  }",method,
+"    synchronized (myList) {
+      return super.add(element);
+    }",method,
+"  @Override
+  public boolean addAll(@NotNull Collection<? extends T> c) {
+    synchronized (myList) {
+      return super.addAll(c);
+    }
+  }",method,
+"    synchronized (myList) {
+      return super.addAll(c);
+    }",method,
+"  @Override
+  public boolean addIfAbsent(@NotNull T element) {
+    synchronized (myList) {
+      return super.addIfAbsent(element);
+    }
+  }",method,
+"    synchronized (myList) {
+      return super.addIfAbsent(element);
+    }",method,
+"  @Override
+  public void clear() {
+    synchronized (myList) {
+      super.clear();
+    }
+  }",method,
+"    synchronized (myList) {
+      super.clear();
+    }",method,
+"  @Override
+  public boolean contains(@NotNull Object o) {
+    synchronized (myList) {
+      return super.contains(o);
+    }
+  }",method,
+"    synchronized (myList) {
+      return super.contains(o);
+    }",method,
+"  @Override
+  public boolean remove(@NotNull Object o) {
+    synchronized (myList) {
+      return super.remove(o);
+    }
+  }",method,
+"    synchronized (myList) {
+      return super.remove(o);
+    }",method,
+"  @Override
+  public boolean removeAll(@NotNull Collection<?> c) {
+    synchronized (myList) {
+      return super.removeAll(c);
+    }
+  }",method,
+"    synchronized (myList) {
+      return super.removeAll(c);
+    }",method,
+"  @Override
+  public boolean isEmpty() {
+    synchronized (myList) {
+      return super.isEmpty();
+    }
+  }",method,
+"    synchronized (myList) {
+      return super.isEmpty();
+    }",method,
+"  @Override
+  @NotNull
+  public Iterator<T> iterator() {
+    final Iterator<T> iterator;
+    synchronized (myList) {
+      iterator = super.iterator();
+    }
+    return new Iterator<T>(){
+      @Override
+      public boolean hasNext() {
+        synchronized (myList) {
+          return iterator.hasNext();
+        }
+      }
+      @Override
+      public T next() {
+        synchronized (myList) {
+          return iterator.next();
+        }
+      }
+      @Override
+      public void remove() {
+        synchronized (myList) {
+          iterator.remove();
+        }
+      }
+    };
+  }",method,
+"    synchronized (myList) {
+      iterator = super.iterator();
+    }",method,
+"      @Override
+      public boolean hasNext() {
+        synchronized (myList) {
+          return iterator.hasNext();
+        }
+      }",method,
+"        synchronized (myList) {
+          return iterator.hasNext();
+        }",method,
+"      @Override
+      public T next() {
+        synchronized (myList) {
+          return iterator.next();
+        }
+      }",method,
+"        synchronized (myList) {
+          return iterator.next();
+        }",method,
+"      @Override
+      public void remove() {
+        synchronized (myList) {
+          iterator.remove();
+        }
+      }",method,
+"        synchronized (myList) {
+          iterator.remove();
+        }",method,
+"  @NotNull
+  @Override
+  public List<T> toStrongList() {
+    synchronized (myList) {
+      return super.toStrongList();
+    }
+  }",method,
+"    synchronized (myList) {
+      return super.toStrongList();
+    }",method,
+"  @NotNull
+  public List<T> copyAndClear() {
+    synchronized (myList) {
+      List<T> result = toStrongList();
+      clear();
+      return result;
+    }
+  }",method,
+"    synchronized (myList) {
+      List<T> result = toStrongList();
+      clear();
+      return result;
+    }",method,
+"public final class SnapshotId implements Comparable<SnapshotId>, Writeable, ToXContentObject {
+    private static final String NAME = ""name"";
+    private static final String UUID = ""uuid"";
+    private final String name;
+    private final String uuid;
+    // Caching hash code
+    private final int hashCode;
+    public SnapshotId(final String name, final String uuid) {
+        this.name = Objects.requireNonNull(name);
+        this.uuid = Objects.requireNonNull(uuid);
+        this.hashCode = computeHashCode();
+    }
+    public SnapshotId(final StreamInput in) throws IOException {
+        name = in.readString();
+        uuid = in.readString();
+        hashCode = computeHashCode();
+    }
+    public String getName() {
+        return name;
+    }
+    public String getUUID() {
+        return uuid;
+    }
+    @Override
+    public String toString() {
+        return name + ""/"" + uuid;
+    }
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) {
+            return true;
+        }
+        if (o == null || getClass() != o.getClass()) {
+            return false;
+        }
+        @SuppressWarnings(""unchecked"") final SnapshotId that = (SnapshotId) o;
+        return name.equals(that.name) && uuid.equals(that.uuid);
+    }
+    @Override
+    public int hashCode() {
+        return hashCode;
+    }
+    @Override
+    public int compareTo(final SnapshotId other) {
+        return this.name.compareTo(other.name);
+    }
+    private int computeHashCode() {
+        return Objects.hash(name, uuid);
+    }
+    @Override
+    public void writeTo(StreamOutput out) throws IOException {
+        out.writeString(name);
+        out.writeString(uuid);
+    }
+    @Override
+    public XContentBuilder toXContent(XContentBuilder builder, Params params) throws IOException {
+        builder.startObject();
+        builder.field(NAME, name);
+        builder.field(UUID, uuid);
+        builder.endObject();
+        return builder;
+    }
+    public static SnapshotId fromXContent(XContentParser parser) throws IOException {
+        // the new format from 5.0 which contains the snapshot name and uuid
+        if (parser.currentToken() == XContentParser.Token.START_OBJECT) {
+            String name = null;
+            String uuid = null;
+            while (parser.nextToken() != XContentParser.Token.END_OBJECT) {
+                String currentFieldName = parser.currentName();
+                parser.nextToken();
+                if (NAME.equals(currentFieldName)) {
+                    name = parser.text();
+                } else if (UUID.equals(currentFieldName)) {
+                    uuid = parser.text();
+                }
+            }
+            return new SnapshotId(name, uuid);
+        } else {
+            // the old format pre 5.0 that only contains the snapshot name, use the name as the uuid too
+            final String name = parser.text();
+            return new SnapshotId(name, name);
+        }
+    }
+}",class,

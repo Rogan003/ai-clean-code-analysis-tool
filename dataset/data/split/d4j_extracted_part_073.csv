@@ -1,0 +1,1509 @@
+code_snippet,type,score
+"        void drain() {
+            if (getAndIncrement() != 0) {
+                return;
+            }
+            Subscriber<? super R> a = actual;
+            Iterator<? extends R> iterator = this.it;
+            if (outputFused && iterator != null) {
+                a.onNext(null);
+                a.onComplete();
+                return;
+            }
+            int missed = 1;
+            for (;;) {
+                if (iterator != null) {
+                    long r = requested.get();
+                    long e = 0L;
+                    if (r == Long.MAX_VALUE) {
+                        slowPath(a, iterator);
+                        return;
+                    }
+                    while (e != r) {
+                        if (cancelled) {
+                            return;
+                        }
+                        R v;
+                        try {
+                            v = ObjectHelper.requireNonNull(iterator.next(), ""The iterator returned a null value"");
+                        } catch (Throwable ex) {
+                            Exceptions.throwIfFatal(ex);
+                            a.onError(ex);
+                            return;
+                        }
+                        a.onNext(v);
+                        if (cancelled) {
+                            return;
+                        }
+                        e++;
+                        boolean b;
+                        try {
+                            b = iterator.hasNext();
+                        } catch (Throwable ex) {
+                            Exceptions.throwIfFatal(ex);
+                            a.onError(ex);
+                            return;
+                        }
+                        if (!b) {
+                            a.onComplete();
+                            return;
+                        }
+                    }
+                    if (e != 0L) {
+                        BackpressureHelper.produced(requested, e);
+                    }
+                }
+                missed = addAndGet(-missed);
+                if (missed == 0) {
+                    break;
+                }
+                if (iterator == null) {
+                    iterator = it;
+                }
+            }
+        }",method,
+"            if (outputFused && iterator != null) {
+                a.onNext(null);
+                a.onComplete();
+                return;
+            }",method,
+"            for (;;) {
+                if (iterator != null) {
+                    long r = requested.get();
+                    long e = 0L;
+                    if (r == Long.MAX_VALUE) {
+                        slowPath(a, iterator);
+                        return;
+                    }
+                    while (e != r) {
+                        if (cancelled) {
+                            return;
+                        }
+                        R v;
+                        try {
+                            v = ObjectHelper.requireNonNull(iterator.next(), ""The iterator returned a null value"");
+                        } catch (Throwable ex) {
+                            Exceptions.throwIfFatal(ex);
+                            a.onError(ex);
+                            return;
+                        }
+                        a.onNext(v);
+                        if (cancelled) {
+                            return;
+                        }
+                        e++;
+                        boolean b;
+                        try {
+                            b = iterator.hasNext();
+                        } catch (Throwable ex) {
+                            Exceptions.throwIfFatal(ex);
+                            a.onError(ex);
+                            return;
+                        }
+                        if (!b) {
+                            a.onComplete();
+                            return;
+                        }
+                    }
+                    if (e != 0L) {
+                        BackpressureHelper.produced(requested, e);
+                    }
+                }
+                missed = addAndGet(-missed);
+                if (missed == 0) {
+                    break;
+                }
+                if (iterator == null) {
+                    iterator = it;
+                }
+            }",method,
+"                if (iterator != null) {
+                    long r = requested.get();
+                    long e = 0L;
+                    if (r == Long.MAX_VALUE) {
+                        slowPath(a, iterator);
+                        return;
+                    }
+                    while (e != r) {
+                        if (cancelled) {
+                            return;
+                        }
+                        R v;
+                        try {
+                            v = ObjectHelper.requireNonNull(iterator.next(), ""The iterator returned a null value"");
+                        } catch (Throwable ex) {
+                            Exceptions.throwIfFatal(ex);
+                            a.onError(ex);
+                            return;
+                        }
+                        a.onNext(v);
+                        if (cancelled) {
+                            return;
+                        }
+                        e++;
+                        boolean b;
+                        try {
+                            b = iterator.hasNext();
+                        } catch (Throwable ex) {
+                            Exceptions.throwIfFatal(ex);
+                            a.onError(ex);
+                            return;
+                        }
+                        if (!b) {
+                            a.onComplete();
+                            return;
+                        }
+                    }
+                    if (e != 0L) {
+                        BackpressureHelper.produced(requested, e);
+                    }
+                }",method,
+"                    if (r == Long.MAX_VALUE) {
+                        slowPath(a, iterator);
+                        return;
+                    }",method,
+"                    while (e != r) {
+                        if (cancelled) {
+                            return;
+                        }
+                        R v;
+                        try {
+                            v = ObjectHelper.requireNonNull(iterator.next(), ""The iterator returned a null value"");
+                        } catch (Throwable ex) {
+                            Exceptions.throwIfFatal(ex);
+                            a.onError(ex);
+                            return;
+                        }
+                        a.onNext(v);
+                        if (cancelled) {
+                            return;
+                        }
+                        e++;
+                        boolean b;
+                        try {
+                            b = iterator.hasNext();
+                        } catch (Throwable ex) {
+                            Exceptions.throwIfFatal(ex);
+                            a.onError(ex);
+                            return;
+                        }
+                        if (!b) {
+                            a.onComplete();
+                            return;
+                        }
+                    }",method,
+"                        if (cancelled) {
+                            return;
+                        }",method,
+"                        if (cancelled) {
+                            return;
+                        }",method,
+"                        if (!b) {
+                            a.onComplete();
+                            return;
+                        }",method,
+"                    if (e != 0L) {
+                        BackpressureHelper.produced(requested, e);
+                    }",method,
+"                if (missed == 0) {
+                    break;
+                }",method,
+"                if (iterator == null) {
+                    iterator = it;
+                }",method,
+"        void slowPath(Subscriber<? super R> a, Iterator<? extends R> iterator) {
+            for (;;) {
+                if (cancelled) {
+                    return;
+                }
+                R v;
+                try {
+                    v = iterator.next();
+                } catch (Throwable ex) {
+                    Exceptions.throwIfFatal(ex);
+                    a.onError(ex);
+                    return;
+                }
+                a.onNext(v);
+                if (cancelled) {
+                    return;
+                }
+                boolean b;
+                try {
+                    b = iterator.hasNext();
+                } catch (Throwable ex) {
+                    Exceptions.throwIfFatal(ex);
+                    a.onError(ex);
+                    return;
+                }
+                if (!b) {
+                    a.onComplete();
+                    return;
+                }
+            }
+        }",method,
+"            for (;;) {
+                if (cancelled) {
+                    return;
+                }
+                R v;
+                try {
+                    v = iterator.next();
+                } catch (Throwable ex) {
+                    Exceptions.throwIfFatal(ex);
+                    a.onError(ex);
+                    return;
+                }
+                a.onNext(v);
+                if (cancelled) {
+                    return;
+                }
+                boolean b;
+                try {
+                    b = iterator.hasNext();
+                } catch (Throwable ex) {
+                    Exceptions.throwIfFatal(ex);
+                    a.onError(ex);
+                    return;
+                }
+                if (!b) {
+                    a.onComplete();
+                    return;
+                }
+            }",method,
+"                if (cancelled) {
+                    return;
+                }",method,
+"                if (cancelled) {
+                    return;
+                }",method,
+"                if (!b) {
+                    a.onComplete();
+                    return;
+                }",method,
+"        @Override
+        public int requestFusion(int mode) {
+            if ((mode & ASYNC) != 0) {
+                outputFused = true;
+                return ASYNC;
+            }
+            return NONE;
+        }",method,
+"        @Override
+        public void clear() {
+            it = null;
+        }",method,
+"        @Override
+        public boolean isEmpty() {
+            return it == null;
+        }",method,
+"        @Nullable
+        @Override
+        public R poll() throws Exception {
+            Iterator<? extends R> iterator = it;
+            if (iterator != null) {
+                R v = ObjectHelper.requireNonNull(iterator.next(), ""The iterator returned a null value"");
+                if (!iterator.hasNext()) {
+                    it = null;
+                }
+                return v;
+            }
+            return null;
+        }",method,
+"            if (iterator != null) {
+                R v = ObjectHelper.requireNonNull(iterator.next(), ""The iterator returned a null value"");
+                if (!iterator.hasNext()) {
+                    it = null;
+                }
+                return v;
+            }",method,
+"final class ColorBlindnessPanel extends JPanel implements ChangeListener {
+  private final JCheckBox myCheckBox = new JCheckBox();
+  private final JComboBox myComboBox = new ComboBox();
+  private ColorBlindness myBlindness;
+  public ColorBlindnessPanel() {
+    super(new HorizontalLayout(JBUI.scale(10)));
+    add(HorizontalLayout.LEFT, myCheckBox);
+    add(HorizontalLayout.LEFT, myComboBox);
+    JLabel label = new SwingActionLink(new AbstractAction(UIBundle.message(""color.blindness.link.to.help"")) {
+      @Override
+      public void actionPerformed(ActionEvent event) {
+        HelpManager.getInstance().invokeHelp(""Colorblind_Settings"");
+      }
+    });
+    add(HorizontalLayout.LEFT, label);
+    myCheckBox.setSelected(false);
+    myCheckBox.addChangeListener(this);
+    int count = 0;
+    for (ColorBlindness blindness : ColorBlindness.values()) {
+      ColorBlindnessSupport support = ColorBlindnessSupport.get(blindness);
+      if (support != null) {
+        myComboBox.addItem(new Item(blindness));
+        count++;
+      }
+    }
+    myComboBox.setEnabled(false);
+    myComboBox.setVisible(count > 1);
+    myCheckBox.setText(UIBundle.message(count > 1
+                                        ? ""color.blindness.combobox.text""
+                                        : ""color.blindness.checkbox.text""));
+    setVisible(count > 0);
+  }
+  @Override
+  public void stateChanged(ChangeEvent event) {
+    myComboBox.setEnabled(myCheckBox.isSelected());
+  }
+  public ColorBlindness getColorBlindness() {
+    if (myCheckBox.isSelected()) {
+      if (myBlindness != null) {
+        return myBlindness;
+      }
+      Object object = myComboBox.getSelectedItem();
+      if (object instanceof Item) {
+        Item item = (Item)object;
+        return item.myBlindness;
+      }
+    }
+    return null;
+  }
+  public void setColorBlindness(ColorBlindness blindness) {
+    // invisible combobox should not be used to store values
+    myBlindness = myComboBox.isVisible() ? null : blindness;
+    Item item = null;
+    if (myBlindness == null && blindness != null) {
+      int count = myComboBox.getItemCount();
+      for (int i = 0; i < count && item == null; i++) {
+        Object object = myComboBox.getItemAt(i);
+        if (object instanceof Item) {
+          item = (Item)object;
+          if (item.myBlindness != blindness) {
+            item = null;
+          }
+        }
+      }
+    }
+    myCheckBox.setSelected(myBlindness != null || item != null);
+    if (item != null) {
+      myComboBox.setSelectedItem(item);
+    }
+  }
+  private static final class Item {
+    private final ColorBlindness myBlindness;
+    private final String myName;
+    private Item(ColorBlindness blindness) {
+      myBlindness = blindness;
+      myName = UIBundle.message(blindness.key);
+    }
+    @Override
+    public String toString() {
+      return myName;
+    }
+  }
+}",class,
+"  private static final class Item {
+    private final ColorBlindness myBlindness;
+    private final String myName;
+    private Item(ColorBlindness blindness) {
+      myBlindness = blindness;
+      myName = UIBundle.message(blindness.key);
+    }
+    @Override
+    public String toString() {
+      return myName;
+    }
+  }",class,
+"  public ColorBlindnessPanel() {
+    super(new HorizontalLayout(JBUI.scale(10)));
+    add(HorizontalLayout.LEFT, myCheckBox);
+    add(HorizontalLayout.LEFT, myComboBox);
+    JLabel label = new SwingActionLink(new AbstractAction(UIBundle.message(""color.blindness.link.to.help"")) {
+      @Override
+      public void actionPerformed(ActionEvent event) {
+        HelpManager.getInstance().invokeHelp(""Colorblind_Settings"");
+      }
+    });
+    add(HorizontalLayout.LEFT, label);
+    myCheckBox.setSelected(false);
+    myCheckBox.addChangeListener(this);
+    int count = 0;
+    for (ColorBlindness blindness : ColorBlindness.values()) {
+      ColorBlindnessSupport support = ColorBlindnessSupport.get(blindness);
+      if (support != null) {
+        myComboBox.addItem(new Item(blindness));
+        count++;
+      }
+    }
+    myComboBox.setEnabled(false);
+    myComboBox.setVisible(count > 1);
+    myCheckBox.setText(UIBundle.message(count > 1
+                                        ? ""color.blindness.combobox.text""
+                                        : ""color.blindness.checkbox.text""));
+    setVisible(count > 0);
+  }",method,
+"      @Override
+      public void actionPerformed(ActionEvent event) {
+        HelpManager.getInstance().invokeHelp(""Colorblind_Settings"");
+      }",method,
+"      if (support != null) {
+        myComboBox.addItem(new Item(blindness));
+        count++;
+      }",method,
+"  @Override
+  public void stateChanged(ChangeEvent event) {
+    myComboBox.setEnabled(myCheckBox.isSelected());
+  }",method,
+"  public ColorBlindness getColorBlindness() {
+    if (myCheckBox.isSelected()) {
+      if (myBlindness != null) {
+        return myBlindness;
+      }
+      Object object = myComboBox.getSelectedItem();
+      if (object instanceof Item) {
+        Item item = (Item)object;
+        return item.myBlindness;
+      }
+    }
+    return null;
+  }",method,
+"      if (myBlindness != null) {
+        return myBlindness;
+      }",method,
+"      if (object instanceof Item) {
+        Item item = (Item)object;
+        return item.myBlindness;
+      }",method,
+"  public void setColorBlindness(ColorBlindness blindness) {
+    // invisible combobox should not be used to store values
+    myBlindness = myComboBox.isVisible() ? null : blindness;
+    Item item = null;
+    if (myBlindness == null && blindness != null) {
+      int count = myComboBox.getItemCount();
+      for (int i = 0; i < count && item == null; i++) {
+        Object object = myComboBox.getItemAt(i);
+        if (object instanceof Item) {
+          item = (Item)object;
+          if (item.myBlindness != blindness) {
+            item = null;
+          }
+        }
+      }
+    }
+    myCheckBox.setSelected(myBlindness != null || item != null);
+    if (item != null) {
+      myComboBox.setSelectedItem(item);
+    }
+  }",method,
+"    if (myBlindness == null && blindness != null) {
+      int count = myComboBox.getItemCount();
+      for (int i = 0; i < count && item == null; i++) {
+        Object object = myComboBox.getItemAt(i);
+        if (object instanceof Item) {
+          item = (Item)object;
+          if (item.myBlindness != blindness) {
+            item = null;
+          }
+        }
+      }
+    }",method,
+"      for (int i = 0; i < count && item == null; i++) {
+        Object object = myComboBox.getItemAt(i);
+        if (object instanceof Item) {
+          item = (Item)object;
+          if (item.myBlindness != blindness) {
+            item = null;
+          }
+        }
+      }",method,
+"        if (object instanceof Item) {
+          item = (Item)object;
+          if (item.myBlindness != blindness) {
+            item = null;
+          }
+        }",method,
+"          if (item.myBlindness != blindness) {
+            item = null;
+          }",method,
+"    if (item != null) {
+      myComboBox.setSelectedItem(item);
+    }",method,
+"    private Item(ColorBlindness blindness) {
+      myBlindness = blindness;
+      myName = UIBundle.message(blindness.key);
+    }",method,
+"    @Override
+    public String toString() {
+      return myName;
+    }",method,
+"final class TransientNativeMemoryIO extends BoundedNativeMemoryIO {
+    private static final Map<Magazine, Boolean> referenceSet = new ConcurrentHashMap<Magazine, Boolean>();
+    private static final ThreadLocal<Reference<Magazine>> currentMagazine = new ThreadLocal<Reference<Magazine>>();
+    private static final int PAGES_PER_MAGAZINE = 1;
+    private final Object sentinel;
+    static MemoryIO allocateAligned(Ruby runtime, int size, int align, boolean clear) {
+        if (size > 1024) {
+            return AllocatedNativeMemoryIO.allocateAligned(runtime, size, align, clear);
+        }
+        Reference<Magazine> magazineReference = currentMagazine.get();
+        Magazine magazine = magazineReference != null ? magazineReference.get() : null;
+        Object sentinel = magazine != null ? magazine.sentinel() : null;
+        long address;
+        if (sentinel == null || (address = magazine.allocate(size, align)) == 0) {
+            PageManager pm = PageManager.getInstance();
+            long memory;
+            int pageCount = PAGES_PER_MAGAZINE;
+            do {
+                memory = pm.allocatePages(pageCount, PageManager.PROT_READ | PageManager.PROT_WRITE);
+                if (memory != 0L && memory != -1L) {
+                    break;
+                }
+                // No available pages; trigger a full GC to reclaim some memory
+                System.gc();
+            } while (true);
+            referenceSet.put(magazine = new Magazine(sentinel = new Object(), pm, memory, pageCount), Boolean.TRUE);
+            currentMagazine.set(new SoftReference<Magazine>(magazine));
+            address = magazine.allocate(size, align);
+        }
+        return new TransientNativeMemoryIO(runtime, sentinel, address, size);
+    }
+    private TransientNativeMemoryIO(Ruby runtime, Object sentinel, long address, int size) {
+        super(runtime, address, size);
+        this.sentinel = sentinel;
+    }
+    private static long align(long offset, long align) {
+        return (offset + align - 1L) & ~(align - 1L);
+    }
+    private static final class Magazine extends PhantomReferenceReaper<Object> implements Runnable {
+        private final WeakReference<Object> weakref;
+        private final PageManager pm;
+        private final long page;
+        private final long end;
+        private final int pageCount;
+        private long memory;
+        Magazine(Object sentinel, PageManager pm, long page, int pageCount) {
+            super(sentinel);
+            this.weakref = new WeakReference<Object>(sentinel);
+            this.pm = pm;
+            this.memory = this.page = page;
+            this.pageCount = pageCount;
+            this.end = this.memory + (pm.pageSize() * pageCount);
+        }
+        Object sentinel() {
+            return weakref.get();
+        }
+        long allocate(int size, int align) {
+            long address = align(this.memory, align);
+            if (address + size <= end) {
+                memory = address + size;
+                return address;
+            }
+            return 0L;
+        }
+        public final void run() {
+            pm.freePages(page, pageCount);
+            referenceSet.remove(this);
+        }
+    }
+}",class,
+"    private static final class Magazine extends PhantomReferenceReaper<Object> implements Runnable {
+        private final WeakReference<Object> weakref;
+        private final PageManager pm;
+        private final long page;
+        private final long end;
+        private final int pageCount;
+        private long memory;
+        Magazine(Object sentinel, PageManager pm, long page, int pageCount) {
+            super(sentinel);
+            this.weakref = new WeakReference<Object>(sentinel);
+            this.pm = pm;
+            this.memory = this.page = page;
+            this.pageCount = pageCount;
+            this.end = this.memory + (pm.pageSize() * pageCount);
+        }
+        Object sentinel() {
+            return weakref.get();
+        }
+        long allocate(int size, int align) {
+            long address = align(this.memory, align);
+            if (address + size <= end) {
+                memory = address + size;
+                return address;
+            }
+            return 0L;
+        }
+        public final void run() {
+            pm.freePages(page, pageCount);
+            referenceSet.remove(this);
+        }
+    }",class,
+"    static MemoryIO allocateAligned(Ruby runtime, int size, int align, boolean clear) {
+        if (size > 1024) {
+            return AllocatedNativeMemoryIO.allocateAligned(runtime, size, align, clear);
+        }
+        Reference<Magazine> magazineReference = currentMagazine.get();
+        Magazine magazine = magazineReference != null ? magazineReference.get() : null;
+        Object sentinel = magazine != null ? magazine.sentinel() : null;
+        long address;
+        if (sentinel == null || (address = magazine.allocate(size, align)) == 0) {
+            PageManager pm = PageManager.getInstance();
+            long memory;
+            int pageCount = PAGES_PER_MAGAZINE;
+            do {
+                memory = pm.allocatePages(pageCount, PageManager.PROT_READ | PageManager.PROT_WRITE);
+                if (memory != 0L && memory != -1L) {
+                    break;
+                }
+                // No available pages; trigger a full GC to reclaim some memory
+                System.gc();
+            } while (true);
+            referenceSet.put(magazine = new Magazine(sentinel = new Object(), pm, memory, pageCount), Boolean.TRUE);
+            currentMagazine.set(new SoftReference<Magazine>(magazine));
+            address = magazine.allocate(size, align);
+        }
+        return new TransientNativeMemoryIO(runtime, sentinel, address, size);
+    }",method,
+"        if (size > 1024) {
+            return AllocatedNativeMemoryIO.allocateAligned(runtime, size, align, clear);
+        }",method,
+"                if (memory != 0L && memory != -1L) {
+                    break;
+                }",method,
+"    private TransientNativeMemoryIO(Ruby runtime, Object sentinel, long address, int size) {
+        super(runtime, address, size);
+        this.sentinel = sentinel;
+    }",method,
+"    private static long align(long offset, long align) {
+        return (offset + align - 1L) & ~(align - 1L);
+    }",method,
+"        Magazine(Object sentinel, PageManager pm, long page, int pageCount) {
+            super(sentinel);
+            this.weakref = new WeakReference<Object>(sentinel);
+            this.pm = pm;
+            this.memory = this.page = page;
+            this.pageCount = pageCount;
+            this.end = this.memory + (pm.pageSize() * pageCount);
+        }",method,
+"        Object sentinel() {
+            return weakref.get();
+        }",method,
+"        long allocate(int size, int align) {
+            long address = align(this.memory, align);
+            if (address + size <= end) {
+                memory = address + size;
+                return address;
+            }
+            return 0L;
+        }",method,
+"            if (address + size <= end) {
+                memory = address + size;
+                return address;
+            }",method,
+"        public final void run() {
+            pm.freePages(page, pageCount);
+            referenceSet.remove(this);
+        }",method,
+"public class SchedulerWhenTest {
+    @Test
+    public void testAsyncMaxConcurrent() {
+        TestScheduler tSched = new TestScheduler();
+        SchedulerWhen sched = maxConcurrentScheduler(tSched);
+        TestSubscriber<Long> tSub = TestSubscriber.create();
+        asyncWork(sched).subscribe(tSub);
+        tSub.assertValueCount(0);
+        tSched.advanceTimeBy(0, SECONDS);
+        tSub.assertValueCount(0);
+        tSched.advanceTimeBy(1, SECONDS);
+        tSub.assertValueCount(2);
+        tSched.advanceTimeBy(1, SECONDS);
+        tSub.assertValueCount(4);
+        tSched.advanceTimeBy(1, SECONDS);
+        tSub.assertValueCount(5);
+        tSub.assertComplete();
+        sched.dispose();
+    }
+    @Test
+    public void testAsyncDelaySubscription() {
+        final TestScheduler tSched = new TestScheduler();
+        SchedulerWhen sched = throttleScheduler(tSched);
+        TestSubscriber<Long> tSub = TestSubscriber.create();
+        asyncWork(sched).subscribe(tSub);
+        tSub.assertValueCount(0);
+        tSched.advanceTimeBy(0, SECONDS);
+        tSub.assertValueCount(0);
+        tSched.advanceTimeBy(1, SECONDS);
+        tSub.assertValueCount(1);
+        tSched.advanceTimeBy(1, SECONDS);
+        tSub.assertValueCount(1);
+        tSched.advanceTimeBy(1, SECONDS);
+        tSub.assertValueCount(2);
+        tSched.advanceTimeBy(1, SECONDS);
+        tSub.assertValueCount(2);
+        tSched.advanceTimeBy(1, SECONDS);
+        tSub.assertValueCount(3);
+        tSched.advanceTimeBy(1, SECONDS);
+        tSub.assertValueCount(3);
+        tSched.advanceTimeBy(1, SECONDS);
+        tSub.assertValueCount(4);
+        tSched.advanceTimeBy(1, SECONDS);
+        tSub.assertValueCount(4);
+        tSched.advanceTimeBy(1, SECONDS);
+        tSub.assertValueCount(5);
+        tSub.assertComplete();
+        sched.dispose();
+    }
+    @Test
+    public void testSyncMaxConcurrent() {
+        TestScheduler tSched = new TestScheduler();
+        SchedulerWhen sched = maxConcurrentScheduler(tSched);
+        TestSubscriber<Long> tSub = TestSubscriber.create();
+        syncWork(sched).subscribe(tSub);
+        tSub.assertValueCount(0);
+        tSched.advanceTimeBy(0, SECONDS);
+        // since all the work is synchronous nothing is blocked and its all done
+        tSub.assertValueCount(5);
+        tSub.assertComplete();
+        sched.dispose();
+    }
+    @Test
+    public void testSyncDelaySubscription() {
+        final TestScheduler tSched = new TestScheduler();
+        SchedulerWhen sched = throttleScheduler(tSched);
+        TestSubscriber<Long> tSub = TestSubscriber.create();
+        syncWork(sched).subscribe(tSub);
+        tSub.assertValueCount(0);
+        tSched.advanceTimeBy(0, SECONDS);
+        tSub.assertValueCount(1);
+        tSched.advanceTimeBy(1, SECONDS);
+        tSub.assertValueCount(2);
+        tSched.advanceTimeBy(1, SECONDS);
+        tSub.assertValueCount(3);
+        tSched.advanceTimeBy(1, SECONDS);
+        tSub.assertValueCount(4);
+        tSched.advanceTimeBy(1, SECONDS);
+        tSub.assertValueCount(5);
+        tSub.assertComplete();
+        sched.dispose();
+    }
+    private Flowable<Long> asyncWork(final Scheduler sched) {
+        return Flowable.range(1, 5).flatMap(new Function<Integer, Flowable<Long>>() {
+            @Override
+            public Flowable<Long> apply(Integer t) {
+                return Flowable.timer(1, SECONDS, sched);
+            }
+        });
+    }
+    private Flowable<Long> syncWork(final Scheduler sched) {
+        return Flowable.range(1, 5).flatMap(new Function<Integer, Flowable<Long>>() {
+            @Override
+            public Flowable<Long> apply(Integer t) {
+                return Flowable.defer(new Callable<Flowable<Long>>() {
+                    @Override
+                    public Flowable<Long> call() {
+                        return Flowable.just(0l);
+                    }
+                }).subscribeOn(sched);
+            }
+        });
+    }
+    private SchedulerWhen maxConcurrentScheduler(TestScheduler tSched) {
+        SchedulerWhen sched = new SchedulerWhen(new Function<Flowable<Flowable<Completable>>, Completable>() {
+            @Override
+            public Completable apply(Flowable<Flowable<Completable>> workerActions) {
+                Flowable<Completable> workers = workerActions.map(new Function<Flowable<Completable>, Completable>() {
+                    @Override
+                    public Completable apply(Flowable<Completable> actions) {
+                        return Completable.concat(actions);
+                    }
+                });
+                return Completable.merge(workers, 2);
+            }
+        }, tSched);
+        return sched;
+    }
+    private SchedulerWhen throttleScheduler(final TestScheduler tSched) {
+        SchedulerWhen sched = new SchedulerWhen(new Function<Flowable<Flowable<Completable>>, Completable>() {
+            @Override
+            public Completable apply(Flowable<Flowable<Completable>> workerActions) {
+                Flowable<Completable> workers = workerActions.map(new Function<Flowable<Completable>, Completable>() {
+                    @Override
+                    public Completable apply(Flowable<Completable> actions) {
+                        return Completable.concat(actions);
+                    }
+                });
+                return Completable.concat(workers.map(new Function<Completable, Completable>() {
+                    @Override
+                    public Completable apply(Completable worker) {
+                        return worker.delay(1, SECONDS, tSched);
+                    }
+                }));
+            }
+        }, tSched);
+        return sched;
+    }
+    @Test(timeout = 1000)
+    public void testRaceConditions() {
+        Scheduler comp = Schedulers.computation();
+        Scheduler limited = comp.when(new Function<Flowable<Flowable<Completable>>, Completable>() {
+            @Override
+            public Completable apply(Flowable<Flowable<Completable>> t) {
+                return Completable.merge(Flowable.merge(t, 10));
+            }
+        });
+        merge(just(just(1).subscribeOn(limited).observeOn(comp)).repeat(1000)).blockingSubscribe();
+    }
+}",class,
+"    @Test
+    public void testAsyncMaxConcurrent() {
+        TestScheduler tSched = new TestScheduler();
+        SchedulerWhen sched = maxConcurrentScheduler(tSched);
+        TestSubscriber<Long> tSub = TestSubscriber.create();
+        asyncWork(sched).subscribe(tSub);
+        tSub.assertValueCount(0);
+        tSched.advanceTimeBy(0, SECONDS);
+        tSub.assertValueCount(0);
+        tSched.advanceTimeBy(1, SECONDS);
+        tSub.assertValueCount(2);
+        tSched.advanceTimeBy(1, SECONDS);
+        tSub.assertValueCount(4);
+        tSched.advanceTimeBy(1, SECONDS);
+        tSub.assertValueCount(5);
+        tSub.assertComplete();
+        sched.dispose();
+    }",method,
+"    @Test
+    public void testAsyncDelaySubscription() {
+        final TestScheduler tSched = new TestScheduler();
+        SchedulerWhen sched = throttleScheduler(tSched);
+        TestSubscriber<Long> tSub = TestSubscriber.create();
+        asyncWork(sched).subscribe(tSub);
+        tSub.assertValueCount(0);
+        tSched.advanceTimeBy(0, SECONDS);
+        tSub.assertValueCount(0);
+        tSched.advanceTimeBy(1, SECONDS);
+        tSub.assertValueCount(1);
+        tSched.advanceTimeBy(1, SECONDS);
+        tSub.assertValueCount(1);
+        tSched.advanceTimeBy(1, SECONDS);
+        tSub.assertValueCount(2);
+        tSched.advanceTimeBy(1, SECONDS);
+        tSub.assertValueCount(2);
+        tSched.advanceTimeBy(1, SECONDS);
+        tSub.assertValueCount(3);
+        tSched.advanceTimeBy(1, SECONDS);
+        tSub.assertValueCount(3);
+        tSched.advanceTimeBy(1, SECONDS);
+        tSub.assertValueCount(4);
+        tSched.advanceTimeBy(1, SECONDS);
+        tSub.assertValueCount(4);
+        tSched.advanceTimeBy(1, SECONDS);
+        tSub.assertValueCount(5);
+        tSub.assertComplete();
+        sched.dispose();
+    }",method,
+"    @Test
+    public void testSyncMaxConcurrent() {
+        TestScheduler tSched = new TestScheduler();
+        SchedulerWhen sched = maxConcurrentScheduler(tSched);
+        TestSubscriber<Long> tSub = TestSubscriber.create();
+        syncWork(sched).subscribe(tSub);
+        tSub.assertValueCount(0);
+        tSched.advanceTimeBy(0, SECONDS);
+        // since all the work is synchronous nothing is blocked and its all done
+        tSub.assertValueCount(5);
+        tSub.assertComplete();
+        sched.dispose();
+    }",method,
+"    @Test
+    public void testSyncDelaySubscription() {
+        final TestScheduler tSched = new TestScheduler();
+        SchedulerWhen sched = throttleScheduler(tSched);
+        TestSubscriber<Long> tSub = TestSubscriber.create();
+        syncWork(sched).subscribe(tSub);
+        tSub.assertValueCount(0);
+        tSched.advanceTimeBy(0, SECONDS);
+        tSub.assertValueCount(1);
+        tSched.advanceTimeBy(1, SECONDS);
+        tSub.assertValueCount(2);
+        tSched.advanceTimeBy(1, SECONDS);
+        tSub.assertValueCount(3);
+        tSched.advanceTimeBy(1, SECONDS);
+        tSub.assertValueCount(4);
+        tSched.advanceTimeBy(1, SECONDS);
+        tSub.assertValueCount(5);
+        tSub.assertComplete();
+        sched.dispose();
+    }",method,
+"    private Flowable<Long> asyncWork(final Scheduler sched) {
+        return Flowable.range(1, 5).flatMap(new Function<Integer, Flowable<Long>>() {
+            @Override
+            public Flowable<Long> apply(Integer t) {
+                return Flowable.timer(1, SECONDS, sched);
+            }
+        });
+    }",method,
+"            @Override
+            public Flowable<Long> apply(Integer t) {
+                return Flowable.timer(1, SECONDS, sched);
+            }",method,
+"    private Flowable<Long> syncWork(final Scheduler sched) {
+        return Flowable.range(1, 5).flatMap(new Function<Integer, Flowable<Long>>() {
+            @Override
+            public Flowable<Long> apply(Integer t) {
+                return Flowable.defer(new Callable<Flowable<Long>>() {
+                    @Override
+                    public Flowable<Long> call() {
+                        return Flowable.just(0l);
+                    }
+                }).subscribeOn(sched);
+            }
+        });
+    }",method,
+"            @Override
+            public Flowable<Long> apply(Integer t) {
+                return Flowable.defer(new Callable<Flowable<Long>>() {
+                    @Override
+                    public Flowable<Long> call() {
+                        return Flowable.just(0l);
+                    }
+                }).subscribeOn(sched);
+            }",method,
+"                return Flowable.defer(new Callable<Flowable<Long>>() {
+                    @Override
+                    public Flowable<Long> call() {
+                        return Flowable.just(0l);
+                    }
+                }",method,
+"                    @Override
+                    public Flowable<Long> call() {
+                        return Flowable.just(0l);
+                    }",method,
+"    private SchedulerWhen maxConcurrentScheduler(TestScheduler tSched) {
+        SchedulerWhen sched = new SchedulerWhen(new Function<Flowable<Flowable<Completable>>, Completable>() {
+            @Override
+            public Completable apply(Flowable<Flowable<Completable>> workerActions) {
+                Flowable<Completable> workers = workerActions.map(new Function<Flowable<Completable>, Completable>() {
+                    @Override
+                    public Completable apply(Flowable<Completable> actions) {
+                        return Completable.concat(actions);
+                    }
+                });
+                return Completable.merge(workers, 2);
+            }
+        }, tSched);
+        return sched;
+    }",method,
+"            @Override
+            public Completable apply(Flowable<Flowable<Completable>> workerActions) {
+                Flowable<Completable> workers = workerActions.map(new Function<Flowable<Completable>, Completable>() {
+                    @Override
+                    public Completable apply(Flowable<Completable> actions) {
+                        return Completable.concat(actions);
+                    }
+                });
+                return Completable.merge(workers, 2);
+            }",method,
+"                    @Override
+                    public Completable apply(Flowable<Completable> actions) {
+                        return Completable.concat(actions);
+                    }",method,
+"    private SchedulerWhen throttleScheduler(final TestScheduler tSched) {
+        SchedulerWhen sched = new SchedulerWhen(new Function<Flowable<Flowable<Completable>>, Completable>() {
+            @Override
+            public Completable apply(Flowable<Flowable<Completable>> workerActions) {
+                Flowable<Completable> workers = workerActions.map(new Function<Flowable<Completable>, Completable>() {
+                    @Override
+                    public Completable apply(Flowable<Completable> actions) {
+                        return Completable.concat(actions);
+                    }
+                });
+                return Completable.concat(workers.map(new Function<Completable, Completable>() {
+                    @Override
+                    public Completable apply(Completable worker) {
+                        return worker.delay(1, SECONDS, tSched);
+                    }
+                }));
+            }
+        }, tSched);
+        return sched;
+    }",method,
+"            @Override
+            public Completable apply(Flowable<Flowable<Completable>> workerActions) {
+                Flowable<Completable> workers = workerActions.map(new Function<Flowable<Completable>, Completable>() {
+                    @Override
+                    public Completable apply(Flowable<Completable> actions) {
+                        return Completable.concat(actions);
+                    }
+                });
+                return Completable.concat(workers.map(new Function<Completable, Completable>() {
+                    @Override
+                    public Completable apply(Completable worker) {
+                        return worker.delay(1, SECONDS, tSched);
+                    }
+                }));
+            }",method,
+"                    @Override
+                    public Completable apply(Flowable<Completable> actions) {
+                        return Completable.concat(actions);
+                    }",method,
+"                return Completable.concat(workers.map(new Function<Completable, Completable>() {
+                    @Override
+                    public Completable apply(Completable worker) {
+                        return worker.delay(1, SECONDS, tSched);
+                    }
+                }",method,
+"                    @Override
+                    public Completable apply(Completable worker) {
+                        return worker.delay(1, SECONDS, tSched);
+                    }",method,
+"    @Test(timeout = 1000)
+    public void testRaceConditions() {
+        Scheduler comp = Schedulers.computation();
+        Scheduler limited = comp.when(new Function<Flowable<Flowable<Completable>>, Completable>() {
+            @Override
+            public Completable apply(Flowable<Flowable<Completable>> t) {
+                return Completable.merge(Flowable.merge(t, 10));
+            }
+        });
+        merge(just(just(1).subscribeOn(limited).observeOn(comp)).repeat(1000)).blockingSubscribe();
+    }",method,
+"            @Override
+            public Completable apply(Flowable<Flowable<Completable>> t) {
+                return Completable.merge(Flowable.merge(t, 10));
+            }",method,
+"public class FilterLexer extends DelegateLexer {
+  private final Filter myFilter;
+  private final boolean[] myStateFilter;
+  private int myPrevTokenEnd;
+  public interface Filter {
+    boolean reject(IElementType type);
+  }
+  public static final class SetFilter implements Filter {
+    private final TokenSet mySet;
+    public SetFilter(TokenSet set) {
+      mySet = set;
+    }
+    @Override
+    public boolean reject(IElementType type) {
+      return mySet.contains(type);
+    }
+  }
+  public FilterLexer(Lexer original, Filter filter, boolean[] stateFilter) {
+    super(original);
+    myFilter = filter;
+    myStateFilter = stateFilter;
+  }
+  public FilterLexer(Lexer original, Filter filter) {
+    this(original, filter, null);
+  }
+  public Lexer getOriginal() {
+    return getDelegate();
+  }
+  @Override
+  public void start(@NotNull CharSequence buffer, int startOffset, int endOffset, int initialState) {
+    super.start(buffer, startOffset, endOffset, initialState);
+    myPrevTokenEnd = -1;
+    locateToken();
+  }
+  @Override
+  public void advance() {
+    myPrevTokenEnd = getDelegate().getTokenEnd();
+    super.advance();
+    locateToken();
+  }
+  public int getPrevTokenEnd() {
+    return myPrevTokenEnd;
+  }
+  @NotNull
+  @Override
+  public LexerPosition getCurrentPosition() {
+    return getDelegate().getCurrentPosition();
+  }
+  @Override
+  public void restore(@NotNull LexerPosition position) {
+    getDelegate().restore(position);
+    myPrevTokenEnd = -1;
+  }
+  public final void locateToken(){
+    while(true){
+      Lexer delegate = getDelegate();
+      IElementType tokenType = delegate.getTokenType();
+      if (tokenType == null) break;
+      if (myFilter == null || !myFilter.reject(tokenType)) {
+        if (myStateFilter == null || !myStateFilter[delegate.getState()]){
+          break;
+        }
+      }
+      delegate.advance();
+    }
+  }
+}",class,
+"  public static final class SetFilter implements Filter {
+    private final TokenSet mySet;
+    public SetFilter(TokenSet set) {
+      mySet = set;
+    }
+    @Override
+    public boolean reject(IElementType type) {
+      return mySet.contains(type);
+    }
+  }",class,
+"    public SetFilter(TokenSet set) {
+      mySet = set;
+    }",method,
+"    @Override
+    public boolean reject(IElementType type) {
+      return mySet.contains(type);
+    }",method,
+"  public FilterLexer(Lexer original, Filter filter, boolean[] stateFilter) {
+    super(original);
+    myFilter = filter;
+    myStateFilter = stateFilter;
+  }",method,
+"  public FilterLexer(Lexer original, Filter filter) {
+    this(original, filter, null);
+  }",method,
+"  public Lexer getOriginal() {
+    return getDelegate();
+  }",method,
+"  @Override
+  public void start(@NotNull CharSequence buffer, int startOffset, int endOffset, int initialState) {
+    super.start(buffer, startOffset, endOffset, initialState);
+    myPrevTokenEnd = -1;
+    locateToken();
+  }",method,
+"  @Override
+  public void advance() {
+    myPrevTokenEnd = getDelegate().getTokenEnd();
+    super.advance();
+    locateToken();
+  }",method,
+"  public int getPrevTokenEnd() {
+    return myPrevTokenEnd;
+  }",method,
+"  @NotNull
+  @Override
+  public LexerPosition getCurrentPosition() {
+    return getDelegate().getCurrentPosition();
+  }",method,
+"  @Override
+  public void restore(@NotNull LexerPosition position) {
+    getDelegate().restore(position);
+    myPrevTokenEnd = -1;
+  }",method,
+"  public final void locateToken(){
+    while(true){
+      Lexer delegate = getDelegate();
+      IElementType tokenType = delegate.getTokenType();
+      if (tokenType == null) break;
+      if (myFilter == null || !myFilter.reject(tokenType)) {
+        if (myStateFilter == null || !myStateFilter[delegate.getState()]){
+          break;
+        }
+      }
+      delegate.advance();
+    }
+  }",method,
+"    while(true){
+      Lexer delegate = getDelegate();
+      IElementType tokenType = delegate.getTokenType();
+      if (tokenType == null) break;
+      if (myFilter == null || !myFilter.reject(tokenType)) {
+        if (myStateFilter == null || !myStateFilter[delegate.getState()]){
+          break;
+        }
+      }
+      delegate.advance();
+    }",method,
+"public class GrainFarm extends SynthNote
+{
+	public PoissonTrigger  triggerMaker;
+	public ParabolicGrain  grains[];
+	public BusWriter       mixers[];
+	public WhiteNoise      freqNoise;
+	public AddUnit         freqAdder;
+	public AddUnit         tieSpeed;  
+	public SynthInput  probability;
+	public SynthInput  spread;
+	public SynthInput  grainSpeed;
+	public BusReader busMix;
+	int numGrains;
+	public GrainFarm( int numGrains ) throws SynthException
+	{
+		super();
+		this.numGrains = numGrains;
+		add( busMix = new BusReader() );
+		add( triggerMaker = new PoissonTrigger() );
+		add( freqNoise = new WhiteNoise() );
+		add( freqAdder = new AddUnit() );
+		add( tieSpeed = new AddUnit() );
+		grains = new ParabolicGrain[numGrains];
+		mixers = new BusWriter[numGrains];
+		for( int i=0; i<numGrains; i++ )
+		{
+			add( grains[i] = new ParabolicGrain() );
+			add( mixers[i] = new BusWriter() );
+			freqAdder.output.connect( grains[i].frequency );
+			tieSpeed.output.connect( grains[i].rate );
+			grains[i].amplitude.set( 1.0/numGrains ); 
+			grains[i].output.connect( mixers[i].input );
+			mixers[i].busOutput.connect( busMix.busInput );
+			if( i == 0 )
+			{
+				triggerMaker.output.connect( grains[i].triggerInput );
+			}
+			else
+			{
+				grains[i-1].triggerPass.connect( grains[i].triggerInput );
+			}
+		}
+		freqNoise.output.connect( freqAdder.inputA );
+		addPort( probability = triggerMaker.probability );
+		addPort( frequency = freqAdder.inputB, ""Frequency"" );
+		addPort( spread = freqNoise.amplitude, ""Spread"" );
+		addPort( grainSpeed = tieSpeed.inputA, ""GrainSpeed"" );
+		addPort( amplitude = busMix.amplitude );
+		addPort( output = busMix.output );
+		frequency.setSignalType( grains[0].frequency );
+		spread.setSignalType( grains[0].frequency );
+		grainSpeed.setSignalType( grains[0].rate );
+		spread.setup(   0.0, 120.0, 1000.0 );
+		grainSpeed.setup(   0.0, 60.0, 1000.0 );
+		probability.setup(   0.0, 0.001, 0.03 );
+		amplitude.setup(   0.0, 0.7, 0.999 );
+		frequency.setup(   0.0, 800.0, 3000.0 );
+	}
+}",class,
+"	public GrainFarm( int numGrains ) throws SynthException
+	{
+		super();
+		this.numGrains = numGrains;
+		add( busMix = new BusReader() );
+		add( triggerMaker = new PoissonTrigger() );
+		add( freqNoise = new WhiteNoise() );
+		add( freqAdder = new AddUnit() );
+		add( tieSpeed = new AddUnit() );
+		grains = new ParabolicGrain[numGrains];
+		mixers = new BusWriter[numGrains];
+		for( int i=0; i<numGrains; i++ )
+		{
+			add( grains[i] = new ParabolicGrain() );
+			add( mixers[i] = new BusWriter() );
+			freqAdder.output.connect( grains[i].frequency );
+			tieSpeed.output.connect( grains[i].rate );
+			grains[i].amplitude.set( 1.0/numGrains ); 
+			grains[i].output.connect( mixers[i].input );
+			mixers[i].busOutput.connect( busMix.busInput );
+			if( i == 0 )
+			{
+				triggerMaker.output.connect( grains[i].triggerInput );
+			}
+			else
+			{
+				grains[i-1].triggerPass.connect( grains[i].triggerInput );
+			}
+		}
+		freqNoise.output.connect( freqAdder.inputA );
+		addPort( probability = triggerMaker.probability );
+		addPort( frequency = freqAdder.inputB, ""Frequency"" );
+		addPort( spread = freqNoise.amplitude, ""Spread"" );
+		addPort( grainSpeed = tieSpeed.inputA, ""GrainSpeed"" );
+		addPort( amplitude = busMix.amplitude );
+		addPort( output = busMix.output );
+		frequency.setSignalType( grains[0].frequency );
+		spread.setSignalType( grains[0].frequency );
+		grainSpeed.setSignalType( grains[0].rate );
+		spread.setup(   0.0, 120.0, 1000.0 );
+		grainSpeed.setup(   0.0, 60.0, 1000.0 );
+		probability.setup(   0.0, 0.001, 0.03 );
+		amplitude.setup(   0.0, 0.7, 0.999 );
+		frequency.setup(   0.0, 800.0, 3000.0 );
+	}",method,
+"		for( int i=0; i<numGrains; i++ )
+		{
+			add( grains[i] = new ParabolicGrain() );
+			add( mixers[i] = new BusWriter() );
+			freqAdder.output.connect( grains[i].frequency );
+			tieSpeed.output.connect( grains[i].rate );
+			grains[i].amplitude.set( 1.0/numGrains ); 
+			grains[i].output.connect( mixers[i].input );
+			mixers[i].busOutput.connect( busMix.busInput );
+			if( i == 0 )
+			{
+				triggerMaker.output.connect( grains[i].triggerInput );
+			}
+			else
+			{
+				grains[i-1].triggerPass.connect( grains[i].triggerInput );
+			}
+		}",method,
+"			if( i == 0 )
+			{
+				triggerMaker.output.connect( grains[i].triggerInput );
+			}",method,
+"public class OracleSelectQueryBlock extends SQLSelectQueryBlock implements OracleSQLObject {
+    private List<SQLCommentHint>       hints;
+    private ModelClause                modelClause;
+    private boolean                    skipLocked  = false;
+    public OracleSelectQueryBlock clone() {
+        OracleSelectQueryBlock x = new OracleSelectQueryBlock();
+        super.cloneTo(x);
+        if (hints != null) {
+            for (SQLCommentHint hint : hints) {
+                SQLCommentHint hint1 = hint.clone();
+                hint1.setParent(x);
+                x.getHints().add(hint1);
+            }
+        }
+        if (modelClause != null) {
+            x.setModelClause(modelClause.clone());
+        }
+        if (forUpdateOf != null) {
+            for (SQLExpr item : forUpdateOf) {
+                SQLExpr item1 = item.clone();
+                item1.setParent(x);
+                forUpdateOf.add(item1);
+            }
+        }
+        x.skipLocked = skipLocked;
+        return x;
+    }
+    public OracleSelectQueryBlock(){
+        dbType = JdbcConstants.ORACLE;
+    }
+    public ModelClause getModelClause() {
+        return modelClause;
+    }
+    public void setModelClause(ModelClause modelClause) {
+        this.modelClause = modelClause;
+    }
+    public List<SQLCommentHint> getHints() {
+        if (hints == null) {
+            hints = new ArrayList<SQLCommentHint>(1);
+        }
+        return this.hints;
+    }
+    public int getHintsSize() {
+        if (hints == null) {
+            return 0;
+        }
+        return hints.size();
+    }
+    public boolean isSkipLocked() {
+        return skipLocked;
+    }
+    public void setSkipLocked(boolean skipLocked) {
+        this.skipLocked = skipLocked;
+    }
+    @Override
+    protected void accept0(SQLASTVisitor visitor) {
+        if (visitor instanceof OracleASTVisitor) {
+            accept0((OracleASTVisitor) visitor);
+            return;
+        }
+        super.accept0(visitor);
+    }
+    public void accept0(OracleASTVisitor visitor) {
+        if (visitor.visit(this)) {
+            acceptChild(visitor, this.hints);
+            acceptChild(visitor, this.selectList);
+            acceptChild(visitor, this.into);
+            acceptChild(visitor, this.from);
+            acceptChild(visitor, this.where);
+            acceptChild(visitor, this.startWith);
+            acceptChild(visitor, this.connectBy);
+            acceptChild(visitor, this.groupBy);
+            acceptChild(visitor, this.orderBy);
+            acceptChild(visitor, this.waitTime);
+            acceptChild(visitor, this.limit);
+            acceptChild(visitor, this.modelClause);
+            acceptChild(visitor, this.forUpdateOf);
+        }
+        visitor.endVisit(this);
+    }
+    public String toString() {
+        return SQLUtils.toOracleString(this);
+    }
+    public void limit(int rowCount, int offset) {
+        if (offset <= 0) {
+            SQLExpr rowCountExpr = new SQLIntegerExpr(rowCount);
+            SQLExpr newCondition = SQLUtils.buildCondition(SQLBinaryOperator.BooleanAnd, rowCountExpr, false,
+                    where);
+            setWhere(newCondition);
+        } else {
+            throw new UnsupportedOperationException(""not support offset"");
+        }
+    }
+    public void setFrom(String tableName) {
+        SQLExprTableSource from;
+        if (tableName == null || tableName.length() == 0) {
+            from = null;
+        } else {
+            from = new OracleSelectTableReference(new SQLIdentifierExpr(tableName));
+        }
+        this.setFrom(from);
+    }
+}",class,
+"    public OracleSelectQueryBlock clone() {
+        OracleSelectQueryBlock x = new OracleSelectQueryBlock();
+        super.cloneTo(x);
+        if (hints != null) {
+            for (SQLCommentHint hint : hints) {
+                SQLCommentHint hint1 = hint.clone();
+                hint1.setParent(x);
+                x.getHints().add(hint1);
+            }
+        }
+        if (modelClause != null) {
+            x.setModelClause(modelClause.clone());
+        }
+        if (forUpdateOf != null) {
+            for (SQLExpr item : forUpdateOf) {
+                SQLExpr item1 = item.clone();
+                item1.setParent(x);
+                forUpdateOf.add(item1);
+            }
+        }
+        x.skipLocked = skipLocked;
+        return x;
+    }",method,
+"        if (hints != null) {
+            for (SQLCommentHint hint : hints) {
+                SQLCommentHint hint1 = hint.clone();
+                hint1.setParent(x);
+                x.getHints().add(hint1);
+            }
+        }",method,
+"            for (SQLCommentHint hint : hints) {
+                SQLCommentHint hint1 = hint.clone();
+                hint1.setParent(x);
+                x.getHints().add(hint1);
+            }",method,
+"        if (modelClause != null) {
+            x.setModelClause(modelClause.clone());
+        }",method,
+"        if (forUpdateOf != null) {
+            for (SQLExpr item : forUpdateOf) {
+                SQLExpr item1 = item.clone();
+                item1.setParent(x);
+                forUpdateOf.add(item1);
+            }
+        }",method,
+"            for (SQLExpr item : forUpdateOf) {
+                SQLExpr item1 = item.clone();
+                item1.setParent(x);
+                forUpdateOf.add(item1);
+            }",method,
+"    public OracleSelectQueryBlock(){
+        dbType = JdbcConstants.ORACLE;
+    }",method,
+"    public ModelClause getModelClause() {
+        return modelClause;
+    }",method,
+"    public void setModelClause(ModelClause modelClause) {
+        this.modelClause = modelClause;
+    }",method,
+"    public List<SQLCommentHint> getHints() {
+        if (hints == null) {
+            hints = new ArrayList<SQLCommentHint>(1);
+        }
+        return this.hints;
+    }",method,

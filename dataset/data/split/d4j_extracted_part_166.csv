@@ -1,0 +1,1501 @@
+code_snippet,type,score
+"    public SnapshotId(final String name, final String uuid) {
+        this.name = Objects.requireNonNull(name);
+        this.uuid = Objects.requireNonNull(uuid);
+        this.hashCode = computeHashCode();
+    }",method,
+"    public SnapshotId(final StreamInput in) throws IOException {
+        name = in.readString();
+        uuid = in.readString();
+        hashCode = computeHashCode();
+    }",method,
+"    public String getName() {
+        return name;
+    }",method,
+"    public String getUUID() {
+        return uuid;
+    }",method,
+"    @Override
+    public String toString() {
+        return name + ""/"" + uuid;
+    }",method,
+"    @Override
+    public boolean equals(Object o) {
+        if (this == o) {
+            return true;
+        }
+        if (o == null || getClass() != o.getClass()) {
+            return false;
+        }
+        @SuppressWarnings(""unchecked"") final SnapshotId that = (SnapshotId) o;
+        return name.equals(that.name) && uuid.equals(that.uuid);
+    }",method,
+"        if (this == o) {
+            return true;
+        }",method,
+"    @Override
+    public int hashCode() {
+        return hashCode;
+    }",method,
+"    @Override
+    public int compareTo(final SnapshotId other) {
+        return this.name.compareTo(other.name);
+    }",method,
+"    private int computeHashCode() {
+        return Objects.hash(name, uuid);
+    }",method,
+"    @Override
+    public void writeTo(StreamOutput out) throws IOException {
+        out.writeString(name);
+        out.writeString(uuid);
+    }",method,
+"    @Override
+    public XContentBuilder toXContent(XContentBuilder builder, Params params) throws IOException {
+        builder.startObject();
+        builder.field(NAME, name);
+        builder.field(UUID, uuid);
+        builder.endObject();
+        return builder;
+    }",method,
+"    public static SnapshotId fromXContent(XContentParser parser) throws IOException {
+        // the new format from 5.0 which contains the snapshot name and uuid
+        if (parser.currentToken() == XContentParser.Token.START_OBJECT) {
+            String name = null;
+            String uuid = null;
+            while (parser.nextToken() != XContentParser.Token.END_OBJECT) {
+                String currentFieldName = parser.currentName();
+                parser.nextToken();
+                if (NAME.equals(currentFieldName)) {
+                    name = parser.text();
+                } else if (UUID.equals(currentFieldName)) {
+                    uuid = parser.text();
+                }
+            }
+            return new SnapshotId(name, uuid);
+        } else {
+            // the old format pre 5.0 that only contains the snapshot name, use the name as the uuid too
+            final String name = parser.text();
+            return new SnapshotId(name, name);
+        }
+    }",method,
+"public class DefaultWebSocketAdapter implements IWebSocketAdapter {
+    private WebSocket ws;
+    private EventListener eventListener;
+    private WSEventReporter wsEventReporter;
+    @Override
+    public void connect(String url, @Nullable final String protocol, EventListener listener) {
+        this.eventListener = listener;
+        this.wsEventReporter = WSEventReporter.newInstance();
+        OkHttpClient okHttpClient = new OkHttpClient();
+        Request.Builder builder = new Request.Builder();
+        if (protocol != null) {
+            builder.addHeader(HEADER_SEC_WEBSOCKET_PROTOCOL, protocol);
+        }
+        builder.url(url);
+        wsEventReporter.created(url);
+        Request wsRequest = builder.build();
+        WebSocketCall webSocketCall = WebSocketCall.create(okHttpClient, wsRequest);
+        try {
+            Field field = WebSocketCall.class.getDeclaredField(""request"");
+            field.setAccessible(true);
+            Request realRequest = (Request) field.get(webSocketCall);
+            Headers wsHeaders = realRequest.headers();
+            Map<String, String> headers = new HashMap<>();
+            for (String name : wsHeaders.names()) {
+                headers.put(name, wsHeaders.values(name).toString());
+            }
+            wsEventReporter.willSendHandshakeRequest(headers, null);
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+        webSocketCall.enqueue(new WebSocketListener() {
+            @Override
+            public void onOpen(WebSocket webSocket, Request request, Response response) throws IOException {
+                ws = webSocket;
+                eventListener.onOpen();
+                Headers wsHeaders = response.headers();
+                Map<String, String> headers = new HashMap<>();
+                for (String name : wsHeaders.names()) {
+                    headers.put(name, wsHeaders.values(name).toString());
+                }
+                wsEventReporter.handshakeResponseReceived(response.code(),
+                        Status.getStatusText(String.valueOf(response.code())),
+                        headers);
+            }
+            @Override
+            public void onMessage(BufferedSource payload, WebSocket.PayloadType type) throws IOException {
+                if (type == WebSocket.PayloadType.BINARY) {
+                    wsEventReporter.frameReceived(payload.readByteArray());
+                } else {
+                    String message = payload.readUtf8();
+                    eventListener.onMessage(message);
+                    wsEventReporter.frameReceived(message);
+                }
+                payload.close();
+            }
+            @Override
+            public void onPong(Buffer payload) {
+            }
+            @Override
+            public void onClose(int code, String reason) {
+                eventListener.onClose(code, reason, true);
+                wsEventReporter.closed();
+            }
+            @Override
+            public void onFailure(IOException e) {
+                e.printStackTrace();
+                if (e instanceof EOFException) {
+                    eventListener.onClose(WebSocketCloseCodes.CLOSE_NORMAL.getCode(), WebSocketCloseCodes.CLOSE_NORMAL.name(), true);
+                    wsEventReporter.closed();
+                } else {
+                    eventListener.onError(e.getMessage());
+                    wsEventReporter.frameError(e.getMessage());
+                }
+            }
+        });
+    }
+    @Override
+    public void send(String data) {
+        if (ws != null) {
+            try {
+                Buffer buffer = new Buffer().writeUtf8(data);
+                ws.sendMessage(WebSocket.PayloadType.TEXT, buffer.buffer());
+                buffer.flush();
+                buffer.close();
+                wsEventReporter.frameSent(data);
+            } catch (Exception e) {
+                e.printStackTrace();
+                reportError(e.getMessage());
+                wsEventReporter.frameError(e.getMessage());
+            }
+        } else {
+            reportError(""WebSocket is not ready"");
+        }
+    }
+    @Override
+    public void close(int code, String reason) {
+        if (ws != null) {
+            try {
+                ws.close(code, reason);
+            } catch (Exception e) {
+                e.printStackTrace();
+                reportError(e.getMessage());
+            }
+        }
+    }
+    @Override
+    public void destroy() {
+        if (ws != null) {
+            try {
+                ws.close(WebSocketCloseCodes.CLOSE_GOING_AWAY.getCode(), WebSocketCloseCodes.CLOSE_GOING_AWAY.name());
+            } catch (Exception e) {
+                e.printStackTrace();
+            }
+        }
+    }
+    private void reportError(String message) {
+        if (eventListener != null) {
+            eventListener.onError(message);
+        }
+    }
+}",class,
+"    @Override
+    public void connect(String url, @Nullable final String protocol, EventListener listener) {
+        this.eventListener = listener;
+        this.wsEventReporter = WSEventReporter.newInstance();
+        OkHttpClient okHttpClient = new OkHttpClient();
+        Request.Builder builder = new Request.Builder();
+        if (protocol != null) {
+            builder.addHeader(HEADER_SEC_WEBSOCKET_PROTOCOL, protocol);
+        }
+        builder.url(url);
+        wsEventReporter.created(url);
+        Request wsRequest = builder.build();
+        WebSocketCall webSocketCall = WebSocketCall.create(okHttpClient, wsRequest);
+        try {
+            Field field = WebSocketCall.class.getDeclaredField(""request"");
+            field.setAccessible(true);
+            Request realRequest = (Request) field.get(webSocketCall);
+            Headers wsHeaders = realRequest.headers();
+            Map<String, String> headers = new HashMap<>();
+            for (String name : wsHeaders.names()) {
+                headers.put(name, wsHeaders.values(name).toString());
+            }
+            wsEventReporter.willSendHandshakeRequest(headers, null);
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+        webSocketCall.enqueue(new WebSocketListener() {
+            @Override
+            public void onOpen(WebSocket webSocket, Request request, Response response) throws IOException {
+                ws = webSocket;
+                eventListener.onOpen();
+                Headers wsHeaders = response.headers();
+                Map<String, String> headers = new HashMap<>();
+                for (String name : wsHeaders.names()) {
+                    headers.put(name, wsHeaders.values(name).toString());
+                }
+                wsEventReporter.handshakeResponseReceived(response.code(),
+                        Status.getStatusText(String.valueOf(response.code())),
+                        headers);
+            }
+            @Override
+            public void onMessage(BufferedSource payload, WebSocket.PayloadType type) throws IOException {
+                if (type == WebSocket.PayloadType.BINARY) {
+                    wsEventReporter.frameReceived(payload.readByteArray());
+                } else {
+                    String message = payload.readUtf8();
+                    eventListener.onMessage(message);
+                    wsEventReporter.frameReceived(message);
+                }
+                payload.close();
+            }
+            @Override
+            public void onPong(Buffer payload) {
+            }
+            @Override
+            public void onClose(int code, String reason) {
+                eventListener.onClose(code, reason, true);
+                wsEventReporter.closed();
+            }
+            @Override
+            public void onFailure(IOException e) {
+                e.printStackTrace();
+                if (e instanceof EOFException) {
+                    eventListener.onClose(WebSocketCloseCodes.CLOSE_NORMAL.getCode(), WebSocketCloseCodes.CLOSE_NORMAL.name(), true);
+                    wsEventReporter.closed();
+                } else {
+                    eventListener.onError(e.getMessage());
+                    wsEventReporter.frameError(e.getMessage());
+                }
+            }
+        });
+    }",method,
+"        if (protocol != null) {
+            builder.addHeader(HEADER_SEC_WEBSOCKET_PROTOCOL, protocol);
+        }",method,
+"        webSocketCall.enqueue(new WebSocketListener() {
+            @Override
+            public void onOpen(WebSocket webSocket, Request request, Response response) throws IOException {
+                ws = webSocket;
+                eventListener.onOpen();
+                Headers wsHeaders = response.headers();
+                Map<String, String> headers = new HashMap<>();
+                for (String name : wsHeaders.names()) {
+                    headers.put(name, wsHeaders.values(name).toString());
+                }
+                wsEventReporter.handshakeResponseReceived(response.code(),
+                        Status.getStatusText(String.valueOf(response.code())),
+                        headers);
+            }
+            @Override
+            public void onMessage(BufferedSource payload, WebSocket.PayloadType type) throws IOException {
+                if (type == WebSocket.PayloadType.BINARY) {
+                    wsEventReporter.frameReceived(payload.readByteArray());
+                } else {
+                    String message = payload.readUtf8();
+                    eventListener.onMessage(message);
+                    wsEventReporter.frameReceived(message);
+                }
+                payload.close();
+            }
+            @Override
+            public void onPong(Buffer payload) {
+            }
+            @Override
+            public void onClose(int code, String reason) {
+                eventListener.onClose(code, reason, true);
+                wsEventReporter.closed();
+            }
+            @Override
+            public void onFailure(IOException e) {
+                e.printStackTrace();
+                if (e instanceof EOFException) {
+                    eventListener.onClose(WebSocketCloseCodes.CLOSE_NORMAL.getCode(), WebSocketCloseCodes.CLOSE_NORMAL.name(), true);
+                    wsEventReporter.closed();
+                } else {
+                    eventListener.onError(e.getMessage());
+                    wsEventReporter.frameError(e.getMessage());
+                }
+            }
+        }",method,
+"            @Override
+            public void onOpen(WebSocket webSocket, Request request, Response response) throws IOException {
+                ws = webSocket;
+                eventListener.onOpen();
+                Headers wsHeaders = response.headers();
+                Map<String, String> headers = new HashMap<>();
+                for (String name : wsHeaders.names()) {
+                    headers.put(name, wsHeaders.values(name).toString());
+                }
+                wsEventReporter.handshakeResponseReceived(response.code(),
+                        Status.getStatusText(String.valueOf(response.code())),
+                        headers);
+            }",method,
+"            @Override
+            public void onMessage(BufferedSource payload, WebSocket.PayloadType type) throws IOException {
+                if (type == WebSocket.PayloadType.BINARY) {
+                    wsEventReporter.frameReceived(payload.readByteArray());
+                } else {
+                    String message = payload.readUtf8();
+                    eventListener.onMessage(message);
+                    wsEventReporter.frameReceived(message);
+                }
+                payload.close();
+            }",method,
+"                if (type == WebSocket.PayloadType.BINARY) {
+                    wsEventReporter.frameReceived(payload.readByteArray());
+                }",method,
+"            @Override
+            public void onPong(Buffer payload) {
+            }",method,
+"            @Override
+            public void onClose(int code, String reason) {
+                eventListener.onClose(code, reason, true);
+                wsEventReporter.closed();
+            }",method,
+"            @Override
+            public void onFailure(IOException e) {
+                e.printStackTrace();
+                if (e instanceof EOFException) {
+                    eventListener.onClose(WebSocketCloseCodes.CLOSE_NORMAL.getCode(), WebSocketCloseCodes.CLOSE_NORMAL.name(), true);
+                    wsEventReporter.closed();
+                } else {
+                    eventListener.onError(e.getMessage());
+                    wsEventReporter.frameError(e.getMessage());
+                }
+            }",method,
+"                if (e instanceof EOFException) {
+                    eventListener.onClose(WebSocketCloseCodes.CLOSE_NORMAL.getCode(), WebSocketCloseCodes.CLOSE_NORMAL.name(), true);
+                    wsEventReporter.closed();
+                }",method,
+"    @Override
+    public void send(String data) {
+        if (ws != null) {
+            try {
+                Buffer buffer = new Buffer().writeUtf8(data);
+                ws.sendMessage(WebSocket.PayloadType.TEXT, buffer.buffer());
+                buffer.flush();
+                buffer.close();
+                wsEventReporter.frameSent(data);
+            } catch (Exception e) {
+                e.printStackTrace();
+                reportError(e.getMessage());
+                wsEventReporter.frameError(e.getMessage());
+            }
+        } else {
+            reportError(""WebSocket is not ready"");
+        }
+    }",method,
+"        if (ws != null) {
+            try {
+                Buffer buffer = new Buffer().writeUtf8(data);
+                ws.sendMessage(WebSocket.PayloadType.TEXT, buffer.buffer());
+                buffer.flush();
+                buffer.close();
+                wsEventReporter.frameSent(data);
+            } catch (Exception e) {
+                e.printStackTrace();
+                reportError(e.getMessage());
+                wsEventReporter.frameError(e.getMessage());
+            }
+        }",method,
+"    @Override
+    public void close(int code, String reason) {
+        if (ws != null) {
+            try {
+                ws.close(code, reason);
+            } catch (Exception e) {
+                e.printStackTrace();
+                reportError(e.getMessage());
+            }
+        }
+    }",method,
+"        if (ws != null) {
+            try {
+                ws.close(code, reason);
+            } catch (Exception e) {
+                e.printStackTrace();
+                reportError(e.getMessage());
+            }
+        }",method,
+"    @Override
+    public void destroy() {
+        if (ws != null) {
+            try {
+                ws.close(WebSocketCloseCodes.CLOSE_GOING_AWAY.getCode(), WebSocketCloseCodes.CLOSE_GOING_AWAY.name());
+            } catch (Exception e) {
+                e.printStackTrace();
+            }
+        }
+    }",method,
+"        if (ws != null) {
+            try {
+                ws.close(WebSocketCloseCodes.CLOSE_GOING_AWAY.getCode(), WebSocketCloseCodes.CLOSE_GOING_AWAY.name());
+            } catch (Exception e) {
+                e.printStackTrace();
+            }
+        }",method,
+"    private void reportError(String message) {
+        if (eventListener != null) {
+            eventListener.onError(message);
+        }
+    }",method,
+"        if (eventListener != null) {
+            eventListener.onError(message);
+        }",method,
+"final class MenuItemActionViewEventObservable extends Observable<MenuItemActionViewEvent> {
+  private final MenuItem menuItem;
+  private final Predicate<? super MenuItemActionViewEvent> handled;
+  MenuItemActionViewEventObservable(MenuItem menuItem,
+      Predicate<? super MenuItemActionViewEvent> handled) {
+    this.menuItem = menuItem;
+    this.handled = handled;
+  }
+  @Override protected void subscribeActual(Observer<? super MenuItemActionViewEvent> observer) {
+    if (!checkMainThread(observer)) {
+      return;
+    }
+    Listener listener = new Listener(menuItem, handled, observer);
+    observer.onSubscribe(listener);
+    setOnActionExpandListener(menuItem, listener);
+  }
+  static final class Listener extends MainThreadDisposable implements OnActionExpandListener {
+    private final MenuItem menuItem;
+    private final Predicate<? super MenuItemActionViewEvent> handled;
+    private final Observer<? super MenuItemActionViewEvent> observer;
+    Listener(MenuItem menuItem, Predicate<? super MenuItemActionViewEvent> handled,
+        Observer<? super MenuItemActionViewEvent> observer) {
+      this.menuItem = menuItem;
+      this.handled = handled;
+      this.observer = observer;
+    }
+    @Override public boolean onMenuItemActionExpand(MenuItem item) {
+      return onEvent(MenuItemActionViewExpandEvent.create(item));
+    }
+    @Override public boolean onMenuItemActionCollapse(MenuItem item) {
+      return onEvent(MenuItemActionViewCollapseEvent.create(item));
+    }
+    private boolean onEvent(MenuItemActionViewEvent event) {
+      if (!isDisposed()) {
+        try {
+          if (handled.test(event)) {
+            observer.onNext(event);
+            return true;
+          }
+        } catch (Exception e) {
+          observer.onError(e);
+          dispose();
+        }
+      }
+      return false;
+    }
+    @Override protected void onDispose() {
+      setOnActionExpandListener(menuItem, null);
+    }
+  }
+}",class,
+"  static final class Listener extends MainThreadDisposable implements OnActionExpandListener {
+    private final MenuItem menuItem;
+    private final Predicate<? super MenuItemActionViewEvent> handled;
+    private final Observer<? super MenuItemActionViewEvent> observer;
+    Listener(MenuItem menuItem, Predicate<? super MenuItemActionViewEvent> handled,
+        Observer<? super MenuItemActionViewEvent> observer) {
+      this.menuItem = menuItem;
+      this.handled = handled;
+      this.observer = observer;
+    }
+    @Override public boolean onMenuItemActionExpand(MenuItem item) {
+      return onEvent(MenuItemActionViewExpandEvent.create(item));
+    }
+    @Override public boolean onMenuItemActionCollapse(MenuItem item) {
+      return onEvent(MenuItemActionViewCollapseEvent.create(item));
+    }
+    private boolean onEvent(MenuItemActionViewEvent event) {
+      if (!isDisposed()) {
+        try {
+          if (handled.test(event)) {
+            observer.onNext(event);
+            return true;
+          }
+        } catch (Exception e) {
+          observer.onError(e);
+          dispose();
+        }
+      }
+      return false;
+    }
+    @Override protected void onDispose() {
+      setOnActionExpandListener(menuItem, null);
+    }
+  }",class,
+"  MenuItemActionViewEventObservable(MenuItem menuItem,
+      Predicate<? super MenuItemActionViewEvent> handled) {
+    this.menuItem = menuItem;
+    this.handled = handled;
+  }",method,
+"    Listener(MenuItem menuItem, Predicate<? super MenuItemActionViewEvent> handled,
+        Observer<? super MenuItemActionViewEvent> observer) {
+      this.menuItem = menuItem;
+      this.handled = handled;
+      this.observer = observer;
+    }",method,
+"    private boolean onEvent(MenuItemActionViewEvent event) {
+      if (!isDisposed()) {
+        try {
+          if (handled.test(event)) {
+            observer.onNext(event);
+            return true;
+          }
+        } catch (Exception e) {
+          observer.onError(e);
+          dispose();
+        }
+      }
+      return false;
+    }",method,
+"public class CachingResourceTransformer implements ResourceTransformer {
+	private static final Log logger = LogFactory.getLog(CachingResourceTransformer.class);
+	private final Cache cache;
+	public CachingResourceTransformer(Cache cache) {
+		Assert.notNull(cache, ""Cache is required"");
+		this.cache = cache;
+	}
+	public CachingResourceTransformer(CacheManager cacheManager, String cacheName) {
+		Cache cache = cacheManager.getCache(cacheName);
+		if (cache == null) {
+			throw new IllegalArgumentException(""Cache '"" + cacheName + ""' not found"");
+		}
+		this.cache = cache;
+	}
+	public Cache getCache() {
+		return this.cache;
+	}
+	@Override
+	public Resource transform(HttpServletRequest request, Resource resource, ResourceTransformerChain transformerChain)
+			throws IOException {
+		Resource transformed = this.cache.get(resource, Resource.class);
+		if (transformed != null) {
+			if (logger.isTraceEnabled()) {
+				logger.trace(""Found match: "" + transformed);
+			}
+			return transformed;
+		}
+		transformed = transformerChain.transform(request, resource);
+		if (logger.isTraceEnabled()) {
+			logger.trace(""Putting transformed resource in cache: "" + transformed);
+		}
+		this.cache.put(resource, transformed);
+		return transformed;
+	}
+}",class,
+"	public CachingResourceTransformer(Cache cache) {
+		Assert.notNull(cache, ""Cache is required"");
+		this.cache = cache;
+	}",method,
+"	public CachingResourceTransformer(CacheManager cacheManager, String cacheName) {
+		Cache cache = cacheManager.getCache(cacheName);
+		if (cache == null) {
+			throw new IllegalArgumentException(""Cache '"" + cacheName + ""' not found"");
+		}
+		this.cache = cache;
+	}",method,
+"		if (cache == null) {
+			throw new IllegalArgumentException(""Cache '"" + cacheName + ""' not found"");
+		}",method,
+"	public Cache getCache() {
+		return this.cache;
+	}",method,
+"	@Override
+	public Resource transform(HttpServletRequest request, Resource resource, ResourceTransformerChain transformerChain)
+			throws IOException {
+		Resource transformed = this.cache.get(resource, Resource.class);
+		if (transformed != null) {
+			if (logger.isTraceEnabled()) {
+				logger.trace(""Found match: "" + transformed);
+			}
+			return transformed;
+		}
+		transformed = transformerChain.transform(request, resource);
+		if (logger.isTraceEnabled()) {
+			logger.trace(""Putting transformed resource in cache: "" + transformed);
+		}
+		this.cache.put(resource, transformed);
+		return transformed;
+	}",method,
+"		if (transformed != null) {
+			if (logger.isTraceEnabled()) {
+				logger.trace(""Found match: "" + transformed);
+			}
+			return transformed;
+		}",method,
+"public class CloudFormationChaosMonkey extends BasicChaosMonkey {
+    public CloudFormationChaosMonkey(Context ctx) {
+        super(ctx);
+    }
+    @Override
+    protected boolean isGroupEnabled(InstanceGroup group) {
+        InstanceGroup noSuffixGroup = noSuffixInstanceGroup(group);
+        return super.isGroupEnabled(noSuffixGroup);
+    }
+    @Override
+    protected Event terminateInstance(InstanceGroup group, String inst, ChaosType chaosType) {
+        InstanceGroup noSuffixGroup = noSuffixInstanceGroup(group);
+        return super.terminateInstance(noSuffixGroup, inst, chaosType);
+    }
+    @Override
+    protected boolean isMaxTerminationCountExceeded(InstanceGroup group) {
+        InstanceGroup noSuffixGroup = noSuffixInstanceGroup(group);
+        return super.isMaxTerminationCountExceeded(noSuffixGroup);
+    }
+    @Override
+    protected double getEffectiveProbability(InstanceGroup group) {
+        InstanceGroup noSuffixGroup = noSuffixInstanceGroup(group);
+        if (!super.isGroupEnabled(noSuffixGroup)) {
+            return 0;
+        }
+        return getEffectiveProbabilityFromCfg(noSuffixGroup);
+    }
+    @Override
+    protected long getLastOptInMilliseconds(InstanceGroup group) {
+        InstanceGroup noSuffixGroup = noSuffixInstanceGroup(group);
+        return super.getLastOptInMilliseconds(noSuffixGroup);
+    }
+    public InstanceGroup noSuffixInstanceGroup(InstanceGroup group) {
+        String newName = group.name().replaceAll(""(-)([^-]*$)"", """");
+        InstanceGroup noSuffixGroup = group.copyAs(newName);
+        return noSuffixGroup;
+    }
+}",class,
+"    public CloudFormationChaosMonkey(Context ctx) {
+        super(ctx);
+    }",method,
+"    @Override
+    protected boolean isGroupEnabled(InstanceGroup group) {
+        InstanceGroup noSuffixGroup = noSuffixInstanceGroup(group);
+        return super.isGroupEnabled(noSuffixGroup);
+    }",method,
+"    @Override
+    protected Event terminateInstance(InstanceGroup group, String inst, ChaosType chaosType) {
+        InstanceGroup noSuffixGroup = noSuffixInstanceGroup(group);
+        return super.terminateInstance(noSuffixGroup, inst, chaosType);
+    }",method,
+"    @Override
+    protected boolean isMaxTerminationCountExceeded(InstanceGroup group) {
+        InstanceGroup noSuffixGroup = noSuffixInstanceGroup(group);
+        return super.isMaxTerminationCountExceeded(noSuffixGroup);
+    }",method,
+"    @Override
+    protected double getEffectiveProbability(InstanceGroup group) {
+        InstanceGroup noSuffixGroup = noSuffixInstanceGroup(group);
+        if (!super.isGroupEnabled(noSuffixGroup)) {
+            return 0;
+        }
+        return getEffectiveProbabilityFromCfg(noSuffixGroup);
+    }",method,
+"    @Override
+    protected long getLastOptInMilliseconds(InstanceGroup group) {
+        InstanceGroup noSuffixGroup = noSuffixInstanceGroup(group);
+        return super.getLastOptInMilliseconds(noSuffixGroup);
+    }",method,
+"    public InstanceGroup noSuffixInstanceGroup(InstanceGroup group) {
+        String newName = group.name().replaceAll(""(-)([^-]*$)"", """");
+        InstanceGroup noSuffixGroup = group.copyAs(newName);
+        return noSuffixGroup;
+    }",method,
+"public class HelloActionBean extends BaseActionBean {
+    public static final String CONTENT_LENGTH = ""Content-Length"";
+    @HandlesEvent(JSON)
+    @DefaultHandler
+    public Resolution json() throws Exception{
+        Message message = new Message(HELLO_WORLD);
+        Gson gson = new GsonBuilder()
+                .create();
+        String rawJsonText = gson.toJson(message);
+        Map<String,String> headers = new HashMap<>();
+        headers.put(CONTENT_LENGTH,String.valueOf(rawJsonText.getBytes().length));
+        getContext().getResponse().setCharacterEncoding(""UTF-8"");
+        getContext().getRequest().setCharacterEncoding(""UTF-8"");
+        getContext().getResponse().setContentType(""application/json"");
+        setResponseHeaders(headers);
+        return new JsonResolution(rawJsonText);
+    }
+    @HandlesEvent(PLAINTEXT)
+    public Resolution plaintext() throws Exception{
+        return new StreamingResolution(TEXT_PLAIN) {
+            public void stream(final HttpServletResponse response) {
+                try {
+                    Map<String,String> headers = new HashMap<>();
+                    headers.put(CONTENT_LENGTH,String.valueOf(HELLO_WORLD.getBytes().length));
+                    getContext().getResponse().setCharacterEncoding(""UTF-8"");
+                    getContext().getRequest().setCharacterEncoding(""UTF-8"");
+                    getContext().getResponse().setContentType(""text/html"");
+                    setResponseHeaders(headers);
+                    response.getWriter().write(HELLO_WORLD);
+                } catch (Exception e) {
+                    //do nothing
+                }
+            }
+        };
+    }
+    public static final String PLAINTEXT = ""plaintext"";
+    public static final String JSON = ""json"";
+    private static final String HELLO_WORLD = ""Hello, World!"";
+    private static final String TEXT_PLAIN = ""text/plain"";
+}",class,
+"    @HandlesEvent(JSON)
+    @DefaultHandler
+    public Resolution json() throws Exception{
+        Message message = new Message(HELLO_WORLD);
+        Gson gson = new GsonBuilder()
+                .create();
+        String rawJsonText = gson.toJson(message);
+        Map<String,String> headers = new HashMap<>();
+        headers.put(CONTENT_LENGTH,String.valueOf(rawJsonText.getBytes().length));
+        getContext().getResponse().setCharacterEncoding(""UTF-8"");
+        getContext().getRequest().setCharacterEncoding(""UTF-8"");
+        getContext().getResponse().setContentType(""application/json"");
+        setResponseHeaders(headers);
+        return new JsonResolution(rawJsonText);
+    }",method,
+"    @HandlesEvent(PLAINTEXT)
+    public Resolution plaintext() throws Exception{
+        return new StreamingResolution(TEXT_PLAIN) {
+            public void stream(final HttpServletResponse response) {
+                try {
+                    Map<String,String> headers = new HashMap<>();
+                    headers.put(CONTENT_LENGTH,String.valueOf(HELLO_WORLD.getBytes().length));
+                    getContext().getResponse().setCharacterEncoding(""UTF-8"");
+                    getContext().getRequest().setCharacterEncoding(""UTF-8"");
+                    getContext().getResponse().setContentType(""text/html"");
+                    setResponseHeaders(headers);
+                    response.getWriter().write(HELLO_WORLD);
+                } catch (Exception e) {
+                    //do nothing
+                }
+            }
+        };
+    }",method,
+"        return new StreamingResolution(TEXT_PLAIN) {
+            public void stream(final HttpServletResponse response) {
+                try {
+                    Map<String,String> headers = new HashMap<>();
+                    headers.put(CONTENT_LENGTH,String.valueOf(HELLO_WORLD.getBytes().length));
+                    getContext().getResponse().setCharacterEncoding(""UTF-8"");
+                    getContext().getRequest().setCharacterEncoding(""UTF-8"");
+                    getContext().getResponse().setContentType(""text/html"");
+                    setResponseHeaders(headers);
+                    response.getWriter().write(HELLO_WORLD);
+                } catch (Exception e) {
+                    //do nothing
+                }
+            }
+        }",method,
+"            public void stream(final HttpServletResponse response) {
+                try {
+                    Map<String,String> headers = new HashMap<>();
+                    headers.put(CONTENT_LENGTH,String.valueOf(HELLO_WORLD.getBytes().length));
+                    getContext().getResponse().setCharacterEncoding(""UTF-8"");
+                    getContext().getRequest().setCharacterEncoding(""UTF-8"");
+                    getContext().getResponse().setContentType(""text/html"");
+                    setResponseHeaders(headers);
+                    response.getWriter().write(HELLO_WORLD);
+                } catch (Exception e) {
+                    //do nothing
+                }
+            }",method,
+"public class JaxRSServerOptionsTest extends AbstractOptionsTest {
+    @Tested
+    private JavaJerseyServerCodegen clientCodegen;
+    public JaxRSServerOptionsTest() {
+        super(new JaxRSServerOptionsProvider());
+    }
+    @Override
+    protected CodegenConfig getCodegenConfig() {
+        return clientCodegen;
+    }
+    @SuppressWarnings(""unused"")
+    @Override
+    protected void setExpectations() {
+        new Expectations(clientCodegen) {{
+            clientCodegen.setModelPackage(JaxRSServerOptionsProvider.MODEL_PACKAGE_VALUE);
+            times = 1;
+            clientCodegen.setApiPackage(JaxRSServerOptionsProvider.API_PACKAGE_VALUE);
+            times = 1;
+            clientCodegen.setSortParamsByRequiredFlag(Boolean.valueOf(JaxRSServerOptionsProvider.SORT_PARAMS_VALUE));
+            times = 1;
+            clientCodegen.setInvokerPackage(JaxRSServerOptionsProvider.INVOKER_PACKAGE_VALUE);
+            times = 1;
+            clientCodegen.setGroupId(JaxRSServerOptionsProvider.GROUP_ID_VALUE);
+            times = 1;
+            clientCodegen.setArtifactId(JaxRSServerOptionsProvider.ARTIFACT_ID_VALUE);
+            times = 1;
+            clientCodegen.setArtifactVersion(JaxRSServerOptionsProvider.ARTIFACT_VERSION_VALUE);
+            times = 1;
+            clientCodegen.setArtifactUrl(JaxRSServerOptionsProvider.ARTIFACT_URL_VALUE);
+            times = 1;
+            clientCodegen.setArtifactDescription(JaxRSServerOptionsProvider.ARTIFACT_DESCRIPTION_VALUE);
+            times = 1;
+            clientCodegen.setScmConnection(JaxRSServerOptionsProvider.SCM_CONNECTION_VALUE);
+            times = 1;
+            clientCodegen.setScmDeveloperConnection(JaxRSServerOptionsProvider.SCM_DEVELOPER_CONNECTION_VALUE);
+            times = 1;
+            clientCodegen.setScmUrl(JaxRSServerOptionsProvider.SCM_URL_VALUE);
+            times = 1;
+            clientCodegen.setDeveloperName(JaxRSServerOptionsProvider.DEVELOPER_NAME_VALUE);
+            times = 1;
+            clientCodegen.setDeveloperEmail(JaxRSServerOptionsProvider.DEVELOPER_EMAIL_VALUE);
+            times = 1;
+            clientCodegen.setDeveloperOrganization(JaxRSServerOptionsProvider.DEVELOPER_ORGANIZATION_VALUE);
+            times = 1;
+            clientCodegen.setDeveloperOrganizationUrl(JaxRSServerOptionsProvider.DEVELOPER_ORGANIZATION_URL_VALUE);
+            times = 1;
+            clientCodegen.setSourceFolder(JaxRSServerOptionsProvider.SOURCE_FOLDER_VALUE);
+            times = 1;
+            clientCodegen.setLocalVariablePrefix(JaxRSServerOptionsProvider.LOCAL_PREFIX_VALUE);
+            times = 1;
+            clientCodegen.setSerializableModel(Boolean.valueOf(JaxRSServerOptionsProvider.SERIALIZABLE_MODEL_VALUE));
+            times = 1;
+            //clientCodegen.setLibrary(JaxRSServerOptionsProvider.JAXRS_LIBRARY_VALUE);
+            clientCodegen.setLibrary(""jersey1"");
+            times = 1;
+            clientCodegen.setFullJavaUtil(Boolean.valueOf(JaxRSServerOptionsProvider.FULL_JAVA_UTIL_VALUE));
+            times = 1;
+            clientCodegen.setDateLibrary(""joda"");
+            times = 1;
+            clientCodegen.setSupportJava6(false);
+            times = 1;
+            clientCodegen.setUseBeanValidation(Boolean.valueOf(JaxRSServerOptionsProvider.USE_BEANVALIDATION));
+            times = 1;           
+            clientCodegen.setUseTags(Boolean.valueOf(JaxRSServerOptionsProvider.USE_TAGS));
+            times = 1;
+        }};
+    }
+}",class,
+"    public JaxRSServerOptionsTest() {
+        super(new JaxRSServerOptionsProvider());
+    }",method,
+"    @Override
+    protected CodegenConfig getCodegenConfig() {
+        return clientCodegen;
+    }",method,
+"    @SuppressWarnings(""unused"")
+    @Override
+    protected void setExpectations() {
+        new Expectations(clientCodegen) {{
+            clientCodegen.setModelPackage(JaxRSServerOptionsProvider.MODEL_PACKAGE_VALUE);
+            times = 1;
+            clientCodegen.setApiPackage(JaxRSServerOptionsProvider.API_PACKAGE_VALUE);
+            times = 1;
+            clientCodegen.setSortParamsByRequiredFlag(Boolean.valueOf(JaxRSServerOptionsProvider.SORT_PARAMS_VALUE));
+            times = 1;
+            clientCodegen.setInvokerPackage(JaxRSServerOptionsProvider.INVOKER_PACKAGE_VALUE);
+            times = 1;
+            clientCodegen.setGroupId(JaxRSServerOptionsProvider.GROUP_ID_VALUE);
+            times = 1;
+            clientCodegen.setArtifactId(JaxRSServerOptionsProvider.ARTIFACT_ID_VALUE);
+            times = 1;
+            clientCodegen.setArtifactVersion(JaxRSServerOptionsProvider.ARTIFACT_VERSION_VALUE);
+            times = 1;
+            clientCodegen.setArtifactUrl(JaxRSServerOptionsProvider.ARTIFACT_URL_VALUE);
+            times = 1;
+            clientCodegen.setArtifactDescription(JaxRSServerOptionsProvider.ARTIFACT_DESCRIPTION_VALUE);
+            times = 1;
+            clientCodegen.setScmConnection(JaxRSServerOptionsProvider.SCM_CONNECTION_VALUE);
+            times = 1;
+            clientCodegen.setScmDeveloperConnection(JaxRSServerOptionsProvider.SCM_DEVELOPER_CONNECTION_VALUE);
+            times = 1;
+            clientCodegen.setScmUrl(JaxRSServerOptionsProvider.SCM_URL_VALUE);
+            times = 1;
+            clientCodegen.setDeveloperName(JaxRSServerOptionsProvider.DEVELOPER_NAME_VALUE);
+            times = 1;
+            clientCodegen.setDeveloperEmail(JaxRSServerOptionsProvider.DEVELOPER_EMAIL_VALUE);
+            times = 1;
+            clientCodegen.setDeveloperOrganization(JaxRSServerOptionsProvider.DEVELOPER_ORGANIZATION_VALUE);
+            times = 1;
+            clientCodegen.setDeveloperOrganizationUrl(JaxRSServerOptionsProvider.DEVELOPER_ORGANIZATION_URL_VALUE);
+            times = 1;
+            clientCodegen.setSourceFolder(JaxRSServerOptionsProvider.SOURCE_FOLDER_VALUE);
+            times = 1;
+            clientCodegen.setLocalVariablePrefix(JaxRSServerOptionsProvider.LOCAL_PREFIX_VALUE);
+            times = 1;
+            clientCodegen.setSerializableModel(Boolean.valueOf(JaxRSServerOptionsProvider.SERIALIZABLE_MODEL_VALUE));
+            times = 1;
+            //clientCodegen.setLibrary(JaxRSServerOptionsProvider.JAXRS_LIBRARY_VALUE);
+            clientCodegen.setLibrary(""jersey1"");
+            times = 1;
+            clientCodegen.setFullJavaUtil(Boolean.valueOf(JaxRSServerOptionsProvider.FULL_JAVA_UTIL_VALUE));
+            times = 1;
+            clientCodegen.setDateLibrary(""joda"");
+            times = 1;
+            clientCodegen.setSupportJava6(false);
+            times = 1;
+            clientCodegen.setUseBeanValidation(Boolean.valueOf(JaxRSServerOptionsProvider.USE_BEANVALIDATION));
+            times = 1;           
+            clientCodegen.setUseTags(Boolean.valueOf(JaxRSServerOptionsProvider.USE_TAGS));
+            times = 1;
+        }};
+    }",method,
+"        new Expectations(clientCodegen) {{
+            clientCodegen.setModelPackage(JaxRSServerOptionsProvider.MODEL_PACKAGE_VALUE);
+            times = 1;
+            clientCodegen.setApiPackage(JaxRSServerOptionsProvider.API_PACKAGE_VALUE);
+            times = 1;
+            clientCodegen.setSortParamsByRequiredFlag(Boolean.valueOf(JaxRSServerOptionsProvider.SORT_PARAMS_VALUE));
+            times = 1;
+            clientCodegen.setInvokerPackage(JaxRSServerOptionsProvider.INVOKER_PACKAGE_VALUE);
+            times = 1;
+            clientCodegen.setGroupId(JaxRSServerOptionsProvider.GROUP_ID_VALUE);
+            times = 1;
+            clientCodegen.setArtifactId(JaxRSServerOptionsProvider.ARTIFACT_ID_VALUE);
+            times = 1;
+            clientCodegen.setArtifactVersion(JaxRSServerOptionsProvider.ARTIFACT_VERSION_VALUE);
+            times = 1;
+            clientCodegen.setArtifactUrl(JaxRSServerOptionsProvider.ARTIFACT_URL_VALUE);
+            times = 1;
+            clientCodegen.setArtifactDescription(JaxRSServerOptionsProvider.ARTIFACT_DESCRIPTION_VALUE);
+            times = 1;
+            clientCodegen.setScmConnection(JaxRSServerOptionsProvider.SCM_CONNECTION_VALUE);
+            times = 1;
+            clientCodegen.setScmDeveloperConnection(JaxRSServerOptionsProvider.SCM_DEVELOPER_CONNECTION_VALUE);
+            times = 1;
+            clientCodegen.setScmUrl(JaxRSServerOptionsProvider.SCM_URL_VALUE);
+            times = 1;
+            clientCodegen.setDeveloperName(JaxRSServerOptionsProvider.DEVELOPER_NAME_VALUE);
+            times = 1;
+            clientCodegen.setDeveloperEmail(JaxRSServerOptionsProvider.DEVELOPER_EMAIL_VALUE);
+            times = 1;
+            clientCodegen.setDeveloperOrganization(JaxRSServerOptionsProvider.DEVELOPER_ORGANIZATION_VALUE);
+            times = 1;
+            clientCodegen.setDeveloperOrganizationUrl(JaxRSServerOptionsProvider.DEVELOPER_ORGANIZATION_URL_VALUE);
+            times = 1;
+            clientCodegen.setSourceFolder(JaxRSServerOptionsProvider.SOURCE_FOLDER_VALUE);
+            times = 1;
+            clientCodegen.setLocalVariablePrefix(JaxRSServerOptionsProvider.LOCAL_PREFIX_VALUE);
+            times = 1;
+            clientCodegen.setSerializableModel(Boolean.valueOf(JaxRSServerOptionsProvider.SERIALIZABLE_MODEL_VALUE));
+            times = 1;
+            //clientCodegen.setLibrary(JaxRSServerOptionsProvider.JAXRS_LIBRARY_VALUE);
+            clientCodegen.setLibrary(""jersey1"");
+            times = 1;
+            clientCodegen.setFullJavaUtil(Boolean.valueOf(JaxRSServerOptionsProvider.FULL_JAVA_UTIL_VALUE));
+            times = 1;
+            clientCodegen.setDateLibrary(""joda"");
+            times = 1;
+            clientCodegen.setSupportJava6(false);
+            times = 1;
+            clientCodegen.setUseBeanValidation(Boolean.valueOf(JaxRSServerOptionsProvider.USE_BEANVALIDATION));
+            times = 1;           
+            clientCodegen.setUseTags(Boolean.valueOf(JaxRSServerOptionsProvider.USE_TAGS));
+            times = 1;
+        }}",method,
+"public class BuildInfoTests {
+	@Rule
+	public TemporaryFolder temp = new TemporaryFolder();
+	@Test
+	public void basicExecution() {
+		Properties properties = buildInfoProperties(createTask(createProject(""test"")));
+		assertThat(properties).containsKey(""build.time"");
+		assertThat(properties).containsEntry(""build.artifact"", ""unspecified"");
+		assertThat(properties).containsEntry(""build.group"", """");
+		assertThat(properties).containsEntry(""build.name"", ""test"");
+		assertThat(properties).containsEntry(""build.version"", ""unspecified"");
+	}
+	@Test
+	public void customArtifactIsReflectedInProperties() {
+		BuildInfo task = createTask(createProject(""test""));
+		task.getProperties().setArtifact(""custom"");
+		assertThat(buildInfoProperties(task)).containsEntry(""build.artifact"", ""custom"");
+	}
+	@Test
+	public void projectGroupIsReflectedInProperties() {
+		BuildInfo task = createTask(createProject(""test""));
+		task.getProject().setGroup(""com.example"");
+		assertThat(buildInfoProperties(task)).containsEntry(""build.group"", ""com.example"");
+	}
+	@Test
+	public void customGroupIsReflectedInProperties() {
+		BuildInfo task = createTask(createProject(""test""));
+		task.getProperties().setGroup(""com.example"");
+		assertThat(buildInfoProperties(task)).containsEntry(""build.group"", ""com.example"");
+	}
+	@Test
+	public void customNameIsReflectedInProperties() {
+		BuildInfo task = createTask(createProject(""test""));
+		task.getProperties().setName(""Example"");
+		assertThat(buildInfoProperties(task)).containsEntry(""build.name"", ""Example"");
+	}
+	@Test
+	public void projectVersionIsReflectedInProperties() {
+		BuildInfo task = createTask(createProject(""test""));
+		task.getProject().setVersion(""1.2.3"");
+		assertThat(buildInfoProperties(task)).containsEntry(""build.version"", ""1.2.3"");
+	}
+	@Test
+	public void customVersionIsReflectedInProperties() {
+		BuildInfo task = createTask(createProject(""test""));
+		task.getProperties().setVersion(""2.3.4"");
+		assertThat(buildInfoProperties(task)).containsEntry(""build.version"", ""2.3.4"");
+	}
+	@Test
+	public void additionalPropertiesAreReflectedInProperties() {
+		BuildInfo task = createTask(createProject(""test""));
+		task.getProperties().getAdditional().put(""a"", ""alpha"");
+		task.getProperties().getAdditional().put(""b"", ""bravo"");
+		assertThat(buildInfoProperties(task)).containsEntry(""build.a"", ""alpha"");
+		assertThat(buildInfoProperties(task)).containsEntry(""build.b"", ""bravo"");
+	}
+	private Project createProject(String projectName) {
+		try {
+			File projectDir = this.temp.newFolder(projectName);
+			return ProjectBuilder.builder().withProjectDir(projectDir)
+					.withName(projectName).build();
+		}
+		catch (IOException ex) {
+			throw new RuntimeException(ex);
+		}
+	}
+	private BuildInfo createTask(Project project) {
+		return project.getTasks().create(""testBuildInfo"", BuildInfo.class);
+	}
+	private Properties buildInfoProperties(BuildInfo task) {
+		task.generateBuildProperties();
+		return buildInfoProperties(
+				new File(task.getDestinationDir(), ""build-info.properties""));
+	}
+	private Properties buildInfoProperties(File file) {
+		assertThat(file).isFile();
+		Properties properties = new Properties();
+		try (FileReader reader = new FileReader(file)) {
+			properties.load(reader);
+			return properties;
+		}
+		catch (IOException ex) {
+			throw new RuntimeException(ex);
+		}
+	}
+}",class,
+"	@Test
+	public void basicExecution() {
+		Properties properties = buildInfoProperties(createTask(createProject(""test"")));
+		assertThat(properties).containsKey(""build.time"");
+		assertThat(properties).containsEntry(""build.artifact"", ""unspecified"");
+		assertThat(properties).containsEntry(""build.group"", """");
+		assertThat(properties).containsEntry(""build.name"", ""test"");
+		assertThat(properties).containsEntry(""build.version"", ""unspecified"");
+	}",method,
+"	@Test
+	public void customArtifactIsReflectedInProperties() {
+		BuildInfo task = createTask(createProject(""test""));
+		task.getProperties().setArtifact(""custom"");
+		assertThat(buildInfoProperties(task)).containsEntry(""build.artifact"", ""custom"");
+	}",method,
+"	@Test
+	public void projectGroupIsReflectedInProperties() {
+		BuildInfo task = createTask(createProject(""test""));
+		task.getProject().setGroup(""com.example"");
+		assertThat(buildInfoProperties(task)).containsEntry(""build.group"", ""com.example"");
+	}",method,
+"	@Test
+	public void customGroupIsReflectedInProperties() {
+		BuildInfo task = createTask(createProject(""test""));
+		task.getProperties().setGroup(""com.example"");
+		assertThat(buildInfoProperties(task)).containsEntry(""build.group"", ""com.example"");
+	}",method,
+"	@Test
+	public void customNameIsReflectedInProperties() {
+		BuildInfo task = createTask(createProject(""test""));
+		task.getProperties().setName(""Example"");
+		assertThat(buildInfoProperties(task)).containsEntry(""build.name"", ""Example"");
+	}",method,
+"	@Test
+	public void projectVersionIsReflectedInProperties() {
+		BuildInfo task = createTask(createProject(""test""));
+		task.getProject().setVersion(""1.2.3"");
+		assertThat(buildInfoProperties(task)).containsEntry(""build.version"", ""1.2.3"");
+	}",method,
+"	@Test
+	public void customVersionIsReflectedInProperties() {
+		BuildInfo task = createTask(createProject(""test""));
+		task.getProperties().setVersion(""2.3.4"");
+		assertThat(buildInfoProperties(task)).containsEntry(""build.version"", ""2.3.4"");
+	}",method,
+"	@Test
+	public void additionalPropertiesAreReflectedInProperties() {
+		BuildInfo task = createTask(createProject(""test""));
+		task.getProperties().getAdditional().put(""a"", ""alpha"");
+		task.getProperties().getAdditional().put(""b"", ""bravo"");
+		assertThat(buildInfoProperties(task)).containsEntry(""build.a"", ""alpha"");
+		assertThat(buildInfoProperties(task)).containsEntry(""build.b"", ""bravo"");
+	}",method,
+"	private Project createProject(String projectName) {
+		try {
+			File projectDir = this.temp.newFolder(projectName);
+			return ProjectBuilder.builder().withProjectDir(projectDir)
+					.withName(projectName).build();
+		}
+		catch (IOException ex) {
+			throw new RuntimeException(ex);
+		}
+	}",method,
+"		catch (IOException ex) {
+			throw new RuntimeException(ex);
+		}",method,
+"	private BuildInfo createTask(Project project) {
+		return project.getTasks().create(""testBuildInfo"", BuildInfo.class);
+	}",method,
+"	private Properties buildInfoProperties(BuildInfo task) {
+		task.generateBuildProperties();
+		return buildInfoProperties(
+				new File(task.getDestinationDir(), ""build-info.properties""));
+	}",method,
+"	private Properties buildInfoProperties(File file) {
+		assertThat(file).isFile();
+		Properties properties = new Properties();
+		try (FileReader reader = new FileReader(file)) {
+			properties.load(reader);
+			return properties;
+		}
+		catch (IOException ex) {
+			throw new RuntimeException(ex);
+		}
+	}",method,
+"		catch (IOException ex) {
+			throw new RuntimeException(ex);
+		}",method,
+"public class SimpleOutputBuffer extends OutputBuffer {
+  private final SimpleDecoder<?, SimpleOutputBuffer, ?> owner;
+  public ByteBuffer data;
+  public SimpleOutputBuffer(SimpleDecoder<?, SimpleOutputBuffer, ?> owner) {
+    this.owner = owner;
+  }
+  public ByteBuffer init(long timeUs, int size) {
+    this.timeUs = timeUs;
+    if (data == null || data.capacity() < size) {
+      data = ByteBuffer.allocateDirect(size).order(ByteOrder.nativeOrder());
+    }
+    data.position(0);
+    data.limit(size);
+    return data;
+  }
+  @Override
+  public void clear() {
+    super.clear();
+    if (data != null) {
+      data.clear();
+    }
+  }
+  @Override
+  public void release() {
+    owner.releaseOutputBuffer(this);
+  }
+}",class,
+"public class DecryptionException extends Exception {
+  public final int errorCode;
+  public DecryptionException(int errorCode, String message) {
+    super(message);
+    this.errorCode = errorCode;
+  }
+}",class,
+"  public SimpleOutputBuffer(SimpleDecoder<?, SimpleOutputBuffer, ?> owner) {
+    this.owner = owner;
+  }",method,
+"  public ByteBuffer init(long timeUs, int size) {
+    this.timeUs = timeUs;
+    if (data == null || data.capacity() < size) {
+      data = ByteBuffer.allocateDirect(size).order(ByteOrder.nativeOrder());
+    }
+    data.position(0);
+    data.limit(size);
+    return data;
+  }",method,
+"  @Override
+  public void clear() {
+    super.clear();
+    if (data != null) {
+      data.clear();
+    }
+  }",method,
+"    if (data != null) {
+      data.clear();
+    }",method,
+"  @Override
+  public void release() {
+    owner.releaseOutputBuffer(this);
+  }",method,
+"  public DecryptionException(int errorCode, String message) {
+    super(message);
+    this.errorCode = errorCode;
+  }",method,
+"public final class StreamUtils {
+	// ===========================================================
+	// Constants
+	// ===========================================================
+	public static final int IO_BUFFER_SIZE = 8 * 1024;
+	private static final int END_OF_STREAM = -1;
+	// ===========================================================
+	// Fields
+	// ===========================================================
+	// ===========================================================
+	// Constructors
+	// ===========================================================
+	// ===========================================================
+	// Getter & Setter
+	// ===========================================================
+	// ===========================================================
+	// Methods from SuperClass/Interfaces
+	// ===========================================================
+	// ===========================================================
+	// Methods
+	// ===========================================================
+	public static final String readFully(final InputStream pInputStream) throws IOException {
+		final StringWriter writer = new StringWriter();
+		final char[] buf = new char[StreamUtils.IO_BUFFER_SIZE];
+		try {
+			final Reader reader = new BufferedReader(new InputStreamReader(pInputStream, ""UTF-8""));
+			int read;
+			while((read = reader.read(buf)) != StreamUtils.END_OF_STREAM) {
+				writer.write(buf, 0, read);
+			}
+		} finally {
+			StreamUtils.close(pInputStream);
+		}
+		return writer.toString();
+	}
+	public static final byte[] streamToBytes(final InputStream pInputStream) throws IOException {
+		return StreamUtils.streamToBytes(pInputStream, StreamUtils.END_OF_STREAM);
+	}
+	public static final byte[] streamToBytes(final InputStream pInputStream, final int pReadLimit) throws IOException {
+		final ByteArrayOutputStream os = new ByteArrayOutputStream((pReadLimit == StreamUtils.END_OF_STREAM) ? StreamUtils.IO_BUFFER_SIZE : pReadLimit);
+		StreamUtils.copy(pInputStream, os, pReadLimit);
+		return os.toByteArray();
+	}
+	public static final void streamToBytes(final InputStream pInputStream, final int pByteLimit, final byte[] pData) throws IOException {
+		StreamUtils.streamToBytes(pInputStream, pByteLimit, pData, 0);
+	}
+	public static final void streamToBytes(final InputStream pInputStream, final int pByteLimit, final byte[] pData, final int pOffset) throws IOException {
+		if(pByteLimit > pData.length - pOffset) {
+			throw new IOException(""pData is not big enough."");
+		}
+		int pBytesLeftToRead = pByteLimit;
+		int readTotal = 0;
+		int read;
+		while((read = pInputStream.read(pData, pOffset + readTotal, pBytesLeftToRead)) != StreamUtils.END_OF_STREAM) {
+			readTotal += read;
+			if(pBytesLeftToRead > read) {
+				pBytesLeftToRead -= read;
+			} else {
+				break;
+			}
+		}
+		if(readTotal != pByteLimit) {
+			throw new IOException(""ReadLimit: '"" + pByteLimit + ""', Read: '"" + readTotal + ""'."");
+		}
+	}
+	public static final void copy(final InputStream pInputStream, final OutputStream pOutputStream) throws IOException {
+		StreamUtils.copy(pInputStream, pOutputStream, StreamUtils.END_OF_STREAM);
+	}
+	public static final void copy(final InputStream pInputStream, final byte[] pData) throws IOException {
+		int dataOffset = 0;
+		final byte[] buf = new byte[StreamUtils.IO_BUFFER_SIZE];
+		int read;
+		while((read = pInputStream.read(buf)) != StreamUtils.END_OF_STREAM) {
+			System.arraycopy(buf, 0, pData, dataOffset, read);
+			dataOffset += read;
+		}
+	}
+	public static final void copy(final InputStream pInputStream, final ByteBuffer pByteBuffer) throws IOException {
+		final byte[] buf = new byte[StreamUtils.IO_BUFFER_SIZE];
+		int read;
+		while((read = pInputStream.read(buf)) != StreamUtils.END_OF_STREAM) {
+			pByteBuffer.put(buf, 0, read);
+		}
+	}
+	public static final void copy(final InputStream pInputStream, final OutputStream pOutputStream, final int pByteLimit) throws IOException {
+		if(pByteLimit == StreamUtils.END_OF_STREAM) {
+			final byte[] buf = new byte[StreamUtils.IO_BUFFER_SIZE];
+			int read;
+			while((read = pInputStream.read(buf)) != StreamUtils.END_OF_STREAM) {
+				pOutputStream.write(buf, 0, read);
+			}
+		} else {
+			final byte[] buf = new byte[StreamUtils.IO_BUFFER_SIZE];
+			final int bufferReadLimit = Math.min(pByteLimit, StreamUtils.IO_BUFFER_SIZE);
+			long pBytesLeftToRead = pByteLimit;
+			int read;
+			while((read = pInputStream.read(buf, 0, bufferReadLimit)) != StreamUtils.END_OF_STREAM) {
+				if(pBytesLeftToRead > read) {
+					pOutputStream.write(buf, 0, read);
+					pBytesLeftToRead -= read;
+				} else {
+					pOutputStream.write(buf, 0, (int) pBytesLeftToRead);
+					break;
+				}
+			}
+		}
+		pOutputStream.flush();
+	}
+	public static final boolean copyAndClose(final InputStream pInputStream, final OutputStream pOutputStream) {
+		try {
+			StreamUtils.copy(pInputStream, pOutputStream, StreamUtils.END_OF_STREAM);
+			return true;
+		} catch (final IOException e) {
+			return false;
+		} finally {
+			StreamUtils.close(pInputStream);
+			StreamUtils.close(pOutputStream);
+		}
+	}
+	public static final void close(final Closeable pCloseable) {
+		if(pCloseable != null) {
+			try {
+				pCloseable.close();
+			} catch (final IOException e) {
+				e.printStackTrace();
+			}
+		}
+	}
+	public static final void flushCloseStream(final OutputStream pOutputStream) {
+		if(pOutputStream != null) {
+			try {
+				pOutputStream.flush();
+			} catch (final IOException e) {
+				e.printStackTrace();
+			} finally {
+				StreamUtils.close(pOutputStream);
+			}
+		}
+	}
+	public static final void flushCloseWriter(final Writer pWriter) {
+		if(pWriter != null) {
+			try {
+				pWriter.flush();
+			} catch (final IOException e) {
+				e.printStackTrace();
+			} finally {
+				StreamUtils.close(pWriter);
+			}
+		}
+	}
+	// ===========================================================
+	// Inner and Anonymous Classes
+	// ===========================================================
+}",class,
+"	public static final String readFully(final InputStream pInputStream) throws IOException {
+		final StringWriter writer = new StringWriter();
+		final char[] buf = new char[StreamUtils.IO_BUFFER_SIZE];
+		try {
+			final Reader reader = new BufferedReader(new InputStreamReader(pInputStream, ""UTF-8""));
+			int read;
+			while((read = reader.read(buf)) != StreamUtils.END_OF_STREAM) {
+				writer.write(buf, 0, read);
+			}
+		} finally {
+			StreamUtils.close(pInputStream);
+		}
+		return writer.toString();
+	}",method,
+"	public static final byte[] streamToBytes(final InputStream pInputStream) throws IOException {
+		return StreamUtils.streamToBytes(pInputStream, StreamUtils.END_OF_STREAM);
+	}",method,
+"	public static final byte[] streamToBytes(final InputStream pInputStream, final int pReadLimit) throws IOException {
+		final ByteArrayOutputStream os = new ByteArrayOutputStream((pReadLimit == StreamUtils.END_OF_STREAM) ? StreamUtils.IO_BUFFER_SIZE : pReadLimit);
+		StreamUtils.copy(pInputStream, os, pReadLimit);
+		return os.toByteArray();
+	}",method,
+"	public static final void streamToBytes(final InputStream pInputStream, final int pByteLimit, final byte[] pData) throws IOException {
+		StreamUtils.streamToBytes(pInputStream, pByteLimit, pData, 0);
+	}",method,
+"	public static final void streamToBytes(final InputStream pInputStream, final int pByteLimit, final byte[] pData, final int pOffset) throws IOException {
+		if(pByteLimit > pData.length - pOffset) {
+			throw new IOException(""pData is not big enough."");
+		}
+		int pBytesLeftToRead = pByteLimit;
+		int readTotal = 0;
+		int read;
+		while((read = pInputStream.read(pData, pOffset + readTotal, pBytesLeftToRead)) != StreamUtils.END_OF_STREAM) {
+			readTotal += read;
+			if(pBytesLeftToRead > read) {
+				pBytesLeftToRead -= read;
+			} else {
+				break;
+			}
+		}
+		if(readTotal != pByteLimit) {
+			throw new IOException(""ReadLimit: '"" + pByteLimit + ""', Read: '"" + readTotal + ""'."");
+		}
+	}",method,
+"		if(pByteLimit > pData.length - pOffset) {
+			throw new IOException(""pData is not big enough."");
+		}",method,
+"			if(pBytesLeftToRead > read) {
+				pBytesLeftToRead -= read;
+			}",method,
+"		if(readTotal != pByteLimit) {
+			throw new IOException(""ReadLimit: '"" + pByteLimit + ""', Read: '"" + readTotal + ""'."");
+		}",method,
+"	public static final void copy(final InputStream pInputStream, final OutputStream pOutputStream) throws IOException {
+		StreamUtils.copy(pInputStream, pOutputStream, StreamUtils.END_OF_STREAM);
+	}",method,
+"	public static final void copy(final InputStream pInputStream, final byte[] pData) throws IOException {
+		int dataOffset = 0;
+		final byte[] buf = new byte[StreamUtils.IO_BUFFER_SIZE];
+		int read;
+		while((read = pInputStream.read(buf)) != StreamUtils.END_OF_STREAM) {
+			System.arraycopy(buf, 0, pData, dataOffset, read);
+			dataOffset += read;
+		}
+	}",method,
+"	public static final void copy(final InputStream pInputStream, final ByteBuffer pByteBuffer) throws IOException {
+		final byte[] buf = new byte[StreamUtils.IO_BUFFER_SIZE];
+		int read;
+		while((read = pInputStream.read(buf)) != StreamUtils.END_OF_STREAM) {
+			pByteBuffer.put(buf, 0, read);
+		}
+	}",method,
+"	public static final void copy(final InputStream pInputStream, final OutputStream pOutputStream, final int pByteLimit) throws IOException {
+		if(pByteLimit == StreamUtils.END_OF_STREAM) {
+			final byte[] buf = new byte[StreamUtils.IO_BUFFER_SIZE];
+			int read;
+			while((read = pInputStream.read(buf)) != StreamUtils.END_OF_STREAM) {
+				pOutputStream.write(buf, 0, read);
+			}
+		} else {
+			final byte[] buf = new byte[StreamUtils.IO_BUFFER_SIZE];
+			final int bufferReadLimit = Math.min(pByteLimit, StreamUtils.IO_BUFFER_SIZE);
+			long pBytesLeftToRead = pByteLimit;
+			int read;
+			while((read = pInputStream.read(buf, 0, bufferReadLimit)) != StreamUtils.END_OF_STREAM) {
+				if(pBytesLeftToRead > read) {
+					pOutputStream.write(buf, 0, read);
+					pBytesLeftToRead -= read;
+				} else {
+					pOutputStream.write(buf, 0, (int) pBytesLeftToRead);
+					break;
+				}
+			}
+		}
+		pOutputStream.flush();
+	}",method,
+"		if(pByteLimit == StreamUtils.END_OF_STREAM) {
+			final byte[] buf = new byte[StreamUtils.IO_BUFFER_SIZE];
+			int read;
+			while((read = pInputStream.read(buf)) != StreamUtils.END_OF_STREAM) {
+				pOutputStream.write(buf, 0, read);
+			}
+		}",method,
+"				if(pBytesLeftToRead > read) {
+					pOutputStream.write(buf, 0, read);
+					pBytesLeftToRead -= read;
+				}",method,
+"	public static final boolean copyAndClose(final InputStream pInputStream, final OutputStream pOutputStream) {
+		try {
+			StreamUtils.copy(pInputStream, pOutputStream, StreamUtils.END_OF_STREAM);
+			return true;
+		} catch (final IOException e) {
+			return false;
+		} finally {
+			StreamUtils.close(pInputStream);
+			StreamUtils.close(pOutputStream);
+		}
+	}",method,

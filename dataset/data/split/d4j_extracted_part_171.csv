@@ -1,0 +1,777 @@
+code_snippet,type,score
+"    @Override
+    public void commit() {
+        //no-op
+    }",method,
+"    @Override
+    public Cancellable schedule(long interval, PunctuationType type, Punctuator callback) {
+        throw new UnsupportedOperationException(""this should not happen: schedule() not supported in global processor context."");
+    }",method,
+"    @SuppressWarnings(""deprecation"")
+    @Override
+    public void schedule(long interval) {
+        throw new UnsupportedOperationException(""this should not happen: schedule() not supported in global processor context."");
+    }",method,
+"abstract class AbstractInternalHDRPercentiles extends InternalNumericMetricsAggregation.MultiValue {
+    protected final double[] keys;
+    protected final DoubleHistogram state;
+    protected final boolean keyed;
+    AbstractInternalHDRPercentiles(String name, double[] keys, DoubleHistogram state, boolean keyed, DocValueFormat format,
+            List<PipelineAggregator> pipelineAggregators,
+            Map<String, Object> metaData) {
+        super(name, pipelineAggregators, metaData);
+        this.keys = keys;
+        this.state = state;
+        this.keyed = keyed;
+        this.format = format;
+    }
+    protected AbstractInternalHDRPercentiles(StreamInput in) throws IOException {
+        super(in);
+        format = in.readNamedWriteable(DocValueFormat.class);
+        keys = in.readDoubleArray();
+        long minBarForHighestToLowestValueRatio = in.readLong();
+        final int serializedLen = in.readVInt();
+        byte[] bytes = new byte[serializedLen];
+        in.readBytes(bytes, 0, serializedLen);
+        ByteBuffer stateBuffer = ByteBuffer.wrap(bytes);
+        try {
+            state = DoubleHistogram.decodeFromCompressedByteBuffer(stateBuffer, minBarForHighestToLowestValueRatio);
+        } catch (DataFormatException e) {
+            throw new IOException(""Failed to decode DoubleHistogram for aggregation ["" + name + ""]"", e);
+        }
+        keyed = in.readBoolean();
+    }
+    @Override
+    protected void doWriteTo(StreamOutput out) throws IOException {
+        out.writeNamedWriteable(format);
+        out.writeDoubleArray(keys);
+        out.writeLong(state.getHighestToLowestValueRatio());
+        ByteBuffer stateBuffer = ByteBuffer.allocate(state.getNeededByteBufferCapacity());
+        final int serializedLen = state.encodeIntoCompressedByteBuffer(stateBuffer);
+        out.writeVInt(serializedLen);
+        out.writeBytes(stateBuffer.array(), 0, serializedLen);
+        out.writeBoolean(keyed);
+    }
+    @Override
+    public double value(String name) {
+        return value(Double.parseDouble(name));
+    }
+    DocValueFormat formatter() {
+        return format;
+    }
+    public abstract double value(double key);
+    public long getEstimatedMemoryFootprint() {
+        return state.getEstimatedFootprintInBytes();
+    }
+    @Override
+    public AbstractInternalHDRPercentiles doReduce(List<InternalAggregation> aggregations, ReduceContext reduceContext) {
+        DoubleHistogram merged = null;
+        for (InternalAggregation aggregation : aggregations) {
+            final AbstractInternalHDRPercentiles percentiles = (AbstractInternalHDRPercentiles) aggregation;
+            if (merged == null) {
+                merged = new DoubleHistogram(percentiles.state);
+                merged.setAutoResize(true);
+            }
+            merged.add(percentiles.state);
+        }
+        return createReduced(getName(), keys, merged, keyed, pipelineAggregators(), getMetaData());
+    }
+    protected abstract AbstractInternalHDRPercentiles createReduced(String name, double[] keys, DoubleHistogram merged, boolean keyed,
+            List<PipelineAggregator> pipelineAggregators, Map<String, Object> metaData);
+    @Override
+    public XContentBuilder doXContentBody(XContentBuilder builder, Params params) throws IOException {
+        if (keyed) {
+            builder.startObject(CommonFields.VALUES.getPreferredName());
+            for(int i = 0; i < keys.length; ++i) {
+                String key = String.valueOf(keys[i]);
+                double value = value(keys[i]);
+                builder.field(key, value);
+                if (format != DocValueFormat.RAW) {
+                    builder.field(key + ""_as_string"", format.format(value));
+                }
+            }
+            builder.endObject();
+        } else {
+            builder.startArray(CommonFields.VALUES.getPreferredName());
+            for (int i = 0; i < keys.length; i++) {
+                double value = value(keys[i]);
+                builder.startObject();
+                builder.field(CommonFields.KEY.getPreferredName(), keys[i]);
+                builder.field(CommonFields.VALUE.getPreferredName(), value);
+                if (format != DocValueFormat.RAW) {
+                    builder.field(CommonFields.VALUE_AS_STRING.getPreferredName(), format.format(value));
+                }
+                builder.endObject();
+            }
+            builder.endArray();
+        }
+        return builder;
+    }
+    @Override
+    protected boolean doEquals(Object obj) {
+        AbstractInternalHDRPercentiles that = (AbstractInternalHDRPercentiles) obj;
+        return keyed == that.keyed
+                && Arrays.equals(keys, that.keys)
+                && Objects.equals(state, that.state);
+    }
+    @Override
+    protected int doHashCode() {
+        // we cannot use state.hashCode at the moment because of:
+        // https://github.com/HdrHistogram/HdrHistogram/issues/81
+        // TODO: upgrade the HDRHistogram library
+        return Objects.hash(keyed, Arrays.hashCode(keys), state.getIntegerToDoubleValueConversionRatio(), state.getTotalCount());
+    }
+}",class,
+"    AbstractInternalHDRPercentiles(String name, double[] keys, DoubleHistogram state, boolean keyed, DocValueFormat format,
+            List<PipelineAggregator> pipelineAggregators,
+            Map<String, Object> metaData) {
+        super(name, pipelineAggregators, metaData);
+        this.keys = keys;
+        this.state = state;
+        this.keyed = keyed;
+        this.format = format;
+    }",method,
+"    protected AbstractInternalHDRPercentiles(StreamInput in) throws IOException {
+        super(in);
+        format = in.readNamedWriteable(DocValueFormat.class);
+        keys = in.readDoubleArray();
+        long minBarForHighestToLowestValueRatio = in.readLong();
+        final int serializedLen = in.readVInt();
+        byte[] bytes = new byte[serializedLen];
+        in.readBytes(bytes, 0, serializedLen);
+        ByteBuffer stateBuffer = ByteBuffer.wrap(bytes);
+        try {
+            state = DoubleHistogram.decodeFromCompressedByteBuffer(stateBuffer, minBarForHighestToLowestValueRatio);
+        } catch (DataFormatException e) {
+            throw new IOException(""Failed to decode DoubleHistogram for aggregation ["" + name + ""]"", e);
+        }
+        keyed = in.readBoolean();
+    }",method,
+"    @Override
+    protected void doWriteTo(StreamOutput out) throws IOException {
+        out.writeNamedWriteable(format);
+        out.writeDoubleArray(keys);
+        out.writeLong(state.getHighestToLowestValueRatio());
+        ByteBuffer stateBuffer = ByteBuffer.allocate(state.getNeededByteBufferCapacity());
+        final int serializedLen = state.encodeIntoCompressedByteBuffer(stateBuffer);
+        out.writeVInt(serializedLen);
+        out.writeBytes(stateBuffer.array(), 0, serializedLen);
+        out.writeBoolean(keyed);
+    }",method,
+"    @Override
+    public double value(String name) {
+        return value(Double.parseDouble(name));
+    }",method,
+"    DocValueFormat formatter() {
+        return format;
+    }",method,
+"    public long getEstimatedMemoryFootprint() {
+        return state.getEstimatedFootprintInBytes();
+    }",method,
+"    @Override
+    public AbstractInternalHDRPercentiles doReduce(List<InternalAggregation> aggregations, ReduceContext reduceContext) {
+        DoubleHistogram merged = null;
+        for (InternalAggregation aggregation : aggregations) {
+            final AbstractInternalHDRPercentiles percentiles = (AbstractInternalHDRPercentiles) aggregation;
+            if (merged == null) {
+                merged = new DoubleHistogram(percentiles.state);
+                merged.setAutoResize(true);
+            }
+            merged.add(percentiles.state);
+        }
+        return createReduced(getName(), keys, merged, keyed, pipelineAggregators(), getMetaData());
+    }",method,
+"        for (InternalAggregation aggregation : aggregations) {
+            final AbstractInternalHDRPercentiles percentiles = (AbstractInternalHDRPercentiles) aggregation;
+            if (merged == null) {
+                merged = new DoubleHistogram(percentiles.state);
+                merged.setAutoResize(true);
+            }
+            merged.add(percentiles.state);
+        }",method,
+"            if (merged == null) {
+                merged = new DoubleHistogram(percentiles.state);
+                merged.setAutoResize(true);
+            }",method,
+"    @Override
+    public XContentBuilder doXContentBody(XContentBuilder builder, Params params) throws IOException {
+        if (keyed) {
+            builder.startObject(CommonFields.VALUES.getPreferredName());
+            for(int i = 0; i < keys.length; ++i) {
+                String key = String.valueOf(keys[i]);
+                double value = value(keys[i]);
+                builder.field(key, value);
+                if (format != DocValueFormat.RAW) {
+                    builder.field(key + ""_as_string"", format.format(value));
+                }
+            }
+            builder.endObject();
+        } else {
+            builder.startArray(CommonFields.VALUES.getPreferredName());
+            for (int i = 0; i < keys.length; i++) {
+                double value = value(keys[i]);
+                builder.startObject();
+                builder.field(CommonFields.KEY.getPreferredName(), keys[i]);
+                builder.field(CommonFields.VALUE.getPreferredName(), value);
+                if (format != DocValueFormat.RAW) {
+                    builder.field(CommonFields.VALUE_AS_STRING.getPreferredName(), format.format(value));
+                }
+                builder.endObject();
+            }
+            builder.endArray();
+        }
+        return builder;
+    }",method,
+"        if (keyed) {
+            builder.startObject(CommonFields.VALUES.getPreferredName());
+            for(int i = 0; i < keys.length; ++i) {
+                String key = String.valueOf(keys[i]);
+                double value = value(keys[i]);
+                builder.field(key, value);
+                if (format != DocValueFormat.RAW) {
+                    builder.field(key + ""_as_string"", format.format(value));
+                }
+            }
+            builder.endObject();
+        }",method,
+"            for(int i = 0; i < keys.length; ++i) {
+                String key = String.valueOf(keys[i]);
+                double value = value(keys[i]);
+                builder.field(key, value);
+                if (format != DocValueFormat.RAW) {
+                    builder.field(key + ""_as_string"", format.format(value));
+                }
+            }",method,
+"                if (format != DocValueFormat.RAW) {
+                    builder.field(key + ""_as_string"", format.format(value));
+                }",method,
+"            for (int i = 0; i < keys.length; i++) {
+                double value = value(keys[i]);
+                builder.startObject();
+                builder.field(CommonFields.KEY.getPreferredName(), keys[i]);
+                builder.field(CommonFields.VALUE.getPreferredName(), value);
+                if (format != DocValueFormat.RAW) {
+                    builder.field(CommonFields.VALUE_AS_STRING.getPreferredName(), format.format(value));
+                }
+                builder.endObject();
+            }",method,
+"                if (format != DocValueFormat.RAW) {
+                    builder.field(CommonFields.VALUE_AS_STRING.getPreferredName(), format.format(value));
+                }",method,
+"    @Override
+    protected boolean doEquals(Object obj) {
+        AbstractInternalHDRPercentiles that = (AbstractInternalHDRPercentiles) obj;
+        return keyed == that.keyed
+                && Arrays.equals(keys, that.keys)
+                && Objects.equals(state, that.state);
+    }",method,
+"    @Override
+    protected int doHashCode() {
+        // we cannot use state.hashCode at the moment because of:
+        // https://github.com/HdrHistogram/HdrHistogram/issues/81
+        // TODO: upgrade the HDRHistogram library
+        return Objects.hash(keyed, Arrays.hashCode(keys), state.getIntegerToDoubleValueConversionRatio(), state.getTotalCount());
+    }",method,
+"import java.security.spec.RSAPrivateCrtKeySpec;
+class Util {
+    static final BigInteger P = new BigInteger(
+            ""178479572281896551646004364479186243274554253442971675202712037168""
+                    + ""82805439171286757012622742273566628953929784385654859898""
+                    + ""28019943266498970695878014699423565775500281013661604573""
+                    + ""09351370942441879889477647669664876805999161358675121909""
+                    + ""02875461840550932624652402732307184862051812119809510467""
+                    + ""6997149499533466361"");
+    static final BigInteger Q = new BigInteger(
+            ""764905408100544417452957057404815852894534709423"");
+    static final BigInteger G = new BigInteger(
+            ""250346303870482828530842176986393415513071912937041425322012361012""
+                    + ""16575725689706821855929265075265423817009497798948914793""
+                    + ""36272769721567876826949070538671438636626715308216064610""
+                    + ""91161573885991070984580607652541845127399865661520191726""
+                    + ""47818913386618968229835178446104566543814577436312685021""
+                    + ""713979414153557537"");
+    static final BigInteger RND_RET = new BigInteger(""10"");
+    static final RSAPrivateCrtKeySpec rsaCrtParam = new RSAPrivateCrtKeySpec(
+            BigInteger.valueOf(3233), BigInteger.valueOf(17),
+            BigInteger.valueOf(2753), BigInteger.valueOf(61),
+            BigInteger.valueOf(53), BigInteger.valueOf(53),
+            BigInteger.valueOf(49), BigInteger.valueOf(52));
+    static final ECParameterSpec ecParam = new ECParameterSpec(
+            new EllipticCurve(
+                    new ECFieldFp(BigInteger.valueOf(23)),
+                    BigInteger.valueOf(5), BigInteger.valueOf(3)),
+            new ECPoint(BigInteger.valueOf(1), BigInteger.valueOf(3)),
+            BigInteger.valueOf(23), 1);
+    private Util() {
+    }
+}",class,
+"@SuppressWarnings(""serial"")
+class MySecureRandomSpi extends SecureRandomSpi {
+    @Override
+    protected byte[] engineGenerateSeed(int arg0) {
+        return null;
+    }
+    @Override
+    protected void engineNextBytes(byte[] bytes) {
+        java.util.Arrays.fill(bytes, (byte) 0);
+        bytes[bytes.length - 1] = (byte) 10;
+    }
+    @Override
+    protected void engineSetSeed(byte[] arg0) {
+        return;
+    }
+}",class,
+"    private Util() {
+    }",method,
+"    @Override
+    protected byte[] engineGenerateSeed(int arg0) {
+        return null;
+    }",method,
+"    @Override
+    protected void engineNextBytes(byte[] bytes) {
+        java.util.Arrays.fill(bytes, (byte) 0);
+        bytes[bytes.length - 1] = (byte) 10;
+    }",method,
+"    @Override
+    protected void engineSetSeed(byte[] arg0) {
+        return;
+    }",method,
+"public class BootstrapMethodArgumentShrinker
+extends      SimplifiedVisitor
+implements   BootstrapMethodInfoVisitor,
+             ConstantVisitor,
+             MemberVisitor
+{
+    private long usedParameters;
+    // Implementations for BootstrapMethodInfoVisitor.
+    public void visitBootstrapMethodInfo(Clazz clazz, BootstrapMethodInfo bootstrapMethodInfo)
+    {
+        // Check which method parameters are used.
+        usedParameters = -1L;
+        clazz.constantPoolEntryAccept(bootstrapMethodInfo.u2methodHandleIndex, this);
+        // Remove the unused arguments.
+        int   methodArgumentCount = bootstrapMethodInfo.u2methodArgumentCount;
+        int[] methodArguments     = bootstrapMethodInfo.u2methodArguments;
+        int newArgumentIndex = 0;
+        for (int argumentIndex = 0; argumentIndex < methodArgumentCount; argumentIndex++)
+        {
+            if (argumentIndex >= 64 ||
+                (usedParameters & (1L << argumentIndex)) != 0L)
+            {
+                methodArguments[newArgumentIndex++] = methodArguments[argumentIndex];
+            }
+        }
+        // Update the number of arguments.
+        bootstrapMethodInfo.u2methodArgumentCount = newArgumentIndex;
+    }
+    // Implementations for ConstantVisitor.
+    public void visitMethodHandleConstant(Clazz clazz, MethodHandleConstant methodHandleConstant)
+    {
+        // Check the referenced bootstrap method.
+        clazz.constantPoolEntryAccept(methodHandleConstant.u2referenceIndex, this);
+    }
+    public void visitAnyRefConstant(Clazz clazz, RefConstant refConstant)
+    {
+        // Check the referenced class member itself.
+        refConstant.referencedMemberAccept(this);
+    }
+    // Implementations for MemberVisitor.
+    public void visitLibraryMethod(LibraryClass libraryClass, LibraryMethod libraryMethod) {}
+    public void visitProgramMethod(ProgramClass programClass, ProgramMethod programMethod)
+    {
+        usedParameters = ParameterUsageMarker.getUsedParameters(programMethod);
+    }
+}",class,
+"        // Check the referenced class member itself.
+        refConstant.referencedMemberAccept(this);
+    }
+    // Implementations for MemberVisitor.
+    public void visitLibraryMethod(LibraryClass libraryClass, LibraryMethod libraryMethod) {}",class,
+"    public void visitBootstrapMethodInfo(Clazz clazz, BootstrapMethodInfo bootstrapMethodInfo)
+    {
+        // Check which method parameters are used.
+        usedParameters = -1L;
+        clazz.constantPoolEntryAccept(bootstrapMethodInfo.u2methodHandleIndex, this);
+        // Remove the unused arguments.
+        int   methodArgumentCount = bootstrapMethodInfo.u2methodArgumentCount;
+        int[] methodArguments     = bootstrapMethodInfo.u2methodArguments;
+        int newArgumentIndex = 0;
+        for (int argumentIndex = 0; argumentIndex < methodArgumentCount; argumentIndex++)
+        {
+            if (argumentIndex >= 64 ||
+                (usedParameters & (1L << argumentIndex)) != 0L)
+            {
+                methodArguments[newArgumentIndex++] = methodArguments[argumentIndex];
+            }
+        }
+        // Update the number of arguments.
+        bootstrapMethodInfo.u2methodArgumentCount = newArgumentIndex;
+    }",method,
+"        for (int argumentIndex = 0; argumentIndex < methodArgumentCount; argumentIndex++)
+        {
+            if (argumentIndex >= 64 ||
+                (usedParameters & (1L << argumentIndex)) != 0L)
+            {
+                methodArguments[newArgumentIndex++] = methodArguments[argumentIndex];
+            }
+        }",method,
+"    public void visitMethodHandleConstant(Clazz clazz, MethodHandleConstant methodHandleConstant)
+    {
+        // Check the referenced bootstrap method.
+        clazz.constantPoolEntryAccept(methodHandleConstant.u2referenceIndex, this);
+    }",method,
+"    public void visitAnyRefConstant(Clazz clazz, RefConstant refConstant)
+    {
+        // Check the referenced class member itself.
+        refConstant.referencedMemberAccept(this);
+    }",method,
+"    public void visitLibraryMethod(LibraryClass libraryClass, LibraryMethod libraryMethod) {}",method,
+"    public void visitProgramMethod(ProgramClass programClass, ProgramMethod programMethod)
+    {
+        usedParameters = ParameterUsageMarker.getUsedParameters(programMethod);
+    }",method,
+"import java.util.Set;
+class SpringBootExceptionHandler implements UncaughtExceptionHandler {
+	private static Set<String> LOG_CONFIGURATION_MESSAGES;
+	static {
+		Set<String> messages = new HashSet<>();
+		messages.add(""Logback configuration error detected"");
+		LOG_CONFIGURATION_MESSAGES = Collections.unmodifiableSet(messages);
+	}
+	private static LoggedExceptionHandlerThreadLocal handler = new LoggedExceptionHandlerThreadLocal();
+	private final UncaughtExceptionHandler parent;
+	private final List<Throwable> loggedExceptions = new ArrayList<>();
+	private int exitCode = 0;
+	SpringBootExceptionHandler(UncaughtExceptionHandler parent) {
+		this.parent = parent;
+	}
+	public void registerLoggedException(Throwable exception) {
+		this.loggedExceptions.add(exception);
+	}
+	public void registerExitCode(int exitCode) {
+		this.exitCode = exitCode;
+	}
+	@Override
+	public void uncaughtException(Thread thread, Throwable ex) {
+		try {
+			if (isPassedToParent(ex) && this.parent != null) {
+				this.parent.uncaughtException(thread, ex);
+			}
+		}
+		finally {
+			this.loggedExceptions.clear();
+			if (this.exitCode != 0) {
+				System.exit(this.exitCode);
+			}
+		}
+	}
+	private boolean isPassedToParent(Throwable ex) {
+		return isLogConfigurationMessage(ex) || !isRegistered(ex);
+	}
+	private boolean isLogConfigurationMessage(Throwable ex) {
+		String message = ex.getMessage();
+		if (message != null) {
+			for (String candidate : LOG_CONFIGURATION_MESSAGES) {
+				if (message.contains(candidate)) {
+					return true;
+				}
+			}
+		}
+		return false;
+	}
+	private boolean isRegistered(Throwable ex) {
+		if (this.loggedExceptions.contains(ex)) {
+			return true;
+		}
+		if (ex instanceof InvocationTargetException) {
+			return isRegistered(ex.getCause());
+		}
+		return false;
+	}
+	static SpringBootExceptionHandler forCurrentThread() {
+		return handler.get();
+	}
+	private static class LoggedExceptionHandlerThreadLocal
+			extends ThreadLocal<SpringBootExceptionHandler> {
+		@Override
+		protected SpringBootExceptionHandler initialValue() {
+			SpringBootExceptionHandler handler = new SpringBootExceptionHandler(
+					Thread.currentThread().getUncaughtExceptionHandler());
+			Thread.currentThread().setUncaughtExceptionHandler(handler);
+			return handler;
+		}
+	}
+}",class,
+"	private static class LoggedExceptionHandlerThreadLocal
+			extends ThreadLocal<SpringBootExceptionHandler> {
+		@Override
+		protected SpringBootExceptionHandler initialValue() {
+			SpringBootExceptionHandler handler = new SpringBootExceptionHandler(
+					Thread.currentThread().getUncaughtExceptionHandler());
+			Thread.currentThread().setUncaughtExceptionHandler(handler);
+			return handler;
+		}
+	}",class,
+"	SpringBootExceptionHandler(UncaughtExceptionHandler parent) {
+		this.parent = parent;
+	}",method,
+"	public void registerLoggedException(Throwable exception) {
+		this.loggedExceptions.add(exception);
+	}",method,
+"	public void registerExitCode(int exitCode) {
+		this.exitCode = exitCode;
+	}",method,
+"	@Override
+	public void uncaughtException(Thread thread, Throwable ex) {
+		try {
+			if (isPassedToParent(ex) && this.parent != null) {
+				this.parent.uncaughtException(thread, ex);
+			}
+		}
+		finally {
+			this.loggedExceptions.clear();
+			if (this.exitCode != 0) {
+				System.exit(this.exitCode);
+			}
+		}
+	}",method,
+"			if (this.exitCode != 0) {
+				System.exit(this.exitCode);
+			}",method,
+"	private boolean isPassedToParent(Throwable ex) {
+		return isLogConfigurationMessage(ex) || !isRegistered(ex);
+	}",method,
+"	private boolean isLogConfigurationMessage(Throwable ex) {
+		String message = ex.getMessage();
+		if (message != null) {
+			for (String candidate : LOG_CONFIGURATION_MESSAGES) {
+				if (message.contains(candidate)) {
+					return true;
+				}
+			}
+		}
+		return false;
+	}",method,
+"		if (message != null) {
+			for (String candidate : LOG_CONFIGURATION_MESSAGES) {
+				if (message.contains(candidate)) {
+					return true;
+				}
+			}
+		}",method,
+"			for (String candidate : LOG_CONFIGURATION_MESSAGES) {
+				if (message.contains(candidate)) {
+					return true;
+				}
+			}",method,
+"	private boolean isRegistered(Throwable ex) {
+		if (this.loggedExceptions.contains(ex)) {
+			return true;
+		}
+		if (ex instanceof InvocationTargetException) {
+			return isRegistered(ex.getCause());
+		}
+		return false;
+	}",method,
+"		if (ex instanceof InvocationTargetException) {
+			return isRegistered(ex.getCause());
+		}",method,
+"	static SpringBootExceptionHandler forCurrentThread() {
+		return handler.get();
+	}",method,
+"		@Override
+		protected SpringBootExceptionHandler initialValue() {
+			SpringBootExceptionHandler handler = new SpringBootExceptionHandler(
+					Thread.currentThread().getUncaughtExceptionHandler());
+			Thread.currentThread().setUncaughtExceptionHandler(handler);
+			return handler;
+		}",method,
+"import static BeanUtil.A.NOT_NULL;
+class BeanUtil {
+  public static class A {
+    public static final Object NOT_NULL = null;
+  }
+  @NotNull<caret>
+  String foo() {
+    return null;
+  }
+}",class,
+"  public static class A {
+    public static final Object NOT_NULL = null;
+  }",class,
+"@interface NotNull {}
+class AbcdClass {}",class,
+"@AbcdAnno
+class Foo {}",class,
+"class Foo {}class Bar {
+  static class Inner {}
+}",class,
+  static class Inner {},class,
+"public class Foooo extends Bar.<caret>
+class AbcdClass {}",class,
+"class AbcdClass {}
+class AbcdException extends Throwable {}",class,
+"class AbcdException extends Throwable {}
+class Foo {
+  {
+    try {
+    } catch (Abcd<caret>)
+  }
+}",class,
+}class AbcdClass {},class,
+"}class AbcdClass {}
+class AbcdException extends Throwable {}",class,
+"class AbcdException extends Throwable {}
+class Foo {
+  {
+    try {
+    } catch (AbcdException<caret>)
+  }
+}",class,
+}class AbcdClass {},class,
+"}class AbcdClass {}
+class AbcdException extends Throwable {}",class,
+"class AbcdException extends Throwable {}
+class Foo {
+  {
+    try { } catch (Abcd<caret> e)
+  }
+}",class,
+}class AbcdClass {},class,
+"}class AbcdClass {}
+class AbcdException extends Throwable {}",class,
+"class AbcdException extends Throwable {}
+class Foo {
+  {
+    try { } catch (AbcdException<caret> e)
+  }
+}",class,
+}class AbcdClass {},class,
+"}class AbcdClass {}
+class AbcdException extends Throwable {}",class,
+"class AbcdException extends Throwable {}
+class Foo {
+  {
+    try { } catch (final Abcd<caret>)
+  }
+}",class,
+}class AbcdClass {},class,
+"}class AbcdClass {}
+class AbcdException extends Throwable {}",class,
+"class AbcdException extends Throwable {}
+class Foo {
+  {
+    try { } catch (final AbcdException<caret>)
+  }
+}",class,
+}class AbcdClass {},class,
+"}class AbcdClass {}
+class AbcdException extends Throwable {}",class,
+"class AbcdException extends Throwable {}
+class Foo {
+  {
+    try { } catch (final AbcdException<caret> e)
+  }
+}",class,
+"}class MyClass {
+  static class MyException extends Exception { }
+  void m() {
+    try { } catch (RuntimeException | My<caret>) { }
+  }
+}",class,
+  static class MyException extends Exception { },class,
+"}class MyClass {
+  static class MyException extends Exception { }
+  void m() {
+    try { } catch (RuntimeException | MyException<caret>) { }
+  }
+}",class,
+  static class MyException extends Exception { },class,
+"}class MyClass {
+  static class MyException extends Exception { }
+  void m() {
+    try { } catch (RuntimeException | My<caret> e) { }
+  }
+}",class,
+  static class MyException extends Exception { },class,
+"}class MyClass {
+  static class MyException extends Exception { }
+  void m() {
+    try { } catch (RuntimeException | MyException<caret> e) { }
+  }
+}",class,
+  static class MyException extends Exception { },class,
+"public class Foo {
+    void foo() {
+        Class<String> classOfString = (Class<? <caret>>)aClass.cast(Long.class);
+    }
+    static class NClass {}
+}",class,
+    static class NClass {},class,
+"public class Main {
+  {
+    switch (a) {
+      <caret>
+    }
+  }
+}",class,
+"}class MyClass {
+  void f() {
+    try (A<caret>) {
+    }
+  }
+}",class,
+"}class MyClass {
+  void f() {
+    try (AutoCloseable<caret>) {
+    }
+  }
+}",class,
+"}class MyClass {
+  static class MyResource implements AutoCloseable { }
+  void f() {
+    try (final My<caret>) {
+    }
+  }
+}",class,
+  static class MyResource implements AutoCloseable { },class,
+"}class MyClass {
+  static class MyResource implements AutoCloseable { }
+  void f() {
+    try (final MyResource<caret>) {
+    }
+  }
+}",class,
+  static class MyResource implements AutoCloseable { },class,
+"}class MyClass {
+  static class MyResource implements AutoCloseable { }
+  void f() {
+    try (My<caret> r) {
+    }
+  }
+}",class,
+  static class MyResource implements AutoCloseable { },class,
+"}class MyClass {
+  static class MyResource implements AutoCloseable { }
+  void f() {
+    try (MyResource<caret> r) {
+    }
+  }
+}",class,
+  static class MyResource implements AutoCloseable { },class,
+"}class MyClass {
+  static class MyResource implements AutoCloseable { }
+  void f() {
+    try (MyResource r1 = null; MyResource<caret>) {
+    }
+  }
+}",class,
+  static class MyResource implements AutoCloseable { },class,
+"}class MyClass {
+  void f() {
+    String response;
+    AutoCloseable resource;
+    try (re<caret>) {
+    }
+  }
+}",class,

@@ -1,0 +1,1745 @@
+code_snippet,type,score
+"			for (URL jsonObject : jsonObjects) {
+				message.append(""\t"" + jsonObject + ""\n"");
+			}",method,
+"		@Override
+		public int hashCode() {
+			return getClass().hashCode();
+		}",method,
+"		@Override
+		public boolean equals(Object obj) {
+			if (obj == null || obj.getClass() != getClass()) {
+				return false;
+			}
+			return true;
+		}",method,
+"public class InternetExplorerOptionsTest {
+  @Test
+  public void shouldAllowACapabilityToBeSet() {
+    InternetExplorerOptions options = new InternetExplorerOptions();
+    options.setCapability(""cheese"", ""cake"");
+    assertEquals(options.toString(), ""cake"", options.asMap().get(""cheese""));
+  }
+  @Test
+  public void shouldMirrorCapabilitiesForIeProperly() {
+    String expected = ""http://cheese.example.com"";
+    InternetExplorerOptions options = new InternetExplorerOptions()
+        .withInitialBrowserUrl(expected);
+    Map<String, ?> map = options.asMap();
+    assertEquals(options.toString(), expected, map.get(INITIAL_BROWSER_URL));
+    assertEquals(
+        options.toString(),
+        expected,
+        ((Map<?, ?>) map.get(""se:ieOptions"")).get(INITIAL_BROWSER_URL));
+  }
+  @Test
+  public void shouldMirrorCapabilitiesFromPassedInIeOptions() {
+    InternetExplorerOptions toMirror = new InternetExplorerOptions()
+        .introduceFlakinessByIgnoringSecurityDomains();
+    // This is damn weird.
+    InternetExplorerOptions options = new InternetExplorerOptions();
+    options.setCapability(""se:ieOptions"", toMirror);
+    assertTrue(options.is(INTRODUCE_FLAKINESS_BY_IGNORING_SECURITY_DOMAINS));
+  }
+  @Test
+  public void shouldPopulateIeOptionsFromExistingCapabilitiesWhichLackThem() {
+    Capabilities caps = new ImmutableCapabilities(
+        INTRODUCE_FLAKINESS_BY_IGNORING_SECURITY_DOMAINS, true);
+    InternetExplorerOptions options = new InternetExplorerOptions(caps);
+    assertTrue(options.is(INTRODUCE_FLAKINESS_BY_IGNORING_SECURITY_DOMAINS));
+    Map<?, ?> remoteOptions = (Map<?, ?>) options.getCapability(""se:ieOptions"");
+    assertEquals(
+        options.toString(),
+        true,
+        remoteOptions.get(INTRODUCE_FLAKINESS_BY_IGNORING_SECURITY_DOMAINS));
+  }
+  @Test
+  public void shouldSurviveASerializationRoundTrip() {
+    InternetExplorerOptions options = new InternetExplorerOptions()
+        .withInitialBrowserUrl(""http://www.cheese.com"")
+        .addCommandSwitches(""--cake"");
+    String json = new BeanToJsonConverter().convert(options);
+    System.out.println(""json = "" + json);
+    Capabilities capabilities = new JsonToBeanConverter().convert(Capabilities.class, json);
+    assertEquals(options, capabilities);
+    InternetExplorerOptions freshOptions = new InternetExplorerOptions(capabilities);
+    assertEquals(options, freshOptions);
+  }
+}",class,
+"  @Test
+  public void shouldAllowACapabilityToBeSet() {
+    InternetExplorerOptions options = new InternetExplorerOptions();
+    options.setCapability(""cheese"", ""cake"");
+    assertEquals(options.toString(), ""cake"", options.asMap().get(""cheese""));
+  }",method,
+"  @Test
+  public void shouldMirrorCapabilitiesForIeProperly() {
+    String expected = ""http://cheese.example.com"";
+    InternetExplorerOptions options = new InternetExplorerOptions()
+        .withInitialBrowserUrl(expected);
+    Map<String, ?> map = options.asMap();
+    assertEquals(options.toString(), expected, map.get(INITIAL_BROWSER_URL));
+    assertEquals(
+        options.toString(),
+        expected,
+        ((Map<?, ?>) map.get(""se:ieOptions"")).get(INITIAL_BROWSER_URL));
+  }
+  @Test
+  public void shouldMirrorCapabilitiesFromPassedInIeOptions() {
+    InternetExplorerOptions toMirror = new InternetExplorerOptions()
+        .introduceFlakinessByIgnoringSecurityDomains();
+    // This is damn weird.
+    InternetExplorerOptions options = new InternetExplorerOptions();
+    options.setCapability(""se:ieOptions"", toMirror);
+    assertTrue(options.is(INTRODUCE_FLAKINESS_BY_IGNORING_SECURITY_DOMAINS));
+  }
+  @Test
+  public void shouldPopulateIeOptionsFromExistingCapabilitiesWhichLackThem() {
+    Capabilities caps = new ImmutableCapabilities(
+        INTRODUCE_FLAKINESS_BY_IGNORING_SECURITY_DOMAINS, true);
+    InternetExplorerOptions options = new InternetExplorerOptions(caps);
+    assertTrue(options.is(INTRODUCE_FLAKINESS_BY_IGNORING_SECURITY_DOMAINS));
+    Map<?, ?> remoteOptions = (Map<?, ?>) options.getCapability(""se:ieOptions"");
+    assertEquals(
+        options.toString(),
+        true,
+        remoteOptions.get(INTRODUCE_FLAKINESS_BY_IGNORING_SECURITY_DOMAINS));
+  }
+  @Test
+  public void shouldSurviveASerializationRoundTrip() {
+    InternetExplorerOptions options = new InternetExplorerOptions()
+        .withInitialBrowserUrl(""http://www.cheese.com"")
+        .addCommandSwitches(""--cake"");
+    String json = new BeanToJsonConverter().convert(options);
+    System.out.println(""json = "" + json);
+    Capabilities capabilities = new JsonToBeanConverter().convert(Capabilities.class, json);
+    assertEquals(options, capabilities);
+    InternetExplorerOptions freshOptions = new InternetExplorerOptions(capabilities);
+    assertEquals(options, freshOptions);
+  }",method,
+"public class VcsLogStorageImpl implements Disposable, VcsLogStorage {
+  @NotNull private static final Logger LOG = Logger.getInstance(VcsLogStorage.class);
+  @NotNull private static final String HASHES_STORAGE = ""hashes"";
+  @NotNull private static final String REFS_STORAGE = ""refs"";
+  @NotNull public static final VcsLogStorage EMPTY = new EmptyLogStorage();
+  public static final int VERSION = 5;
+  public static final int NO_INDEX = -1;
+  private static final int REFS_VERSION = 1;
+  @NotNull private final PersistentEnumeratorBase<CommitId> myCommitIdEnumerator;
+  @NotNull private final PersistentEnumeratorBase<VcsRef> myRefsEnumerator;
+  @NotNull private final FatalErrorHandler myExceptionReporter;
+  private volatile boolean myDisposed = false;
+  public VcsLogStorageImpl(@NotNull Project project,
+                           @NotNull Map<VirtualFile, VcsLogProvider> logProviders,
+                           @NotNull FatalErrorHandler exceptionReporter,
+                           @NotNull Disposable parent) throws IOException {
+    myExceptionReporter = exceptionReporter;
+    List<VirtualFile> roots = StreamEx.ofKeys(logProviders).sortedBy(VirtualFile::getPath).toList();
+    String logId = PersistentUtil.calcLogId(project, logProviders);
+    MyCommitIdKeyDescriptor commitIdKeyDescriptor = new MyCommitIdKeyDescriptor(roots);
+    myCommitIdEnumerator = PersistentUtil.createPersistentEnumerator(commitIdKeyDescriptor, HASHES_STORAGE, logId, VERSION);
+    myRefsEnumerator = PersistentUtil.createPersistentEnumerator(new VcsRefKeyDescriptor(logProviders, commitIdKeyDescriptor),
+                                                                 REFS_STORAGE, logId, VERSION + REFS_VERSION);
+    Disposer.register(parent, this);
+  }
+  @NotNull
+  public static Function<Integer, Hash> createHashGetter(@NotNull VcsLogStorage storage) {
+    return commitIndex -> {
+      CommitId commitId = storage.getCommitId(commitIndex);
+      if (commitId == null) return null;
+      return commitId.getHash();
+    };
+  }
+  @Nullable
+  private CommitId doGetCommitId(int index) throws IOException {
+    return myCommitIdEnumerator.valueOf(index);
+  }
+  private int getOrPut(@NotNull Hash hash, @NotNull VirtualFile root) throws IOException {
+    return myCommitIdEnumerator.enumerate(new CommitId(hash, root));
+  }
+  @Override
+  public int getCommitIndex(@NotNull Hash hash, @NotNull VirtualFile root) {
+    checkDisposed();
+    try {
+      return getOrPut(hash, root);
+    }
+    catch (IOException e) {
+      myExceptionReporter.consume(this, e);
+    }
+    return NO_INDEX;
+  }
+  @Override
+  @Nullable
+  public CommitId getCommitId(int commitIndex) {
+    checkDisposed();
+    try {
+      CommitId commitId = doGetCommitId(commitIndex);
+      if (commitId == null) {
+        myExceptionReporter.consume(this, new RuntimeException(""Unknown commit index: "" + commitIndex));
+      }
+      return commitId;
+    }
+    catch (IOException e) {
+      myExceptionReporter.consume(this, e);
+    }
+    return null;
+  }
+  @Override
+  @Nullable
+  public CommitId findCommitId(@NotNull final Condition<CommitId> condition) {
+    checkDisposed();
+    try {
+      final Ref<CommitId> hashRef = Ref.create();
+      myCommitIdEnumerator.iterateData(new CommonProcessors.FindProcessor<CommitId>() {
+        @Override
+        protected boolean accept(CommitId commitId) {
+          boolean matches = condition.value(commitId);
+          if (matches) {
+            hashRef.set(commitId);
+          }
+          return matches;
+        }
+      });
+      return hashRef.get();
+    }
+    catch (IOException e) {
+      myExceptionReporter.consume(this, e);
+      return null;
+    }
+  }
+  @Override
+  public int getRefIndex(@NotNull VcsRef ref) {
+    checkDisposed();
+    try {
+      return myRefsEnumerator.enumerate(ref);
+    }
+    catch (IOException e) {
+      myExceptionReporter.consume(this, e);
+    }
+    return NO_INDEX;
+  }
+  @Nullable
+  @Override
+  public VcsRef getVcsRef(int refIndex) {
+    checkDisposed();
+    try {
+      return myRefsEnumerator.valueOf(refIndex);
+    }
+    catch (IOException e) {
+      myExceptionReporter.consume(this, e);
+      return null;
+    }
+  }
+  public void flush() {
+    checkDisposed();
+    myCommitIdEnumerator.force();
+    myRefsEnumerator.force();
+  }
+  @Override
+  public void dispose() {
+    try {
+      myDisposed = true;
+      myCommitIdEnumerator.close();
+      myRefsEnumerator.close();
+    }
+    catch (IOException e) {
+      LOG.warn(e);
+    }
+  }
+  private void checkDisposed() {
+    if (myDisposed) throw new ProcessCanceledException();
+  }
+  private static class MyCommitIdKeyDescriptor implements KeyDescriptor<CommitId> {
+    @NotNull private final List<VirtualFile> myRoots;
+    @NotNull private final TObjectIntHashMap<VirtualFile> myRootsReversed;
+    public MyCommitIdKeyDescriptor(@NotNull List<VirtualFile> roots) {
+      myRoots = roots;
+      myRootsReversed = new TObjectIntHashMap<>();
+      for (int i = 0; i < roots.size(); i++) {
+        myRootsReversed.put(roots.get(i), i);
+      }
+    }
+    @Override
+    public void save(@NotNull DataOutput out, CommitId value) throws IOException {
+      ((HashImpl)value.getHash()).write(out);
+      out.writeInt(myRootsReversed.get(value.getRoot()));
+    }
+    @Override
+    public CommitId read(@NotNull DataInput in) throws IOException {
+      Hash hash = HashImpl.read(in);
+      VirtualFile root = myRoots.get(in.readInt());
+      if (root == null) return null;
+      return new CommitId(hash, root);
+    }
+    @Override
+    public int getHashCode(CommitId value) {
+      return value.hashCode();
+    }
+    @Override
+    public boolean isEqual(CommitId val1, CommitId val2) {
+      return val1.equals(val2);
+    }
+  }
+  private static class EmptyLogStorage implements VcsLogStorage {
+    @Override
+    public int getCommitIndex(@NotNull Hash hash, @NotNull VirtualFile root) {
+      return 0;
+    }
+    @NotNull
+    @Override
+    public CommitId getCommitId(int commitIndex) {
+      throw new UnsupportedOperationException(""Illegal access to empty hash map by index "" + commitIndex);
+    }
+    @Nullable
+    @Override
+    public CommitId findCommitId(@NotNull Condition<CommitId> string) {
+      return null;
+    }
+    @Override
+    public int getRefIndex(@NotNull VcsRef ref) {
+      return 0;
+    }
+    @Nullable
+    @Override
+    public VcsRef getVcsRef(int refIndex) {
+      throw new UnsupportedOperationException(""Illegal access to empty ref map by index "" + refIndex);
+    }
+    @Override
+    public void flush() {
+    }
+  }
+  private static class VcsRefKeyDescriptor implements KeyDescriptor<VcsRef> {
+    @NotNull private final Map<VirtualFile, VcsLogProvider> myLogProviders;
+    @NotNull private final KeyDescriptor<CommitId> myCommitIdKeyDescriptor;
+    public VcsRefKeyDescriptor(@NotNull Map<VirtualFile, VcsLogProvider> logProviders,
+                               @NotNull KeyDescriptor<CommitId> commitIdKeyDescriptor) {
+      myLogProviders = logProviders;
+      myCommitIdKeyDescriptor = commitIdKeyDescriptor;
+    }
+    @Override
+    public int getHashCode(@NotNull VcsRef value) {
+      return value.hashCode();
+    }
+    @Override
+    public boolean isEqual(@NotNull VcsRef val1, @NotNull VcsRef val2) {
+      return val1.equals(val2);
+    }
+    @Override
+    public void save(@NotNull DataOutput out, @NotNull VcsRef value) throws IOException {
+      myCommitIdKeyDescriptor.save(out, new CommitId(value.getCommitHash(), value.getRoot()));
+      IOUtil.writeUTF(out, value.getName());
+      myLogProviders.get(value.getRoot()).getReferenceManager().serialize(out, value.getType());
+    }
+    @Override
+    public VcsRef read(@NotNull DataInput in) throws IOException {
+      CommitId commitId = myCommitIdKeyDescriptor.read(in);
+      if (commitId == null) throw new IOException(""Can not read commit id for reference"");
+      String name = IOUtil.readUTF(in);
+      VcsRefType type = myLogProviders.get(commitId.getRoot()).getReferenceManager().deserialize(in);
+      return new VcsRefImpl(commitId.getHash(), name, type, commitId.getRoot());
+    }
+  }
+}",class,
+"  private static class MyCommitIdKeyDescriptor implements KeyDescriptor<CommitId> {
+    @NotNull private final List<VirtualFile> myRoots;
+    @NotNull private final TObjectIntHashMap<VirtualFile> myRootsReversed;
+    public MyCommitIdKeyDescriptor(@NotNull List<VirtualFile> roots) {
+      myRoots = roots;
+      myRootsReversed = new TObjectIntHashMap<>();
+      for (int i = 0; i < roots.size(); i++) {
+        myRootsReversed.put(roots.get(i), i);
+      }
+    }
+    @Override
+    public void save(@NotNull DataOutput out, CommitId value) throws IOException {
+      ((HashImpl)value.getHash()).write(out);
+      out.writeInt(myRootsReversed.get(value.getRoot()));
+    }
+    @Override
+    public CommitId read(@NotNull DataInput in) throws IOException {
+      Hash hash = HashImpl.read(in);
+      VirtualFile root = myRoots.get(in.readInt());
+      if (root == null) return null;
+      return new CommitId(hash, root);
+    }
+    @Override
+    public int getHashCode(CommitId value) {
+      return value.hashCode();
+    }
+    @Override
+    public boolean isEqual(CommitId val1, CommitId val2) {
+      return val1.equals(val2);
+    }
+  }",class,
+"  private static class EmptyLogStorage implements VcsLogStorage {
+    @Override
+    public int getCommitIndex(@NotNull Hash hash, @NotNull VirtualFile root) {
+      return 0;
+    }
+    @NotNull
+    @Override
+    public CommitId getCommitId(int commitIndex) {
+      throw new UnsupportedOperationException(""Illegal access to empty hash map by index "" + commitIndex);
+    }
+    @Nullable
+    @Override
+    public CommitId findCommitId(@NotNull Condition<CommitId> string) {
+      return null;
+    }
+    @Override
+    public int getRefIndex(@NotNull VcsRef ref) {
+      return 0;
+    }
+    @Nullable
+    @Override
+    public VcsRef getVcsRef(int refIndex) {
+      throw new UnsupportedOperationException(""Illegal access to empty ref map by index "" + refIndex);
+    }
+    @Override
+    public void flush() {
+    }
+  }",class,
+"  private static class VcsRefKeyDescriptor implements KeyDescriptor<VcsRef> {
+    @NotNull private final Map<VirtualFile, VcsLogProvider> myLogProviders;
+    @NotNull private final KeyDescriptor<CommitId> myCommitIdKeyDescriptor;
+    public VcsRefKeyDescriptor(@NotNull Map<VirtualFile, VcsLogProvider> logProviders,
+                               @NotNull KeyDescriptor<CommitId> commitIdKeyDescriptor) {
+      myLogProviders = logProviders;
+      myCommitIdKeyDescriptor = commitIdKeyDescriptor;
+    }
+    @Override
+    public int getHashCode(@NotNull VcsRef value) {
+      return value.hashCode();
+    }
+    @Override
+    public boolean isEqual(@NotNull VcsRef val1, @NotNull VcsRef val2) {
+      return val1.equals(val2);
+    }
+    @Override
+    public void save(@NotNull DataOutput out, @NotNull VcsRef value) throws IOException {
+      myCommitIdKeyDescriptor.save(out, new CommitId(value.getCommitHash(), value.getRoot()));
+      IOUtil.writeUTF(out, value.getName());
+      myLogProviders.get(value.getRoot()).getReferenceManager().serialize(out, value.getType());
+    }
+    @Override
+    public VcsRef read(@NotNull DataInput in) throws IOException {
+      CommitId commitId = myCommitIdKeyDescriptor.read(in);
+      if (commitId == null) throw new IOException(""Can not read commit id for reference"");
+      String name = IOUtil.readUTF(in);
+      VcsRefType type = myLogProviders.get(commitId.getRoot()).getReferenceManager().deserialize(in);
+      return new VcsRefImpl(commitId.getHash(), name, type, commitId.getRoot());
+    }
+  }",class,
+"  public VcsLogStorageImpl(@NotNull Project project,
+                           @NotNull Map<VirtualFile, VcsLogProvider> logProviders,
+                           @NotNull FatalErrorHandler exceptionReporter,
+                           @NotNull Disposable parent) throws IOException {
+    myExceptionReporter = exceptionReporter;
+    List<VirtualFile> roots = StreamEx.ofKeys(logProviders).sortedBy(VirtualFile::getPath).toList();
+    String logId = PersistentUtil.calcLogId(project, logProviders);
+    MyCommitIdKeyDescriptor commitIdKeyDescriptor = new MyCommitIdKeyDescriptor(roots);
+    myCommitIdEnumerator = PersistentUtil.createPersistentEnumerator(commitIdKeyDescriptor, HASHES_STORAGE, logId, VERSION);
+    myRefsEnumerator = PersistentUtil.createPersistentEnumerator(new VcsRefKeyDescriptor(logProviders, commitIdKeyDescriptor),
+                                                                 REFS_STORAGE, logId, VERSION + REFS_VERSION);
+    Disposer.register(parent, this);
+  }",method,
+"  @NotNull
+  public static Function<Integer, Hash> createHashGetter(@NotNull VcsLogStorage storage) {
+    return commitIndex -> {
+      CommitId commitId = storage.getCommitId(commitIndex);
+      if (commitId == null) return null;
+      return commitId.getHash();
+    };
+  }",method,
+"  @Nullable
+  private CommitId doGetCommitId(int index) throws IOException {
+    return myCommitIdEnumerator.valueOf(index);
+  }",method,
+"  private int getOrPut(@NotNull Hash hash, @NotNull VirtualFile root) throws IOException {
+    return myCommitIdEnumerator.enumerate(new CommitId(hash, root));
+  }",method,
+"  @Override
+  public int getCommitIndex(@NotNull Hash hash, @NotNull VirtualFile root) {
+    checkDisposed();
+    try {
+      return getOrPut(hash, root);
+    }
+    catch (IOException e) {
+      myExceptionReporter.consume(this, e);
+    }
+    return NO_INDEX;
+  }",method,
+"    catch (IOException e) {
+      myExceptionReporter.consume(this, e);
+    }",method,
+"  @Override
+  @Nullable
+  public CommitId getCommitId(int commitIndex) {
+    checkDisposed();
+    try {
+      CommitId commitId = doGetCommitId(commitIndex);
+      if (commitId == null) {
+        myExceptionReporter.consume(this, new RuntimeException(""Unknown commit index: "" + commitIndex));
+      }
+      return commitId;
+    }
+    catch (IOException e) {
+      myExceptionReporter.consume(this, e);
+    }
+    return null;
+  }",method,
+"      if (commitId == null) {
+        myExceptionReporter.consume(this, new RuntimeException(""Unknown commit index: "" + commitIndex));
+      }",method,
+"    catch (IOException e) {
+      myExceptionReporter.consume(this, e);
+    }",method,
+"  @Override
+  @Nullable
+  public CommitId findCommitId(@NotNull final Condition<CommitId> condition) {
+    checkDisposed();
+    try {
+      final Ref<CommitId> hashRef = Ref.create();
+      myCommitIdEnumerator.iterateData(new CommonProcessors.FindProcessor<CommitId>() {
+        @Override
+        protected boolean accept(CommitId commitId) {
+          boolean matches = condition.value(commitId);
+          if (matches) {
+            hashRef.set(commitId);
+          }
+          return matches;
+        }
+      });
+      return hashRef.get();
+    }
+    catch (IOException e) {
+      myExceptionReporter.consume(this, e);
+      return null;
+    }
+  }",method,
+"      myCommitIdEnumerator.iterateData(new CommonProcessors.FindProcessor<CommitId>() {
+        @Override
+        protected boolean accept(CommitId commitId) {
+          boolean matches = condition.value(commitId);
+          if (matches) {
+            hashRef.set(commitId);
+          }
+          return matches;
+        }
+      }",method,
+"        @Override
+        protected boolean accept(CommitId commitId) {
+          boolean matches = condition.value(commitId);
+          if (matches) {
+            hashRef.set(commitId);
+          }
+          return matches;
+        }",method,
+"          if (matches) {
+            hashRef.set(commitId);
+          }",method,
+"    catch (IOException e) {
+      myExceptionReporter.consume(this, e);
+      return null;
+    }",method,
+"  @Override
+  public int getRefIndex(@NotNull VcsRef ref) {
+    checkDisposed();
+    try {
+      return myRefsEnumerator.enumerate(ref);
+    }
+    catch (IOException e) {
+      myExceptionReporter.consume(this, e);
+    }
+    return NO_INDEX;
+  }",method,
+"    catch (IOException e) {
+      myExceptionReporter.consume(this, e);
+    }",method,
+"  @Nullable
+  @Override
+  public VcsRef getVcsRef(int refIndex) {
+    checkDisposed();
+    try {
+      return myRefsEnumerator.valueOf(refIndex);
+    }
+    catch (IOException e) {
+      myExceptionReporter.consume(this, e);
+      return null;
+    }
+  }",method,
+"    catch (IOException e) {
+      myExceptionReporter.consume(this, e);
+      return null;
+    }",method,
+"  public void flush() {
+    checkDisposed();
+    myCommitIdEnumerator.force();
+    myRefsEnumerator.force();
+  }",method,
+"  @Override
+  public void dispose() {
+    try {
+      myDisposed = true;
+      myCommitIdEnumerator.close();
+      myRefsEnumerator.close();
+    }
+    catch (IOException e) {
+      LOG.warn(e);
+    }
+  }",method,
+"    catch (IOException e) {
+      LOG.warn(e);
+    }",method,
+"  private void checkDisposed() {
+    if (myDisposed) throw new ProcessCanceledException();
+  }",method,
+"    @NotNull private final List<VirtualFile> myRoots;
+    @NotNull private final TObjectIntHashMap<VirtualFile> myRootsReversed;
+    public MyCommitIdKeyDescriptor(@NotNull List<VirtualFile> roots) {
+      myRoots = roots;
+      myRootsReversed = new TObjectIntHashMap<>();
+      for (int i = 0; i < roots.size(); i++) {
+        myRootsReversed.put(roots.get(i), i);
+      }
+    }",method,
+"    @Override
+    public void save(@NotNull DataOutput out, CommitId value) throws IOException {
+      ((HashImpl)value.getHash()).write(out);
+      out.writeInt(myRootsReversed.get(value.getRoot()));
+    }",method,
+"    @Override
+    public CommitId read(@NotNull DataInput in) throws IOException {
+      Hash hash = HashImpl.read(in);
+      VirtualFile root = myRoots.get(in.readInt());
+      if (root == null) return null;
+      return new CommitId(hash, root);
+    }",method,
+"    @Override
+    public int getHashCode(CommitId value) {
+      return value.hashCode();
+    }",method,
+"    @Override
+    public boolean isEqual(CommitId val1, CommitId val2) {
+      return val1.equals(val2);
+    }",method,
+"    @Override
+    public int getCommitIndex(@NotNull Hash hash, @NotNull VirtualFile root) {
+      return 0;
+    }",method,
+"    @NotNull
+    @Override
+    public CommitId getCommitId(int commitIndex) {
+      throw new UnsupportedOperationException(""Illegal access to empty hash map by index "" + commitIndex);
+    }",method,
+"    @Nullable
+    @Override
+    public CommitId findCommitId(@NotNull Condition<CommitId> string) {
+      return null;
+    }",method,
+"    @Override
+    public int getRefIndex(@NotNull VcsRef ref) {
+      return 0;
+    }",method,
+"    @Nullable
+    @Override
+    public VcsRef getVcsRef(int refIndex) {
+      throw new UnsupportedOperationException(""Illegal access to empty ref map by index "" + refIndex);
+    }",method,
+"    @Override
+    public void flush() {
+    }",method,
+"    @NotNull private final Map<VirtualFile, VcsLogProvider> myLogProviders;
+    @NotNull private final KeyDescriptor<CommitId> myCommitIdKeyDescriptor;
+    public VcsRefKeyDescriptor(@NotNull Map<VirtualFile, VcsLogProvider> logProviders,
+                               @NotNull KeyDescriptor<CommitId> commitIdKeyDescriptor) {
+      myLogProviders = logProviders;
+      myCommitIdKeyDescriptor = commitIdKeyDescriptor;
+    }",method,
+"    @Override
+    public int getHashCode(@NotNull VcsRef value) {
+      return value.hashCode();
+    }",method,
+"    @Override
+    public boolean isEqual(@NotNull VcsRef val1, @NotNull VcsRef val2) {
+      return val1.equals(val2);
+    }",method,
+"    @Override
+    public void save(@NotNull DataOutput out, @NotNull VcsRef value) throws IOException {
+      myCommitIdKeyDescriptor.save(out, new CommitId(value.getCommitHash(), value.getRoot()));
+      IOUtil.writeUTF(out, value.getName());
+      myLogProviders.get(value.getRoot()).getReferenceManager().serialize(out, value.getType());
+    }",method,
+"    @Override
+    public VcsRef read(@NotNull DataInput in) throws IOException {
+      CommitId commitId = myCommitIdKeyDescriptor.read(in);
+      if (commitId == null) throw new IOException(""Can not read commit id for reference"");
+      String name = IOUtil.readUTF(in);
+      VcsRefType type = myLogProviders.get(commitId.getRoot()).getReferenceManager().deserialize(in);
+      return new VcsRefImpl(commitId.getHash(), name, type, commitId.getRoot());
+    }",method,
+"public class BubbleActivity extends Activity {
+	// These variables are for testing purposes, do not modify
+	private final static int RANDOM = 0;
+	private final static int SINGLE = 1;
+	private final static int STILL = 2;
+	private static int speedMode = RANDOM;
+	private static final String TAG = ""Lab-Graphics"";
+	// The Main view
+	private RelativeLayout mFrame;
+	// Bubble image's bitmap
+	private Bitmap mBitmap;
+	// Display dimensions
+	private int mDisplayWidth, mDisplayHeight;
+	// Sound variables
+	// AudioManager
+	private AudioManager mAudioManager;
+	// SoundPool
+	private SoundPool mSoundPool;
+	// ID for the bubble popping sound
+	private int mSoundID;
+	// Audio volume
+	private float mStreamVolume;
+	// Gesture Detector
+	private GestureDetector mGestureDetector;
+	@Override
+	public void onCreate(Bundle savedInstanceState) {
+		super.onCreate(savedInstanceState);
+		setContentView(R.layout.main);
+		// Set up user interface
+		mFrame = (RelativeLayout) findViewById(R.id.frame);
+		// Load basic bubble Bitmap
+		mBitmap = BitmapFactory.decodeResource(getResources(), R.drawable.b64);
+	}
+	@Override
+	protected void onResume() {
+		super.onResume();
+		// Manage bubble popping sound
+		// Use AudioManager.STREAM_MUSIC as stream type
+		mAudioManager = (AudioManager) getSystemService(AUDIO_SERVICE);
+		mStreamVolume = (float) mAudioManager
+				.getStreamVolume(AudioManager.STREAM_MUSIC)
+				/ mAudioManager.getStreamMaxVolume(AudioManager.STREAM_MUSIC);
+		// TODO - make a new SoundPool, allowing up to 10 streams
+		mSoundPool = null;
+		// TODO - set a SoundPool OnLoadCompletedListener that calls
+		// setupGestureDetector()
+		// TODO - load the sound from res/raw/bubble_pop.wav
+	}
+	@Override
+	public void onWindowFocusChanged(boolean hasFocus) {
+		super.onWindowFocusChanged(hasFocus);
+		if (hasFocus) {
+			// Get the size of the display so this View knows where borders are
+			mDisplayWidth = mFrame.getWidth();
+			mDisplayHeight = mFrame.getHeight();
+		}
+	}
+	// Set up GestureDetector
+	private void setupGestureDetector() {
+		mGestureDetector = new GestureDetector(this,
+		new GestureDetector.SimpleOnGestureListener() {
+			// If a fling gesture starts on a BubbleView then change the
+			// BubbleView's velocity
+			@Override
+			public boolean onFling(MotionEvent event1, MotionEvent event2,
+					float velocityX, float velocityY) {
+				// TODO - Implement onFling actions.
+				// You can get all Views in mFrame one at a time
+				// using the ViewGroup.getChildAt() method
+				return true;
+			}
+			// If a single tap intersects a BubbleView, then pop the BubbleView
+			// Otherwise, create a new BubbleView at the tap's location and add
+			// it to mFrame. You can get all views from mFrame with
+			// ViewGroup.getChildAt()
+			@Override
+			public boolean onSingleTapConfirmed(MotionEvent event) {
+				// TODO - Implement onSingleTapConfirmed actions.
+				// You can get all Views in mFrame using the
+				// ViewGroup.getChildCount() method
+				return true;
+			}
+		});
+	}
+	@Override
+	public boolean onTouchEvent(MotionEvent event) {
+		// TODO - Delegate the touch to the gestureDetector
+		return true || false;
+	}
+	@Override
+	protected void onPause() {
+		// TODO - Release all SoundPool resources
+		super.onPause();
+	}
+	// BubbleView is a View that displays a bubble.
+	// This class handles animating, drawing, and popping amongst other actions.
+	// A new BubbleView is created for each bubble on the display
+	public class BubbleView extends View {
+		private static final int BITMAP_SIZE = 64;
+		private static final int REFRESH_RATE = 40;
+		private final Paint mPainter = new Paint();
+		private ScheduledFuture<?> mMoverFuture;
+		private int mScaledBitmapWidth;
+		private Bitmap mScaledBitmap;
+		// location, speed and direction of the bubble
+		private float mXPos, mYPos, mDx, mDy, mRadius, mRadiusSquared;
+		private long mRotate, mDRotate;
+		BubbleView(Context context, float x, float y) {
+			super(context);
+			// Create a new random number generator to
+			// randomize size, rotation, speed and direction
+			Random r = new Random();
+			// Creates the bubble bitmap for this BubbleView
+			createScaledBitmap(r);
+			// Radius of the Bitmap
+			mRadius = mScaledBitmapWidth / 2;
+			mRadiusSquared = mRadius * mRadius;
+			// Adjust position to center the bubble under user's finger
+			mXPos = x - mRadius;
+			mYPos = y - mRadius;
+			// Set the BubbleView's speed and direction
+			setSpeedAndDirection(r);
+			// Set the BubbleView's rotation
+			setRotation(r);
+			mPainter.setAntiAlias(true);
+		}
+		private void setRotation(Random r) {
+			if (speedMode == RANDOM) {
+				// TODO - set rotation in range [1..3]
+			} else {
+				mDRotate = 0;
+			}
+		}
+		private void setSpeedAndDirection(Random r) {
+			// Used by test cases
+			switch (speedMode) {
+			case SINGLE:
+				mDx = 20;
+				mDy = 20;
+				break;
+			case STILL:
+				// No speed
+				mDx = 0;
+				mDy = 0;
+				break;
+			default:
+				// TODO - Set mDx and mDy to indicate movement direction and speed 
+				// Limit speed in the x and y direction to [-3..3] pixels per movement.
+			}
+		}
+		private void createScaledBitmap(Random r) {
+			if (speedMode != RANDOM) {
+				mScaledBitmapWidth = BITMAP_SIZE * 3;
+			} else {
+				// TODO - set scaled bitmap size in range [1..3] * BITMAP_SIZE
+			}
+			// TODO - create the scaled bitmap using size set above
+		}
+		// Start moving the BubbleView & updating the display
+		private void startMovement() {
+			// Creates a WorkerThread
+			ScheduledExecutorService executor = Executors
+					.newScheduledThreadPool(1);
+			// Execute the run() in Worker Thread every REFRESH_RATE
+			// milliseconds
+			// Save reference to this job in mMoverFuture
+			mMoverFuture = executor.scheduleWithFixedDelay(new Runnable() {
+				@Override
+				public void run() {
+					// TODO - implement movement logic.
+					// Each time this method is run the BubbleView should
+					// move one step. If the BubbleView exits the display,
+					// stop the BubbleView's Worker Thread.
+					// Otherwise, request that the BubbleView be redrawn.
+				}
+			}, 0, REFRESH_RATE, TimeUnit.MILLISECONDS);
+		}
+		// Returns true if the BubbleView intersects position (x,y)
+		private synchronized boolean intersects(float x, float y) {
+			// TODO - Return true if the BubbleView intersects position (x,y)
+			return  true || false;
+		}
+		// Cancel the Bubble's movement
+		// Remove Bubble from mFrame
+		// Play pop sound if the BubbleView was popped
+		private void stopMovement(final boolean wasPopped) {
+			if (null != mMoverFuture) {
+				if (!mMoverFuture.isDone()) {
+					mMoverFuture.cancel(true);
+				}
+				// This work will be performed on the UI Thread
+				mFrame.post(new Runnable() {
+					@Override
+					public void run() {
+						// TODO - Remove the BubbleView from mFrame
+						// TODO - If the bubble was popped by user,
+						// play the popping sound
+						if (wasPopped) {
+						}
+					}
+				});
+			}
+		}
+		// Change the Bubble's speed and direction
+		private synchronized void deflect(float velocityX, float velocityY) {
+			mDx = velocityX / REFRESH_RATE;
+			mDy = velocityY / REFRESH_RATE;
+		}
+		// Draw the Bubble at its current location
+		@Override
+		protected synchronized void onDraw(Canvas canvas) {
+			// TODO - save the canvas
+			// TODO - increase the rotation of the original image by mDRotate
+			// TODO Rotate the canvas by current rotation
+			// Hint - Rotate around the bubble's center, not its position
+			// TODO - draw the bitmap at it's new location
+			// TODO - restore the canvas
+		}
+		// Returns true if the BubbleView is still on the screen after the move
+		// operation
+		private synchronized boolean moveWhileOnScreen() {
+			// TODO - Move the BubbleView
+			return isOutOfView();
+		}
+		// Return true if the BubbleView is still on the screen after the move
+		// operation
+		private boolean isOutOfView() {
+			// TODO - Return true if the BubbleView is still on the screen after
+			// the move operation
+			return true || false;
+		}
+	}
+	// Do not modify below here
+	@Override
+	public void onBackPressed() {
+		openOptionsMenu();
+	}
+	@Override
+	public boolean onCreateOptionsMenu(Menu menu) {
+		super.onCreateOptionsMenu(menu);
+		getMenuInflater().inflate(R.menu.menu, menu);
+		return true;
+	}
+	@Override
+	public boolean onOptionsItemSelected(MenuItem item) {
+		switch (item.getItemId()) {
+		case R.id.menu_still_mode:
+			speedMode = STILL;
+			return true;
+		case R.id.menu_single_speed:
+			speedMode = SINGLE;
+			return true;
+		case R.id.menu_random_mode:
+			speedMode = RANDOM;
+			return true;
+		case R.id.quit:
+			exitRequested();
+			return true;
+		default:
+			return super.onOptionsItemSelected(item);
+		}
+	}
+	private void exitRequested() {
+		super.onBackPressed();
+	}
+}",class,
+"	// This class handles animating, drawing, and popping amongst other actions.
+	// A new BubbleView is created for each bubble on the display
+	public class BubbleView extends View {
+		private static final int BITMAP_SIZE = 64;
+		private static final int REFRESH_RATE = 40;
+		private final Paint mPainter = new Paint();
+		private ScheduledFuture<?> mMoverFuture;
+		private int mScaledBitmapWidth;
+		private Bitmap mScaledBitmap;
+		// location, speed and direction of the bubble
+		private float mXPos, mYPos, mDx, mDy, mRadius, mRadiusSquared;
+		private long mRotate, mDRotate;
+		BubbleView(Context context, float x, float y) {
+			super(context);
+			// Create a new random number generator to
+			// randomize size, rotation, speed and direction
+			Random r = new Random();
+			// Creates the bubble bitmap for this BubbleView
+			createScaledBitmap(r);
+			// Radius of the Bitmap
+			mRadius = mScaledBitmapWidth / 2;
+			mRadiusSquared = mRadius * mRadius;
+			// Adjust position to center the bubble under user's finger
+			mXPos = x - mRadius;
+			mYPos = y - mRadius;
+			// Set the BubbleView's speed and direction
+			setSpeedAndDirection(r);
+			// Set the BubbleView's rotation
+			setRotation(r);
+			mPainter.setAntiAlias(true);
+		}
+		private void setRotation(Random r) {
+			if (speedMode == RANDOM) {
+				// TODO - set rotation in range [1..3]
+			} else {
+				mDRotate = 0;
+			}
+		}
+		private void setSpeedAndDirection(Random r) {
+			// Used by test cases
+			switch (speedMode) {
+			case SINGLE:
+				mDx = 20;
+				mDy = 20;
+				break;
+			case STILL:
+				// No speed
+				mDx = 0;
+				mDy = 0;
+				break;
+			default:
+				// TODO - Set mDx and mDy to indicate movement direction and speed 
+				// Limit speed in the x and y direction to [-3..3] pixels per movement.
+			}
+		}
+		private void createScaledBitmap(Random r) {
+			if (speedMode != RANDOM) {
+				mScaledBitmapWidth = BITMAP_SIZE * 3;
+			} else {
+				// TODO - set scaled bitmap size in range [1..3] * BITMAP_SIZE
+			}
+			// TODO - create the scaled bitmap using size set above
+		}
+		// Start moving the BubbleView & updating the display
+		private void startMovement() {
+			// Creates a WorkerThread
+			ScheduledExecutorService executor = Executors
+					.newScheduledThreadPool(1);
+			// Execute the run() in Worker Thread every REFRESH_RATE
+			// milliseconds
+			// Save reference to this job in mMoverFuture
+			mMoverFuture = executor.scheduleWithFixedDelay(new Runnable() {
+				@Override
+				public void run() {
+					// TODO - implement movement logic.
+					// Each time this method is run the BubbleView should
+					// move one step. If the BubbleView exits the display,
+					// stop the BubbleView's Worker Thread.
+					// Otherwise, request that the BubbleView be redrawn.
+				}
+			}, 0, REFRESH_RATE, TimeUnit.MILLISECONDS);
+		}
+		// Returns true if the BubbleView intersects position (x,y)
+		private synchronized boolean intersects(float x, float y) {
+			// TODO - Return true if the BubbleView intersects position (x,y)
+			return  true || false;
+		}
+		// Cancel the Bubble's movement
+		// Remove Bubble from mFrame
+		// Play pop sound if the BubbleView was popped
+		private void stopMovement(final boolean wasPopped) {
+			if (null != mMoverFuture) {
+				if (!mMoverFuture.isDone()) {
+					mMoverFuture.cancel(true);
+				}
+				// This work will be performed on the UI Thread
+				mFrame.post(new Runnable() {
+					@Override
+					public void run() {
+						// TODO - Remove the BubbleView from mFrame
+						// TODO - If the bubble was popped by user,
+						// play the popping sound
+						if (wasPopped) {
+						}
+					}
+				});
+			}
+		}
+		// Change the Bubble's speed and direction
+		private synchronized void deflect(float velocityX, float velocityY) {
+			mDx = velocityX / REFRESH_RATE;
+			mDy = velocityY / REFRESH_RATE;
+		}
+		// Draw the Bubble at its current location
+		@Override
+		protected synchronized void onDraw(Canvas canvas) {
+			// TODO - save the canvas
+			// TODO - increase the rotation of the original image by mDRotate
+			// TODO Rotate the canvas by current rotation
+			// Hint - Rotate around the bubble's center, not its position
+			// TODO - draw the bitmap at it's new location
+			// TODO - restore the canvas
+		}
+		// Returns true if the BubbleView is still on the screen after the move
+		// operation
+		private synchronized boolean moveWhileOnScreen() {
+			// TODO - Move the BubbleView
+			return isOutOfView();
+		}
+		// Return true if the BubbleView is still on the screen after the move
+		// operation
+		private boolean isOutOfView() {
+			// TODO - Return true if the BubbleView is still on the screen after
+			// the move operation
+			return true || false;
+		}
+	}",class,
+"	@Override
+	public void onCreate(Bundle savedInstanceState) {
+		super.onCreate(savedInstanceState);
+		setContentView(R.layout.main);
+		// Set up user interface
+		mFrame = (RelativeLayout) findViewById(R.id.frame);
+		// Load basic bubble Bitmap
+		mBitmap = BitmapFactory.decodeResource(getResources(), R.drawable.b64);
+	}",method,
+"	@Override
+	protected void onResume() {
+		super.onResume();
+		// Manage bubble popping sound
+		// Use AudioManager.STREAM_MUSIC as stream type
+		mAudioManager = (AudioManager) getSystemService(AUDIO_SERVICE);
+		mStreamVolume = (float) mAudioManager
+				.getStreamVolume(AudioManager.STREAM_MUSIC)
+				/ mAudioManager.getStreamMaxVolume(AudioManager.STREAM_MUSIC);
+		// TODO - make a new SoundPool, allowing up to 10 streams
+		mSoundPool = null;
+		// TODO - set a SoundPool OnLoadCompletedListener that calls
+		// setupGestureDetector()
+		// TODO - load the sound from res/raw/bubble_pop.wav
+	}",method,
+"	@Override
+	public void onWindowFocusChanged(boolean hasFocus) {
+		super.onWindowFocusChanged(hasFocus);
+		if (hasFocus) {
+			// Get the size of the display so this View knows where borders are
+			mDisplayWidth = mFrame.getWidth();
+			mDisplayHeight = mFrame.getHeight();
+		}
+	}",method,
+"		if (hasFocus) {
+			// Get the size of the display so this View knows where borders are
+			mDisplayWidth = mFrame.getWidth();
+			mDisplayHeight = mFrame.getHeight();
+		}",method,
+"	private void setupGestureDetector() {
+		mGestureDetector = new GestureDetector(this,
+		new GestureDetector.SimpleOnGestureListener() {
+			// If a fling gesture starts on a BubbleView then change the
+			// BubbleView's velocity
+			@Override
+			public boolean onFling(MotionEvent event1, MotionEvent event2,
+					float velocityX, float velocityY) {
+				// TODO - Implement onFling actions.
+				// You can get all Views in mFrame one at a time
+				// using the ViewGroup.getChildAt() method
+				return true;
+			}
+			// If a single tap intersects a BubbleView, then pop the BubbleView
+			// Otherwise, create a new BubbleView at the tap's location and add
+			// it to mFrame. You can get all views from mFrame with
+			// ViewGroup.getChildAt()
+			@Override
+			public boolean onSingleTapConfirmed(MotionEvent event) {
+				// TODO - Implement onSingleTapConfirmed actions.
+				// You can get all Views in mFrame using the
+				// ViewGroup.getChildCount() method
+				return true;
+			}
+		});
+	}",method,
+"		new GestureDetector.SimpleOnGestureListener() {
+			// If a fling gesture starts on a BubbleView then change the
+			// BubbleView's velocity
+			@Override
+			public boolean onFling(MotionEvent event1, MotionEvent event2,
+					float velocityX, float velocityY) {
+				// TODO - Implement onFling actions.
+				// You can get all Views in mFrame one at a time
+				// using the ViewGroup.getChildAt() method
+				return true;
+			}
+			// If a single tap intersects a BubbleView, then pop the BubbleView
+			// Otherwise, create a new BubbleView at the tap's location and add
+			// it to mFrame. You can get all views from mFrame with
+			// ViewGroup.getChildAt()
+			@Override
+			public boolean onSingleTapConfirmed(MotionEvent event) {
+				// TODO - Implement onSingleTapConfirmed actions.
+				// You can get all Views in mFrame using the
+				// ViewGroup.getChildCount() method
+				return true;
+			}
+		}",method,
+"			@Override
+			public boolean onFling(MotionEvent event1, MotionEvent event2,
+					float velocityX, float velocityY) {
+				// TODO - Implement onFling actions.
+				// You can get all Views in mFrame one at a time
+				// using the ViewGroup.getChildAt() method
+				return true;
+			}",method,
+"			@Override
+			public boolean onSingleTapConfirmed(MotionEvent event) {
+				// TODO - Implement onSingleTapConfirmed actions.
+				// You can get all Views in mFrame using the
+				// ViewGroup.getChildCount() method
+				return true;
+			}",method,
+"	@Override
+	public boolean onTouchEvent(MotionEvent event) {
+		// TODO - Delegate the touch to the gestureDetector
+		return true || false;
+	}",method,
+"	@Override
+	protected void onPause() {
+		// TODO - Release all SoundPool resources
+		super.onPause();
+	}",method,
+"		BubbleView(Context context, float x, float y) {
+			super(context);
+			// Create a new random number generator to
+			// randomize size, rotation, speed and direction
+			Random r = new Random();
+			// Creates the bubble bitmap for this BubbleView
+			createScaledBitmap(r);
+			// Radius of the Bitmap
+			mRadius = mScaledBitmapWidth / 2;
+			mRadiusSquared = mRadius * mRadius;
+			// Adjust position to center the bubble under user's finger
+			mXPos = x - mRadius;
+			mYPos = y - mRadius;
+			// Set the BubbleView's speed and direction
+			setSpeedAndDirection(r);
+			// Set the BubbleView's rotation
+			setRotation(r);
+			mPainter.setAntiAlias(true);
+		}",method,
+"		private void setRotation(Random r) {
+			if (speedMode == RANDOM) {
+				// TODO - set rotation in range [1..3]
+			} else {
+				mDRotate = 0;
+			}
+		}",method,
+"			if (speedMode == RANDOM) {
+				// TODO - set rotation in range [1..3]
+			}",method,
+"		private void setSpeedAndDirection(Random r) {
+			// Used by test cases
+			switch (speedMode) {
+			case SINGLE:
+				mDx = 20;
+				mDy = 20;
+				break;
+			case STILL:
+				// No speed
+				mDx = 0;
+				mDy = 0;
+				break;
+			default:
+				// TODO - Set mDx and mDy to indicate movement direction and speed 
+				// Limit speed in the x and y direction to [-3..3] pixels per movement.
+			}
+		}",method,
+"			switch (speedMode) {
+			case SINGLE:
+				mDx = 20;
+				mDy = 20;
+				break;
+			case STILL:
+				// No speed
+				mDx = 0;
+				mDy = 0;
+				break;
+			default:
+				// TODO - Set mDx and mDy to indicate movement direction and speed 
+				// Limit speed in the x and y direction to [-3..3] pixels per movement.
+			}",method,
+"		private void createScaledBitmap(Random r) {
+			if (speedMode != RANDOM) {
+				mScaledBitmapWidth = BITMAP_SIZE * 3;
+			} else {
+				// TODO - set scaled bitmap size in range [1..3] * BITMAP_SIZE
+			}
+			// TODO - create the scaled bitmap using size set above
+		}",method,
+"			if (speedMode != RANDOM) {
+				mScaledBitmapWidth = BITMAP_SIZE * 3;
+			}",method,
+"		private void startMovement() {
+			// Creates a WorkerThread
+			ScheduledExecutorService executor = Executors
+					.newScheduledThreadPool(1);
+			// Execute the run() in Worker Thread every REFRESH_RATE
+			// milliseconds
+			// Save reference to this job in mMoverFuture
+			mMoverFuture = executor.scheduleWithFixedDelay(new Runnable() {
+				@Override
+				public void run() {
+					// TODO - implement movement logic.
+					// Each time this method is run the BubbleView should
+					// move one step. If the BubbleView exits the display,
+					// stop the BubbleView's Worker Thread.
+					// Otherwise, request that the BubbleView be redrawn.
+				}
+			}, 0, REFRESH_RATE, TimeUnit.MILLISECONDS);
+		}",method,
+"				@Override
+				public void run() {
+					// TODO - implement movement logic.
+					// Each time this method is run the BubbleView should
+					// move one step. If the BubbleView exits the display,
+					// stop the BubbleView's Worker Thread.
+					// Otherwise, request that the BubbleView be redrawn.
+				}",method,
+"		private synchronized boolean intersects(float x, float y) {
+			// TODO - Return true if the BubbleView intersects position (x,y)
+			return  true || false;
+		}",method,
+"		private void stopMovement(final boolean wasPopped) {
+			if (null != mMoverFuture) {
+				if (!mMoverFuture.isDone()) {
+					mMoverFuture.cancel(true);
+				}
+				// This work will be performed on the UI Thread
+				mFrame.post(new Runnable() {
+					@Override
+					public void run() {
+						// TODO - Remove the BubbleView from mFrame
+						// TODO - If the bubble was popped by user,
+						// play the popping sound
+						if (wasPopped) {
+						}
+					}
+				});
+			}
+		}",method,
+"			if (null != mMoverFuture) {
+				if (!mMoverFuture.isDone()) {
+					mMoverFuture.cancel(true);
+				}
+				// This work will be performed on the UI Thread
+				mFrame.post(new Runnable() {
+					@Override
+					public void run() {
+						// TODO - Remove the BubbleView from mFrame
+						// TODO - If the bubble was popped by user,
+						// play the popping sound
+						if (wasPopped) {
+						}
+					}
+				});
+			}",method,
+"				mFrame.post(new Runnable() {
+					@Override
+					public void run() {
+						// TODO - Remove the BubbleView from mFrame
+						// TODO - If the bubble was popped by user,
+						// play the popping sound
+						if (wasPopped) {
+						}
+					}
+				}",method,
+"					@Override
+					public void run() {
+						// TODO - Remove the BubbleView from mFrame
+						// TODO - If the bubble was popped by user,
+						// play the popping sound
+						if (wasPopped) {
+						}
+					}",method,
+"						if (wasPopped) {
+						}",method,
+"		private synchronized void deflect(float velocityX, float velocityY) {
+			mDx = velocityX / REFRESH_RATE;
+			mDy = velocityY / REFRESH_RATE;
+		}",method,
+"		@Override
+		protected synchronized void onDraw(Canvas canvas) {
+			// TODO - save the canvas
+			// TODO - increase the rotation of the original image by mDRotate
+			// TODO Rotate the canvas by current rotation
+			// Hint - Rotate around the bubble's center, not its position
+			// TODO - draw the bitmap at it's new location
+			// TODO - restore the canvas
+		}",method,
+"		private synchronized boolean moveWhileOnScreen() {
+			// TODO - Move the BubbleView
+			return isOutOfView();
+		}",method,
+"		private boolean isOutOfView() {
+			// TODO - Return true if the BubbleView is still on the screen after
+			// the move operation
+			return true || false;
+		}",method,
+"	@Override
+	public void onBackPressed() {
+		openOptionsMenu();
+	}",method,
+"	@Override
+	public boolean onCreateOptionsMenu(Menu menu) {
+		super.onCreateOptionsMenu(menu);
+		getMenuInflater().inflate(R.menu.menu, menu);
+		return true;
+	}",method,
+"	@Override
+	public boolean onOptionsItemSelected(MenuItem item) {
+		switch (item.getItemId()) {
+		case R.id.menu_still_mode:
+			speedMode = STILL;
+			return true;
+		case R.id.menu_single_speed:
+			speedMode = SINGLE;
+			return true;
+		case R.id.menu_random_mode:
+			speedMode = RANDOM;
+			return true;
+		case R.id.quit:
+			exitRequested();
+			return true;
+		default:
+			return super.onOptionsItemSelected(item);
+		}
+	}",method,
+"	private void exitRequested() {
+		super.onBackPressed();
+	}",method,
+"public class TestBasicConfiguration extends BasicConfiguration {
+    private static final Properties PROPS = new Properties();
+    public TestBasicConfiguration() {
+        super(PROPS);
+    }
+    @Test
+    public void testGetBool() {
+        PROPS.clear();
+        Assert.assertFalse(getBool(""foobar.enabled""));
+        PROPS.setProperty(""foobar.enabled"", ""true"");
+        Assert.assertTrue(getBool(""foobar.enabled""));
+        PROPS.setProperty(""foobar.enabled"", ""false"");
+        Assert.assertFalse(getBool(""foobar.enabled""));
+    }
+    @Test
+    public void testGetBoolOrElse() {
+        PROPS.clear();
+        Assert.assertFalse(getBoolOrElse(""foobar.enabled"", false));
+        Assert.assertTrue(getBoolOrElse(""foobar.enabled"", true));
+        PROPS.setProperty(""foobar.enabled"", ""true"");
+        Assert.assertTrue(getBoolOrElse(""foobar.enabled"", false));
+        Assert.assertTrue(getBoolOrElse(""foobar.enabled"", true));
+        PROPS.setProperty(""foobar.enabled"", ""false"");
+        Assert.assertFalse(getBoolOrElse(""foobar.enabled"", false));
+        Assert.assertFalse(getBoolOrElse(""foobar.enabled"", true));
+    }
+    @Test
+    public void testGetNumOrElse() {
+        // CHECKSTYLE IGNORE MagicNumberCheck
+        PROPS.clear();
+        Assert.assertEquals(getNumOrElse(""foobar.number"", 42), 42D);
+        PROPS.setProperty(""foobar.number"", ""0"");
+        Assert.assertEquals(getNumOrElse(""foobar.number"", 42), 0D);
+    }
+    @Test
+    public void testGetStr() {
+        PROPS.clear();
+        Assert.assertNull(getStr(""foobar""));
+        PROPS.setProperty(""foobar"", ""string"");
+        Assert.assertEquals(getStr(""foobar""), ""string"");
+    }
+    @Test
+    public void testGetStrOrElse() {
+        PROPS.clear();
+        Assert.assertEquals(getStrOrElse(""foobar"", ""default""), ""default"");
+        PROPS.setProperty(""foobar"", ""string"");
+        Assert.assertEquals(getStrOrElse(""foobar"", ""default""), ""string"");
+        PROPS.setProperty(""foobar"", """");
+        Assert.assertEquals(getStrOrElse(""foobar"", ""default""), """");
+    }
+}",class,
+"    public TestBasicConfiguration() {
+        super(PROPS);
+    }",method,
+"    @Test
+    public void testGetBool() {
+        PROPS.clear();
+        Assert.assertFalse(getBool(""foobar.enabled""));
+        PROPS.setProperty(""foobar.enabled"", ""true"");
+        Assert.assertTrue(getBool(""foobar.enabled""));
+        PROPS.setProperty(""foobar.enabled"", ""false"");
+        Assert.assertFalse(getBool(""foobar.enabled""));
+    }",method,
+"    @Test
+    public void testGetBoolOrElse() {
+        PROPS.clear();
+        Assert.assertFalse(getBoolOrElse(""foobar.enabled"", false));
+        Assert.assertTrue(getBoolOrElse(""foobar.enabled"", true));
+        PROPS.setProperty(""foobar.enabled"", ""true"");
+        Assert.assertTrue(getBoolOrElse(""foobar.enabled"", false));
+        Assert.assertTrue(getBoolOrElse(""foobar.enabled"", true));
+        PROPS.setProperty(""foobar.enabled"", ""false"");
+        Assert.assertFalse(getBoolOrElse(""foobar.enabled"", false));
+        Assert.assertFalse(getBoolOrElse(""foobar.enabled"", true));
+    }",method,
+"    @Test
+    public void testGetNumOrElse() {
+        // CHECKSTYLE IGNORE MagicNumberCheck
+        PROPS.clear();
+        Assert.assertEquals(getNumOrElse(""foobar.number"", 42), 42D);
+        PROPS.setProperty(""foobar.number"", ""0"");
+        Assert.assertEquals(getNumOrElse(""foobar.number"", 42), 0D);
+    }",method,
+"    @Test
+    public void testGetStr() {
+        PROPS.clear();
+        Assert.assertNull(getStr(""foobar""));
+        PROPS.setProperty(""foobar"", ""string"");
+        Assert.assertEquals(getStr(""foobar""), ""string"");
+    }",method,
+"    @Test
+    public void testGetStrOrElse() {
+        PROPS.clear();
+        Assert.assertEquals(getStrOrElse(""foobar"", ""default""), ""default"");
+        PROPS.setProperty(""foobar"", ""string"");
+        Assert.assertEquals(getStrOrElse(""foobar"", ""default""), ""string"");
+        PROPS.setProperty(""foobar"", """");
+        Assert.assertEquals(getStrOrElse(""foobar"", ""default""), """");
+    }",method,
+"public class JCacheErrorHandlerTests {
+	private Cache cache;
+	private Cache errorCache;
+	private CacheErrorHandler errorHandler;
+	private SimpleService simpleService;
+	@Rule
+	public final ExpectedException thrown = ExpectedException.none();
+	@Before
+	public void setup() {
+		AnnotationConfigApplicationContext context = new AnnotationConfigApplicationContext(Config.class);
+		this.cache = context.getBean(""mockCache"", Cache.class);
+		this.errorCache = context.getBean(""mockErrorCache"", Cache.class);
+		this.errorHandler = context.getBean(CacheErrorHandler.class);
+		this.simpleService = context.getBean(SimpleService.class);
+	}
+	@Test
+	public void getFail() {
+		UnsupportedOperationException exception = new UnsupportedOperationException(""Test exception on get"");
+		Object key = SimpleKeyGenerator.generateKey(0L);
+		willThrow(exception).given(this.cache).get(key);
+		this.simpleService.get(0L);
+		verify(this.errorHandler).handleCacheGetError(exception, this.cache, key);
+	}
+	@Test
+	public void getPutNewElementFail() {
+		UnsupportedOperationException exception = new UnsupportedOperationException(""Test exception on put"");
+		Object key = SimpleKeyGenerator.generateKey(0L);
+		given(this.cache.get(key)).willReturn(null);
+		willThrow(exception).given(this.cache).put(key, 0L);
+		this.simpleService.get(0L);
+		verify(this.errorHandler).handleCachePutError(exception, this.cache, key, 0L);
+	}
+	@Test
+	public void getFailPutExceptionFail() {
+		UnsupportedOperationException exceptionOnPut = new UnsupportedOperationException(""Test exception on put"");
+		Object key = SimpleKeyGenerator.generateKey(0L);
+		given(this.cache.get(key)).willReturn(null);
+		willThrow(exceptionOnPut).given(this.errorCache).put(key, SimpleService.TEST_EXCEPTION);
+		try {
+			this.simpleService.getFail(0L);
+		}
+		catch (IllegalStateException ex) {
+			assertEquals(""Test exception"", ex.getMessage());
+		}
+		verify(this.errorHandler).handleCachePutError(
+				exceptionOnPut, this.errorCache, key, SimpleService.TEST_EXCEPTION);
+	}
+	@Test
+	public void putFail() {
+		UnsupportedOperationException exception = new UnsupportedOperationException(""Test exception on put"");
+		Object key = SimpleKeyGenerator.generateKey(0L);
+		willThrow(exception).given(this.cache).put(key, 234L);
+		this.simpleService.put(0L, 234L);
+		verify(this.errorHandler).handleCachePutError(exception, this.cache, key, 234L);
+	}
+	@Test
+	public void evictFail() {
+		UnsupportedOperationException exception = new UnsupportedOperationException(""Test exception on evict"");
+		Object key = SimpleKeyGenerator.generateKey(0L);
+		willThrow(exception).given(this.cache).evict(key);
+		this.simpleService.evict(0L);
+		verify(this.errorHandler).handleCacheEvictError(exception, this.cache, key);
+	}
+	@Test
+	public void clearFail() {
+		UnsupportedOperationException exception = new UnsupportedOperationException(""Test exception on evict"");
+		willThrow(exception).given(this.cache).clear();
+		this.simpleService.clear();
+		verify(this.errorHandler).handleCacheClearError(exception, this.cache);
+	}
+	@Configuration
+	@EnableCaching
+	static class Config extends JCacheConfigurerSupport {
+		@Bean
+		@Override
+		public CacheManager cacheManager() {
+			SimpleCacheManager cacheManager = new SimpleCacheManager();
+			cacheManager.setCaches(Arrays.asList(mockCache(), mockErrorCache()));
+			return cacheManager;
+		}
+		@Bean
+		@Override
+		public CacheErrorHandler errorHandler() {
+			return mock(CacheErrorHandler.class);
+		}
+		@Bean
+		public SimpleService simpleService() {
+			return new SimpleService();
+		}
+		@Bean
+		public Cache mockCache() {
+			Cache cache = mock(Cache.class);
+			given(cache.getName()).willReturn(""test"");
+			return cache;
+		}
+		@Bean
+		public Cache mockErrorCache() {
+			Cache cache = mock(Cache.class);
+			given(cache.getName()).willReturn(""error"");
+			return cache;
+		}
+	}
+	@CacheDefaults(cacheName = ""test"")
+	public static class SimpleService {
+		private static final IllegalStateException TEST_EXCEPTION = new IllegalStateException(""Test exception"");
+		private AtomicLong counter = new AtomicLong();
+		@CacheResult
+		public Object get(long id) {
+			return this.counter.getAndIncrement();
+		}
+		@CacheResult(exceptionCacheName = ""error"")
+		public Object getFail(long id) {
+			throw TEST_EXCEPTION;
+		}
+		@CachePut
+		public void put(long id, @CacheValue Object object) {
+		}
+		@CacheRemove
+		public void evict(long id) {
+		}
+		@CacheRemoveAll
+		public void clear() {
+		}
+	}
+}",class,
+"	static class Config extends JCacheConfigurerSupport {
+		@Bean
+		@Override
+		public CacheManager cacheManager() {
+			SimpleCacheManager cacheManager = new SimpleCacheManager();
+			cacheManager.setCaches(Arrays.asList(mockCache(), mockErrorCache()));
+			return cacheManager;
+		}
+		@Bean
+		@Override
+		public CacheErrorHandler errorHandler() {
+			return mock(CacheErrorHandler.class);
+		}
+		@Bean
+		public SimpleService simpleService() {
+			return new SimpleService();
+		}
+		@Bean
+		public Cache mockCache() {
+			Cache cache = mock(Cache.class);
+			given(cache.getName()).willReturn(""test"");
+			return cache;
+		}
+		@Bean
+		public Cache mockErrorCache() {
+			Cache cache = mock(Cache.class);
+			given(cache.getName()).willReturn(""error"");
+			return cache;
+		}
+	}",class,
+"	public static class SimpleService {
+		private static final IllegalStateException TEST_EXCEPTION = new IllegalStateException(""Test exception"");
+		private AtomicLong counter = new AtomicLong();
+		@CacheResult
+		public Object get(long id) {
+			return this.counter.getAndIncrement();
+		}
+		@CacheResult(exceptionCacheName = ""error"")
+		public Object getFail(long id) {
+			throw TEST_EXCEPTION;
+		}
+		@CachePut
+		public void put(long id, @CacheValue Object object) {
+		}
+		@CacheRemove
+		public void evict(long id) {
+		}
+		@CacheRemoveAll
+		public void clear() {
+		}
+	}",class,
+"	@Before
+	public void setup() {
+		AnnotationConfigApplicationContext context = new AnnotationConfigApplicationContext(Config.class);
+		this.cache = context.getBean(""mockCache"", Cache.class);
+		this.errorCache = context.getBean(""mockErrorCache"", Cache.class);
+		this.errorHandler = context.getBean(CacheErrorHandler.class);
+		this.simpleService = context.getBean(SimpleService.class);
+	}",method,
+"	@Test
+	public void getFail() {
+		UnsupportedOperationException exception = new UnsupportedOperationException(""Test exception on get"");
+		Object key = SimpleKeyGenerator.generateKey(0L);
+		willThrow(exception).given(this.cache).get(key);
+		this.simpleService.get(0L);
+		verify(this.errorHandler).handleCacheGetError(exception, this.cache, key);
+	}",method,
+"	@Test
+	public void getPutNewElementFail() {
+		UnsupportedOperationException exception = new UnsupportedOperationException(""Test exception on put"");
+		Object key = SimpleKeyGenerator.generateKey(0L);
+		given(this.cache.get(key)).willReturn(null);
+		willThrow(exception).given(this.cache).put(key, 0L);
+		this.simpleService.get(0L);
+		verify(this.errorHandler).handleCachePutError(exception, this.cache, key, 0L);
+	}",method,
+"	@Test
+	public void getFailPutExceptionFail() {
+		UnsupportedOperationException exceptionOnPut = new UnsupportedOperationException(""Test exception on put"");
+		Object key = SimpleKeyGenerator.generateKey(0L);
+		given(this.cache.get(key)).willReturn(null);
+		willThrow(exceptionOnPut).given(this.errorCache).put(key, SimpleService.TEST_EXCEPTION);
+		try {
+			this.simpleService.getFail(0L);
+		}
+		catch (IllegalStateException ex) {
+			assertEquals(""Test exception"", ex.getMessage());
+		}
+		verify(this.errorHandler).handleCachePutError(
+				exceptionOnPut, this.errorCache, key, SimpleService.TEST_EXCEPTION);
+	}",method,
+"		catch (IllegalStateException ex) {
+			assertEquals(""Test exception"", ex.getMessage());
+		}",method,
+"	@Test
+	public void putFail() {
+		UnsupportedOperationException exception = new UnsupportedOperationException(""Test exception on put"");
+		Object key = SimpleKeyGenerator.generateKey(0L);
+		willThrow(exception).given(this.cache).put(key, 234L);
+		this.simpleService.put(0L, 234L);
+		verify(this.errorHandler).handleCachePutError(exception, this.cache, key, 234L);
+	}",method,
+"	@Test
+	public void evictFail() {
+		UnsupportedOperationException exception = new UnsupportedOperationException(""Test exception on evict"");
+		Object key = SimpleKeyGenerator.generateKey(0L);
+		willThrow(exception).given(this.cache).evict(key);
+		this.simpleService.evict(0L);
+		verify(this.errorHandler).handleCacheEvictError(exception, this.cache, key);
+	}",method,
+"	@Test
+	public void clearFail() {
+		UnsupportedOperationException exception = new UnsupportedOperationException(""Test exception on evict"");
+		willThrow(exception).given(this.cache).clear();
+		this.simpleService.clear();
+		verify(this.errorHandler).handleCacheClearError(exception, this.cache);
+	}",method,

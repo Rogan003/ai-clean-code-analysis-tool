@@ -1,0 +1,1326 @@
+code_snippet,type,score
+"  public String getSource() {
+    return myCurrentRepositoryUrl;
+  }",method,
+"  private void setRoots(@NotNull Collection<HgRepository> repositories, @Nullable final HgRepository selectedRepo) {
+    hgRepositorySelector.setRoots(repositories);
+    hgRepositorySelector.setSelectedRoot(selectedRepo);
+    onChangeRepository();
+  }",method,
+"  protected JComponent createCenterPanel() {
+    return mainPanel;
+  }",method,
+"  @Override
+  protected String getHelpId() {
+    return ""reference.mercurial.pull.dialog"";
+  }",method,
+"  private void onChangeRepository() {
+    final VirtualFile repo = hgRepositorySelector.getRepository().getRoot();
+    final String defaultPath = HgUtil.getRepositoryDefaultPath(project, repo);
+    if (!StringUtil.isEmptyOrSpaces(defaultPath)) {
+      addPathsFromHgrc(repo);
+      myRepositoryURL.setText(HgUtil.removePasswordIfNeeded(defaultPath));
+      myCurrentRepositoryUrl = defaultPath;
+      onChangePullSource();
+    }
+  }",method,
+"  private void onChangePullSource() {
+    myCurrentRepositoryUrl = myRepositoryURL.getText();
+    setOKActionEnabled(!StringUtil.isEmptyOrSpaces(myRepositoryURL.getText()));
+  }",method,
+"  @Override
+  protected String getDimensionServiceKey() {
+    return HgPullDialog.class.getName();
+  }",method,
+"public class JavaBuckConfig implements ConfigView<BuckConfig> {
+  public static final String SECTION = ""java"";
+  public static final String PROPERTY_COMPILE_AGAINST_ABIS = ""compile_against_abis"";
+  private static final JavaOptions DEFAULT_JAVA_OPTIONS =
+      JavaOptions.of(new CommandTool.Builder().addArg(""java"").build());
+  private final BuckConfig delegate;
+  // Interface for reflection-based ConfigView to instantiate this class.
+  public static JavaBuckConfig of(BuckConfig delegate) {
+    return new JavaBuckConfig(delegate);
+  }
+  private JavaBuckConfig(BuckConfig delegate) {
+    this.delegate = delegate;
+  }
+  @Override
+  public BuckConfig getDelegate() {
+    return delegate;
+  }
+  public JavaOptions getDefaultJavaOptions() {
+    return getToolForExecutable(""java"").map(JavaOptions::of).orElse(DEFAULT_JAVA_OPTIONS);
+  }
+  public JavaOptions getDefaultJavaOptionsForTests() {
+    return getToolForExecutable(""java_for_tests"")
+        .map(JavaOptions::of)
+        .orElseGet(this::getDefaultJavaOptions);
+  }
+  public JavacOptions getDefaultJavacOptions() {
+    JavacOptions.Builder builder = JavacOptions.builderForUseInJavaBuckConfig();
+    Optional<String> sourceLevel = delegate.getValue(SECTION, ""source_level"");
+    if (sourceLevel.isPresent()) {
+      builder.setSourceLevel(sourceLevel.get());
+    }
+    Optional<String> targetLevel = delegate.getValue(SECTION, ""target_level"");
+    if (targetLevel.isPresent()) {
+      builder.setTargetLevel(targetLevel.get());
+    }
+    ImmutableList<String> extraArguments =
+        delegate.getListWithoutComments(SECTION, ""extra_arguments"");
+    ImmutableList<String> safeAnnotationProcessors =
+        delegate.getListWithoutComments(SECTION, ""safe_annotation_processors"");
+    builder.setTrackClassUsage(trackClassUsage());
+    Optional<AbstractJavacOptions.SpoolMode> spoolMode =
+        delegate.getEnum(SECTION, ""jar_spool_mode"", AbstractJavacOptions.SpoolMode.class);
+    if (spoolMode.isPresent()) {
+      builder.setSpoolMode(spoolMode.get());
+    }
+    ImmutableMap<String, String> allEntries = delegate.getEntriesForSection(SECTION);
+    ImmutableMap.Builder<String, String> bootclasspaths = ImmutableMap.builder();
+    for (Map.Entry<String, String> entry : allEntries.entrySet()) {
+      if (entry.getKey().startsWith(""bootclasspath-"")) {
+        bootclasspaths.put(entry.getKey().substring(""bootclasspath-"".length()), entry.getValue());
+      }
+    }
+    return builder
+        .putAllSourceToBootclasspath(bootclasspaths.build())
+        .addAllExtraArguments(extraArguments)
+        .setSafeAnnotationProcessors(safeAnnotationProcessors)
+        .build();
+  }
+  public AbiGenerationMode getAbiGenerationMode() {
+    return delegate
+        .getEnum(SECTION, ""abi_generation_mode"", AbiGenerationMode.class)
+        .orElse(AbiGenerationMode.CLASS);
+  }
+  public ImmutableSet<String> getSrcRoots() {
+    return ImmutableSet.copyOf(delegate.getListWithoutComments(SECTION, ""src_roots""));
+  }
+  public DefaultJavaPackageFinder createDefaultJavaPackageFinder() {
+    return DefaultJavaPackageFinder.createDefaultJavaPackageFinder(getSrcRoots());
+  }
+  public boolean trackClassUsage() {
+    // This is just to make it possible to turn off dep-based rulekeys in case anything goes wrong
+    // and can be removed when we're sure class usage tracking and dep-based keys for Java
+    // work fine.
+    Optional<Boolean> trackClassUsage = delegate.getBoolean(SECTION, ""track_class_usage"");
+    if (trackClassUsage.isPresent() && !trackClassUsage.get()) {
+      return false;
+    }
+    final Javac.Source javacSource = getJavacSpec().getJavacSource();
+    return (javacSource == Javac.Source.JAR || javacSource == Javac.Source.JDK);
+  }
+  public JavacSpec getJavacSpec() {
+    return JavacSpec.builder()
+        .setJavacPath(
+            getJavacPath().isPresent()
+                ? Optional.of(Either.ofLeft(getJavacPath().get()))
+                : Optional.empty())
+        .setJavacJarPath(delegate.getSourcePath(""tools"", ""javac_jar""))
+        .setJavacLocation(
+            delegate
+                .getEnum(SECTION, ""location"", Javac.Location.class)
+                .orElse(Javac.Location.IN_PROCESS))
+        .setCompilerClassName(delegate.getValue(""tools"", ""compiler_class_name""))
+        .build();
+  }
+  @VisibleForTesting
+  Optional<Path> getJavacPath() {
+    return getPathToExecutable(""javac"");
+  }
+  private Optional<Path> getPathToExecutable(String executableName) {
+    Optional<Path> path = delegate.getPath(""tools"", executableName);
+    if (path.isPresent()) {
+      File file = path.get().toFile();
+      if (!file.canExecute()) {
+        throw new HumanReadableException(executableName + "" is not executable: "" + file.getPath());
+      }
+      return Optional.of(file.toPath());
+    }
+    return Optional.empty();
+  }
+  private Optional<Tool> getToolForExecutable(String executableName) {
+    return delegate
+        // Make sure to pass `false` for `isCellRootRelative` so that we get a relative path back,
+        // instead of an absolute one.  Otherwise, we can't preserve the original value.
+        .getPath(""tools"", executableName, false)
+        .map(
+            path -> {
+              if (!Files.isExecutable(
+                  delegate.resolvePathThatMayBeOutsideTheProjectFilesystem(path))) {
+                throw new HumanReadableException(executableName + "" is not executable: "" + path);
+              }
+              // Build the tool object.  For absolute paths, just add the raw string and avoid
+              // hashing the contents, as this would require all users to have identical system
+              // binaries, when what we probably only care about is the version.
+              return new CommandTool.Builder()
+                  .addArg(
+                      path.isAbsolute()
+                          ? StringArg.of(path.toString())
+                          : SourcePathArg.of(delegate.getSourcePath(path)))
+                  .build();
+            });
+  }
+  public boolean shouldCacheBinaries() {
+    return delegate.getBooleanValue(SECTION, ""cache_binaries"", true);
+  }
+  public Optional<Integer> getDxThreadCount() {
+    return delegate.getInteger(SECTION, ""dx_threads"");
+  }
+  public SourceAbiVerificationMode getSourceAbiVerificationMode() {
+    if (!getAbiGenerationMode().isSourceAbi()) {
+      return SourceAbiVerificationMode.OFF;
+    }
+    return delegate
+        .getEnum(SECTION, ""source_abi_verification_mode"", SourceAbiVerificationMode.class)
+        .orElse(SourceAbiVerificationMode.OFF);
+  }
+  public boolean shouldCompileAgainstAbis() {
+    return delegate.getBooleanValue(SECTION, PROPERTY_COMPILE_AGAINST_ABIS, false);
+  }
+  public Optional<String> getDefaultCxxPlatform() {
+    return delegate.getValue(SECTION, ""default_cxx_platform"");
+  }
+  public enum SourceAbiVerificationMode {
+    OFF,
+    LOG,
+    FAIL,
+  }
+}",class,
+"    // and can be removed when we're sure class usage tracking and dep-based keys for Java
+    // work fine.
+    Optional<Boolean> trackClassUsage = delegate.getBoolean(SECTION, ""track_class_usage"");
+    if (trackClassUsage.isPresent() && !trackClassUsage.get()) {
+      return false;
+    }",class,
+"  public static JavaBuckConfig of(BuckConfig delegate) {
+    return new JavaBuckConfig(delegate);
+  }",method,
+"  private JavaBuckConfig(BuckConfig delegate) {
+    this.delegate = delegate;
+  }",method,
+"  @Override
+  public BuckConfig getDelegate() {
+    return delegate;
+  }",method,
+"  public JavaOptions getDefaultJavaOptions() {
+    return getToolForExecutable(""java"").map(JavaOptions::of).orElse(DEFAULT_JAVA_OPTIONS);
+  }",method,
+"  public JavaOptions getDefaultJavaOptionsForTests() {
+    return getToolForExecutable(""java_for_tests"")
+        .map(JavaOptions::of)
+        .orElseGet(this::getDefaultJavaOptions);
+  }",method,
+"  public JavacOptions getDefaultJavacOptions() {
+    JavacOptions.Builder builder = JavacOptions.builderForUseInJavaBuckConfig();
+    Optional<String> sourceLevel = delegate.getValue(SECTION, ""source_level"");
+    if (sourceLevel.isPresent()) {
+      builder.setSourceLevel(sourceLevel.get());
+    }
+    Optional<String> targetLevel = delegate.getValue(SECTION, ""target_level"");
+    if (targetLevel.isPresent()) {
+      builder.setTargetLevel(targetLevel.get());
+    }
+    ImmutableList<String> extraArguments =
+        delegate.getListWithoutComments(SECTION, ""extra_arguments"");
+    ImmutableList<String> safeAnnotationProcessors =
+        delegate.getListWithoutComments(SECTION, ""safe_annotation_processors"");
+    builder.setTrackClassUsage(trackClassUsage());
+    Optional<AbstractJavacOptions.SpoolMode> spoolMode =
+        delegate.getEnum(SECTION, ""jar_spool_mode"", AbstractJavacOptions.SpoolMode.class);
+    if (spoolMode.isPresent()) {
+      builder.setSpoolMode(spoolMode.get());
+    }
+    ImmutableMap<String, String> allEntries = delegate.getEntriesForSection(SECTION);
+    ImmutableMap.Builder<String, String> bootclasspaths = ImmutableMap.builder();
+    for (Map.Entry<String, String> entry : allEntries.entrySet()) {
+      if (entry.getKey().startsWith(""bootclasspath-"")) {
+        bootclasspaths.put(entry.getKey().substring(""bootclasspath-"".length()), entry.getValue());
+      }
+    }
+    return builder
+        .putAllSourceToBootclasspath(bootclasspaths.build())
+        .addAllExtraArguments(extraArguments)
+        .setSafeAnnotationProcessors(safeAnnotationProcessors)
+        .build();
+  }",method,
+"  public AbiGenerationMode getAbiGenerationMode() {
+    return delegate
+        .getEnum(SECTION, ""abi_generation_mode"", AbiGenerationMode.class)
+        .orElse(AbiGenerationMode.CLASS);
+  }",method,
+"  public ImmutableSet<String> getSrcRoots() {
+    return ImmutableSet.copyOf(delegate.getListWithoutComments(SECTION, ""src_roots""));
+  }",method,
+"  public DefaultJavaPackageFinder createDefaultJavaPackageFinder() {
+    return DefaultJavaPackageFinder.createDefaultJavaPackageFinder(getSrcRoots());
+  }",method,
+"  public boolean trackClassUsage() {
+    // This is just to make it possible to turn off dep-based rulekeys in case anything goes wrong
+    // and can be removed when we're sure class usage tracking and dep-based keys for Java
+    // work fine.
+    Optional<Boolean> trackClassUsage = delegate.getBoolean(SECTION, ""track_class_usage"");
+    if (trackClassUsage.isPresent() && !trackClassUsage.get()) {
+      return false;
+    }
+    final Javac.Source javacSource = getJavacSpec().getJavacSource();
+    return (javacSource == Javac.Source.JAR || javacSource == Javac.Source.JDK);
+  }",method,
+"  public JavacSpec getJavacSpec() {
+    return JavacSpec.builder()
+        .setJavacPath(
+            getJavacPath().isPresent()
+                ? Optional.of(Either.ofLeft(getJavacPath().get()))
+                : Optional.empty())
+        .setJavacJarPath(delegate.getSourcePath(""tools"", ""javac_jar""))
+        .setJavacLocation(
+            delegate
+                .getEnum(SECTION, ""location"", Javac.Location.class)
+                .orElse(Javac.Location.IN_PROCESS))
+        .setCompilerClassName(delegate.getValue(""tools"", ""compiler_class_name""))
+        .build();
+  }",method,
+"  @VisibleForTesting
+  Optional<Path> getJavacPath() {
+    return getPathToExecutable(""javac"");
+  }",method,
+"  private Optional<Path> getPathToExecutable(String executableName) {
+    Optional<Path> path = delegate.getPath(""tools"", executableName);
+    if (path.isPresent()) {
+      File file = path.get().toFile();
+      if (!file.canExecute()) {
+        throw new HumanReadableException(executableName + "" is not executable: "" + file.getPath());
+      }
+      return Optional.of(file.toPath());
+    }
+    return Optional.empty();
+  }",method,
+"  private Optional<Tool> getToolForExecutable(String executableName) {
+    return delegate
+        // Make sure to pass `false` for `isCellRootRelative` so that we get a relative path back,
+        // instead of an absolute one.  Otherwise, we can't preserve the original value.
+        .getPath(""tools"", executableName, false)
+        .map(
+            path -> {
+              if (!Files.isExecutable(
+                  delegate.resolvePathThatMayBeOutsideTheProjectFilesystem(path))) {
+                throw new HumanReadableException(executableName + "" is not executable: "" + path);
+              }
+              // Build the tool object.  For absolute paths, just add the raw string and avoid
+              // hashing the contents, as this would require all users to have identical system
+              // binaries, when what we probably only care about is the version.
+              return new CommandTool.Builder()
+                  .addArg(
+                      path.isAbsolute()
+                          ? StringArg.of(path.toString())
+                          : SourcePathArg.of(delegate.getSourcePath(path)))
+                  .build();
+            });
+  }",method,
+"  public boolean shouldCacheBinaries() {
+    return delegate.getBooleanValue(SECTION, ""cache_binaries"", true);
+  }",method,
+"  public Optional<Integer> getDxThreadCount() {
+    return delegate.getInteger(SECTION, ""dx_threads"");
+  }",method,
+"  public SourceAbiVerificationMode getSourceAbiVerificationMode() {
+    if (!getAbiGenerationMode().isSourceAbi()) {
+      return SourceAbiVerificationMode.OFF;
+    }
+    return delegate
+        .getEnum(SECTION, ""source_abi_verification_mode"", SourceAbiVerificationMode.class)
+        .orElse(SourceAbiVerificationMode.OFF);
+  }",method,
+"  public boolean shouldCompileAgainstAbis() {
+    return delegate.getBooleanValue(SECTION, PROPERTY_COMPILE_AGAINST_ABIS, false);
+  }",method,
+"  public Optional<String> getDefaultCxxPlatform() {
+    return delegate.getValue(SECTION, ""default_cxx_platform"");
+  }",method,
+"public class CreateIndexRequestBuilder extends AcknowledgedRequestBuilder<CreateIndexRequest, CreateIndexResponse, CreateIndexRequestBuilder> {
+    public CreateIndexRequestBuilder(ElasticsearchClient client, CreateIndexAction action) {
+        super(client, action, new CreateIndexRequest());
+    }
+    public CreateIndexRequestBuilder(ElasticsearchClient client, CreateIndexAction action, String index) {
+        super(client, action, new CreateIndexRequest(index));
+    }
+    public CreateIndexRequestBuilder setIndex(String index) {
+        request.index(index);
+        return this;
+    }
+    public CreateIndexRequestBuilder setSettings(Settings settings) {
+        request.settings(settings);
+        return this;
+    }
+    public CreateIndexRequestBuilder setSettings(Settings.Builder settings) {
+        request.settings(settings);
+        return this;
+    }
+    public CreateIndexRequestBuilder setSettings(XContentBuilder builder) {
+        request.settings(builder);
+        return this;
+    }
+    public CreateIndexRequestBuilder setSettings(String source, XContentType xContentType) {
+        request.settings(source, xContentType);
+        return this;
+    }
+    public CreateIndexRequestBuilder setSettings(Map<String, ?> source) {
+        request.settings(source);
+        return this;
+    }
+    public CreateIndexRequestBuilder addMapping(String type, String source, XContentType xContentType) {
+        request.mapping(type, source, xContentType);
+        return this;
+    }
+    public CreateIndexRequestBuilder setCause(String cause) {
+        request.cause(cause);
+        return this;
+    }
+    public CreateIndexRequestBuilder addMapping(String type, XContentBuilder source) {
+        request.mapping(type, source);
+        return this;
+    }
+    public CreateIndexRequestBuilder addMapping(String type, Map<String, Object> source) {
+        request.mapping(type, source);
+        return this;
+    }
+    public CreateIndexRequestBuilder addMapping(String type, Object... source) {
+        request.mapping(type, source);
+        return this;
+    }
+    public CreateIndexRequestBuilder setAliases(Map source) {
+        request.aliases(source);
+        return this;
+    }
+    public CreateIndexRequestBuilder setAliases(String source) {
+        request.aliases(source);
+        return this;
+    }
+    public CreateIndexRequestBuilder setAliases(XContentBuilder source) {
+        request.aliases(source);
+        return this;
+    }
+    public CreateIndexRequestBuilder setAliases(BytesReference source) {
+        request.aliases(source);
+        return this;
+    }
+    public CreateIndexRequestBuilder addAlias(Alias alias) {
+        request.alias(alias);
+        return this;
+    }
+    public CreateIndexRequestBuilder setSource(String source, XContentType xContentType) {
+        request.source(source, xContentType);
+        return this;
+    }
+    public CreateIndexRequestBuilder setSource(BytesReference source, XContentType xContentType) {
+        request.source(source, xContentType);
+        return this;
+    }
+    public CreateIndexRequestBuilder setSource(byte[] source, XContentType xContentType) {
+        request.source(source, xContentType);
+        return this;
+    }
+    public CreateIndexRequestBuilder setSource(byte[] source, int offset, int length, XContentType xContentType) {
+        request.source(source, offset, length, xContentType);
+        return this;
+    }
+    public CreateIndexRequestBuilder setSource(Map<String, ?> source) {
+        request.source(source);
+        return this;
+    }
+    public CreateIndexRequestBuilder addCustom(IndexMetaData.Custom custom) {
+        request.custom(custom);
+        return this;
+    }
+    public CreateIndexRequestBuilder setSource(XContentBuilder source) {
+        request.source(source);
+        return this;
+    }
+    public CreateIndexRequestBuilder setUpdateAllTypes(boolean updateAllTypes) {
+        request.updateAllTypes(updateAllTypes);
+        return this;
+    }
+    public CreateIndexRequestBuilder setWaitForActiveShards(ActiveShardCount waitForActiveShards) {
+        request.waitForActiveShards(waitForActiveShards);
+        return this;
+    }
+    public CreateIndexRequestBuilder setWaitForActiveShards(final int waitForActiveShards) {
+        return setWaitForActiveShards(ActiveShardCount.from(waitForActiveShards));
+    }
+}",class,
+"    public CreateIndexRequestBuilder(ElasticsearchClient client, CreateIndexAction action) {
+        super(client, action, new CreateIndexRequest());
+    }",method,
+"    public CreateIndexRequestBuilder(ElasticsearchClient client, CreateIndexAction action, String index) {
+        super(client, action, new CreateIndexRequest(index));
+    }",method,
+"    public CreateIndexRequestBuilder setIndex(String index) {
+        request.index(index);
+        return this;
+    }",method,
+"    public CreateIndexRequestBuilder setSettings(Settings settings) {
+        request.settings(settings);
+        return this;
+    }",method,
+"    public CreateIndexRequestBuilder setSettings(Settings.Builder settings) {
+        request.settings(settings);
+        return this;
+    }",method,
+"    public CreateIndexRequestBuilder setSettings(XContentBuilder builder) {
+        request.settings(builder);
+        return this;
+    }",method,
+"    public CreateIndexRequestBuilder setSettings(String source, XContentType xContentType) {
+        request.settings(source, xContentType);
+        return this;
+    }",method,
+"    public CreateIndexRequestBuilder setSettings(Map<String, ?> source) {
+        request.settings(source);
+        return this;
+    }",method,
+"    public CreateIndexRequestBuilder addMapping(String type, String source, XContentType xContentType) {
+        request.mapping(type, source, xContentType);
+        return this;
+    }",method,
+"    public CreateIndexRequestBuilder setCause(String cause) {
+        request.cause(cause);
+        return this;
+    }",method,
+"    public CreateIndexRequestBuilder addMapping(String type, XContentBuilder source) {
+        request.mapping(type, source);
+        return this;
+    }",method,
+"    public CreateIndexRequestBuilder addMapping(String type, Map<String, Object> source) {
+        request.mapping(type, source);
+        return this;
+    }",method,
+"    public CreateIndexRequestBuilder addMapping(String type, Object... source) {
+        request.mapping(type, source);
+        return this;
+    }",method,
+"    public CreateIndexRequestBuilder setAliases(Map source) {
+        request.aliases(source);
+        return this;
+    }",method,
+"    public CreateIndexRequestBuilder setAliases(String source) {
+        request.aliases(source);
+        return this;
+    }",method,
+"    public CreateIndexRequestBuilder setAliases(XContentBuilder source) {
+        request.aliases(source);
+        return this;
+    }",method,
+"    public CreateIndexRequestBuilder setAliases(BytesReference source) {
+        request.aliases(source);
+        return this;
+    }",method,
+"    public CreateIndexRequestBuilder addAlias(Alias alias) {
+        request.alias(alias);
+        return this;
+    }",method,
+"    public CreateIndexRequestBuilder setSource(String source, XContentType xContentType) {
+        request.source(source, xContentType);
+        return this;
+    }",method,
+"    public CreateIndexRequestBuilder setSource(BytesReference source, XContentType xContentType) {
+        request.source(source, xContentType);
+        return this;
+    }",method,
+"    public CreateIndexRequestBuilder setSource(byte[] source, XContentType xContentType) {
+        request.source(source, xContentType);
+        return this;
+    }",method,
+"    public CreateIndexRequestBuilder setSource(byte[] source, int offset, int length, XContentType xContentType) {
+        request.source(source, offset, length, xContentType);
+        return this;
+    }",method,
+"    public CreateIndexRequestBuilder setSource(Map<String, ?> source) {
+        request.source(source);
+        return this;
+    }",method,
+"    public CreateIndexRequestBuilder addCustom(IndexMetaData.Custom custom) {
+        request.custom(custom);
+        return this;
+    }",method,
+"    public CreateIndexRequestBuilder setSource(XContentBuilder source) {
+        request.source(source);
+        return this;
+    }",method,
+"    public CreateIndexRequestBuilder setUpdateAllTypes(boolean updateAllTypes) {
+        request.updateAllTypes(updateAllTypes);
+        return this;
+    }",method,
+"    public CreateIndexRequestBuilder setWaitForActiveShards(ActiveShardCount waitForActiveShards) {
+        request.waitForActiveShards(waitForActiveShards);
+        return this;
+    }",method,
+"    public CreateIndexRequestBuilder setWaitForActiveShards(final int waitForActiveShards) {
+        return setWaitForActiveShards(ActiveShardCount.from(waitForActiveShards));
+    }",method,
+"public class TsvExporterTests extends RefineTest {
+    @Override
+    @BeforeTest
+    public void init() {
+        logger = LoggerFactory.getLogger(this.getClass());
+    }
+    //dependencies
+    StringWriter writer;
+    Project project;
+    Engine engine;
+    Properties options;
+    //System Under Test
+    CsvExporter SUT;
+    @BeforeMethod
+    public void SetUp(){
+        SUT = new CsvExporter('\t');//new TsvExporter();
+        writer = new StringWriter();
+        project = new Project();
+        engine = new Engine(project);
+        options = mock(Properties.class);
+    }
+    @AfterMethod
+    public void TearDown(){
+        SUT = null;
+        writer = null;
+        project = null;
+        engine = null;
+        options = null;
+    }
+    @Test
+    public void exportSimpleTsv(){
+        CreateGrid(2, 2);
+        try {
+            SUT.export(project, options, engine, writer);
+        } catch (IOException e) {
+            Assert.fail();
+        }
+        Assert.assertEquals(writer.toString(), ""column0\tcolumn1\n"" +
+                                               ""row0cell0\trow0cell1\n"" +
+                                               ""row1cell0\trow1cell1\n"");
+    }
+    @Test
+    public void exportSimpleTsvNoHeader(){
+        CreateGrid(2, 2);
+        when(options.getProperty(""printColumnHeader"")).thenReturn(""false"");
+        try {
+            SUT.export(project, options, engine, writer);
+        } catch (IOException e) {
+            Assert.fail();
+        }
+        Assert.assertEquals(writer.toString(), ""row0cell0\trow0cell1\n"" +
+                                               ""row1cell0\trow1cell1\n"");
+        verify(options,times(2)).getProperty(""printColumnHeader"");
+    }
+    @Test
+    public void exportTsvWithLineBreaks(){
+        CreateGrid(3,3);
+        project.rows.get(1).cells.set(1, new Cell(""line\n\n\nbreak"", null));
+        try {
+            SUT.export(project, options, engine, writer);
+        } catch (IOException e) {
+            Assert.fail();
+        }
+        Assert.assertEquals(writer.toString(), ""column0\tcolumn1\tcolumn2\n"" +
+                                               ""row0cell0\trow0cell1\trow0cell2\n"" +
+                                               ""row1cell0\t\""line\n\n\nbreak\""\trow1cell2\n"" +
+                                               ""row2cell0\trow2cell1\trow2cell2\n"");
+    }
+    @Test
+    public void exportTsvWithComma(){
+        CreateGrid(3,3);
+        project.rows.get(1).cells.set(1, new Cell(""with\t tab"", null));
+        try {
+            SUT.export(project, options, engine, writer);
+        } catch (IOException e) {
+            Assert.fail();
+        }
+        Assert.assertEquals(writer.toString(), ""column0\tcolumn1\tcolumn2\n"" +
+                                               ""row0cell0\trow0cell1\trow0cell2\n"" +
+                                               ""row1cell0\t\""with\t tab\""\trow1cell2\n"" +
+                                               ""row2cell0\trow2cell1\trow2cell2\n"");
+    }
+    @Test
+    public void exportTsvWithQuote(){
+        CreateGrid(3,3);
+        project.rows.get(1).cells.set(1, new Cell(""line has \""quote\"""", null));
+        try {
+            SUT.export(project, options, engine, writer);
+        } catch (IOException e) {
+            Assert.fail();
+        }
+        Assert.assertEquals(writer.toString(), ""column0\tcolumn1\tcolumn2\n"" +
+                                               ""row0cell0\trow0cell1\trow0cell2\n"" +
+                                               ""row1cell0\t\""line has \""\""quote\""\""\""\trow1cell2\n"" +
+                                               ""row2cell0\trow2cell1\trow2cell2\n"");
+    }
+    @Test
+    public void exportTsvWithEmptyCells(){
+        CreateGrid(3,3);
+        project.rows.get(1).cells.set(1, null);
+        project.rows.get(2).cells.set(0, null);
+        try {
+            SUT.export(project, options, engine, writer);
+        } catch (IOException e) {
+            Assert.fail();
+        }
+        Assert.assertEquals(writer.toString(), ""column0\tcolumn1\tcolumn2\n"" +
+                                               ""row0cell0\trow0cell1\trow0cell2\n"" +
+                                               ""row1cell0\t\trow1cell2\n"" +
+                                               ""\trow2cell1\trow2cell2\n"");
+    }
+    //helper methods
+    protected void CreateColumns(int noOfColumns){
+        for(int i = 0; i < noOfColumns; i++){
+            try {
+                project.columnModel.addColumn(i, new Column(i, ""column"" + i), true);
+                project.columnModel.columns.get(i).getCellIndex();
+            } catch (ModelException e1) {
+                Assert.fail(""Could not create column"");
+            }
+        }
+    }
+    protected void CreateGrid(int noOfRows, int noOfColumns){
+        CreateColumns(noOfColumns);
+        for(int i = 0; i < noOfRows; i++){
+            Row row = new Row(noOfColumns);
+            for(int j = 0; j < noOfColumns; j++){
+                row.cells.add(new Cell(""row"" + i + ""cell"" + j, null));
+            }
+            project.rows.add(row);
+        }
+    }
+}",class,
+"    @Override
+    @BeforeTest
+    public void init() {
+        logger = LoggerFactory.getLogger(this.getClass());
+    }",method,
+"    @BeforeMethod
+    public void SetUp(){
+        SUT = new CsvExporter('\t');//new TsvExporter();
+        writer = new StringWriter();
+        project = new Project();
+        engine = new Engine(project);
+        options = mock(Properties.class);
+    }",method,
+"    @AfterMethod
+    public void TearDown(){
+        SUT = null;
+        writer = null;
+        project = null;
+        engine = null;
+        options = null;
+    }",method,
+"    @Test
+    public void exportSimpleTsv(){
+        CreateGrid(2, 2);
+        try {
+            SUT.export(project, options, engine, writer);
+        } catch (IOException e) {
+            Assert.fail();
+        }
+        Assert.assertEquals(writer.toString(), ""column0\tcolumn1\n"" +
+                                               ""row0cell0\trow0cell1\n"" +
+                                               ""row1cell0\trow1cell1\n"");
+    }",method,
+"    @Test
+    public void exportSimpleTsvNoHeader(){
+        CreateGrid(2, 2);
+        when(options.getProperty(""printColumnHeader"")).thenReturn(""false"");
+        try {
+            SUT.export(project, options, engine, writer);
+        } catch (IOException e) {
+            Assert.fail();
+        }
+        Assert.assertEquals(writer.toString(), ""row0cell0\trow0cell1\n"" +
+                                               ""row1cell0\trow1cell1\n"");
+        verify(options,times(2)).getProperty(""printColumnHeader"");
+    }",method,
+"    @Test
+    public void exportTsvWithLineBreaks(){
+        CreateGrid(3,3);
+        project.rows.get(1).cells.set(1, new Cell(""line\n\n\nbreak"", null));
+        try {
+            SUT.export(project, options, engine, writer);
+        } catch (IOException e) {
+            Assert.fail();
+        }
+        Assert.assertEquals(writer.toString(), ""column0\tcolumn1\tcolumn2\n"" +
+                                               ""row0cell0\trow0cell1\trow0cell2\n"" +
+                                               ""row1cell0\t\""line\n\n\nbreak\""\trow1cell2\n"" +
+                                               ""row2cell0\trow2cell1\trow2cell2\n"");
+    }",method,
+"    @Test
+    public void exportTsvWithComma(){
+        CreateGrid(3,3);
+        project.rows.get(1).cells.set(1, new Cell(""with\t tab"", null));
+        try {
+            SUT.export(project, options, engine, writer);
+        } catch (IOException e) {
+            Assert.fail();
+        }
+        Assert.assertEquals(writer.toString(), ""column0\tcolumn1\tcolumn2\n"" +
+                                               ""row0cell0\trow0cell1\trow0cell2\n"" +
+                                               ""row1cell0\t\""with\t tab\""\trow1cell2\n"" +
+                                               ""row2cell0\trow2cell1\trow2cell2\n"");
+    }",method,
+"    @Test
+    public void exportTsvWithQuote(){
+        CreateGrid(3,3);
+        project.rows.get(1).cells.set(1, new Cell(""line has \""quote\"""", null));
+        try {
+            SUT.export(project, options, engine, writer);
+        } catch (IOException e) {
+            Assert.fail();
+        }
+        Assert.assertEquals(writer.toString(), ""column0\tcolumn1\tcolumn2\n"" +
+                                               ""row0cell0\trow0cell1\trow0cell2\n"" +
+                                               ""row1cell0\t\""line has \""\""quote\""\""\""\trow1cell2\n"" +
+                                               ""row2cell0\trow2cell1\trow2cell2\n"");
+    }",method,
+"    @Test
+    public void exportTsvWithEmptyCells(){
+        CreateGrid(3,3);
+        project.rows.get(1).cells.set(1, null);
+        project.rows.get(2).cells.set(0, null);
+        try {
+            SUT.export(project, options, engine, writer);
+        } catch (IOException e) {
+            Assert.fail();
+        }
+        Assert.assertEquals(writer.toString(), ""column0\tcolumn1\tcolumn2\n"" +
+                                               ""row0cell0\trow0cell1\trow0cell2\n"" +
+                                               ""row1cell0\t\trow1cell2\n"" +
+                                               ""\trow2cell1\trow2cell2\n"");
+    }",method,
+"    protected void CreateColumns(int noOfColumns){
+        for(int i = 0; i < noOfColumns; i++){
+            try {
+                project.columnModel.addColumn(i, new Column(i, ""column"" + i), true);
+                project.columnModel.columns.get(i).getCellIndex();
+            } catch (ModelException e1) {
+                Assert.fail(""Could not create column"");
+            }
+        }
+    }",method,
+"        for(int i = 0; i < noOfColumns; i++){
+            try {
+                project.columnModel.addColumn(i, new Column(i, ""column"" + i), true);
+                project.columnModel.columns.get(i).getCellIndex();
+            } catch (ModelException e1) {
+                Assert.fail(""Could not create column"");
+            }
+        }",method,
+"    protected void CreateGrid(int noOfRows, int noOfColumns){
+        CreateColumns(noOfColumns);
+        for(int i = 0; i < noOfRows; i++){
+            Row row = new Row(noOfColumns);
+            for(int j = 0; j < noOfColumns; j++){
+                row.cells.add(new Cell(""row"" + i + ""cell"" + j, null));
+            }
+            project.rows.add(row);
+        }
+    }",method,
+"        for(int i = 0; i < noOfRows; i++){
+            Row row = new Row(noOfColumns);
+            for(int j = 0; j < noOfColumns; j++){
+                row.cells.add(new Cell(""row"" + i + ""cell"" + j, null));
+            }
+            project.rows.add(row);
+        }",method,
+"            for(int j = 0; j < noOfColumns; j++){
+                row.cells.add(new Cell(""row"" + i + ""cell"" + j, null));
+            }",method,
+"public class SocketAutoReadTest extends AbstractSocketTest {
+    @Test
+    public void testAutoReadOffDuringReadOnlyReadsOneTime() throws Throwable {
+        run();
+    }
+    public void testAutoReadOffDuringReadOnlyReadsOneTime(ServerBootstrap sb, Bootstrap cb) throws Throwable {
+        testAutoReadOffDuringReadOnlyReadsOneTime(true, sb, cb);
+        testAutoReadOffDuringReadOnlyReadsOneTime(false, sb, cb);
+    }
+    private static void testAutoReadOffDuringReadOnlyReadsOneTime(boolean readOutsideEventLoopThread,
+                                                           ServerBootstrap sb, Bootstrap cb) throws Throwable {
+        Channel serverChannel = null;
+        Channel clientChannel = null;
+        try {
+            AutoReadInitializer serverInitializer = new AutoReadInitializer(!readOutsideEventLoopThread);
+            AutoReadInitializer clientInitializer = new AutoReadInitializer(!readOutsideEventLoopThread);
+            sb.option(ChannelOption.SO_BACKLOG, 1024)
+                    .option(ChannelOption.AUTO_READ, true)
+                    .childOption(ChannelOption.AUTO_READ, true)
+                    // We want to ensure that we attempt multiple individual read operations per read loop so we can
+                    // test the auto read feature being turned off when data is first read.
+                    .childOption(ChannelOption.RCVBUF_ALLOCATOR, new TestRecvByteBufAllocator())
+                    .childHandler(serverInitializer);
+            serverChannel = sb.bind().syncUninterruptibly().channel();
+            cb.option(ChannelOption.AUTO_READ, true)
+                    // We want to ensure that we attempt multiple individual read operations per read loop so we can
+                    // test the auto read feature being turned off when data is first read.
+                    .option(ChannelOption.RCVBUF_ALLOCATOR, new TestRecvByteBufAllocator())
+                    .handler(clientInitializer);
+            clientChannel = cb.connect(serverChannel.localAddress()).syncUninterruptibly().channel();
+            // 3 bytes means 3 independent reads for TestRecvByteBufAllocator
+            clientChannel.writeAndFlush(Unpooled.wrappedBuffer(new byte[3]));
+            serverInitializer.autoReadHandler.assertSingleRead();
+            // 3 bytes means 3 independent reads for TestRecvByteBufAllocator
+            serverInitializer.channel.writeAndFlush(Unpooled.wrappedBuffer(new byte[3]));
+            clientInitializer.autoReadHandler.assertSingleRead();
+            if (readOutsideEventLoopThread) {
+                serverInitializer.channel.read();
+            }
+            serverInitializer.autoReadHandler.assertSingleReadSecondTry();
+            if (readOutsideEventLoopThread) {
+                clientChannel.read();
+            }
+            clientInitializer.autoReadHandler.assertSingleReadSecondTry();
+        } finally {
+            if (clientChannel != null) {
+                clientChannel.close().sync();
+            }
+            if (serverChannel != null) {
+                serverChannel.close().sync();
+            }
+        }
+    }
+    private static class AutoReadInitializer extends ChannelInitializer<Channel> {
+        final AutoReadHandler autoReadHandler;
+        volatile Channel channel;
+        AutoReadInitializer(boolean readInEventLoop) {
+            autoReadHandler = new AutoReadHandler(readInEventLoop);
+        }
+        @Override
+        protected void initChannel(Channel ch) throws Exception {
+            channel = ch;
+            ch.pipeline().addLast(autoReadHandler);
+        }
+    }
+    private static final class AutoReadHandler extends ChannelInboundHandlerAdapter {
+        private final AtomicInteger count = new AtomicInteger();
+        private final CountDownLatch latch = new CountDownLatch(1);
+        private final CountDownLatch latch2;
+        private final boolean callRead;
+        AutoReadHandler(boolean callRead) {
+            this.callRead = callRead;
+            latch2 = new CountDownLatch(callRead ? 3 : 2);
+        }
+        @Override
+        public void channelRead(ChannelHandlerContext ctx, Object msg) throws Exception {
+            ReferenceCountUtil.release(msg);
+            if (count.incrementAndGet() == 1) {
+                ctx.channel().config().setAutoRead(false);
+            }
+            if (callRead) {
+                // Test calling read in the EventLoop thread to ensure a read is eventually done.
+                ctx.read();
+            }
+        }
+        @Override
+        public void channelReadComplete(ChannelHandlerContext ctx) throws Exception {
+            latch.countDown();
+            latch2.countDown();
+        }
+        void assertSingleRead() throws InterruptedException {
+            assertTrue(latch.await(5, TimeUnit.SECONDS));
+            assertTrue(count.get() > 0);
+        }
+        void assertSingleReadSecondTry() throws InterruptedException {
+            assertTrue(latch2.await(5, TimeUnit.SECONDS));
+            assertEquals(callRead ? 3 : 2, count.get());
+        }
+    }
+    private static final class TestRecvByteBufAllocator implements RecvByteBufAllocator {
+        @Override
+        public ExtendedHandle newHandle() {
+            return new ExtendedHandle() {
+                private ChannelConfig config;
+                private int attemptedBytesRead;
+                private int lastBytesRead;
+                @Override
+                public ByteBuf allocate(ByteBufAllocator alloc) {
+                    return alloc.ioBuffer(guess(), guess());
+                }
+                @Override
+                public int guess() {
+                    return 1; // only ever allocate buffers of size 1 to ensure the number of reads is controlled.
+                }
+                @Override
+                public void reset(ChannelConfig config) {
+                    this.config = config;
+                }
+                @Override
+                public void incMessagesRead(int numMessages) {
+                    // No need to track the number of messages read because it is not used.
+                }
+                @Override
+                public void lastBytesRead(int bytes) {
+                    lastBytesRead = bytes;
+                }
+                @Override
+                public int lastBytesRead() {
+                    return lastBytesRead;
+                }
+                @Override
+                public void attemptedBytesRead(int bytes) {
+                    attemptedBytesRead = bytes;
+                }
+                @Override
+                public int attemptedBytesRead() {
+                    return attemptedBytesRead;
+                }
+                @Override
+                public boolean continueReading() {
+                    return config.isAutoRead();
+                }
+                @Override
+                public boolean continueReading(UncheckedBooleanSupplier maybeMoreDataSupplier) {
+                    return config.isAutoRead();
+                }
+                @Override
+                public void readComplete() {
+                    // Nothing needs to be done or adjusted after each read cycle is completed.
+                }
+            };
+        }
+    }
+}",class,
+"    private static class AutoReadInitializer extends ChannelInitializer<Channel> {
+        final AutoReadHandler autoReadHandler;
+        volatile Channel channel;
+        AutoReadInitializer(boolean readInEventLoop) {
+            autoReadHandler = new AutoReadHandler(readInEventLoop);
+        }
+        @Override
+        protected void initChannel(Channel ch) throws Exception {
+            channel = ch;
+            ch.pipeline().addLast(autoReadHandler);
+        }
+    }",class,
+"    private static final class AutoReadHandler extends ChannelInboundHandlerAdapter {
+        private final AtomicInteger count = new AtomicInteger();
+        private final CountDownLatch latch = new CountDownLatch(1);
+        private final CountDownLatch latch2;
+        private final boolean callRead;
+        AutoReadHandler(boolean callRead) {
+            this.callRead = callRead;
+            latch2 = new CountDownLatch(callRead ? 3 : 2);
+        }
+        @Override
+        public void channelRead(ChannelHandlerContext ctx, Object msg) throws Exception {
+            ReferenceCountUtil.release(msg);
+            if (count.incrementAndGet() == 1) {
+                ctx.channel().config().setAutoRead(false);
+            }
+            if (callRead) {
+                // Test calling read in the EventLoop thread to ensure a read is eventually done.
+                ctx.read();
+            }
+        }
+        @Override
+        public void channelReadComplete(ChannelHandlerContext ctx) throws Exception {
+            latch.countDown();
+            latch2.countDown();
+        }
+        void assertSingleRead() throws InterruptedException {
+            assertTrue(latch.await(5, TimeUnit.SECONDS));
+            assertTrue(count.get() > 0);
+        }
+        void assertSingleReadSecondTry() throws InterruptedException {
+            assertTrue(latch2.await(5, TimeUnit.SECONDS));
+            assertEquals(callRead ? 3 : 2, count.get());
+        }
+    }",class,
+"    private static final class TestRecvByteBufAllocator implements RecvByteBufAllocator {
+        @Override
+        public ExtendedHandle newHandle() {
+            return new ExtendedHandle() {
+                private ChannelConfig config;
+                private int attemptedBytesRead;
+                private int lastBytesRead;
+                @Override
+                public ByteBuf allocate(ByteBufAllocator alloc) {
+                    return alloc.ioBuffer(guess(), guess());
+                }
+                @Override
+                public int guess() {
+                    return 1; // only ever allocate buffers of size 1 to ensure the number of reads is controlled.
+                }
+                @Override
+                public void reset(ChannelConfig config) {
+                    this.config = config;
+                }
+                @Override
+                public void incMessagesRead(int numMessages) {
+                    // No need to track the number of messages read because it is not used.
+                }
+                @Override
+                public void lastBytesRead(int bytes) {
+                    lastBytesRead = bytes;
+                }
+                @Override
+                public int lastBytesRead() {
+                    return lastBytesRead;
+                }
+                @Override
+                public void attemptedBytesRead(int bytes) {
+                    attemptedBytesRead = bytes;
+                }
+                @Override
+                public int attemptedBytesRead() {
+                    return attemptedBytesRead;
+                }
+                @Override
+                public boolean continueReading() {
+                    return config.isAutoRead();
+                }
+                @Override
+                public boolean continueReading(UncheckedBooleanSupplier maybeMoreDataSupplier) {
+                    return config.isAutoRead();
+                }
+                @Override
+                public void readComplete() {
+                    // Nothing needs to be done or adjusted after each read cycle is completed.
+                }
+            };
+        }
+    }",class,
+"    @Test
+    public void testAutoReadOffDuringReadOnlyReadsOneTime() throws Throwable {
+        run();
+    }",method,
+"    public void testAutoReadOffDuringReadOnlyReadsOneTime(ServerBootstrap sb, Bootstrap cb) throws Throwable {
+        testAutoReadOffDuringReadOnlyReadsOneTime(true, sb, cb);
+        testAutoReadOffDuringReadOnlyReadsOneTime(false, sb, cb);
+    }",method,
+"    private static void testAutoReadOffDuringReadOnlyReadsOneTime(boolean readOutsideEventLoopThread,
+                                                           ServerBootstrap sb, Bootstrap cb) throws Throwable {
+        Channel serverChannel = null;
+        Channel clientChannel = null;
+        try {
+            AutoReadInitializer serverInitializer = new AutoReadInitializer(!readOutsideEventLoopThread);
+            AutoReadInitializer clientInitializer = new AutoReadInitializer(!readOutsideEventLoopThread);
+            sb.option(ChannelOption.SO_BACKLOG, 1024)
+                    .option(ChannelOption.AUTO_READ, true)
+                    .childOption(ChannelOption.AUTO_READ, true)
+                    // We want to ensure that we attempt multiple individual read operations per read loop so we can
+                    // test the auto read feature being turned off when data is first read.
+                    .childOption(ChannelOption.RCVBUF_ALLOCATOR, new TestRecvByteBufAllocator())
+                    .childHandler(serverInitializer);
+            serverChannel = sb.bind().syncUninterruptibly().channel();
+            cb.option(ChannelOption.AUTO_READ, true)
+                    // We want to ensure that we attempt multiple individual read operations per read loop so we can
+                    // test the auto read feature being turned off when data is first read.
+                    .option(ChannelOption.RCVBUF_ALLOCATOR, new TestRecvByteBufAllocator())
+                    .handler(clientInitializer);
+            clientChannel = cb.connect(serverChannel.localAddress()).syncUninterruptibly().channel();
+            // 3 bytes means 3 independent reads for TestRecvByteBufAllocator
+            clientChannel.writeAndFlush(Unpooled.wrappedBuffer(new byte[3]));
+            serverInitializer.autoReadHandler.assertSingleRead();
+            // 3 bytes means 3 independent reads for TestRecvByteBufAllocator
+            serverInitializer.channel.writeAndFlush(Unpooled.wrappedBuffer(new byte[3]));
+            clientInitializer.autoReadHandler.assertSingleRead();
+            if (readOutsideEventLoopThread) {
+                serverInitializer.channel.read();
+            }
+            serverInitializer.autoReadHandler.assertSingleReadSecondTry();
+            if (readOutsideEventLoopThread) {
+                clientChannel.read();
+            }
+            clientInitializer.autoReadHandler.assertSingleReadSecondTry();
+        } finally {
+            if (clientChannel != null) {
+                clientChannel.close().sync();
+            }
+            if (serverChannel != null) {
+                serverChannel.close().sync();
+            }
+        }
+    }",method,
+"            if (readOutsideEventLoopThread) {
+                serverInitializer.channel.read();
+            }",method,
+"            if (readOutsideEventLoopThread) {
+                clientChannel.read();
+            }",method,
+"            if (clientChannel != null) {
+                clientChannel.close().sync();
+            }",method,
+"            if (serverChannel != null) {
+                serverChannel.close().sync();
+            }",method,
+"        AutoReadInitializer(boolean readInEventLoop) {
+            autoReadHandler = new AutoReadHandler(readInEventLoop);
+        }",method,
+"        @Override
+        protected void initChannel(Channel ch) throws Exception {
+            channel = ch;
+            ch.pipeline().addLast(autoReadHandler);
+        }",method,
+"        AutoReadHandler(boolean callRead) {
+            this.callRead = callRead;
+            latch2 = new CountDownLatch(callRead ? 3 : 2);
+        }",method,
+"        @Override
+        public void channelRead(ChannelHandlerContext ctx, Object msg) throws Exception {
+            ReferenceCountUtil.release(msg);
+            if (count.incrementAndGet() == 1) {
+                ctx.channel().config().setAutoRead(false);
+            }
+            if (callRead) {
+                // Test calling read in the EventLoop thread to ensure a read is eventually done.
+                ctx.read();
+            }
+        }",method,
+"            if (callRead) {
+                // Test calling read in the EventLoop thread to ensure a read is eventually done.
+                ctx.read();
+            }",method,
+"        @Override
+        public void channelReadComplete(ChannelHandlerContext ctx) throws Exception {
+            latch.countDown();
+            latch2.countDown();
+        }",method,
+"        void assertSingleRead() throws InterruptedException {
+            assertTrue(latch.await(5, TimeUnit.SECONDS));
+            assertTrue(count.get() > 0);
+        }",method,
+"        void assertSingleReadSecondTry() throws InterruptedException {
+            assertTrue(latch2.await(5, TimeUnit.SECONDS));
+            assertEquals(callRead ? 3 : 2, count.get());
+        }",method,
+"        @Override
+        public ExtendedHandle newHandle() {
+            return new ExtendedHandle() {
+                private ChannelConfig config;
+                private int attemptedBytesRead;
+                private int lastBytesRead;
+                @Override
+                public ByteBuf allocate(ByteBufAllocator alloc) {
+                    return alloc.ioBuffer(guess(), guess());
+                }
+                @Override
+                public int guess() {
+                    return 1; // only ever allocate buffers of size 1 to ensure the number of reads is controlled.
+                }
+                @Override
+                public void reset(ChannelConfig config) {
+                    this.config = config;
+                }
+                @Override
+                public void incMessagesRead(int numMessages) {
+                    // No need to track the number of messages read because it is not used.
+                }
+                @Override
+                public void lastBytesRead(int bytes) {
+                    lastBytesRead = bytes;
+                }
+                @Override
+                public int lastBytesRead() {
+                    return lastBytesRead;
+                }
+                @Override
+                public void attemptedBytesRead(int bytes) {
+                    attemptedBytesRead = bytes;
+                }
+                @Override
+                public int attemptedBytesRead() {
+                    return attemptedBytesRead;
+                }
+                @Override
+                public boolean continueReading() {
+                    return config.isAutoRead();
+                }
+                @Override
+                public boolean continueReading(UncheckedBooleanSupplier maybeMoreDataSupplier) {
+                    return config.isAutoRead();
+                }
+                @Override
+                public void readComplete() {
+                    // Nothing needs to be done or adjusted after each read cycle is completed.
+                }
+            };
+        }",method,
+"            return new ExtendedHandle() {
+                private ChannelConfig config;
+                private int attemptedBytesRead;
+                private int lastBytesRead;
+                @Override
+                public ByteBuf allocate(ByteBufAllocator alloc) {
+                    return alloc.ioBuffer(guess(), guess());
+                }
+                @Override
+                public int guess() {
+                    return 1; // only ever allocate buffers of size 1 to ensure the number of reads is controlled.
+                }
+                @Override
+                public void reset(ChannelConfig config) {
+                    this.config = config;
+                }
+                @Override
+                public void incMessagesRead(int numMessages) {
+                    // No need to track the number of messages read because it is not used.
+                }
+                @Override
+                public void lastBytesRead(int bytes) {
+                    lastBytesRead = bytes;
+                }
+                @Override
+                public int lastBytesRead() {
+                    return lastBytesRead;
+                }
+                @Override
+                public void attemptedBytesRead(int bytes) {
+                    attemptedBytesRead = bytes;
+                }
+                @Override
+                public int attemptedBytesRead() {
+                    return attemptedBytesRead;
+                }
+                @Override
+                public boolean continueReading() {
+                    return config.isAutoRead();
+                }
+                @Override
+                public boolean continueReading(UncheckedBooleanSupplier maybeMoreDataSupplier) {
+                    return config.isAutoRead();
+                }
+                @Override
+                public void readComplete() {
+                    // Nothing needs to be done or adjusted after each read cycle is completed.
+                }
+            }",method,
+"                @Override
+                public ByteBuf allocate(ByteBufAllocator alloc) {
+                    return alloc.ioBuffer(guess(), guess());
+                }",method,
+"                @Override
+                public int guess() {
+                    return 1; // only ever allocate buffers of size 1 to ensure the number of reads is controlled.
+                }",method,
+"                @Override
+                public void reset(ChannelConfig config) {
+                    this.config = config;
+                }",method,
+"                @Override
+                public void incMessagesRead(int numMessages) {
+                    // No need to track the number of messages read because it is not used.
+                }",method,
+"                @Override
+                public void lastBytesRead(int bytes) {
+                    lastBytesRead = bytes;
+                }",method,
+"                @Override
+                public int lastBytesRead() {
+                    return lastBytesRead;
+                }",method,
+"                @Override
+                public void attemptedBytesRead(int bytes) {
+                    attemptedBytesRead = bytes;
+                }",method,
+"                @Override
+                public int attemptedBytesRead() {
+                    return attemptedBytesRead;
+                }",method,

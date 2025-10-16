@@ -1,0 +1,1797 @@
+code_snippet,type,score
+"    @Override
+    public int hashCode() {
+        return Objects.hash(alpha);
+    }",method,
+"    @Override
+    public boolean equals(Object obj) {
+        if (obj == null) {
+            return false;
+        }
+        if (getClass() != obj.getClass()) {
+            return false;
+        }
+        EwmaModel other = (EwmaModel) obj;
+        return Objects.equals(alpha, other.alpha);
+    }",method,
+"        if (obj == null) {
+            return false;
+        }",method,
+"        public EWMAModelBuilder alpha(double alpha) {
+            this.alpha = alpha;
+            return this;
+        }",method,
+"        @Override
+        public XContentBuilder toXContent(XContentBuilder builder, Params params) throws IOException {
+            builder.field(MovAvgPipelineAggregationBuilder.MODEL.getPreferredName(), NAME);
+            builder.startObject(MovAvgPipelineAggregationBuilder.SETTINGS.getPreferredName());
+            builder.field(""alpha"", alpha);
+            builder.endObject();
+            return builder;
+        }",method,
+"        @Override
+        public MovAvgModel build() {
+            return new EwmaModel(alpha);
+        }",method,
+"public class ReturnResults extends BaseRichBolt {
+    public static final Logger LOG = LoggerFactory.getLogger(ReturnResults.class);
+    OutputCollector _collector;
+    boolean local;
+    Map<List, DRPCInvocationsClient> _clients = new HashMap<List, DRPCInvocationsClient>();
+    @Override
+    public void prepare(Map stormConf, TopologyContext context, OutputCollector collector) {
+        _collector = collector;
+        local = stormConf.get(Config.STORM_CLUSTER_MODE).equals(""local"");
+    }
+    @Override
+    public void execute(Tuple input) {
+        String result = (String) input.getValue(0);
+        String returnInfo = (String) input.getValue(1);
+        if(returnInfo!=null) {
+            Map retMap = (Map) JSONValue.parse(returnInfo);
+            final String host = (String) retMap.get(""host"");
+            final int port = Utils.getInt(retMap.get(""port""));
+            String id = (String) retMap.get(""id"");
+            DistributedRPCInvocations.Iface client;
+            if(local) {
+                client = (DistributedRPCInvocations.Iface) ServiceRegistry.getService(host);
+            } else {
+                List server = new ArrayList() {{
+                    add(host);
+                    add(port);
+                }};
+                if(!_clients.containsKey(server)) {
+                    _clients.put(server, new DRPCInvocationsClient(host, port));
+                }
+                client = _clients.get(server);
+            }
+            try {
+                client.result(id, result);
+                _collector.ack(input);
+            } catch(TException e) {
+                LOG.error(""Failed to return results to DRPC server"", e);
+                _collector.fail(input);
+            }
+        }
+    }    
+    @Override
+    public void cleanup() {
+        for(DRPCInvocationsClient c: _clients.values()) {
+            c.close();
+        }
+    }
+    public void declareOutputFields(OutputFieldsDeclarer declarer) {
+    }
+}",class,
+"    @Override
+    public void prepare(Map stormConf, TopologyContext context, OutputCollector collector) {
+        _collector = collector;
+        local = stormConf.get(Config.STORM_CLUSTER_MODE).equals(""local"");
+    }",method,
+"    @Override
+    public void execute(Tuple input) {
+        String result = (String) input.getValue(0);
+        String returnInfo = (String) input.getValue(1);
+        if(returnInfo!=null) {
+            Map retMap = (Map) JSONValue.parse(returnInfo);
+            final String host = (String) retMap.get(""host"");
+            final int port = Utils.getInt(retMap.get(""port""));
+            String id = (String) retMap.get(""id"");
+            DistributedRPCInvocations.Iface client;
+            if(local) {
+                client = (DistributedRPCInvocations.Iface) ServiceRegistry.getService(host);
+            } else {
+                List server = new ArrayList() {{
+                    add(host);
+                    add(port);
+                }};
+                if(!_clients.containsKey(server)) {
+                    _clients.put(server, new DRPCInvocationsClient(host, port));
+                }
+                client = _clients.get(server);
+            }
+            try {
+                client.result(id, result);
+                _collector.ack(input);
+            } catch(TException e) {
+                LOG.error(""Failed to return results to DRPC server"", e);
+                _collector.fail(input);
+            }
+        }
+    }",method,
+"        if(returnInfo!=null) {
+            Map retMap = (Map) JSONValue.parse(returnInfo);
+            final String host = (String) retMap.get(""host"");
+            final int port = Utils.getInt(retMap.get(""port""));
+            String id = (String) retMap.get(""id"");
+            DistributedRPCInvocations.Iface client;
+            if(local) {
+                client = (DistributedRPCInvocations.Iface) ServiceRegistry.getService(host);
+            } else {
+                List server = new ArrayList() {{
+                    add(host);
+                    add(port);
+                }};
+                if(!_clients.containsKey(server)) {
+                    _clients.put(server, new DRPCInvocationsClient(host, port));
+                }
+                client = _clients.get(server);
+            }
+            try {
+                client.result(id, result);
+                _collector.ack(input);
+            } catch(TException e) {
+                LOG.error(""Failed to return results to DRPC server"", e);
+                _collector.fail(input);
+            }
+        }",method,
+"            if(local) {
+                client = (DistributedRPCInvocations.Iface) ServiceRegistry.getService(host);
+            }",method,
+"    @Override
+    public void cleanup() {
+        for(DRPCInvocationsClient c: _clients.values()) {
+            c.close();
+        }
+    }",method,
+"    public void declareOutputFields(OutputFieldsDeclarer declarer) {
+    }",method,
+"public class ReferenceListWeigher extends ProximityWeigher {
+  public static final ReferenceListWeigher INSTANCE = new ReferenceListWeigher();
+  public static final ElementPattern<PsiElement> INSIDE_REFERENCE_LIST =
+    PlatformPatterns.psiElement().withParents(PsiJavaCodeReferenceElement.class, PsiReferenceList.class);
+  protected enum Preference {
+    Interfaces, Classes, Exceptions
+  }
+  @Nullable
+  protected Preference getPreferredCondition(@NotNull final PsiElement position) {
+    if (INSIDE_REFERENCE_LIST.accepts(position)) {
+      PsiReferenceList list = (PsiReferenceList)position.getParent().getParent();
+      PsiReferenceList.Role role = list.getRole();
+      if (shouldContainInterfaces(list, role)) {
+        return Preference.Interfaces;
+      }
+      if (role == PsiReferenceList.Role.EXTENDS_LIST) {
+        return Preference.Classes;
+      }
+      if (role == PsiReferenceList.Role.THROWS_LIST) {
+        return Preference.Exceptions;
+      }
+    }
+    return null;
+  }
+  private static boolean shouldContainInterfaces(PsiReferenceList list, PsiReferenceList.Role role) {
+    if (role == PsiReferenceList.Role.EXTENDS_LIST) {
+      PsiElement parent = list.getParent();
+      return parent instanceof PsiClass && ((PsiClass)parent).isInterface();
+    }
+    if (role == PsiReferenceList.Role.IMPLEMENTS_LIST) {
+      return true;
+    }
+    return false;
+  }
+  public enum ReferenceListApplicability {
+    inapplicable,
+    unknown,
+    applicableByKind,
+    applicableByName
+  }
+  @Override
+  public ReferenceListApplicability weigh(@NotNull PsiElement element, @NotNull ProximityLocation location) {
+    if (element instanceof PsiClass && location.getPosition() != null) {
+      return getApplicability((PsiClass)element, location.getPosition());
+    }
+    return unknown;
+  }
+  @NotNull
+  public ReferenceListApplicability getApplicability(@NotNull PsiClass aClass, @NotNull PsiElement position) {
+    Preference condition = getPreferredCondition(position);
+    if (condition == Preference.Interfaces) return aClass.isInterface() ? applicableByKind : inapplicable;
+    if (condition == Preference.Classes) {
+      if (aClass.isInterface()) return inapplicable;
+      String name = aClass.getName();
+      if (name != null && name.endsWith(""TestCase"")) {
+        VirtualFile vFile = aClass.getContainingFile().getVirtualFile();
+        if (vFile != null && ProjectFileIndex.SERVICE.getInstance(aClass.getProject()).isInTestSourceContent(vFile)) {
+          return applicableByName;
+        }
+      }
+      return applicableByKind;
+    }
+    if (condition == Preference.Exceptions) {
+      return InheritanceUtil.isInheritor(aClass, CommonClassNames.JAVA_LANG_THROWABLE) ? applicableByKind : inapplicable;
+    }
+    return unknown;
+  }
+}",class,
+"  @Nullable
+  protected Preference getPreferredCondition(@NotNull final PsiElement position) {
+    if (INSIDE_REFERENCE_LIST.accepts(position)) {
+      PsiReferenceList list = (PsiReferenceList)position.getParent().getParent();
+      PsiReferenceList.Role role = list.getRole();
+      if (shouldContainInterfaces(list, role)) {
+        return Preference.Interfaces;
+      }
+      if (role == PsiReferenceList.Role.EXTENDS_LIST) {
+        return Preference.Classes;
+      }
+      if (role == PsiReferenceList.Role.THROWS_LIST) {
+        return Preference.Exceptions;
+      }
+    }
+    return null;
+  }",method,
+"      if (role == PsiReferenceList.Role.EXTENDS_LIST) {
+        return Preference.Classes;
+      }",method,
+"      if (role == PsiReferenceList.Role.THROWS_LIST) {
+        return Preference.Exceptions;
+      }",method,
+"  private static boolean shouldContainInterfaces(PsiReferenceList list, PsiReferenceList.Role role) {
+    if (role == PsiReferenceList.Role.EXTENDS_LIST) {
+      PsiElement parent = list.getParent();
+      return parent instanceof PsiClass && ((PsiClass)parent).isInterface();
+    }
+    if (role == PsiReferenceList.Role.IMPLEMENTS_LIST) {
+      return true;
+    }
+    return false;
+  }",method,
+"    if (role == PsiReferenceList.Role.EXTENDS_LIST) {
+      PsiElement parent = list.getParent();
+      return parent instanceof PsiClass && ((PsiClass)parent).isInterface();
+    }",method,
+"    if (role == PsiReferenceList.Role.IMPLEMENTS_LIST) {
+      return true;
+    }",method,
+"  @Override
+  public ReferenceListApplicability weigh(@NotNull PsiElement element, @NotNull ProximityLocation location) {
+    if (element instanceof PsiClass && location.getPosition() != null) {
+      return getApplicability((PsiClass)element, location.getPosition());
+    }
+    return unknown;
+  }",method,
+"  @NotNull
+  public ReferenceListApplicability getApplicability(@NotNull PsiClass aClass, @NotNull PsiElement position) {
+    Preference condition = getPreferredCondition(position);
+    if (condition == Preference.Interfaces) return aClass.isInterface() ? applicableByKind : inapplicable;
+    if (condition == Preference.Classes) {
+      if (aClass.isInterface()) return inapplicable;
+      String name = aClass.getName();
+      if (name != null && name.endsWith(""TestCase"")) {
+        VirtualFile vFile = aClass.getContainingFile().getVirtualFile();
+        if (vFile != null && ProjectFileIndex.SERVICE.getInstance(aClass.getProject()).isInTestSourceContent(vFile)) {
+          return applicableByName;
+        }
+      }
+      return applicableByKind;
+    }
+    if (condition == Preference.Exceptions) {
+      return InheritanceUtil.isInheritor(aClass, CommonClassNames.JAVA_LANG_THROWABLE) ? applicableByKind : inapplicable;
+    }
+    return unknown;
+  }",method,
+"    if (condition == Preference.Classes) {
+      if (aClass.isInterface()) return inapplicable;
+      String name = aClass.getName();
+      if (name != null && name.endsWith(""TestCase"")) {
+        VirtualFile vFile = aClass.getContainingFile().getVirtualFile();
+        if (vFile != null && ProjectFileIndex.SERVICE.getInstance(aClass.getProject()).isInTestSourceContent(vFile)) {
+          return applicableByName;
+        }
+      }
+      return applicableByKind;
+    }",method,
+"    if (condition == Preference.Exceptions) {
+      return InheritanceUtil.isInheritor(aClass, CommonClassNames.JAVA_LANG_THROWABLE) ? applicableByKind : inapplicable;
+    }",method,
+"public class UsePoolThreadSample extends GetSample {
+    private static final String LOG_TAG = ""UsePoolThreadSample"";
+    @Override
+    public String getDefaultURL() {
+        return PROTOCOL + ""httpbin.org/bytes/1024000"";
+    }
+    @Override
+    public boolean isRequestHeadersAllowed() {
+        return false;
+    }
+    @Override
+    public int getSampleTitle() {
+        return R.string.title_use_pool_thread;
+    }
+    @Override
+    public ResponseHandlerInterface getResponseHandler() {
+        return new UsePoolThreadResponseHandler();
+    }
+    private class UsePoolThreadResponseHandler extends AsyncHttpResponseHandler {
+        private final File destFile;
+        public UsePoolThreadResponseHandler() {
+            super();
+            // Destination file to save the downloaded bytes to.
+            destFile = getRandomCacheFile();
+            Log.d(LOG_TAG, ""Bytes will be saved in file: "" + destFile.getAbsolutePath());
+            // We wish to use the same pool thread to run the response.
+            setUsePoolThread(true);
+        }
+        @Override
+        public void onSuccess(final int statusCode, final Header[] headers, final byte[] responseBody) {
+            // Response body includes 1MB of data, and it might take few
+            // milliseconds, maybe a second or two on old devices, to save it in
+            // the filesystem. However, since this callback method is running
+            // within the pool thread's execution scope, the UI thread will be
+            // relaxed to continue its work of updating the UI while this
+            // handler saves the bytes on disk.
+            // Save the response body's bytes on disk.
+            saveBytesOnDisk(destFile, responseBody);
+            // This callback is now running within the pool thread execution
+            // scope and not within Android's UI thread, so if we must update
+            // the UI, we'll have to dispatch a runnable to the UI thread.
+            runOnUiThread(new Runnable() {
+                @Override
+                public void run() {
+                    debugStatusCode(LOG_TAG, statusCode);
+                    debugHeaders(LOG_TAG, headers);
+                    if (responseBody != null) {
+                        addView(getColoredView(LIGHTGREEN, ""Request succeeded ("" + statusCode + ""): (bytes="" + destFile.length() + ""), path: "" + destFile.getAbsolutePath()));
+                    }
+                }
+            });
+        }
+        @Override
+        public void onFailure(final int statusCode, final Header[] headers, final byte[] responseBody, final Throwable error) {
+            // This callback is now running within the pool thread execution
+            // scope and not within Android's UI thread, so if we must update
+            // the UI, we'll have to dispatch a runnable to the UI thread.
+            runOnUiThread(new Runnable() {
+                @Override
+                public void run() {
+                    debugStatusCode(LOG_TAG, statusCode);
+                    debugHeaders(LOG_TAG, headers);
+                    debugThrowable(LOG_TAG, error);
+                    if (responseBody != null) {
+                        addView(getColoredView(LIGHTGREEN, ""Download interrupted ("" + statusCode + ""): (bytes="" + responseBody.length + ""), path: "" + destFile.getAbsolutePath()));
+                    }
+                }
+            });
+        }
+        private File getRandomCacheFile() {
+            File dir = getCacheDir();
+            if (dir == null) {
+                dir = getFilesDir();
+            }
+            return new File(dir, ""sample-"" + System.currentTimeMillis() + "".bin"");
+        }
+        private void saveBytesOnDisk(File destination, byte[] bytes) {
+            // TODO: Spin your own implementation to save the bytes on disk/SD card.
+            if (bytes != null && destination != null) {
+                Log.d(LOG_TAG, ""Saved "" + bytes.length + "" bytes into file: "" + destination.getAbsolutePath());
+            }
+        }
+    }
+}",class,
+"    private class UsePoolThreadResponseHandler extends AsyncHttpResponseHandler {
+        private final File destFile;
+        public UsePoolThreadResponseHandler() {
+            super();
+            // Destination file to save the downloaded bytes to.
+            destFile = getRandomCacheFile();
+            Log.d(LOG_TAG, ""Bytes will be saved in file: "" + destFile.getAbsolutePath());
+            // We wish to use the same pool thread to run the response.
+            setUsePoolThread(true);
+        }
+        @Override
+        public void onSuccess(final int statusCode, final Header[] headers, final byte[] responseBody) {
+            // Response body includes 1MB of data, and it might take few
+            // milliseconds, maybe a second or two on old devices, to save it in
+            // the filesystem. However, since this callback method is running
+            // within the pool thread's execution scope, the UI thread will be
+            // relaxed to continue its work of updating the UI while this
+            // handler saves the bytes on disk.
+            // Save the response body's bytes on disk.
+            saveBytesOnDisk(destFile, responseBody);
+            // This callback is now running within the pool thread execution
+            // scope and not within Android's UI thread, so if we must update
+            // the UI, we'll have to dispatch a runnable to the UI thread.
+            runOnUiThread(new Runnable() {
+                @Override
+                public void run() {
+                    debugStatusCode(LOG_TAG, statusCode);
+                    debugHeaders(LOG_TAG, headers);
+                    if (responseBody != null) {
+                        addView(getColoredView(LIGHTGREEN, ""Request succeeded ("" + statusCode + ""): (bytes="" + destFile.length() + ""), path: "" + destFile.getAbsolutePath()));
+                    }
+                }
+            });
+        }
+        @Override
+        public void onFailure(final int statusCode, final Header[] headers, final byte[] responseBody, final Throwable error) {
+            // This callback is now running within the pool thread execution
+            // scope and not within Android's UI thread, so if we must update
+            // the UI, we'll have to dispatch a runnable to the UI thread.
+            runOnUiThread(new Runnable() {
+                @Override
+                public void run() {
+                    debugStatusCode(LOG_TAG, statusCode);
+                    debugHeaders(LOG_TAG, headers);
+                    debugThrowable(LOG_TAG, error);
+                    if (responseBody != null) {
+                        addView(getColoredView(LIGHTGREEN, ""Download interrupted ("" + statusCode + ""): (bytes="" + responseBody.length + ""), path: "" + destFile.getAbsolutePath()));
+                    }
+                }
+            });
+        }
+        private File getRandomCacheFile() {
+            File dir = getCacheDir();
+            if (dir == null) {
+                dir = getFilesDir();
+            }
+            return new File(dir, ""sample-"" + System.currentTimeMillis() + "".bin"");
+        }
+        private void saveBytesOnDisk(File destination, byte[] bytes) {
+            // TODO: Spin your own implementation to save the bytes on disk/SD card.
+            if (bytes != null && destination != null) {
+                Log.d(LOG_TAG, ""Saved "" + bytes.length + "" bytes into file: "" + destination.getAbsolutePath());
+            }
+        }
+    }",class,
+"    @Override
+    public String getDefaultURL() {
+        return PROTOCOL + ""httpbin.org/bytes/1024000"";
+    }",method,
+"    @Override
+    public boolean isRequestHeadersAllowed() {
+        return false;
+    }",method,
+"    @Override
+    public int getSampleTitle() {
+        return R.string.title_use_pool_thread;
+    }",method,
+"    @Override
+    public ResponseHandlerInterface getResponseHandler() {
+        return new UsePoolThreadResponseHandler();
+    }",method,
+"        public UsePoolThreadResponseHandler() {
+            super();
+            // Destination file to save the downloaded bytes to.
+            destFile = getRandomCacheFile();
+            Log.d(LOG_TAG, ""Bytes will be saved in file: "" + destFile.getAbsolutePath());
+            // We wish to use the same pool thread to run the response.
+            setUsePoolThread(true);
+        }",method,
+"        @Override
+        public void onSuccess(final int statusCode, final Header[] headers, final byte[] responseBody) {
+            // Response body includes 1MB of data, and it might take few
+            // milliseconds, maybe a second or two on old devices, to save it in
+            // the filesystem. However, since this callback method is running
+            // within the pool thread's execution scope, the UI thread will be
+            // relaxed to continue its work of updating the UI while this
+            // handler saves the bytes on disk.
+            // Save the response body's bytes on disk.
+            saveBytesOnDisk(destFile, responseBody);
+            // This callback is now running within the pool thread execution
+            // scope and not within Android's UI thread, so if we must update
+            // the UI, we'll have to dispatch a runnable to the UI thread.
+            runOnUiThread(new Runnable() {
+                @Override
+                public void run() {
+                    debugStatusCode(LOG_TAG, statusCode);
+                    debugHeaders(LOG_TAG, headers);
+                    if (responseBody != null) {
+                        addView(getColoredView(LIGHTGREEN, ""Request succeeded ("" + statusCode + ""): (bytes="" + destFile.length() + ""), path: "" + destFile.getAbsolutePath()));
+                    }
+                }
+            });
+        }",method,
+"            runOnUiThread(new Runnable() {
+                @Override
+                public void run() {
+                    debugStatusCode(LOG_TAG, statusCode);
+                    debugHeaders(LOG_TAG, headers);
+                    if (responseBody != null) {
+                        addView(getColoredView(LIGHTGREEN, ""Request succeeded ("" + statusCode + ""): (bytes="" + destFile.length() + ""), path: "" + destFile.getAbsolutePath()));
+                    }
+                }
+            }",method,
+"                @Override
+                public void run() {
+                    debugStatusCode(LOG_TAG, statusCode);
+                    debugHeaders(LOG_TAG, headers);
+                    if (responseBody != null) {
+                        addView(getColoredView(LIGHTGREEN, ""Request succeeded ("" + statusCode + ""): (bytes="" + destFile.length() + ""), path: "" + destFile.getAbsolutePath()));
+                    }
+                }",method,
+"                    if (responseBody != null) {
+                        addView(getColoredView(LIGHTGREEN, ""Request succeeded ("" + statusCode + ""): (bytes="" + destFile.length() + ""), path: "" + destFile.getAbsolutePath()));
+                    }",method,
+"        @Override
+        public void onFailure(final int statusCode, final Header[] headers, final byte[] responseBody, final Throwable error) {
+            // This callback is now running within the pool thread execution
+            // scope and not within Android's UI thread, so if we must update
+            // the UI, we'll have to dispatch a runnable to the UI thread.
+            runOnUiThread(new Runnable() {
+                @Override
+                public void run() {
+                    debugStatusCode(LOG_TAG, statusCode);
+                    debugHeaders(LOG_TAG, headers);
+                    debugThrowable(LOG_TAG, error);
+                    if (responseBody != null) {
+                        addView(getColoredView(LIGHTGREEN, ""Download interrupted ("" + statusCode + ""): (bytes="" + responseBody.length + ""), path: "" + destFile.getAbsolutePath()));
+                    }
+                }
+            });
+        }",method,
+"            runOnUiThread(new Runnable() {
+                @Override
+                public void run() {
+                    debugStatusCode(LOG_TAG, statusCode);
+                    debugHeaders(LOG_TAG, headers);
+                    debugThrowable(LOG_TAG, error);
+                    if (responseBody != null) {
+                        addView(getColoredView(LIGHTGREEN, ""Download interrupted ("" + statusCode + ""): (bytes="" + responseBody.length + ""), path: "" + destFile.getAbsolutePath()));
+                    }
+                }
+            }",method,
+"                @Override
+                public void run() {
+                    debugStatusCode(LOG_TAG, statusCode);
+                    debugHeaders(LOG_TAG, headers);
+                    debugThrowable(LOG_TAG, error);
+                    if (responseBody != null) {
+                        addView(getColoredView(LIGHTGREEN, ""Download interrupted ("" + statusCode + ""): (bytes="" + responseBody.length + ""), path: "" + destFile.getAbsolutePath()));
+                    }
+                }",method,
+"                    if (responseBody != null) {
+                        addView(getColoredView(LIGHTGREEN, ""Download interrupted ("" + statusCode + ""): (bytes="" + responseBody.length + ""), path: "" + destFile.getAbsolutePath()));
+                    }",method,
+"        private File getRandomCacheFile() {
+            File dir = getCacheDir();
+            if (dir == null) {
+                dir = getFilesDir();
+            }
+            return new File(dir, ""sample-"" + System.currentTimeMillis() + "".bin"");
+        }",method,
+"            if (dir == null) {
+                dir = getFilesDir();
+            }",method,
+"        private void saveBytesOnDisk(File destination, byte[] bytes) {
+            // TODO: Spin your own implementation to save the bytes on disk/SD card.
+            if (bytes != null && destination != null) {
+                Log.d(LOG_TAG, ""Saved "" + bytes.length + "" bytes into file: "" + destination.getAbsolutePath());
+            }
+        }",method,
+"            if (bytes != null && destination != null) {
+                Log.d(LOG_TAG, ""Saved "" + bytes.length + "" bytes into file: "" + destination.getAbsolutePath());
+            }",method,
+"public class CancelProcessesCommandTests extends RefineTest {
+    @Override
+    @BeforeTest
+    public void init() {
+        logger = LoggerFactory.getLogger(this.getClass());
+    }
+    // System Under Test
+    CancelProcessesCommand SUT = null;
+    // variables
+    long PROJECT_ID_LONG = 1234;
+    String PROJECT_ID = ""1234"";
+    // mocks
+    HttpServletRequest request = null;
+    HttpServletResponse response = null;
+    ProjectManager projMan = null;
+    Project proj = null;
+    ProcessManager processMan = null;
+    PrintWriter pw = null;
+    @BeforeMethod
+    public void SetUp() {
+        projMan = mock(ProjectManager.class);
+        ProjectManager.singleton = projMan;
+        proj = mock(Project.class);
+        processMan = mock(ProcessManager.class);
+        pw = mock(PrintWriter.class);
+        request = mock(HttpServletRequest.class);
+        response = mock(HttpServletResponse.class);
+        SUT = new CancelProcessesCommand();
+    }
+    @AfterMethod
+    public void TearDown() {
+        SUT = null;
+        projMan = null;
+        ProjectManager.singleton = null;
+        proj = null;
+        pw = null;
+        request = null;
+        response = null;
+    }
+    @Test
+    public void doPostFailsThrowsWithNullParameters() {
+        // both parameters null
+        try {
+            SUT.doPost(null, null);
+            Assert.fail(); // should have thrown exception by this point
+        } catch (IllegalArgumentException e){
+            //expected
+        } catch (ServletException e) {
+            Assert.fail();
+        } catch (Exception e) {
+            Assert.fail();
+        }
+        // request is null
+        try {
+            SUT.doPost(null, response);
+            Assert.fail(); // should have thrown exception by this point
+        } catch (IllegalArgumentException e){
+            //expected
+        } catch (ServletException e) {
+            Assert.fail();
+        } catch (Exception e) {
+            Assert.fail();
+        }
+        // response parameter null
+        try {
+            SUT.doPost(request, null);
+            Assert.fail(); // should have thrown exception by this point
+        } catch (IllegalArgumentException e){
+            // expected
+        } catch (ServletException e) {
+            Assert.fail();
+        } catch (Exception e) {
+            Assert.fail();
+        }
+    }
+    @Test
+    public void doPostRegressionTest() {
+        // mock dependencies
+        when(request.getParameter(""project"")).thenReturn(PROJECT_ID);
+        when(projMan.getProject(anyLong())).thenReturn(proj);
+        when(proj.getProcessManager()).thenReturn(processMan);
+        try {
+            when(response.getWriter()).thenReturn(pw);
+        } catch (IOException e1) {
+            Assert.fail();
+        }
+        // run
+        try {
+            SUT.doPost(request, response);
+        } catch (ServletException e) {
+            Assert.fail();
+        } catch (IOException e) {
+            Assert.fail();
+        }
+        // verify
+        verify(request, times(1)).getParameter(""project"");
+        verify(projMan, times(1)).getProject(PROJECT_ID_LONG);
+        verify(processMan, times(1)).cancelAll();
+        verify(response, times(1)).setCharacterEncoding(""UTF-8"");
+        verify(response, times(1))
+                .setHeader(""Content-Type"", ""application/json"");
+        verify(proj, times(1)).getProcessManager();
+        try {
+            verify(response, times(1)).getWriter();
+        } catch (IOException e) {
+            Assert.fail();
+        }
+        verify(pw, times(1)).write(""{ \""code\"" : \""ok\"" }"");
+    }
+     @Test
+     public void doPostThrowsIfCommand_getProjectReturnsNull(){
+        // mock dependencies
+        when(request.getParameter(""project"")).thenReturn(PROJECT_ID);
+        when(projMan.getProject(anyLong()))
+            .thenReturn(null);
+        // run
+        try {
+            SUT.doPost(request, response);
+        } catch (ServletException e) {
+            //expected
+        } catch (IOException e) {
+            Assert.fail();
+        }
+        // verify
+        verify(request, times(1)).getParameter(""project"");
+        verify(projMan, times(1)).getProject(PROJECT_ID_LONG);
+     }
+     @Test
+     public void doPostCatchesExceptionFromWriter(){
+         String ERROR_MESSAGE = ""hello world"";
+        // mock dependencies
+            when(request.getParameter(""project"")).thenReturn(PROJECT_ID);
+            when(projMan.getProject(anyLong())).thenReturn(proj);
+            when(proj.getProcessManager()).thenReturn(processMan);
+            try {
+                when(response.getWriter()).thenThrow(new IllegalStateException(ERROR_MESSAGE))
+                .thenReturn(pw);
+            } catch (IOException e) {
+                Assert.fail();
+            }
+            // run
+            try {
+                SUT.doPost(request, response);
+            } catch (ServletException e) {
+                Assert.fail();
+            } catch (IOException e) {
+                Assert.fail();
+            }
+            verify(request, times(1)).getParameter(""project"");
+            verify(projMan, times(1)).getProject(PROJECT_ID_LONG);
+            verify(processMan, times(1)).cancelAll();
+            verify(response, times(3)).setCharacterEncoding(""UTF-8"");
+            //omitted other verifications for brevity.
+            //assumption is that expecting response.setCharacterEncoding times(3)
+            //implies it has Command.respondException has been called as expected
+     }
+}",class,
+"    @Override
+    @BeforeTest
+    public void init() {
+        logger = LoggerFactory.getLogger(this.getClass());
+    }",method,
+"    @BeforeMethod
+    public void SetUp() {
+        projMan = mock(ProjectManager.class);
+        ProjectManager.singleton = projMan;
+        proj = mock(Project.class);
+        processMan = mock(ProcessManager.class);
+        pw = mock(PrintWriter.class);
+        request = mock(HttpServletRequest.class);
+        response = mock(HttpServletResponse.class);
+        SUT = new CancelProcessesCommand();
+    }",method,
+"    @AfterMethod
+    public void TearDown() {
+        SUT = null;
+        projMan = null;
+        ProjectManager.singleton = null;
+        proj = null;
+        pw = null;
+        request = null;
+        response = null;
+    }",method,
+"    @Test
+    public void doPostFailsThrowsWithNullParameters() {
+        // both parameters null
+        try {
+            SUT.doPost(null, null);
+            Assert.fail(); // should have thrown exception by this point
+        } catch (IllegalArgumentException e){
+            //expected
+        } catch (ServletException e) {
+            Assert.fail();
+        } catch (Exception e) {
+            Assert.fail();
+        }
+        // request is null
+        try {
+            SUT.doPost(null, response);
+            Assert.fail(); // should have thrown exception by this point
+        } catch (IllegalArgumentException e){
+            //expected
+        } catch (ServletException e) {
+            Assert.fail();
+        } catch (Exception e) {
+            Assert.fail();
+        }
+        // response parameter null
+        try {
+            SUT.doPost(request, null);
+            Assert.fail(); // should have thrown exception by this point
+        } catch (IllegalArgumentException e){
+            // expected
+        } catch (ServletException e) {
+            Assert.fail();
+        } catch (Exception e) {
+            Assert.fail();
+        }
+    }",method,
+"    @Test
+    public void doPostRegressionTest() {
+        // mock dependencies
+        when(request.getParameter(""project"")).thenReturn(PROJECT_ID);
+        when(projMan.getProject(anyLong())).thenReturn(proj);
+        when(proj.getProcessManager()).thenReturn(processMan);
+        try {
+            when(response.getWriter()).thenReturn(pw);
+        } catch (IOException e1) {
+            Assert.fail();
+        }
+        // run
+        try {
+            SUT.doPost(request, response);
+        } catch (ServletException e) {
+            Assert.fail();
+        } catch (IOException e) {
+            Assert.fail();
+        }
+        // verify
+        verify(request, times(1)).getParameter(""project"");
+        verify(projMan, times(1)).getProject(PROJECT_ID_LONG);
+        verify(processMan, times(1)).cancelAll();
+        verify(response, times(1)).setCharacterEncoding(""UTF-8"");
+        verify(response, times(1))
+                .setHeader(""Content-Type"", ""application/json"");
+        verify(proj, times(1)).getProcessManager();
+        try {
+            verify(response, times(1)).getWriter();
+        } catch (IOException e) {
+            Assert.fail();
+        }
+        verify(pw, times(1)).write(""{ \""code\"" : \""ok\"" }"");
+    }",method,
+"     @Test
+     public void doPostThrowsIfCommand_getProjectReturnsNull(){
+        // mock dependencies
+        when(request.getParameter(""project"")).thenReturn(PROJECT_ID);
+        when(projMan.getProject(anyLong()))
+            .thenReturn(null);
+        // run
+        try {
+            SUT.doPost(request, response);
+        } catch (ServletException e) {
+            //expected
+        } catch (IOException e) {
+            Assert.fail();
+        }
+        // verify
+        verify(request, times(1)).getParameter(""project"");
+        verify(projMan, times(1)).getProject(PROJECT_ID_LONG);
+     }",method,
+"     @Test
+     public void doPostCatchesExceptionFromWriter(){
+         String ERROR_MESSAGE = ""hello world"";
+        // mock dependencies
+            when(request.getParameter(""project"")).thenReturn(PROJECT_ID);
+            when(projMan.getProject(anyLong())).thenReturn(proj);
+            when(proj.getProcessManager()).thenReturn(processMan);
+            try {
+                when(response.getWriter()).thenThrow(new IllegalStateException(ERROR_MESSAGE))
+                .thenReturn(pw);
+            } catch (IOException e) {
+                Assert.fail();
+            }
+            // run
+            try {
+                SUT.doPost(request, response);
+            } catch (ServletException e) {
+                Assert.fail();
+            } catch (IOException e) {
+                Assert.fail();
+            }
+            verify(request, times(1)).getParameter(""project"");
+            verify(projMan, times(1)).getProject(PROJECT_ID_LONG);
+            verify(processMan, times(1)).cancelAll();
+            verify(response, times(3)).setCharacterEncoding(""UTF-8"");
+            //omitted other verifications for brevity.
+            //assumption is that expecting response.setCharacterEncoding times(3)
+            //implies it has Command.respondException has been called as expected
+     }",method,
+"public final class ClusterAllocationExplanationTests extends ESTestCase {
+    public void testDecisionEquality() {
+        Decision.Multi d = new Decision.Multi();
+        Decision.Multi d2 = new Decision.Multi();
+        d.add(Decision.single(Decision.Type.NO, ""no label"", ""because I said no""));
+        d.add(Decision.single(Decision.Type.YES, ""yes label"", ""yes please""));
+        d.add(Decision.single(Decision.Type.THROTTLE, ""throttle label"", ""wait a sec""));
+        d2.add(Decision.single(Decision.Type.NO, ""no label"", ""because I said no""));
+        d2.add(Decision.single(Decision.Type.YES, ""yes label"", ""yes please""));
+        d2.add(Decision.single(Decision.Type.THROTTLE, ""throttle label"", ""wait a sec""));
+        assertEquals(d, d2);
+    }
+    public void testExplanationSerialization() throws Exception {
+        ClusterAllocationExplanation cae = randomClusterAllocationExplanation(randomBoolean());
+        BytesStreamOutput out = new BytesStreamOutput();
+        cae.writeTo(out);
+        StreamInput in = out.bytes().streamInput();
+        ClusterAllocationExplanation cae2 = new ClusterAllocationExplanation(in);
+        assertEquals(cae.getShard(), cae2.getShard());
+        assertEquals(cae.isPrimary(), cae2.isPrimary());
+        assertTrue(cae2.isPrimary());
+        assertEquals(cae.getUnassignedInfo(), cae2.getUnassignedInfo());
+        assertEquals(cae.getCurrentNode(), cae2.getCurrentNode());
+        assertEquals(cae.getShardState(), cae2.getShardState());
+        if (cae.getClusterInfo() == null) {
+            assertNull(cae2.getClusterInfo());
+        } else {
+            assertNotNull(cae2.getClusterInfo());
+            assertEquals(cae.getClusterInfo().getNodeMostAvailableDiskUsages().size(),
+                cae2.getClusterInfo().getNodeMostAvailableDiskUsages().size());
+        }
+        assertEquals(cae.getShardAllocationDecision().getAllocateDecision(), cae2.getShardAllocationDecision().getAllocateDecision());
+        assertEquals(cae.getShardAllocationDecision().getMoveDecision(), cae2.getShardAllocationDecision().getMoveDecision());
+    }
+    public void testExplanationToXContent() throws Exception {
+        ClusterAllocationExplanation cae = randomClusterAllocationExplanation(true);
+        XContentBuilder builder = XContentFactory.jsonBuilder();
+        cae.toXContent(builder, ToXContent.EMPTY_PARAMS);
+        assertEquals(""{\""index\"":\""idx\"",\""shard\"":0,\""primary\"":true,\""current_state\"":\""started\"",\""current_node\"":"" +
+                         ""{\""id\"":\""node-0\"",\""name\"":\""\"",\""transport_address\"":\"""" + cae.getCurrentNode().getAddress() +
+                         ""\"",\""weight_ranking\"":3},\""can_remain_on_current_node\"":\""yes\"",\""can_rebalance_cluster\"":\""yes\"","" +
+                         ""\""can_rebalance_to_other_node\"":\""no\"",\""rebalance_explanation\"":\""cannot rebalance as no target node exists "" +
+                         ""that can both allocate this shard and improve the cluster balance\""}"", builder.string());
+    }
+    private static ClusterAllocationExplanation randomClusterAllocationExplanation(boolean assignedShard) {
+        ShardRouting shardRouting = TestShardRouting.newShardRouting(new ShardId(new Index(""idx"", ""123""), 0),
+            assignedShard ? ""node-0"" : null, true, assignedShard ? ShardRoutingState.STARTED : ShardRoutingState.UNASSIGNED);
+        DiscoveryNode node = assignedShard ? new DiscoveryNode(""node-0"", buildNewFakeTransportAddress(), emptyMap(), emptySet(),
+                                                                  Version.CURRENT) : null;
+        ShardAllocationDecision shardAllocationDecision;
+        if (assignedShard) {
+            MoveDecision moveDecision = MoveDecision.cannotRebalance(Decision.YES, AllocationDecision.NO, 3, null)
+                                            .withRemainDecision(Decision.YES);
+            shardAllocationDecision = new ShardAllocationDecision(AllocateUnassignedDecision.NOT_TAKEN, moveDecision);
+        } else {
+            AllocateUnassignedDecision allocateDecision = AllocateUnassignedDecision.no(UnassignedInfo.AllocationStatus.DECIDERS_NO, null);
+            shardAllocationDecision = new ShardAllocationDecision(allocateDecision, MoveDecision.NOT_TAKEN);
+        }
+        return new ClusterAllocationExplanation(shardRouting, node, null, null, shardAllocationDecision);
+    }
+}",class,
+"    public void testDecisionEquality() {
+        Decision.Multi d = new Decision.Multi();
+        Decision.Multi d2 = new Decision.Multi();
+        d.add(Decision.single(Decision.Type.NO, ""no label"", ""because I said no""));
+        d.add(Decision.single(Decision.Type.YES, ""yes label"", ""yes please""));
+        d.add(Decision.single(Decision.Type.THROTTLE, ""throttle label"", ""wait a sec""));
+        d2.add(Decision.single(Decision.Type.NO, ""no label"", ""because I said no""));
+        d2.add(Decision.single(Decision.Type.YES, ""yes label"", ""yes please""));
+        d2.add(Decision.single(Decision.Type.THROTTLE, ""throttle label"", ""wait a sec""));
+        assertEquals(d, d2);
+    }",method,
+"    public void testExplanationSerialization() throws Exception {
+        ClusterAllocationExplanation cae = randomClusterAllocationExplanation(randomBoolean());
+        BytesStreamOutput out = new BytesStreamOutput();
+        cae.writeTo(out);
+        StreamInput in = out.bytes().streamInput();
+        ClusterAllocationExplanation cae2 = new ClusterAllocationExplanation(in);
+        assertEquals(cae.getShard(), cae2.getShard());
+        assertEquals(cae.isPrimary(), cae2.isPrimary());
+        assertTrue(cae2.isPrimary());
+        assertEquals(cae.getUnassignedInfo(), cae2.getUnassignedInfo());
+        assertEquals(cae.getCurrentNode(), cae2.getCurrentNode());
+        assertEquals(cae.getShardState(), cae2.getShardState());
+        if (cae.getClusterInfo() == null) {
+            assertNull(cae2.getClusterInfo());
+        } else {
+            assertNotNull(cae2.getClusterInfo());
+            assertEquals(cae.getClusterInfo().getNodeMostAvailableDiskUsages().size(),
+                cae2.getClusterInfo().getNodeMostAvailableDiskUsages().size());
+        }
+        assertEquals(cae.getShardAllocationDecision().getAllocateDecision(), cae2.getShardAllocationDecision().getAllocateDecision());
+        assertEquals(cae.getShardAllocationDecision().getMoveDecision(), cae2.getShardAllocationDecision().getMoveDecision());
+    }",method,
+"    public void testExplanationToXContent() throws Exception {
+        ClusterAllocationExplanation cae = randomClusterAllocationExplanation(true);
+        XContentBuilder builder = XContentFactory.jsonBuilder();
+        cae.toXContent(builder, ToXContent.EMPTY_PARAMS);
+        assertEquals(""{\""index\"":\""idx\"",\""shard\"":0,\""primary\"":true,\""current_state\"":\""started\"",\""current_node\"":"" +
+                         ""{\""id\"":\""node-0\"",\""name\"":\""\"",\""transport_address\"":\"""" + cae.getCurrentNode().getAddress() +
+                         ""\"",\""weight_ranking\"":3},\""can_remain_on_current_node\"":\""yes\"",\""can_rebalance_cluster\"":\""yes\"","" +
+                         ""\""can_rebalance_to_other_node\"":\""no\"",\""rebalance_explanation\"":\""cannot rebalance as no target node exists "" +
+                         ""that can both allocate this shard and improve the cluster balance\""}"", builder.string());
+    }",method,
+"    private static ClusterAllocationExplanation randomClusterAllocationExplanation(boolean assignedShard) {
+        ShardRouting shardRouting = TestShardRouting.newShardRouting(new ShardId(new Index(""idx"", ""123""), 0),
+            assignedShard ? ""node-0"" : null, true, assignedShard ? ShardRoutingState.STARTED : ShardRoutingState.UNASSIGNED);
+        DiscoveryNode node = assignedShard ? new DiscoveryNode(""node-0"", buildNewFakeTransportAddress(), emptyMap(), emptySet(),
+                                                                  Version.CURRENT) : null;
+        ShardAllocationDecision shardAllocationDecision;
+        if (assignedShard) {
+            MoveDecision moveDecision = MoveDecision.cannotRebalance(Decision.YES, AllocationDecision.NO, 3, null)
+                                            .withRemainDecision(Decision.YES);
+            shardAllocationDecision = new ShardAllocationDecision(AllocateUnassignedDecision.NOT_TAKEN, moveDecision);
+        } else {
+            AllocateUnassignedDecision allocateDecision = AllocateUnassignedDecision.no(UnassignedInfo.AllocationStatus.DECIDERS_NO, null);
+            shardAllocationDecision = new ShardAllocationDecision(allocateDecision, MoveDecision.NOT_TAKEN);
+        }
+        return new ClusterAllocationExplanation(shardRouting, node, null, null, shardAllocationDecision);
+    }",method,
+"        if (assignedShard) {
+            MoveDecision moveDecision = MoveDecision.cannotRebalance(Decision.YES, AllocationDecision.NO, 3, null)
+                                            .withRemainDecision(Decision.YES);
+            shardAllocationDecision = new ShardAllocationDecision(AllocateUnassignedDecision.NOT_TAKEN, moveDecision);
+        }",method,
+"public class YAMLBreadcrumbsTest extends LightPlatformCodeInsightFixtureTestCase {
+  private static final String INPUT = ""---\n"" +
+                                      ""items:\n"" +
+                                      ""    - part_no:   A4786\n"" +
+                                      ""      descrip:   Water Bucket (Filled)\n"" +
+                                      ""      price:     1.47\n"" +
+                                      ""      quantity:  4\n"" +
+                                      ""\n"" +
+                                      ""    - part_no:   E1628\n"" +
+                                      ""      descrip:   High Heeled<caret> \""Ruby\"" Slippers\n"" +
+                                      ""      size:      8\n"" +
+                                      ""      price:     133.7\n"" +
+                                      ""      quantity:  1\n"" +
+                                      ""\n"" +
+                                      ""specialDelivery:  >\n"" +
+                                      ""    Follow the Yellow Brick\n"" +
+                                      ""    Road to the Emerald City.\n"" +
+                                      ""    Pay no attention<caret> to the\n"" +
+                                      ""    man behind the curtain.\n"" +
+                                      ""---\n"" +
+                                      ""{\n"" +
+                                      ""foo: salkdjkalsd,\n"" +
+                                      ""bar: asjdjkas,\n"" +
+                                      ""baz: [foo: qoo, boo: fo<caret>o, doo: 123]\n"" +
+                                      ""}\n"" +
+                                      ""---\n"" +
+                                      ""foo: \n"" +
+                                      ""  bar:\n"" +
+                                      ""- av<caret>r\n"" +
+                                      ""..."";
+  private static final String OUTPUT = ""[Document 1/3;null][items:;null][Item 2/2;null][descrip:;null][High Heeled \""Ruby\"" S...;null]\n"" +
+                                       ""------\n"" +
+                                       ""[Document 1/3;null][specialDelivery:;null][Follow the Yellow Br...;null]\n"" +
+                                       ""------\n"" +
+                                       ""[Document 2/3;null][baz:;null][Item 2/3;null][boo:;null][foo;null]\n"" +
+                                       ""------\n"" +
+                                       ""[Document 3/3;null][foo:;null][Item;null][avr;null]"";
+  public void testAll() {
+    myFixture.configureByText(YAMLFileType.YML, INPUT);
+    final CaretModel caretModel = myFixture.getEditor().getCaretModel();
+    final String result = caretModel.getAllCarets().stream()
+      .map(Caret::getOffset)
+      .collect(Collectors.toList()).stream()
+      .map((offset) -> {
+        caretModel.moveToOffset(offset);
+        return myFixture.getBreadcrumbsAtCaret().stream()
+          .map(crumb -> ""["" + crumb.getText() + "";"" + crumb.getTooltip() + ""]"")
+          .reduce((left, right) -> left + right).orElse(""[]"");
+      })
+      .reduce((left, right) -> left + ""\n------\n"" + right).orElse("""");
+    assertSameLines(OUTPUT, result);
+  }
+}",class,
+"  public void testAll() {
+    myFixture.configureByText(YAMLFileType.YML, INPUT);
+    final CaretModel caretModel = myFixture.getEditor().getCaretModel();
+    final String result = caretModel.getAllCarets().stream()
+      .map(Caret::getOffset)
+      .collect(Collectors.toList()).stream()
+      .map((offset) -> {
+        caretModel.moveToOffset(offset);
+        return myFixture.getBreadcrumbsAtCaret().stream()
+          .map(crumb -> ""["" + crumb.getText() + "";"" + crumb.getTooltip() + ""]"")
+          .reduce((left, right) -> left + right).orElse(""[]"");
+      })
+      .reduce((left, right) -> left + ""\n------\n"" + right).orElse("""");
+    assertSameLines(OUTPUT, result);
+  }",method,
+"public class OracleCreateTableTest35 extends OracleTest {
+    public void test_types() throws Exception {
+        String sql = //
+        ""create table sto_scandata_bak_2013_05_08_023000 AS (select * from sto_scandata t where t.delflag=1 )"";
+        OracleStatementParser parser = new OracleStatementParser(sql);
+        List<SQLStatement> statementList = parser.parseStatementList();
+        SQLStatement stmt = statementList.get(0);
+        print(statementList);
+        Assert.assertEquals(1, statementList.size());
+        Assert.assertEquals(""CREATE TABLE sto_scandata_bak_2013_05_08_023000"" //
+                            + ""\nAS""//
+                            + ""\nSELECT *""//
+                            + ""\nFROM sto_scandata t""//
+                            + ""\nWHERE t.delflag = 1"",//
+                            SQLUtils.toSQLString(stmt, JdbcConstants.ORACLE));
+        OracleSchemaStatVisitor visitor = new OracleSchemaStatVisitor();
+        stmt.accept(visitor);
+        System.out.println(""Tables : "" + visitor.getTables());
+        System.out.println(""fields : "" + visitor.getColumns());
+        System.out.println(""coditions : "" + visitor.getConditions());
+        System.out.println(""relationships : "" + visitor.getRelationships());
+        System.out.println(""orderBy : "" + visitor.getOrderByColumns());
+        Assert.assertEquals(2, visitor.getTables().size());
+        Assert.assertEquals(2, visitor.getColumns().size());
+        Assert.assertTrue(visitor.getColumns().contains(new TableStat.Column(""sto_scandata"", ""*"")));
+    }
+}",class,
+"    public void test_types() throws Exception {
+        String sql = //
+        ""create table sto_scandata_bak_2013_05_08_023000 AS (select * from sto_scandata t where t.delflag=1 )"";
+        OracleStatementParser parser = new OracleStatementParser(sql);
+        List<SQLStatement> statementList = parser.parseStatementList();
+        SQLStatement stmt = statementList.get(0);
+        print(statementList);
+        Assert.assertEquals(1, statementList.size());
+        Assert.assertEquals(""CREATE TABLE sto_scandata_bak_2013_05_08_023000"" //
+                            + ""\nAS""//
+                            + ""\nSELECT *""//
+                            + ""\nFROM sto_scandata t""//
+                            + ""\nWHERE t.delflag = 1"",//
+                            SQLUtils.toSQLString(stmt, JdbcConstants.ORACLE));
+        OracleSchemaStatVisitor visitor = new OracleSchemaStatVisitor();
+        stmt.accept(visitor);
+        System.out.println(""Tables : "" + visitor.getTables());
+        System.out.println(""fields : "" + visitor.getColumns());
+        System.out.println(""coditions : "" + visitor.getConditions());
+        System.out.println(""relationships : "" + visitor.getRelationships());
+        System.out.println(""orderBy : "" + visitor.getOrderByColumns());
+        Assert.assertEquals(2, visitor.getTables().size());
+        Assert.assertEquals(2, visitor.getColumns().size());
+        Assert.assertTrue(visitor.getColumns().contains(new TableStat.Column(""sto_scandata"", ""*"")));
+    }",method,
+"public abstract class Uri {
+  public abstract boolean isAbsolute();
+  public abstract boolean isRelative();
+  public abstract boolean isEmpty();
+  public abstract String scheme();
+  public abstract Host host();
+  public abstract int port();
+  public abstract String userInfo();
+  public abstract String path();
+  public abstract Iterable<String> pathSegments();
+  public abstract Optional<String> queryString(Charset charset);
+  public abstract Optional<String> rawQueryString();
+  public abstract Query query();
+  public abstract Query query(Charset charset, akka.http.scaladsl.model.Uri.ParsingMode mode);
+  public abstract Optional<String> fragment();
+  public abstract Uri scheme(String scheme);
+  public abstract Uri host(Host host);
+  public abstract Uri host(String host);
+  public abstract Uri port(int port);
+  public abstract Uri userInfo(String userInfo);
+  public abstract Uri path(String path);
+  public abstract Uri addPathSegment(String segment);
+  public abstract Uri rawQueryString(String rawQuery);
+  public abstract Uri query(Query query);
+  public abstract Uri toRelative();
+  public abstract Uri fragment(String fragment);
+  public abstract Uri fragment(Optional<String> fragment);
+  public abstract String getScheme();
+  public abstract Host getHost();
+  public abstract int getPort();
+  public abstract String getUserInfo();
+  public abstract String getPathString();
+  public static final akka.http.scaladsl.model.Uri.ParsingMode STRICT = UriJavaAccessor.pmStrict();
+  public static final akka.http.scaladsl.model.Uri.ParsingMode RELAXED = UriJavaAccessor.pmRelaxed();
+  public static final Uri EMPTY = new JavaUri(akka.http.scaladsl.model.Uri.Empty$.MODULE$);
+  public static Uri create(String uri) {
+    return new JavaUri(akka.http.scaladsl.model.Uri.apply(uri));
+  }
+  public static Uri create(String uri, akka.http.scaladsl.model.Uri.ParsingMode parsingMode) {
+    return new JavaUri(akka.http.scaladsl.model.Uri.apply(ParserInput$.MODULE$.apply(uri), parsingMode));
+  }
+  public static Uri create(String uri, Charset charset, akka.http.scaladsl.model.Uri.ParsingMode parsingMode) {
+    return new JavaUri(akka.http.scaladsl.model.Uri.apply(ParserInput$.MODULE$.apply(uri), charset, parsingMode));
+  }
+  public static interface ParsingMode {}
+}",class,
+"  public static Uri create(String uri) {
+    return new JavaUri(akka.http.scaladsl.model.Uri.apply(uri));
+  }",method,
+"  public static Uri create(String uri, akka.http.scaladsl.model.Uri.ParsingMode parsingMode) {
+    return new JavaUri(akka.http.scaladsl.model.Uri.apply(ParserInput$.MODULE$.apply(uri), parsingMode));
+  }",method,
+"  public static Uri create(String uri, Charset charset, akka.http.scaladsl.model.Uri.ParsingMode parsingMode) {
+    return new JavaUri(akka.http.scaladsl.model.Uri.apply(ParserInput$.MODULE$.apply(uri), charset, parsingMode));
+  }",method,
+"public class WelcomeBalloonLayoutImpl extends BalloonLayoutImpl {
+  private static final String TYPE_KEY = ""Type"";
+  private final Consumer<List<NotificationType>> myListener;
+  private final Computable<Point> myButtonLocation;
+  private BalloonImpl myPopupBalloon;
+  private final BalloonPanel myBalloonPanel = new BalloonPanel();
+  private boolean myVisible;
+  public WelcomeBalloonLayoutImpl(@NotNull JRootPane parent,
+                                  @NotNull Insets insets,
+                                  @NotNull Consumer<List<NotificationType>> listener,
+                                  @NotNull Computable<Point> buttonLocation) {
+    super(parent, insets);
+    myListener = listener;
+    myButtonLocation = buttonLocation;
+  }
+  @Override
+  public void dispose() {
+    super.dispose();
+    if (myPopupBalloon != null) {
+      Disposer.dispose(myPopupBalloon);
+      myPopupBalloon = null;
+    }
+  }
+  @Override
+  public void add(@NotNull Balloon balloon, @Nullable Object layoutData) {
+    if (layoutData instanceof BalloonLayoutData && ((BalloonLayoutData)layoutData).welcomeScreen) {
+      addToPopup((BalloonImpl)balloon, (BalloonLayoutData)layoutData);
+    }
+    else {
+      super.add(balloon, layoutData);
+    }
+  }
+  private void addToPopup(@NotNull BalloonImpl balloon, @NotNull BalloonLayoutData layoutData) {
+    layoutData.doLayout = this::layoutPopup;
+    layoutData.configuration = layoutData.configuration.replace(JBUI.scale(myPopupBalloon == null ? 7 : 5), JBUI.scale(12));
+    if (myPopupBalloon == null) {
+      final JScrollPane pane = NotificationsManagerImpl.createBalloonScrollPane(myBalloonPanel, true);
+      pane.setHorizontalScrollBarPolicy(ScrollPaneConstants.HORIZONTAL_SCROLLBAR_NEVER);
+      pane.setVerticalScrollBarPolicy(ScrollPaneConstants.VERTICAL_SCROLLBAR_AS_NEEDED);
+      pane.getVerticalScrollBar().addComponentListener(new ComponentAdapter() {
+        @Override
+        public void componentShown(ComponentEvent e) {
+          int top = SystemInfo.isMac ? 2 : 1;
+          pane.setBorder(JBUI.Borders.empty(top, 0, 1, 1));
+        }
+        @Override
+        public void componentHidden(ComponentEvent e) {
+          pane.setBorder(JBUI.Borders.empty());
+        }
+      });
+      myPopupBalloon =
+        new BalloonImpl(pane, BORDER_COLOR, new Insets(0, 0, 0, 0), FILL_COLOR, true, false, false, true, false, true, 0, false, false,
+                        null, false, 0, 0, 0, 0, false, null, null, false, false, true, null, false, null, -1);
+      myPopupBalloon.setAnimationEnabled(false);
+      myPopupBalloon.setShadowBorderProvider(
+        new NotificationBalloonShadowBorderProvider(FILL_COLOR, BORDER_COLOR));
+      myPopupBalloon.setHideListener(() -> myPopupBalloon.getComponent().setVisible(false));
+      myPopupBalloon.setActionProvider(new BalloonImpl.ActionProvider() {
+        private BalloonImpl.ActionButton myAction;
+        @NotNull
+        @Override
+        public List<BalloonImpl.ActionButton> createActions() {
+          myAction = myPopupBalloon.new ActionButton(AllIcons.Ide.Notification.Close, null, null, com.intellij.util.Consumer.EMPTY_CONSUMER);
+          return Collections.singletonList(myAction);
+        }
+        @Override
+        public void layout(@NotNull Rectangle bounds) {
+          myAction.setBounds(0, 0, 0, 0);
+        }
+      });
+    }
+    myBalloonPanel.add(balloon.getContent());
+    balloon.getContent().putClientProperty(TYPE_KEY, layoutData.type);
+    Disposer.register(balloon, new Disposable() {
+      @Override
+      public void dispose() {
+        myBalloons.remove(balloon);
+        myBalloonPanel.remove(balloon.getContent());
+        updatePopup();
+      }
+    });
+    myBalloons.add(balloon);
+    updatePopup();
+  }
+  public void showPopup() {
+    layoutPopup();
+    if (myVisible) {
+      myPopupBalloon.getComponent().setVisible(true);
+    }
+    else {
+      myPopupBalloon.show(myLayeredPane);
+      myVisible = true;
+    }
+  }
+  @Override
+  public void queueRelayout() {
+    if (myVisible) {
+      layoutPopup();
+    }
+  }
+  private void layoutPopup() {
+    Dimension layeredSize = myLayeredPane.getSize();
+    Dimension size = new Dimension(myPopupBalloon.getPreferredSize());
+    Point location = myButtonLocation.compute();
+    int x = layeredSize.width - size.width - 5;
+    int fullHeight = location.y;
+    if (x > location.x) {
+      x = location.x - 20;
+    }
+    if (size.height > fullHeight) {
+      size.height = fullHeight;
+    }
+    myPopupBalloon.setBounds(new Rectangle(x, fullHeight - size.height, size.width, size.height));
+  }
+  private void updatePopup() {
+    int count = myBalloonPanel.getComponentCount();
+    List<NotificationType> types = new ArrayList<>(count);
+    for (int i = 0; i < count; i++) {
+      types.add((NotificationType)((JComponent)myBalloonPanel.getComponent(i)).getClientProperty(TYPE_KEY));
+    }
+    myListener.accept(types);
+    if (myVisible) {
+      if (count == 0) {
+        myPopupBalloon.getComponent().setVisible(false);
+      }
+      else {
+        layoutPopup();
+      }
+    }
+  }
+  private static class BalloonPanel extends NonOpaquePanel {
+    public BalloonPanel() {
+      super(new AbstractLayoutManager() {
+        @Override
+        public Dimension preferredLayoutSize(Container parent) {
+          int count = parent.getComponentCount();
+          int width = 0;
+          int height = 0;
+          for (int i = 0; i < count; i++) {
+            Dimension size = parent.getComponent(i).getPreferredSize();
+            width = Math.max(width, size.width);
+            height += size.height;
+          }
+          height += count - 1;
+          return new Dimension(width + JBUI.scale(32), height);
+        }
+        @Override
+        public void layoutContainer(Container parent) {
+          int count = parent.getComponentCount();
+          int width = parent.getWidth() - JBUI.scale(32);
+          int height = parent.getHeight();
+          if (count == 1) {
+            parent.getComponent(0).setBounds(JBUI.scale(16), 0, width, height);
+          }
+          else {
+            int y = 0;
+            for (int i = 0; i < count; i++) {
+              Component component = parent.getComponent(i);
+              Dimension size = component.getPreferredSize();
+              component.setBounds(JBUI.scale(16), y, width, size.height);
+              y += size.height + JBUI.scale(2);
+            }
+          }
+        }
+      });
+    }
+    @Override
+    protected void paintComponent(Graphics g) {
+      super.paintComponent(g);
+      int count = getComponentCount() - 1;
+      if (count > 0) {
+        int x2 = getWidth() - JBUI.scale(16);
+        int y = 0;
+        g.setColor(new JBColor(0xD0D0D0, 0x717375));
+        for (int i = 0; i < count; i++) {
+          Dimension size = getComponent(i).getPreferredSize();
+          y += size.height + 1;
+          g.drawLine(JBUI.scale(16), y, x2, y);
+        }
+      }
+    }
+  }
+}",class,
+"  private static class BalloonPanel extends NonOpaquePanel {
+    public BalloonPanel() {
+      super(new AbstractLayoutManager() {
+        @Override
+        public Dimension preferredLayoutSize(Container parent) {
+          int count = parent.getComponentCount();
+          int width = 0;
+          int height = 0;
+          for (int i = 0; i < count; i++) {
+            Dimension size = parent.getComponent(i).getPreferredSize();
+            width = Math.max(width, size.width);
+            height += size.height;
+          }
+          height += count - 1;
+          return new Dimension(width + JBUI.scale(32), height);
+        }
+        @Override
+        public void layoutContainer(Container parent) {
+          int count = parent.getComponentCount();
+          int width = parent.getWidth() - JBUI.scale(32);
+          int height = parent.getHeight();
+          if (count == 1) {
+            parent.getComponent(0).setBounds(JBUI.scale(16), 0, width, height);
+          }
+          else {
+            int y = 0;
+            for (int i = 0; i < count; i++) {
+              Component component = parent.getComponent(i);
+              Dimension size = component.getPreferredSize();
+              component.setBounds(JBUI.scale(16), y, width, size.height);
+              y += size.height + JBUI.scale(2);
+            }
+          }
+        }
+      });
+    }
+    @Override
+    protected void paintComponent(Graphics g) {
+      super.paintComponent(g);
+      int count = getComponentCount() - 1;
+      if (count > 0) {
+        int x2 = getWidth() - JBUI.scale(16);
+        int y = 0;
+        g.setColor(new JBColor(0xD0D0D0, 0x717375));
+        for (int i = 0; i < count; i++) {
+          Dimension size = getComponent(i).getPreferredSize();
+          y += size.height + 1;
+          g.drawLine(JBUI.scale(16), y, x2, y);
+        }
+      }
+    }
+  }",class,
+"  public WelcomeBalloonLayoutImpl(@NotNull JRootPane parent,
+                                  @NotNull Insets insets,
+                                  @NotNull Consumer<List<NotificationType>> listener,
+                                  @NotNull Computable<Point> buttonLocation) {
+    super(parent, insets);
+    myListener = listener;
+    myButtonLocation = buttonLocation;
+  }",method,
+"  @Override
+  public void dispose() {
+    super.dispose();
+    if (myPopupBalloon != null) {
+      Disposer.dispose(myPopupBalloon);
+      myPopupBalloon = null;
+    }
+  }",method,
+"    if (myPopupBalloon != null) {
+      Disposer.dispose(myPopupBalloon);
+      myPopupBalloon = null;
+    }",method,
+"  @Override
+  public void add(@NotNull Balloon balloon, @Nullable Object layoutData) {
+    if (layoutData instanceof BalloonLayoutData && ((BalloonLayoutData)layoutData).welcomeScreen) {
+      addToPopup((BalloonImpl)balloon, (BalloonLayoutData)layoutData);
+    }
+    else {
+      super.add(balloon, layoutData);
+    }
+  }",method,
+"  private void addToPopup(@NotNull BalloonImpl balloon, @NotNull BalloonLayoutData layoutData) {
+    layoutData.doLayout = this::layoutPopup;
+    layoutData.configuration = layoutData.configuration.replace(JBUI.scale(myPopupBalloon == null ? 7 : 5), JBUI.scale(12));
+    if (myPopupBalloon == null) {
+      final JScrollPane pane = NotificationsManagerImpl.createBalloonScrollPane(myBalloonPanel, true);
+      pane.setHorizontalScrollBarPolicy(ScrollPaneConstants.HORIZONTAL_SCROLLBAR_NEVER);
+      pane.setVerticalScrollBarPolicy(ScrollPaneConstants.VERTICAL_SCROLLBAR_AS_NEEDED);
+      pane.getVerticalScrollBar().addComponentListener(new ComponentAdapter() {
+        @Override
+        public void componentShown(ComponentEvent e) {
+          int top = SystemInfo.isMac ? 2 : 1;
+          pane.setBorder(JBUI.Borders.empty(top, 0, 1, 1));
+        }
+        @Override
+        public void componentHidden(ComponentEvent e) {
+          pane.setBorder(JBUI.Borders.empty());
+        }
+      });
+      myPopupBalloon =
+        new BalloonImpl(pane, BORDER_COLOR, new Insets(0, 0, 0, 0), FILL_COLOR, true, false, false, true, false, true, 0, false, false,
+                        null, false, 0, 0, 0, 0, false, null, null, false, false, true, null, false, null, -1);
+      myPopupBalloon.setAnimationEnabled(false);
+      myPopupBalloon.setShadowBorderProvider(
+        new NotificationBalloonShadowBorderProvider(FILL_COLOR, BORDER_COLOR));
+      myPopupBalloon.setHideListener(() -> myPopupBalloon.getComponent().setVisible(false));
+      myPopupBalloon.setActionProvider(new BalloonImpl.ActionProvider() {
+        private BalloonImpl.ActionButton myAction;
+        @NotNull
+        @Override
+        public List<BalloonImpl.ActionButton> createActions() {
+          myAction = myPopupBalloon.new ActionButton(AllIcons.Ide.Notification.Close, null, null, com.intellij.util.Consumer.EMPTY_CONSUMER);
+          return Collections.singletonList(myAction);
+        }
+        @Override
+        public void layout(@NotNull Rectangle bounds) {
+          myAction.setBounds(0, 0, 0, 0);
+        }
+      });
+    }
+    myBalloonPanel.add(balloon.getContent());
+    balloon.getContent().putClientProperty(TYPE_KEY, layoutData.type);
+    Disposer.register(balloon, new Disposable() {
+      @Override
+      public void dispose() {
+        myBalloons.remove(balloon);
+        myBalloonPanel.remove(balloon.getContent());
+        updatePopup();
+      }
+    });
+    myBalloons.add(balloon);
+    updatePopup();
+  }",method,
+"    if (myPopupBalloon == null) {
+      final JScrollPane pane = NotificationsManagerImpl.createBalloonScrollPane(myBalloonPanel, true);
+      pane.setHorizontalScrollBarPolicy(ScrollPaneConstants.HORIZONTAL_SCROLLBAR_NEVER);
+      pane.setVerticalScrollBarPolicy(ScrollPaneConstants.VERTICAL_SCROLLBAR_AS_NEEDED);
+      pane.getVerticalScrollBar().addComponentListener(new ComponentAdapter() {
+        @Override
+        public void componentShown(ComponentEvent e) {
+          int top = SystemInfo.isMac ? 2 : 1;
+          pane.setBorder(JBUI.Borders.empty(top, 0, 1, 1));
+        }
+        @Override
+        public void componentHidden(ComponentEvent e) {
+          pane.setBorder(JBUI.Borders.empty());
+        }
+      });
+      myPopupBalloon =
+        new BalloonImpl(pane, BORDER_COLOR, new Insets(0, 0, 0, 0), FILL_COLOR, true, false, false, true, false, true, 0, false, false,
+                        null, false, 0, 0, 0, 0, false, null, null, false, false, true, null, false, null, -1);
+      myPopupBalloon.setAnimationEnabled(false);
+      myPopupBalloon.setShadowBorderProvider(
+        new NotificationBalloonShadowBorderProvider(FILL_COLOR, BORDER_COLOR));
+      myPopupBalloon.setHideListener(() -> myPopupBalloon.getComponent().setVisible(false));
+      myPopupBalloon.setActionProvider(new BalloonImpl.ActionProvider() {
+        private BalloonImpl.ActionButton myAction;
+        @NotNull
+        @Override
+        public List<BalloonImpl.ActionButton> createActions() {
+          myAction = myPopupBalloon.new ActionButton(AllIcons.Ide.Notification.Close, null, null, com.intellij.util.Consumer.EMPTY_CONSUMER);
+          return Collections.singletonList(myAction);
+        }
+        @Override
+        public void layout(@NotNull Rectangle bounds) {
+          myAction.setBounds(0, 0, 0, 0);
+        }
+      });
+    }",method,
+"        @Override
+        public void componentShown(ComponentEvent e) {
+          int top = SystemInfo.isMac ? 2 : 1;
+          pane.setBorder(JBUI.Borders.empty(top, 0, 1, 1));
+        }",method,
+"        @Override
+        public void componentHidden(ComponentEvent e) {
+          pane.setBorder(JBUI.Borders.empty());
+        }",method,
+"      myPopupBalloon.setActionProvider(new BalloonImpl.ActionProvider() {
+        private BalloonImpl.ActionButton myAction;
+        @NotNull
+        @Override
+        public List<BalloonImpl.ActionButton> createActions() {
+          myAction = myPopupBalloon.new ActionButton(AllIcons.Ide.Notification.Close, null, null, com.intellij.util.Consumer.EMPTY_CONSUMER);
+          return Collections.singletonList(myAction);
+        }
+        @Override
+        public void layout(@NotNull Rectangle bounds) {
+          myAction.setBounds(0, 0, 0, 0);
+        }
+      }",method,
+"        @NotNull
+        @Override
+        public List<BalloonImpl.ActionButton> createActions() {
+          myAction = myPopupBalloon.new ActionButton(AllIcons.Ide.Notification.Close, null, null, com.intellij.util.Consumer.EMPTY_CONSUMER);
+          return Collections.singletonList(myAction);
+        }",method,
+"        @Override
+        public void layout(@NotNull Rectangle bounds) {
+          myAction.setBounds(0, 0, 0, 0);
+        }",method,
+"    Disposer.register(balloon, new Disposable() {
+      @Override
+      public void dispose() {
+        myBalloons.remove(balloon);
+        myBalloonPanel.remove(balloon.getContent());
+        updatePopup();
+      }
+    }",method,
+"      @Override
+      public void dispose() {
+        myBalloons.remove(balloon);
+        myBalloonPanel.remove(balloon.getContent());
+        updatePopup();
+      }",method,
+"  public void showPopup() {
+    layoutPopup();
+    if (myVisible) {
+      myPopupBalloon.getComponent().setVisible(true);
+    }
+    else {
+      myPopupBalloon.show(myLayeredPane);
+      myVisible = true;
+    }
+  }",method,
+"    if (myVisible) {
+      myPopupBalloon.getComponent().setVisible(true);
+    }",method,
+"  @Override
+  public void queueRelayout() {
+    if (myVisible) {
+      layoutPopup();
+    }
+  }",method,
+"    if (myVisible) {
+      layoutPopup();
+    }",method,
+"  private void layoutPopup() {
+    Dimension layeredSize = myLayeredPane.getSize();
+    Dimension size = new Dimension(myPopupBalloon.getPreferredSize());
+    Point location = myButtonLocation.compute();
+    int x = layeredSize.width - size.width - 5;
+    int fullHeight = location.y;
+    if (x > location.x) {
+      x = location.x - 20;
+    }
+    if (size.height > fullHeight) {
+      size.height = fullHeight;
+    }
+    myPopupBalloon.setBounds(new Rectangle(x, fullHeight - size.height, size.width, size.height));
+  }",method,
+"    if (x > location.x) {
+      x = location.x - 20;
+    }",method,
+"    if (size.height > fullHeight) {
+      size.height = fullHeight;
+    }",method,
+"  private void updatePopup() {
+    int count = myBalloonPanel.getComponentCount();
+    List<NotificationType> types = new ArrayList<>(count);
+    for (int i = 0; i < count; i++) {
+      types.add((NotificationType)((JComponent)myBalloonPanel.getComponent(i)).getClientProperty(TYPE_KEY));
+    }
+    myListener.accept(types);
+    if (myVisible) {
+      if (count == 0) {
+        myPopupBalloon.getComponent().setVisible(false);
+      }
+      else {
+        layoutPopup();
+      }
+    }
+  }",method,
+"    for (int i = 0; i < count; i++) {
+      types.add((NotificationType)((JComponent)myBalloonPanel.getComponent(i)).getClientProperty(TYPE_KEY));
+    }",method,
+"    if (myVisible) {
+      if (count == 0) {
+        myPopupBalloon.getComponent().setVisible(false);
+      }
+      else {
+        layoutPopup();
+      }
+    }",method,
+"      if (count == 0) {
+        myPopupBalloon.getComponent().setVisible(false);
+      }",method,
+"    public BalloonPanel() {
+      super(new AbstractLayoutManager() {
+        @Override
+        public Dimension preferredLayoutSize(Container parent) {
+          int count = parent.getComponentCount();
+          int width = 0;
+          int height = 0;
+          for (int i = 0; i < count; i++) {
+            Dimension size = parent.getComponent(i).getPreferredSize();
+            width = Math.max(width, size.width);
+            height += size.height;
+          }
+          height += count - 1;
+          return new Dimension(width + JBUI.scale(32), height);
+        }
+        @Override
+        public void layoutContainer(Container parent) {
+          int count = parent.getComponentCount();
+          int width = parent.getWidth() - JBUI.scale(32);
+          int height = parent.getHeight();
+          if (count == 1) {
+            parent.getComponent(0).setBounds(JBUI.scale(16), 0, width, height);
+          }
+          else {
+            int y = 0;
+            for (int i = 0; i < count; i++) {
+              Component component = parent.getComponent(i);
+              Dimension size = component.getPreferredSize();
+              component.setBounds(JBUI.scale(16), y, width, size.height);
+              y += size.height + JBUI.scale(2);
+            }
+          }
+        }
+      });
+    }",method,
+"      super(new AbstractLayoutManager() {
+        @Override
+        public Dimension preferredLayoutSize(Container parent) {
+          int count = parent.getComponentCount();
+          int width = 0;
+          int height = 0;
+          for (int i = 0; i < count; i++) {
+            Dimension size = parent.getComponent(i).getPreferredSize();
+            width = Math.max(width, size.width);
+            height += size.height;
+          }
+          height += count - 1;
+          return new Dimension(width + JBUI.scale(32), height);
+        }
+        @Override
+        public void layoutContainer(Container parent) {
+          int count = parent.getComponentCount();
+          int width = parent.getWidth() - JBUI.scale(32);
+          int height = parent.getHeight();
+          if (count == 1) {
+            parent.getComponent(0).setBounds(JBUI.scale(16), 0, width, height);
+          }
+          else {
+            int y = 0;
+            for (int i = 0; i < count; i++) {
+              Component component = parent.getComponent(i);
+              Dimension size = component.getPreferredSize();
+              component.setBounds(JBUI.scale(16), y, width, size.height);
+              y += size.height + JBUI.scale(2);
+            }
+          }
+        }
+      }",method,
+"        @Override
+        public Dimension preferredLayoutSize(Container parent) {
+          int count = parent.getComponentCount();
+          int width = 0;
+          int height = 0;
+          for (int i = 0; i < count; i++) {
+            Dimension size = parent.getComponent(i).getPreferredSize();
+            width = Math.max(width, size.width);
+            height += size.height;
+          }
+          height += count - 1;
+          return new Dimension(width + JBUI.scale(32), height);
+        }",method,
+"          for (int i = 0; i < count; i++) {
+            Dimension size = parent.getComponent(i).getPreferredSize();
+            width = Math.max(width, size.width);
+            height += size.height;
+          }",method,
+"        @Override
+        public void layoutContainer(Container parent) {
+          int count = parent.getComponentCount();
+          int width = parent.getWidth() - JBUI.scale(32);
+          int height = parent.getHeight();
+          if (count == 1) {
+            parent.getComponent(0).setBounds(JBUI.scale(16), 0, width, height);
+          }
+          else {
+            int y = 0;
+            for (int i = 0; i < count; i++) {
+              Component component = parent.getComponent(i);
+              Dimension size = component.getPreferredSize();
+              component.setBounds(JBUI.scale(16), y, width, size.height);
+              y += size.height + JBUI.scale(2);
+            }
+          }
+        }",method,
+"          if (count == 1) {
+            parent.getComponent(0).setBounds(JBUI.scale(16), 0, width, height);
+          }",method,
+"            for (int i = 0; i < count; i++) {
+              Component component = parent.getComponent(i);
+              Dimension size = component.getPreferredSize();
+              component.setBounds(JBUI.scale(16), y, width, size.height);
+              y += size.height + JBUI.scale(2);
+            }",method,
+"    @Override
+    protected void paintComponent(Graphics g) {
+      super.paintComponent(g);
+      int count = getComponentCount() - 1;
+      if (count > 0) {
+        int x2 = getWidth() - JBUI.scale(16);
+        int y = 0;
+        g.setColor(new JBColor(0xD0D0D0, 0x717375));
+        for (int i = 0; i < count; i++) {
+          Dimension size = getComponent(i).getPreferredSize();
+          y += size.height + 1;
+          g.drawLine(JBUI.scale(16), y, x2, y);
+        }
+      }
+    }",method,
+"      if (count > 0) {
+        int x2 = getWidth() - JBUI.scale(16);
+        int y = 0;
+        g.setColor(new JBColor(0xD0D0D0, 0x717375));
+        for (int i = 0; i < count; i++) {
+          Dimension size = getComponent(i).getPreferredSize();
+          y += size.height + 1;
+          g.drawLine(JBUI.scale(16), y, x2, y);
+        }
+      }",method,
+"        for (int i = 0; i < count; i++) {
+          Dimension size = getComponent(i).getPreferredSize();
+          y += size.height + 1;
+          g.drawLine(JBUI.scale(16), y, x2, y);
+        }",method,

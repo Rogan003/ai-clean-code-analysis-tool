@@ -1,0 +1,1425 @@
+code_snippet,type,score
+"public class ConvertToJavaProcessor extends BaseRefactoringProcessor {
+  private static final Logger LOG = Logger.getInstance(ConvertToJavaProcessor.class);
+  private final GroovyFile[] myFiles;
+  protected ConvertToJavaProcessor(Project project, GroovyFile... files) {
+    super(project);
+    myFiles = files;
+  }
+  @NotNull
+  @Override
+  protected UsageViewDescriptor createUsageViewDescriptor(@NotNull UsageInfo[] usages) {
+    return new UsageViewDescriptorAdapter() {
+      @NotNull
+      @Override
+      public PsiElement[] getElements() {
+        return myFiles;
+      }
+      @Override
+      public String getProcessedElementsHeader() {
+        return GroovyRefactoringBundle.message(""files.to.be.converted"");
+      }
+    };
+  }
+  @NotNull
+  @Override
+  protected UsageInfo[] findUsages() {
+    return UsageInfo.EMPTY_ARRAY;
+  }
+  //private static String
+  @Override
+  protected void performRefactoring(@NotNull UsageInfo[] usages) {
+    UsageTrigger.trigger(GroovyStatisticsIds.CONVERT_GROOVY_TO_JAVA_ID);
+    final GeneratorClassNameProvider classNameProvider = new GeneratorClassNameProvider();
+    ExpressionContext context = new ExpressionContext(myProject, myFiles);
+    final ClassGenerator classGenerator = new ClassGenerator(classNameProvider, new ClassItemGeneratorImpl(context));
+    for (GroovyFile file : myFiles) {
+      final PsiClass[] classes = file.getClasses();
+      StringBuilder builder = new StringBuilder();
+      boolean first = true;
+      for (PsiClass aClass : classes) {
+        classGenerator.writeTypeDefinition(builder, aClass, true, first);
+        first = false;
+        builder.append('\n');
+      }
+      final Document document = PsiDocumentManager.getInstance(myProject).getDocument(file);
+      LOG.assertTrue(document != null);
+      document.setText(builder.toString());
+      PsiDocumentManager.getInstance(myProject).commitDocument(document);
+      String fileName = getNewFileName(file);
+      PsiElement newFile;
+      try {
+        newFile = file.setName(fileName);
+      }
+      catch (final IncorrectOperationException e) {
+        ApplicationManager.getApplication().invokeLater(
+          () -> Messages.showMessageDialog(myProject, e.getMessage(), RefactoringBundle.message(""error.title""), Messages.getErrorIcon()));
+        return;
+      }
+      doPostProcessing(newFile);
+    }
+  }
+  private void doPostProcessing(PsiElement newFile) {
+    if (ApplicationManager.getApplication().isUnitTestMode()) return;
+    // don't move classes to new files with corresponding class names and reformat
+    if (!(newFile instanceof PsiJavaFile)) {
+      LOG.info("".java is not assigned to java file type"");
+      return;
+    }
+    newFile = JavaCodeStyleManager.getInstance(myProject).shortenClassReferences(newFile);
+    newFile = CodeStyleManager.getInstance(myProject).reformat(newFile);
+    PsiClass[] inner = ((PsiJavaFile)newFile).getClasses();
+    for (PsiClass psiClass : inner) {
+      MoveClassToSeparateFileFix fix = new MoveClassToSeparateFileFix(psiClass);
+      if (fix.isAvailable(myProject, null, (PsiFile)newFile)) {
+        fix.invoke(myProject, null, (PsiFile)newFile);
+      }
+    }
+  }
+  private static String getNewFileName(GroovyFile file) {
+    final PsiDirectory dir = file.getContainingDirectory();
+    LOG.assertTrue(dir != null);
+    final PsiFile[] files = dir.getFiles();
+    Set<String> fileNames = new HashSet<>();
+    for (PsiFile psiFile : files) {
+      fileNames.add(psiFile.getName());
+    }
+    String prefix = FileUtil.getNameWithoutExtension(file.getName());
+    String fileName = prefix + "".java"";
+    int index = 1;
+    while (fileNames.contains(fileName)) {
+      fileName = prefix + index + "".java"";
+    }
+    return fileName;
+  }
+  @Override
+  protected String getCommandName() {
+    return GroovyRefactoringBundle.message(""converting.files.to.java"");
+  }
+}",class,
+"    // don't move classes to new files with corresponding class names and reformat
+    if (!(newFile instanceof PsiJavaFile)) {
+      LOG.info("".java is not assigned to java file type"");
+      return;
+    }",class,
+"  protected ConvertToJavaProcessor(Project project, GroovyFile... files) {
+    super(project);
+    myFiles = files;
+  }",method,
+"  @NotNull
+  @Override
+  protected UsageViewDescriptor createUsageViewDescriptor(@NotNull UsageInfo[] usages) {
+    return new UsageViewDescriptorAdapter() {
+      @NotNull
+      @Override
+      public PsiElement[] getElements() {
+        return myFiles;
+      }
+      @Override
+      public String getProcessedElementsHeader() {
+        return GroovyRefactoringBundle.message(""files.to.be.converted"");
+      }
+    };
+  }",method,
+"    return new UsageViewDescriptorAdapter() {
+      @NotNull
+      @Override
+      public PsiElement[] getElements() {
+        return myFiles;
+      }
+      @Override
+      public String getProcessedElementsHeader() {
+        return GroovyRefactoringBundle.message(""files.to.be.converted"");
+      }
+    }",method,
+"      @NotNull
+      @Override
+      public PsiElement[] getElements() {
+        return myFiles;
+      }",method,
+"      @Override
+      public String getProcessedElementsHeader() {
+        return GroovyRefactoringBundle.message(""files.to.be.converted"");
+      }",method,
+"  @NotNull
+  @Override
+  protected UsageInfo[] findUsages() {
+    return UsageInfo.EMPTY_ARRAY;
+  }",method,
+"  @Override
+  protected void performRefactoring(@NotNull UsageInfo[] usages) {
+    UsageTrigger.trigger(GroovyStatisticsIds.CONVERT_GROOVY_TO_JAVA_ID);
+    final GeneratorClassNameProvider classNameProvider = new GeneratorClassNameProvider();
+    ExpressionContext context = new ExpressionContext(myProject, myFiles);
+    final ClassGenerator classGenerator = new ClassGenerator(classNameProvider, new ClassItemGeneratorImpl(context));
+    for (GroovyFile file : myFiles) {
+      final PsiClass[] classes = file.getClasses();
+      StringBuilder builder = new StringBuilder();
+      boolean first = true;
+      for (PsiClass aClass : classes) {
+        classGenerator.writeTypeDefinition(builder, aClass, true, first);
+        first = false;
+        builder.append('\n');
+      }
+      final Document document = PsiDocumentManager.getInstance(myProject).getDocument(file);
+      LOG.assertTrue(document != null);
+      document.setText(builder.toString());
+      PsiDocumentManager.getInstance(myProject).commitDocument(document);
+      String fileName = getNewFileName(file);
+      PsiElement newFile;
+      try {
+        newFile = file.setName(fileName);
+      }
+      catch (final IncorrectOperationException e) {
+        ApplicationManager.getApplication().invokeLater(
+          () -> Messages.showMessageDialog(myProject, e.getMessage(), RefactoringBundle.message(""error.title""), Messages.getErrorIcon()));
+        return;
+      }
+      doPostProcessing(newFile);
+    }
+  }",method,
+"    for (GroovyFile file : myFiles) {
+      final PsiClass[] classes = file.getClasses();
+      StringBuilder builder = new StringBuilder();
+      boolean first = true;
+      for (PsiClass aClass : classes) {
+        classGenerator.writeTypeDefinition(builder, aClass, true, first);
+        first = false;
+        builder.append('\n');
+      }
+      final Document document = PsiDocumentManager.getInstance(myProject).getDocument(file);
+      LOG.assertTrue(document != null);
+      document.setText(builder.toString());
+      PsiDocumentManager.getInstance(myProject).commitDocument(document);
+      String fileName = getNewFileName(file);
+      PsiElement newFile;
+      try {
+        newFile = file.setName(fileName);
+      }
+      catch (final IncorrectOperationException e) {
+        ApplicationManager.getApplication().invokeLater(
+          () -> Messages.showMessageDialog(myProject, e.getMessage(), RefactoringBundle.message(""error.title""), Messages.getErrorIcon()));
+        return;
+      }
+      doPostProcessing(newFile);
+    }",method,
+"      for (PsiClass aClass : classes) {
+        classGenerator.writeTypeDefinition(builder, aClass, true, first);
+        first = false;
+        builder.append('\n');
+      }",method,
+"      catch (final IncorrectOperationException e) {
+        ApplicationManager.getApplication().invokeLater(
+          () -> Messages.showMessageDialog(myProject, e.getMessage(), RefactoringBundle.message(""error.title""), Messages.getErrorIcon()));
+        return;
+      }",method,
+"  private void doPostProcessing(PsiElement newFile) {
+    if (ApplicationManager.getApplication().isUnitTestMode()) return;
+    // don't move classes to new files with corresponding class names and reformat
+    if (!(newFile instanceof PsiJavaFile)) {
+      LOG.info("".java is not assigned to java file type"");
+      return;
+    }
+    newFile = JavaCodeStyleManager.getInstance(myProject).shortenClassReferences(newFile);
+    newFile = CodeStyleManager.getInstance(myProject).reformat(newFile);
+    PsiClass[] inner = ((PsiJavaFile)newFile).getClasses();
+    for (PsiClass psiClass : inner) {
+      MoveClassToSeparateFileFix fix = new MoveClassToSeparateFileFix(psiClass);
+      if (fix.isAvailable(myProject, null, (PsiFile)newFile)) {
+        fix.invoke(myProject, null, (PsiFile)newFile);
+      }
+    }
+  }",method,
+"    for (PsiClass psiClass : inner) {
+      MoveClassToSeparateFileFix fix = new MoveClassToSeparateFileFix(psiClass);
+      if (fix.isAvailable(myProject, null, (PsiFile)newFile)) {
+        fix.invoke(myProject, null, (PsiFile)newFile);
+      }
+    }",method,
+"  private static String getNewFileName(GroovyFile file) {
+    final PsiDirectory dir = file.getContainingDirectory();
+    LOG.assertTrue(dir != null);
+    final PsiFile[] files = dir.getFiles();
+    Set<String> fileNames = new HashSet<>();
+    for (PsiFile psiFile : files) {
+      fileNames.add(psiFile.getName());
+    }
+    String prefix = FileUtil.getNameWithoutExtension(file.getName());
+    String fileName = prefix + "".java"";
+    int index = 1;
+    while (fileNames.contains(fileName)) {
+      fileName = prefix + index + "".java"";
+    }
+    return fileName;
+  }",method,
+"    for (PsiFile psiFile : files) {
+      fileNames.add(psiFile.getName());
+    }",method,
+"  @Override
+  protected String getCommandName() {
+    return GroovyRefactoringBundle.message(""converting.files.to.java"");
+  }",method,
+"public class LayoutPullParser extends KXmlParser implements ILayoutPullParser{
+    public LayoutPullParser(String layoutPath) {
+        if (layoutPath.startsWith(""/"")) {
+            layoutPath = layoutPath.substring(1);
+        }
+        try {
+            init(getClass().getClassLoader().getResourceAsStream(layoutPath));
+        } catch (XmlPullParserException e) {
+            throw new IOError(e);
+        }
+    }
+    public LayoutPullParser(File layoutFile) {
+        try {
+            init(new FileInputStream(layoutFile));
+        } catch (XmlPullParserException | FileNotFoundException e) {
+            throw new IOError(e);
+        }
+    }
+    private void init(InputStream stream) throws XmlPullParserException {
+        setFeature(FEATURE_PROCESS_NAMESPACES, true);
+        setInput(stream, null);
+    }
+    @Override
+    public Object getViewCookie() {
+        // TODO: Implement this properly.
+        String name = super.getName();
+        if (name == null) {
+            return null;
+        }
+        // Store tools attributes if this looks like a layout we'll need adapter view
+        // bindings for in the LayoutlibCallback.
+        if (LIST_VIEW.equals(name) || EXPANDABLE_LIST_VIEW.equals(name) || GRID_VIEW.equals(name) || SPINNER.equals(name)) {
+            Map<String, String> map = null;
+            int count = getAttributeCount();
+            for (int i = 0; i < count; i++) {
+                String namespace = getAttributeNamespace(i);
+                if (namespace != null && namespace.equals(TOOLS_URI)) {
+                    String attribute = getAttributeName(i);
+                    if (attribute.equals(ATTR_IGNORE)) {
+                        continue;
+                    }
+                    if (map == null) {
+                        map = new HashMap<String, String>(4);
+                    }
+                    map.put(attribute, getAttributeValue(i));
+                }
+            }
+            return map;
+        }
+        return null;
+    }
+    @Override
+    @Deprecated
+    public ILayoutPullParser getParser(String layoutName) {
+        // Studio returns null.
+        return null;
+    }
+}",class,
+"    public LayoutPullParser(String layoutPath) {
+        if (layoutPath.startsWith(""/"")) {
+            layoutPath = layoutPath.substring(1);
+        }
+        try {
+            init(getClass().getClassLoader().getResourceAsStream(layoutPath));
+        } catch (XmlPullParserException e) {
+            throw new IOError(e);
+        }
+    }",method,
+"    public LayoutPullParser(File layoutFile) {
+        try {
+            init(new FileInputStream(layoutFile));
+        } catch (XmlPullParserException | FileNotFoundException e) {
+            throw new IOError(e);
+        }
+    }",method,
+"    private void init(InputStream stream) throws XmlPullParserException {
+        setFeature(FEATURE_PROCESS_NAMESPACES, true);
+        setInput(stream, null);
+    }",method,
+"    @Override
+    public Object getViewCookie() {
+        // TODO: Implement this properly.
+        String name = super.getName();
+        if (name == null) {
+            return null;
+        }
+        // Store tools attributes if this looks like a layout we'll need adapter view
+        // bindings for in the LayoutlibCallback.
+        if (LIST_VIEW.equals(name) || EXPANDABLE_LIST_VIEW.equals(name) || GRID_VIEW.equals(name) || SPINNER.equals(name)) {
+            Map<String, String> map = null;
+            int count = getAttributeCount();
+            for (int i = 0; i < count; i++) {
+                String namespace = getAttributeNamespace(i);
+                if (namespace != null && namespace.equals(TOOLS_URI)) {
+                    String attribute = getAttributeName(i);
+                    if (attribute.equals(ATTR_IGNORE)) {
+                        continue;
+                    }
+                    if (map == null) {
+                        map = new HashMap<String, String>(4);
+                    }
+                    map.put(attribute, getAttributeValue(i));
+                }
+            }
+            return map;
+        }
+        return null;
+    }",method,
+"        if (name == null) {
+            return null;
+        }",method,
+"            for (int i = 0; i < count; i++) {
+                String namespace = getAttributeNamespace(i);
+                if (namespace != null && namespace.equals(TOOLS_URI)) {
+                    String attribute = getAttributeName(i);
+                    if (attribute.equals(ATTR_IGNORE)) {
+                        continue;
+                    }
+                    if (map == null) {
+                        map = new HashMap<String, String>(4);
+                    }
+                    map.put(attribute, getAttributeValue(i));
+                }
+            }",method,
+"                    if (map == null) {
+                        map = new HashMap<String, String>(4);
+                    }",method,
+"    @Override
+    @Deprecated
+    public ILayoutPullParser getParser(String layoutName) {
+        // Studio returns null.
+        return null;
+    }",method,
+"public class PorterDuffColorFilter extends ColorFilter {
+    @ColorInt
+    private int mColor;
+    private PorterDuff.Mode mMode;
+    public PorterDuffColorFilter(@ColorInt int color, @NonNull PorterDuff.Mode mode) {
+        mColor = color;
+        mMode = mode;
+    }
+    @ColorInt
+    public int getColor() {
+        return mColor;
+    }
+    public void setColor(@ColorInt int color) {
+        if (mColor != color) {
+            mColor = color;
+            discardNativeInstance();
+        }
+    }
+    public PorterDuff.Mode getMode() {
+        return mMode;
+    }
+    public void setMode(@NonNull PorterDuff.Mode mode) {
+        if (mode == null) {
+            throw new IllegalArgumentException(""mode must be non-null"");
+        }
+        mMode = mode;
+        discardNativeInstance();
+    }
+    @Override
+    long createNativeInstance() {
+        return native_CreatePorterDuffFilter(mColor, mMode.nativeInt);
+    }
+    @Override
+    public boolean equals(Object object) {
+        if (this == object) {
+            return true;
+        }
+        if (object == null || getClass() != object.getClass()) {
+            return false;
+        }
+        final PorterDuffColorFilter other = (PorterDuffColorFilter) object;
+        return (mColor == other.mColor && mMode.nativeInt == other.mMode.nativeInt);
+    }
+    @Override
+    public int hashCode() {
+        return 31 *  mMode.hashCode() + mColor;
+    }
+    private static native long native_CreatePorterDuffFilter(int srcColor, int porterDuffMode);
+}",class,
+"public class PorterDuffXfermode extends Xfermode {
+    public PorterDuffXfermode(PorterDuff.Mode mode) {
+        porterDuffMode = mode.nativeInt;
+    }
+}",class,
+"    public PorterDuffColorFilter(@ColorInt int color, @NonNull PorterDuff.Mode mode) {
+        mColor = color;
+        mMode = mode;
+    }",method,
+"    @ColorInt
+    public int getColor() {
+        return mColor;
+    }",method,
+"    public void setColor(@ColorInt int color) {
+        if (mColor != color) {
+            mColor = color;
+            discardNativeInstance();
+        }
+    }",method,
+"        if (mColor != color) {
+            mColor = color;
+            discardNativeInstance();
+        }",method,
+"    public PorterDuff.Mode getMode() {
+        return mMode;
+    }",method,
+"    public void setMode(@NonNull PorterDuff.Mode mode) {
+        if (mode == null) {
+            throw new IllegalArgumentException(""mode must be non-null"");
+        }
+        mMode = mode;
+        discardNativeInstance();
+    }",method,
+"        if (mode == null) {
+            throw new IllegalArgumentException(""mode must be non-null"");
+        }",method,
+"    @Override
+    long createNativeInstance() {
+        return native_CreatePorterDuffFilter(mColor, mMode.nativeInt);
+    }",method,
+"    @Override
+    public boolean equals(Object object) {
+        if (this == object) {
+            return true;
+        }
+        if (object == null || getClass() != object.getClass()) {
+            return false;
+        }
+        final PorterDuffColorFilter other = (PorterDuffColorFilter) object;
+        return (mColor == other.mColor && mMode.nativeInt == other.mMode.nativeInt);
+    }",method,
+"        if (this == object) {
+            return true;
+        }",method,
+"    @Override
+    public int hashCode() {
+        return 31 *  mMode.hashCode() + mColor;
+    }",method,
+"    public PorterDuffXfermode(PorterDuff.Mode mode) {
+        porterDuffMode = mode.nativeInt;
+    }",method,
+"public class ToggleProfileAction extends MavenAction {
+  public void update(AnActionEvent e) {
+    super.update(e);
+    if (!isAvailable(e)) return;
+    MavenProfileKind targetState = getTargetState(e);
+    if(targetState == null) return;
+    String text;
+    switch (targetState) {
+      case NONE:
+        text = ProjectBundle.message(""maven.profile.deactivate"");
+        break;
+      case EXPLICIT:
+        text = ProjectBundle.message(""maven.profile.activate"");
+        break;
+      case IMPLICIT:
+      default:
+        text = ProjectBundle.message(""maven.profile.default"");
+        break;
+    }
+    e.getPresentation().setText(text);
+  }
+  @Override
+  protected boolean isAvailable(AnActionEvent e) {
+    if (!super.isAvailable(e)) return false;
+    return getTargetState(e) != null;
+  }
+  @Nullable
+  private static MavenProfileKind getTargetState(AnActionEvent e) {
+    Map<String, MavenProfileKind> selectedProfiles = e.getData(MavenDataKeys.MAVEN_PROFILES);
+    if (selectedProfiles == null || selectedProfiles.isEmpty()) return null;
+    MavenProjectsManager projectsManager = MavenActionUtil.getProjectsManager(e.getDataContext());
+    if(projectsManager == null) return null;
+    return getTargetState(projectsManager, selectedProfiles);
+  }
+  @Nullable
+  private static MavenProfileKind getTargetState(@NotNull MavenProjectsManager projectsManager, Map<String, MavenProfileKind> profiles) {
+    MavenExplicitProfiles explicitProfiles = projectsManager.getExplicitProfiles();
+    MavenProfileKind targetState = null;
+    // all profiles should target to the same state
+    for (Map.Entry<String, MavenProfileKind> profile : profiles.entrySet()) {
+      MavenProfileKind profileTargetState = getTargetState(profile, explicitProfiles);
+      if (targetState == null) {
+        targetState = profileTargetState;
+      }
+      else if (!targetState.equals(profileTargetState)) {
+        targetState = null;
+        break;
+      }
+    }
+    return targetState;
+  }
+  private static MavenProfileKind getTargetState(Map.Entry<String, MavenProfileKind> profile, MavenExplicitProfiles explicitProfiles) {
+    MavenProfileKind targetState;
+    if (explicitProfiles.getDisabledProfiles().contains(profile.getKey())) {
+      // explicitly disabled -> explicitly enabled
+      targetState = MavenProfileKind.EXPLICIT;
+    }
+    else if (explicitProfiles.getEnabledProfiles().contains(profile.getKey())) {
+      // explicitly enabled -> default
+      targetState = MavenProfileKind.IMPLICIT;
+    }
+    else {
+      // default
+      if (MavenProfileKind.NONE.equals(profile.getValue())) {
+        // default inactive -> explicitly enabled
+        targetState = MavenProfileKind.EXPLICIT;
+      }
+      else {
+        // default active -> explicitly disabled
+        targetState = MavenProfileKind.NONE;
+      }
+    }
+    return targetState;
+  }
+  @Override
+  public void actionPerformed(@NotNull AnActionEvent e) {
+    MavenProjectsManager manager = MavenActionUtil.getProjectsManager(e.getDataContext());
+    if(manager == null) return;
+    Map<String, MavenProfileKind> selectedProfiles = e.getData(MavenDataKeys.MAVEN_PROFILES);
+    if(selectedProfiles == null) return;
+    Set<String> selectedProfileIds = selectedProfiles.keySet();
+    MavenProfileKind targetState = getTargetState(manager, selectedProfiles);
+    if(targetState == null) return;
+    MavenExplicitProfiles newExplicitProfiles = manager.getExplicitProfiles().clone();
+    switch (targetState) {
+      case NONE:
+        // disable explicitly
+        newExplicitProfiles.getEnabledProfiles().removeAll(selectedProfileIds);
+        newExplicitProfiles.getDisabledProfiles().addAll(selectedProfileIds);
+        break;
+      case EXPLICIT:
+        // enable explicitly
+        newExplicitProfiles.getDisabledProfiles().removeAll(selectedProfileIds);
+        newExplicitProfiles.getEnabledProfiles().addAll(selectedProfileIds);
+        break;
+      case IMPLICIT:
+      default:
+        // reset to default state
+        newExplicitProfiles.getEnabledProfiles().removeAll(selectedProfileIds);
+        newExplicitProfiles.getDisabledProfiles().removeAll(selectedProfileIds);
+        break;
+    }
+    manager.setExplicitProfiles(newExplicitProfiles);
+  }
+}",class,
+"  public void update(AnActionEvent e) {
+    super.update(e);
+    if (!isAvailable(e)) return;
+    MavenProfileKind targetState = getTargetState(e);
+    if(targetState == null) return;
+    String text;
+    switch (targetState) {
+      case NONE:
+        text = ProjectBundle.message(""maven.profile.deactivate"");
+        break;
+      case EXPLICIT:
+        text = ProjectBundle.message(""maven.profile.activate"");
+        break;
+      case IMPLICIT:
+      default:
+        text = ProjectBundle.message(""maven.profile.default"");
+        break;
+    }
+    e.getPresentation().setText(text);
+  }",method,
+"    switch (targetState) {
+      case NONE:
+        text = ProjectBundle.message(""maven.profile.deactivate"");
+        break;
+      case EXPLICIT:
+        text = ProjectBundle.message(""maven.profile.activate"");
+        break;
+      case IMPLICIT:
+      default:
+        text = ProjectBundle.message(""maven.profile.default"");
+        break;
+    }",method,
+"  @Override
+  protected boolean isAvailable(AnActionEvent e) {
+    if (!super.isAvailable(e)) return false;
+    return getTargetState(e) != null;
+  }",method,
+"  @Nullable
+  private static MavenProfileKind getTargetState(AnActionEvent e) {
+    Map<String, MavenProfileKind> selectedProfiles = e.getData(MavenDataKeys.MAVEN_PROFILES);
+    if (selectedProfiles == null || selectedProfiles.isEmpty()) return null;
+    MavenProjectsManager projectsManager = MavenActionUtil.getProjectsManager(e.getDataContext());
+    if(projectsManager == null) return null;
+    return getTargetState(projectsManager, selectedProfiles);
+  }",method,
+"  @Nullable
+  private static MavenProfileKind getTargetState(@NotNull MavenProjectsManager projectsManager, Map<String, MavenProfileKind> profiles) {
+    MavenExplicitProfiles explicitProfiles = projectsManager.getExplicitProfiles();
+    MavenProfileKind targetState = null;
+    // all profiles should target to the same state
+    for (Map.Entry<String, MavenProfileKind> profile : profiles.entrySet()) {
+      MavenProfileKind profileTargetState = getTargetState(profile, explicitProfiles);
+      if (targetState == null) {
+        targetState = profileTargetState;
+      }
+      else if (!targetState.equals(profileTargetState)) {
+        targetState = null;
+        break;
+      }
+    }
+    return targetState;
+  }",method,
+"      if (targetState == null) {
+        targetState = profileTargetState;
+      }",method,
+"  private static MavenProfileKind getTargetState(Map.Entry<String, MavenProfileKind> profile, MavenExplicitProfiles explicitProfiles) {
+    MavenProfileKind targetState;
+    if (explicitProfiles.getDisabledProfiles().contains(profile.getKey())) {
+      // explicitly disabled -> explicitly enabled
+      targetState = MavenProfileKind.EXPLICIT;
+    }
+    else if (explicitProfiles.getEnabledProfiles().contains(profile.getKey())) {
+      // explicitly enabled -> default
+      targetState = MavenProfileKind.IMPLICIT;
+    }
+    else {
+      // default
+      if (MavenProfileKind.NONE.equals(profile.getValue())) {
+        // default inactive -> explicitly enabled
+        targetState = MavenProfileKind.EXPLICIT;
+      }
+      else {
+        // default active -> explicitly disabled
+        targetState = MavenProfileKind.NONE;
+      }
+    }
+    return targetState;
+  }",method,
+"  @Override
+  public void actionPerformed(@NotNull AnActionEvent e) {
+    MavenProjectsManager manager = MavenActionUtil.getProjectsManager(e.getDataContext());
+    if(manager == null) return;
+    Map<String, MavenProfileKind> selectedProfiles = e.getData(MavenDataKeys.MAVEN_PROFILES);
+    if(selectedProfiles == null) return;
+    Set<String> selectedProfileIds = selectedProfiles.keySet();
+    MavenProfileKind targetState = getTargetState(manager, selectedProfiles);
+    if(targetState == null) return;
+    MavenExplicitProfiles newExplicitProfiles = manager.getExplicitProfiles().clone();
+    switch (targetState) {
+      case NONE:
+        // disable explicitly
+        newExplicitProfiles.getEnabledProfiles().removeAll(selectedProfileIds);
+        newExplicitProfiles.getDisabledProfiles().addAll(selectedProfileIds);
+        break;
+      case EXPLICIT:
+        // enable explicitly
+        newExplicitProfiles.getDisabledProfiles().removeAll(selectedProfileIds);
+        newExplicitProfiles.getEnabledProfiles().addAll(selectedProfileIds);
+        break;
+      case IMPLICIT:
+      default:
+        // reset to default state
+        newExplicitProfiles.getEnabledProfiles().removeAll(selectedProfileIds);
+        newExplicitProfiles.getDisabledProfiles().removeAll(selectedProfileIds);
+        break;
+    }
+    manager.setExplicitProfiles(newExplicitProfiles);
+  }",method,
+"    switch (targetState) {
+      case NONE:
+        // disable explicitly
+        newExplicitProfiles.getEnabledProfiles().removeAll(selectedProfileIds);
+        newExplicitProfiles.getDisabledProfiles().addAll(selectedProfileIds);
+        break;
+      case EXPLICIT:
+        // enable explicitly
+        newExplicitProfiles.getDisabledProfiles().removeAll(selectedProfileIds);
+        newExplicitProfiles.getEnabledProfiles().addAll(selectedProfileIds);
+        break;
+      case IMPLICIT:
+      default:
+        // reset to default state
+        newExplicitProfiles.getEnabledProfiles().removeAll(selectedProfileIds);
+        newExplicitProfiles.getDisabledProfiles().removeAll(selectedProfileIds);
+        break;
+    }",method,
+"public class CameraProfile
+{
+    public static final int QUALITY_LOW    = 0;
+    public static final int QUALITY_MEDIUM = 1;
+    public static final int QUALITY_HIGH   = 2;
+    private static final HashMap<Integer, int[]> sCache = new HashMap<Integer, int[]>();
+    public static int getJpegEncodingQualityParameter(int quality) {
+        int numberOfCameras = Camera.getNumberOfCameras();
+        CameraInfo cameraInfo = new CameraInfo();
+        for (int i = 0; i < numberOfCameras; i++) {
+            Camera.getCameraInfo(i, cameraInfo);
+            if (cameraInfo.facing == CameraInfo.CAMERA_FACING_BACK) {
+                return getJpegEncodingQualityParameter(i, quality);
+            }
+        }
+        return 0;
+    }
+    public static int getJpegEncodingQualityParameter(int cameraId, int quality) {
+        if (quality < QUALITY_LOW || quality > QUALITY_HIGH) {
+            throw new IllegalArgumentException(""Unsupported quality level: "" + quality);
+        }
+        synchronized (sCache) {
+            int[] levels = sCache.get(cameraId);
+            if (levels == null) {
+                levels = getImageEncodingQualityLevels(cameraId);
+                sCache.put(cameraId, levels);
+            }
+            return levels[quality];
+        }
+    }
+    static {
+        System.loadLibrary(""media_jni"");
+        native_init();
+    }
+    private static int[] getImageEncodingQualityLevels(int cameraId) {
+        int nLevels = native_get_num_image_encoding_quality_levels(cameraId);
+        if (nLevels != QUALITY_HIGH + 1) {
+            throw new RuntimeException(""Unexpected Jpeg encoding quality levels "" + nLevels);
+        }
+        int[] levels = new int[nLevels];
+        for (int i = 0; i < nLevels; ++i) {
+            levels[i] = native_get_image_encoding_quality_level(cameraId, i);
+        }
+        Arrays.sort(levels);  // Lower quality level ALWAYS comes before higher one
+        return levels;
+    }
+    // Methods implemented by JNI
+    private static native final void native_init();
+    private static native final int native_get_num_image_encoding_quality_levels(int cameraId);
+    private static native final int native_get_image_encoding_quality_level(int cameraId, int index);
+}",class,
+"    public static int getJpegEncodingQualityParameter(int quality) {
+        int numberOfCameras = Camera.getNumberOfCameras();
+        CameraInfo cameraInfo = new CameraInfo();
+        for (int i = 0; i < numberOfCameras; i++) {
+            Camera.getCameraInfo(i, cameraInfo);
+            if (cameraInfo.facing == CameraInfo.CAMERA_FACING_BACK) {
+                return getJpegEncodingQualityParameter(i, quality);
+            }
+        }
+        return 0;
+    }",method,
+"        for (int i = 0; i < numberOfCameras; i++) {
+            Camera.getCameraInfo(i, cameraInfo);
+            if (cameraInfo.facing == CameraInfo.CAMERA_FACING_BACK) {
+                return getJpegEncodingQualityParameter(i, quality);
+            }
+        }",method,
+"            if (cameraInfo.facing == CameraInfo.CAMERA_FACING_BACK) {
+                return getJpegEncodingQualityParameter(i, quality);
+            }",method,
+"    public static int getJpegEncodingQualityParameter(int cameraId, int quality) {
+        if (quality < QUALITY_LOW || quality > QUALITY_HIGH) {
+            throw new IllegalArgumentException(""Unsupported quality level: "" + quality);
+        }
+        synchronized (sCache) {
+            int[] levels = sCache.get(cameraId);
+            if (levels == null) {
+                levels = getImageEncodingQualityLevels(cameraId);
+                sCache.put(cameraId, levels);
+            }
+            return levels[quality];
+        }
+    }",method,
+"        if (quality < QUALITY_LOW || quality > QUALITY_HIGH) {
+            throw new IllegalArgumentException(""Unsupported quality level: "" + quality);
+        }",method,
+"        synchronized (sCache) {
+            int[] levels = sCache.get(cameraId);
+            if (levels == null) {
+                levels = getImageEncodingQualityLevels(cameraId);
+                sCache.put(cameraId, levels);
+            }
+            return levels[quality];
+        }",method,
+"            if (levels == null) {
+                levels = getImageEncodingQualityLevels(cameraId);
+                sCache.put(cameraId, levels);
+            }",method,
+"    private static int[] getImageEncodingQualityLevels(int cameraId) {
+        int nLevels = native_get_num_image_encoding_quality_levels(cameraId);
+        if (nLevels != QUALITY_HIGH + 1) {
+            throw new RuntimeException(""Unexpected Jpeg encoding quality levels "" + nLevels);
+        }
+        int[] levels = new int[nLevels];
+        for (int i = 0; i < nLevels; ++i) {
+            levels[i] = native_get_image_encoding_quality_level(cameraId, i);
+        }
+        Arrays.sort(levels);  // Lower quality level ALWAYS comes before higher one
+        return levels;
+    }",method,
+"        if (nLevels != QUALITY_HIGH + 1) {
+            throw new RuntimeException(""Unexpected Jpeg encoding quality levels "" + nLevels);
+        }",method,
+"        for (int i = 0; i < nLevels; ++i) {
+            levels[i] = native_get_image_encoding_quality_level(cameraId, i);
+        }",method,
+"public abstract class PythonBinary extends AbstractBuildRuleWithDeclaredAndExtraDeps
+    implements BinaryBuildRule, HasRuntimeDeps {
+  private final Supplier<? extends SortedSet<BuildRule>> originalDeclaredDeps;
+  private final PythonPlatform pythonPlatform;
+  private final String mainModule;
+  @AddToRuleKey private final PythonPackageComponents components;
+  private final ImmutableSet<String> preloadLibraries;
+  @AddToRuleKey private final String pexExtension;
+  @AddToRuleKey private final boolean legacyOutputPath;
+  public PythonBinary(
+      BuildTarget buildTarget,
+      ProjectFilesystem projectFilesystem,
+      BuildRuleParams buildRuleParams,
+      Supplier<? extends SortedSet<BuildRule>> originalDeclaredDeps,
+      PythonPlatform pythonPlatform,
+      String mainModule,
+      PythonPackageComponents components,
+      ImmutableSet<String> preloadLibraries,
+      String pexExtension,
+      boolean legacyOutputPath) {
+    super(buildTarget, projectFilesystem, buildRuleParams);
+    this.originalDeclaredDeps = originalDeclaredDeps;
+    this.pythonPlatform = pythonPlatform;
+    this.mainModule = mainModule;
+    this.components = components;
+    this.preloadLibraries = preloadLibraries;
+    this.pexExtension = pexExtension;
+    this.legacyOutputPath = legacyOutputPath;
+  }
+  static Path getBinPath(
+      BuildTarget target,
+      ProjectFilesystem filesystem,
+      String extension,
+      boolean legacyOutputPath) {
+    if (!legacyOutputPath) {
+      target = target.withFlavors();
+    }
+    return BuildTargets.getGenPath(filesystem, target, ""%s"" + extension);
+  }
+  final Path getBinPath() {
+    return getBinPath(getBuildTarget(), getProjectFilesystem(), pexExtension, legacyOutputPath);
+  }
+  @Override
+  public SourcePath getSourcePathToOutput() {
+    return ExplicitBuildTargetSourcePath.of(getBuildTarget(), getBinPath());
+  }
+  @VisibleForTesting
+  protected final PythonPlatform getPythonPlatform() {
+    return pythonPlatform;
+  }
+  @VisibleForTesting
+  protected final String getMainModule() {
+    return mainModule;
+  }
+  @VisibleForTesting
+  protected final PythonPackageComponents getComponents() {
+    return components;
+  }
+  @VisibleForTesting
+  protected final ImmutableSet<String> getPreloadLibraries() {
+    return preloadLibraries;
+  }
+  @Override
+  public Stream<BuildTarget> getRuntimeDeps(SourcePathRuleFinder ruleFinder) {
+    return originalDeclaredDeps.get().stream().map(BuildRule::getBuildTarget);
+  }
+}",class,
+"  @AddToRuleKey private final String pexExtension;
+  @AddToRuleKey private final boolean legacyOutputPath;
+  public PythonBinary(
+      BuildTarget buildTarget,
+      ProjectFilesystem projectFilesystem,
+      BuildRuleParams buildRuleParams,
+      Supplier<? extends SortedSet<BuildRule>> originalDeclaredDeps,
+      PythonPlatform pythonPlatform,
+      String mainModule,
+      PythonPackageComponents components,
+      ImmutableSet<String> preloadLibraries,
+      String pexExtension,
+      boolean legacyOutputPath) {
+    super(buildTarget, projectFilesystem, buildRuleParams);
+    this.originalDeclaredDeps = originalDeclaredDeps;
+    this.pythonPlatform = pythonPlatform;
+    this.mainModule = mainModule;
+    this.components = components;
+    this.preloadLibraries = preloadLibraries;
+    this.pexExtension = pexExtension;
+    this.legacyOutputPath = legacyOutputPath;
+  }",method,
+"  static Path getBinPath(
+      BuildTarget target,
+      ProjectFilesystem filesystem,
+      String extension,
+      boolean legacyOutputPath) {
+    if (!legacyOutputPath) {
+      target = target.withFlavors();
+    }
+    return BuildTargets.getGenPath(filesystem, target, ""%s"" + extension);
+  }",method,
+"    if (!legacyOutputPath) {
+      target = target.withFlavors();
+    }",method,
+"  final Path getBinPath() {
+    return getBinPath(getBuildTarget(), getProjectFilesystem(), pexExtension, legacyOutputPath);
+  }",method,
+"  @Override
+  public SourcePath getSourcePathToOutput() {
+    return ExplicitBuildTargetSourcePath.of(getBuildTarget(), getBinPath());
+  }",method,
+"  @VisibleForTesting
+  protected final PythonPlatform getPythonPlatform() {
+    return pythonPlatform;
+  }",method,
+"  @VisibleForTesting
+  protected final String getMainModule() {
+    return mainModule;
+  }",method,
+"  @VisibleForTesting
+  protected final PythonPackageComponents getComponents() {
+    return components;
+  }",method,
+"  @VisibleForTesting
+  protected final ImmutableSet<String> getPreloadLibraries() {
+    return preloadLibraries;
+  }",method,
+"  @Override
+  public Stream<BuildTarget> getRuntimeDeps(SourcePathRuleFinder ruleFinder) {
+    return originalDeclaredDeps.get().stream().map(BuildRule::getBuildTarget);
+  }",method,
+"public class SpatialHashGrid {
+    List<GameObject>[] dynamicCells;
+    List<GameObject>[] staticCells;
+    int cellsPerRow;
+    int cellsPerCol;
+    float cellSize;
+    int[] cellIds = new int[4];
+    List<GameObject> foundObjects;
+    @SuppressWarnings(""unchecked"")
+    public SpatialHashGrid(float worldWidth, float worldHeight, float cellSize) {
+        this.cellSize = cellSize;
+        this.cellsPerRow = (int)FloatMath.ceil(worldWidth/cellSize);
+        this.cellsPerCol = (int)FloatMath.ceil(worldHeight/cellSize);
+        int numCells = cellsPerRow * cellsPerCol;
+        dynamicCells = new List[numCells];
+        staticCells = new List[numCells];
+        for(int i = 0; i < numCells; i++) {
+            dynamicCells[i] = new ArrayList<GameObject>(10);
+            staticCells[i] = new ArrayList<GameObject>(10);
+        }
+        foundObjects = new ArrayList<GameObject>(10);
+    }
+    public void insertStaticObject(GameObject obj) {
+        int[] cellIds = getCellIds(obj);
+        int i = 0;
+        int cellId = -1;
+        while(i <= 3 && (cellId = cellIds[i++]) != -1) {
+            staticCells[cellId].add(obj);
+        }
+    }
+    public void insertDynamicObject(GameObject obj) {
+        int[] cellIds = getCellIds(obj);
+        int i = 0;
+        int cellId = -1;
+        while(i <= 3 && (cellId = cellIds[i++]) != -1) {
+            dynamicCells[cellId].add(obj);
+        }
+    }
+    public void removeObject(GameObject obj) {
+        int[] cellIds = getCellIds(obj);
+        int i = 0;
+        int cellId = -1;
+        while(i <= 3 && (cellId = cellIds[i++]) != -1) {
+            dynamicCells[cellId].remove(obj);
+            staticCells[cellId].remove(obj);
+        }
+    }
+    public void clearDynamicCells(GameObject obj) {
+        int len = dynamicCells.length;
+        for(int i = 0; i < len; i++) {
+            dynamicCells[i].clear();
+        }
+    }
+    public List<GameObject> getPotentialColliders(GameObject obj) {
+        foundObjects.clear();
+        int[] cellIds = getCellIds(obj);
+        int i = 0;
+        int cellId = -1;
+        while(i <= 3 && (cellId = cellIds[i++]) != -1) {
+            int len = dynamicCells[cellId].size();
+            for(int j = 0; j < len; j++) {
+                GameObject collider = dynamicCells[cellId].get(j);
+                if(!foundObjects.contains(collider))
+                    foundObjects.add(collider);
+            }
+            len = staticCells[cellId].size();
+            for(int j = 0; j < len; j++) {
+                GameObject collider = staticCells[cellId].get(j);
+                if(!foundObjects.contains(collider))
+                    foundObjects.add(collider);
+            }
+        }
+        return foundObjects;
+    }
+    public int[] getCellIds(GameObject obj) {
+        int x1 = (int)FloatMath.floor(obj.bounds.lowerLeft.x / cellSize);
+        int y1 = (int)FloatMath.floor(obj.bounds.lowerLeft.y / cellSize);
+        int x2 = (int)FloatMath.floor((obj.bounds.lowerLeft.x + obj.bounds.width) / cellSize);
+        int y2 = (int)FloatMath.floor((obj.bounds.lowerLeft.y + obj.bounds.height) / cellSize);
+        if(x1 == x2 && y1 == y2) {
+            if(x1 >= 0 && x1 < cellsPerRow && y1 >= 0 && y1 < cellsPerCol)
+                cellIds[0] = x1 + y1 * cellsPerRow;
+            else
+                cellIds[0] = -1;
+            cellIds[1] = -1;
+            cellIds[2] = -1;
+            cellIds[3] = -1;
+        }
+        else if(x1 == x2) {
+            int i = 0;
+            if(x1 >= 0 && x1 < cellsPerRow) {
+                if(y1 >= 0 && y1 < cellsPerCol)
+                    cellIds[i++] = x1 + y1 * cellsPerRow;
+                if(y2 >= 0 && y2 < cellsPerCol)
+                    cellIds[i++] = x1 + y2 * cellsPerRow;
+            }
+            while(i <= 3) cellIds[i++] = -1;
+        }
+        else if(y1 == y2) {
+            int i = 0;
+            if(y1 >= 0 && y1 < cellsPerCol) {
+                if(x1 >= 0 && x1 < cellsPerRow)
+                    cellIds[i++] = x1 + y1 * cellsPerRow;
+                if(x2 >= 0 && x2 < cellsPerRow)
+                    cellIds[i++] = x2 + y1 * cellsPerRow;
+            }
+            while(i <= 3) cellIds[i++] = -1;                       
+        }
+        else {
+            int i = 0;
+            int y1CellsPerRow = y1 * cellsPerRow;
+            int y2CellsPerRow = y2 * cellsPerRow;
+            if(x1 >= 0 && x1 < cellsPerRow && y1 >= 0 && y1 < cellsPerCol)
+                cellIds[i++] = x1 + y1CellsPerRow;
+            if(x2 >= 0 && x2 < cellsPerRow && y1 >= 0 && y1 < cellsPerCol)
+                cellIds[i++] = x2 + y1CellsPerRow;
+            if(x2 >= 0 && x2 < cellsPerRow && y2 >= 0 && y2 < cellsPerCol)
+                cellIds[i++] = x2 + y2CellsPerRow;
+            if(x1 >= 0 && x1 < cellsPerRow && y2 >= 0 && y2 < cellsPerCol)
+                cellIds[i++] = x1 + y2CellsPerRow;
+            while(i <= 3) cellIds[i++] = -1;
+        }
+        return cellIds;
+    }
+}",class,
+"    @SuppressWarnings(""unchecked"")
+    public SpatialHashGrid(float worldWidth, float worldHeight, float cellSize) {
+        this.cellSize = cellSize;
+        this.cellsPerRow = (int)FloatMath.ceil(worldWidth/cellSize);
+        this.cellsPerCol = (int)FloatMath.ceil(worldHeight/cellSize);
+        int numCells = cellsPerRow * cellsPerCol;
+        dynamicCells = new List[numCells];
+        staticCells = new List[numCells];
+        for(int i = 0; i < numCells; i++) {
+            dynamicCells[i] = new ArrayList<GameObject>(10);
+            staticCells[i] = new ArrayList<GameObject>(10);
+        }
+        foundObjects = new ArrayList<GameObject>(10);
+    }",method,
+"        for(int i = 0; i < numCells; i++) {
+            dynamicCells[i] = new ArrayList<GameObject>(10);
+            staticCells[i] = new ArrayList<GameObject>(10);
+        }",method,
+"    public void insertStaticObject(GameObject obj) {
+        int[] cellIds = getCellIds(obj);
+        int i = 0;
+        int cellId = -1;
+        while(i <= 3 && (cellId = cellIds[i++]) != -1) {
+            staticCells[cellId].add(obj);
+        }
+    }",method,
+"    public void insertDynamicObject(GameObject obj) {
+        int[] cellIds = getCellIds(obj);
+        int i = 0;
+        int cellId = -1;
+        while(i <= 3 && (cellId = cellIds[i++]) != -1) {
+            dynamicCells[cellId].add(obj);
+        }
+    }",method,
+"    public void removeObject(GameObject obj) {
+        int[] cellIds = getCellIds(obj);
+        int i = 0;
+        int cellId = -1;
+        while(i <= 3 && (cellId = cellIds[i++]) != -1) {
+            dynamicCells[cellId].remove(obj);
+            staticCells[cellId].remove(obj);
+        }
+    }",method,
+"    public void clearDynamicCells(GameObject obj) {
+        int len = dynamicCells.length;
+        for(int i = 0; i < len; i++) {
+            dynamicCells[i].clear();
+        }
+    }",method,
+"        for(int i = 0; i < len; i++) {
+            dynamicCells[i].clear();
+        }",method,
+"    public List<GameObject> getPotentialColliders(GameObject obj) {
+        foundObjects.clear();
+        int[] cellIds = getCellIds(obj);
+        int i = 0;
+        int cellId = -1;
+        while(i <= 3 && (cellId = cellIds[i++]) != -1) {
+            int len = dynamicCells[cellId].size();
+            for(int j = 0; j < len; j++) {
+                GameObject collider = dynamicCells[cellId].get(j);
+                if(!foundObjects.contains(collider))
+                    foundObjects.add(collider);
+            }
+            len = staticCells[cellId].size();
+            for(int j = 0; j < len; j++) {
+                GameObject collider = staticCells[cellId].get(j);
+                if(!foundObjects.contains(collider))
+                    foundObjects.add(collider);
+            }
+        }
+        return foundObjects;
+    }",method,
+"            for(int j = 0; j < len; j++) {
+                GameObject collider = dynamicCells[cellId].get(j);
+                if(!foundObjects.contains(collider))
+                    foundObjects.add(collider);
+            }",method,
+"            for(int j = 0; j < len; j++) {
+                GameObject collider = staticCells[cellId].get(j);
+                if(!foundObjects.contains(collider))
+                    foundObjects.add(collider);
+            }",method,
+"    public int[] getCellIds(GameObject obj) {
+        int x1 = (int)FloatMath.floor(obj.bounds.lowerLeft.x / cellSize);
+        int y1 = (int)FloatMath.floor(obj.bounds.lowerLeft.y / cellSize);
+        int x2 = (int)FloatMath.floor((obj.bounds.lowerLeft.x + obj.bounds.width) / cellSize);
+        int y2 = (int)FloatMath.floor((obj.bounds.lowerLeft.y + obj.bounds.height) / cellSize);
+        if(x1 == x2 && y1 == y2) {
+            if(x1 >= 0 && x1 < cellsPerRow && y1 >= 0 && y1 < cellsPerCol)
+                cellIds[0] = x1 + y1 * cellsPerRow;
+            else
+                cellIds[0] = -1;
+            cellIds[1] = -1;
+            cellIds[2] = -1;
+            cellIds[3] = -1;
+        }
+        else if(x1 == x2) {
+            int i = 0;
+            if(x1 >= 0 && x1 < cellsPerRow) {
+                if(y1 >= 0 && y1 < cellsPerCol)
+                    cellIds[i++] = x1 + y1 * cellsPerRow;
+                if(y2 >= 0 && y2 < cellsPerCol)
+                    cellIds[i++] = x1 + y2 * cellsPerRow;
+            }
+            while(i <= 3) cellIds[i++] = -1;
+        }
+        else if(y1 == y2) {
+            int i = 0;
+            if(y1 >= 0 && y1 < cellsPerCol) {
+                if(x1 >= 0 && x1 < cellsPerRow)
+                    cellIds[i++] = x1 + y1 * cellsPerRow;
+                if(x2 >= 0 && x2 < cellsPerRow)
+                    cellIds[i++] = x2 + y1 * cellsPerRow;
+            }
+            while(i <= 3) cellIds[i++] = -1;                       
+        }
+        else {
+            int i = 0;
+            int y1CellsPerRow = y1 * cellsPerRow;
+            int y2CellsPerRow = y2 * cellsPerRow;
+            if(x1 >= 0 && x1 < cellsPerRow && y1 >= 0 && y1 < cellsPerCol)
+                cellIds[i++] = x1 + y1CellsPerRow;
+            if(x2 >= 0 && x2 < cellsPerRow && y1 >= 0 && y1 < cellsPerCol)
+                cellIds[i++] = x2 + y1CellsPerRow;
+            if(x2 >= 0 && x2 < cellsPerRow && y2 >= 0 && y2 < cellsPerCol)
+                cellIds[i++] = x2 + y2CellsPerRow;
+            if(x1 >= 0 && x1 < cellsPerRow && y2 >= 0 && y2 < cellsPerCol)
+                cellIds[i++] = x1 + y2CellsPerRow;
+            while(i <= 3) cellIds[i++] = -1;
+        }
+        return cellIds;
+    }",method,
+"        if(x1 == x2 && y1 == y2) {
+            if(x1 >= 0 && x1 < cellsPerRow && y1 >= 0 && y1 < cellsPerCol)
+                cellIds[0] = x1 + y1 * cellsPerRow;
+            else
+                cellIds[0] = -1;
+            cellIds[1] = -1;
+            cellIds[2] = -1;
+            cellIds[3] = -1;
+        }",method,
+"        else if(x1 == x2) {
+            int i = 0;
+            if(x1 >= 0 && x1 < cellsPerRow) {
+                if(y1 >= 0 && y1 < cellsPerCol)
+                    cellIds[i++] = x1 + y1 * cellsPerRow;
+                if(y2 >= 0 && y2 < cellsPerCol)
+                    cellIds[i++] = x1 + y2 * cellsPerRow;
+            }
+            while(i <= 3) cellIds[i++] = -1;
+        }",method,
+"            if(x1 >= 0 && x1 < cellsPerRow) {
+                if(y1 >= 0 && y1 < cellsPerCol)
+                    cellIds[i++] = x1 + y1 * cellsPerRow;
+                if(y2 >= 0 && y2 < cellsPerCol)
+                    cellIds[i++] = x1 + y2 * cellsPerRow;
+            }",method,
+"        else if(y1 == y2) {
+            int i = 0;
+            if(y1 >= 0 && y1 < cellsPerCol) {
+                if(x1 >= 0 && x1 < cellsPerRow)
+                    cellIds[i++] = x1 + y1 * cellsPerRow;
+                if(x2 >= 0 && x2 < cellsPerRow)
+                    cellIds[i++] = x2 + y1 * cellsPerRow;
+            }
+            while(i <= 3) cellIds[i++] = -1;                       
+        }",method,
+"            if(y1 >= 0 && y1 < cellsPerCol) {
+                if(x1 >= 0 && x1 < cellsPerRow)
+                    cellIds[i++] = x1 + y1 * cellsPerRow;
+                if(x2 >= 0 && x2 < cellsPerRow)
+                    cellIds[i++] = x2 + y1 * cellsPerRow;
+            }",method,
+"import java.lang.reflect.Type;
+class Parameter {
+    private final Type type;
+    private final boolean isAssisted;
+    private final Annotation bindingAnnotation;
+    private final boolean isProvider;
+    Parameter(Type type, Annotation[] annotations) {
+        this.type = type;
+        this.bindingAnnotation = getBindingAnnotation(annotations);
+        this.isAssisted = hasAssistedAnnotation(annotations);
+        this.isProvider = isProvider(type);
+    }
+    public boolean isProvidedByFactory() {
+        return isAssisted;
+    }
+    public Type getType() {
+        return type;
+    }
+    @Override
+    public String toString() {
+        StringBuilder result = new StringBuilder();
+        if (isAssisted) {
+            result.append(""@Assisted"");
+            result.append("" "");
+        }
+        if (bindingAnnotation != null) {
+            result.append(bindingAnnotation.toString());
+            result.append("" "");
+        }
+        result.append(type.toString());
+        return result.toString();
+    }
+    private boolean hasAssistedAnnotation(Annotation[] annotations) {
+        for (Annotation annotation : annotations) {
+            if (annotation.annotationType().equals(Assisted.class)) {
+                return true;
+            }
+        }
+        return false;
+    }
+    public Object getValue(Injector injector) {
+        return isProvider
+                ? injector.getProvider(getBindingForType(getProvidedType(type)))
+                : injector.getInstance(getPrimaryBindingKey());
+    }
+    Key<?> getPrimaryBindingKey() {
+        return isProvider
+                ? getBindingForType(getProvidedType(type))
+                : getBindingForType(type);
+    }
+    private Type getProvidedType(Type type) {
+        return ((ParameterizedType) type).getActualTypeArguments()[0];
+    }
+    private boolean isProvider(Type type) {
+        return type instanceof ParameterizedType
+                && ((ParameterizedType) type).getRawType() == Provider.class;
+    }
+    private Key<?> getBindingForType(Type type) {
+        return bindingAnnotation != null
+                ? Key.get(type, bindingAnnotation)
+                : Key.get(type);
+    }
+    private Annotation getBindingAnnotation(Annotation[] annotations) {
+        Annotation bindingAnnotation = null;
+        for (Annotation a : annotations) {
+            if (a.annotationType().getAnnotation(BindingAnnotation.class) != null) {
+                if (bindingAnnotation != null) {
+                    throw new IllegalArgumentException(""Parameter has multiple binding annotations: "" + bindingAnnotation + "" and "" + a);
+                }
+                bindingAnnotation = a;
+            }
+        }
+        return bindingAnnotation;
+    }
+}",class,
+"    Parameter(Type type, Annotation[] annotations) {
+        this.type = type;
+        this.bindingAnnotation = getBindingAnnotation(annotations);
+        this.isAssisted = hasAssistedAnnotation(annotations);
+        this.isProvider = isProvider(type);
+    }",method,
+"    public boolean isProvidedByFactory() {
+        return isAssisted;
+    }",method,
+"    public Type getType() {
+        return type;
+    }",method,
+"    @Override
+    public String toString() {
+        StringBuilder result = new StringBuilder();
+        if (isAssisted) {
+            result.append(""@Assisted"");
+            result.append("" "");
+        }
+        if (bindingAnnotation != null) {
+            result.append(bindingAnnotation.toString());
+            result.append("" "");
+        }
+        result.append(type.toString());
+        return result.toString();
+    }",method,
+"        if (isAssisted) {
+            result.append(""@Assisted"");
+            result.append("" "");
+        }",method,
+"        if (bindingAnnotation != null) {
+            result.append(bindingAnnotation.toString());
+            result.append("" "");
+        }",method,
+"    private boolean hasAssistedAnnotation(Annotation[] annotations) {
+        for (Annotation annotation : annotations) {
+            if (annotation.annotationType().equals(Assisted.class)) {
+                return true;
+            }
+        }
+        return false;
+    }",method,
+"        for (Annotation annotation : annotations) {
+            if (annotation.annotationType().equals(Assisted.class)) {
+                return true;
+            }
+        }",method,
+"    public Object getValue(Injector injector) {
+        return isProvider
+                ? injector.getProvider(getBindingForType(getProvidedType(type)))
+                : injector.getInstance(getPrimaryBindingKey());
+    }",method,
+"    Key<?> getPrimaryBindingKey() {
+        return isProvider
+                ? getBindingForType(getProvidedType(type))
+                : getBindingForType(type);
+    }",method,
+"    private Type getProvidedType(Type type) {
+        return ((ParameterizedType) type).getActualTypeArguments()[0];
+    }",method,

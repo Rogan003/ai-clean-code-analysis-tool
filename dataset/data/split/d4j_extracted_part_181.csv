@@ -1,0 +1,1393 @@
+code_snippet,type,score
+"      @Nullable
+      @Override
+      public PsiType visitType(PsiType type) {
+        if (!(type instanceof PsiPrimitiveType) && myProcessed.add(type)) {
+          int priority = type.equalsToText(CommonClassNames.JAVA_LANG_OBJECT) ? 1 : 1000 - myProcessed.size();
+          consumer.consume(PrioritizedLookupElement.withPriority(PsiTypeLookupItem.createLookupItem(type, position), priority));
+        }
+        return type;
+      }",method,
+"  private static PsiType[] getReturnTypeCandidates(@NotNull PsiMethod method) {
+    PsiType lub = null;
+    boolean hasVoid = false;
+    for (PsiReturnStatement statement : PsiUtil.findReturnStatements(method)) {
+      PsiExpression value = statement.getReturnValue();
+      if (value == null) {
+        hasVoid = true;
+      }
+      else {
+        PsiType type = value.getType();
+        if (lub == null) {
+          lub = type;
+        }
+        else if (type != null) {
+          lub = GenericsUtil.getLeastUpperBound(lub, type, method.getManager());
+        }
+      }
+    }
+    if (hasVoid && lub == null) {
+      lub = PsiType.VOID;
+    }
+    if (lub instanceof PsiIntersectionType) {
+      return ((PsiIntersectionType)lub).getConjuncts();
+    }
+    return lub == null ? PsiType.EMPTY_ARRAY : new PsiType[]{lub};
+  }",method,
+"      if (value == null) {
+        hasVoid = true;
+      }",method,
+"        if (lub == null) {
+          lub = type;
+        }",method,
+"        else if (type != null) {
+          lub = GenericsUtil.getLeastUpperBound(lub, type, method.getManager());
+        }",method,
+"    if (hasVoid && lub == null) {
+      lub = PsiType.VOID;
+    }",method,
+"    if (lub instanceof PsiIntersectionType) {
+      return ((PsiIntersectionType)lub).getConjuncts();
+    }",method,
+"public class TestReport extends DefaultTask {
+    private File destinationDir;
+    private List<Object> results = new ArrayList<Object>();
+    @Inject
+    protected BuildOperationExecutor getBuildOperationExecutor() {
+        throw new UnsupportedOperationException();
+    }
+    @OutputDirectory
+    public File getDestinationDir() {
+        return destinationDir;
+    }
+    public void setDestinationDir(File destinationDir) {
+        this.destinationDir = destinationDir;
+    }
+    @InputFiles @SkipWhenEmpty
+    public FileCollection getTestResultDirs() {
+        UnionFileCollection dirs = new UnionFileCollection();
+        for (Object result : results) {
+            addTo(result, dirs);
+        }
+        return dirs;
+    }
+    private void addTo(Object result, UnionFileCollection dirs) {
+        if (result instanceof Test) {
+            Test test = (Test) result;
+            dirs.add(getProject().files(test.getBinResultsDir()).builtBy(test));
+        } else if (result instanceof Iterable<?>) {
+            Iterable<?> iterable = (Iterable<?>) result;
+            for (Object nested : iterable) {
+                addTo(nested, dirs);
+            }
+        } else {
+            dirs.add(getProject().files(result));
+        }
+    }
+    public void setTestResultDirs(Iterable<File> testResultDirs) {
+        this.results.clear();
+        reportOn(testResultDirs);
+    }
+    public void reportOn(Object... results) {
+        for (Object result : results) {
+            this.results.add(result);
+        }
+    }
+    @TaskAction
+    void generateReport() {
+        TestResultsProvider resultsProvider = createAggregateProvider();
+        try {
+            if (resultsProvider.isHasResults()) {
+                DefaultTestReport testReport = new DefaultTestReport(getBuildOperationExecutor());
+                testReport.generateReport(resultsProvider, getDestinationDir());
+            } else {
+                getLogger().info(""{} - no binary test results found in dirs: {}."", getPath(), getTestResultDirs().getFiles());
+                setDidWork(false);
+            }
+        } finally {
+            stoppable(resultsProvider).stop();
+        }
+    }
+    private TestResultsProvider createAggregateProvider() {
+        List<TestResultsProvider> resultsProviders = new LinkedList<TestResultsProvider>();
+        try {
+            FileCollection resultDirs = getTestResultDirs();
+            if (resultDirs.getFiles().size() == 1) {
+                return new BinaryResultBackedTestResultsProvider(resultDirs.getSingleFile());
+            } else {
+                return new AggregateTestResultsProvider(collect(resultDirs, resultsProviders, new Transformer<TestResultsProvider, File>() {
+                    public TestResultsProvider transform(File dir) {
+                        return new BinaryResultBackedTestResultsProvider(dir);
+                    }
+                }));
+            }
+        } catch (RuntimeException e) {
+            stoppable(resultsProviders).stop();
+            throw e;
+        }
+    }
+}",class,
+"    @Inject
+    protected BuildOperationExecutor getBuildOperationExecutor() {
+        throw new UnsupportedOperationException();
+    }",method,
+"    @OutputDirectory
+    public File getDestinationDir() {
+        return destinationDir;
+    }",method,
+"    public void setDestinationDir(File destinationDir) {
+        this.destinationDir = destinationDir;
+    }",method,
+"    @InputFiles @SkipWhenEmpty
+    public FileCollection getTestResultDirs() {
+        UnionFileCollection dirs = new UnionFileCollection();
+        for (Object result : results) {
+            addTo(result, dirs);
+        }
+        return dirs;
+    }",method,
+"        for (Object result : results) {
+            addTo(result, dirs);
+        }",method,
+"    private void addTo(Object result, UnionFileCollection dirs) {
+        if (result instanceof Test) {
+            Test test = (Test) result;
+            dirs.add(getProject().files(test.getBinResultsDir()).builtBy(test));
+        } else if (result instanceof Iterable<?>) {
+            Iterable<?> iterable = (Iterable<?>) result;
+            for (Object nested : iterable) {
+                addTo(nested, dirs);
+            }
+        } else {
+            dirs.add(getProject().files(result));
+        }
+    }",method,
+"        if (result instanceof Test) {
+            Test test = (Test) result;
+            dirs.add(getProject().files(test.getBinResultsDir()).builtBy(test));
+        }",method,
+"            for (Object nested : iterable) {
+                addTo(nested, dirs);
+            }",method,
+"    public void setTestResultDirs(Iterable<File> testResultDirs) {
+        this.results.clear();
+        reportOn(testResultDirs);
+    }",method,
+"    public void reportOn(Object... results) {
+        for (Object result : results) {
+            this.results.add(result);
+        }
+    }",method,
+"        for (Object result : results) {
+            this.results.add(result);
+        }",method,
+"    @TaskAction
+    void generateReport() {
+        TestResultsProvider resultsProvider = createAggregateProvider();
+        try {
+            if (resultsProvider.isHasResults()) {
+                DefaultTestReport testReport = new DefaultTestReport(getBuildOperationExecutor());
+                testReport.generateReport(resultsProvider, getDestinationDir());
+            } else {
+                getLogger().info(""{} - no binary test results found in dirs: {}."", getPath(), getTestResultDirs().getFiles());
+                setDidWork(false);
+            }
+        } finally {
+            stoppable(resultsProvider).stop();
+        }
+    }",method,
+"    private TestResultsProvider createAggregateProvider() {
+        List<TestResultsProvider> resultsProviders = new LinkedList<TestResultsProvider>();
+        try {
+            FileCollection resultDirs = getTestResultDirs();
+            if (resultDirs.getFiles().size() == 1) {
+                return new BinaryResultBackedTestResultsProvider(resultDirs.getSingleFile());
+            } else {
+                return new AggregateTestResultsProvider(collect(resultDirs, resultsProviders, new Transformer<TestResultsProvider, File>() {
+                    public TestResultsProvider transform(File dir) {
+                        return new BinaryResultBackedTestResultsProvider(dir);
+                    }
+                }));
+            }
+        } catch (RuntimeException e) {
+            stoppable(resultsProviders).stop();
+            throw e;
+        }
+    }",method,
+"                return new AggregateTestResultsProvider(collect(resultDirs, resultsProviders, new Transformer<TestResultsProvider, File>() {
+                    public TestResultsProvider transform(File dir) {
+                        return new BinaryResultBackedTestResultsProvider(dir);
+                    }
+                }",method,
+"                    public TestResultsProvider transform(File dir) {
+                        return new BinaryResultBackedTestResultsProvider(dir);
+                    }",method,
+"public class OrderAsc {
+  private WebDriver driver;
+  private String baseUrl;
+  private boolean acceptNextAlert = true;
+  private StringBuffer verificationErrors = new StringBuffer();
+  @Before
+  public void setUp() throws Exception {
+    driver = new FirefoxDriver();
+    baseUrl = ""http://localhost:8080"";
+    driver.manage().timeouts().implicitlyWait(30, TimeUnit.SECONDS);
+  }
+  @Test
+  public void testOrderAsc() throws Exception {
+    driver.get(baseUrl + ""/bkfl/Login.jsp"");
+    driver.findElement(By.name(""Login"")).clear();
+    driver.findElement(By.name(""Login"")).sendKeys(""admin"");
+    driver.findElement(By.name(""Password"")).clear();
+    driver.findElement(By.name(""Password"")).sendKeys(""admin"");
+    driver.findElement(By.cssSelector(""input[type=\""submit\""]"")).click();
+    assertEquals(""User Information"", driver.findElement(By.cssSelector(""td > font"")).getText());
+    driver.findElement(By.xpath(""//td[6]/a/font/img"")).click();
+    driver.findElement(By.xpath(""//tr[3]/td/a/font"")).click();
+    driver.findElement(By.cssSelector(""font > a > font"")).click();
+    driver.findElement(By.name(""quantity"")).clear();
+    driver.findElement(By.name(""quantity"")).sendKeys(""1"");
+    driver.findElement(By.cssSelector(""input[type=\""submit\""]"")).click();
+    driver.findElement(By.cssSelector(""font > a > font"")).click();
+    driver.findElement(By.name(""quantity"")).clear();
+    driver.findElement(By.name(""quantity"")).sendKeys(""2"");
+    new Select(driver.findElement(By.name(""item_id""))).selectByVisibleText(""Beginning Active Server Pages 3.0"");
+    driver.findElement(By.cssSelector(""input[type=\""submit\""]"")).click();
+    driver.findElement(By.cssSelector(""font > a > font"")).click();
+    new Select(driver.findElement(By.name(""member_id""))).selectByVisibleText(""guest"");
+    driver.findElement(By.name(""quantity"")).clear();
+    driver.findElement(By.name(""quantity"")).sendKeys(""3"");
+    driver.findElement(By.cssSelector(""input[type=\""submit\""]"")).click();
+    driver.findElement(By.xpath(""//tr[2]/td[3]/a/font"")).click();
+    driver.findElement(By.xpath(""//tr[2]/td[3]/a/font"")).click();
+    assertEquals(""guest"", driver.findElement(By.xpath(""//tr[3]/td[3]/font"")).getText());
+    driver.findElement(By.xpath(""//tr[3]/td/a/font"")).click();
+    driver.findElement(By.xpath(""//input[@value='Delete']"")).click();
+    driver.findElement(By.xpath(""//tr[3]/td/a/font"")).click();
+    driver.findElement(By.xpath(""//input[@value='Delete']"")).click();
+    driver.findElement(By.xpath(""//tr[3]/td/a/font"")).click();
+    driver.findElement(By.xpath(""//input[@value='Delete']"")).click();
+    driver.findElement(By.xpath(""//td[5]/a/font/img"")).click();
+    driver.findElement(By.cssSelector(""input[type=\""submit\""]"")).click();
+  }
+  @After
+  public void tearDown() throws Exception {
+    driver.quit();
+    String verificationErrorString = verificationErrors.toString();
+    if (!"""".equals(verificationErrorString)) {
+      fail(verificationErrorString);
+    }
+  }
+  private boolean isElementPresent(By by) {
+    try {
+      driver.findElement(by);
+      return true;
+    } catch (NoSuchElementException e) {
+      return false;
+    }
+  }
+  private boolean isAlertPresent() {
+    try {
+      driver.switchTo().alert();
+      return true;
+    } catch (NoAlertPresentException e) {
+      return false;
+    }
+  }
+  private String closeAlertAndGetItsText() {
+    try {
+      Alert alert = driver.switchTo().alert();
+      String alertText = alert.getText();
+      if (acceptNextAlert) {
+        alert.accept();
+      } else {
+        alert.dismiss();
+      }
+      return alertText;
+    } finally {
+      acceptNextAlert = true;
+    }
+  }
+}",class,
+"  @Before
+  public void setUp() throws Exception {
+    driver = new FirefoxDriver();
+    baseUrl = ""http://localhost:8080"";
+    driver.manage().timeouts().implicitlyWait(30, TimeUnit.SECONDS);
+  }
+  @Test
+  public void testOrderAsc() throws Exception {
+    driver.get(baseUrl + ""/bkfl/Login.jsp"");
+    driver.findElement(By.name(""Login"")).clear();
+    driver.findElement(By.name(""Login"")).sendKeys(""admin"");
+    driver.findElement(By.name(""Password"")).clear();
+    driver.findElement(By.name(""Password"")).sendKeys(""admin"");
+    driver.findElement(By.cssSelector(""input[type=\""submit\""]"")).click();
+    assertEquals(""User Information"", driver.findElement(By.cssSelector(""td > font"")).getText());
+    driver.findElement(By.xpath(""//td[6]/a/font/img"")).click();
+    driver.findElement(By.xpath(""//tr[3]/td/a/font"")).click();
+    driver.findElement(By.cssSelector(""font > a > font"")).click();
+    driver.findElement(By.name(""quantity"")).clear();
+    driver.findElement(By.name(""quantity"")).sendKeys(""1"");
+    driver.findElement(By.cssSelector(""input[type=\""submit\""]"")).click();
+    driver.findElement(By.cssSelector(""font > a > font"")).click();
+    driver.findElement(By.name(""quantity"")).clear();
+    driver.findElement(By.name(""quantity"")).sendKeys(""2"");
+    new Select(driver.findElement(By.name(""item_id""))).selectByVisibleText(""Beginning Active Server Pages 3.0"");
+    driver.findElement(By.cssSelector(""input[type=\""submit\""]"")).click();
+    driver.findElement(By.cssSelector(""font > a > font"")).click();
+    new Select(driver.findElement(By.name(""member_id""))).selectByVisibleText(""guest"");
+    driver.findElement(By.name(""quantity"")).clear();
+    driver.findElement(By.name(""quantity"")).sendKeys(""3"");
+    driver.findElement(By.cssSelector(""input[type=\""submit\""]"")).click();
+    driver.findElement(By.xpath(""//tr[2]/td[3]/a/font"")).click();
+    driver.findElement(By.xpath(""//tr[2]/td[3]/a/font"")).click();
+    assertEquals(""guest"", driver.findElement(By.xpath(""//tr[3]/td[3]/font"")).getText());
+    driver.findElement(By.xpath(""//tr[3]/td/a/font"")).click();
+    driver.findElement(By.xpath(""//input[@value='Delete']"")).click();
+    driver.findElement(By.xpath(""//tr[3]/td/a/font"")).click();
+    driver.findElement(By.xpath(""//input[@value='Delete']"")).click();
+    driver.findElement(By.xpath(""//tr[3]/td/a/font"")).click();
+    driver.findElement(By.xpath(""//input[@value='Delete']"")).click();
+    driver.findElement(By.xpath(""//td[5]/a/font/img"")).click();
+    driver.findElement(By.cssSelector(""input[type=\""submit\""]"")).click();
+  }",method,
+"  @Test
+  public void testOrderAsc() throws Exception {
+    driver.get(baseUrl + ""/bkfl/Login.jsp"");
+    driver.findElement(By.name(""Login"")).clear();
+    driver.findElement(By.name(""Login"")).sendKeys(""admin"");
+    driver.findElement(By.name(""Password"")).clear();
+    driver.findElement(By.name(""Password"")).sendKeys(""admin"");
+    driver.findElement(By.cssSelector(""input[type=\""submit\""]"")).click();
+    assertEquals(""User Information"", driver.findElement(By.cssSelector(""td > font"")).getText());
+    driver.findElement(By.xpath(""//td[6]/a/font/img"")).click();
+    driver.findElement(By.xpath(""//tr[3]/td/a/font"")).click();
+    driver.findElement(By.cssSelector(""font > a > font"")).click();
+    driver.findElement(By.name(""quantity"")).clear();
+    driver.findElement(By.name(""quantity"")).sendKeys(""1"");
+    driver.findElement(By.cssSelector(""input[type=\""submit\""]"")).click();
+    driver.findElement(By.cssSelector(""font > a > font"")).click();
+    driver.findElement(By.name(""quantity"")).clear();
+    driver.findElement(By.name(""quantity"")).sendKeys(""2"");
+    new Select(driver.findElement(By.name(""item_id""))).selectByVisibleText(""Beginning Active Server Pages 3.0"");
+    driver.findElement(By.cssSelector(""input[type=\""submit\""]"")).click();
+    driver.findElement(By.cssSelector(""font > a > font"")).click();
+    new Select(driver.findElement(By.name(""member_id""))).selectByVisibleText(""guest"");
+    driver.findElement(By.name(""quantity"")).clear();
+    driver.findElement(By.name(""quantity"")).sendKeys(""3"");
+    driver.findElement(By.cssSelector(""input[type=\""submit\""]"")).click();
+    driver.findElement(By.xpath(""//tr[2]/td[3]/a/font"")).click();
+    driver.findElement(By.xpath(""//tr[2]/td[3]/a/font"")).click();
+    assertEquals(""guest"", driver.findElement(By.xpath(""//tr[3]/td[3]/font"")).getText());
+    driver.findElement(By.xpath(""//tr[3]/td/a/font"")).click();
+    driver.findElement(By.xpath(""//input[@value='Delete']"")).click();
+    driver.findElement(By.xpath(""//tr[3]/td/a/font"")).click();
+    driver.findElement(By.xpath(""//input[@value='Delete']"")).click();
+    driver.findElement(By.xpath(""//tr[3]/td/a/font"")).click();
+    driver.findElement(By.xpath(""//input[@value='Delete']"")).click();
+    driver.findElement(By.xpath(""//td[5]/a/font/img"")).click();
+    driver.findElement(By.cssSelector(""input[type=\""submit\""]"")).click();
+  }
+  @After
+  public void tearDown() throws Exception {
+    driver.quit();
+    String verificationErrorString = verificationErrors.toString();
+    if (!"""".equals(verificationErrorString)) {
+      fail(verificationErrorString);
+    }
+  }",method,
+"  @After
+  public void tearDown() throws Exception {
+    driver.quit();
+    String verificationErrorString = verificationErrors.toString();
+    if (!"""".equals(verificationErrorString)) {
+      fail(verificationErrorString);
+    }
+  }",method,
+"  private boolean isElementPresent(By by) {
+    try {
+      driver.findElement(by);
+      return true;
+    } catch (NoSuchElementException e) {
+      return false;
+    }
+  }",method,
+"  private boolean isAlertPresent() {
+    try {
+      driver.switchTo().alert();
+      return true;
+    } catch (NoAlertPresentException e) {
+      return false;
+    }
+  }",method,
+"  private String closeAlertAndGetItsText() {
+    try {
+      Alert alert = driver.switchTo().alert();
+      String alertText = alert.getText();
+      if (acceptNextAlert) {
+        alert.accept();
+      } else {
+        alert.dismiss();
+      }
+      return alertText;
+    } finally {
+      acceptNextAlert = true;
+    }
+  }",method,
+"      if (acceptNextAlert) {
+        alert.accept();
+      }",method,
+"public class CommandParametersResolutionModule extends BaseCommandRuntimeModule {
+  public CommandParametersResolutionModule(@NotNull CommandRuntime runtime) {
+    super(runtime);
+  }
+  @Override
+  public void onStart(@NotNull Command command) {
+    if (command.getRepositoryUrl() == null) {
+      command.setRepositoryUrl(resolveRepositoryUrl(command));
+    }
+    if (command.getWorkingDirectory() == null) {
+      command.setWorkingDirectory(resolveWorkingDirectory(command));
+    }
+    command.setConfigDir(myAuthenticationService.getSpecialConfigDir());
+    command.saveOriginalParameters();
+  }
+  @Nullable
+  private SVNURL resolveRepositoryUrl(@NotNull Command command) {
+    UrlMappingRepositoryProvider urlMappingProvider = new UrlMappingRepositoryProvider(myVcs, command.getTarget());
+    InfoCommandRepositoryProvider infoCommandProvider = new InfoCommandRepositoryProvider(myVcs, command.getTarget());
+    Repository repository = urlMappingProvider.get();
+    if (repository == null && !command.isLocalInfo()) {
+      repository = infoCommandProvider.get();
+    }
+    return repository != null ? repository.getUrl() : null;
+  }
+  @NotNull
+  private File resolveWorkingDirectory(@NotNull Command command) {
+    SvnTarget target = command.getTarget();
+    File workingDirectory = target.isFile() ? target.getFile() : null;
+    // TODO: Do we really need search existing parent - or just take parent directory if target is file???
+    workingDirectory = CommandUtil.findExistingParent(workingDirectory);
+    return workingDirectory != null ? workingDirectory : getDefaultWorkingDirectory(myVcs.getProject());
+  }
+  @NotNull
+  public static File getDefaultWorkingDirectory(@NotNull Project project) {
+    VirtualFile baseDir = project.getBaseDir();
+    return baseDir != null ? virtualToIoFile(baseDir) : CommandUtil.getHomeDirectory();
+  }
+}",class,
+"  public CommandParametersResolutionModule(@NotNull CommandRuntime runtime) {
+    super(runtime);
+  }",method,
+"  @Override
+  public void onStart(@NotNull Command command) {
+    if (command.getRepositoryUrl() == null) {
+      command.setRepositoryUrl(resolveRepositoryUrl(command));
+    }
+    if (command.getWorkingDirectory() == null) {
+      command.setWorkingDirectory(resolveWorkingDirectory(command));
+    }
+    command.setConfigDir(myAuthenticationService.getSpecialConfigDir());
+    command.saveOriginalParameters();
+  }",method,
+"  @Nullable
+  private SVNURL resolveRepositoryUrl(@NotNull Command command) {
+    UrlMappingRepositoryProvider urlMappingProvider = new UrlMappingRepositoryProvider(myVcs, command.getTarget());
+    InfoCommandRepositoryProvider infoCommandProvider = new InfoCommandRepositoryProvider(myVcs, command.getTarget());
+    Repository repository = urlMappingProvider.get();
+    if (repository == null && !command.isLocalInfo()) {
+      repository = infoCommandProvider.get();
+    }
+    return repository != null ? repository.getUrl() : null;
+  }",method,
+"  @NotNull
+  private File resolveWorkingDirectory(@NotNull Command command) {
+    SvnTarget target = command.getTarget();
+    File workingDirectory = target.isFile() ? target.getFile() : null;
+    // TODO: Do we really need search existing parent - or just take parent directory if target is file???
+    workingDirectory = CommandUtil.findExistingParent(workingDirectory);
+    return workingDirectory != null ? workingDirectory : getDefaultWorkingDirectory(myVcs.getProject());
+  }",method,
+"  @NotNull
+  public static File getDefaultWorkingDirectory(@NotNull Project project) {
+    VirtualFile baseDir = project.getBaseDir();
+    return baseDir != null ? virtualToIoFile(baseDir) : CommandUtil.getHomeDirectory();
+  }",method,
+"public class StructureClass extends SlotClass
+{
+    StructureClass(Symbol symbol)
+    {
+        super(symbol, new Cons(BuiltInClass.STRUCTURE_OBJECT));
+    }
+    public StructureClass(Symbol symbol, LispObject directSuperclasses)
+    {
+        super(symbol, directSuperclasses);
+    }
+    @Override
+    public LispObject typeOf()
+    {
+        return Symbol.STRUCTURE_CLASS;
+    }
+    @Override
+    public LispObject classOf()
+    {
+      return LispClass.findClass(Symbol.STRUCTURE_CLASS);
+    }
+    @Override
+    public LispObject typep(LispObject type)
+    {
+        if (type == Symbol.STRUCTURE_CLASS)
+            return T;
+        if (type == LispClass.findClass(Symbol.STRUCTURE_CLASS))
+            return T;
+        return super.typep(type);
+    }
+    @Override
+    public LispObject getDescription()
+    {
+        return new SimpleString(princToString());
+    }
+    @Override
+    public String printObject()
+    {
+        StringBuilder sb = new StringBuilder(""STRUCTURE-CLASS "");
+        sb.append(getName().princToString());
+        return unreadableString(sb.toString(), false);
+    }
+    // ### make-structure-class name direct-slots slots include => class
+    private static final Primitive MAKE_STRUCTURE_CLASS =
+        new Primitive(""make-structure-class"", PACKAGE_SYS, false)
+    {
+        @Override
+        public LispObject execute(LispObject first, LispObject second,
+                                  LispObject third, LispObject fourth)
+        {
+            Symbol symbol = checkSymbol(first);
+            LispClass existingClass = LispClass.findClass(symbol);
+            if (existingClass instanceof StructureClass)
+                // DEFSTRUCT-REDEFINITION write-up
+                // states the effects from re-definition are undefined
+                // we punt: our compiler bootstrapping depends on
+                // the class not being redefined (remaining in the
+                // same location in the class hierarchy)
+                return existingClass;
+            LispObject directSlots = checkList(second);
+            LispObject slots = checkList(third);
+            Symbol include = checkSymbol(fourth);
+            StructureClass c = new StructureClass(symbol);
+            if (include != NIL) {
+                LispClass includedClass = LispClass.findClass(include);
+                if (includedClass == null)
+                    return error(new SimpleError(""Class "" + include +
+                                                  "" is undefined.""));
+                c.setCPL(new Cons(c, includedClass.getCPL()));
+            } else
+                c.setCPL(c, BuiltInClass.STRUCTURE_OBJECT, BuiltInClass.CLASS_T);
+            c.setDirectSlotDefinitions(directSlots);
+            c.setSlotDefinitions(slots);
+            c.setFinalized(true);
+            addClass(symbol, c);
+            return c;
+        }
+    };
+}",class,
+"    // ### make-structure-class name direct-slots slots include => class
+    private static final Primitive MAKE_STRUCTURE_CLASS =
+        new Primitive(""make-structure-class"", PACKAGE_SYS, false)
+    {
+        @Override
+        public LispObject execute(LispObject first, LispObject second,
+                                  LispObject third, LispObject fourth)
+        {
+            Symbol symbol = checkSymbol(first);
+            LispClass existingClass = LispClass.findClass(symbol);
+            if (existingClass instanceof StructureClass)
+                // DEFSTRUCT-REDEFINITION write-up
+                // states the effects from re-definition are undefined
+                // we punt: our compiler bootstrapping depends on
+                // the class not being redefined (remaining in the
+                // same location in the class hierarchy)
+                return existingClass;
+            LispObject directSlots = checkList(second);
+            LispObject slots = checkList(third);
+            Symbol include = checkSymbol(fourth);
+            StructureClass c = new StructureClass(symbol);
+            if (include != NIL) {
+                LispClass includedClass = LispClass.findClass(include);
+                if (includedClass == null)
+                    return error(new SimpleError(""Class "" + include +
+                                                  "" is undefined.""));
+                c.setCPL(new Cons(c, includedClass.getCPL()));
+            } else
+                c.setCPL(c, BuiltInClass.STRUCTURE_OBJECT, BuiltInClass.CLASS_T);
+            c.setDirectSlotDefinitions(directSlots);
+            c.setSlotDefinitions(slots);
+            c.setFinalized(true);
+            addClass(symbol, c);
+            return c;
+        }
+    }",class,
+"                // the class not being redefined (remaining in the
+                // same location in the class hierarchy)
+                return existingClass;
+            LispObject directSlots = checkList(second);
+            LispObject slots = checkList(third);
+            Symbol include = checkSymbol(fourth);
+            StructureClass c = new StructureClass(symbol);
+            if (include != NIL) {
+                LispClass includedClass = LispClass.findClass(include);
+                if (includedClass == null)
+                    return error(new SimpleError(""Class "" + include +
+                                                  "" is undefined.""));
+                c.setCPL(new Cons(c, includedClass.getCPL()));
+            }",class,
+"    StructureClass(Symbol symbol)
+    {
+        super(symbol, new Cons(BuiltInClass.STRUCTURE_OBJECT));
+    }",method,
+"    public StructureClass(Symbol symbol, LispObject directSuperclasses)
+    {
+        super(symbol, directSuperclasses);
+    }",method,
+"    @Override
+    public LispObject typeOf()
+    {
+        return Symbol.STRUCTURE_CLASS;
+    }",method,
+"    @Override
+    public LispObject classOf()
+    {
+      return LispClass.findClass(Symbol.STRUCTURE_CLASS);
+    }",method,
+"    @Override
+    public LispObject typep(LispObject type)
+    {
+        if (type == Symbol.STRUCTURE_CLASS)
+            return T;
+        if (type == LispClass.findClass(Symbol.STRUCTURE_CLASS))
+            return T;
+        return super.typep(type);
+    }",method,
+"    @Override
+    public LispObject getDescription()
+    {
+        return new SimpleString(princToString());
+    }",method,
+"    @Override
+    public String printObject()
+    {
+        StringBuilder sb = new StringBuilder(""STRUCTURE-CLASS "");
+        sb.append(getName().princToString());
+        return unreadableString(sb.toString(), false);
+    }",method,
+"        new Primitive(""make-structure-class"", PACKAGE_SYS, false)
+    {
+        @Override
+        public LispObject execute(LispObject first, LispObject second,
+                                  LispObject third, LispObject fourth)
+        {
+            Symbol symbol = checkSymbol(first);
+            LispClass existingClass = LispClass.findClass(symbol);
+            if (existingClass instanceof StructureClass)
+                // DEFSTRUCT-REDEFINITION write-up
+                // states the effects from re-definition are undefined
+                // we punt: our compiler bootstrapping depends on
+                // the class not being redefined (remaining in the
+                // same location in the class hierarchy)
+                return existingClass;
+            LispObject directSlots = checkList(second);
+            LispObject slots = checkList(third);
+            Symbol include = checkSymbol(fourth);
+            StructureClass c = new StructureClass(symbol);
+            if (include != NIL) {
+                LispClass includedClass = LispClass.findClass(include);
+                if (includedClass == null)
+                    return error(new SimpleError(""Class "" + include +
+                                                  "" is undefined.""));
+                c.setCPL(new Cons(c, includedClass.getCPL()));
+            } else
+                c.setCPL(c, BuiltInClass.STRUCTURE_OBJECT, BuiltInClass.CLASS_T);
+            c.setDirectSlotDefinitions(directSlots);
+            c.setSlotDefinitions(slots);
+            c.setFinalized(true);
+            addClass(symbol, c);
+            return c;
+        }
+    }",method,
+"        @Override
+        public LispObject execute(LispObject first, LispObject second,
+                                  LispObject third, LispObject fourth)
+        {
+            Symbol symbol = checkSymbol(first);
+            LispClass existingClass = LispClass.findClass(symbol);
+            if (existingClass instanceof StructureClass)
+                // DEFSTRUCT-REDEFINITION write-up
+                // states the effects from re-definition are undefined
+                // we punt: our compiler bootstrapping depends on
+                // the class not being redefined (remaining in the
+                // same location in the class hierarchy)
+                return existingClass;
+            LispObject directSlots = checkList(second);
+            LispObject slots = checkList(third);
+            Symbol include = checkSymbol(fourth);
+            StructureClass c = new StructureClass(symbol);
+            if (include != NIL) {
+                LispClass includedClass = LispClass.findClass(include);
+                if (includedClass == null)
+                    return error(new SimpleError(""Class "" + include +
+                                                  "" is undefined.""));
+                c.setCPL(new Cons(c, includedClass.getCPL()));
+            } else
+                c.setCPL(c, BuiltInClass.STRUCTURE_OBJECT, BuiltInClass.CLASS_T);
+            c.setDirectSlotDefinitions(directSlots);
+            c.setSlotDefinitions(slots);
+            c.setFinalized(true);
+            addClass(symbol, c);
+            return c;
+        }",method,
+"            if (include != NIL) {
+                LispClass includedClass = LispClass.findClass(include);
+                if (includedClass == null)
+                    return error(new SimpleError(""Class "" + include +
+                                                  "" is undefined.""));
+                c.setCPL(new Cons(c, includedClass.getCPL()));
+            }",method,
+"public class MySqlParameterizedOutputVisitorTest_56 extends TestCase {
+    public void test_for_parameterize() throws Exception {
+        final String dbType = JdbcConstants.MYSQL;
+        String sql = ""select `ktv_resource`.`RESOURCE_ID`,`ktv_resource`.`RESOURCE_PROVIDER`,`ktv_resource`.`KTV_ID`,`ktv_resource`.`RESOURCE_TYPE`,`ktv_resource`.`SUB_RESOURCE_TYPE`,`ktv_resource`.`STATUS`,`ktv_resource`.`START_TIME`,`ktv_resource`.`END_TIME`,`ktv_resource`.`FEATURE`,`ktv_resource`.`GMT_CREATED`,`ktv_resource`.`GMT_MODIFIED`,`ktv_resource`.`source`,`ktv_resource`.`seller_id`,`ktv_resource`.`original_Resource_Id`,`ktv_resource`.`business_unit`,`ktv_resource`.`resource_code`,`ktv_resource`.`OPTIONS`,`ktv_resource`.`AVAILABLE_COUNT`,`ktv_resource`.`TOTAL_COUNT`,`ktv_resource`.`OUT_INSTANCE_ID`,`ktv_resource`.`CONSUME_ID`,`ktv_resource`.`GROUP_ID`,`ktv_resource`.`BUSINESS_ID`,`ktv_resource`.`rule`,`ktv_resource`.`market_place`,`ktv_resource`.`VERSION` from `ktv_resource_0062` `ktv_resource` where ((`ktv_resource`.`KTV_ID` = 880693310) AND (`ktv_resource`.`STATUS` = 1) AND (`ktv_resource`.`START_TIME` <= '2017-09-19 20:15:34.199') AND (`ktv_resource`.`END_TIME` >= '2017-09-19 20:15:34.199') AND (`ktv_resource`.`seller_id` IN (2680068332)) AND (`ktv_resource`.`AVAILABLE_COUNT` IS NULL OR (`ktv_resource`.`AVAILABLE_COUNT` > 0) OR (`ktv_resource`.`AVAILABLE_COUNT` = -1))) limit 0,30"";
+        SQLStatementParser parser = SQLParserUtils.createSQLStatementParser(sql, dbType);
+        List<SQLStatement> stmtList = parser.parseStatementList();
+        SQLStatement statement = stmtList.get(0);
+        StringBuilder out = new StringBuilder();
+        SQLASTOutputVisitor visitor = SQLUtils.createOutputVisitor(out, JdbcConstants.MYSQL);
+        List<Object> parameters = new ArrayList<Object>();
+        visitor.setParameterized(true);
+        visitor.setParameterizedMergeInList(true);
+        visitor.setParameters(parameters);
+        statement.accept(visitor);
+        String psql = out.toString();
+        System.out.println(psql);
+        assertEquals(""SELECT `ktv_resource`.`RESOURCE_ID`, `ktv_resource`.`RESOURCE_PROVIDER`, `ktv_resource`.`KTV_ID`, `ktv_resource`.`RESOURCE_TYPE`, `ktv_resource`.`SUB_RESOURCE_TYPE`\n"" +
+                ""\t, `ktv_resource`.`STATUS`, `ktv_resource`.`START_TIME`, `ktv_resource`.`END_TIME`, `ktv_resource`.`FEATURE`, `ktv_resource`.`GMT_CREATED`\n"" +
+                ""\t, `ktv_resource`.`GMT_MODIFIED`, `ktv_resource`.`source`, `ktv_resource`.`seller_id`, `ktv_resource`.`original_Resource_Id`, `ktv_resource`.`business_unit`\n"" +
+                ""\t, `ktv_resource`.`resource_code`, `ktv_resource`.`OPTIONS`, `ktv_resource`.`AVAILABLE_COUNT`, `ktv_resource`.`TOTAL_COUNT`, `ktv_resource`.`OUT_INSTANCE_ID`\n"" +
+                ""\t, `ktv_resource`.`CONSUME_ID`, `ktv_resource`.`GROUP_ID`, `ktv_resource`.`BUSINESS_ID`, `ktv_resource`.`rule`, `ktv_resource`.`market_place`\n"" +
+                ""\t, `ktv_resource`.`VERSION`\n"" +
+                ""FROM ktv_resource `ktv_resource`\n"" +
+                ""WHERE `ktv_resource`.`KTV_ID` = ?\n"" +
+                ""\tAND `ktv_resource`.`STATUS` = ?\n"" +
+                ""\tAND `ktv_resource`.`START_TIME` <= ?\n"" +
+                ""\tAND `ktv_resource`.`END_TIME` >= ?\n"" +
+                ""\tAND `ktv_resource`.`seller_id` IN (?)\n"" +
+                ""\tAND (`ktv_resource`.`AVAILABLE_COUNT` IS NULL\n"" +
+                ""\t\tOR `ktv_resource`.`AVAILABLE_COUNT` > ?\n"" +
+                ""\t\tOR `ktv_resource`.`AVAILABLE_COUNT` = ?)\n"" +
+                ""LIMIT ?, ?"", psql);
+        String rsql = SQLUtils.format(psql, JdbcConstants.MYSQL, parameters);
+        System.out.println(rsql);
+    }
+}",class,
+"    public void test_for_parameterize() throws Exception {
+        final String dbType = JdbcConstants.MYSQL;
+        String sql = ""select `ktv_resource`.`RESOURCE_ID`,`ktv_resource`.`RESOURCE_PROVIDER`,`ktv_resource`.`KTV_ID`,`ktv_resource`.`RESOURCE_TYPE`,`ktv_resource`.`SUB_RESOURCE_TYPE`,`ktv_resource`.`STATUS`,`ktv_resource`.`START_TIME`,`ktv_resource`.`END_TIME`,`ktv_resource`.`FEATURE`,`ktv_resource`.`GMT_CREATED`,`ktv_resource`.`GMT_MODIFIED`,`ktv_resource`.`source`,`ktv_resource`.`seller_id`,`ktv_resource`.`original_Resource_Id`,`ktv_resource`.`business_unit`,`ktv_resource`.`resource_code`,`ktv_resource`.`OPTIONS`,`ktv_resource`.`AVAILABLE_COUNT`,`ktv_resource`.`TOTAL_COUNT`,`ktv_resource`.`OUT_INSTANCE_ID`,`ktv_resource`.`CONSUME_ID`,`ktv_resource`.`GROUP_ID`,`ktv_resource`.`BUSINESS_ID`,`ktv_resource`.`rule`,`ktv_resource`.`market_place`,`ktv_resource`.`VERSION` from `ktv_resource_0062` `ktv_resource` where ((`ktv_resource`.`KTV_ID` = 880693310) AND (`ktv_resource`.`STATUS` = 1) AND (`ktv_resource`.`START_TIME` <= '2017-09-19 20:15:34.199') AND (`ktv_resource`.`END_TIME` >= '2017-09-19 20:15:34.199') AND (`ktv_resource`.`seller_id` IN (2680068332)) AND (`ktv_resource`.`AVAILABLE_COUNT` IS NULL OR (`ktv_resource`.`AVAILABLE_COUNT` > 0) OR (`ktv_resource`.`AVAILABLE_COUNT` = -1))) limit 0,30"";
+        SQLStatementParser parser = SQLParserUtils.createSQLStatementParser(sql, dbType);
+        List<SQLStatement> stmtList = parser.parseStatementList();
+        SQLStatement statement = stmtList.get(0);
+        StringBuilder out = new StringBuilder();
+        SQLASTOutputVisitor visitor = SQLUtils.createOutputVisitor(out, JdbcConstants.MYSQL);
+        List<Object> parameters = new ArrayList<Object>();
+        visitor.setParameterized(true);
+        visitor.setParameterizedMergeInList(true);
+        visitor.setParameters(parameters);
+        statement.accept(visitor);
+        String psql = out.toString();
+        System.out.println(psql);
+        assertEquals(""SELECT `ktv_resource`.`RESOURCE_ID`, `ktv_resource`.`RESOURCE_PROVIDER`, `ktv_resource`.`KTV_ID`, `ktv_resource`.`RESOURCE_TYPE`, `ktv_resource`.`SUB_RESOURCE_TYPE`\n"" +
+                ""\t, `ktv_resource`.`STATUS`, `ktv_resource`.`START_TIME`, `ktv_resource`.`END_TIME`, `ktv_resource`.`FEATURE`, `ktv_resource`.`GMT_CREATED`\n"" +
+                ""\t, `ktv_resource`.`GMT_MODIFIED`, `ktv_resource`.`source`, `ktv_resource`.`seller_id`, `ktv_resource`.`original_Resource_Id`, `ktv_resource`.`business_unit`\n"" +
+                ""\t, `ktv_resource`.`resource_code`, `ktv_resource`.`OPTIONS`, `ktv_resource`.`AVAILABLE_COUNT`, `ktv_resource`.`TOTAL_COUNT`, `ktv_resource`.`OUT_INSTANCE_ID`\n"" +
+                ""\t, `ktv_resource`.`CONSUME_ID`, `ktv_resource`.`GROUP_ID`, `ktv_resource`.`BUSINESS_ID`, `ktv_resource`.`rule`, `ktv_resource`.`market_place`\n"" +
+                ""\t, `ktv_resource`.`VERSION`\n"" +
+                ""FROM ktv_resource `ktv_resource`\n"" +
+                ""WHERE `ktv_resource`.`KTV_ID` = ?\n"" +
+                ""\tAND `ktv_resource`.`STATUS` = ?\n"" +
+                ""\tAND `ktv_resource`.`START_TIME` <= ?\n"" +
+                ""\tAND `ktv_resource`.`END_TIME` >= ?\n"" +
+                ""\tAND `ktv_resource`.`seller_id` IN (?)\n"" +
+                ""\tAND (`ktv_resource`.`AVAILABLE_COUNT` IS NULL\n"" +
+                ""\t\tOR `ktv_resource`.`AVAILABLE_COUNT` > ?\n"" +
+                ""\t\tOR `ktv_resource`.`AVAILABLE_COUNT` = ?)\n"" +
+                ""LIMIT ?, ?"", psql);
+        String rsql = SQLUtils.format(psql, JdbcConstants.MYSQL, parameters);
+        System.out.println(rsql);
+    }",method,
+"import org.junit.runner.Description;
+class TestSuiteNode extends TestNode {
+  private final List<TestNode> children = new ArrayList<>();
+  TestSuiteNode(Description description) {
+    super(description);
+  }
+  // VisibleForTesting
+  @Override
+  public List<TestNode> getChildren() {
+    return Collections.unmodifiableList(children);
+  }
+  @Override
+  public boolean isTestCase() {
+    return false;
+  }
+  @Override
+  public void testFailure(Throwable throwable, long now) {
+    for (TestNode child : getChildren()) {
+      child.testFailure(throwable, now);
+    }
+  }
+  @Override
+  public void dynamicTestFailure(Description test, Throwable throwable, long now) {
+    for (TestNode child : getChildren()) {
+      child.dynamicTestFailure(test, throwable, now);
+    }
+  }
+  @Override
+  public void testInterrupted(long now) {
+    for (TestNode child : getChildren()) {
+      child.testInterrupted(now);
+    }
+  }
+  @Override
+  public void testSkipped(long now) {
+    for (TestNode child : getChildren()) {
+      child.testSkipped(now);
+    }
+  }
+  @Override
+  public void testSuppressed(long now) {
+    for (TestNode child : getChildren()) {
+      child.testSuppressed(now);
+    }
+  }
+  void addTestSuite(TestSuiteNode suite) {
+    children.add(suite);
+  }
+  void addTestCase(TestCaseNode testCase) {
+    children.add(testCase);
+  }
+  @Override
+  protected TestResult buildResult() {
+    TestInterval runTime = null;
+    int numTests = 0;
+    int numFailures = 0;
+    LinkedList<TestResult> childResults = new LinkedList<>();
+    for (TestNode child : children) {
+      TestResult childResult = child.getResult();
+      childResults.add(childResult);
+      numTests += childResult.getNumTests();
+      numFailures += childResult.getNumFailures();
+      TestInterval childRunTime = childResult.getRunTimeInterval();
+      if (childRunTime != null) {
+        runTime =
+            runTime == null
+                ? childRunTime
+                : new TestInterval(
+                    Math.min(runTime.getStartMillis(), childRunTime.getStartMillis()),
+                    Math.max(runTime.getEndMillis(), childRunTime.getEndMillis()));
+      }
+    }
+    return new TestResult.Builder()
+        .name(getDescription().getDisplayName())
+        .className("""")
+        .properties(Collections.<String, String>emptyMap())
+        .failures(Collections.<Throwable>emptyList())
+        .runTimeInterval(runTime)
+        .status(Status.SKIPPED)
+        .numTests(numTests)
+        .numFailures(numFailures)
+        .childResults(childResults)
+        .integrations(Collections.<TestIntegration>emptySet())
+        .build();
+  }
+}",class,
+"  TestSuiteNode(Description description) {
+    super(description);
+  }",method,
+"  @Override
+  public List<TestNode> getChildren() {
+    return Collections.unmodifiableList(children);
+  }",method,
+"  @Override
+  public boolean isTestCase() {
+    return false;
+  }",method,
+"  @Override
+  public void testFailure(Throwable throwable, long now) {
+    for (TestNode child : getChildren()) {
+      child.testFailure(throwable, now);
+    }
+  }",method,
+"  @Override
+  public void dynamicTestFailure(Description test, Throwable throwable, long now) {
+    for (TestNode child : getChildren()) {
+      child.dynamicTestFailure(test, throwable, now);
+    }
+  }",method,
+"  @Override
+  public void testInterrupted(long now) {
+    for (TestNode child : getChildren()) {
+      child.testInterrupted(now);
+    }
+  }",method,
+"  @Override
+  public void testSkipped(long now) {
+    for (TestNode child : getChildren()) {
+      child.testSkipped(now);
+    }
+  }",method,
+"  @Override
+  public void testSuppressed(long now) {
+    for (TestNode child : getChildren()) {
+      child.testSuppressed(now);
+    }
+  }",method,
+"  void addTestSuite(TestSuiteNode suite) {
+    children.add(suite);
+  }",method,
+"  void addTestCase(TestCaseNode testCase) {
+    children.add(testCase);
+  }",method,
+"  @Override
+  protected TestResult buildResult() {
+    TestInterval runTime = null;
+    int numTests = 0;
+    int numFailures = 0;
+    LinkedList<TestResult> childResults = new LinkedList<>();
+    for (TestNode child : children) {
+      TestResult childResult = child.getResult();
+      childResults.add(childResult);
+      numTests += childResult.getNumTests();
+      numFailures += childResult.getNumFailures();
+      TestInterval childRunTime = childResult.getRunTimeInterval();
+      if (childRunTime != null) {
+        runTime =
+            runTime == null
+                ? childRunTime
+                : new TestInterval(
+                    Math.min(runTime.getStartMillis(), childRunTime.getStartMillis()),
+                    Math.max(runTime.getEndMillis(), childRunTime.getEndMillis()));
+      }
+    }
+    return new TestResult.Builder()
+        .name(getDescription().getDisplayName())
+        .className("""")
+        .properties(Collections.<String, String>emptyMap())
+        .failures(Collections.<Throwable>emptyList())
+        .runTimeInterval(runTime)
+        .status(Status.SKIPPED)
+        .numTests(numTests)
+        .numFailures(numFailures)
+        .childResults(childResults)
+        .integrations(Collections.<TestIntegration>emptySet())
+        .build();
+  }",method,
+"    for (TestNode child : children) {
+      TestResult childResult = child.getResult();
+      childResults.add(childResult);
+      numTests += childResult.getNumTests();
+      numFailures += childResult.getNumFailures();
+      TestInterval childRunTime = childResult.getRunTimeInterval();
+      if (childRunTime != null) {
+        runTime =
+            runTime == null
+                ? childRunTime
+                : new TestInterval(
+                    Math.min(runTime.getStartMillis(), childRunTime.getStartMillis()),
+                    Math.max(runTime.getEndMillis(), childRunTime.getEndMillis()));
+      }
+    }",method,
+"      if (childRunTime != null) {
+        runTime =
+            runTime == null
+                ? childRunTime
+                : new TestInterval(
+                    Math.min(runTime.getStartMillis(), childRunTime.getStartMillis()),
+                    Math.max(runTime.getEndMillis(), childRunTime.getEndMillis()));
+      }",method,
+"public class DelegatingNavigationHandlerTests {
+	private final MockFacesContext facesContext = new MockFacesContext();
+	private final StaticListableBeanFactory beanFactory = new StaticListableBeanFactory();
+	private final TestNavigationHandler origNavHandler = new TestNavigationHandler();
+	private final DelegatingNavigationHandlerProxy delNavHandler = new DelegatingNavigationHandlerProxy(origNavHandler) {
+		@Override
+		protected BeanFactory getBeanFactory(FacesContext facesContext) {
+			return beanFactory;
+		}
+	};
+	@Test
+	public void handleNavigationWithoutDecoration() {
+		TestNavigationHandler targetHandler = new TestNavigationHandler();
+		beanFactory.addBean(""jsfNavigationHandler"", targetHandler);
+		delNavHandler.handleNavigation(facesContext, ""fromAction"", ""myViewId"");
+		assertEquals(""fromAction"", targetHandler.lastFromAction);
+		assertEquals(""myViewId"", targetHandler.lastOutcome);
+	}
+	@Test
+	public void handleNavigationWithDecoration() {
+		TestDecoratingNavigationHandler targetHandler = new TestDecoratingNavigationHandler();
+		beanFactory.addBean(""jsfNavigationHandler"", targetHandler);
+		delNavHandler.handleNavigation(facesContext, ""fromAction"", ""myViewId"");
+		assertEquals(""fromAction"", targetHandler.lastFromAction);
+		assertEquals(""myViewId"", targetHandler.lastOutcome);
+		// Original handler must have been invoked as well...
+		assertEquals(""fromAction"", origNavHandler.lastFromAction);
+		assertEquals(""myViewId"", origNavHandler.lastOutcome);
+	}
+	static class TestNavigationHandler extends NavigationHandler {
+		private String lastFromAction;
+		private String lastOutcome;
+		@Override
+		public void handleNavigation(FacesContext facesContext, String fromAction, String outcome) {
+			lastFromAction = fromAction;
+			lastOutcome = outcome;
+		}
+	}
+	static class TestDecoratingNavigationHandler extends DecoratingNavigationHandler {
+		private String lastFromAction;
+		private String lastOutcome;
+		@Override
+		public void handleNavigation(FacesContext facesContext, @Nullable String fromAction,
+				@Nullable String outcome, @Nullable NavigationHandler originalNavigationHandler) {
+			lastFromAction = fromAction;
+			lastOutcome = outcome;
+			if (originalNavigationHandler != null) {
+				originalNavigationHandler.handleNavigation(facesContext, fromAction, outcome);
+			}
+		}
+	}
+}",class,
+"	static class TestNavigationHandler extends NavigationHandler {
+		private String lastFromAction;
+		private String lastOutcome;
+		@Override
+		public void handleNavigation(FacesContext facesContext, String fromAction, String outcome) {
+			lastFromAction = fromAction;
+			lastOutcome = outcome;
+		}
+	}",class,
+"	static class TestDecoratingNavigationHandler extends DecoratingNavigationHandler {
+		private String lastFromAction;
+		private String lastOutcome;
+		@Override
+		public void handleNavigation(FacesContext facesContext, @Nullable String fromAction,
+				@Nullable String outcome, @Nullable NavigationHandler originalNavigationHandler) {
+			lastFromAction = fromAction;
+			lastOutcome = outcome;
+			if (originalNavigationHandler != null) {
+				originalNavigationHandler.handleNavigation(facesContext, fromAction, outcome);
+			}
+		}
+	}",class,
+"		@Override
+		protected BeanFactory getBeanFactory(FacesContext facesContext) {
+			return beanFactory;
+		}",method,
+"	@Test
+	public void handleNavigationWithoutDecoration() {
+		TestNavigationHandler targetHandler = new TestNavigationHandler();
+		beanFactory.addBean(""jsfNavigationHandler"", targetHandler);
+		delNavHandler.handleNavigation(facesContext, ""fromAction"", ""myViewId"");
+		assertEquals(""fromAction"", targetHandler.lastFromAction);
+		assertEquals(""myViewId"", targetHandler.lastOutcome);
+	}",method,
+"	@Test
+	public void handleNavigationWithDecoration() {
+		TestDecoratingNavigationHandler targetHandler = new TestDecoratingNavigationHandler();
+		beanFactory.addBean(""jsfNavigationHandler"", targetHandler);
+		delNavHandler.handleNavigation(facesContext, ""fromAction"", ""myViewId"");
+		assertEquals(""fromAction"", targetHandler.lastFromAction);
+		assertEquals(""myViewId"", targetHandler.lastOutcome);
+		// Original handler must have been invoked as well...
+		assertEquals(""fromAction"", origNavHandler.lastFromAction);
+		assertEquals(""myViewId"", origNavHandler.lastOutcome);
+	}",method,
+"		@Override
+		public void handleNavigation(FacesContext facesContext, String fromAction, String outcome) {
+			lastFromAction = fromAction;
+			lastOutcome = outcome;
+		}",method,
+"		@Override
+		public void handleNavigation(FacesContext facesContext, @Nullable String fromAction,
+				@Nullable String outcome, @Nullable NavigationHandler originalNavigationHandler) {
+			lastFromAction = fromAction;
+			lastOutcome = outcome;
+			if (originalNavigationHandler != null) {
+				originalNavigationHandler.handleNavigation(facesContext, fromAction, outcome);
+			}
+		}",method,
+"			if (originalNavigationHandler != null) {
+				originalNavigationHandler.handleNavigation(facesContext, fromAction, outcome);
+			}",method,
+"public final class SettableDataSource<T> extends AbstractDataSource<CloseableReference<T>> {
+  public static <V> SettableDataSource<V> create() {
+    return new SettableDataSource<V>();
+  }
+  private SettableDataSource() {
+  }
+  public boolean set(@Nullable CloseableReference<T> valueRef) {
+    CloseableReference<T> clonedRef = CloseableReference.cloneOrNull(valueRef);
+    return super.setResult(clonedRef,  true);
+  }
+  public boolean setException(Throwable throwable) {
+    return super.setFailure(throwable);
+  }
+  @Override
+  public boolean setProgress(float progress) {
+    return super.setProgress(progress);
+  }
+  @Override
+  @Nullable
+  public CloseableReference<T> getResult() {
+    return CloseableReference.cloneOrNull(super.getResult());
+  }
+  @Override
+  protected void closeResult(@Nullable CloseableReference<T> result) {
+    CloseableReference.closeSafely(result);
+  }
+}",class,
+"public class DecodeException extends RuntimeException {
+  public DecodeException(String message) {
+    super(message);
+  }
+  public DecodeException(String message, Throwable t) {
+    super(message, t);
+  }
+}",class,
+"  public static <V> SettableDataSource<V> create() {
+    return new SettableDataSource<V>();
+  }",method,
+"  private SettableDataSource() {
+  }",method,
+"  public boolean set(@Nullable CloseableReference<T> valueRef) {
+    CloseableReference<T> clonedRef = CloseableReference.cloneOrNull(valueRef);
+    return super.setResult(clonedRef,  true);
+  }",method,
+"  public boolean setException(Throwable throwable) {
+    return super.setFailure(throwable);
+  }",method,
+"  @Override
+  public boolean setProgress(float progress) {
+    return super.setProgress(progress);
+  }",method,
+"  @Override
+  @Nullable
+  public CloseableReference<T> getResult() {
+    return CloseableReference.cloneOrNull(super.getResult());
+  }",method,
+"  @Override
+  protected void closeResult(@Nullable CloseableReference<T> result) {
+    CloseableReference.closeSafely(result);
+  }",method,
+"  public DecodeException(String message) {
+    super(message);
+  }",method,
+"  public DecodeException(String message, Throwable t) {
+    super(message, t);
+  }",method,
+"public class StumpTransform implements Transform {
+  private String outputName;
+  private class StumpDescription implements Serializable {
+    public StumpDescription(String featureName, Double threshold, String descriptiveName) {
+      this.featureName = featureName;
+      this.threshold = threshold;
+      this.descriptiveName = descriptiveName;
+    }
+    public String featureName;
+    public Double threshold;
+    public String descriptiveName;
+  }
+  // Family -> description
+  private Map<String, List<StumpDescription>> thresholds;
+  @Override
+  public void configure(Config config, String key) {
+    outputName = config.getString(key + "".output"");
+    thresholds = new HashMap<>();
+    List<String> stumps = config.getStringList(key + "".stumps"");
+    for (String stump : stumps) {
+      String[] tokens = stump.split("","");
+      if (tokens.length == 4) {
+        String family = tokens[0];
+        String featureName = tokens[1];
+        Double threshold = Double.parseDouble(tokens[2]);
+        String descriptiveName = tokens[3];
+        List<StumpDescription> featureList = thresholds.get(family);
+        if (featureList == null) {
+          featureList = new ArrayList<>();
+          thresholds.put(family, featureList);
+        }
+        StumpDescription description = new StumpDescription(featureName,
+                                                            threshold,
+                                                            descriptiveName);
+        featureList.add(description);
+      }
+    }
+  }
+  @Override
+  public void doTransform(FeatureVector featureVector) {
+    Map<String, Map<String, Double>> floatFeatures = featureVector.getFloatFeatures();
+    if (floatFeatures == null) {
+      return;
+    }
+    Util.optionallyCreateStringFeatures(featureVector);
+    Map<String, Set<String>> stringFeatures = featureVector.getStringFeatures();
+    Set<String> output = Util.getOrCreateStringFeature(outputName, stringFeatures);
+    for (Entry<String, List<StumpDescription>> stumpFamily : thresholds.entrySet()) {
+      Map<String, Double> feature = floatFeatures.get(stumpFamily.getKey());
+      if (feature == null) continue;
+      for (StumpDescription desc : stumpFamily.getValue()) {
+        Double value = feature.get(desc.featureName);
+        if (value != null && value >= desc.threshold) {
+          output.add(desc.descriptiveName);
+        }
+      }
+    }
+  }
+}",class,
+"  private class StumpDescription implements Serializable {
+    public StumpDescription(String featureName, Double threshold, String descriptiveName) {
+      this.featureName = featureName;
+      this.threshold = threshold;
+      this.descriptiveName = descriptiveName;
+    }
+    public String featureName;
+    public Double threshold;
+    public String descriptiveName;
+  }",class,
+"    public StumpDescription(String featureName, Double threshold, String descriptiveName) {
+      this.featureName = featureName;
+      this.threshold = threshold;
+      this.descriptiveName = descriptiveName;
+    }",method,
+"  @Override
+  public void configure(Config config, String key) {
+    outputName = config.getString(key + "".output"");
+    thresholds = new HashMap<>();
+    List<String> stumps = config.getStringList(key + "".stumps"");
+    for (String stump : stumps) {
+      String[] tokens = stump.split("","");
+      if (tokens.length == 4) {
+        String family = tokens[0];
+        String featureName = tokens[1];
+        Double threshold = Double.parseDouble(tokens[2]);
+        String descriptiveName = tokens[3];
+        List<StumpDescription> featureList = thresholds.get(family);
+        if (featureList == null) {
+          featureList = new ArrayList<>();
+          thresholds.put(family, featureList);
+        }
+        StumpDescription description = new StumpDescription(featureName,
+                                                            threshold,
+                                                            descriptiveName);
+        featureList.add(description);
+      }
+    }
+  }",method,
+"    for (String stump : stumps) {
+      String[] tokens = stump.split("","");
+      if (tokens.length == 4) {
+        String family = tokens[0];
+        String featureName = tokens[1];
+        Double threshold = Double.parseDouble(tokens[2]);
+        String descriptiveName = tokens[3];
+        List<StumpDescription> featureList = thresholds.get(family);
+        if (featureList == null) {
+          featureList = new ArrayList<>();
+          thresholds.put(family, featureList);
+        }
+        StumpDescription description = new StumpDescription(featureName,
+                                                            threshold,
+                                                            descriptiveName);
+        featureList.add(description);
+      }
+    }",method,
+"      if (tokens.length == 4) {
+        String family = tokens[0];
+        String featureName = tokens[1];
+        Double threshold = Double.parseDouble(tokens[2]);
+        String descriptiveName = tokens[3];
+        List<StumpDescription> featureList = thresholds.get(family);
+        if (featureList == null) {
+          featureList = new ArrayList<>();
+          thresholds.put(family, featureList);
+        }
+        StumpDescription description = new StumpDescription(featureName,
+                                                            threshold,
+                                                            descriptiveName);
+        featureList.add(description);
+      }",method,
+"        if (featureList == null) {
+          featureList = new ArrayList<>();
+          thresholds.put(family, featureList);
+        }",method,
+"  @Override
+  public void doTransform(FeatureVector featureVector) {
+    Map<String, Map<String, Double>> floatFeatures = featureVector.getFloatFeatures();
+    if (floatFeatures == null) {
+      return;
+    }
+    Util.optionallyCreateStringFeatures(featureVector);
+    Map<String, Set<String>> stringFeatures = featureVector.getStringFeatures();
+    Set<String> output = Util.getOrCreateStringFeature(outputName, stringFeatures);
+    for (Entry<String, List<StumpDescription>> stumpFamily : thresholds.entrySet()) {
+      Map<String, Double> feature = floatFeatures.get(stumpFamily.getKey());
+      if (feature == null) continue;
+      for (StumpDescription desc : stumpFamily.getValue()) {
+        Double value = feature.get(desc.featureName);
+        if (value != null && value >= desc.threshold) {
+          output.add(desc.descriptiveName);
+        }
+      }
+    }
+  }",method,
+"    if (floatFeatures == null) {
+      return;
+    }",method,
+"        if (value != null && value >= desc.threshold) {
+          output.add(desc.descriptiveName);
+        }",method,
+"public class LibflacAudioRenderer extends SimpleDecoderAudioRenderer {
+  private static final int NUM_BUFFERS = 16;
+  public LibflacAudioRenderer() {
+    this(null, null);
+  }
+  public LibflacAudioRenderer(Handler eventHandler, AudioRendererEventListener eventListener,
+      AudioProcessor... audioProcessors) {
+    super(eventHandler, eventListener, audioProcessors);
+  }
+  @Override
+  protected int supportsFormatInternal(Format format) {
+    return FlacLibrary.isAvailable() && MimeTypes.AUDIO_FLAC.equalsIgnoreCase(format.sampleMimeType)
+        ? FORMAT_HANDLED : FORMAT_UNSUPPORTED_TYPE;
+  }
+  @Override
+  protected FlacDecoder createDecoder(Format format, ExoMediaCrypto mediaCrypto)
+      throws FlacDecoderException {
+    return new FlacDecoder(NUM_BUFFERS, NUM_BUFFERS, format.initializationData);
+  }
+}",class,
+"  public LibflacAudioRenderer() {
+    this(null, null);
+  }",method,
+"  public LibflacAudioRenderer(Handler eventHandler, AudioRendererEventListener eventListener,
+      AudioProcessor... audioProcessors) {
+    super(eventHandler, eventListener, audioProcessors);
+  }",method,
+"  @Override
+  protected int supportsFormatInternal(Format format) {
+    return FlacLibrary.isAvailable() && MimeTypes.AUDIO_FLAC.equalsIgnoreCase(format.sampleMimeType)
+        ? FORMAT_HANDLED : FORMAT_UNSUPPORTED_TYPE;
+  }",method,
+"  @Override
+  protected FlacDecoder createDecoder(Format format, ExoMediaCrypto mediaCrypto)
+      throws FlacDecoderException {
+    return new FlacDecoder(NUM_BUFFERS, NUM_BUFFERS, format.initializationData);
+  }",method,

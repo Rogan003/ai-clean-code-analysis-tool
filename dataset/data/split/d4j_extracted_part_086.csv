@@ -1,0 +1,1285 @@
+code_snippet,type,score
+"public class CarbonQueryUtil {
+  private CarbonQueryUtil() {
+  }
+  public static synchronized TableSplit[] getTableSplits(String databaseName, String tableName,
+      CarbonQueryPlan queryPlan) {
+    //Just create splits depends on locations of region servers
+    List<Partition> allPartitions = null;
+    if (queryPlan == null) {
+      allPartitions =
+          QueryPartitionHelper.getInstance().getAllPartitions(databaseName, tableName);
+    } else {
+      allPartitions =
+          QueryPartitionHelper.getInstance().getPartitionsForQuery(queryPlan);
+    }
+    TableSplit[] splits = new TableSplit[allPartitions.size()];
+    for (int i = 0; i < splits.length; i++) {
+      splits[i] = new TableSplit();
+      List<String> locations = new ArrayList<String>(CarbonCommonConstants.CONSTANT_SIZE_TEN);
+      Partition partition = allPartitions.get(i);
+      String location = QueryPartitionHelper.getInstance()
+          .getLocation(partition, databaseName, tableName);
+      locations.add(location);
+      splits[i].setPartition(partition);
+      splits[i].setLocations(locations);
+    }
+    return splits;
+  }
+  public static TableSplit[] getTableSplitsForDirectLoad(String sourcePath) {
+    //Just create splits depends on locations of region servers
+    DefaultLoadBalancer loadBalancer = null;
+    List<Partition> allPartitions = getAllFilesForDataLoad(sourcePath);
+    loadBalancer = new DefaultLoadBalancer(new ArrayList<String>(), allPartitions);
+    TableSplit[] tblSplits = new TableSplit[allPartitions.size()];
+    for (int i = 0; i < tblSplits.length; i++) {
+      tblSplits[i] = new TableSplit();
+      List<String> locations = new ArrayList<String>(CarbonCommonConstants.CONSTANT_SIZE_TEN);
+      Partition partition = allPartitions.get(i);
+      String location = loadBalancer.getNodeForPartitions(partition);
+      locations.add(location);
+      tblSplits[i].setPartition(partition);
+      tblSplits[i].setLocations(locations);
+    }
+    return tblSplits;
+  }
+  public static void splitFilePath(String sourcePath, List<String> partitionsFiles,
+      String separator) {
+    if (StringUtils.isNotEmpty(sourcePath)) {
+      String[] files = sourcePath.split(separator);
+      Collections.addAll(partitionsFiles, files);
+    }
+  }
+  private static List<Partition> getAllFilesForDataLoad(String sourcePath) {
+    List<String> files = new ArrayList<String>(CarbonCommonConstants.CONSTANT_SIZE_TEN);
+    splitFilePath(sourcePath, files, CarbonCommonConstants.COMMA);
+    List<Partition> partitionList =
+        new ArrayList<Partition>(CarbonCommonConstants.CONSTANT_SIZE_TEN);
+    Map<Integer, List<String>> partitionFiles = new HashMap<Integer, List<String>>();
+    partitionFiles.put(0, new ArrayList<String>(CarbonCommonConstants.CONSTANT_SIZE_TEN));
+    partitionList.add(new PartitionMultiFileImpl(0 + """", partitionFiles.get(0)));
+    for (int i = 0; i < files.size(); i++) {
+      partitionFiles.get(0).add(files.get(i));
+    }
+    return partitionList;
+  }
+}",class,
+"  private CarbonQueryUtil() {
+  }",method,
+"  public static synchronized TableSplit[] getTableSplits(String databaseName, String tableName,
+      CarbonQueryPlan queryPlan) {
+    //Just create splits depends on locations of region servers
+    List<Partition> allPartitions = null;
+    if (queryPlan == null) {
+      allPartitions =
+          QueryPartitionHelper.getInstance().getAllPartitions(databaseName, tableName);
+    } else {
+      allPartitions =
+          QueryPartitionHelper.getInstance().getPartitionsForQuery(queryPlan);
+    }
+    TableSplit[] splits = new TableSplit[allPartitions.size()];
+    for (int i = 0; i < splits.length; i++) {
+      splits[i] = new TableSplit();
+      List<String> locations = new ArrayList<String>(CarbonCommonConstants.CONSTANT_SIZE_TEN);
+      Partition partition = allPartitions.get(i);
+      String location = QueryPartitionHelper.getInstance()
+          .getLocation(partition, databaseName, tableName);
+      locations.add(location);
+      splits[i].setPartition(partition);
+      splits[i].setLocations(locations);
+    }
+    return splits;
+  }",method,
+"    if (queryPlan == null) {
+      allPartitions =
+          QueryPartitionHelper.getInstance().getAllPartitions(databaseName, tableName);
+    }",method,
+"    for (int i = 0; i < splits.length; i++) {
+      splits[i] = new TableSplit();
+      List<String> locations = new ArrayList<String>(CarbonCommonConstants.CONSTANT_SIZE_TEN);
+      Partition partition = allPartitions.get(i);
+      String location = QueryPartitionHelper.getInstance()
+          .getLocation(partition, databaseName, tableName);
+      locations.add(location);
+      splits[i].setPartition(partition);
+      splits[i].setLocations(locations);
+    }",method,
+"  public static TableSplit[] getTableSplitsForDirectLoad(String sourcePath) {
+    //Just create splits depends on locations of region servers
+    DefaultLoadBalancer loadBalancer = null;
+    List<Partition> allPartitions = getAllFilesForDataLoad(sourcePath);
+    loadBalancer = new DefaultLoadBalancer(new ArrayList<String>(), allPartitions);
+    TableSplit[] tblSplits = new TableSplit[allPartitions.size()];
+    for (int i = 0; i < tblSplits.length; i++) {
+      tblSplits[i] = new TableSplit();
+      List<String> locations = new ArrayList<String>(CarbonCommonConstants.CONSTANT_SIZE_TEN);
+      Partition partition = allPartitions.get(i);
+      String location = loadBalancer.getNodeForPartitions(partition);
+      locations.add(location);
+      tblSplits[i].setPartition(partition);
+      tblSplits[i].setLocations(locations);
+    }
+    return tblSplits;
+  }",method,
+"    for (int i = 0; i < tblSplits.length; i++) {
+      tblSplits[i] = new TableSplit();
+      List<String> locations = new ArrayList<String>(CarbonCommonConstants.CONSTANT_SIZE_TEN);
+      Partition partition = allPartitions.get(i);
+      String location = loadBalancer.getNodeForPartitions(partition);
+      locations.add(location);
+      tblSplits[i].setPartition(partition);
+      tblSplits[i].setLocations(locations);
+    }",method,
+"  public static void splitFilePath(String sourcePath, List<String> partitionsFiles,
+      String separator) {
+    if (StringUtils.isNotEmpty(sourcePath)) {
+      String[] files = sourcePath.split(separator);
+      Collections.addAll(partitionsFiles, files);
+    }
+  }",method,
+"  private static List<Partition> getAllFilesForDataLoad(String sourcePath) {
+    List<String> files = new ArrayList<String>(CarbonCommonConstants.CONSTANT_SIZE_TEN);
+    splitFilePath(sourcePath, files, CarbonCommonConstants.COMMA);
+    List<Partition> partitionList =
+        new ArrayList<Partition>(CarbonCommonConstants.CONSTANT_SIZE_TEN);
+    Map<Integer, List<String>> partitionFiles = new HashMap<Integer, List<String>>();
+    partitionFiles.put(0, new ArrayList<String>(CarbonCommonConstants.CONSTANT_SIZE_TEN));
+    partitionList.add(new PartitionMultiFileImpl(0 + """", partitionFiles.get(0)));
+    for (int i = 0; i < files.size(); i++) {
+      partitionFiles.get(0).add(files.get(i));
+    }
+    return partitionList;
+  }",method,
+"public final class ObservableSampleTimed<T> extends AbstractObservableWithUpstream<T, T> {
+    final long period;
+    final TimeUnit unit;
+    final Scheduler scheduler;
+    final boolean emitLast;
+    public ObservableSampleTimed(ObservableSource<T> source, long period, TimeUnit unit, Scheduler scheduler, boolean emitLast) {
+        super(source);
+        this.period = period;
+        this.unit = unit;
+        this.scheduler = scheduler;
+        this.emitLast = emitLast;
+    }
+    @Override
+    public void subscribeActual(Observer<? super T> t) {
+        SerializedObserver<T> serial = new SerializedObserver<T>(t);
+        if (emitLast) {
+            source.subscribe(new SampleTimedEmitLast<T>(serial, period, unit, scheduler));
+        } else {
+            source.subscribe(new SampleTimedNoLast<T>(serial, period, unit, scheduler));
+        }
+    }
+    abstract static class SampleTimedObserver<T> extends AtomicReference<T> implements Observer<T>, Disposable, Runnable {
+        private static final long serialVersionUID = -3517602651313910099L;
+        final Observer<? super T> actual;
+        final long period;
+        final TimeUnit unit;
+        final Scheduler scheduler;
+        final AtomicReference<Disposable> timer = new AtomicReference<Disposable>();
+        Disposable s;
+        SampleTimedObserver(Observer<? super T> actual, long period, TimeUnit unit, Scheduler scheduler) {
+            this.actual = actual;
+            this.period = period;
+            this.unit = unit;
+            this.scheduler = scheduler;
+        }
+        @Override
+        public void onSubscribe(Disposable s) {
+            if (DisposableHelper.validate(this.s, s)) {
+                this.s = s;
+                actual.onSubscribe(this);
+                Disposable d = scheduler.schedulePeriodicallyDirect(this, period, period, unit);
+                DisposableHelper.replace(timer, d);
+            }
+        }
+        @Override
+        public void onNext(T t) {
+            lazySet(t);
+        }
+        @Override
+        public void onError(Throwable t) {
+            cancelTimer();
+            actual.onError(t);
+        }
+        @Override
+        public void onComplete() {
+            cancelTimer();
+            complete();
+        }
+        void cancelTimer() {
+            DisposableHelper.dispose(timer);
+        }
+        @Override
+        public void dispose() {
+            cancelTimer();
+            s.dispose();
+        }
+        @Override
+        public boolean isDisposed() {
+            return s.isDisposed();
+        }
+        void emit() {
+            T value = getAndSet(null);
+            if (value != null) {
+                actual.onNext(value);
+            }
+        }
+        abstract void complete();
+    }
+    static final class SampleTimedNoLast<T> extends SampleTimedObserver<T> {
+        private static final long serialVersionUID = -7139995637533111443L;
+        SampleTimedNoLast(Observer<? super T> actual, long period, TimeUnit unit, Scheduler scheduler) {
+            super(actual, period, unit, scheduler);
+        }
+        @Override
+        void complete() {
+            actual.onComplete();
+        }
+        @Override
+        public void run() {
+            emit();
+        }
+    }
+    static final class SampleTimedEmitLast<T> extends SampleTimedObserver<T> {
+        private static final long serialVersionUID = -7139995637533111443L;
+        final AtomicInteger wip;
+        SampleTimedEmitLast(Observer<? super T> actual, long period, TimeUnit unit, Scheduler scheduler) {
+            super(actual, period, unit, scheduler);
+            this.wip = new AtomicInteger(1);
+        }
+        @Override
+        void complete() {
+            emit();
+            if (wip.decrementAndGet() == 0) {
+                actual.onComplete();
+            }
+        }
+        @Override
+        public void run() {
+            if (wip.incrementAndGet() == 2) {
+                emit();
+                if (wip.decrementAndGet() == 0) {
+                    actual.onComplete();
+                }
+            }
+        }
+    }
+}",class,
+"    abstract static class SampleTimedObserver<T> extends AtomicReference<T> implements Observer<T>, Disposable, Runnable {
+        private static final long serialVersionUID = -3517602651313910099L;
+        final Observer<? super T> actual;
+        final long period;
+        final TimeUnit unit;
+        final Scheduler scheduler;
+        final AtomicReference<Disposable> timer = new AtomicReference<Disposable>();
+        Disposable s;
+        SampleTimedObserver(Observer<? super T> actual, long period, TimeUnit unit, Scheduler scheduler) {
+            this.actual = actual;
+            this.period = period;
+            this.unit = unit;
+            this.scheduler = scheduler;
+        }
+        @Override
+        public void onSubscribe(Disposable s) {
+            if (DisposableHelper.validate(this.s, s)) {
+                this.s = s;
+                actual.onSubscribe(this);
+                Disposable d = scheduler.schedulePeriodicallyDirect(this, period, period, unit);
+                DisposableHelper.replace(timer, d);
+            }
+        }
+        @Override
+        public void onNext(T t) {
+            lazySet(t);
+        }
+        @Override
+        public void onError(Throwable t) {
+            cancelTimer();
+            actual.onError(t);
+        }
+        @Override
+        public void onComplete() {
+            cancelTimer();
+            complete();
+        }
+        void cancelTimer() {
+            DisposableHelper.dispose(timer);
+        }
+        @Override
+        public void dispose() {
+            cancelTimer();
+            s.dispose();
+        }
+        @Override
+        public boolean isDisposed() {
+            return s.isDisposed();
+        }
+        void emit() {
+            T value = getAndSet(null);
+            if (value != null) {
+                actual.onNext(value);
+            }
+        }
+        abstract void complete();
+    }",class,
+"    static final class SampleTimedNoLast<T> extends SampleTimedObserver<T> {
+        private static final long serialVersionUID = -7139995637533111443L;
+        SampleTimedNoLast(Observer<? super T> actual, long period, TimeUnit unit, Scheduler scheduler) {
+            super(actual, period, unit, scheduler);
+        }
+        @Override
+        void complete() {
+            actual.onComplete();
+        }
+        @Override
+        public void run() {
+            emit();
+        }
+    }",class,
+"    static final class SampleTimedEmitLast<T> extends SampleTimedObserver<T> {
+        private static final long serialVersionUID = -7139995637533111443L;
+        final AtomicInteger wip;
+        SampleTimedEmitLast(Observer<? super T> actual, long period, TimeUnit unit, Scheduler scheduler) {
+            super(actual, period, unit, scheduler);
+            this.wip = new AtomicInteger(1);
+        }
+        @Override
+        void complete() {
+            emit();
+            if (wip.decrementAndGet() == 0) {
+                actual.onComplete();
+            }
+        }
+        @Override
+        public void run() {
+            if (wip.incrementAndGet() == 2) {
+                emit();
+                if (wip.decrementAndGet() == 0) {
+                    actual.onComplete();
+                }
+            }
+        }
+    }",class,
+"    public ObservableSampleTimed(ObservableSource<T> source, long period, TimeUnit unit, Scheduler scheduler, boolean emitLast) {
+        super(source);
+        this.period = period;
+        this.unit = unit;
+        this.scheduler = scheduler;
+        this.emitLast = emitLast;
+    }",method,
+"    @Override
+    public void subscribeActual(Observer<? super T> t) {
+        SerializedObserver<T> serial = new SerializedObserver<T>(t);
+        if (emitLast) {
+            source.subscribe(new SampleTimedEmitLast<T>(serial, period, unit, scheduler));
+        } else {
+            source.subscribe(new SampleTimedNoLast<T>(serial, period, unit, scheduler));
+        }
+    }",method,
+"        if (emitLast) {
+            source.subscribe(new SampleTimedEmitLast<T>(serial, period, unit, scheduler));
+        }",method,
+"        SampleTimedObserver(Observer<? super T> actual, long period, TimeUnit unit, Scheduler scheduler) {
+            this.actual = actual;
+            this.period = period;
+            this.unit = unit;
+            this.scheduler = scheduler;
+        }",method,
+"        @Override
+        public void onSubscribe(Disposable s) {
+            if (DisposableHelper.validate(this.s, s)) {
+                this.s = s;
+                actual.onSubscribe(this);
+                Disposable d = scheduler.schedulePeriodicallyDirect(this, period, period, unit);
+                DisposableHelper.replace(timer, d);
+            }
+        }",method,
+"        @Override
+        public void onNext(T t) {
+            lazySet(t);
+        }",method,
+"        @Override
+        public void onError(Throwable t) {
+            cancelTimer();
+            actual.onError(t);
+        }",method,
+"        @Override
+        public void onComplete() {
+            cancelTimer();
+            complete();
+        }",method,
+"        void cancelTimer() {
+            DisposableHelper.dispose(timer);
+        }",method,
+"        @Override
+        public void dispose() {
+            cancelTimer();
+            s.dispose();
+        }",method,
+"        @Override
+        public boolean isDisposed() {
+            return s.isDisposed();
+        }",method,
+"        void emit() {
+            T value = getAndSet(null);
+            if (value != null) {
+                actual.onNext(value);
+            }
+        }",method,
+"            if (value != null) {
+                actual.onNext(value);
+            }",method,
+"        SampleTimedNoLast(Observer<? super T> actual, long period, TimeUnit unit, Scheduler scheduler) {
+            super(actual, period, unit, scheduler);
+        }",method,
+"        @Override
+        void complete() {
+            actual.onComplete();
+        }",method,
+"        @Override
+        public void run() {
+            emit();
+        }",method,
+"        SampleTimedEmitLast(Observer<? super T> actual, long period, TimeUnit unit, Scheduler scheduler) {
+            super(actual, period, unit, scheduler);
+            this.wip = new AtomicInteger(1);
+        }",method,
+"        @Override
+        void complete() {
+            emit();
+            if (wip.decrementAndGet() == 0) {
+                actual.onComplete();
+            }
+        }",method,
+"        @Override
+        public void run() {
+            if (wip.incrementAndGet() == 2) {
+                emit();
+                if (wip.decrementAndGet() == 0) {
+                    actual.onComplete();
+                }
+            }
+        }",method,
+"public class StructuralSearchUtil {
+  private static final String REG_EXP_META_CHARS = "".$|()[]{}^?*+\\"";
+  private static final Key<StructuralSearchProfile> STRUCTURAL_SEARCH_PROFILE_KEY = new Key<>(""Structural Search Profile"");
+  private static LanguageFileType ourDefaultFileType = null;
+  public static boolean ourUseUniversalMatchingAlgorithm = false;
+  private static StructuralSearchProfile[] ourNewStyleProfiles;
+  private static List<Configuration> ourPredefinedConfigurations = null;
+  private StructuralSearchUtil() {}
+  @Nullable
+  public static StructuralSearchProfile getProfileByPsiElement(@NotNull PsiElement element) {
+    return getProfileByLanguage(element.getLanguage());
+  }
+  @Contract(""null -> false"")
+  public static boolean isIdentifier(PsiElement element) {
+    if (element == null) return false;
+    final StructuralSearchProfile profile = getProfileByPsiElement(element);
+    return profile != null && profile.isIdentifier(element);
+  }
+  public static PsiElement getParentIfIdentifier(PsiElement element) {
+    return !isIdentifier(element) ? element : element.getParent();
+  }
+  @NotNull
+  public static PsiElement getPresentableElement(@NotNull PsiElement element) {
+    final StructuralSearchProfile profile = getProfileByPsiElement(element);
+    if (profile == null) {
+      return element;
+    }
+    return profile.getPresentableElement(element);
+  }
+  private static StructuralSearchProfile[] getNewStyleProfiles() {
+    if (ourNewStyleProfiles == null) {
+      final List<StructuralSearchProfile> list = new ArrayList<>();
+      for (StructuralSearchProfile profile : StructuralSearchProfile.EP_NAME.getExtensions()) {
+        if (profile instanceof StructuralSearchProfileBase) {
+          list.add(profile);
+        }
+      }
+      list.add(new XmlStructuralSearchProfile());
+      ourNewStyleProfiles = list.toArray(new StructuralSearchProfile[list.size()]);
+    }
+    return ourNewStyleProfiles;
+  }
+  private static StructuralSearchProfile[] getProfiles() {
+    return ourUseUniversalMatchingAlgorithm
+           ? getNewStyleProfiles()
+           : StructuralSearchProfile.EP_NAME.getExtensions();
+  }
+  public static FileType getDefaultFileType() {
+    if (ourDefaultFileType == null) {
+      for (StructuralSearchProfile profile : getProfiles()) {
+        ourDefaultFileType = profile.getDefaultFileType(ourDefaultFileType);
+      }
+      if (ourDefaultFileType == null) {
+        ourDefaultFileType = StdFileTypes.XML;
+      }
+    }
+    assert ourDefaultFileType instanceof LanguageFileType : ""file type not valid for structural search: "" + ourDefaultFileType.getName();
+    return ourDefaultFileType;
+  }
+  @TestOnly
+  public static void clearProfileCache(@NotNull Language language) {
+    language.putUserData(STRUCTURAL_SEARCH_PROFILE_KEY, null);
+  }
+  @Nullable
+  public static StructuralSearchProfile getProfileByLanguage(@NotNull Language language) {
+    final StructuralSearchProfile cachedProfile = language.getUserData(STRUCTURAL_SEARCH_PROFILE_KEY);
+    if (cachedProfile != null) return cachedProfile;
+    for (StructuralSearchProfile profile : getProfiles()) {
+      if (profile.isMyLanguage(language)) {
+        language.putUserData(STRUCTURAL_SEARCH_PROFILE_KEY, profile);
+        return profile;
+      }
+    }
+    return null;
+  }
+  public static boolean isTypedVariable(@NotNull final String name) {
+    return name.length() > 1 && name.charAt(0)=='$' && name.charAt(name.length()-1)=='$';
+  }
+  @Nullable
+  public static StructuralSearchProfile getProfileByFileType(FileType fileType) {
+    if (!(fileType instanceof LanguageFileType)) {
+      return null;
+    }
+    final LanguageFileType languageFileType = (LanguageFileType)fileType;
+    return getProfileByLanguage(languageFileType.getLanguage());
+  }
+  @NotNull
+  public static FileType[] getSuitableFileTypes() {
+    Set<FileType> allFileTypes = new HashSet<>();
+    Collections.addAll(allFileTypes, FileTypeManager.getInstance().getRegisteredFileTypes());
+    for (Language language : Language.getRegisteredLanguages()) {
+      FileType fileType = language.getAssociatedFileType();
+      if (fileType != null) {
+        allFileTypes.add(fileType);
+      }
+    }
+    List<FileType> result = new ArrayList<>();
+    for (FileType fileType : allFileTypes) {
+      if (fileType instanceof LanguageFileType) {
+        result.add(fileType);
+      }
+    }
+    return result.toArray(new FileType[result.size()]);
+  }
+  public static boolean containsRegExpMetaChar(String s) {
+    return s.chars().anyMatch(StructuralSearchUtil::isRegExpMetaChar);
+  }
+  private static boolean isRegExpMetaChar(int ch) {
+    return REG_EXP_META_CHARS.indexOf(ch) >= 0;
+  }
+  public static String shieldRegExpMetaChars(String word) {
+    final StringBuilder buf = new StringBuilder(word.length());
+    for (int i = 0; i < word.length(); ++i) {
+      if (isRegExpMetaChar(word.charAt(i))) {
+        buf.append(""\\"");
+      }
+      buf.append(word.charAt(i));
+    }
+    return buf.toString();
+  }
+  public static List<Configuration> getPredefinedTemplates() {
+    if (ourPredefinedConfigurations == null) {
+      final List<Configuration> result = new ArrayList<>();
+      for (StructuralSearchProfile profile : getProfiles()) {
+        Collections.addAll(result, profile.getPredefinedTemplates());
+      }
+      Collections.sort(result);
+      ourPredefinedConfigurations = Collections.unmodifiableList(result);
+    }
+    return ourPredefinedConfigurations;
+  }
+  public static boolean isDocCommentOwner(PsiElement match) {
+    final StructuralSearchProfile profile = getProfileByPsiElement(match);
+    return profile != null && profile.isDocCommentOwner(match);
+  }
+}",class,
+"public class UnsupportedPatternException extends StructuralSearchException {
+  public UnsupportedPatternException(String _pattern) {
+    super(_pattern);
+  }
+}",class,
+  private StructuralSearchUtil() {},method,
+"  @Nullable
+  public static StructuralSearchProfile getProfileByPsiElement(@NotNull PsiElement element) {
+    return getProfileByLanguage(element.getLanguage());
+  }",method,
+"  @Contract(""null -> false"")
+  public static boolean isIdentifier(PsiElement element) {
+    if (element == null) return false;
+    final StructuralSearchProfile profile = getProfileByPsiElement(element);
+    return profile != null && profile.isIdentifier(element);
+  }",method,
+"  public static PsiElement getParentIfIdentifier(PsiElement element) {
+    return !isIdentifier(element) ? element : element.getParent();
+  }",method,
+"  @NotNull
+  public static PsiElement getPresentableElement(@NotNull PsiElement element) {
+    final StructuralSearchProfile profile = getProfileByPsiElement(element);
+    if (profile == null) {
+      return element;
+    }
+    return profile.getPresentableElement(element);
+  }",method,
+"    if (profile == null) {
+      return element;
+    }",method,
+"  private static StructuralSearchProfile[] getNewStyleProfiles() {
+    if (ourNewStyleProfiles == null) {
+      final List<StructuralSearchProfile> list = new ArrayList<>();
+      for (StructuralSearchProfile profile : StructuralSearchProfile.EP_NAME.getExtensions()) {
+        if (profile instanceof StructuralSearchProfileBase) {
+          list.add(profile);
+        }
+      }
+      list.add(new XmlStructuralSearchProfile());
+      ourNewStyleProfiles = list.toArray(new StructuralSearchProfile[list.size()]);
+    }
+    return ourNewStyleProfiles;
+  }",method,
+"    if (ourNewStyleProfiles == null) {
+      final List<StructuralSearchProfile> list = new ArrayList<>();
+      for (StructuralSearchProfile profile : StructuralSearchProfile.EP_NAME.getExtensions()) {
+        if (profile instanceof StructuralSearchProfileBase) {
+          list.add(profile);
+        }
+      }
+      list.add(new XmlStructuralSearchProfile());
+      ourNewStyleProfiles = list.toArray(new StructuralSearchProfile[list.size()]);
+    }",method,
+"        if (profile instanceof StructuralSearchProfileBase) {
+          list.add(profile);
+        }",method,
+"  private static StructuralSearchProfile[] getProfiles() {
+    return ourUseUniversalMatchingAlgorithm
+           ? getNewStyleProfiles()
+           : StructuralSearchProfile.EP_NAME.getExtensions();
+  }",method,
+"  public static FileType getDefaultFileType() {
+    if (ourDefaultFileType == null) {
+      for (StructuralSearchProfile profile : getProfiles()) {
+        ourDefaultFileType = profile.getDefaultFileType(ourDefaultFileType);
+      }
+      if (ourDefaultFileType == null) {
+        ourDefaultFileType = StdFileTypes.XML;
+      }
+    }
+    assert ourDefaultFileType instanceof LanguageFileType : ""file type not valid for structural search: "" + ourDefaultFileType.getName();
+    return ourDefaultFileType;
+  }",method,
+"    if (ourDefaultFileType == null) {
+      for (StructuralSearchProfile profile : getProfiles()) {
+        ourDefaultFileType = profile.getDefaultFileType(ourDefaultFileType);
+      }
+      if (ourDefaultFileType == null) {
+        ourDefaultFileType = StdFileTypes.XML;
+      }
+    }",method,
+"      if (ourDefaultFileType == null) {
+        ourDefaultFileType = StdFileTypes.XML;
+      }",method,
+"  @TestOnly
+  public static void clearProfileCache(@NotNull Language language) {
+    language.putUserData(STRUCTURAL_SEARCH_PROFILE_KEY, null);
+  }",method,
+"  @Nullable
+  public static StructuralSearchProfile getProfileByLanguage(@NotNull Language language) {
+    final StructuralSearchProfile cachedProfile = language.getUserData(STRUCTURAL_SEARCH_PROFILE_KEY);
+    if (cachedProfile != null) return cachedProfile;
+    for (StructuralSearchProfile profile : getProfiles()) {
+      if (profile.isMyLanguage(language)) {
+        language.putUserData(STRUCTURAL_SEARCH_PROFILE_KEY, profile);
+        return profile;
+      }
+    }
+    return null;
+  }",method,
+"  public static boolean isTypedVariable(@NotNull final String name) {
+    return name.length() > 1 && name.charAt(0)=='$' && name.charAt(name.length()-1)=='$';
+  }",method,
+"  @Nullable
+  public static StructuralSearchProfile getProfileByFileType(FileType fileType) {
+    if (!(fileType instanceof LanguageFileType)) {
+      return null;
+    }
+    final LanguageFileType languageFileType = (LanguageFileType)fileType;
+    return getProfileByLanguage(languageFileType.getLanguage());
+  }",method,
+"  @NotNull
+  public static FileType[] getSuitableFileTypes() {
+    Set<FileType> allFileTypes = new HashSet<>();
+    Collections.addAll(allFileTypes, FileTypeManager.getInstance().getRegisteredFileTypes());
+    for (Language language : Language.getRegisteredLanguages()) {
+      FileType fileType = language.getAssociatedFileType();
+      if (fileType != null) {
+        allFileTypes.add(fileType);
+      }
+    }
+    List<FileType> result = new ArrayList<>();
+    for (FileType fileType : allFileTypes) {
+      if (fileType instanceof LanguageFileType) {
+        result.add(fileType);
+      }
+    }
+    return result.toArray(new FileType[result.size()]);
+  }",method,
+"      if (fileType != null) {
+        allFileTypes.add(fileType);
+      }",method,
+"    for (FileType fileType : allFileTypes) {
+      if (fileType instanceof LanguageFileType) {
+        result.add(fileType);
+      }
+    }",method,
+"      if (fileType instanceof LanguageFileType) {
+        result.add(fileType);
+      }",method,
+"  public static boolean containsRegExpMetaChar(String s) {
+    return s.chars().anyMatch(StructuralSearchUtil::isRegExpMetaChar);
+  }",method,
+"  private static boolean isRegExpMetaChar(int ch) {
+    return REG_EXP_META_CHARS.indexOf(ch) >= 0;
+  }",method,
+"  public static String shieldRegExpMetaChars(String word) {
+    final StringBuilder buf = new StringBuilder(word.length());
+    for (int i = 0; i < word.length(); ++i) {
+      if (isRegExpMetaChar(word.charAt(i))) {
+        buf.append(""\\"");
+      }
+      buf.append(word.charAt(i));
+    }
+    return buf.toString();
+  }",method,
+"  public static List<Configuration> getPredefinedTemplates() {
+    if (ourPredefinedConfigurations == null) {
+      final List<Configuration> result = new ArrayList<>();
+      for (StructuralSearchProfile profile : getProfiles()) {
+        Collections.addAll(result, profile.getPredefinedTemplates());
+      }
+      Collections.sort(result);
+      ourPredefinedConfigurations = Collections.unmodifiableList(result);
+    }
+    return ourPredefinedConfigurations;
+  }",method,
+"    if (ourPredefinedConfigurations == null) {
+      final List<Configuration> result = new ArrayList<>();
+      for (StructuralSearchProfile profile : getProfiles()) {
+        Collections.addAll(result, profile.getPredefinedTemplates());
+      }
+      Collections.sort(result);
+      ourPredefinedConfigurations = Collections.unmodifiableList(result);
+    }",method,
+"  public static boolean isDocCommentOwner(PsiElement match) {
+    final StructuralSearchProfile profile = getProfileByPsiElement(match);
+    return profile != null && profile.isDocCommentOwner(match);
+  }",method,
+"  public UnsupportedPatternException(String _pattern) {
+    super(_pattern);
+  }",method,
+"public class Play25CallAdapterFactory extends CallAdapter.Factory {
+    private Function<RuntimeException, RuntimeException> exceptionConverter = Function.identity();
+    public Play25CallAdapterFactory() {
+    }
+    public Play25CallAdapterFactory(
+            Function<RuntimeException, RuntimeException> exceptionConverter) {
+        this.exceptionConverter = exceptionConverter;
+    }
+    @Override
+    public CallAdapter<?, ?> get(Type returnType, Annotation[] annotations, Retrofit retrofit) {
+        if (!(returnType instanceof ParameterizedType)) {
+            return null;
+        }
+        ParameterizedType type = (ParameterizedType) returnType;
+        if (type.getRawType() != CompletionStage.class) {
+            return null;
+        }
+        return createAdapter((ParameterizedType) returnType);
+    }
+    private CallAdapter<?, CompletionStage<?>> createAdapter(ParameterizedType returnType) {
+        // Get CompletionStage type argument
+        Type[] types = returnType.getActualTypeArguments();
+        if (types.length != 1) {
+            throw new IllegalStateException(""Must be exactly one type parameter"");
+        }
+        Type resultType = types[0];
+        Class<?> rawTypeParam = getRawType(resultType);
+        boolean includeResponse = false;
+        if (rawTypeParam == Response.class) {
+            if (!(resultType instanceof ParameterizedType)) {
+                throw new IllegalStateException(""Response must be parameterized""
+                        + "" as Response<T>"");
+            }
+            resultType = ((ParameterizedType) resultType).getActualTypeArguments()[0];
+            includeResponse = true;
+        }
+        return new ValueAdapter(resultType, includeResponse, exceptionConverter);
+    }
+    private static final class ValueAdapter<R> implements CallAdapter<R, CompletionStage<R>> {
+        private final Type responseType;
+        private final boolean includeResponse;
+        private Function<RuntimeException, RuntimeException> exceptionConverter;
+        ValueAdapter(Type responseType, boolean includeResponse,
+                     Function<RuntimeException, RuntimeException> exceptionConverter) {
+            this.responseType = responseType;
+            this.includeResponse = includeResponse;
+            this.exceptionConverter = exceptionConverter;
+        }
+        @Override
+        public Type responseType() {
+            return responseType;
+        }
+        @Override
+        public CompletionStage<R> adapt(final Call<R> call) {
+            final CompletableFuture<R> promise = new CompletableFuture();
+            call.enqueue(new Callback<R>() {
+                @Override
+                public void onResponse(Call<R> call, Response<R> response) {
+                    if (response.isSuccessful()) {
+                        if (includeResponse) {
+                            promise.complete((R) response);
+                        } else {
+                            promise.complete(response.body());
+                        }
+                    } else {
+                        promise.completeExceptionally(exceptionConverter.apply(new HttpException(response)));
+                    }
+                }
+                @Override
+                public void onFailure(Call<R> call, Throwable t) {
+                    promise.completeExceptionally(t);
+                }
+            });
+            return promise;
+        }
+    }
+}",class,
+"    private static final class ValueAdapter<R> implements CallAdapter<R, CompletionStage<R>> {
+        private final Type responseType;
+        private final boolean includeResponse;
+        private Function<RuntimeException, RuntimeException> exceptionConverter;
+        ValueAdapter(Type responseType, boolean includeResponse,
+                     Function<RuntimeException, RuntimeException> exceptionConverter) {
+            this.responseType = responseType;
+            this.includeResponse = includeResponse;
+            this.exceptionConverter = exceptionConverter;
+        }
+        @Override
+        public Type responseType() {
+            return responseType;
+        }
+        @Override
+        public CompletionStage<R> adapt(final Call<R> call) {
+            final CompletableFuture<R> promise = new CompletableFuture();
+            call.enqueue(new Callback<R>() {
+                @Override
+                public void onResponse(Call<R> call, Response<R> response) {
+                    if (response.isSuccessful()) {
+                        if (includeResponse) {
+                            promise.complete((R) response);
+                        } else {
+                            promise.complete(response.body());
+                        }
+                    } else {
+                        promise.completeExceptionally(exceptionConverter.apply(new HttpException(response)));
+                    }
+                }
+                @Override
+                public void onFailure(Call<R> call, Throwable t) {
+                    promise.completeExceptionally(t);
+                }
+            });
+            return promise;
+        }
+    }",class,
+"    public Play25CallAdapterFactory() {
+    }",method,
+"    public Play25CallAdapterFactory(
+            Function<RuntimeException, RuntimeException> exceptionConverter) {
+        this.exceptionConverter = exceptionConverter;
+    }",method,
+"    @Override
+    public CallAdapter<?, ?> get(Type returnType, Annotation[] annotations, Retrofit retrofit) {
+        if (!(returnType instanceof ParameterizedType)) {
+            return null;
+        }
+        ParameterizedType type = (ParameterizedType) returnType;
+        if (type.getRawType() != CompletionStage.class) {
+            return null;
+        }
+        return createAdapter((ParameterizedType) returnType);
+    }",method,
+"    private CallAdapter<?, CompletionStage<?>> createAdapter(ParameterizedType returnType) {
+        // Get CompletionStage type argument
+        Type[] types = returnType.getActualTypeArguments();
+        if (types.length != 1) {
+            throw new IllegalStateException(""Must be exactly one type parameter"");
+        }
+        Type resultType = types[0];
+        Class<?> rawTypeParam = getRawType(resultType);
+        boolean includeResponse = false;
+        if (rawTypeParam == Response.class) {
+            if (!(resultType instanceof ParameterizedType)) {
+                throw new IllegalStateException(""Response must be parameterized""
+                        + "" as Response<T>"");
+            }
+            resultType = ((ParameterizedType) resultType).getActualTypeArguments()[0];
+            includeResponse = true;
+        }
+        return new ValueAdapter(resultType, includeResponse, exceptionConverter);
+    }",method,
+"        if (types.length != 1) {
+            throw new IllegalStateException(""Must be exactly one type parameter"");
+        }",method,
+"        if (rawTypeParam == Response.class) {
+            if (!(resultType instanceof ParameterizedType)) {
+                throw new IllegalStateException(""Response must be parameterized""
+                        + "" as Response<T>"");
+            }
+            resultType = ((ParameterizedType) resultType).getActualTypeArguments()[0];
+            includeResponse = true;
+        }",method,
+"        ValueAdapter(Type responseType, boolean includeResponse,
+                     Function<RuntimeException, RuntimeException> exceptionConverter) {
+            this.responseType = responseType;
+            this.includeResponse = includeResponse;
+            this.exceptionConverter = exceptionConverter;
+        }",method,
+"        @Override
+        public Type responseType() {
+            return responseType;
+        }",method,
+"        @Override
+        public CompletionStage<R> adapt(final Call<R> call) {
+            final CompletableFuture<R> promise = new CompletableFuture();
+            call.enqueue(new Callback<R>() {
+                @Override
+                public void onResponse(Call<R> call, Response<R> response) {
+                    if (response.isSuccessful()) {
+                        if (includeResponse) {
+                            promise.complete((R) response);
+                        } else {
+                            promise.complete(response.body());
+                        }
+                    } else {
+                        promise.completeExceptionally(exceptionConverter.apply(new HttpException(response)));
+                    }
+                }
+                @Override
+                public void onFailure(Call<R> call, Throwable t) {
+                    promise.completeExceptionally(t);
+                }
+            });
+            return promise;
+        }",method,
+"            call.enqueue(new Callback<R>() {
+                @Override
+                public void onResponse(Call<R> call, Response<R> response) {
+                    if (response.isSuccessful()) {
+                        if (includeResponse) {
+                            promise.complete((R) response);
+                        } else {
+                            promise.complete(response.body());
+                        }
+                    } else {
+                        promise.completeExceptionally(exceptionConverter.apply(new HttpException(response)));
+                    }
+                }
+                @Override
+                public void onFailure(Call<R> call, Throwable t) {
+                    promise.completeExceptionally(t);
+                }
+            }",method,
+"                @Override
+                public void onResponse(Call<R> call, Response<R> response) {
+                    if (response.isSuccessful()) {
+                        if (includeResponse) {
+                            promise.complete((R) response);
+                        } else {
+                            promise.complete(response.body());
+                        }
+                    } else {
+                        promise.completeExceptionally(exceptionConverter.apply(new HttpException(response)));
+                    }
+                }",method,
+"                        if (includeResponse) {
+                            promise.complete((R) response);
+                        }",method,
+"                @Override
+                public void onFailure(Call<R> call, Throwable t) {
+                    promise.completeExceptionally(t);
+                }",method,
+"public class SignatureTest extends TestCase {
+    private static final Signature A = new Signature(""308201D33082013CA0030201020219373565373461363A31336534333439623635343A2D38303030300D06092A864886F70D01010505003017311530130603550403130C6269736F6E416E64726F6964301E170D3133303432343232323134345A170D3338303432353232323134345A3017311530130603550403130C6269736F6E416E64726F696430819F300D06092A864886F70D010101050003818D00308189028181009214CE08563B77FF3128D3A303254287301263A842D19D5D4EAF024EBEDF864F3802C215B2F3EA85432F3EFF1DB8F591B0854FA7C1C6E4A8A85132FA762CC2D12A8EBD34D8B15C241A91716577F03BB3D2AFFC24367AB1E5E03C387891E34E646E47FAD75B178C1FD077B9199B3ABA6D48E2464801F6592E98245124046E51A90203010001A317301530130603551D25040C300A06082B06010505070303300D06092A864886F70D0101050500038181000B71581EDDC20E8C18C1C140BEE72501A97E04CA12030C51D4C38767B6A9FB5155CF4858C565EF77E5E2C22687C1AAB04BBA2B81C9A73CFB8DE118B624094AAE43D8FC2D585D90839DAFA5033AF7B8C0DE27E6ADAE44C40508CE493E9C80F1F5DA9EC87ECA1844BAB12C83CC8EB5937E1BE36A42CD22086A826E00FB763CD577"");
+    private static final Signature M = new Signature(""308201D43082013CA0030201020219373565373461363A31336534333439623635343A2D38303030300D06092A864886F70D01010505003017311530130603550403130C6269736F6E416E64726F6964301E170D3133303432343232323134345A170D3338303432353232323134345A3017311530130603550403130C6269736F6E416E64726F696430819F300D06092A864886F70D010101050003818D00308189028181009214CE08563B77FF3128D3A303254287301263A842D19D5D4EAF024EBEDF864F3802C215B2F3EA85432F3EFF1DB8F591B0854FA7C1C6E4A8A85132FA762CC2D12A8EBD34D8B15C241A91716577F03BB3D2AFFC24367AB1E5E03C387891E34E646E47FAD75B178C1FD077B9199B3ABA6D48E2464801F6592E98245124046E51A90203010001A317301530130603551D25040C300A06082B06010505070303300D06092A864886F70D010105050003820081000B71581EDDC20E8C18C1C140BEE72501A97E04CA12030C51D4C38767B6A9FB5155CF4858C565EF77E5E2C22687C1AAB04BBA2B81C9A73CFB8DE118B624094AAE43D8FC2D585D90839DAFA5033AF7B8C0DE27E6ADAE44C40508CE493E9C80F1F5DA9EC87ECA1844BAB12C83CC8EB5937E1BE36A42CD22086A826E00FB763CD577"");
+    private static final Signature B = new Signature(""308204a830820390a003020102020900a1573d0f45bea193300d06092a864886f70d0101050500308194310b3009060355040613025553311330110603550408130a43616c69666f726e6961311630140603550407130d4d6f756e7461696e20566965773110300e060355040a1307416e64726f69643110300e060355040b1307416e64726f69643110300e06035504031307416e64726f69643122302006092a864886f70d0109011613616e64726f696440616e64726f69642e636f6d301e170d3131303931393138343232355a170d3339303230343138343232355a308194310b3009060355040613025553311330110603550408130a43616c69666f726e6961311630140603550407130d4d6f756e7461696e20566965773110300e060355040a1307416e64726f69643110300e060355040b1307416e64726f69643110300e06035504031307416e64726f69643122302006092a864886f70d0109011613616e64726f696440616e64726f69642e636f6d30820120300d06092a864886f70d01010105000382010d00308201080282010100de1b51336afc909d8bcca5920fcdc8940578ec5c253898930e985481cfdea75ba6fc54b1f7bb492a03d98db471ab4200103a8314e60ee25fef6c8b83bc1b2b45b084874cffef148fa2001bb25c672b6beba50b7ac026b546da762ea223829a22b80ef286131f059d2c9b4ca71d54e515a8a3fd6bf5f12a2493dfc2619b337b032a7cf8bbd34b833f2b93aeab3d325549a93272093943bb59dfc0197ae4861ff514e019b73f5cf10023ad1a032adb4b9bbaeb4debecb4941d6a02381f1165e1ac884c1fca9525c5854dce2ad8ec839b8ce78442c16367efc07778a337d3ca2cdf9792ac722b95d67c345f1c00976ec372f02bfcbef0262cc512a6845e71cfea0d020103a381fc3081f9301d0603551d0e0416041478a0fc4517fb70ff52210df33c8d32290a44b2bb3081c90603551d230481c13081be801478a0fc4517fb70ff52210df33c8d32290a44b2bba1819aa48197308194310b3009060355040613025553311330110603550408130a43616c69666f726e6961311630140603550407130d4d6f756e7461696e20566965773110300e060355040a1307416e64726f69643110300e060355040b1307416e64726f69643110300e06035504031307416e64726f69643122302006092a864886f70d0109011613616e64726f696440616e64726f69642e636f6d820900a1573d0f45bea193300c0603551d13040530030101ff300d06092a864886f70d01010505000382010100977302dfbf668d7c61841c9c78d2563bcda1b199e95e6275a799939981416909722713531157f3cdcfea94eea7bb79ca3ca972bd8058a36ad1919291df42d7190678d4ea47a4b9552c9dfb260e6d0d9129b44615cd641c1080580e8a990dd768c6ab500c3b964e185874e4105109d94c5bd8c405deb3cf0f7960a563bfab58169a956372167a7e2674a04c4f80015d8f7869a7a4139aecbbdca2abc294144ee01e4109f0e47a518363cf6e9bf41f7560e94bdd4a5d085234796b05c7a1389adfd489feec2a107955129d7991daa49afb3d327dc0dc4fe959789372b093a89c8dbfa41554f771c18015a6cb242a17e04d19d55d3b4664eae12caf2a11cd2b836e"");
+    public void testExactlyEqual() throws Exception {
+        assertTrue(Signature.areExactMatch(asArray(A), asArray(A)));
+        assertTrue(Signature.areExactMatch(asArray(M), asArray(M)));
+        assertFalse(Signature.areExactMatch(asArray(A), asArray(B)));
+        assertFalse(Signature.areExactMatch(asArray(A), asArray(M)));
+        assertFalse(Signature.areExactMatch(asArray(M), asArray(A)));
+        assertTrue(Signature.areExactMatch(asArray(A, M), asArray(M, A)));
+    }
+    public void testEffectiveMatch() throws Exception {
+        assertTrue(Signature.areEffectiveMatch(asArray(A), asArray(A)));
+        assertTrue(Signature.areEffectiveMatch(asArray(M), asArray(M)));
+        assertFalse(Signature.areEffectiveMatch(asArray(A), asArray(B)));
+        assertTrue(Signature.areEffectiveMatch(asArray(A), asArray(M)));
+        assertTrue(Signature.areEffectiveMatch(asArray(M), asArray(A)));
+        assertTrue(Signature.areEffectiveMatch(asArray(A, M), asArray(M, A)));
+        assertTrue(Signature.areEffectiveMatch(asArray(A, B), asArray(M, B)));
+        assertFalse(Signature.areEffectiveMatch(asArray(A, M), asArray(A, B)));
+    }
+    private static Signature[] asArray(Signature... s) {
+        return s;
+    }
+}",class,
+"    public void testExactlyEqual() throws Exception {
+        assertTrue(Signature.areExactMatch(asArray(A), asArray(A)));
+        assertTrue(Signature.areExactMatch(asArray(M), asArray(M)));
+        assertFalse(Signature.areExactMatch(asArray(A), asArray(B)));
+        assertFalse(Signature.areExactMatch(asArray(A), asArray(M)));
+        assertFalse(Signature.areExactMatch(asArray(M), asArray(A)));
+        assertTrue(Signature.areExactMatch(asArray(A, M), asArray(M, A)));
+    }",method,
+"    public void testEffectiveMatch() throws Exception {
+        assertTrue(Signature.areEffectiveMatch(asArray(A), asArray(A)));
+        assertTrue(Signature.areEffectiveMatch(asArray(M), asArray(M)));
+        assertFalse(Signature.areEffectiveMatch(asArray(A), asArray(B)));
+        assertTrue(Signature.areEffectiveMatch(asArray(A), asArray(M)));
+        assertTrue(Signature.areEffectiveMatch(asArray(M), asArray(A)));
+        assertTrue(Signature.areEffectiveMatch(asArray(A, M), asArray(M, A)));
+        assertTrue(Signature.areEffectiveMatch(asArray(A, B), asArray(M, B)));
+        assertFalse(Signature.areEffectiveMatch(asArray(A, M), asArray(A, B)));
+    }",method,
+"    private static Signature[] asArray(Signature... s) {
+        return s;
+    }",method,
+"public abstract class LookupSuperMethodNode extends RubyNode {
+    @Child private MetaClassNode metaClassNode = MetaClassNodeGen.create(null);
+    public abstract InternalMethod executeLookupSuperMethod(VirtualFrame frame, Object self);
+    // The check for same metaClass is overly restrictive,
+    // but seems the be the only reasonable check in term of performance.
+    // The ideal condition would be to check if both ancestor lists starting at
+    // the current method's module are identical, which is non-trivial
+    // if the current method's module is an (included) module and not a class.
+    @Specialization(guards = {
+            ""getCurrentMethod(frame) == currentMethod"",
+            ""metaClass(self) == selfMetaClass""
+    },
+            assumptions = ""superMethod.getAssumptions()"",
+            limit = ""getCacheLimit()"")
+    protected InternalMethod lookupSuperMethodCachedDynamicObject(VirtualFrame frame, DynamicObject self,
+            @Cached(""getCurrentMethod(frame)"") InternalMethod currentMethod,
+            @Cached(""metaClass(self)"") DynamicObject selfMetaClass,
+            @Cached(""doLookup(currentMethod, selfMetaClass)"") MethodLookupResult superMethod) {
+        return superMethod.getMethod();
+    }
+    @Specialization
+    protected InternalMethod lookupSuperMethodUncached(VirtualFrame frame, Object self) {
+        final InternalMethod currentMethod = getCurrentMethod(frame);
+        final DynamicObject selfMetaClass = metaClass(self);
+        return doLookup(currentMethod, selfMetaClass).getMethod();
+    }
+    protected InternalMethod getCurrentMethod(VirtualFrame frame) {
+        return RubyArguments.getMethod(frame);
+    }
+    protected DynamicObject metaClass(Object object) {
+        return metaClassNode.executeMetaClass(object);
+    }
+    @TruffleBoundary
+    protected MethodLookupResult doLookup(InternalMethod currentMethod, DynamicObject selfMetaClass) {
+        assert RubyGuards.isRubyClass(selfMetaClass);
+        MethodLookupResult superMethod = ModuleOperations.lookupSuperMethod(currentMethod, selfMetaClass);
+        // TODO (eregon, 12 June 2015): Is this correct?
+        if (!superMethod.isDefined()) {
+            return superMethod.withNoMethod();
+        }
+        return superMethod;
+    }
+    protected int getCacheLimit() {
+        return getContext().getOptions().METHOD_LOOKUP_CACHE;
+    }
+}",class,
+"    @Specialization
+    protected InternalMethod lookupSuperMethodUncached(VirtualFrame frame, Object self) {
+        final InternalMethod currentMethod = getCurrentMethod(frame);
+        final DynamicObject selfMetaClass = metaClass(self);
+        return doLookup(currentMethod, selfMetaClass).getMethod();
+    }",method,
+"    protected InternalMethod getCurrentMethod(VirtualFrame frame) {
+        return RubyArguments.getMethod(frame);
+    }",method,
+"    protected DynamicObject metaClass(Object object) {
+        return metaClassNode.executeMetaClass(object);
+    }",method,
+"    @TruffleBoundary
+    protected MethodLookupResult doLookup(InternalMethod currentMethod, DynamicObject selfMetaClass) {
+        assert RubyGuards.isRubyClass(selfMetaClass);
+        MethodLookupResult superMethod = ModuleOperations.lookupSuperMethod(currentMethod, selfMetaClass);
+        // TODO (eregon, 12 June 2015): Is this correct?
+        if (!superMethod.isDefined()) {
+            return superMethod.withNoMethod();
+        }
+        return superMethod;
+    }",method,
+"    protected int getCacheLimit() {
+        return getContext().getOptions().METHOD_LOOKUP_CACHE;
+    }",method,
+"public abstract class DownloadableLibraryType extends LibraryType<LibraryVersionProperties> {
+  protected final Icon myIcon;
+  private final String myLibraryCategoryName;
+  private final DownloadableLibraryDescription myLibraryDescription;
+  public DownloadableLibraryType(@NotNull String libraryCategoryName,
+                                          @NotNull String libraryTypeId,
+                                          @NotNull String groupId,
+                                          @NotNull Icon icon,
+                                          @NotNull URL... localUrls) {
+    super(new PersistentLibraryKind<LibraryVersionProperties>(libraryTypeId) {
+      @NotNull
+      @Override
+      public LibraryVersionProperties createDefaultProperties() {
+        return new LibraryVersionProperties();
+      }
+    });
+    myLibraryCategoryName = libraryCategoryName;
+    myLibraryDescription = DownloadableLibraryService.getInstance().createLibraryDescription(groupId, localUrls);
+    myIcon = icon;
+  }
+  @Nullable
+  private static LibraryVersionProperties detectVersion(List<VirtualFile> classesRoots, String detectionClass) {
+    if (!LibraryUtil.isClassAvailableInLibrary(classesRoots, detectionClass)) {
+      return null;
+    }
+    final String version = JarVersionDetectionUtil.detectJarVersion(detectionClass, classesRoots);
+    return new LibraryVersionProperties(version);
+  }
+  @Override
+  public String getCreateActionName() {
+    return null;
+  }
+  @Override
+  public NewLibraryConfiguration createNewLibrary(@NotNull JComponent parentComponent,
+                                                  @Nullable VirtualFile contextDirectory,
+                                                  @NotNull Project project) {
+    return null;
+  }
+  @NotNull
+  public DownloadableLibraryDescription getLibraryDescription() {
+    return myLibraryDescription;
+  }
+  public String getLibraryCategoryName() {
+    return myLibraryCategoryName;
+  }
+  @Override
+  public String getDescription(@NotNull LibraryVersionProperties properties) {
+    final String versionString = properties.getVersionString();
+    return StringUtil.capitalize(myLibraryCategoryName) + "" library"" + (versionString != null ? "" of version "" + versionString : """");
+  }
+  @Override
+  public LibraryPropertiesEditor createPropertiesEditor(@NotNull LibraryEditorComponent<LibraryVersionProperties> editorComponent) {
+    return DownloadableLibraryService.getInstance().createDownloadableLibraryEditor(myLibraryDescription, editorComponent, this);
+  }
+  @NotNull
+  public Icon getIcon() {
+    return myIcon;
+  }
+  protected abstract String[] getDetectionClassNames();
+  @Override
+  public LibraryVersionProperties detect(@NotNull List<VirtualFile> classesRoots) {
+    for (String className : getDetectionClassNames()) {
+      final LibraryVersionProperties versionProperties = detectVersion(classesRoots, className);
+      if (versionProperties != null) return versionProperties;
+    }
+    return null;
+  }
+}",class,
+"  public DownloadableLibraryType(@NotNull String libraryCategoryName,
+                                          @NotNull String libraryTypeId,
+                                          @NotNull String groupId,
+                                          @NotNull Icon icon,
+                                          @NotNull URL... localUrls) {
+    super(new PersistentLibraryKind<LibraryVersionProperties>(libraryTypeId) {
+      @NotNull
+      @Override
+      public LibraryVersionProperties createDefaultProperties() {
+        return new LibraryVersionProperties();
+      }
+    });
+    myLibraryCategoryName = libraryCategoryName;
+    myLibraryDescription = DownloadableLibraryService.getInstance().createLibraryDescription(groupId, localUrls);
+    myIcon = icon;
+  }",method,
+"    super(new PersistentLibraryKind<LibraryVersionProperties>(libraryTypeId) {
+      @NotNull
+      @Override
+      public LibraryVersionProperties createDefaultProperties() {
+        return new LibraryVersionProperties();
+      }
+    }",method,
+"      @NotNull
+      @Override
+      public LibraryVersionProperties createDefaultProperties() {
+        return new LibraryVersionProperties();
+      }",method,
+"  @Nullable
+  private static LibraryVersionProperties detectVersion(List<VirtualFile> classesRoots, String detectionClass) {
+    if (!LibraryUtil.isClassAvailableInLibrary(classesRoots, detectionClass)) {
+      return null;
+    }
+    final String version = JarVersionDetectionUtil.detectJarVersion(detectionClass, classesRoots);
+    return new LibraryVersionProperties(version);
+  }",method,
+"  @Override
+  public String getCreateActionName() {
+    return null;
+  }",method,
+"  @Override
+  public NewLibraryConfiguration createNewLibrary(@NotNull JComponent parentComponent,
+                                                  @Nullable VirtualFile contextDirectory,
+                                                  @NotNull Project project) {
+    return null;
+  }",method,
+"  @NotNull
+  public DownloadableLibraryDescription getLibraryDescription() {
+    return myLibraryDescription;
+  }",method,
+"  public String getLibraryCategoryName() {
+    return myLibraryCategoryName;
+  }",method,
+"  @Override
+  public String getDescription(@NotNull LibraryVersionProperties properties) {
+    final String versionString = properties.getVersionString();
+    return StringUtil.capitalize(myLibraryCategoryName) + "" library"" + (versionString != null ? "" of version "" + versionString : """");
+  }",method,
+"  @Override
+  public LibraryPropertiesEditor createPropertiesEditor(@NotNull LibraryEditorComponent<LibraryVersionProperties> editorComponent) {
+    return DownloadableLibraryService.getInstance().createDownloadableLibraryEditor(myLibraryDescription, editorComponent, this);
+  }",method,
+"  @NotNull
+  public Icon getIcon() {
+    return myIcon;
+  }",method,
+"  @Override
+  public LibraryVersionProperties detect(@NotNull List<VirtualFile> classesRoots) {
+    for (String className : getDetectionClassNames()) {
+      final LibraryVersionProperties versionProperties = detectVersion(classesRoots, className);
+      if (versionProperties != null) return versionProperties;
+    }
+    return null;
+  }",method,
+"                                          @NotNull String libraryTypeId,
+                                          @NotNull String groupId,
+                                          @NotNull Icon icon,
+                                          @NotNull URL... localUrls) {
+    super(new PersistentLibraryKind<LibraryVersionProperties>(libraryTypeId) {
+      @NotNull
+      @Override
+      public LibraryVersionProperties createDefaultProperties() {
+        return new LibraryVersionProperties();
+      }
+    }",method,

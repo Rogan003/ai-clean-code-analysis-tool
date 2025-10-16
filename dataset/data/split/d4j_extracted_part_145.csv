@@ -1,0 +1,1231 @@
+code_snippet,type,score
+"    public String getEndDate() {
+        return endDate;
+    }",method,
+"    public void setEndDate(String endDate) {
+        this.endDate = endDate;
+    }",method,
+"    public String getServiceData() {
+        return serviceData;
+    }",method,
+"    public void setServiceData(String serviceData) {
+        this.serviceData = serviceData;
+    }",method,
+"    public String getAddressA() {
+        return addressA;
+    }",method,
+"    public void setAddressA(String addressA) {
+        this.addressA = addressA;
+    }",method,
+"    public String getAddressB() {
+        return addressB;
+    }",method,
+"    public void setAddressB(String addressB) {
+        this.addressB = addressB;
+    }",method,
+"    public String getPrice() {
+        return price;
+    }",method,
+"    public void setPrice(String price) {
+        this.price = price;
+    }",method,
+"public abstract class SimpleDiffPanelState implements Disposable  {
+  protected ComparisonPolicy myComparisonPolicy = ComparisonPolicy.DEFAULT;
+  protected DiffPolicy myDiffPolicy;
+  protected HighlightMode myHighlightMode;
+  protected final EditorPlaceHolder myAppender1;
+  protected final EditorPlaceHolder myAppender2;
+  protected FragmentList myFragmentList = FragmentList.EMPTY;
+  protected final Project myProject;
+  public SimpleDiffPanelState(Project project, ContentChangeListener changeListener, @NotNull Disposable parentDisposable) {
+    myAppender1 = createEditorWrapper(project, changeListener, FragmentSide.SIDE1);
+    myAppender2 = createEditorWrapper(project, changeListener, FragmentSide.SIDE2);
+    myProject = project;
+    myDiffPolicy = DiffPolicy.LINES_WO_FORMATTING;
+    myHighlightMode = HighlightMode.BY_WORD;
+    Disposer.register(parentDisposable, this);
+  }
+  private EditorPlaceHolder createEditorWrapper(Project project, ContentChangeListener changeListener, FragmentSide side) {
+    EditorPlaceHolder editorWrapper = new EditorPlaceHolder(side, project, this);
+    editorWrapper.addListener(changeListener);
+    return editorWrapper;
+  }
+  public void setComparisonPolicy(@NotNull ComparisonPolicy comparisonPolicy) {
+    myComparisonPolicy = comparisonPolicy;
+  }
+  public void setDiffPolicy(DiffPolicy diffPolicy) {
+    myDiffPolicy = diffPolicy;
+  }
+  public DiffPolicy getDiffPolicy() {
+    return myDiffPolicy;
+  }
+  public ComparisonPolicy getComparisonPolicy() {
+    return myComparisonPolicy;
+  }
+  public HighlightMode getHighlightMode() {
+    return myHighlightMode;
+  }
+  public void setHighlightMode(HighlightMode highlightMode) {
+    myHighlightMode = highlightMode;
+  }
+  public void dispose() {
+  }
+  private LineBlocks addMarkup(final List<LineFragment> lines) {
+    ApplicationManager.getApplication().runWriteAction(() -> {
+      final FragmentHighlighterImpl fragmentHighlighter = new FragmentHighlighterImpl(myAppender1, myAppender2);
+      for (Iterator<LineFragment> iterator = lines.iterator(); iterator.hasNext();) {
+        LineFragment line = iterator.next();
+        fragmentHighlighter.setIsLast(!iterator.hasNext());
+        line.highlight(fragmentHighlighter);
+      }
+    });
+    ArrayList<LineFragment> allLineFragments = new ArrayList<>();
+    for (LineFragment lineFragment : lines) {
+      allLineFragments.add(lineFragment);
+      lineFragment.addAllDescendantsTo(allLineFragments);
+    }
+    myFragmentList = FragmentListImpl.fromList(allLineFragments);
+    return LineBlocks.fromLineFragments(allLineFragments);
+  }
+  private void resetMarkup() {
+    ApplicationManager.getApplication().runWriteAction(new ResetMarkupRunnable(this));
+  }
+  @Nullable
+  public LineBlocks updateEditors() throws FilesTooBigForDiffException {
+    resetMarkup();
+    if (myAppender1.getEditor() == null || myAppender2.getEditor() == null) {
+      return null;
+    }
+    return addMarkup(
+      new TextCompareProcessor(myComparisonPolicy, myDiffPolicy, myHighlightMode).process(myAppender1.getText(), myAppender2.getText()));
+  }
+  public Project getProject() { return myProject; }
+  public FragmentList getFragmentList() { return myFragmentList; }
+  private static class ResetMarkupRunnable implements Runnable {
+    private final SimpleDiffPanelState myState;
+    public ResetMarkupRunnable(SimpleDiffPanelState state) {
+      myState = state;
+    }
+    public void run() {
+      myState.myAppender1.resetHighlighters();
+      myState.myAppender2.resetHighlighters();
+    }
+  }
+}",class,
+"  private static class ResetMarkupRunnable implements Runnable {
+    private final SimpleDiffPanelState myState;
+    public ResetMarkupRunnable(SimpleDiffPanelState state) {
+      myState = state;
+    }
+    public void run() {
+      myState.myAppender1.resetHighlighters();
+      myState.myAppender2.resetHighlighters();
+    }
+  }",class,
+"  public SimpleDiffPanelState(Project project, ContentChangeListener changeListener, @NotNull Disposable parentDisposable) {
+    myAppender1 = createEditorWrapper(project, changeListener, FragmentSide.SIDE1);
+    myAppender2 = createEditorWrapper(project, changeListener, FragmentSide.SIDE2);
+    myProject = project;
+    myDiffPolicy = DiffPolicy.LINES_WO_FORMATTING;
+    myHighlightMode = HighlightMode.BY_WORD;
+    Disposer.register(parentDisposable, this);
+  }",method,
+"  private EditorPlaceHolder createEditorWrapper(Project project, ContentChangeListener changeListener, FragmentSide side) {
+    EditorPlaceHolder editorWrapper = new EditorPlaceHolder(side, project, this);
+    editorWrapper.addListener(changeListener);
+    return editorWrapper;
+  }",method,
+"  public void setComparisonPolicy(@NotNull ComparisonPolicy comparisonPolicy) {
+    myComparisonPolicy = comparisonPolicy;
+  }",method,
+"  public void setDiffPolicy(DiffPolicy diffPolicy) {
+    myDiffPolicy = diffPolicy;
+  }",method,
+"  public DiffPolicy getDiffPolicy() {
+    return myDiffPolicy;
+  }",method,
+"  public ComparisonPolicy getComparisonPolicy() {
+    return myComparisonPolicy;
+  }",method,
+"  public HighlightMode getHighlightMode() {
+    return myHighlightMode;
+  }",method,
+"  public void setHighlightMode(HighlightMode highlightMode) {
+    myHighlightMode = highlightMode;
+  }",method,
+"  public void dispose() {
+  }",method,
+"  private LineBlocks addMarkup(final List<LineFragment> lines) {
+    ApplicationManager.getApplication().runWriteAction(() -> {
+      final FragmentHighlighterImpl fragmentHighlighter = new FragmentHighlighterImpl(myAppender1, myAppender2);
+      for (Iterator<LineFragment> iterator = lines.iterator(); iterator.hasNext();) {
+        LineFragment line = iterator.next();
+        fragmentHighlighter.setIsLast(!iterator.hasNext());
+        line.highlight(fragmentHighlighter);
+      }
+    });
+    ArrayList<LineFragment> allLineFragments = new ArrayList<>();
+    for (LineFragment lineFragment : lines) {
+      allLineFragments.add(lineFragment);
+      lineFragment.addAllDescendantsTo(allLineFragments);
+    }
+    myFragmentList = FragmentListImpl.fromList(allLineFragments);
+    return LineBlocks.fromLineFragments(allLineFragments);
+  }",method,
+"    for (LineFragment lineFragment : lines) {
+      allLineFragments.add(lineFragment);
+      lineFragment.addAllDescendantsTo(allLineFragments);
+    }",method,
+"  private void resetMarkup() {
+    ApplicationManager.getApplication().runWriteAction(new ResetMarkupRunnable(this));
+  }",method,
+"  @Nullable
+  public LineBlocks updateEditors() throws FilesTooBigForDiffException {
+    resetMarkup();
+    if (myAppender1.getEditor() == null || myAppender2.getEditor() == null) {
+      return null;
+    }
+    return addMarkup(
+      new TextCompareProcessor(myComparisonPolicy, myDiffPolicy, myHighlightMode).process(myAppender1.getText(), myAppender2.getText()));
+  }",method,
+  public Project getProject() { return myProject; },method,
+  public FragmentList getFragmentList() { return myFragmentList; },method,
+"    public ResetMarkupRunnable(SimpleDiffPanelState state) {
+      myState = state;
+    }",method,
+"    public void run() {
+      myState.myAppender1.resetHighlighters();
+      myState.myAppender2.resetHighlighters();
+    }",method,
+"public class MainShader extends DefaultShader {
+	public static class Config extends DefaultShader.Config {
+		public RealisticShadowSystem shadowSystem;
+		public Config (RealisticShadowSystem shadowSystem) {
+			super();
+			numBones = 12;
+			numPointLights = 2;
+			numSpotLights = 5;
+			numDirectionalLights = 2;
+			this.shadowSystem = shadowSystem;
+		}
+	}
+	protected final int u_dirShadows0uvTransform = register(new Uniform(""u_dirShadows[0].uvTransform""));
+	protected final int u_dirShadows1uvTransform = register(new Uniform(""u_dirShadows[1].uvTransform""));
+	protected int dirShadowsLoc;
+	protected int dirShadowsUvTransformOffset;
+	protected int dirShadowsSize;
+	// Shadow projViewTrans
+	protected int u_dirShadowMapProjViewTrans0 = register(new Uniform(""u_dirShadowMapProjViewTrans[0]""));
+	protected int u_dirShadowMapProjViewTrans1 = register(new Uniform(""u_dirShadowMapProjViewTrans[1]""));
+	protected int dirShadowMapProjViewTransLoc;
+	protected int dirShadowMapProjViewTransSize;
+	// Shadow UVTransform
+	protected int u_dirShadowMapUVTransform0 = register(new Uniform(""u_dirShadowMapUVTransform[0]""));
+	protected int u_dirShadowMapUVTransform1 = register(new Uniform(""u_dirShadowMapUVTransform[1]""));
+	protected int dirShadowMapUVTransformLoc;
+	protected int dirShadowMapUVTransformSize;
+	protected final int u_spotShadows0uvTransform = register(new Uniform(""u_spotShadows[0].uvTransform""));
+	protected final int u_spotShadows1uvTransform = register(new Uniform(""u_spotShadows[1].uvTransform""));
+	protected int spotShadowsLoc;
+	protected int spotShadowsUvTransformOffset;
+	protected int spotShadowsSize;
+	// Shadow projViewTrans
+	protected int u_spotShadowMapProjViewTrans0 = register(new Uniform(""u_spotShadowMapProjViewTrans[0]""));
+	protected int u_spotShadowMapProjViewTrans1 = register(new Uniform(""u_spotShadowMapProjViewTrans[1]""));
+	protected int spotShadowMapProjViewTransLoc;
+	protected int spotShadowMapProjViewTransSize;
+	// Shadow UVTransform
+	protected int u_spotShadowMapUVTransform0 = register(new Uniform(""u_spotShadowMapUVTransform[0]""));
+	protected int u_spotShadowMapUVTransform1 = register(new Uniform(""u_spotShadowMapUVTransform[1]""));
+	protected int spotShadowMapUVTransformLoc;
+	protected int spotShadowMapUVTransformSize;
+	protected RealisticShadowSystem shadowSystem;
+	private static String defaultVertexShader = null;
+	public static String getDefaultVertexShader () {
+		if (defaultVertexShader == null)
+			defaultVertexShader = Gdx.files.classpath(""com/badlogic/gdx/tests/g3d/shadows/system/realistic/main.vertex.glsl"")
+				.readString();
+		return defaultVertexShader;
+	}
+	private static String defaultFragmentShader = null;
+	public static String getDefaultFragmentShader () {
+		if (defaultFragmentShader == null)
+			defaultFragmentShader = Gdx.files.classpath(""com/badlogic/gdx/tests/g3d/shadows/system/realistic/main.fragment.glsl"")
+				.readString();
+		return defaultFragmentShader;
+	}
+	public static String createPrefix (final Renderable renderable, final Config config) {
+		return DefaultShader.createPrefix(renderable, config);
+	}
+	public MainShader (final Renderable renderable, final Config config) {
+		this(renderable, config, createPrefix(renderable, config));
+	}
+	public MainShader (final Renderable renderable, final Config config, final String prefix) {
+		this(renderable, config, prefix, getDefaultVertexShader(), getDefaultFragmentShader());
+	}
+	public MainShader (final Renderable renderable, final Config config, final String prefix, final String vertexShader,
+		final String fragmentShader) {
+		this(renderable, config, new ShaderProgram(prefix + vertexShader, prefix + fragmentShader));
+	}
+	public MainShader (final Renderable renderable, final Config config, final ShaderProgram shaderProgram) {
+		super(renderable, config, shaderProgram);
+		this.shadowSystem = config.shadowSystem;
+	}
+	@Override
+	public void init () {
+		super.init();
+		// Directional Shadow
+		dirShadowsLoc = loc(u_dirShadows0uvTransform);
+		dirShadowsUvTransformOffset = loc(u_dirShadows0uvTransform) - dirShadowsLoc;
+		dirShadowsSize = loc(u_dirShadows1uvTransform) - dirShadowsLoc;
+		if (dirShadowsSize < 0) dirShadowsSize = 0;
+		dirShadowMapProjViewTransLoc = loc(u_dirShadowMapProjViewTrans0);
+		dirShadowMapProjViewTransSize = loc(u_dirShadowMapProjViewTrans1) - dirShadowMapProjViewTransLoc;
+		dirShadowMapUVTransformLoc = loc(u_dirShadowMapUVTransform0);
+		dirShadowMapUVTransformSize = loc(u_dirShadowMapUVTransform1) - dirShadowMapUVTransformLoc;
+		// Spot Shadow
+		spotShadowsLoc = loc(u_spotShadows0uvTransform);
+		spotShadowsUvTransformOffset = loc(u_spotShadows0uvTransform) - spotShadowsLoc;
+		spotShadowsSize = loc(u_spotShadows1uvTransform) - spotShadowsLoc;
+		if (spotShadowsSize < 0) spotShadowsSize = 0;
+		spotShadowMapProjViewTransLoc = loc(u_spotShadowMapProjViewTrans0);
+		spotShadowMapProjViewTransSize = loc(u_spotShadowMapProjViewTrans1) - spotShadowMapProjViewTransLoc;
+		spotShadowMapUVTransformLoc = loc(u_spotShadowMapUVTransform0);
+		spotShadowMapUVTransformSize = loc(u_spotShadowMapUVTransform1) - spotShadowMapUVTransformLoc;
+	}
+	@Override
+	protected void bindLights (final Renderable renderable, final Attributes attributes) {
+		super.bindLights(renderable, attributes);
+		final Environment environment = renderable.environment;
+		bindDirectionalShadows(attributes);
+		bindSpotShadows(attributes);
+		if (shadowSystem.getTexture() != null) {
+			set(u_shadowTexture, shadowSystem.getTexture());
+		}
+	}
+	public void bindDirectionalShadows (final Attributes attributes) {
+		final DirectionalLightsAttribute dla = attributes.get(DirectionalLightsAttribute.class, DirectionalLightsAttribute.Type);
+		final Array<DirectionalLight> dirs = dla == null ? null : dla.lights;
+		if (dirLightsLoc >= 0) {
+			for (int i = 0; i < directionalLights.length; i++) {
+				if (dirs == null || dirs.size <= i) {
+					continue;
+				}
+				int idx = dirShadowsLoc + i * dirShadowsSize;
+				// Shadow
+				ObjectMap<DirectionalLight, LightProperties> dirCameras = shadowSystem.getDirectionalCameras();
+				DirectionalLight dl = dirs.get(i);
+				if (shadowSystem.hasLight(dl)) {
+					// UVTransform
+					final TextureRegion tr = dirCameras.get(dl).region;
+					Camera cam = dirCameras.get(dl).camera;
+					if (cam != null) {
+						program.setUniformf(idx + dirShadowsUvTransformOffset, tr.getU(), tr.getV(), tr.getU2() - tr.getU(), tr.getV2()
+							- tr.getV());
+						// ProjViewTrans
+						idx = dirShadowMapProjViewTransLoc + i * dirShadowMapProjViewTransSize;
+						program.setUniformMatrix(idx, dirCameras.get(dl).camera.combined);
+					}
+				}
+				if (dirLightsSize <= 0) break;
+			}
+		}
+	}
+	public void bindSpotShadows (final Attributes attributes) {
+		final SpotLightsAttribute sla = attributes.get(SpotLightsAttribute.class, SpotLightsAttribute.Type);
+		final Array<SpotLight> spots = sla == null ? null : sla.lights;
+		if (spotLightsLoc >= 0) {
+			for (int i = 0; i < spotLights.length; i++) {
+				if (spots == null || spots.size <= i) {
+					continue;
+				}
+				int idx = spotShadowsLoc + i * spotShadowsSize;
+				// Shadow
+				ObjectMap<SpotLight, LightProperties> spotCameras = shadowSystem.getSpotCameras();
+				SpotLight sl = spots.get(i);
+				if (shadowSystem.hasLight(sl)) {
+					// UVTransform
+					final TextureRegion tr = spotCameras.get(sl).region;
+					Camera cam = spotCameras.get(sl).camera;
+					if (cam != null) {
+						program.setUniformf(idx + spotShadowsUvTransformOffset, tr.getU(), tr.getV(), tr.getU2() - tr.getU(),
+							tr.getV2() - tr.getV());
+						// ProjViewTrans
+						idx = spotShadowMapProjViewTransLoc + i * spotShadowMapProjViewTransSize;
+						program.setUniformMatrix(idx, spotCameras.get(sl).camera.combined);
+					}
+				}
+				if (spotLightsSize <= 0) break;
+			}
+		}
+	}
+}",class,
+"	public static class Config extends DefaultShader.Config {
+		public RealisticShadowSystem shadowSystem;
+		public Config (RealisticShadowSystem shadowSystem) {
+			super();
+			numBones = 12;
+			numPointLights = 2;
+			numSpotLights = 5;
+			numDirectionalLights = 2;
+			this.shadowSystem = shadowSystem;
+		}
+	}",class,
+"		public Config (RealisticShadowSystem shadowSystem) {
+			super();
+			numBones = 12;
+			numPointLights = 2;
+			numSpotLights = 5;
+			numDirectionalLights = 2;
+			this.shadowSystem = shadowSystem;
+		}",method,
+"	public static String getDefaultVertexShader () {
+		if (defaultVertexShader == null)
+			defaultVertexShader = Gdx.files.classpath(""com/badlogic/gdx/tests/g3d/shadows/system/realistic/main.vertex.glsl"")
+				.readString();
+		return defaultVertexShader;
+	}",method,
+"	public static String getDefaultFragmentShader () {
+		if (defaultFragmentShader == null)
+			defaultFragmentShader = Gdx.files.classpath(""com/badlogic/gdx/tests/g3d/shadows/system/realistic/main.fragment.glsl"")
+				.readString();
+		return defaultFragmentShader;
+	}",method,
+"	public static String createPrefix (final Renderable renderable, final Config config) {
+		return DefaultShader.createPrefix(renderable, config);
+	}",method,
+"	public MainShader (final Renderable renderable, final Config config) {
+		this(renderable, config, createPrefix(renderable, config));
+	}",method,
+"	public MainShader (final Renderable renderable, final Config config, final String prefix) {
+		this(renderable, config, prefix, getDefaultVertexShader(), getDefaultFragmentShader());
+	}",method,
+"	public MainShader (final Renderable renderable, final Config config, final String prefix, final String vertexShader,
+		final String fragmentShader) {
+		this(renderable, config, new ShaderProgram(prefix + vertexShader, prefix + fragmentShader));
+	}",method,
+"	public MainShader (final Renderable renderable, final Config config, final ShaderProgram shaderProgram) {
+		super(renderable, config, shaderProgram);
+		this.shadowSystem = config.shadowSystem;
+	}",method,
+"	@Override
+	public void init () {
+		super.init();
+		// Directional Shadow
+		dirShadowsLoc = loc(u_dirShadows0uvTransform);
+		dirShadowsUvTransformOffset = loc(u_dirShadows0uvTransform) - dirShadowsLoc;
+		dirShadowsSize = loc(u_dirShadows1uvTransform) - dirShadowsLoc;
+		if (dirShadowsSize < 0) dirShadowsSize = 0;
+		dirShadowMapProjViewTransLoc = loc(u_dirShadowMapProjViewTrans0);
+		dirShadowMapProjViewTransSize = loc(u_dirShadowMapProjViewTrans1) - dirShadowMapProjViewTransLoc;
+		dirShadowMapUVTransformLoc = loc(u_dirShadowMapUVTransform0);
+		dirShadowMapUVTransformSize = loc(u_dirShadowMapUVTransform1) - dirShadowMapUVTransformLoc;
+		// Spot Shadow
+		spotShadowsLoc = loc(u_spotShadows0uvTransform);
+		spotShadowsUvTransformOffset = loc(u_spotShadows0uvTransform) - spotShadowsLoc;
+		spotShadowsSize = loc(u_spotShadows1uvTransform) - spotShadowsLoc;
+		if (spotShadowsSize < 0) spotShadowsSize = 0;
+		spotShadowMapProjViewTransLoc = loc(u_spotShadowMapProjViewTrans0);
+		spotShadowMapProjViewTransSize = loc(u_spotShadowMapProjViewTrans1) - spotShadowMapProjViewTransLoc;
+		spotShadowMapUVTransformLoc = loc(u_spotShadowMapUVTransform0);
+		spotShadowMapUVTransformSize = loc(u_spotShadowMapUVTransform1) - spotShadowMapUVTransformLoc;
+	}",method,
+"	@Override
+	protected void bindLights (final Renderable renderable, final Attributes attributes) {
+		super.bindLights(renderable, attributes);
+		final Environment environment = renderable.environment;
+		bindDirectionalShadows(attributes);
+		bindSpotShadows(attributes);
+		if (shadowSystem.getTexture() != null) {
+			set(u_shadowTexture, shadowSystem.getTexture());
+		}
+	}",method,
+"	public void bindDirectionalShadows (final Attributes attributes) {
+		final DirectionalLightsAttribute dla = attributes.get(DirectionalLightsAttribute.class, DirectionalLightsAttribute.Type);
+		final Array<DirectionalLight> dirs = dla == null ? null : dla.lights;
+		if (dirLightsLoc >= 0) {
+			for (int i = 0; i < directionalLights.length; i++) {
+				if (dirs == null || dirs.size <= i) {
+					continue;
+				}
+				int idx = dirShadowsLoc + i * dirShadowsSize;
+				// Shadow
+				ObjectMap<DirectionalLight, LightProperties> dirCameras = shadowSystem.getDirectionalCameras();
+				DirectionalLight dl = dirs.get(i);
+				if (shadowSystem.hasLight(dl)) {
+					// UVTransform
+					final TextureRegion tr = dirCameras.get(dl).region;
+					Camera cam = dirCameras.get(dl).camera;
+					if (cam != null) {
+						program.setUniformf(idx + dirShadowsUvTransformOffset, tr.getU(), tr.getV(), tr.getU2() - tr.getU(), tr.getV2()
+							- tr.getV());
+						// ProjViewTrans
+						idx = dirShadowMapProjViewTransLoc + i * dirShadowMapProjViewTransSize;
+						program.setUniformMatrix(idx, dirCameras.get(dl).camera.combined);
+					}
+				}
+				if (dirLightsSize <= 0) break;
+			}
+		}
+	}",method,
+"		if (dirLightsLoc >= 0) {
+			for (int i = 0; i < directionalLights.length; i++) {
+				if (dirs == null || dirs.size <= i) {
+					continue;
+				}
+				int idx = dirShadowsLoc + i * dirShadowsSize;
+				// Shadow
+				ObjectMap<DirectionalLight, LightProperties> dirCameras = shadowSystem.getDirectionalCameras();
+				DirectionalLight dl = dirs.get(i);
+				if (shadowSystem.hasLight(dl)) {
+					// UVTransform
+					final TextureRegion tr = dirCameras.get(dl).region;
+					Camera cam = dirCameras.get(dl).camera;
+					if (cam != null) {
+						program.setUniformf(idx + dirShadowsUvTransformOffset, tr.getU(), tr.getV(), tr.getU2() - tr.getU(), tr.getV2()
+							- tr.getV());
+						// ProjViewTrans
+						idx = dirShadowMapProjViewTransLoc + i * dirShadowMapProjViewTransSize;
+						program.setUniformMatrix(idx, dirCameras.get(dl).camera.combined);
+					}
+				}
+				if (dirLightsSize <= 0) break;
+			}
+		}",method,
+"			for (int i = 0; i < directionalLights.length; i++) {
+				if (dirs == null || dirs.size <= i) {
+					continue;
+				}
+				int idx = dirShadowsLoc + i * dirShadowsSize;
+				// Shadow
+				ObjectMap<DirectionalLight, LightProperties> dirCameras = shadowSystem.getDirectionalCameras();
+				DirectionalLight dl = dirs.get(i);
+				if (shadowSystem.hasLight(dl)) {
+					// UVTransform
+					final TextureRegion tr = dirCameras.get(dl).region;
+					Camera cam = dirCameras.get(dl).camera;
+					if (cam != null) {
+						program.setUniformf(idx + dirShadowsUvTransformOffset, tr.getU(), tr.getV(), tr.getU2() - tr.getU(), tr.getV2()
+							- tr.getV());
+						// ProjViewTrans
+						idx = dirShadowMapProjViewTransLoc + i * dirShadowMapProjViewTransSize;
+						program.setUniformMatrix(idx, dirCameras.get(dl).camera.combined);
+					}
+				}
+				if (dirLightsSize <= 0) break;
+			}",method,
+"				if (dirs == null || dirs.size <= i) {
+					continue;
+				}",method,
+"					if (cam != null) {
+						program.setUniformf(idx + dirShadowsUvTransformOffset, tr.getU(), tr.getV(), tr.getU2() - tr.getU(), tr.getV2()
+							- tr.getV());
+						// ProjViewTrans
+						idx = dirShadowMapProjViewTransLoc + i * dirShadowMapProjViewTransSize;
+						program.setUniformMatrix(idx, dirCameras.get(dl).camera.combined);
+					}",method,
+"	public void bindSpotShadows (final Attributes attributes) {
+		final SpotLightsAttribute sla = attributes.get(SpotLightsAttribute.class, SpotLightsAttribute.Type);
+		final Array<SpotLight> spots = sla == null ? null : sla.lights;
+		if (spotLightsLoc >= 0) {
+			for (int i = 0; i < spotLights.length; i++) {
+				if (spots == null || spots.size <= i) {
+					continue;
+				}
+				int idx = spotShadowsLoc + i * spotShadowsSize;
+				// Shadow
+				ObjectMap<SpotLight, LightProperties> spotCameras = shadowSystem.getSpotCameras();
+				SpotLight sl = spots.get(i);
+				if (shadowSystem.hasLight(sl)) {
+					// UVTransform
+					final TextureRegion tr = spotCameras.get(sl).region;
+					Camera cam = spotCameras.get(sl).camera;
+					if (cam != null) {
+						program.setUniformf(idx + spotShadowsUvTransformOffset, tr.getU(), tr.getV(), tr.getU2() - tr.getU(),
+							tr.getV2() - tr.getV());
+						// ProjViewTrans
+						idx = spotShadowMapProjViewTransLoc + i * spotShadowMapProjViewTransSize;
+						program.setUniformMatrix(idx, spotCameras.get(sl).camera.combined);
+					}
+				}
+				if (spotLightsSize <= 0) break;
+			}
+		}
+	}",method,
+"		if (spotLightsLoc >= 0) {
+			for (int i = 0; i < spotLights.length; i++) {
+				if (spots == null || spots.size <= i) {
+					continue;
+				}
+				int idx = spotShadowsLoc + i * spotShadowsSize;
+				// Shadow
+				ObjectMap<SpotLight, LightProperties> spotCameras = shadowSystem.getSpotCameras();
+				SpotLight sl = spots.get(i);
+				if (shadowSystem.hasLight(sl)) {
+					// UVTransform
+					final TextureRegion tr = spotCameras.get(sl).region;
+					Camera cam = spotCameras.get(sl).camera;
+					if (cam != null) {
+						program.setUniformf(idx + spotShadowsUvTransformOffset, tr.getU(), tr.getV(), tr.getU2() - tr.getU(),
+							tr.getV2() - tr.getV());
+						// ProjViewTrans
+						idx = spotShadowMapProjViewTransLoc + i * spotShadowMapProjViewTransSize;
+						program.setUniformMatrix(idx, spotCameras.get(sl).camera.combined);
+					}
+				}
+				if (spotLightsSize <= 0) break;
+			}
+		}",method,
+"			for (int i = 0; i < spotLights.length; i++) {
+				if (spots == null || spots.size <= i) {
+					continue;
+				}
+				int idx = spotShadowsLoc + i * spotShadowsSize;
+				// Shadow
+				ObjectMap<SpotLight, LightProperties> spotCameras = shadowSystem.getSpotCameras();
+				SpotLight sl = spots.get(i);
+				if (shadowSystem.hasLight(sl)) {
+					// UVTransform
+					final TextureRegion tr = spotCameras.get(sl).region;
+					Camera cam = spotCameras.get(sl).camera;
+					if (cam != null) {
+						program.setUniformf(idx + spotShadowsUvTransformOffset, tr.getU(), tr.getV(), tr.getU2() - tr.getU(),
+							tr.getV2() - tr.getV());
+						// ProjViewTrans
+						idx = spotShadowMapProjViewTransLoc + i * spotShadowMapProjViewTransSize;
+						program.setUniformMatrix(idx, spotCameras.get(sl).camera.combined);
+					}
+				}
+				if (spotLightsSize <= 0) break;
+			}",method,
+"				if (spots == null || spots.size <= i) {
+					continue;
+				}",method,
+"					if (cam != null) {
+						program.setUniformf(idx + spotShadowsUvTransformOffset, tr.getU(), tr.getV(), tr.getU2() - tr.getU(),
+							tr.getV2() - tr.getV());
+						// ProjViewTrans
+						idx = spotShadowMapProjViewTransLoc + i * spotShadowMapProjViewTransSize;
+						program.setUniformMatrix(idx, spotCameras.get(sl).camera.combined);
+					}",method,
+"    public AdapterView(Context context) {
+        this(context, null);
+    }",method,
+"    public AdapterView(Context context, AttributeSet attrs) {
+        this(context, attrs, 0);
+    }",method,
+"    public AdapterView(Context context, AttributeSet attrs, int defStyleAttr) {
+        this(context, attrs, defStyleAttr, 0);
+    }",method,
+"public class ClassModel {
+  @JsonProperty(""_class"")
+  @JacksonXmlProperty(localName = ""_class"")
+  @XmlElement(name = ""_class"")
+  private String propertyClass = null;
+  public ClassModel propertyClass(String propertyClass) {
+    this.propertyClass = propertyClass;
+    return this;
+  }
+  @ApiModelProperty(value = """")
+  public String getPropertyClass() {
+    return propertyClass;
+  }
+  public void setPropertyClass(String propertyClass) {
+    this.propertyClass = propertyClass;
+  }
+  @Override
+  public boolean equals(java.lang.Object o) {
+    if (this == o) {
+      return true;
+    }
+    if (o == null || getClass() != o.getClass()) {
+      return false;
+    }
+    ClassModel classModel = (ClassModel) o;
+    return Objects.equals(this.propertyClass, classModel.propertyClass);
+  }
+  @Override
+  public int hashCode() {
+    return Objects.hash(propertyClass);
+  }
+  @Override
+  public String toString() {
+    StringBuilder sb = new StringBuilder();
+    sb.append(""class ClassModel {\n"");
+    sb.append(""    propertyClass: "").append(toIndentedString(propertyClass)).append(""\n"");
+    sb.append(""}"");
+    return sb.toString();
+  }
+  private String toIndentedString(java.lang.Object o) {
+    if (o == null) {
+      return ""null"";
+    }
+    return o.toString().replace(""\n"", ""\n    "");
+  }
+}",class,
+"    sb.append(""class ClassModel {\n"");
+    sb.append(""    propertyClass: "").append(toIndentedString(propertyClass)).append(""\n"");
+    sb.append(""}"");
+    return sb.toString();
+  }
+  private String toIndentedString(java.lang.Object o) {
+    if (o == null) {
+      return ""null"";
+    }
+    return o.toString().replace(""\n"", ""\n    "");
+  }",class,
+"  public ClassModel propertyClass(String propertyClass) {
+    this.propertyClass = propertyClass;
+    return this;
+  }",method,
+"  @ApiModelProperty(value = """")
+  public String getPropertyClass() {
+    return propertyClass;
+  }",method,
+"  public void setPropertyClass(String propertyClass) {
+    this.propertyClass = propertyClass;
+  }",method,
+"  @Override
+  public boolean equals(java.lang.Object o) {
+    if (this == o) {
+      return true;
+    }
+    if (o == null || getClass() != o.getClass()) {
+      return false;
+    }
+    ClassModel classModel = (ClassModel) o;
+    return Objects.equals(this.propertyClass, classModel.propertyClass);
+  }",method,
+"    if (this == o) {
+      return true;
+    }",method,
+"  @Override
+  public int hashCode() {
+    return Objects.hash(propertyClass);
+  }",method,
+"  @Override
+  public String toString() {
+    StringBuilder sb = new StringBuilder();
+    sb.append(""class ClassModel {\n"");
+    sb.append(""    propertyClass: "").append(toIndentedString(propertyClass)).append(""\n"");
+    sb.append(""}"");
+    return sb.toString();
+  }",method,
+"  private String toIndentedString(java.lang.Object o) {
+    if (o == null) {
+      return ""null"";
+    }
+    return o.toString().replace(""\n"", ""\n    "");
+  }",method,
+"    if (o == null) {
+      return ""null"";
+    }",method,
+"public class OracleBlockTest15 extends OracleTest {
+    public void test_0() throws Exception {
+        String sql = ""DECLARE\n"" +
+				""   sales  NUMBER(8,2) := 10100;\n"" +
+				""   quota  NUMBER(8,2) := 10000;\n"" +
+				""   bonus  NUMBER(6,2);\n"" +
+				""   emp_id NUMBER(6) := 120;\n"" +
+				"" BEGIN\n"" +
+				""   IF sales > (quota + 200) THEN\n"" +
+				""      bonus := (sales - quota)/4;\n"" +
+				"" \n"" +
+				""      UPDATE employees SET salary =\n"" +
+				""        salary + bonus\n"" +
+				""          WHERE employee_id = emp_id;\n"" +
+				""   END IF;\n"" +
+				"" END;""; //
+        List<SQLStatement> stmtList = SQLUtils.parseStatements(sql, JdbcConstants.ORACLE);
+        assertEquals(1, stmtList.size());
+        String result = SQLUtils.toOracleString(stmtList.get(0));
+        System.out.println(result);
+        assertEquals(""DECLARE\n"" +
+                ""\tsales NUMBER(8, 2) := 10100;\n"" +
+                ""\tquota NUMBER(8, 2) := 10000;\n"" +
+                ""\tbonus NUMBER(6, 2);\n"" +
+                ""\temp_id NUMBER(6) := 120;\n"" +
+                ""BEGIN\n"" +
+                ""\tIF sales > quota + 200 THEN\n"" +
+                ""\t\tbonus := (sales - quota) / 4;\n"" +
+                ""\t\tUPDATE employees\n"" +
+                ""\t\tSET salary = salary + bonus\n"" +
+                ""\t\tWHERE employee_id = emp_id;\n"" +
+                ""\tEND IF;\n"" +
+                ""END;"", result);
+        Assert.assertEquals(1, stmtList.size());
+        OracleSchemaStatVisitor visitor = new OracleSchemaStatVisitor();
+        for (SQLStatement statement : stmtList) {
+            statement.accept(visitor);
+        }
+        System.out.println(""Tables : "" + visitor.getTables());
+        System.out.println(""fields : "" + visitor.getColumns());
+        System.out.println(""coditions : "" + visitor.getConditions());
+        System.out.println(""relationships : "" + visitor.getRelationships());
+        System.out.println(""orderBy : "" + visitor.getOrderByColumns());
+        Assert.assertEquals(1, visitor.getTables().size());
+        Assert.assertTrue(visitor.getTables().containsKey(new TableStat.Name(""employees"")));
+        Assert.assertEquals(2, visitor.getColumns().size());
+        Assert.assertEquals(1, visitor.getConditions().size());
+        Assert.assertEquals(0, visitor.getRelationships().size());
+        // Assert.assertTrue(visitor.getColumns().contains(new TableStat.Column(""employees"", ""salary"")));
+    }
+}",class,
+"    public void test_0() throws Exception {
+        String sql = ""DECLARE\n"" +
+				""   sales  NUMBER(8,2) := 10100;\n"" +
+				""   quota  NUMBER(8,2) := 10000;\n"" +
+				""   bonus  NUMBER(6,2);\n"" +
+				""   emp_id NUMBER(6) := 120;\n"" +
+				"" BEGIN\n"" +
+				""   IF sales > (quota + 200) THEN\n"" +
+				""      bonus := (sales - quota)/4;\n"" +
+				"" \n"" +
+				""      UPDATE employees SET salary =\n"" +
+				""        salary + bonus\n"" +
+				""          WHERE employee_id = emp_id;\n"" +
+				""   END IF;\n"" +
+				"" END;""; //
+        List<SQLStatement> stmtList = SQLUtils.parseStatements(sql, JdbcConstants.ORACLE);
+        assertEquals(1, stmtList.size());
+        String result = SQLUtils.toOracleString(stmtList.get(0));
+        System.out.println(result);
+        assertEquals(""DECLARE\n"" +
+                ""\tsales NUMBER(8, 2) := 10100;\n"" +
+                ""\tquota NUMBER(8, 2) := 10000;\n"" +
+                ""\tbonus NUMBER(6, 2);\n"" +
+                ""\temp_id NUMBER(6) := 120;\n"" +
+                ""BEGIN\n"" +
+                ""\tIF sales > quota + 200 THEN\n"" +
+                ""\t\tbonus := (sales - quota) / 4;\n"" +
+                ""\t\tUPDATE employees\n"" +
+                ""\t\tSET salary = salary + bonus\n"" +
+                ""\t\tWHERE employee_id = emp_id;\n"" +
+                ""\tEND IF;\n"" +
+                ""END;"", result);
+        Assert.assertEquals(1, stmtList.size());
+        OracleSchemaStatVisitor visitor = new OracleSchemaStatVisitor();
+        for (SQLStatement statement : stmtList) {
+            statement.accept(visitor);
+        }
+        System.out.println(""Tables : "" + visitor.getTables());
+        System.out.println(""fields : "" + visitor.getColumns());
+        System.out.println(""coditions : "" + visitor.getConditions());
+        System.out.println(""relationships : "" + visitor.getRelationships());
+        System.out.println(""orderBy : "" + visitor.getOrderByColumns());
+        Assert.assertEquals(1, visitor.getTables().size());
+        Assert.assertTrue(visitor.getTables().containsKey(new TableStat.Name(""employees"")));
+        Assert.assertEquals(2, visitor.getColumns().size());
+        Assert.assertEquals(1, visitor.getConditions().size());
+        Assert.assertEquals(0, visitor.getRelationships().size());
+        // Assert.assertTrue(visitor.getColumns().contains(new TableStat.Column(""employees"", ""salary"")));
+    }",method,
+"        for (SQLStatement statement : stmtList) {
+            statement.accept(visitor);
+        }",method,
+"public class TransportSearchHelperTests extends ESTestCase {
+    public void testParseScrollId() throws IOException {
+        AtomicArray<SearchPhaseResult> array = new AtomicArray<>(3);
+        DiscoveryNode node1 = new DiscoveryNode(""node_1"", buildNewFakeTransportAddress(), Version.CURRENT);
+        DiscoveryNode node2 = new DiscoveryNode(""node_2"", buildNewFakeTransportAddress(), Version.CURRENT);
+        DiscoveryNode node3 = new DiscoveryNode(""node_3"", buildNewFakeTransportAddress(), Version.CURRENT);
+        SearchAsyncActionTests.TestSearchPhaseResult testSearchPhaseResult1 = new SearchAsyncActionTests.TestSearchPhaseResult(1, node1);
+        testSearchPhaseResult1.setSearchShardTarget(new SearchShardTarget(""node_1"", new ShardId(""idx"", ""uuid1"", 2), ""cluster_x"", null));
+        SearchAsyncActionTests.TestSearchPhaseResult testSearchPhaseResult2 = new SearchAsyncActionTests.TestSearchPhaseResult(12, node2);
+        testSearchPhaseResult2.setSearchShardTarget(new SearchShardTarget(""node_2"", new ShardId(""idy"", ""uuid2"", 42), ""cluster_y"", null));
+        SearchAsyncActionTests.TestSearchPhaseResult testSearchPhaseResult3 = new SearchAsyncActionTests.TestSearchPhaseResult(42, node3);
+        testSearchPhaseResult3.setSearchShardTarget(new SearchShardTarget(""node_3"", new ShardId(""idy"", ""uuid2"", 43), null, null));
+        array.setOnce(0, testSearchPhaseResult1);
+        array.setOnce(1, testSearchPhaseResult2);
+        array.setOnce(2, testSearchPhaseResult3);
+        String scrollId = TransportSearchHelper.buildScrollId(array);
+        ParsedScrollId parseScrollId = TransportSearchHelper.parseScrollId(scrollId);
+        assertEquals(3, parseScrollId.getContext().length);
+        assertEquals(""node_1"", parseScrollId.getContext()[0].getNode());
+        assertEquals(""cluster_x"", parseScrollId.getContext()[0].getClusterAlias());
+        assertEquals(1, parseScrollId.getContext()[0].getScrollId());
+        assertEquals(""node_2"", parseScrollId.getContext()[1].getNode());
+        assertEquals(""cluster_y"", parseScrollId.getContext()[1].getClusterAlias());
+        assertEquals(12, parseScrollId.getContext()[1].getScrollId());
+        assertEquals(""node_3"", parseScrollId.getContext()[2].getNode());
+        assertNull(parseScrollId.getContext()[2].getClusterAlias());
+        assertEquals(42, parseScrollId.getContext()[2].getScrollId());
+    }
+}",class,
+"    public void testParseScrollId() throws IOException {
+        AtomicArray<SearchPhaseResult> array = new AtomicArray<>(3);
+        DiscoveryNode node1 = new DiscoveryNode(""node_1"", buildNewFakeTransportAddress(), Version.CURRENT);
+        DiscoveryNode node2 = new DiscoveryNode(""node_2"", buildNewFakeTransportAddress(), Version.CURRENT);
+        DiscoveryNode node3 = new DiscoveryNode(""node_3"", buildNewFakeTransportAddress(), Version.CURRENT);
+        SearchAsyncActionTests.TestSearchPhaseResult testSearchPhaseResult1 = new SearchAsyncActionTests.TestSearchPhaseResult(1, node1);
+        testSearchPhaseResult1.setSearchShardTarget(new SearchShardTarget(""node_1"", new ShardId(""idx"", ""uuid1"", 2), ""cluster_x"", null));
+        SearchAsyncActionTests.TestSearchPhaseResult testSearchPhaseResult2 = new SearchAsyncActionTests.TestSearchPhaseResult(12, node2);
+        testSearchPhaseResult2.setSearchShardTarget(new SearchShardTarget(""node_2"", new ShardId(""idy"", ""uuid2"", 42), ""cluster_y"", null));
+        SearchAsyncActionTests.TestSearchPhaseResult testSearchPhaseResult3 = new SearchAsyncActionTests.TestSearchPhaseResult(42, node3);
+        testSearchPhaseResult3.setSearchShardTarget(new SearchShardTarget(""node_3"", new ShardId(""idy"", ""uuid2"", 43), null, null));
+        array.setOnce(0, testSearchPhaseResult1);
+        array.setOnce(1, testSearchPhaseResult2);
+        array.setOnce(2, testSearchPhaseResult3);
+        String scrollId = TransportSearchHelper.buildScrollId(array);
+        ParsedScrollId parseScrollId = TransportSearchHelper.parseScrollId(scrollId);
+        assertEquals(3, parseScrollId.getContext().length);
+        assertEquals(""node_1"", parseScrollId.getContext()[0].getNode());
+        assertEquals(""cluster_x"", parseScrollId.getContext()[0].getClusterAlias());
+        assertEquals(1, parseScrollId.getContext()[0].getScrollId());
+        assertEquals(""node_2"", parseScrollId.getContext()[1].getNode());
+        assertEquals(""cluster_y"", parseScrollId.getContext()[1].getClusterAlias());
+        assertEquals(12, parseScrollId.getContext()[1].getScrollId());
+        assertEquals(""node_3"", parseScrollId.getContext()[2].getNode());
+        assertNull(parseScrollId.getContext()[2].getClusterAlias());
+        assertEquals(42, parseScrollId.getContext()[2].getScrollId());
+    }",method,
+"public class GroovyDslScript {
+  private static final Logger LOG = Logger.getInstance(""#org.jetbrains.plugins.groovy.dsl.GroovyDslScript"");
+  private final Project project;
+  @Nullable private final VirtualFile file;
+  private final GroovyDslExecutor executor;
+  private final String myPath;
+  private final FactorTree myFactorTree;
+  public GroovyDslScript(final Project project, @Nullable VirtualFile file, @NotNull GroovyDslExecutor executor, String path) {
+    this.project = project;
+    this.file = file;
+    this.executor = executor;
+    myPath = path;
+    myFactorTree = new FactorTree(project, executor);
+  }
+  public boolean processExecutor(PsiScopeProcessor processor,
+                                 final PsiType psiType,
+                                 final PsiElement place,
+                                 final PsiFile placeFile,
+                                 ResolveState state, NotNullLazyValue<String> typeText) {
+    CustomMembersHolder holder = myFactorTree.retrieve(place, placeFile, typeText);
+    GroovyClassDescriptor descriptor = new GroovyClassDescriptor(psiType, place, placeFile);
+    try {
+      if (holder == null) {
+        holder = addGdslMembers(descriptor, psiType);
+        myFactorTree.cache(descriptor, holder);
+      }
+      return holder.processMembers(descriptor, processor, state);
+    }
+    catch (ProcessCanceledException e) {
+      throw e;
+    }
+    catch (Throwable e) {
+      handleDslError(e);
+      return true;
+    }
+  }
+  private CustomMembersHolder addGdslMembers(GroovyClassDescriptor descriptor, final PsiType psiType) {
+    final ProcessingContext ctx = new ProcessingContext();
+    ctx.put(GdslUtil.INITIAL_CONTEXT, descriptor);
+    try {
+      if (!isApplicable(executor, descriptor, ctx)) {
+        return CustomMembersHolder.EMPTY;
+      }
+      return executor.processVariants(descriptor, ctx, psiType);
+    }
+    catch (InvokerInvocationException e) {
+      Throwable cause = e.getCause();
+      if (cause instanceof ProcessCanceledException) {
+        throw (ProcessCanceledException)cause;
+      }
+      if (cause instanceof OutOfMemoryError) {
+        throw (OutOfMemoryError)cause;
+      }
+      handleDslError(e);
+    }
+    catch (ProcessCanceledException | OutOfMemoryError e) {
+      throw e;
+    }
+    catch (Throwable e) { // To handle exceptions in definition script
+      handleDslError(e);
+    }
+    return CustomMembersHolder.EMPTY;
+  }
+  private static boolean isApplicable(@NotNull GroovyDslExecutor executor, GroovyClassDescriptor descriptor, final ProcessingContext ctx) {
+    List<Pair<ContextFilter,Closure>> enhancers = executor.getEnhancers();
+    if (enhancers == null) {
+      LOG.error(""null enhancers"");
+      return false;
+    }
+    for (Pair<ContextFilter, Closure> pair : enhancers) {
+      if (pair.first.isApplicable(descriptor, ctx)) {
+        return true;
+      }
+    }
+    return false;
+  }
+  public boolean handleDslError(Throwable e) {
+    if (project.isDisposed() || ApplicationManager.getApplication().isUnitTestMode()) {
+      return true;
+    }
+    if (file != null) {
+      DslErrorReporter.getInstance().invokeDslErrorPopup(e, project, file);
+    }
+    else {
+      LOG.info(""Error when executing internal GDSL "" + myPath, e);
+      GdslUtil.stopGdsl();
+    }
+    return false;
+  }
+  @Override
+  public String toString() {
+    return ""GroovyDslScript: "" + myPath;
+  }
+  @NotNull
+  public MultiMap getStaticInfo() {
+    return executor.getStaticInfo();
+  }
+}",class,
+"  public GroovyDslScript(final Project project, @Nullable VirtualFile file, @NotNull GroovyDslExecutor executor, String path) {
+    this.project = project;
+    this.file = file;
+    this.executor = executor;
+    myPath = path;
+    myFactorTree = new FactorTree(project, executor);
+  }",method,
+"  public boolean processExecutor(PsiScopeProcessor processor,
+                                 final PsiType psiType,
+                                 final PsiElement place,
+                                 final PsiFile placeFile,
+                                 ResolveState state, NotNullLazyValue<String> typeText) {
+    CustomMembersHolder holder = myFactorTree.retrieve(place, placeFile, typeText);
+    GroovyClassDescriptor descriptor = new GroovyClassDescriptor(psiType, place, placeFile);
+    try {
+      if (holder == null) {
+        holder = addGdslMembers(descriptor, psiType);
+        myFactorTree.cache(descriptor, holder);
+      }
+      return holder.processMembers(descriptor, processor, state);
+    }
+    catch (ProcessCanceledException e) {
+      throw e;
+    }
+    catch (Throwable e) {
+      handleDslError(e);
+      return true;
+    }
+  }",method,
+"      if (holder == null) {
+        holder = addGdslMembers(descriptor, psiType);
+        myFactorTree.cache(descriptor, holder);
+      }",method,
+"    catch (ProcessCanceledException e) {
+      throw e;
+    }",method,
+"    catch (Throwable e) {
+      handleDslError(e);
+      return true;
+    }",method,
+"  private CustomMembersHolder addGdslMembers(GroovyClassDescriptor descriptor, final PsiType psiType) {
+    final ProcessingContext ctx = new ProcessingContext();
+    ctx.put(GdslUtil.INITIAL_CONTEXT, descriptor);
+    try {
+      if (!isApplicable(executor, descriptor, ctx)) {
+        return CustomMembersHolder.EMPTY;
+      }
+      return executor.processVariants(descriptor, ctx, psiType);
+    }
+    catch (InvokerInvocationException e) {
+      Throwable cause = e.getCause();
+      if (cause instanceof ProcessCanceledException) {
+        throw (ProcessCanceledException)cause;
+      }
+      if (cause instanceof OutOfMemoryError) {
+        throw (OutOfMemoryError)cause;
+      }
+      handleDslError(e);
+    }
+    catch (ProcessCanceledException | OutOfMemoryError e) {
+      throw e;
+    }
+    catch (Throwable e) { // To handle exceptions in definition script
+      handleDslError(e);
+    }
+    return CustomMembersHolder.EMPTY;
+  }",method,
+"    catch (InvokerInvocationException e) {
+      Throwable cause = e.getCause();
+      if (cause instanceof ProcessCanceledException) {
+        throw (ProcessCanceledException)cause;
+      }
+      if (cause instanceof OutOfMemoryError) {
+        throw (OutOfMemoryError)cause;
+      }
+      handleDslError(e);
+    }",method,
+"      if (cause instanceof ProcessCanceledException) {
+        throw (ProcessCanceledException)cause;
+      }",method,
+"      if (cause instanceof OutOfMemoryError) {
+        throw (OutOfMemoryError)cause;
+      }",method,
+"    catch (ProcessCanceledException | OutOfMemoryError e) {
+      throw e;
+    }",method,
+"    catch (Throwable e) { // To handle exceptions in definition script
+      handleDslError(e);
+    }",method,
+"  private static boolean isApplicable(@NotNull GroovyDslExecutor executor, GroovyClassDescriptor descriptor, final ProcessingContext ctx) {
+    List<Pair<ContextFilter,Closure>> enhancers = executor.getEnhancers();
+    if (enhancers == null) {
+      LOG.error(""null enhancers"");
+      return false;
+    }
+    for (Pair<ContextFilter, Closure> pair : enhancers) {
+      if (pair.first.isApplicable(descriptor, ctx)) {
+        return true;
+      }
+    }
+    return false;
+  }",method,
+"    if (enhancers == null) {
+      LOG.error(""null enhancers"");
+      return false;
+    }",method,
+"    for (Pair<ContextFilter, Closure> pair : enhancers) {
+      if (pair.first.isApplicable(descriptor, ctx)) {
+        return true;
+      }
+    }",method,
+"  public boolean handleDslError(Throwable e) {
+    if (project.isDisposed() || ApplicationManager.getApplication().isUnitTestMode()) {
+      return true;
+    }
+    if (file != null) {
+      DslErrorReporter.getInstance().invokeDslErrorPopup(e, project, file);
+    }
+    else {
+      LOG.info(""Error when executing internal GDSL "" + myPath, e);
+      GdslUtil.stopGdsl();
+    }
+    return false;
+  }",method,
+"    if (file != null) {
+      DslErrorReporter.getInstance().invokeDslErrorPopup(e, project, file);
+    }",method,
+"  @Override
+  public String toString() {
+    return ""GroovyDslScript: "" + myPath;
+  }",method,
+"  @NotNull
+  public MultiMap getStaticInfo() {
+    return executor.getStaticInfo();
+  }",method,
+"public class TestExecutionRequest implements InternalTestExecutionRequest {
+    private final Collection<InternalTestDescriptor> testDescriptors;
+    private final Collection<String> testClassNames;
+    private final Collection<InternalJvmTestRequest> internalJvmTestRequests;
+    public TestExecutionRequest(Iterable<TestOperationDescriptor> operationDescriptors, Collection<String> testClassNames, Set<InternalJvmTestRequest> internalJvmTestRequests) {
+        this.testDescriptors = adaptDescriptors(operationDescriptors);
+        this.testClassNames = testClassNames;
+        this.internalJvmTestRequests = internalJvmTestRequests;
+    }
+    @Override
+    public Collection<InternalTestDescriptor> getTestExecutionDescriptors() {
+        return testDescriptors;
+    }
+    public Collection<String> getTestClassNames() {
+        return testClassNames;
+    }
+    public Collection<InternalJvmTestRequest> getInternalJvmTestRequests() {
+        return internalJvmTestRequests;
+    }
+    private Collection<InternalTestDescriptor> adaptDescriptors(Iterable<TestOperationDescriptor> operationDescriptors) {
+        return CollectionUtils.collect(operationDescriptors, new Transformer<InternalTestDescriptor, OperationDescriptor>() {
+            @Override
+            public InternalTestDescriptor transform(OperationDescriptor operationDescriptor) {
+                return (InternalTestDescriptor) ((OperationDescriptorWrapper) operationDescriptor).getInternalOperationDescriptor();
+            }
+        });
+    }
+}",class,
+"    public TestExecutionRequest(Iterable<TestOperationDescriptor> operationDescriptors, Collection<String> testClassNames, Set<InternalJvmTestRequest> internalJvmTestRequests) {
+        this.testDescriptors = adaptDescriptors(operationDescriptors);
+        this.testClassNames = testClassNames;
+        this.internalJvmTestRequests = internalJvmTestRequests;
+    }",method,
+"    @Override
+    public Collection<InternalTestDescriptor> getTestExecutionDescriptors() {
+        return testDescriptors;
+    }",method,
+"    public Collection<String> getTestClassNames() {
+        return testClassNames;
+    }",method,
+"    public Collection<InternalJvmTestRequest> getInternalJvmTestRequests() {
+        return internalJvmTestRequests;
+    }",method,
+"    private Collection<InternalTestDescriptor> adaptDescriptors(Iterable<TestOperationDescriptor> operationDescriptors) {
+        return CollectionUtils.collect(operationDescriptors, new Transformer<InternalTestDescriptor, OperationDescriptor>() {
+            @Override
+            public InternalTestDescriptor transform(OperationDescriptor operationDescriptor) {
+                return (InternalTestDescriptor) ((OperationDescriptorWrapper) operationDescriptor).getInternalOperationDescriptor();
+            }
+        });
+    }",method,
+"        return CollectionUtils.collect(operationDescriptors, new Transformer<InternalTestDescriptor, OperationDescriptor>() {
+            @Override
+            public InternalTestDescriptor transform(OperationDescriptor operationDescriptor) {
+                return (InternalTestDescriptor) ((OperationDescriptorWrapper) operationDescriptor).getInternalOperationDescriptor();
+            }
+        }",method,
+"            @Override
+            public InternalTestDescriptor transform(OperationDescriptor operationDescriptor) {
+                return (InternalTestDescriptor) ((OperationDescriptorWrapper) operationDescriptor).getInternalOperationDescriptor();
+            }",method,
+"public class ActivityStarterDelegate implements ActivityStarter {
+    private ActivityStarter mActualStarter;
+    @Override
+    public void startPendingIntentDismissingKeyguard(PendingIntent intent) {
+        if (mActualStarter == null) return;
+        mActualStarter.startPendingIntentDismissingKeyguard(intent);
+    }
+    @Override
+    public void startActivity(Intent intent, boolean dismissShade) {
+        if (mActualStarter == null) return;
+        mActualStarter.startActivity(intent, dismissShade);
+    }
+    @Override
+    public void startActivity(Intent intent, boolean onlyProvisioned, boolean dismissShade) {
+        if (mActualStarter == null) return;
+        mActualStarter.startActivity(intent, onlyProvisioned, dismissShade);
+    }
+    @Override
+    public void startActivity(Intent intent, boolean dismissShade, Callback callback) {
+        if (mActualStarter == null) return;
+        mActualStarter.startActivity(intent, dismissShade, callback);
+    }
+    @Override
+    public void postStartActivityDismissingKeyguard(Intent intent, int delay) {
+        if (mActualStarter == null) return;
+        mActualStarter.postStartActivityDismissingKeyguard(intent, delay);
+    }
+    @Override
+    public void postStartActivityDismissingKeyguard(PendingIntent intent) {
+        if (mActualStarter == null) return;
+        mActualStarter.postStartActivityDismissingKeyguard(intent);
+    }
+    @Override
+    public void postQSRunnableDismissingKeyguard(Runnable runnable) {
+        if (mActualStarter == null) return;
+        mActualStarter.postQSRunnableDismissingKeyguard(runnable);
+    }
+    public void setActivityStarterImpl(ActivityStarter starter) {
+        mActualStarter = starter;
+    }
+}",class,
+"    @Override
+    public void startPendingIntentDismissingKeyguard(PendingIntent intent) {
+        if (mActualStarter == null) return;
+        mActualStarter.startPendingIntentDismissingKeyguard(intent);
+    }",method,
+"    @Override
+    public void startActivity(Intent intent, boolean dismissShade) {
+        if (mActualStarter == null) return;
+        mActualStarter.startActivity(intent, dismissShade);
+    }",method,
+"    @Override
+    public void startActivity(Intent intent, boolean onlyProvisioned, boolean dismissShade) {
+        if (mActualStarter == null) return;
+        mActualStarter.startActivity(intent, onlyProvisioned, dismissShade);
+    }",method,

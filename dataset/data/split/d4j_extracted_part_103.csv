@@ -1,0 +1,1910 @@
+code_snippet,type,score
+"        if (dependencyToAll) {
+            dependenciesToAll.add(className);
+            dependents.remove(className);
+        }",method,
+"        for (String dependency : classDependencies) {
+            if (!dependency.equals(className) && !dependenciesToAll.contains(dependency)) {
+                Set<String> d = rememberClass(dependency);
+                d.add(className);
+            }
+        }",method,
+"        for (String superType : superTypes) {
+            parentToChildren.put(superType, className);
+        }",method,
+"    private Set<String> rememberClass(String className) {
+        Set<String> d = dependents.get(className);
+        if (d == null) {
+            d = Sets.newHashSet();
+            dependents.put(className, d);
+        }
+        return d;
+    }",method,
+"        if (d == null) {
+            d = Sets.newHashSet();
+            dependents.put(className, d);
+        }",method,
+"    public Map<String, DependentsSet> getDependentsMap() {
+        if (dependenciesToAll.isEmpty() && dependents.isEmpty()) {
+            return Collections.emptyMap();
+        }
+        ImmutableMap.Builder<String, DependentsSet> builder = ImmutableMap.builder();
+        for (String s : dependenciesToAll) {
+            builder.put(s, DependencyToAll.INSTANCE);
+        }
+        for (Map.Entry<String, Set<String>> entry : dependents.entrySet()) {
+            builder.put(entry.getKey(), new DefaultDependentsSet(ImmutableSet.copyOf(entry.getValue())));
+        }
+        return builder.build();
+    }",method,
+"        for (String s : dependenciesToAll) {
+            builder.put(s, DependencyToAll.INSTANCE);
+        }",method,
+"    public Multimap<String, Integer> getClassesToConstants() {
+        return classesToConstants;
+    }",method,
+"    public Multimap<Integer, String> getLiteralsToClasses() {
+        return literalsToClasses;
+    }",method,
+"    public ClassSetAnalysisData getAnalysis() {
+        return new ClassSetAnalysisData(filePathToClassName, getDependentsMap(), getClassesToConstants(), getLiteralsToClasses(), parentToChildren);
+    }",method,
+"public class TestNGTestPackage extends TestNGTestObject {
+  public TestNGTestPackage(TestNGConfiguration configuration) {
+    super(configuration);
+  }
+  @Override
+  public void fillTestObjects(Map<PsiClass, Map<PsiMethod, List<String>>> classes) throws CantRunException {
+    final String packageName = myConfig.getPersistantData().getPackageName();
+    PsiPackage psiPackage =
+      ReadAction.compute(() -> JavaPsiFacade.getInstance(myConfig.getProject()).findPackage(packageName));
+    if (psiPackage == null) {
+      throw CantRunException.packageNotFound(packageName);
+    }
+    else {
+      TestSearchScope scope = myConfig.getPersistantData().getScope();
+      //TODO we should narrow this down by module really, if that's what's specified
+      SourceScope sourceScope = scope.getSourceScope(myConfig);
+      TestClassFilter projectFilter =
+        new TestClassFilter(sourceScope != null ? sourceScope.getGlobalSearchScope() : GlobalSearchScope.projectScope(myConfig.getProject()), myConfig.getProject(), true, true);
+      TestClassFilter filter = projectFilter.intersectionWith(PackageScope.packageScope(psiPackage, true));
+      calculateDependencies(null, classes, getSearchScope(), TestNGUtil.getAllTestClasses(filter, false));
+      if (classes.size() == 0) {
+        throw new CantRunException(""No tests found in the package \"""" + packageName + '\""');
+      }
+    }
+  }
+  @Override
+  public String getGeneratedName() {
+    final String packageName = myConfig.getPersistantData().getPackageName();
+    return packageName.length() == 0 ? ""<default>"" : packageName;
+  }
+  @Override
+  public String getActionName() {
+    String s = myConfig.getName();
+    if (!myConfig.isGeneratedName()) return '\""' + s + '\""';
+    if (myConfig.getPersistantData().getPackageName().trim().length() > 0) {
+      return ""Tests in \"""" + myConfig.getPersistantData().getPackageName() + '\""';
+    }
+    else {
+      return ""All Tests"";
+    }
+  }
+  @Override
+  public void checkConfiguration() throws RuntimeConfigurationException {
+    final TestData data = myConfig.getPersistantData();
+    PsiPackage psiPackage = JavaPsiFacade.getInstance(myConfig.getProject()).findPackage(data.getPackageName());
+    if (psiPackage == null) throw new RuntimeConfigurationException(""Package '"" + data.getPackageName() + ""' not found"");
+  }
+  @Override
+  public boolean isConfiguredByElement(PsiElement element) {
+    final String packageName = myConfig.getPersistantData().getPackageName();
+    if (element instanceof PsiPackage) {
+      return Comparing.strEqual(packageName, ((PsiPackage)element).getQualifiedName());
+    } else if (element instanceof PsiDirectory) {
+      final PsiPackage psiPackage = JavaDirectoryService.getInstance().getPackage(((PsiDirectory)element));
+      return psiPackage != null && Comparing.strEqual(packageName, psiPackage.getQualifiedName());
+    }
+    return false;
+  }
+}",class,
+"  public TestNGTestPackage(TestNGConfiguration configuration) {
+    super(configuration);
+  }",method,
+"  @Override
+  public void fillTestObjects(Map<PsiClass, Map<PsiMethod, List<String>>> classes) throws CantRunException {
+    final String packageName = myConfig.getPersistantData().getPackageName();
+    PsiPackage psiPackage =
+      ReadAction.compute(() -> JavaPsiFacade.getInstance(myConfig.getProject()).findPackage(packageName));
+    if (psiPackage == null) {
+      throw CantRunException.packageNotFound(packageName);
+    }
+    else {
+      TestSearchScope scope = myConfig.getPersistantData().getScope();
+      //TODO we should narrow this down by module really, if that's what's specified
+      SourceScope sourceScope = scope.getSourceScope(myConfig);
+      TestClassFilter projectFilter =
+        new TestClassFilter(sourceScope != null ? sourceScope.getGlobalSearchScope() : GlobalSearchScope.projectScope(myConfig.getProject()), myConfig.getProject(), true, true);
+      TestClassFilter filter = projectFilter.intersectionWith(PackageScope.packageScope(psiPackage, true));
+      calculateDependencies(null, classes, getSearchScope(), TestNGUtil.getAllTestClasses(filter, false));
+      if (classes.size() == 0) {
+        throw new CantRunException(""No tests found in the package \"""" + packageName + '\""');
+      }
+    }
+  }",method,
+"    if (psiPackage == null) {
+      throw CantRunException.packageNotFound(packageName);
+    }",method,
+"  @Override
+  public String getGeneratedName() {
+    final String packageName = myConfig.getPersistantData().getPackageName();
+    return packageName.length() == 0 ? ""<default>"" : packageName;
+  }",method,
+"  @Override
+  public String getActionName() {
+    String s = myConfig.getName();
+    if (!myConfig.isGeneratedName()) return '\""' + s + '\""';
+    if (myConfig.getPersistantData().getPackageName().trim().length() > 0) {
+      return ""Tests in \"""" + myConfig.getPersistantData().getPackageName() + '\""';
+    }
+    else {
+      return ""All Tests"";
+    }
+  }",method,
+"  @Override
+  public void checkConfiguration() throws RuntimeConfigurationException {
+    final TestData data = myConfig.getPersistantData();
+    PsiPackage psiPackage = JavaPsiFacade.getInstance(myConfig.getProject()).findPackage(data.getPackageName());
+    if (psiPackage == null) throw new RuntimeConfigurationException(""Package '"" + data.getPackageName() + ""' not found"");
+  }",method,
+"  @Override
+  public boolean isConfiguredByElement(PsiElement element) {
+    final String packageName = myConfig.getPersistantData().getPackageName();
+    if (element instanceof PsiPackage) {
+      return Comparing.strEqual(packageName, ((PsiPackage)element).getQualifiedName());
+    } else if (element instanceof PsiDirectory) {
+      final PsiPackage psiPackage = JavaDirectoryService.getInstance().getPackage(((PsiDirectory)element));
+      return psiPackage != null && Comparing.strEqual(packageName, psiPackage.getQualifiedName());
+    }
+    return false;
+  }",method,
+"    if (element instanceof PsiPackage) {
+      return Comparing.strEqual(packageName, ((PsiPackage)element).getQualifiedName());
+    }",method,
+"public class DtoIP4MacPair {
+    String ip;
+    String mac;
+    URI uri;
+    // Default constructor needed for deserialization
+    public DtoIP4MacPair() {}
+    public DtoIP4MacPair(String ip, String mac) {
+        this.ip = ip;
+        this.mac = mac;
+    }
+    public String getIp() {
+        return ip;
+    }
+    public void setIp(String ip) {
+        this.ip = ip;
+    }
+    public String getMac() {
+        return mac;
+    }
+    public void setMac(String mac) {
+        this.mac = mac;
+    }
+    public URI getUri() {
+        return uri;
+    }
+    public void setUri(URI uri) {
+        this.uri = uri;
+    }
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (o == null || getClass() != o.getClass()) return false;
+        DtoIP4MacPair that = (DtoIP4MacPair) o;
+        if (ip != null ? !ip.equals(that.ip) : that.ip != null) return false;
+        if (mac != null ? !mac.equals(that.mac) : that.mac != null)
+            return false;
+        if (uri != null ? !uri.equals(that.uri) : that.uri != null)
+            return false;
+        return true;
+    }
+    @Override
+    public int hashCode() {
+        int result = ip != null ? ip.hashCode() : 0;
+        result = 31 * result + (mac != null ? mac.hashCode() : 0);
+        result = 31 * result + (uri != null ? uri.hashCode() : 0);
+        return result;
+    }
+}",class,
+    public DtoIP4MacPair() {},method,
+"    public DtoIP4MacPair(String ip, String mac) {
+        this.ip = ip;
+        this.mac = mac;
+    }",method,
+"    public String getIp() {
+        return ip;
+    }",method,
+"    public void setIp(String ip) {
+        this.ip = ip;
+    }",method,
+"    public String getMac() {
+        return mac;
+    }",method,
+"    public void setMac(String mac) {
+        this.mac = mac;
+    }",method,
+"    public URI getUri() {
+        return uri;
+    }",method,
+"    public void setUri(URI uri) {
+        this.uri = uri;
+    }",method,
+"    @Override
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (o == null || getClass() != o.getClass()) return false;
+        DtoIP4MacPair that = (DtoIP4MacPair) o;
+        if (ip != null ? !ip.equals(that.ip) : that.ip != null) return false;
+        if (mac != null ? !mac.equals(that.mac) : that.mac != null)
+            return false;
+        if (uri != null ? !uri.equals(that.uri) : that.uri != null)
+            return false;
+        return true;
+    }",method,
+"    @Override
+    public int hashCode() {
+        int result = ip != null ? ip.hashCode() : 0;
+        result = 31 * result + (mac != null ? mac.hashCode() : 0);
+        result = 31 * result + (uri != null ? uri.hashCode() : 0);
+        return result;
+    }",method,
+"public class LineNumberLinearizer
+extends      SimplifiedVisitor
+implements   ClassVisitor,
+             MemberVisitor,
+             AttributeVisitor,
+             LineNumberInfoVisitor
+{
+    private static final boolean DEBUG = false;
+    public  static final int SHIFT_ROUNDING       = 1000;
+    private static final int SHIFT_ROUNDING_LIMIT = 50000;
+    private Stack          enclosingLineNumbers = new Stack();
+    private LineNumberInfo previousLineNumberInfo;
+    private int            highestUsedLineNumber;
+    private int            currentLineNumberShift;
+    // Implementations for ClassVisitor.
+    public void visitProgramClass(ProgramClass programClass)
+    {
+        // Find the highest line number in the entire class.
+        LineNumberRangeFinder lineNumberRangeFinder =
+            new LineNumberRangeFinder();
+        programClass.methodsAccept(new AllAttributeVisitor(true,
+                                   new AllLineNumberInfoVisitor(
+                                   lineNumberRangeFinder)));
+        // Are there any inlined line numbers?
+        if (lineNumberRangeFinder.hasSource())
+        {
+            // Remember the minimum initial shift.
+            highestUsedLineNumber = lineNumberRangeFinder.getHighestLineNumber();
+            // Shift the inlined line numbers.
+            programClass.methodsAccept(this);
+        }
+    }
+    // Implementations for MemberVisitor.
+    public void visitProgramMethod(ProgramClass programClass, ProgramMethod programMethod)
+    {
+        programMethod.attributesAccept(programClass, this);
+    }
+    // Implementations for AttributeVisitor.
+    public void visitAnyAttribute(Clazz clazz, Attribute attribute) {}
+    public void visitCodeAttribute(Clazz clazz, Method method, CodeAttribute codeAttribute)
+    {
+        codeAttribute.attributesAccept(clazz, method, this);
+    }
+    public void visitLineNumberTableAttribute(Clazz clazz, Method method, CodeAttribute codeAttribute, LineNumberTableAttribute lineNumberTableAttribute)
+    {
+        if (DEBUG)
+        {
+            System.out.println(""LineNumberLinearizer [""+clazz.getName()+"".""+method.getName(clazz)+method.getDescriptor(clazz)+""]:"");
+        }
+        enclosingLineNumbers.clear();
+        previousLineNumberInfo = null;
+        // Process all line numbers.
+        lineNumberTableAttribute.lineNumbersAccept(clazz, method, codeAttribute, this);
+    }
+    // Implementations for LineNumberInfoVisitor.
+    public void visitLineNumberInfo(Clazz clazz, Method method, CodeAttribute codeAttribute, LineNumberInfo lineNumberInfo)
+    {
+        String source = lineNumberInfo.getSource();
+        if (DEBUG)
+        {
+            System.out.print(""    ["" + lineNumberInfo.u2startPC + ""] line "" + lineNumberInfo.u2lineNumber + (source == null ? """" : "" ["" + source + ""]""));
+        }
+        // Is it an inlined line number?
+        if (source != null)
+        {
+            ExtendedLineNumberInfo extendedLineNumberInfo =
+                (ExtendedLineNumberInfo)lineNumberInfo;
+            int lineNumber = extendedLineNumberInfo.u2lineNumber;
+            // Are we entering or exiting a new inlined block?
+            if (previousLineNumberInfo == null ||
+                previousLineNumberInfo.getSource() != source)
+            {
+                // Are we entering a new inlined block?
+                if (lineNumber != MethodInliner.INLINED_METHOD_END_LINE_NUMBER)
+                {
+                    // Remember information about the inlined block.
+                    enclosingLineNumbers.push(previousLineNumberInfo != null ?
+                        new MyLineNumberBlock(currentLineNumberShift,
+                                              previousLineNumberInfo.u2lineNumber,
+                                              previousLineNumberInfo.getSource()) :
+                        new MyLineNumberBlock(0, 0, null));
+                    // Parse the end line number from the source string,
+                    // so we know how large a block this will be.
+                    int separatorIndex1 = source.indexOf(':');
+                    int separatorIndex2 = source.indexOf(':', separatorIndex1 + 1);
+                    int startLineNumber = Integer.parseInt(source.substring(separatorIndex1 + 1, separatorIndex2));
+                    int endLineNumber   = Integer.parseInt(source.substring(separatorIndex2 + 1));
+                    // Start shifting, if necessary, so the block ends up beyond
+                    // the highest used line number. We're striving for rounded
+                    // shifts, unless we've reached a given limit, to avoid
+                    // running out of line numbers too quickly.
+                    currentLineNumberShift =
+                        highestUsedLineNumber > SHIFT_ROUNDING_LIMIT ?
+                            highestUsedLineNumber - startLineNumber + 1 :
+                        startLineNumber > highestUsedLineNumber ? 0 :
+                            (highestUsedLineNumber - startLineNumber + SHIFT_ROUNDING)
+                            / SHIFT_ROUNDING * SHIFT_ROUNDING;
+                    highestUsedLineNumber = endLineNumber + currentLineNumberShift;
+                    if (DEBUG)
+                    {
+                        System.out.print("" (enter with shift ""+currentLineNumberShift+"")"");
+                    }
+                    // Apply the shift.
+                    lineNumberInfo.u2lineNumber += currentLineNumberShift;
+                }
+                // TODO: There appear to be cases where the stack is empty at this point, so we've added a check.
+                else if (enclosingLineNumbers.isEmpty())
+                {
+                    if (DEBUG)
+                    {
+                        System.err.println(""Problem linearizing line numbers for optimized code (""+clazz.getName()+"".""+method.getName(clazz)+"")"");
+                    }
+                }
+                // Are we exiting an inlined block?
+                else
+                {
+                    // Pop information about the enclosing line number.
+                    MyLineNumberBlock lineNumberBlock =
+                        (MyLineNumberBlock)enclosingLineNumbers.pop();
+                    // Set this end of the block to the line at which it was
+                    // inlined.
+                    extendedLineNumberInfo.u2lineNumber = lineNumberBlock.enclosingLineNumber;
+                    extendedLineNumberInfo.source       = lineNumberBlock.enclosingSource;
+                    // Reset the shift to the shift of the block.
+                    currentLineNumberShift = lineNumberBlock.lineNumberShift;
+                    if (DEBUG)
+                    {
+                        System.out.print("" (exit to shift ""+currentLineNumberShift+"")"");
+                    }
+                }
+            }
+            else
+            {
+                if (DEBUG)
+                {
+                    System.out.print("" (apply shift ""+currentLineNumberShift+"")"");
+                }
+                // Apply the shift.
+                lineNumberInfo.u2lineNumber += currentLineNumberShift;
+            }
+        }
+        previousLineNumberInfo = lineNumberInfo;
+        if (DEBUG)
+        {
+            System.out.println("" -> line "" + lineNumberInfo.u2lineNumber);
+        }
+    }
+    private static class MyLineNumberBlock
+    {
+        public final int    lineNumberShift;
+        public final int    enclosingLineNumber;
+        public final String enclosingSource;
+        public MyLineNumberBlock(int    lineNumberShift,
+                                 int    enclosingLineNumber,
+                                 String enclosingSource)
+        {
+            this.lineNumberShift     = lineNumberShift;
+            this.enclosingLineNumber = enclosingLineNumber;
+            this.enclosingSource     = enclosingSource;
+        }
+    }
+}",class,
+"    private static class MyLineNumberBlock
+    {
+        public final int    lineNumberShift;
+        public final int    enclosingLineNumber;
+        public final String enclosingSource;
+        public MyLineNumberBlock(int    lineNumberShift,
+                                 int    enclosingLineNumber,
+                                 String enclosingSource)
+        {
+            this.lineNumberShift     = lineNumberShift;
+            this.enclosingLineNumber = enclosingLineNumber;
+            this.enclosingSource     = enclosingSource;
+        }
+    }",class,
+"    public void visitProgramClass(ProgramClass programClass)
+    {
+        // Find the highest line number in the entire class.
+        LineNumberRangeFinder lineNumberRangeFinder =
+            new LineNumberRangeFinder();
+        programClass.methodsAccept(new AllAttributeVisitor(true,
+                                   new AllLineNumberInfoVisitor(
+                                   lineNumberRangeFinder)));
+        // Are there any inlined line numbers?
+        if (lineNumberRangeFinder.hasSource())
+        {
+            // Remember the minimum initial shift.
+            highestUsedLineNumber = lineNumberRangeFinder.getHighestLineNumber();
+            // Shift the inlined line numbers.
+            programClass.methodsAccept(this);
+        }
+    }",method,
+"    public void visitProgramMethod(ProgramClass programClass, ProgramMethod programMethod)
+    {
+        programMethod.attributesAccept(programClass, this);
+    }",method,
+"    public void visitAnyAttribute(Clazz clazz, Attribute attribute) {}",method,
+"    public void visitCodeAttribute(Clazz clazz, Method method, CodeAttribute codeAttribute)
+    {
+        codeAttribute.attributesAccept(clazz, method, this);
+    }",method,
+"    public void visitLineNumberTableAttribute(Clazz clazz, Method method, CodeAttribute codeAttribute, LineNumberTableAttribute lineNumberTableAttribute)
+    {
+        if (DEBUG)
+        {
+            System.out.println(""LineNumberLinearizer [""+clazz.getName()+"".""+method.getName(clazz)+method.getDescriptor(clazz)+""]:"");
+        }
+        enclosingLineNumbers.clear();
+        previousLineNumberInfo = null;
+        // Process all line numbers.
+        lineNumberTableAttribute.lineNumbersAccept(clazz, method, codeAttribute, this);
+    }",method,
+"        if (DEBUG)
+        {
+            System.out.println(""LineNumberLinearizer [""+clazz.getName()+"".""+method.getName(clazz)+method.getDescriptor(clazz)+""]:"");
+        }",method,
+"    public void visitLineNumberInfo(Clazz clazz, Method method, CodeAttribute codeAttribute, LineNumberInfo lineNumberInfo)
+    {
+        String source = lineNumberInfo.getSource();
+        if (DEBUG)
+        {
+            System.out.print(""    ["" + lineNumberInfo.u2startPC + ""] line "" + lineNumberInfo.u2lineNumber + (source == null ? """" : "" ["" + source + ""]""));
+        }
+        // Is it an inlined line number?
+        if (source != null)
+        {
+            ExtendedLineNumberInfo extendedLineNumberInfo =
+                (ExtendedLineNumberInfo)lineNumberInfo;
+            int lineNumber = extendedLineNumberInfo.u2lineNumber;
+            // Are we entering or exiting a new inlined block?
+            if (previousLineNumberInfo == null ||
+                previousLineNumberInfo.getSource() != source)
+            {
+                // Are we entering a new inlined block?
+                if (lineNumber != MethodInliner.INLINED_METHOD_END_LINE_NUMBER)
+                {
+                    // Remember information about the inlined block.
+                    enclosingLineNumbers.push(previousLineNumberInfo != null ?
+                        new MyLineNumberBlock(currentLineNumberShift,
+                                              previousLineNumberInfo.u2lineNumber,
+                                              previousLineNumberInfo.getSource()) :
+                        new MyLineNumberBlock(0, 0, null));
+                    // Parse the end line number from the source string,
+                    // so we know how large a block this will be.
+                    int separatorIndex1 = source.indexOf(':');
+                    int separatorIndex2 = source.indexOf(':', separatorIndex1 + 1);
+                    int startLineNumber = Integer.parseInt(source.substring(separatorIndex1 + 1, separatorIndex2));
+                    int endLineNumber   = Integer.parseInt(source.substring(separatorIndex2 + 1));
+                    // Start shifting, if necessary, so the block ends up beyond
+                    // the highest used line number. We're striving for rounded
+                    // shifts, unless we've reached a given limit, to avoid
+                    // running out of line numbers too quickly.
+                    currentLineNumberShift =
+                        highestUsedLineNumber > SHIFT_ROUNDING_LIMIT ?
+                            highestUsedLineNumber - startLineNumber + 1 :
+                        startLineNumber > highestUsedLineNumber ? 0 :
+                            (highestUsedLineNumber - startLineNumber + SHIFT_ROUNDING)
+                            / SHIFT_ROUNDING * SHIFT_ROUNDING;
+                    highestUsedLineNumber = endLineNumber + currentLineNumberShift;
+                    if (DEBUG)
+                    {
+                        System.out.print("" (enter with shift ""+currentLineNumberShift+"")"");
+                    }
+                    // Apply the shift.
+                    lineNumberInfo.u2lineNumber += currentLineNumberShift;
+                }
+                // TODO: There appear to be cases where the stack is empty at this point, so we've added a check.
+                else if (enclosingLineNumbers.isEmpty())
+                {
+                    if (DEBUG)
+                    {
+                        System.err.println(""Problem linearizing line numbers for optimized code (""+clazz.getName()+"".""+method.getName(clazz)+"")"");
+                    }
+                }
+                // Are we exiting an inlined block?
+                else
+                {
+                    // Pop information about the enclosing line number.
+                    MyLineNumberBlock lineNumberBlock =
+                        (MyLineNumberBlock)enclosingLineNumbers.pop();
+                    // Set this end of the block to the line at which it was
+                    // inlined.
+                    extendedLineNumberInfo.u2lineNumber = lineNumberBlock.enclosingLineNumber;
+                    extendedLineNumberInfo.source       = lineNumberBlock.enclosingSource;
+                    // Reset the shift to the shift of the block.
+                    currentLineNumberShift = lineNumberBlock.lineNumberShift;
+                    if (DEBUG)
+                    {
+                        System.out.print("" (exit to shift ""+currentLineNumberShift+"")"");
+                    }
+                }
+            }
+            else
+            {
+                if (DEBUG)
+                {
+                    System.out.print("" (apply shift ""+currentLineNumberShift+"")"");
+                }
+                // Apply the shift.
+                lineNumberInfo.u2lineNumber += currentLineNumberShift;
+            }
+        }
+        previousLineNumberInfo = lineNumberInfo;
+        if (DEBUG)
+        {
+            System.out.println("" -> line "" + lineNumberInfo.u2lineNumber);
+        }
+    }",method,
+"        if (DEBUG)
+        {
+            System.out.print(""    ["" + lineNumberInfo.u2startPC + ""] line "" + lineNumberInfo.u2lineNumber + (source == null ? """" : "" ["" + source + ""]""));
+        }",method,
+"        if (source != null)
+        {
+            ExtendedLineNumberInfo extendedLineNumberInfo =
+                (ExtendedLineNumberInfo)lineNumberInfo;
+            int lineNumber = extendedLineNumberInfo.u2lineNumber;
+            // Are we entering or exiting a new inlined block?
+            if (previousLineNumberInfo == null ||
+                previousLineNumberInfo.getSource() != source)
+            {
+                // Are we entering a new inlined block?
+                if (lineNumber != MethodInliner.INLINED_METHOD_END_LINE_NUMBER)
+                {
+                    // Remember information about the inlined block.
+                    enclosingLineNumbers.push(previousLineNumberInfo != null ?
+                        new MyLineNumberBlock(currentLineNumberShift,
+                                              previousLineNumberInfo.u2lineNumber,
+                                              previousLineNumberInfo.getSource()) :
+                        new MyLineNumberBlock(0, 0, null));
+                    // Parse the end line number from the source string,
+                    // so we know how large a block this will be.
+                    int separatorIndex1 = source.indexOf(':');
+                    int separatorIndex2 = source.indexOf(':', separatorIndex1 + 1);
+                    int startLineNumber = Integer.parseInt(source.substring(separatorIndex1 + 1, separatorIndex2));
+                    int endLineNumber   = Integer.parseInt(source.substring(separatorIndex2 + 1));
+                    // Start shifting, if necessary, so the block ends up beyond
+                    // the highest used line number. We're striving for rounded
+                    // shifts, unless we've reached a given limit, to avoid
+                    // running out of line numbers too quickly.
+                    currentLineNumberShift =
+                        highestUsedLineNumber > SHIFT_ROUNDING_LIMIT ?
+                            highestUsedLineNumber - startLineNumber + 1 :
+                        startLineNumber > highestUsedLineNumber ? 0 :
+                            (highestUsedLineNumber - startLineNumber + SHIFT_ROUNDING)
+                            / SHIFT_ROUNDING * SHIFT_ROUNDING;
+                    highestUsedLineNumber = endLineNumber + currentLineNumberShift;
+                    if (DEBUG)
+                    {
+                        System.out.print("" (enter with shift ""+currentLineNumberShift+"")"");
+                    }
+                    // Apply the shift.
+                    lineNumberInfo.u2lineNumber += currentLineNumberShift;
+                }
+                // TODO: There appear to be cases where the stack is empty at this point, so we've added a check.
+                else if (enclosingLineNumbers.isEmpty())
+                {
+                    if (DEBUG)
+                    {
+                        System.err.println(""Problem linearizing line numbers for optimized code (""+clazz.getName()+"".""+method.getName(clazz)+"")"");
+                    }
+                }
+                // Are we exiting an inlined block?
+                else
+                {
+                    // Pop information about the enclosing line number.
+                    MyLineNumberBlock lineNumberBlock =
+                        (MyLineNumberBlock)enclosingLineNumbers.pop();
+                    // Set this end of the block to the line at which it was
+                    // inlined.
+                    extendedLineNumberInfo.u2lineNumber = lineNumberBlock.enclosingLineNumber;
+                    extendedLineNumberInfo.source       = lineNumberBlock.enclosingSource;
+                    // Reset the shift to the shift of the block.
+                    currentLineNumberShift = lineNumberBlock.lineNumberShift;
+                    if (DEBUG)
+                    {
+                        System.out.print("" (exit to shift ""+currentLineNumberShift+"")"");
+                    }
+                }
+            }
+            else
+            {
+                if (DEBUG)
+                {
+                    System.out.print("" (apply shift ""+currentLineNumberShift+"")"");
+                }
+                // Apply the shift.
+                lineNumberInfo.u2lineNumber += currentLineNumberShift;
+            }
+        }",method,
+"                if (lineNumber != MethodInliner.INLINED_METHOD_END_LINE_NUMBER)
+                {
+                    // Remember information about the inlined block.
+                    enclosingLineNumbers.push(previousLineNumberInfo != null ?
+                        new MyLineNumberBlock(currentLineNumberShift,
+                                              previousLineNumberInfo.u2lineNumber,
+                                              previousLineNumberInfo.getSource()) :
+                        new MyLineNumberBlock(0, 0, null));
+                    // Parse the end line number from the source string,
+                    // so we know how large a block this will be.
+                    int separatorIndex1 = source.indexOf(':');
+                    int separatorIndex2 = source.indexOf(':', separatorIndex1 + 1);
+                    int startLineNumber = Integer.parseInt(source.substring(separatorIndex1 + 1, separatorIndex2));
+                    int endLineNumber   = Integer.parseInt(source.substring(separatorIndex2 + 1));
+                    // Start shifting, if necessary, so the block ends up beyond
+                    // the highest used line number. We're striving for rounded
+                    // shifts, unless we've reached a given limit, to avoid
+                    // running out of line numbers too quickly.
+                    currentLineNumberShift =
+                        highestUsedLineNumber > SHIFT_ROUNDING_LIMIT ?
+                            highestUsedLineNumber - startLineNumber + 1 :
+                        startLineNumber > highestUsedLineNumber ? 0 :
+                            (highestUsedLineNumber - startLineNumber + SHIFT_ROUNDING)
+                            / SHIFT_ROUNDING * SHIFT_ROUNDING;
+                    highestUsedLineNumber = endLineNumber + currentLineNumberShift;
+                    if (DEBUG)
+                    {
+                        System.out.print("" (enter with shift ""+currentLineNumberShift+"")"");
+                    }
+                    // Apply the shift.
+                    lineNumberInfo.u2lineNumber += currentLineNumberShift;
+                }",method,
+"                    if (DEBUG)
+                    {
+                        System.out.print("" (enter with shift ""+currentLineNumberShift+"")"");
+                    }",method,
+"                    if (DEBUG)
+                    {
+                        System.err.println(""Problem linearizing line numbers for optimized code (""+clazz.getName()+"".""+method.getName(clazz)+"")"");
+                    }",method,
+"                    if (DEBUG)
+                    {
+                        System.out.print("" (exit to shift ""+currentLineNumberShift+"")"");
+                    }",method,
+"                if (DEBUG)
+                {
+                    System.out.print("" (apply shift ""+currentLineNumberShift+"")"");
+                }",method,
+"        if (DEBUG)
+        {
+            System.out.println("" -> line "" + lineNumberInfo.u2lineNumber);
+        }",method,
+"        public MyLineNumberBlock(int    lineNumberShift,
+                                 int    enclosingLineNumber,
+                                 String enclosingSource)
+        {
+            this.lineNumberShift     = lineNumberShift;
+            this.enclosingLineNumber = enclosingLineNumber;
+            this.enclosingSource     = enclosingSource;
+        }",method,
+"public class AnonymousHasLambdaAlternativeInspection extends AbstractBaseJavaLocalInspectionTool {
+  public static final Logger LOG = Logger.getInstance(AnonymousHasLambdaAlternativeInspection.class);
+  static final class AnonymousLambdaAlternative {
+    final String myClassName;
+    final String myMethodName;
+    final String myLambdaAlternative;
+    final String myReplacementMessage;
+    public AnonymousLambdaAlternative(String className, String methodName, String lambdaAlternative, String replacementMessage) {
+      myClassName = className;
+      myMethodName = methodName;
+      myLambdaAlternative = lambdaAlternative;
+      myReplacementMessage = replacementMessage;
+    }
+  }
+  private static AnonymousLambdaAlternative[] ALTERNATIVES = {
+    new AnonymousLambdaAlternative(""java.lang.ThreadLocal"", ""initialValue"", ""java.lang.ThreadLocal.withInitial($lambda$)"",
+                                   ""ThreadLocal.withInitial()""),
+    new AnonymousLambdaAlternative(""java.lang.Thread"", ""run"", ""new java.lang.Thread($lambda$)"",
+                                   ""new Thread(() -> {…})"")
+  };
+  @NotNull
+  @Override
+  public PsiElementVisitor buildVisitor(@NotNull final ProblemsHolder holder, boolean isOnTheFly) {
+    if (!PsiUtil.isLanguageLevel8OrHigher(holder.getFile())) {
+      return PsiElementVisitor.EMPTY_VISITOR;
+    }
+    return new JavaElementVisitor() {
+      @Override
+      public void visitAnonymousClass(final PsiAnonymousClass aClass) {
+        super.visitAnonymousClass(aClass);
+        PsiExpressionList argumentList = aClass.getArgumentList();
+        if (AnonymousCanBeLambdaInspection.isLambdaForm(aClass, Collections.emptySet()) &&
+            argumentList != null &&
+            argumentList.getExpressions().length == 0) {
+          PsiMethod method = aClass.getMethods()[0];
+          PsiClassType type = aClass.getBaseClassType();
+          AnonymousLambdaAlternative alternative = getAlternative(type.resolve(), method);
+          if(alternative != null) {
+            final PsiElement lBrace = aClass.getLBrace();
+            LOG.assertTrue(lBrace != null);
+            final TextRange rangeInElement = new TextRange(0, lBrace.getStartOffsetInParent() + aClass.getStartOffsetInParent() - 1);
+            holder.registerProblem(aClass.getParent(), ""Anonymous #ref #loc can be replaced with ""+alternative.myReplacementMessage,
+                                   ProblemHighlightType.LIKE_UNUSED_SYMBOL, rangeInElement, new ReplaceWithLambdaAlternativeFix(alternative));
+          }
+        }
+      }
+      @Contract(""null, _ -> null"")
+      private AnonymousLambdaAlternative getAlternative(PsiClass type, PsiMethod method) {
+        if(type == null) return null;
+        for(AnonymousLambdaAlternative alternative : ALTERNATIVES) {
+          if(alternative.myClassName.equals(type.getQualifiedName()) && alternative.myMethodName.equals(method.getName())) {
+            return alternative;
+          }
+        }
+        return null;
+      }
+    };
+  }
+  static class ReplaceWithLambdaAlternativeFix implements LocalQuickFix {
+    private final @NotNull AnonymousLambdaAlternative myAlternative;
+    public ReplaceWithLambdaAlternativeFix(@NotNull AnonymousLambdaAlternative alternative) {
+      myAlternative = alternative;
+    }
+    @Nls
+    @NotNull
+    @Override
+    public String getName() {
+      return ""Replace with ""+myAlternative.myReplacementMessage;
+    }
+    @Nls
+    @NotNull
+    @Override
+    public String getFamilyName() {
+      return ""Replace anonymous class with lambda alternative"";
+    }
+    @Override
+    public void applyFix(@NotNull Project project, @NotNull ProblemDescriptor descriptor) {
+      PsiElement element = descriptor.getStartElement();
+      if(!(element instanceof PsiNewExpression)) return;
+      PsiAnonymousClass aClass = ((PsiNewExpression)element).getAnonymousClass();
+      if(aClass == null) return;
+      PsiMethod[] methods = aClass.getMethods();
+      if(methods.length != 1) return;
+      PsiMethod method = methods[0];
+      if(method.getBody() == null) return;
+      UnaryOperator<PsiLambdaExpression> replacer = lambda -> {
+        PsiElementFactory factory = JavaPsiFacade.getElementFactory(project);
+        PsiElement replacement = element.replace(factory.createExpressionFromText(myAlternative.myLambdaAlternative, element));
+        PsiElement[] lambdaPositions =
+          PsiTreeUtil.collectElements(replacement, e -> e instanceof PsiReference && e.textMatches(""$lambda$""));
+        LOG.assertTrue(lambdaPositions.length == 1);
+        return (PsiLambdaExpression)lambdaPositions[0].replace(lambda);
+      };
+      AnonymousCanBeLambdaInspection.generateLambdaByMethod(aClass, method, replacer, true);
+    }
+  }
+}",class,
+"  static final class AnonymousLambdaAlternative {
+    final String myClassName;
+    final String myMethodName;
+    final String myLambdaAlternative;
+    final String myReplacementMessage;
+    public AnonymousLambdaAlternative(String className, String methodName, String lambdaAlternative, String replacementMessage) {
+      myClassName = className;
+      myMethodName = methodName;
+      myLambdaAlternative = lambdaAlternative;
+      myReplacementMessage = replacementMessage;
+    }
+  }",class,
+"  static class ReplaceWithLambdaAlternativeFix implements LocalQuickFix {
+    private final @NotNull AnonymousLambdaAlternative myAlternative;
+    public ReplaceWithLambdaAlternativeFix(@NotNull AnonymousLambdaAlternative alternative) {
+      myAlternative = alternative;
+    }
+    @Nls
+    @NotNull
+    @Override
+    public String getName() {
+      return ""Replace with ""+myAlternative.myReplacementMessage;
+    }
+    @Nls
+    @NotNull
+    @Override
+    public String getFamilyName() {
+      return ""Replace anonymous class with lambda alternative"";
+    }
+    @Override
+    public void applyFix(@NotNull Project project, @NotNull ProblemDescriptor descriptor) {
+      PsiElement element = descriptor.getStartElement();
+      if(!(element instanceof PsiNewExpression)) return;
+      PsiAnonymousClass aClass = ((PsiNewExpression)element).getAnonymousClass();
+      if(aClass == null) return;
+      PsiMethod[] methods = aClass.getMethods();
+      if(methods.length != 1) return;
+      PsiMethod method = methods[0];
+      if(method.getBody() == null) return;
+      UnaryOperator<PsiLambdaExpression> replacer = lambda -> {
+        PsiElementFactory factory = JavaPsiFacade.getElementFactory(project);
+        PsiElement replacement = element.replace(factory.createExpressionFromText(myAlternative.myLambdaAlternative, element));
+        PsiElement[] lambdaPositions =
+          PsiTreeUtil.collectElements(replacement, e -> e instanceof PsiReference && e.textMatches(""$lambda$""));
+        LOG.assertTrue(lambdaPositions.length == 1);
+        return (PsiLambdaExpression)lambdaPositions[0].replace(lambda);
+      };
+      AnonymousCanBeLambdaInspection.generateLambdaByMethod(aClass, method, replacer, true);
+    }
+  }",class,
+"      return ""Replace anonymous class with lambda alternative"";
+    }
+    @Override
+    public void applyFix(@NotNull Project project, @NotNull ProblemDescriptor descriptor) {
+      PsiElement element = descriptor.getStartElement();
+      if(!(element instanceof PsiNewExpression)) return;
+      PsiAnonymousClass aClass = ((PsiNewExpression)element).getAnonymousClass();
+      if(aClass == null) return;
+      PsiMethod[] methods = aClass.getMethods();
+      if(methods.length != 1) return;
+      PsiMethod method = methods[0];
+      if(method.getBody() == null) return;
+      UnaryOperator<PsiLambdaExpression> replacer = lambda -> {
+        PsiElementFactory factory = JavaPsiFacade.getElementFactory(project);
+        PsiElement replacement = element.replace(factory.createExpressionFromText(myAlternative.myLambdaAlternative, element));
+        PsiElement[] lambdaPositions =
+          PsiTreeUtil.collectElements(replacement, e -> e instanceof PsiReference && e.textMatches(""$lambda$""));
+        LOG.assertTrue(lambdaPositions.length == 1);
+        return (PsiLambdaExpression)lambdaPositions[0].replace(lambda);
+      };
+      AnonymousCanBeLambdaInspection.generateLambdaByMethod(aClass, method, replacer, true);
+    }",class,
+"    public AnonymousLambdaAlternative(String className, String methodName, String lambdaAlternative, String replacementMessage) {
+      myClassName = className;
+      myMethodName = methodName;
+      myLambdaAlternative = lambdaAlternative;
+      myReplacementMessage = replacementMessage;
+    }",method,
+"  @NotNull
+  @Override
+  public PsiElementVisitor buildVisitor(@NotNull final ProblemsHolder holder, boolean isOnTheFly) {
+    if (!PsiUtil.isLanguageLevel8OrHigher(holder.getFile())) {
+      return PsiElementVisitor.EMPTY_VISITOR;
+    }
+    return new JavaElementVisitor() {
+      @Override
+      public void visitAnonymousClass(final PsiAnonymousClass aClass) {
+        super.visitAnonymousClass(aClass);
+        PsiExpressionList argumentList = aClass.getArgumentList();
+        if (AnonymousCanBeLambdaInspection.isLambdaForm(aClass, Collections.emptySet()) &&
+            argumentList != null &&
+            argumentList.getExpressions().length == 0) {
+          PsiMethod method = aClass.getMethods()[0];
+          PsiClassType type = aClass.getBaseClassType();
+          AnonymousLambdaAlternative alternative = getAlternative(type.resolve(), method);
+          if(alternative != null) {
+            final PsiElement lBrace = aClass.getLBrace();
+            LOG.assertTrue(lBrace != null);
+            final TextRange rangeInElement = new TextRange(0, lBrace.getStartOffsetInParent() + aClass.getStartOffsetInParent() - 1);
+            holder.registerProblem(aClass.getParent(), ""Anonymous #ref #loc can be replaced with ""+alternative.myReplacementMessage,
+                                   ProblemHighlightType.LIKE_UNUSED_SYMBOL, rangeInElement, new ReplaceWithLambdaAlternativeFix(alternative));
+          }
+        }
+      }
+      @Contract(""null, _ -> null"")
+      private AnonymousLambdaAlternative getAlternative(PsiClass type, PsiMethod method) {
+        if(type == null) return null;
+        for(AnonymousLambdaAlternative alternative : ALTERNATIVES) {
+          if(alternative.myClassName.equals(type.getQualifiedName()) && alternative.myMethodName.equals(method.getName())) {
+            return alternative;
+          }
+        }
+        return null;
+      }
+    };
+  }",method,
+"    return new JavaElementVisitor() {
+      @Override
+      public void visitAnonymousClass(final PsiAnonymousClass aClass) {
+        super.visitAnonymousClass(aClass);
+        PsiExpressionList argumentList = aClass.getArgumentList();
+        if (AnonymousCanBeLambdaInspection.isLambdaForm(aClass, Collections.emptySet()) &&
+            argumentList != null &&
+            argumentList.getExpressions().length == 0) {
+          PsiMethod method = aClass.getMethods()[0];
+          PsiClassType type = aClass.getBaseClassType();
+          AnonymousLambdaAlternative alternative = getAlternative(type.resolve(), method);
+          if(alternative != null) {
+            final PsiElement lBrace = aClass.getLBrace();
+            LOG.assertTrue(lBrace != null);
+            final TextRange rangeInElement = new TextRange(0, lBrace.getStartOffsetInParent() + aClass.getStartOffsetInParent() - 1);
+            holder.registerProblem(aClass.getParent(), ""Anonymous #ref #loc can be replaced with ""+alternative.myReplacementMessage,
+                                   ProblemHighlightType.LIKE_UNUSED_SYMBOL, rangeInElement, new ReplaceWithLambdaAlternativeFix(alternative));
+          }
+        }
+      }
+      @Contract(""null, _ -> null"")
+      private AnonymousLambdaAlternative getAlternative(PsiClass type, PsiMethod method) {
+        if(type == null) return null;
+        for(AnonymousLambdaAlternative alternative : ALTERNATIVES) {
+          if(alternative.myClassName.equals(type.getQualifiedName()) && alternative.myMethodName.equals(method.getName())) {
+            return alternative;
+          }
+        }
+        return null;
+      }
+    }",method,
+"      @Override
+      public void visitAnonymousClass(final PsiAnonymousClass aClass) {
+        super.visitAnonymousClass(aClass);
+        PsiExpressionList argumentList = aClass.getArgumentList();
+        if (AnonymousCanBeLambdaInspection.isLambdaForm(aClass, Collections.emptySet()) &&
+            argumentList != null &&
+            argumentList.getExpressions().length == 0) {
+          PsiMethod method = aClass.getMethods()[0];
+          PsiClassType type = aClass.getBaseClassType();
+          AnonymousLambdaAlternative alternative = getAlternative(type.resolve(), method);
+          if(alternative != null) {
+            final PsiElement lBrace = aClass.getLBrace();
+            LOG.assertTrue(lBrace != null);
+            final TextRange rangeInElement = new TextRange(0, lBrace.getStartOffsetInParent() + aClass.getStartOffsetInParent() - 1);
+            holder.registerProblem(aClass.getParent(), ""Anonymous #ref #loc can be replaced with ""+alternative.myReplacementMessage,
+                                   ProblemHighlightType.LIKE_UNUSED_SYMBOL, rangeInElement, new ReplaceWithLambdaAlternativeFix(alternative));
+          }
+        }
+      }",method,
+"          if(alternative != null) {
+            final PsiElement lBrace = aClass.getLBrace();
+            LOG.assertTrue(lBrace != null);
+            final TextRange rangeInElement = new TextRange(0, lBrace.getStartOffsetInParent() + aClass.getStartOffsetInParent() - 1);
+            holder.registerProblem(aClass.getParent(), ""Anonymous #ref #loc can be replaced with ""+alternative.myReplacementMessage,
+                                   ProblemHighlightType.LIKE_UNUSED_SYMBOL, rangeInElement, new ReplaceWithLambdaAlternativeFix(alternative));
+          }",method,
+"      @Contract(""null, _ -> null"")
+      private AnonymousLambdaAlternative getAlternative(PsiClass type, PsiMethod method) {
+        if(type == null) return null;
+        for(AnonymousLambdaAlternative alternative : ALTERNATIVES) {
+          if(alternative.myClassName.equals(type.getQualifiedName()) && alternative.myMethodName.equals(method.getName())) {
+            return alternative;
+          }
+        }
+        return null;
+      }",method,
+"        for(AnonymousLambdaAlternative alternative : ALTERNATIVES) {
+          if(alternative.myClassName.equals(type.getQualifiedName()) && alternative.myMethodName.equals(method.getName())) {
+            return alternative;
+          }
+        }",method,
+"    public ReplaceWithLambdaAlternativeFix(@NotNull AnonymousLambdaAlternative alternative) {
+      myAlternative = alternative;
+    }",method,
+"    @Nls
+    @NotNull
+    @Override
+    public String getName() {
+      return ""Replace with ""+myAlternative.myReplacementMessage;
+    }",method,
+"    @Nls
+    @NotNull
+    @Override
+    public String getFamilyName() {
+      return ""Replace anonymous class with lambda alternative"";
+    }",method,
+"    @Override
+    public void applyFix(@NotNull Project project, @NotNull ProblemDescriptor descriptor) {
+      PsiElement element = descriptor.getStartElement();
+      if(!(element instanceof PsiNewExpression)) return;
+      PsiAnonymousClass aClass = ((PsiNewExpression)element).getAnonymousClass();
+      if(aClass == null) return;
+      PsiMethod[] methods = aClass.getMethods();
+      if(methods.length != 1) return;
+      PsiMethod method = methods[0];
+      if(method.getBody() == null) return;
+      UnaryOperator<PsiLambdaExpression> replacer = lambda -> {
+        PsiElementFactory factory = JavaPsiFacade.getElementFactory(project);
+        PsiElement replacement = element.replace(factory.createExpressionFromText(myAlternative.myLambdaAlternative, element));
+        PsiElement[] lambdaPositions =
+          PsiTreeUtil.collectElements(replacement, e -> e instanceof PsiReference && e.textMatches(""$lambda$""));
+        LOG.assertTrue(lambdaPositions.length == 1);
+        return (PsiLambdaExpression)lambdaPositions[0].replace(lambda);
+      };
+      AnonymousCanBeLambdaInspection.generateLambdaByMethod(aClass, method, replacer, true);
+    }",method,
+"public class AnimatablePathDataValue extends AnimatableValue {
+    protected short[] commands;
+    protected float[] parameters;
+    protected AnimatablePathDataValue(AnimationTarget target) {
+        super(target);
+    }
+    public AnimatablePathDataValue(AnimationTarget target, short[] commands,
+                                   float[] parameters) {
+        super(target);
+        this.commands = commands;
+        this.parameters = parameters;
+    }
+    public AnimatableValue interpolate(AnimatableValue result,
+                                       AnimatableValue to, float interpolation,
+                                       AnimatableValue accumulation,
+                                       int multiplier) {
+        AnimatablePathDataValue toValue = (AnimatablePathDataValue) to;
+        AnimatablePathDataValue accValue =
+            (AnimatablePathDataValue) accumulation;
+        boolean hasTo = to != null;
+        boolean hasAcc = accumulation != null;
+        boolean canInterpolate = hasTo
+            && toValue.parameters.length == parameters.length
+            && Arrays.equals(toValue.commands, commands);
+        boolean canAccumulate = hasAcc
+            && accValue.parameters.length == parameters.length
+            && Arrays.equals(accValue.commands, commands);
+        AnimatablePathDataValue base;
+        if (!canInterpolate && hasTo && interpolation >= 0.5) {
+            base = toValue;
+        } else {
+            base = this;
+        }
+        int cmdCount = base.commands.length;
+        int paramCount = base.parameters.length;
+        AnimatablePathDataValue res;
+        if (result == null) {
+            res = new AnimatablePathDataValue(target);
+            res.commands = new short[cmdCount];
+            res.parameters = new float[paramCount];
+            System.arraycopy(base.commands, 0, res.commands, 0, cmdCount);
+        } else {
+            res = (AnimatablePathDataValue) result;
+            if (res.commands == null || res.commands.length != cmdCount) {
+                res.commands = new short[cmdCount];
+                System.arraycopy(base.commands, 0, res.commands, 0, cmdCount);
+                res.hasChanged = true;
+            } else {
+                if (!Arrays.equals(base.commands, res.commands)) {
+                    System.arraycopy(base.commands, 0, res.commands, 0,
+                                     cmdCount);
+                    res.hasChanged = true;
+                }
+            }
+        }
+        for (int i = 0; i < paramCount; i++) {
+            float newValue = base.parameters[i];
+            if (canInterpolate) {
+                newValue += interpolation * (toValue.parameters[i] - newValue);
+            }
+            if (canAccumulate) {
+                newValue += multiplier * accValue.parameters[i];
+            }
+            if (res.parameters[i] != newValue) {
+                res.parameters[i] = newValue;
+                res.hasChanged = true;
+            }
+        }
+        return res;
+    }
+    public short[] getCommands() {
+        return commands;
+    }
+    public float[] getParameters() {
+        return parameters;
+    }
+    public boolean canPace() {
+        return false;
+    }
+    public float distanceTo(AnimatableValue other) {
+        return 0f;
+    }
+    public AnimatableValue getZeroValue() {
+        short[] cmds = new short[commands.length];
+        System.arraycopy(commands, 0, cmds, 0, commands.length);
+        float[] params = new float[parameters.length];
+        return new AnimatablePathDataValue(target, cmds, params);
+    }
+    protected static final char[] PATH_COMMANDS = {
+        ' ', 'z', 'M', 'm', 'L', 'l', 'C', 'c', 'Q', 'q', 'A', 'a', 'H', 'h',
+        'V', 'v', 'S', 's', 'T', 't'
+    };
+    protected static final int[] PATH_PARAMS = {
+        0, 0, 2, 2, 2, 2, 6, 6, 4, 4, 7, 7, 1, 1, 1, 1, 4, 4, 2, 2
+    };
+    public String toStringRep() {
+        StringBuffer sb = new StringBuffer();
+        int k = 0;
+        for (int i = 0; i < commands.length; i++) {
+            sb.append(PATH_COMMANDS[commands[i]]);
+            for (int j = 0; j < PATH_PARAMS[commands[i]]; j++) {
+                sb.append(' ');
+                sb.append(parameters[k++]);
+            }
+        }
+        return sb.toString();
+    }
+}",class,
+"    protected AnimatablePathDataValue(AnimationTarget target) {
+        super(target);
+    }",method,
+"    public AnimatablePathDataValue(AnimationTarget target, short[] commands,
+                                   float[] parameters) {
+        super(target);
+        this.commands = commands;
+        this.parameters = parameters;
+    }",method,
+"    public AnimatableValue interpolate(AnimatableValue result,
+                                       AnimatableValue to, float interpolation,
+                                       AnimatableValue accumulation,
+                                       int multiplier) {
+        AnimatablePathDataValue toValue = (AnimatablePathDataValue) to;
+        AnimatablePathDataValue accValue =
+            (AnimatablePathDataValue) accumulation;
+        boolean hasTo = to != null;
+        boolean hasAcc = accumulation != null;
+        boolean canInterpolate = hasTo
+            && toValue.parameters.length == parameters.length
+            && Arrays.equals(toValue.commands, commands);
+        boolean canAccumulate = hasAcc
+            && accValue.parameters.length == parameters.length
+            && Arrays.equals(accValue.commands, commands);
+        AnimatablePathDataValue base;
+        if (!canInterpolate && hasTo && interpolation >= 0.5) {
+            base = toValue;
+        } else {
+            base = this;
+        }
+        int cmdCount = base.commands.length;
+        int paramCount = base.parameters.length;
+        AnimatablePathDataValue res;
+        if (result == null) {
+            res = new AnimatablePathDataValue(target);
+            res.commands = new short[cmdCount];
+            res.parameters = new float[paramCount];
+            System.arraycopy(base.commands, 0, res.commands, 0, cmdCount);
+        } else {
+            res = (AnimatablePathDataValue) result;
+            if (res.commands == null || res.commands.length != cmdCount) {
+                res.commands = new short[cmdCount];
+                System.arraycopy(base.commands, 0, res.commands, 0, cmdCount);
+                res.hasChanged = true;
+            } else {
+                if (!Arrays.equals(base.commands, res.commands)) {
+                    System.arraycopy(base.commands, 0, res.commands, 0,
+                                     cmdCount);
+                    res.hasChanged = true;
+                }
+            }
+        }
+        for (int i = 0; i < paramCount; i++) {
+            float newValue = base.parameters[i];
+            if (canInterpolate) {
+                newValue += interpolation * (toValue.parameters[i] - newValue);
+            }
+            if (canAccumulate) {
+                newValue += multiplier * accValue.parameters[i];
+            }
+            if (res.parameters[i] != newValue) {
+                res.parameters[i] = newValue;
+                res.hasChanged = true;
+            }
+        }
+        return res;
+    }",method,
+"        if (!canInterpolate && hasTo && interpolation >= 0.5) {
+            base = toValue;
+        }",method,
+"        if (result == null) {
+            res = new AnimatablePathDataValue(target);
+            res.commands = new short[cmdCount];
+            res.parameters = new float[paramCount];
+            System.arraycopy(base.commands, 0, res.commands, 0, cmdCount);
+        }",method,
+"            if (res.commands == null || res.commands.length != cmdCount) {
+                res.commands = new short[cmdCount];
+                System.arraycopy(base.commands, 0, res.commands, 0, cmdCount);
+                res.hasChanged = true;
+            }",method,
+"        for (int i = 0; i < paramCount; i++) {
+            float newValue = base.parameters[i];
+            if (canInterpolate) {
+                newValue += interpolation * (toValue.parameters[i] - newValue);
+            }
+            if (canAccumulate) {
+                newValue += multiplier * accValue.parameters[i];
+            }
+            if (res.parameters[i] != newValue) {
+                res.parameters[i] = newValue;
+                res.hasChanged = true;
+            }
+        }",method,
+"            if (canInterpolate) {
+                newValue += interpolation * (toValue.parameters[i] - newValue);
+            }",method,
+"            if (canAccumulate) {
+                newValue += multiplier * accValue.parameters[i];
+            }",method,
+"            if (res.parameters[i] != newValue) {
+                res.parameters[i] = newValue;
+                res.hasChanged = true;
+            }",method,
+"    public short[] getCommands() {
+        return commands;
+    }",method,
+"    public float[] getParameters() {
+        return parameters;
+    }",method,
+"    public boolean canPace() {
+        return false;
+    }",method,
+"    public float distanceTo(AnimatableValue other) {
+        return 0f;
+    }",method,
+"    public AnimatableValue getZeroValue() {
+        short[] cmds = new short[commands.length];
+        System.arraycopy(commands, 0, cmds, 0, commands.length);
+        float[] params = new float[parameters.length];
+        return new AnimatablePathDataValue(target, cmds, params);
+    }",method,
+"    public String toStringRep() {
+        StringBuffer sb = new StringBuffer();
+        int k = 0;
+        for (int i = 0; i < commands.length; i++) {
+            sb.append(PATH_COMMANDS[commands[i]]);
+            for (int j = 0; j < PATH_PARAMS[commands[i]]; j++) {
+                sb.append(' ');
+                sb.append(parameters[k++]);
+            }
+        }
+        return sb.toString();
+    }",method,
+"        for (int i = 0; i < commands.length; i++) {
+            sb.append(PATH_COMMANDS[commands[i]]);
+            for (int j = 0; j < PATH_PARAMS[commands[i]]; j++) {
+                sb.append(' ');
+                sb.append(parameters[k++]);
+            }
+        }",method,
+"            for (int j = 0; j < PATH_PARAMS[commands[i]]; j++) {
+                sb.append(' ');
+                sb.append(parameters[k++]);
+            }",method,
+"public class HttpComponentsHttpInvokerRequestExecutorTests {
+	@Test
+	public void customizeConnectionTimeout() throws IOException {
+		HttpComponentsHttpInvokerRequestExecutor executor = new HttpComponentsHttpInvokerRequestExecutor();
+		executor.setConnectTimeout(5000);
+		HttpInvokerClientConfiguration config = mockHttpInvokerClientConfiguration(""http://fake-service"");
+		HttpPost httpPost = executor.createHttpPost(config);
+		assertEquals(5000, httpPost.getConfig().getConnectTimeout());
+	}
+	@Test
+	public void customizeConnectionRequestTimeout() throws IOException {
+		HttpComponentsHttpInvokerRequestExecutor executor = new HttpComponentsHttpInvokerRequestExecutor();
+		executor.setConnectionRequestTimeout(7000);
+		HttpInvokerClientConfiguration config = mockHttpInvokerClientConfiguration(""http://fake-service"");
+		HttpPost httpPost = executor.createHttpPost(config);
+		assertEquals(7000, httpPost.getConfig().getConnectionRequestTimeout());
+	}
+	@Test
+	public void customizeReadTimeout() throws IOException {
+		HttpComponentsHttpInvokerRequestExecutor executor = new HttpComponentsHttpInvokerRequestExecutor();
+		executor.setReadTimeout(10000);
+		HttpInvokerClientConfiguration config = mockHttpInvokerClientConfiguration(""http://fake-service"");
+		HttpPost httpPost = executor.createHttpPost(config);
+		assertEquals(10000, httpPost.getConfig().getSocketTimeout());
+	}
+	@Test
+	public void defaultSettingsOfHttpClientMergedOnExecutorCustomization() throws IOException {
+		RequestConfig defaultConfig = RequestConfig.custom().setConnectTimeout(1234).build();
+		CloseableHttpClient client = mock(CloseableHttpClient.class,
+				withSettings().extraInterfaces(Configurable.class));
+		Configurable configurable = (Configurable) client;
+		when(configurable.getConfig()).thenReturn(defaultConfig);
+		HttpComponentsHttpInvokerRequestExecutor executor =
+				new HttpComponentsHttpInvokerRequestExecutor(client);
+		HttpInvokerClientConfiguration config = mockHttpInvokerClientConfiguration(""http://fake-service"");
+		HttpPost httpPost = executor.createHttpPost(config);
+		assertSame(""Default client configuration is expected"", defaultConfig, httpPost.getConfig());
+		executor.setConnectionRequestTimeout(4567);
+		HttpPost httpPost2 = executor.createHttpPost(config);
+		assertNotNull(httpPost2.getConfig());
+		assertEquals(4567, httpPost2.getConfig().getConnectionRequestTimeout());
+		// Default connection timeout merged
+		assertEquals(1234, httpPost2.getConfig().getConnectTimeout());
+	}
+	@Test
+	public void localSettingsOverrideClientDefaultSettings() throws Exception {
+		RequestConfig defaultConfig = RequestConfig.custom()
+				.setConnectTimeout(1234).setConnectionRequestTimeout(6789).build();
+		CloseableHttpClient client = mock(CloseableHttpClient.class,
+				withSettings().extraInterfaces(Configurable.class));
+		Configurable configurable = (Configurable) client;
+		when(configurable.getConfig()).thenReturn(defaultConfig);
+		HttpComponentsHttpInvokerRequestExecutor executor =
+				new HttpComponentsHttpInvokerRequestExecutor(client);
+		executor.setConnectTimeout(5000);
+		HttpInvokerClientConfiguration config = mockHttpInvokerClientConfiguration(""http://fake-service"");
+		HttpPost httpPost = executor.createHttpPost(config);
+		RequestConfig requestConfig = httpPost.getConfig();
+		assertEquals(5000, requestConfig.getConnectTimeout());
+		assertEquals(6789, requestConfig.getConnectionRequestTimeout());
+		assertEquals(-1, requestConfig.getSocketTimeout());
+	}
+	@Test
+	public void mergeBasedOnCurrentHttpClient() throws Exception {
+		RequestConfig defaultConfig = RequestConfig.custom()
+				.setSocketTimeout(1234).build();
+		final CloseableHttpClient client = mock(CloseableHttpClient.class,
+				withSettings().extraInterfaces(Configurable.class));
+		Configurable configurable = (Configurable) client;
+		when(configurable.getConfig()).thenReturn(defaultConfig);
+		HttpComponentsHttpInvokerRequestExecutor executor =
+				new HttpComponentsHttpInvokerRequestExecutor() {
+					@Override
+					public HttpClient getHttpClient() {
+						return client;
+					}
+				};
+		executor.setReadTimeout(5000);
+		HttpInvokerClientConfiguration config = mockHttpInvokerClientConfiguration(""http://fake-service"");
+		HttpPost httpPost = executor.createHttpPost(config);
+		RequestConfig requestConfig = httpPost.getConfig();
+		assertEquals(-1, requestConfig.getConnectTimeout());
+		assertEquals(-1, requestConfig.getConnectionRequestTimeout());
+		assertEquals(5000, requestConfig.getSocketTimeout());
+		// Update the Http client so that it returns an updated  config
+		RequestConfig updatedDefaultConfig = RequestConfig.custom()
+				.setConnectTimeout(1234).build();
+		when(configurable.getConfig()).thenReturn(updatedDefaultConfig);
+		executor.setReadTimeout(7000);
+		HttpPost httpPost2 = executor.createHttpPost(config);
+		RequestConfig requestConfig2 = httpPost2.getConfig();
+		assertEquals(1234, requestConfig2.getConnectTimeout());
+		assertEquals(-1, requestConfig2.getConnectionRequestTimeout());
+		assertEquals(7000, requestConfig2.getSocketTimeout());
+	}
+	@Test
+	public void ignoreFactorySettings() throws IOException {
+		CloseableHttpClient httpClient = HttpClientBuilder.create().build();
+		HttpComponentsHttpInvokerRequestExecutor executor = new HttpComponentsHttpInvokerRequestExecutor(httpClient) {
+			@Override
+			protected RequestConfig createRequestConfig(HttpInvokerClientConfiguration config) {
+				return null;
+			}
+		};
+		HttpInvokerClientConfiguration config = mockHttpInvokerClientConfiguration(""http://fake-service"");
+		HttpPost httpPost = executor.createHttpPost(config);
+		assertNull(""custom request config should not be set"", httpPost.getConfig());
+	}
+	private HttpInvokerClientConfiguration mockHttpInvokerClientConfiguration(String serviceUrl) {
+		HttpInvokerClientConfiguration config = mock(HttpInvokerClientConfiguration.class);
+		when(config.getServiceUrl()).thenReturn(serviceUrl);
+		return config;
+	}
+}",class,
+"	@Test
+	public void customizeConnectionTimeout() throws IOException {
+		HttpComponentsHttpInvokerRequestExecutor executor = new HttpComponentsHttpInvokerRequestExecutor();
+		executor.setConnectTimeout(5000);
+		HttpInvokerClientConfiguration config = mockHttpInvokerClientConfiguration(""http://fake-service"");
+		HttpPost httpPost = executor.createHttpPost(config);
+		assertEquals(5000, httpPost.getConfig().getConnectTimeout());
+	}
+	@Test
+	public void customizeConnectionRequestTimeout() throws IOException {
+		HttpComponentsHttpInvokerRequestExecutor executor = new HttpComponentsHttpInvokerRequestExecutor();
+		executor.setConnectionRequestTimeout(7000);
+		HttpInvokerClientConfiguration config = mockHttpInvokerClientConfiguration(""http://fake-service"");
+		HttpPost httpPost = executor.createHttpPost(config);
+		assertEquals(7000, httpPost.getConfig().getConnectionRequestTimeout());
+	}",method,
+"	@Test
+	public void customizeConnectionRequestTimeout() throws IOException {
+		HttpComponentsHttpInvokerRequestExecutor executor = new HttpComponentsHttpInvokerRequestExecutor();
+		executor.setConnectionRequestTimeout(7000);
+		HttpInvokerClientConfiguration config = mockHttpInvokerClientConfiguration(""http://fake-service"");
+		HttpPost httpPost = executor.createHttpPost(config);
+		assertEquals(7000, httpPost.getConfig().getConnectionRequestTimeout());
+	}
+	@Test
+	public void customizeReadTimeout() throws IOException {
+		HttpComponentsHttpInvokerRequestExecutor executor = new HttpComponentsHttpInvokerRequestExecutor();
+		executor.setReadTimeout(10000);
+		HttpInvokerClientConfiguration config = mockHttpInvokerClientConfiguration(""http://fake-service"");
+		HttpPost httpPost = executor.createHttpPost(config);
+		assertEquals(10000, httpPost.getConfig().getSocketTimeout());
+	}
+	@Test
+	public void defaultSettingsOfHttpClientMergedOnExecutorCustomization() throws IOException {
+		RequestConfig defaultConfig = RequestConfig.custom().setConnectTimeout(1234).build();
+		CloseableHttpClient client = mock(CloseableHttpClient.class,
+				withSettings().extraInterfaces(Configurable.class));
+		Configurable configurable = (Configurable) client;
+		when(configurable.getConfig()).thenReturn(defaultConfig);
+		HttpComponentsHttpInvokerRequestExecutor executor =
+				new HttpComponentsHttpInvokerRequestExecutor(client);
+		HttpInvokerClientConfiguration config = mockHttpInvokerClientConfiguration(""http://fake-service"");
+		HttpPost httpPost = executor.createHttpPost(config);
+		assertSame(""Default client configuration is expected"", defaultConfig, httpPost.getConfig());
+		executor.setConnectionRequestTimeout(4567);
+		HttpPost httpPost2 = executor.createHttpPost(config);
+		assertNotNull(httpPost2.getConfig());
+		assertEquals(4567, httpPost2.getConfig().getConnectionRequestTimeout());
+		// Default connection timeout merged
+		assertEquals(1234, httpPost2.getConfig().getConnectTimeout());
+	}",method,
+"	@Test
+	public void customizeReadTimeout() throws IOException {
+		HttpComponentsHttpInvokerRequestExecutor executor = new HttpComponentsHttpInvokerRequestExecutor();
+		executor.setReadTimeout(10000);
+		HttpInvokerClientConfiguration config = mockHttpInvokerClientConfiguration(""http://fake-service"");
+		HttpPost httpPost = executor.createHttpPost(config);
+		assertEquals(10000, httpPost.getConfig().getSocketTimeout());
+	}
+	@Test
+	public void defaultSettingsOfHttpClientMergedOnExecutorCustomization() throws IOException {
+		RequestConfig defaultConfig = RequestConfig.custom().setConnectTimeout(1234).build();
+		CloseableHttpClient client = mock(CloseableHttpClient.class,
+				withSettings().extraInterfaces(Configurable.class));
+		Configurable configurable = (Configurable) client;
+		when(configurable.getConfig()).thenReturn(defaultConfig);
+		HttpComponentsHttpInvokerRequestExecutor executor =
+				new HttpComponentsHttpInvokerRequestExecutor(client);
+		HttpInvokerClientConfiguration config = mockHttpInvokerClientConfiguration(""http://fake-service"");
+		HttpPost httpPost = executor.createHttpPost(config);
+		assertSame(""Default client configuration is expected"", defaultConfig, httpPost.getConfig());
+		executor.setConnectionRequestTimeout(4567);
+		HttpPost httpPost2 = executor.createHttpPost(config);
+		assertNotNull(httpPost2.getConfig());
+		assertEquals(4567, httpPost2.getConfig().getConnectionRequestTimeout());
+		// Default connection timeout merged
+		assertEquals(1234, httpPost2.getConfig().getConnectTimeout());
+	}",method,
+"	@Test
+	public void defaultSettingsOfHttpClientMergedOnExecutorCustomization() throws IOException {
+		RequestConfig defaultConfig = RequestConfig.custom().setConnectTimeout(1234).build();
+		CloseableHttpClient client = mock(CloseableHttpClient.class,
+				withSettings().extraInterfaces(Configurable.class));
+		Configurable configurable = (Configurable) client;
+		when(configurable.getConfig()).thenReturn(defaultConfig);
+		HttpComponentsHttpInvokerRequestExecutor executor =
+				new HttpComponentsHttpInvokerRequestExecutor(client);
+		HttpInvokerClientConfiguration config = mockHttpInvokerClientConfiguration(""http://fake-service"");
+		HttpPost httpPost = executor.createHttpPost(config);
+		assertSame(""Default client configuration is expected"", defaultConfig, httpPost.getConfig());
+		executor.setConnectionRequestTimeout(4567);
+		HttpPost httpPost2 = executor.createHttpPost(config);
+		assertNotNull(httpPost2.getConfig());
+		assertEquals(4567, httpPost2.getConfig().getConnectionRequestTimeout());
+		// Default connection timeout merged
+		assertEquals(1234, httpPost2.getConfig().getConnectTimeout());
+	}
+	@Test
+	public void localSettingsOverrideClientDefaultSettings() throws Exception {
+		RequestConfig defaultConfig = RequestConfig.custom()
+				.setConnectTimeout(1234).setConnectionRequestTimeout(6789).build();
+		CloseableHttpClient client = mock(CloseableHttpClient.class,
+				withSettings().extraInterfaces(Configurable.class));
+		Configurable configurable = (Configurable) client;
+		when(configurable.getConfig()).thenReturn(defaultConfig);
+		HttpComponentsHttpInvokerRequestExecutor executor =
+				new HttpComponentsHttpInvokerRequestExecutor(client);
+		executor.setConnectTimeout(5000);
+		HttpInvokerClientConfiguration config = mockHttpInvokerClientConfiguration(""http://fake-service"");
+		HttpPost httpPost = executor.createHttpPost(config);
+		RequestConfig requestConfig = httpPost.getConfig();
+		assertEquals(5000, requestConfig.getConnectTimeout());
+		assertEquals(6789, requestConfig.getConnectionRequestTimeout());
+		assertEquals(-1, requestConfig.getSocketTimeout());
+	}
+	@Test
+	public void mergeBasedOnCurrentHttpClient() throws Exception {
+		RequestConfig defaultConfig = RequestConfig.custom()
+				.setSocketTimeout(1234).build();
+		final CloseableHttpClient client = mock(CloseableHttpClient.class,
+				withSettings().extraInterfaces(Configurable.class));
+		Configurable configurable = (Configurable) client;
+		when(configurable.getConfig()).thenReturn(defaultConfig);
+		HttpComponentsHttpInvokerRequestExecutor executor =
+				new HttpComponentsHttpInvokerRequestExecutor() {
+					@Override
+					public HttpClient getHttpClient() {
+						return client;
+					}
+				};
+		executor.setReadTimeout(5000);
+		HttpInvokerClientConfiguration config = mockHttpInvokerClientConfiguration(""http://fake-service"");
+		HttpPost httpPost = executor.createHttpPost(config);
+		RequestConfig requestConfig = httpPost.getConfig();
+		assertEquals(-1, requestConfig.getConnectTimeout());
+		assertEquals(-1, requestConfig.getConnectionRequestTimeout());
+		assertEquals(5000, requestConfig.getSocketTimeout());
+		// Update the Http client so that it returns an updated  config
+		RequestConfig updatedDefaultConfig = RequestConfig.custom()
+				.setConnectTimeout(1234).build();
+		when(configurable.getConfig()).thenReturn(updatedDefaultConfig);
+		executor.setReadTimeout(7000);
+		HttpPost httpPost2 = executor.createHttpPost(config);
+		RequestConfig requestConfig2 = httpPost2.getConfig();
+		assertEquals(1234, requestConfig2.getConnectTimeout());
+		assertEquals(-1, requestConfig2.getConnectionRequestTimeout());
+		assertEquals(7000, requestConfig2.getSocketTimeout());
+	}",method,
+"	@Test
+	public void localSettingsOverrideClientDefaultSettings() throws Exception {
+		RequestConfig defaultConfig = RequestConfig.custom()
+				.setConnectTimeout(1234).setConnectionRequestTimeout(6789).build();
+		CloseableHttpClient client = mock(CloseableHttpClient.class,
+				withSettings().extraInterfaces(Configurable.class));
+		Configurable configurable = (Configurable) client;
+		when(configurable.getConfig()).thenReturn(defaultConfig);
+		HttpComponentsHttpInvokerRequestExecutor executor =
+				new HttpComponentsHttpInvokerRequestExecutor(client);
+		executor.setConnectTimeout(5000);
+		HttpInvokerClientConfiguration config = mockHttpInvokerClientConfiguration(""http://fake-service"");
+		HttpPost httpPost = executor.createHttpPost(config);
+		RequestConfig requestConfig = httpPost.getConfig();
+		assertEquals(5000, requestConfig.getConnectTimeout());
+		assertEquals(6789, requestConfig.getConnectionRequestTimeout());
+		assertEquals(-1, requestConfig.getSocketTimeout());
+	}
+	@Test
+	public void mergeBasedOnCurrentHttpClient() throws Exception {
+		RequestConfig defaultConfig = RequestConfig.custom()
+				.setSocketTimeout(1234).build();
+		final CloseableHttpClient client = mock(CloseableHttpClient.class,
+				withSettings().extraInterfaces(Configurable.class));
+		Configurable configurable = (Configurable) client;
+		when(configurable.getConfig()).thenReturn(defaultConfig);
+		HttpComponentsHttpInvokerRequestExecutor executor =
+				new HttpComponentsHttpInvokerRequestExecutor() {
+					@Override
+					public HttpClient getHttpClient() {
+						return client;
+					}
+				};
+		executor.setReadTimeout(5000);
+		HttpInvokerClientConfiguration config = mockHttpInvokerClientConfiguration(""http://fake-service"");
+		HttpPost httpPost = executor.createHttpPost(config);
+		RequestConfig requestConfig = httpPost.getConfig();
+		assertEquals(-1, requestConfig.getConnectTimeout());
+		assertEquals(-1, requestConfig.getConnectionRequestTimeout());
+		assertEquals(5000, requestConfig.getSocketTimeout());
+		// Update the Http client so that it returns an updated  config
+		RequestConfig updatedDefaultConfig = RequestConfig.custom()
+				.setConnectTimeout(1234).build();
+		when(configurable.getConfig()).thenReturn(updatedDefaultConfig);
+		executor.setReadTimeout(7000);
+		HttpPost httpPost2 = executor.createHttpPost(config);
+		RequestConfig requestConfig2 = httpPost2.getConfig();
+		assertEquals(1234, requestConfig2.getConnectTimeout());
+		assertEquals(-1, requestConfig2.getConnectionRequestTimeout());
+		assertEquals(7000, requestConfig2.getSocketTimeout());
+	}",method,
+"	@Test
+	public void mergeBasedOnCurrentHttpClient() throws Exception {
+		RequestConfig defaultConfig = RequestConfig.custom()
+				.setSocketTimeout(1234).build();
+		final CloseableHttpClient client = mock(CloseableHttpClient.class,
+				withSettings().extraInterfaces(Configurable.class));
+		Configurable configurable = (Configurable) client;
+		when(configurable.getConfig()).thenReturn(defaultConfig);
+		HttpComponentsHttpInvokerRequestExecutor executor =
+				new HttpComponentsHttpInvokerRequestExecutor() {
+					@Override
+					public HttpClient getHttpClient() {
+						return client;
+					}
+				};
+		executor.setReadTimeout(5000);
+		HttpInvokerClientConfiguration config = mockHttpInvokerClientConfiguration(""http://fake-service"");
+		HttpPost httpPost = executor.createHttpPost(config);
+		RequestConfig requestConfig = httpPost.getConfig();
+		assertEquals(-1, requestConfig.getConnectTimeout());
+		assertEquals(-1, requestConfig.getConnectionRequestTimeout());
+		assertEquals(5000, requestConfig.getSocketTimeout());
+		// Update the Http client so that it returns an updated  config
+		RequestConfig updatedDefaultConfig = RequestConfig.custom()
+				.setConnectTimeout(1234).build();
+		when(configurable.getConfig()).thenReturn(updatedDefaultConfig);
+		executor.setReadTimeout(7000);
+		HttpPost httpPost2 = executor.createHttpPost(config);
+		RequestConfig requestConfig2 = httpPost2.getConfig();
+		assertEquals(1234, requestConfig2.getConnectTimeout());
+		assertEquals(-1, requestConfig2.getConnectionRequestTimeout());
+		assertEquals(7000, requestConfig2.getSocketTimeout());
+	}
+	@Test
+	public void ignoreFactorySettings() throws IOException {
+		CloseableHttpClient httpClient = HttpClientBuilder.create().build();
+		HttpComponentsHttpInvokerRequestExecutor executor = new HttpComponentsHttpInvokerRequestExecutor(httpClient) {
+			@Override
+			protected RequestConfig createRequestConfig(HttpInvokerClientConfiguration config) {
+				return null;
+			}
+		};
+		HttpInvokerClientConfiguration config = mockHttpInvokerClientConfiguration(""http://fake-service"");
+		HttpPost httpPost = executor.createHttpPost(config);
+		assertNull(""custom request config should not be set"", httpPost.getConfig());
+	}",method,
+"				new HttpComponentsHttpInvokerRequestExecutor() {
+					@Override
+					public HttpClient getHttpClient() {
+						return client;
+					}
+				};
+		executor.setReadTimeout(5000);
+		HttpInvokerClientConfiguration config = mockHttpInvokerClientConfiguration(""http://fake-service"");
+		HttpPost httpPost = executor.createHttpPost(config);
+		RequestConfig requestConfig = httpPost.getConfig();
+		assertEquals(-1, requestConfig.getConnectTimeout());
+		assertEquals(-1, requestConfig.getConnectionRequestTimeout());
+		assertEquals(5000, requestConfig.getSocketTimeout());
+		// Update the Http client so that it returns an updated  config
+		RequestConfig updatedDefaultConfig = RequestConfig.custom()
+				.setConnectTimeout(1234).build();
+		when(configurable.getConfig()).thenReturn(updatedDefaultConfig);
+		executor.setReadTimeout(7000);
+		HttpPost httpPost2 = executor.createHttpPost(config);
+		RequestConfig requestConfig2 = httpPost2.getConfig();
+		assertEquals(1234, requestConfig2.getConnectTimeout());
+		assertEquals(-1, requestConfig2.getConnectionRequestTimeout());
+		assertEquals(7000, requestConfig2.getSocketTimeout());
+	}
+	@Test
+	public void ignoreFactorySettings() throws IOException {
+		CloseableHttpClient httpClient = HttpClientBuilder.create().build();
+		HttpComponentsHttpInvokerRequestExecutor executor = new HttpComponentsHttpInvokerRequestExecutor(httpClient) {
+			@Override
+			protected RequestConfig createRequestConfig(HttpInvokerClientConfiguration config) {
+				return null;
+			}
+		};
+		HttpInvokerClientConfiguration config = mockHttpInvokerClientConfiguration(""http://fake-service"");
+		HttpPost httpPost = executor.createHttpPost(config);
+		assertNull(""custom request config should not be set"", httpPost.getConfig());
+	}",method,
+"					@Override
+					public HttpClient getHttpClient() {
+						return client;
+					}
+				};
+		executor.setReadTimeout(5000);
+		HttpInvokerClientConfiguration config = mockHttpInvokerClientConfiguration(""http://fake-service"");
+		HttpPost httpPost = executor.createHttpPost(config);
+		RequestConfig requestConfig = httpPost.getConfig();
+		assertEquals(-1, requestConfig.getConnectTimeout());
+		assertEquals(-1, requestConfig.getConnectionRequestTimeout());
+		assertEquals(5000, requestConfig.getSocketTimeout());
+		// Update the Http client so that it returns an updated  config
+		RequestConfig updatedDefaultConfig = RequestConfig.custom()
+				.setConnectTimeout(1234).build();
+		when(configurable.getConfig()).thenReturn(updatedDefaultConfig);
+		executor.setReadTimeout(7000);
+		HttpPost httpPost2 = executor.createHttpPost(config);
+		RequestConfig requestConfig2 = httpPost2.getConfig();
+		assertEquals(1234, requestConfig2.getConnectTimeout());
+		assertEquals(-1, requestConfig2.getConnectionRequestTimeout());
+		assertEquals(7000, requestConfig2.getSocketTimeout());
+	}
+	@Test
+	public void ignoreFactorySettings() throws IOException {
+		CloseableHttpClient httpClient = HttpClientBuilder.create().build();
+		HttpComponentsHttpInvokerRequestExecutor executor = new HttpComponentsHttpInvokerRequestExecutor(httpClient) {
+			@Override
+			protected RequestConfig createRequestConfig(HttpInvokerClientConfiguration config) {
+				return null;
+			}
+		};
+		HttpInvokerClientConfiguration config = mockHttpInvokerClientConfiguration(""http://fake-service"");
+		HttpPost httpPost = executor.createHttpPost(config);
+		assertNull(""custom request config should not be set"", httpPost.getConfig());
+	}",method,
+"	@Test
+	public void ignoreFactorySettings() throws IOException {
+		CloseableHttpClient httpClient = HttpClientBuilder.create().build();
+		HttpComponentsHttpInvokerRequestExecutor executor = new HttpComponentsHttpInvokerRequestExecutor(httpClient) {
+			@Override
+			protected RequestConfig createRequestConfig(HttpInvokerClientConfiguration config) {
+				return null;
+			}
+		};
+		HttpInvokerClientConfiguration config = mockHttpInvokerClientConfiguration(""http://fake-service"");
+		HttpPost httpPost = executor.createHttpPost(config);
+		assertNull(""custom request config should not be set"", httpPost.getConfig());
+	}",method,
+"			@Override
+			protected RequestConfig createRequestConfig(HttpInvokerClientConfiguration config) {
+				return null;
+			}",method,
+"	private HttpInvokerClientConfiguration mockHttpInvokerClientConfiguration(String serviceUrl) {
+		HttpInvokerClientConfiguration config = mock(HttpInvokerClientConfiguration.class);
+		when(config.getServiceUrl()).thenReturn(serviceUrl);
+		return config;
+	}",method,
+"import java.awt.*;
+class DiffLineMarkerRenderer implements LineMarkerRendererEx {
+  @NotNull private final RangeHighlighter myHighlighter;
+  @NotNull private final TextDiffType myDiffType;
+  private final boolean myIgnoredFoldingOutline;
+  private final boolean myResolved;
+  private final boolean myHideWithoutLineNumbers;
+  private final boolean myEmptyRange;
+  private final boolean myFirstLine;
+  private final boolean myLastLine;
+  public DiffLineMarkerRenderer(@NotNull RangeHighlighter highlighter,
+                                @NotNull TextDiffType diffType,
+                                boolean ignoredFoldingOutline,
+                                boolean resolved,
+                                boolean hideWithoutLineNumbers,
+                                boolean isEmptyRange,
+                                boolean isFirstLine,
+                                boolean isLastLine) {
+    myHighlighter = highlighter;
+    myDiffType = diffType;
+    myIgnoredFoldingOutline = ignoredFoldingOutline;
+    myResolved = resolved;
+    myHideWithoutLineNumbers = hideWithoutLineNumbers;
+    myEmptyRange = isEmptyRange;
+    myFirstLine = isFirstLine;
+    myLastLine = isLastLine;
+  }
+  @Override
+  public void paint(Editor editor, Graphics g, Rectangle range) {
+    EditorGutterComponentEx gutter = ((EditorEx)editor).getGutterComponentEx();
+    Graphics2D g2 = (Graphics2D)g;
+    int x1 = 0;
+    int x2 = x1 + gutter.getWidth();
+    int y1, y2;
+    if (myEmptyRange && myLastLine) {
+      y1 = DiffDrawUtil.lineToY(editor, DiffUtil.getLineCount(editor.getDocument()));
+      y2 = y1;
+    }
+    else {
+      int startLine = editor.getDocument().getLineNumber(myHighlighter.getStartOffset());
+      int endLine = editor.getDocument().getLineNumber(myHighlighter.getEndOffset()) + 1;
+      y1 = DiffDrawUtil.lineToY(editor, startLine);
+      y2 = myEmptyRange ? y1 : DiffDrawUtil.lineToY(editor, endLine);
+    }
+    if (myEmptyRange && myFirstLine) {
+      y1++;
+      y2++;
+    }
+    if (myHideWithoutLineNumbers && !editor.getSettings().isLineNumbersShown()) {
+      x1 = gutter.getWhitespaceSeparatorOffset();
+    }
+    else {
+      int annotationsOffset = gutter.getAnnotationsAreaOffset();
+      int annotationsWidth = gutter.getAnnotationsAreaWidth();
+      if (annotationsWidth != 0) {
+        drawMarker(editor, g2, x1, annotationsOffset, y1, y2, false);
+        x1 = annotationsOffset + annotationsWidth;
+      }
+    }
+    if (myIgnoredFoldingOutline) {
+      int xOutline = gutter.getWhitespaceSeparatorOffset();
+      drawMarker(editor, g2, xOutline, x2, y1, y2, true);
+      drawMarker(editor, g2, x1, xOutline, y1, y2, false);
+    }
+    else {
+      drawMarker(editor, g2, x1, x2, y1, y2, false);
+    }
+  }
+  private void drawMarker(Editor editor, Graphics2D g2,
+                          int x1, int x2, int y1, int y2,
+                          boolean ignoredBackgroundColor) {
+    if (x1 >= x2) return;
+    Color color = myDiffType.getColor(editor);
+    if (y2 - y1 > 2) {
+      if (!myResolved) {
+        g2.setColor(ignoredBackgroundColor ? myDiffType.getIgnoredColor(editor) : color);
+        g2.fillRect(x1, y1, x2 - x1, y2 - y1);
+      } else {
+        DiffDrawUtil.drawChunkBorderLine(g2, x1, x2, y1, color, false, myResolved);
+        DiffDrawUtil.drawChunkBorderLine(g2, x1, x2, y2 - 1, color, false, myResolved);
+      }
+    }
+    else {
+      // range is empty - insertion or deletion
+      // Draw 2 pixel line in that case
+      DiffDrawUtil.drawChunkBorderLine(g2, x1, x2, y1 - 1, color, true, myResolved);
+    }
+  }
+  @NotNull
+  @Override
+  public Position getPosition() {
+    return Position.CUSTOM;
+  }
+}",class,
+"  public DiffLineMarkerRenderer(@NotNull RangeHighlighter highlighter,
+                                @NotNull TextDiffType diffType,
+                                boolean ignoredFoldingOutline,
+                                boolean resolved,
+                                boolean hideWithoutLineNumbers,
+                                boolean isEmptyRange,
+                                boolean isFirstLine,
+                                boolean isLastLine) {
+    myHighlighter = highlighter;
+    myDiffType = diffType;
+    myIgnoredFoldingOutline = ignoredFoldingOutline;
+    myResolved = resolved;
+    myHideWithoutLineNumbers = hideWithoutLineNumbers;
+    myEmptyRange = isEmptyRange;
+    myFirstLine = isFirstLine;
+    myLastLine = isLastLine;
+  }",method,
+"  @Override
+  public void paint(Editor editor, Graphics g, Rectangle range) {
+    EditorGutterComponentEx gutter = ((EditorEx)editor).getGutterComponentEx();
+    Graphics2D g2 = (Graphics2D)g;
+    int x1 = 0;
+    int x2 = x1 + gutter.getWidth();
+    int y1, y2;
+    if (myEmptyRange && myLastLine) {
+      y1 = DiffDrawUtil.lineToY(editor, DiffUtil.getLineCount(editor.getDocument()));
+      y2 = y1;
+    }
+    else {
+      int startLine = editor.getDocument().getLineNumber(myHighlighter.getStartOffset());
+      int endLine = editor.getDocument().getLineNumber(myHighlighter.getEndOffset()) + 1;
+      y1 = DiffDrawUtil.lineToY(editor, startLine);
+      y2 = myEmptyRange ? y1 : DiffDrawUtil.lineToY(editor, endLine);
+    }
+    if (myEmptyRange && myFirstLine) {
+      y1++;
+      y2++;
+    }
+    if (myHideWithoutLineNumbers && !editor.getSettings().isLineNumbersShown()) {
+      x1 = gutter.getWhitespaceSeparatorOffset();
+    }
+    else {
+      int annotationsOffset = gutter.getAnnotationsAreaOffset();
+      int annotationsWidth = gutter.getAnnotationsAreaWidth();
+      if (annotationsWidth != 0) {
+        drawMarker(editor, g2, x1, annotationsOffset, y1, y2, false);
+        x1 = annotationsOffset + annotationsWidth;
+      }
+    }
+    if (myIgnoredFoldingOutline) {
+      int xOutline = gutter.getWhitespaceSeparatorOffset();
+      drawMarker(editor, g2, xOutline, x2, y1, y2, true);
+      drawMarker(editor, g2, x1, xOutline, y1, y2, false);
+    }
+    else {
+      drawMarker(editor, g2, x1, x2, y1, y2, false);
+    }
+  }",method,
+"    if (myEmptyRange && myLastLine) {
+      y1 = DiffDrawUtil.lineToY(editor, DiffUtil.getLineCount(editor.getDocument()));
+      y2 = y1;
+    }",method,
+"    if (myEmptyRange && myFirstLine) {
+      y1++;
+      y2++;
+    }",method,
+"      if (annotationsWidth != 0) {
+        drawMarker(editor, g2, x1, annotationsOffset, y1, y2, false);
+        x1 = annotationsOffset + annotationsWidth;
+      }",method,
+"    if (myIgnoredFoldingOutline) {
+      int xOutline = gutter.getWhitespaceSeparatorOffset();
+      drawMarker(editor, g2, xOutline, x2, y1, y2, true);
+      drawMarker(editor, g2, x1, xOutline, y1, y2, false);
+    }",method,

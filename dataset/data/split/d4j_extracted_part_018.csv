@@ -1,0 +1,1139 @@
+code_snippet,type,score
+"    @After
+    public void tearDown() {
+        decoder.end();
+    }",method,
+"    @Test
+    public void testHeaderBlock() throws Exception {
+        ByteBuf headerBlock = Unpooled.buffer(37);
+        headerBlock.writeBytes(zlibHeader);
+        headerBlock.writeByte(0); // Non-compressed block
+        headerBlock.writeByte(0x15); // little-endian length (21)
+        headerBlock.writeByte(0x00); // little-endian length (21)
+        headerBlock.writeByte(0xea); // one's compliment of length
+        headerBlock.writeByte(0xff); // one's compliment of length
+        headerBlock.writeInt(1); // number of Name/Value pairs
+        headerBlock.writeInt(4); // length of name
+        headerBlock.writeBytes(nameBytes);
+        headerBlock.writeInt(5); // length of value
+        headerBlock.writeBytes(valueBytes);
+        headerBlock.writeBytes(zlibSyncFlush);
+        decoder.decode(ByteBufAllocator.DEFAULT, headerBlock, frame);
+        decoder.endHeaderBlock(frame);
+        assertFalse(headerBlock.isReadable());
+        assertFalse(frame.isInvalid());
+        assertEquals(1, frame.headers().names().size());
+        assertTrue(frame.headers().contains(name));
+        assertEquals(1, frame.headers().getAll(name).size());
+        assertEquals(value, frame.headers().get(name));
+        headerBlock.release();
+    }",method,
+"    @Test
+    public void testHeaderBlockMultipleDecodes() throws Exception {
+        ByteBuf headerBlock = Unpooled.buffer(37);
+        headerBlock.writeBytes(zlibHeader);
+        headerBlock.writeByte(0); // Non-compressed block
+        headerBlock.writeByte(0x15); // little-endian length (21)
+        headerBlock.writeByte(0x00); // little-endian length (21)
+        headerBlock.writeByte(0xea); // one's compliment of length
+        headerBlock.writeByte(0xff); // one's compliment of length
+        headerBlock.writeInt(1); // number of Name/Value pairs
+        headerBlock.writeInt(4); // length of name
+        headerBlock.writeBytes(nameBytes);
+        headerBlock.writeInt(5); // length of value
+        headerBlock.writeBytes(valueBytes);
+        headerBlock.writeBytes(zlibSyncFlush);
+        int readableBytes = headerBlock.readableBytes();
+        for (int i = 0; i < readableBytes; i++) {
+            ByteBuf headerBlockSegment = headerBlock.slice(i, 1);
+            decoder.decode(ByteBufAllocator.DEFAULT, headerBlockSegment, frame);
+            assertFalse(headerBlockSegment.isReadable());
+        }
+        decoder.endHeaderBlock(frame);
+        assertFalse(frame.isInvalid());
+        assertEquals(1, frame.headers().names().size());
+        assertTrue(frame.headers().contains(name));
+        assertEquals(1, frame.headers().getAll(name).size());
+        assertEquals(value, frame.headers().get(name));
+        headerBlock.release();
+    }",method,
+"        for (int i = 0; i < readableBytes; i++) {
+            ByteBuf headerBlockSegment = headerBlock.slice(i, 1);
+            decoder.decode(ByteBufAllocator.DEFAULT, headerBlockSegment, frame);
+            assertFalse(headerBlockSegment.isReadable());
+        }",method,
+"    @Test
+    public void testLargeHeaderName() throws Exception {
+        ByteBuf headerBlock = Unpooled.buffer(8220);
+        headerBlock.writeBytes(zlibHeader);
+        headerBlock.writeByte(0); // Non-compressed block
+        headerBlock.writeByte(0x0c); // little-endian length (8204)
+        headerBlock.writeByte(0x20); // little-endian length (8204)
+        headerBlock.writeByte(0xf3); // one's compliment of length
+        headerBlock.writeByte(0xdf); // one's compliment of length
+        headerBlock.writeInt(1); // number of Name/Value pairs
+        headerBlock.writeInt(8192); // length of name
+        for (int i = 0; i < 8192; i++) {
+            headerBlock.writeByte('n');
+        }
+        headerBlock.writeInt(0); // length of value
+        headerBlock.writeBytes(zlibSyncFlush);
+        decoder.decode(ByteBufAllocator.DEFAULT, headerBlock, frame);
+        decoder.endHeaderBlock(frame);
+        assertFalse(headerBlock.isReadable());
+        assertFalse(frame.isInvalid());
+        assertFalse(frame.isTruncated());
+        assertEquals(1, frame.headers().names().size());
+        headerBlock.release();
+    }",method,
+"        for (int i = 0; i < 8192; i++) {
+            headerBlock.writeByte('n');
+        }",method,
+"    @Test
+    public void testLargeHeaderValue() throws Exception {
+        ByteBuf headerBlock = Unpooled.buffer(8220);
+        headerBlock.writeBytes(zlibHeader);
+        headerBlock.writeByte(0); // Non-compressed block
+        headerBlock.writeByte(0x0c); // little-endian length (8204)
+        headerBlock.writeByte(0x20); // little-endian length (8204)
+        headerBlock.writeByte(0xf3); // one's compliment of length
+        headerBlock.writeByte(0xdf); // one's compliment of length
+        headerBlock.writeInt(1); // number of Name/Value pairs
+        headerBlock.writeInt(1); // length of name
+        headerBlock.writeByte('n');
+        headerBlock.writeInt(8191); // length of value
+        for (int i = 0; i < 8191; i++) {
+            headerBlock.writeByte('v');
+        }
+        headerBlock.writeBytes(zlibSyncFlush);
+        decoder.decode(ByteBufAllocator.DEFAULT, headerBlock, frame);
+        decoder.endHeaderBlock(frame);
+        assertFalse(headerBlock.isReadable());
+        assertFalse(frame.isInvalid());
+        assertFalse(frame.isTruncated());
+        assertEquals(1, frame.headers().names().size());
+        assertEquals(8191, frame.headers().get(""n"").length());
+        headerBlock.release();
+    }",method,
+"        for (int i = 0; i < 8191; i++) {
+            headerBlock.writeByte('v');
+        }",method,
+"    @Test(expected = SpdyProtocolException.class)
+    public void testHeaderBlockExtraData() throws Exception {
+        ByteBuf headerBlock = Unpooled.buffer(37);
+        headerBlock.writeBytes(zlibHeader);
+        headerBlock.writeByte(0); // Non-compressed block
+        headerBlock.writeByte(0x15); // little-endian length (21)
+        headerBlock.writeByte(0x00); // little-endian length (21)
+        headerBlock.writeByte(0xea); // one's compliment of length
+        headerBlock.writeByte(0xff); // one's compliment of length
+        headerBlock.writeInt(1); // number of Name/Value pairs
+        headerBlock.writeInt(4); // length of name
+        headerBlock.writeBytes(nameBytes);
+        headerBlock.writeInt(5); // length of value
+        headerBlock.writeBytes(valueBytes);
+        headerBlock.writeByte(0x19); // adler-32 checksum
+        headerBlock.writeByte(0xa5); // adler-32 checksum
+        headerBlock.writeByte(0x03); // adler-32 checksum
+        headerBlock.writeByte(0xc9); // adler-32 checksum
+        headerBlock.writeByte(0); // Data following zlib stream
+        decoder.decode(ByteBufAllocator.DEFAULT, headerBlock, frame);
+        headerBlock.release();
+    }",method,
+"    @Test(expected = SpdyProtocolException.class)
+    public void testHeaderBlockInvalidDictionary() throws Exception {
+        ByteBuf headerBlock = Unpooled.buffer(7);
+        headerBlock.writeByte(0x78);
+        headerBlock.writeByte(0x3f);
+        headerBlock.writeByte(0x01); // Unknown dictionary
+        headerBlock.writeByte(0x02); // Unknown dictionary
+        headerBlock.writeByte(0x03); // Unknown dictionary
+        headerBlock.writeByte(0x04); // Unknown dictionary
+        headerBlock.writeByte(0); // Non-compressed block
+        decoder.decode(ByteBufAllocator.DEFAULT, headerBlock, frame);
+        headerBlock.release();
+    }",method,
+"    @Test(expected = SpdyProtocolException.class)
+    public void testHeaderBlockInvalidDeflateBlock() throws Exception {
+        ByteBuf headerBlock = Unpooled.buffer(11);
+        headerBlock.writeBytes(zlibHeader);
+        headerBlock.writeByte(0); // Non-compressed block
+        headerBlock.writeByte(0x00); // little-endian length (0)
+        headerBlock.writeByte(0x00); // little-endian length (0)
+        headerBlock.writeByte(0x00); // invalid one's compliment
+        headerBlock.writeByte(0x00); // invalid one's compliment
+        decoder.decode(ByteBufAllocator.DEFAULT, headerBlock, frame);
+        headerBlock.release();
+    }",method,
+"public class CouchbaseDataAutoConfigurationTests {
+	private AnnotationConfigApplicationContext context;
+	@After
+	public void close() {
+		if (this.context != null) {
+			this.context.close();
+		}
+	}
+	@Test
+	public void disabledIfCouchbaseIsNotConfigured() {
+		load(null);
+		assertThat(this.context.getBeansOfType(IndexManager.class)).isEmpty();
+	}
+	@Test
+	public void customConfiguration() {
+		load(CustomCouchbaseConfiguration.class);
+		CouchbaseTemplate couchbaseTemplate = this.context
+				.getBean(CouchbaseTemplate.class);
+		assertThat(couchbaseTemplate.getDefaultConsistency())
+				.isEqualTo(Consistency.STRONGLY_CONSISTENT);
+	}
+	@Test
+	public void validatorIsPresent() {
+		load(CouchbaseTestConfigurer.class);
+		assertThat(this.context.getBeansOfType(ValidatingCouchbaseEventListener.class))
+				.hasSize(1);
+	}
+	@Test
+	public void autoIndexIsDisabledByDefault() {
+		load(CouchbaseTestConfigurer.class);
+		IndexManager indexManager = this.context.getBean(IndexManager.class);
+		assertThat(indexManager.isIgnoreViews()).isTrue();
+		assertThat(indexManager.isIgnoreN1qlPrimary()).isTrue();
+		assertThat(indexManager.isIgnoreN1qlSecondary()).isTrue();
+	}
+	@Test
+	public void enableAutoIndex() {
+		load(CouchbaseTestConfigurer.class, ""spring.data.couchbase.auto-index=true"");
+		IndexManager indexManager = this.context.getBean(IndexManager.class);
+		assertThat(indexManager.isIgnoreViews()).isFalse();
+		assertThat(indexManager.isIgnoreN1qlPrimary()).isFalse();
+		assertThat(indexManager.isIgnoreN1qlSecondary()).isFalse();
+	}
+	@Test
+	public void changeConsistency() {
+		load(CouchbaseTestConfigurer.class,
+				""spring.data.couchbase.consistency=eventually-consistent"");
+		SpringBootCouchbaseDataConfiguration configuration = this.context
+				.getBean(SpringBootCouchbaseDataConfiguration.class);
+		assertThat(configuration.getDefaultConsistency())
+				.isEqualTo(Consistency.EVENTUALLY_CONSISTENT);
+	}
+	@Test
+	@SuppressWarnings(""unchecked"")
+	public void entityScanShouldSetInitialEntitySet() throws Exception {
+		load(EntityScanConfig.class);
+		CouchbaseMappingContext mappingContext = this.context
+				.getBean(CouchbaseMappingContext.class);
+		Set<Class<?>> initialEntitySet = (Set<Class<?>>) ReflectionTestUtils
+				.getField(mappingContext, ""initialEntitySet"");
+		assertThat(initialEntitySet).containsOnly(City.class);
+	}
+	@Test
+	public void customConversions() {
+		load(CustomConversionsConfig.class);
+		CouchbaseTemplate template = this.context.getBean(CouchbaseTemplate.class);
+		assertThat(template.getConverter().getConversionService()
+				.canConvert(CouchbaseProperties.class, Boolean.class)).isTrue();
+	}
+	private void load(Class<?> config, String... environment) {
+		AnnotationConfigApplicationContext context = new AnnotationConfigApplicationContext();
+		TestPropertyValues.of(environment).applyTo(context);
+		if (config != null) {
+			context.register(config);
+		}
+		context.register(PropertyPlaceholderAutoConfiguration.class,
+				ValidationAutoConfiguration.class, CouchbaseAutoConfiguration.class,
+				CouchbaseDataAutoConfiguration.class);
+		context.refresh();
+		this.context = context;
+	}
+	@Configuration
+	static class CustomCouchbaseConfiguration extends AbstractCouchbaseDataConfiguration {
+		@Override
+		protected CouchbaseConfigurer couchbaseConfigurer() {
+			return new CouchbaseTestConfigurer();
+		}
+		@Override
+		protected Consistency getDefaultConsistency() {
+			return Consistency.STRONGLY_CONSISTENT;
+		}
+	}
+	@Configuration
+	@Import(CouchbaseTestConfigurer.class)
+	static class CustomConversionsConfig {
+		@Bean(BeanNames.COUCHBASE_CUSTOM_CONVERSIONS)
+		public CouchbaseCustomConversions myCustomConversions() {
+			return new CouchbaseCustomConversions(
+					Collections.singletonList(new MyConverter()));
+		}
+	}
+	@Configuration
+	@EntityScan(""org.springframework.boot.autoconfigure.data.couchbase.city"")
+	@Import(CustomCouchbaseConfiguration.class)
+	static class EntityScanConfig {
+	}
+	static class MyConverter implements Converter<CouchbaseProperties, Boolean> {
+		@Override
+		public Boolean convert(CouchbaseProperties value) {
+			return true;
+		}
+	}
+}",class,
+"	static class CustomCouchbaseConfiguration extends AbstractCouchbaseDataConfiguration {
+		@Override
+		protected CouchbaseConfigurer couchbaseConfigurer() {
+			return new CouchbaseTestConfigurer();
+		}
+		@Override
+		protected Consistency getDefaultConsistency() {
+			return Consistency.STRONGLY_CONSISTENT;
+		}
+	}",class,
+"	static class CustomConversionsConfig {
+		@Bean(BeanNames.COUCHBASE_CUSTOM_CONVERSIONS)
+		public CouchbaseCustomConversions myCustomConversions() {
+			return new CouchbaseCustomConversions(
+					Collections.singletonList(new MyConverter()));
+		}
+	}",class,
+"	static class EntityScanConfig {
+	}",class,
+"	static class MyConverter implements Converter<CouchbaseProperties, Boolean> {
+		@Override
+		public Boolean convert(CouchbaseProperties value) {
+			return true;
+		}
+	}",class,
+"	@After
+	public void close() {
+		if (this.context != null) {
+			this.context.close();
+		}
+	}",method,
+"		if (this.context != null) {
+			this.context.close();
+		}",method,
+"	@Test
+	public void disabledIfCouchbaseIsNotConfigured() {
+		load(null);
+		assertThat(this.context.getBeansOfType(IndexManager.class)).isEmpty();
+	}",method,
+"	@Test
+	public void customConfiguration() {
+		load(CustomCouchbaseConfiguration.class);
+		CouchbaseTemplate couchbaseTemplate = this.context
+				.getBean(CouchbaseTemplate.class);
+		assertThat(couchbaseTemplate.getDefaultConsistency())
+				.isEqualTo(Consistency.STRONGLY_CONSISTENT);
+	}",method,
+"	@Test
+	public void validatorIsPresent() {
+		load(CouchbaseTestConfigurer.class);
+		assertThat(this.context.getBeansOfType(ValidatingCouchbaseEventListener.class))
+				.hasSize(1);
+	}",method,
+"	@Test
+	public void autoIndexIsDisabledByDefault() {
+		load(CouchbaseTestConfigurer.class);
+		IndexManager indexManager = this.context.getBean(IndexManager.class);
+		assertThat(indexManager.isIgnoreViews()).isTrue();
+		assertThat(indexManager.isIgnoreN1qlPrimary()).isTrue();
+		assertThat(indexManager.isIgnoreN1qlSecondary()).isTrue();
+	}",method,
+"	@Test
+	public void enableAutoIndex() {
+		load(CouchbaseTestConfigurer.class, ""spring.data.couchbase.auto-index=true"");
+		IndexManager indexManager = this.context.getBean(IndexManager.class);
+		assertThat(indexManager.isIgnoreViews()).isFalse();
+		assertThat(indexManager.isIgnoreN1qlPrimary()).isFalse();
+		assertThat(indexManager.isIgnoreN1qlSecondary()).isFalse();
+	}",method,
+"	@Test
+	public void changeConsistency() {
+		load(CouchbaseTestConfigurer.class,
+				""spring.data.couchbase.consistency=eventually-consistent"");
+		SpringBootCouchbaseDataConfiguration configuration = this.context
+				.getBean(SpringBootCouchbaseDataConfiguration.class);
+		assertThat(configuration.getDefaultConsistency())
+				.isEqualTo(Consistency.EVENTUALLY_CONSISTENT);
+	}",method,
+"	@Test
+	@SuppressWarnings(""unchecked"")
+	public void entityScanShouldSetInitialEntitySet() throws Exception {
+		load(EntityScanConfig.class);
+		CouchbaseMappingContext mappingContext = this.context
+				.getBean(CouchbaseMappingContext.class);
+		Set<Class<?>> initialEntitySet = (Set<Class<?>>) ReflectionTestUtils
+				.getField(mappingContext, ""initialEntitySet"");
+		assertThat(initialEntitySet).containsOnly(City.class);
+	}",method,
+"	@Test
+	public void customConversions() {
+		load(CustomConversionsConfig.class);
+		CouchbaseTemplate template = this.context.getBean(CouchbaseTemplate.class);
+		assertThat(template.getConverter().getConversionService()
+				.canConvert(CouchbaseProperties.class, Boolean.class)).isTrue();
+	}",method,
+"	private void load(Class<?> config, String... environment) {
+		AnnotationConfigApplicationContext context = new AnnotationConfigApplicationContext();
+		TestPropertyValues.of(environment).applyTo(context);
+		if (config != null) {
+			context.register(config);
+		}
+		context.register(PropertyPlaceholderAutoConfiguration.class,
+				ValidationAutoConfiguration.class, CouchbaseAutoConfiguration.class,
+				CouchbaseDataAutoConfiguration.class);
+		context.refresh();
+		this.context = context;
+	}",method,
+"		if (config != null) {
+			context.register(config);
+		}",method,
+"		@Override
+		protected CouchbaseConfigurer couchbaseConfigurer() {
+			return new CouchbaseTestConfigurer();
+		}",method,
+"		@Override
+		protected Consistency getDefaultConsistency() {
+			return Consistency.STRONGLY_CONSISTENT;
+		}",method,
+"		@Bean(BeanNames.COUCHBASE_CUSTOM_CONVERSIONS)
+		public CouchbaseCustomConversions myCustomConversions() {
+			return new CouchbaseCustomConversions(
+					Collections.singletonList(new MyConverter()));
+		}",method,
+"		@Override
+		public Boolean convert(CouchbaseProperties value) {
+			return true;
+		}",method,
+"public class ContentManagerAdapter implements ContentManagerListener {
+  public void contentAdded(ContentManagerEvent event) {}
+  public void contentRemoved(ContentManagerEvent event) {}
+  public void contentRemoveQuery(ContentManagerEvent event) {}
+  public void selectionChanged(ContentManagerEvent event) {}
+}",class,
+  public void contentAdded(ContentManagerEvent event) {},method,
+  public void contentRemoved(ContentManagerEvent event) {},method,
+  public void contentRemoveQuery(ContentManagerEvent event) {},method,
+  public void selectionChanged(ContentManagerEvent event) {},method,
+"public class DtoVxLanPort extends DtoBridgePort {
+    private URI bindings;
+    private UUID vtepId;
+    @Override
+    public Short getVlanId() {
+        return null;
+    }
+    @Override
+    public String getType() {
+        return PortType.VXLAN;
+    }
+    public UUID getVtepId() {
+        return vtepId;
+    }
+    public void setVtepId(UUID vtepId) {
+        this.vtepId = vtepId;
+    }
+    public URI getBindings() {
+        return bindings;
+    }
+    public void setBindings(URI bindings) {
+        this.bindings = bindings;
+    }
+}",class,
+"public class PortType {
+    public static final String BRIDGE = ""Bridge"";
+    public static final String ROUTER = ""Router"";
+    public static final String VXLAN = ""Vxlan"";
+}",class,
+"public class TunnelZoneType {
+    public static final String GRE = ""gre"";
+    public static final String VxLAN = ""vxlan"";
+    public static final String VTEP = ""vtep"";
+}",class,
+"    @Override
+    public Short getVlanId() {
+        return null;
+    }",method,
+"    @Override
+    public String getType() {
+        return PortType.VXLAN;
+    }",method,
+"    public UUID getVtepId() {
+        return vtepId;
+    }",method,
+"    public void setVtepId(UUID vtepId) {
+        this.vtepId = vtepId;
+    }",method,
+"    public URI getBindings() {
+        return bindings;
+    }",method,
+"    public void setBindings(URI bindings) {
+        this.bindings = bindings;
+    }",method,
+"public class TestTimeoutTest {
+  @Test
+  public void testBasicConversion() throws Exception {
+    assertThat(TestTimeout.valueOf(""SHORT"")).isSameAs(SHORT);
+    assertThat(TestTimeout.valueOf(""MODERATE"")).isSameAs(MODERATE);
+    assertThat(TestTimeout.valueOf(""LONG"")).isSameAs(LONG);
+    assertThat(TestTimeout.valueOf(""ETERNAL"")).isSameAs(ETERNAL);
+  }
+  @Test
+  public void testSuggestedTestSize() throws Exception {
+    assertThat(getSuggestedTestTimeout(0)).isEqualTo(SHORT);
+    assertThat(getSuggestedTestTimeout(30)).isEqualTo(SHORT);
+    assertThat(getSuggestedTestTimeout(50)).isEqualTo(MODERATE);
+    assertThat(getSuggestedTestTimeout(250)).isEqualTo(LONG);
+    assertThat(getSuggestedTestTimeout(700)).isEqualTo(ETERNAL);
+    assertThat(getSuggestedTestTimeout(60 * 60 * 24 * 360)).isEqualTo(ETERNAL);
+  }
+  @Test
+  public void testAllTimesHaveSuggestions() throws Exception {
+    for (int timeout = 0; timeout < ETERNAL.getTimeoutSeconds(); timeout++) {
+      TestTimeout suggested = getSuggestedTestTimeout(timeout);
+      assertWithMessage(""No suggested TestTimeout found for timeout "" + timeout)
+          .that(suggested)
+          .isNotNull();
+      assertWithMessage(
+              ""Suggested timeout "" + suggested + "" is not in the fuzzy range for "" + timeout)
+          .that(suggested.isInRangeFuzzy(timeout))
+          .isTrue();
+    }
+  }
+  @Test
+  public void testIsInRangeFuzzy() throws Exception {
+    assertThat(SHORT.isInRangeFuzzy(0)).isTrue();
+    assertThat(SHORT.isInRangeFuzzy(30)).isTrue();
+    assertThat(SHORT.isInRangeFuzzy(55)).isFalse();
+    assertThat(MODERATE.isInRangeFuzzy(10)).isFalse();
+    assertThat(MODERATE.isInRangeFuzzy(40)).isTrue();
+    assertThat(MODERATE.isInRangeFuzzy(290)).isFalse();
+    assertThat(LONG.isInRangeFuzzy(30)).isFalse();
+    assertThat(LONG.isInRangeFuzzy(200)).isTrue();
+    assertThat(LONG.isInRangeFuzzy(890)).isFalse();
+    assertThat(ETERNAL.isInRangeFuzzy(50)).isFalse();
+    assertThat(ETERNAL.isInRangeFuzzy(500)).isTrue();
+    assertThat(ETERNAL.isInRangeFuzzy(3500)).isTrue();
+    assertThat(ETERNAL.isInRangeFuzzy(60 * 60 * 24 * 360)).isTrue();
+  }
+  @Test
+  public void testAllFuzzyRangesCovered() throws Exception {
+    for (int timeout = 0; timeout < ETERNAL.getTimeoutSeconds(); timeout++) {
+      List<Boolean> truthValues = new ArrayList<>();
+      for (TestTimeout testTimeout : Arrays.asList(SHORT, MODERATE, LONG, ETERNAL)) {
+        truthValues.add(testTimeout.isInRangeFuzzy(timeout));
+      }
+      assertWithMessage(""Timeout "" + timeout + "" is not in any fuzzy range."")
+          .that(truthValues)
+          .contains(true);
+    }
+  }
+}",class,
+"  @Test
+  public void testBasicConversion() throws Exception {
+    assertThat(TestTimeout.valueOf(""SHORT"")).isSameAs(SHORT);
+    assertThat(TestTimeout.valueOf(""MODERATE"")).isSameAs(MODERATE);
+    assertThat(TestTimeout.valueOf(""LONG"")).isSameAs(LONG);
+    assertThat(TestTimeout.valueOf(""ETERNAL"")).isSameAs(ETERNAL);
+  }",method,
+"  @Test
+  public void testSuggestedTestSize() throws Exception {
+    assertThat(getSuggestedTestTimeout(0)).isEqualTo(SHORT);
+    assertThat(getSuggestedTestTimeout(30)).isEqualTo(SHORT);
+    assertThat(getSuggestedTestTimeout(50)).isEqualTo(MODERATE);
+    assertThat(getSuggestedTestTimeout(250)).isEqualTo(LONG);
+    assertThat(getSuggestedTestTimeout(700)).isEqualTo(ETERNAL);
+    assertThat(getSuggestedTestTimeout(60 * 60 * 24 * 360)).isEqualTo(ETERNAL);
+  }",method,
+"  @Test
+  public void testAllTimesHaveSuggestions() throws Exception {
+    for (int timeout = 0; timeout < ETERNAL.getTimeoutSeconds(); timeout++) {
+      TestTimeout suggested = getSuggestedTestTimeout(timeout);
+      assertWithMessage(""No suggested TestTimeout found for timeout "" + timeout)
+          .that(suggested)
+          .isNotNull();
+      assertWithMessage(
+              ""Suggested timeout "" + suggested + "" is not in the fuzzy range for "" + timeout)
+          .that(suggested.isInRangeFuzzy(timeout))
+          .isTrue();
+    }
+  }",method,
+"  @Test
+  public void testIsInRangeFuzzy() throws Exception {
+    assertThat(SHORT.isInRangeFuzzy(0)).isTrue();
+    assertThat(SHORT.isInRangeFuzzy(30)).isTrue();
+    assertThat(SHORT.isInRangeFuzzy(55)).isFalse();
+    assertThat(MODERATE.isInRangeFuzzy(10)).isFalse();
+    assertThat(MODERATE.isInRangeFuzzy(40)).isTrue();
+    assertThat(MODERATE.isInRangeFuzzy(290)).isFalse();
+    assertThat(LONG.isInRangeFuzzy(30)).isFalse();
+    assertThat(LONG.isInRangeFuzzy(200)).isTrue();
+    assertThat(LONG.isInRangeFuzzy(890)).isFalse();
+    assertThat(ETERNAL.isInRangeFuzzy(50)).isFalse();
+    assertThat(ETERNAL.isInRangeFuzzy(500)).isTrue();
+    assertThat(ETERNAL.isInRangeFuzzy(3500)).isTrue();
+    assertThat(ETERNAL.isInRangeFuzzy(60 * 60 * 24 * 360)).isTrue();
+  }",method,
+"  @Test
+  public void testAllFuzzyRangesCovered() throws Exception {
+    for (int timeout = 0; timeout < ETERNAL.getTimeoutSeconds(); timeout++) {
+      List<Boolean> truthValues = new ArrayList<>();
+      for (TestTimeout testTimeout : Arrays.asList(SHORT, MODERATE, LONG, ETERNAL)) {
+        truthValues.add(testTimeout.isInRangeFuzzy(timeout));
+      }
+      assertWithMessage(""Timeout "" + timeout + "" is not in any fuzzy range."")
+          .that(truthValues)
+          .contains(true);
+    }
+  }",method,
+"  static public String[] getDirectiveOptions(String directive) {
+    if (DIRECTIVES.containsKey(directive))
+      return DIRECTIVES.get(directive);
+    return new String[]{};
+  }",method,
+"  static public Set<String> getDirectives() {
+    return DIRECTIVES.keySet();
+  }",method,
+"public abstract class PackageManagementService {
+  @Nullable
+  public List<String> getAllRepositories() {
+    return null;
+  }
+  public boolean canModifyRepository(String repositoryUrl) {
+    return true;
+  }
+  public void addRepository(String repositoryUrl) {
+  }
+  public void removeRepository(String repositoryUrl) {
+  }
+  public int compareVersions(@NotNull String version1, @NotNull String version2) {
+    return PackageVersionComparator.VERSION_COMPARATOR.compare(version1, version2);
+  }
+  public abstract List<RepoPackage> getAllPackages() throws IOException;
+  public abstract List<RepoPackage> reloadAllPackages() throws IOException;
+  public List<RepoPackage> getAllPackagesCached() {
+    return Collections.emptyList();
+  }
+  public boolean canInstallToUser() {
+    return false;
+  }
+  public String getInstallToUserText() {
+    return """";
+  }
+  public boolean isInstallToUserSelected() {
+    return false;
+  }
+  public void installToUserChanged(boolean newValue) {
+  }
+  public abstract Collection<InstalledPackage> getInstalledPackages() throws IOException;
+  public abstract void installPackage(RepoPackage repoPackage, @Nullable String version, boolean forceUpgrade,
+                                      @Nullable String extraOptions, Listener listener, boolean installToUser);
+  public abstract void uninstallPackages(List<InstalledPackage> installedPackages, Listener listener);
+  public abstract void fetchPackageVersions(String packageName, CatchingConsumer<List<String>, Exception> consumer);
+  public abstract void fetchPackageDetails(String packageName, CatchingConsumer<String, Exception> consumer);
+  public interface Listener {
+    void operationStarted(String packageName);
+    void operationFinished(String packageName, @Nullable ErrorDescription errorDescription);
+  }
+  public static class ErrorDescription {
+    @NotNull private final String myMessage;
+    @Nullable private final String myCommand;
+    @Nullable private final String myOutput;
+    @Nullable private final String mySolution;
+    @Nullable
+    public static ErrorDescription fromMessage(@Nullable String message) {
+      return message != null ? new ErrorDescription(message, null, null, null) : null;
+    }
+    public ErrorDescription(@NotNull String message, @Nullable String command, @Nullable String output, @Nullable String solution) {
+      myMessage = message;
+      myCommand = command;
+      myOutput = output;
+      mySolution = solution;
+    }
+    @NotNull
+    public String getMessage() {
+      return myMessage;
+    }
+    @Nullable
+    public String getCommand() {
+      return myCommand;
+    }
+    @Nullable
+    public String getOutput() {
+      return myOutput;
+    }
+    @Nullable
+    public String getSolution() {
+      return mySolution;
+    }
+  }
+}",class,
+"  public static class ErrorDescription {
+    @NotNull private final String myMessage;
+    @Nullable private final String myCommand;
+    @Nullable private final String myOutput;
+    @Nullable private final String mySolution;
+    @Nullable
+    public static ErrorDescription fromMessage(@Nullable String message) {
+      return message != null ? new ErrorDescription(message, null, null, null) : null;
+    }
+    public ErrorDescription(@NotNull String message, @Nullable String command, @Nullable String output, @Nullable String solution) {
+      myMessage = message;
+      myCommand = command;
+      myOutput = output;
+      mySolution = solution;
+    }
+    @NotNull
+    public String getMessage() {
+      return myMessage;
+    }
+    @Nullable
+    public String getCommand() {
+      return myCommand;
+    }
+    @Nullable
+    public String getOutput() {
+      return myOutput;
+    }
+    @Nullable
+    public String getSolution() {
+      return mySolution;
+    }
+  }",class,
+"  @Nullable
+  public List<String> getAllRepositories() {
+    return null;
+  }",method,
+"  public boolean canModifyRepository(String repositoryUrl) {
+    return true;
+  }",method,
+"  public void addRepository(String repositoryUrl) {
+  }",method,
+"  public void removeRepository(String repositoryUrl) {
+  }",method,
+"  public int compareVersions(@NotNull String version1, @NotNull String version2) {
+    return PackageVersionComparator.VERSION_COMPARATOR.compare(version1, version2);
+  }",method,
+"  public List<RepoPackage> getAllPackagesCached() {
+    return Collections.emptyList();
+  }",method,
+"  public boolean canInstallToUser() {
+    return false;
+  }",method,
+"  public String getInstallToUserText() {
+    return """";
+  }",method,
+"  public boolean isInstallToUserSelected() {
+    return false;
+  }",method,
+"  public void installToUserChanged(boolean newValue) {
+  }",method,
+"    @NotNull private final String myMessage;
+    @Nullable private final String myCommand;
+    @Nullable private final String myOutput;
+    @Nullable private final String mySolution;
+    @Nullable
+    public static ErrorDescription fromMessage(@Nullable String message) {
+      return message != null ? new ErrorDescription(message, null, null, null) : null;
+    }",method,
+"    public ErrorDescription(@NotNull String message, @Nullable String command, @Nullable String output, @Nullable String solution) {
+      myMessage = message;
+      myCommand = command;
+      myOutput = output;
+      mySolution = solution;
+    }",method,
+"    @NotNull
+    public String getMessage() {
+      return myMessage;
+    }",method,
+"    @Nullable
+    public String getCommand() {
+      return myCommand;
+    }",method,
+"    @Nullable
+    public String getOutput() {
+      return myOutput;
+    }",method,
+"    @Nullable
+    public String getSolution() {
+      return mySolution;
+    }",method,
+"abstract public class ColumnChange implements Change {
+    static public void writeOldColumnGroups(Writer writer, Properties options,
+            List<ColumnGroup> oldColumnGroups) throws IOException {
+        writer.write(""oldColumnGroupCount="");
+        writer.write(Integer.toString(oldColumnGroups.size())); writer.write('\n');
+        for (ColumnGroup cg : oldColumnGroups) {
+            JSONWriter jsonWriter = new JSONWriter(writer);
+            try {
+                cg.write(jsonWriter, options);
+            } catch (JSONException e) {
+                throw new IOException(e);
+            }
+            writer.write('\n');
+        }
+    }
+    static public List<ColumnGroup> readOldColumnGroups(
+            LineNumberReader reader, int oldColumnGroupCount) throws Exception {
+        List<ColumnGroup> oldColumnGroups = new ArrayList<ColumnGroup>(oldColumnGroupCount);
+        for (int i = 0; i < oldColumnGroupCount; i++) {
+            String line = reader.readLine();
+            if (line != null) {
+                oldColumnGroups.add(ColumnGroup.load(line));
+            }
+        }
+        return oldColumnGroups;
+    }
+}",class,
+"    static public void writeOldColumnGroups(Writer writer, Properties options,
+            List<ColumnGroup> oldColumnGroups) throws IOException {
+        writer.write(""oldColumnGroupCount="");
+        writer.write(Integer.toString(oldColumnGroups.size())); writer.write('\n');
+        for (ColumnGroup cg : oldColumnGroups) {
+            JSONWriter jsonWriter = new JSONWriter(writer);
+            try {
+                cg.write(jsonWriter, options);
+            } catch (JSONException e) {
+                throw new IOException(e);
+            }
+            writer.write('\n');
+        }
+    }",method,
+"        for (ColumnGroup cg : oldColumnGroups) {
+            JSONWriter jsonWriter = new JSONWriter(writer);
+            try {
+                cg.write(jsonWriter, options);
+            } catch (JSONException e) {
+                throw new IOException(e);
+            }
+            writer.write('\n');
+        }",method,
+"    static public List<ColumnGroup> readOldColumnGroups(
+            LineNumberReader reader, int oldColumnGroupCount) throws Exception {
+        List<ColumnGroup> oldColumnGroups = new ArrayList<ColumnGroup>(oldColumnGroupCount);
+        for (int i = 0; i < oldColumnGroupCount; i++) {
+            String line = reader.readLine();
+            if (line != null) {
+                oldColumnGroups.add(ColumnGroup.load(line));
+            }
+        }
+        return oldColumnGroups;
+    }",method,
+"        for (int i = 0; i < oldColumnGroupCount; i++) {
+            String line = reader.readLine();
+            if (line != null) {
+                oldColumnGroups.add(ColumnGroup.load(line));
+            }
+        }",method,
+"            if (line != null) {
+                oldColumnGroups.add(ColumnGroup.load(line));
+            }",method,
+"public abstract class ExtraParameterHandler extends BaseAnnotationHandler<GeneratedClassHolder> {
+	private Class<? extends Annotation> methodAnnotationClass;
+	public ExtraParameterHandler(Class<? extends Annotation> targetClass, Class<? extends Annotation> methodAnnotationClass, AndroidAnnotationsEnvironment environment) {
+		super(targetClass, environment);
+		this.methodAnnotationClass = methodAnnotationClass;
+	}
+	@Override
+	protected void validate(Element element, ElementValidation valid) {
+		validatorHelper.enclosingElementHasAnnotation(methodAnnotationClass, element, valid);
+		validatorHelper.canBePutInABundle(element, valid);
+	}
+	@Override
+	public void process(Element element, GeneratedClassHolder holder) throws Exception {
+		// Don't do anything here.
+	}
+	public IJExpression getExtraValue(VariableElement parameter, JVar extras, JBlock block, JMethod annotatedMethod, GeneratedClassHolder holder) {
+		return getExtraValue(parameter, extras, block, annotatedMethod, holder.getGeneratedClass());
+	}
+	public IJExpression getExtraValue(VariableElement parameter, JVar extras, JBlock block, JMethod annotatedMethod, JDefinedClass generatedClass) {
+		String parameterName = parameter.getSimpleName().toString();
+		AbstractJClass parameterClass = codeModelHelper.typeMirrorToJClass(parameter.asType());
+		String extraKey = getAnnotationValue(parameter);
+		if (extraKey == null || extraKey.isEmpty()) {
+			extraKey = parameterName;
+		}
+		BundleHelper bundleHelper = new BundleHelper(getEnvironment(), parameter.asType());
+		IJExpression restoreMethodCall = bundleHelper.getExpressionToRestoreFromBundle(parameterClass, extras, getStaticExtraField(generatedClass, extraKey), annotatedMethod);
+		return block.decl(parameterClass, parameterName, restoreMethodCall);
+	}
+	private JFieldVar getStaticExtraField(JDefinedClass generatedClass, String extraName) {
+		String staticFieldName = CaseHelper.camelCaseToUpperSnakeCase(null, extraName, ""Extra"");
+		JFieldVar staticExtraField = generatedClass.fields().get(staticFieldName);
+		if (staticExtraField == null) {
+			staticExtraField = generatedClass.field(PUBLIC | STATIC | FINAL, getClasses().STRING, staticFieldName, lit(extraName));
+		}
+		return staticExtraField;
+	}
+	public abstract String getAnnotationValue(VariableElement parameter);
+}",class,
+"	public ExtraParameterHandler(Class<? extends Annotation> targetClass, Class<? extends Annotation> methodAnnotationClass, AndroidAnnotationsEnvironment environment) {
+		super(targetClass, environment);
+		this.methodAnnotationClass = methodAnnotationClass;
+	}",method,
+"	@Override
+	protected void validate(Element element, ElementValidation valid) {
+		validatorHelper.enclosingElementHasAnnotation(methodAnnotationClass, element, valid);
+		validatorHelper.canBePutInABundle(element, valid);
+	}",method,
+"	@Override
+	public void process(Element element, GeneratedClassHolder holder) throws Exception {
+		// Don't do anything here.
+	}",method,
+"	public IJExpression getExtraValue(VariableElement parameter, JVar extras, JBlock block, JMethod annotatedMethod, GeneratedClassHolder holder) {
+		return getExtraValue(parameter, extras, block, annotatedMethod, holder.getGeneratedClass());
+	}",method,
+"	public IJExpression getExtraValue(VariableElement parameter, JVar extras, JBlock block, JMethod annotatedMethod, JDefinedClass generatedClass) {
+		String parameterName = parameter.getSimpleName().toString();
+		AbstractJClass parameterClass = codeModelHelper.typeMirrorToJClass(parameter.asType());
+		String extraKey = getAnnotationValue(parameter);
+		if (extraKey == null || extraKey.isEmpty()) {
+			extraKey = parameterName;
+		}
+		BundleHelper bundleHelper = new BundleHelper(getEnvironment(), parameter.asType());
+		IJExpression restoreMethodCall = bundleHelper.getExpressionToRestoreFromBundle(parameterClass, extras, getStaticExtraField(generatedClass, extraKey), annotatedMethod);
+		return block.decl(parameterClass, parameterName, restoreMethodCall);
+	}",method,
+"	private JFieldVar getStaticExtraField(JDefinedClass generatedClass, String extraName) {
+		String staticFieldName = CaseHelper.camelCaseToUpperSnakeCase(null, extraName, ""Extra"");
+		JFieldVar staticExtraField = generatedClass.fields().get(staticFieldName);
+		if (staticExtraField == null) {
+			staticExtraField = generatedClass.field(PUBLIC | STATIC | FINAL, getClasses().STRING, staticFieldName, lit(extraName));
+		}
+		return staticExtraField;
+	}",method,
+"		if (staticExtraField == null) {
+			staticExtraField = generatedClass.field(PUBLIC | STATIC | FINAL, getClasses().STRING, staticFieldName, lit(extraName));
+		}",method,
+"public class RlogCommand extends AbstractCommand {
+  private String myModuleName = ""."";
+  private boolean myHeadersOnly = true;
+  private boolean myNoTags = false;
+  private String myDateTo;
+  private String myDateFrom;
+  private boolean mySuppressEmptyHeaders = true;
+  private String myBranchName = null;
+  private boolean myLogDefaultBranch = false;
+  private String[] myRevisions = null;
+  // Implemented ============================================================
+  public final boolean execute(IRequestProcessor requestProcessor,
+                               IEventSender eventSender,
+                               ICvsListenerRegistry listenerRegistry,
+                               IClientEnvironment clientEnvironment,
+                               IProgressViewer progressViewer) throws CommandException, AuthenticationException {
+    final Requests requests = new Requests(CommandRequest.RLOG, clientEnvironment);
+    requests.addArgumentRequest(myHeadersOnly, ""-h"");
+    requests.addArgumentRequest(myNoTags, ""-N"");
+    requests.addArgumentRequest(mySuppressEmptyHeaders, ""-S"");
+    requests.addArgumentRequest(!isRecursive(), ""-l"");
+    requests.addArgumentRequest(getDateFilter(), ""-d"");
+    final String revisionFilter = getRevisionFilter();
+    if (revisionFilter != null) {
+      requests.addArgumentRequest(""-r"" + revisionFilter);
+    } else if (myBranchName != null) {
+      requests.addArgumentRequest(""-r"" + myBranchName);          
+    }
+    requests.addArgumentRequest(myLogDefaultBranch, ""-b"");
+    requests.addArgumentRequest(myModuleName);
+    final ICvsListener parser = new LogMessageParser(eventSender, clientEnvironment.getCvsFileSystem());
+    parser.registerListeners(listenerRegistry);
+    try {
+      return requestProcessor.processRequests(requests, new DummyRequestsProgressHandler());
+    }
+    finally {
+      parser.unregisterListeners(listenerRegistry);
+    }
+  }
+  public void setMyLogDefaultBranch(boolean logDefaultBranch) {
+    myLogDefaultBranch = logDefaultBranch;
+  }
+  @Nullable
+  private String getDateFilter() {
+    if (myDateFrom == null && myDateTo == null) {
+      return null;
+    }
+    final StringBuilder result = new StringBuilder();
+    if (myDateFrom == null) {
+      result.append('<');
+      result.append(myDateTo);
+    }
+    else if (myDateTo == null) {
+      result.append('>');
+      result.append(myDateFrom);
+    }
+    else {
+      result.append(myDateFrom);
+      result.append('<');
+      result.append(myDateTo);
+    }
+    return result.toString();
+  }
+  @Nullable
+  private String getRevisionFilter() {
+    if (myRevisions == null || myRevisions.length == 0) {
+      return null;
+    }
+    final StringBuilder result = new StringBuilder();
+    boolean comma = false;
+    for (String revision : myRevisions) {
+      if (comma) result.append(',');
+      else comma = true;
+      result.append(revision);
+    }
+    return result.toString();
+  }
+  public final String getCvsCommandLine() {
+    //noinspection HardCodedStringLiteral
+    final StringBuffer cvsCommandLine = new StringBuffer(""rlog "");
+    cvsCommandLine.append(getCVSArguments());
+    appendFileArguments(cvsCommandLine);
+    return cvsCommandLine.toString();
+  }
+  public final void resetCvsCommand() {
+    super.resetCvsCommand();
+    setRecursive(true);
+  }
+  public void setHeadersOnly(final boolean headersOnly) {
+    myHeadersOnly = headersOnly;
+  }
+  public void setNoTags(final boolean noTags) {
+    myNoTags = noTags;
+  }
+  @SuppressWarnings({""HardCodedStringLiteral""})
+  private String getCVSArguments() {
+    final StringBuilder cvsArguments = new StringBuilder();
+    if (myHeadersOnly) {
+      cvsArguments.append(""-h "");
+    }
+    if (myNoTags) {
+      cvsArguments.append(""-N "");
+    }
+    return cvsArguments.toString();
+  }
+  public void setModuleName(final String moduleName) {
+    myModuleName = moduleName;
+  }
+  // Utils ==================================================================
+  protected final void addModifiedRequest(FileObject fileObject, Entry entry, Requests requests, IClientEnvironment clientEnvironment) {
+    requests.addIsModifiedRequest(fileObject);
+  }
+  public void setDateFrom(final String dateFrom) {
+    myDateFrom = dateFrom;
+  }
+  public void setDateTo(final String dateTo) {
+    myDateTo = dateTo;
+  }
+  public void setSuppressEmptyHeaders(final boolean suppressEmptyHeaders) {
+    mySuppressEmptyHeaders = suppressEmptyHeaders;
+  }
+  public void setBranchName(final String branchName) {
+    myBranchName = branchName;
+  }
+  public void setRevisions(final String... revisions) {
+    myRevisions = revisions;
+  }
+}",class,
+"  public final boolean execute(IRequestProcessor requestProcessor,
+                               IEventSender eventSender,
+                               ICvsListenerRegistry listenerRegistry,
+                               IClientEnvironment clientEnvironment,
+                               IProgressViewer progressViewer) throws CommandException, AuthenticationException {
+    final Requests requests = new Requests(CommandRequest.RLOG, clientEnvironment);
+    requests.addArgumentRequest(myHeadersOnly, ""-h"");
+    requests.addArgumentRequest(myNoTags, ""-N"");
+    requests.addArgumentRequest(mySuppressEmptyHeaders, ""-S"");
+    requests.addArgumentRequest(!isRecursive(), ""-l"");
+    requests.addArgumentRequest(getDateFilter(), ""-d"");
+    final String revisionFilter = getRevisionFilter();
+    if (revisionFilter != null) {
+      requests.addArgumentRequest(""-r"" + revisionFilter);
+    } else if (myBranchName != null) {
+      requests.addArgumentRequest(""-r"" + myBranchName);          
+    }
+    requests.addArgumentRequest(myLogDefaultBranch, ""-b"");
+    requests.addArgumentRequest(myModuleName);
+    final ICvsListener parser = new LogMessageParser(eventSender, clientEnvironment.getCvsFileSystem());
+    parser.registerListeners(listenerRegistry);
+    try {
+      return requestProcessor.processRequests(requests, new DummyRequestsProgressHandler());
+    }
+    finally {
+      parser.unregisterListeners(listenerRegistry);
+    }
+  }",method,
+"    if (revisionFilter != null) {
+      requests.addArgumentRequest(""-r"" + revisionFilter);
+    }",method,
+"  public void setMyLogDefaultBranch(boolean logDefaultBranch) {
+    myLogDefaultBranch = logDefaultBranch;
+  }",method,
+"  @Nullable
+  private String getDateFilter() {
+    if (myDateFrom == null && myDateTo == null) {
+      return null;
+    }
+    final StringBuilder result = new StringBuilder();
+    if (myDateFrom == null) {
+      result.append('<');
+      result.append(myDateTo);
+    }
+    else if (myDateTo == null) {
+      result.append('>');
+      result.append(myDateFrom);
+    }
+    else {
+      result.append(myDateFrom);
+      result.append('<');
+      result.append(myDateTo);
+    }
+    return result.toString();
+  }",method,
+"    if (myDateFrom == null && myDateTo == null) {
+      return null;
+    }",method,
+"    if (myDateFrom == null) {
+      result.append('<');
+      result.append(myDateTo);
+    }",method,
+"    else if (myDateTo == null) {
+      result.append('>');
+      result.append(myDateFrom);
+    }",method,
+"  @Nullable
+  private String getRevisionFilter() {
+    if (myRevisions == null || myRevisions.length == 0) {
+      return null;
+    }
+    final StringBuilder result = new StringBuilder();
+    boolean comma = false;
+    for (String revision : myRevisions) {
+      if (comma) result.append(',');
+      else comma = true;
+      result.append(revision);
+    }
+    return result.toString();
+  }",method,
+"    if (myRevisions == null || myRevisions.length == 0) {
+      return null;
+    }",method,
+"    for (String revision : myRevisions) {
+      if (comma) result.append(',');
+      else comma = true;
+      result.append(revision);
+    }",method,
+"  public final String getCvsCommandLine() {
+    //noinspection HardCodedStringLiteral
+    final StringBuffer cvsCommandLine = new StringBuffer(""rlog "");
+    cvsCommandLine.append(getCVSArguments());
+    appendFileArguments(cvsCommandLine);
+    return cvsCommandLine.toString();
+  }",method,
+"  public final void resetCvsCommand() {
+    super.resetCvsCommand();
+    setRecursive(true);
+  }",method,
+"  public void setHeadersOnly(final boolean headersOnly) {
+    myHeadersOnly = headersOnly;
+  }",method,
+"  public void setNoTags(final boolean noTags) {
+    myNoTags = noTags;
+  }",method,

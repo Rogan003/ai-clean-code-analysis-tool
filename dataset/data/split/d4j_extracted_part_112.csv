@@ -1,0 +1,1212 @@
+code_snippet,type,score
+"    public byte[] getUnencryptedData() {
+        return _unencryptedData;
+    }",method,
+"    public void setUnencryptedData(byte[] data) {
+        _unencryptedData = data;
+    }",method,
+"    public byte[] getEncryptedData() {
+        return _encryptedData;
+    }",method,
+"    public void setEncryptedData(byte[] data) {
+        _encryptedData = data;
+    }",method,
+"    public int getSize() {
+        if (_unencryptedData != null)
+            return _unencryptedData.length;
+        else if (_encryptedData != null)
+            return _encryptedData.length;
+        else
+            return 0;
+    }",method,
+"    public void readBytes(InputStream in) throws DataFormatException, IOException {
+        int size = (int) DataHelper.readLong(in, 4);
+        if (size < 0) throw new DataFormatException(""payload size out of range ("" + size + "")"");
+        _encryptedData = new byte[size];
+        int read = read(in, _encryptedData);
+        if (read != size) throw new DataFormatException(""Incorrect number of bytes read in the payload structure"");
+        //if (_log.shouldLog(Log.DEBUG))
+        //    _log.debug(""read payload: "" + read + "" bytes"");
+    }",method,
+"    public void writeBytes(OutputStream out) throws DataFormatException, IOException {
+        if (_encryptedData == null) throw new DataFormatException(""Not yet encrypted.  Please set the encrypted data"");
+        DataHelper.writeLong(out, 4, _encryptedData.length);
+        out.write(_encryptedData);
+        //if (_log.shouldLog(Log.DEBUG))
+        //    _log.debug(""wrote payload: "" + _encryptedData.length);
+    }",method,
+"    public int writeBytes(byte target[], int offset) {
+        if (_encryptedData == null) throw new IllegalStateException(""Not yet encrypted.  Please set the encrypted data"");
+        DataHelper.toLong(target, offset, 4, _encryptedData.length);
+        offset += 4;
+        System.arraycopy(_encryptedData, 0, target, offset, _encryptedData.length);
+        return 4 + _encryptedData.length;
+    }",method,
+"    @Override
+    public boolean equals(Object object) {
+        if (object == this) return true;
+        if ((object == null) || !(object instanceof Payload)) return false;
+        Payload p = (Payload) object;
+        return DataHelper.eq(_unencryptedData, p.getUnencryptedData())
+               && DataHelper.eq(_encryptedData, p.getEncryptedData());
+    }",method,
+"    @Override
+    public int hashCode() {
+        return DataHelper.hashCode(_encryptedData != null ? _encryptedData : _unencryptedData);
+    }",method,
+"    @Override
+    public String toString() {
+        StringBuilder buf = new StringBuilder(32);
+        buf.append(""[Payload: "");
+        if (_encryptedData != null)
+            buf.append(_encryptedData.length).append("" bytes"");
+        else
+            buf.append(""null"");
+        buf.append(""]"");
+        return buf.toString();
+    }",method,
+"public class JpsModelSerializationDataService {
+  @NotNull
+  public static Map<String, String> getAllPathVariables(JpsGlobal global) {
+    return computeAllPathVariables(global);
+  }
+  public static Map<String, String> computeAllPathVariables(JpsGlobal global) {
+    Map<String, String> pathVariables = new HashMap<>(PathMacroUtil.getGlobalSystemMacros());
+    JpsPathVariablesConfiguration configuration = getPathVariablesConfiguration(global);
+    if (configuration != null) {
+      pathVariables.putAll(configuration.getAllUserVariables());
+    }
+    return pathVariables;
+  }
+  @Nullable
+  public static JpsPathVariablesConfiguration getPathVariablesConfiguration(JpsGlobal global) {
+    return global.getContainer().getChild(JpsGlobalLoader.PATH_VARIABLES_ROLE);
+  }
+  @NotNull
+  public static JpsPathVariablesConfiguration getOrCreatePathVariablesConfiguration(JpsGlobal global) {
+    JpsPathVariablesConfiguration child = global.getContainer().getChild(JpsGlobalLoader.PATH_VARIABLES_ROLE);
+    if (child == null) {
+      return global.getContainer().setChild(JpsGlobalLoader.PATH_VARIABLES_ROLE, new JpsPathVariablesConfigurationImpl());
+    }
+    return child;
+  }
+  @Nullable
+  public static JpsProjectSerializationDataExtension getProjectExtension(@NotNull JpsProject project) {
+    return project.getContainer().getChild(JpsProjectSerializationDataExtensionImpl.ROLE);
+  }
+  @Nullable
+  public static File getBaseDirectory(@NotNull JpsProject project) {
+    JpsProjectSerializationDataExtension extension = getProjectExtension(project);
+    return extension != null ? extension.getBaseDirectory() : null;
+  }
+  @Nullable
+  public static JpsModuleSerializationDataExtension getModuleExtension(@NotNull JpsModule project) {
+    return project.getContainer().getChild(JpsModuleSerializationDataExtensionImpl.ROLE);
+  }
+  @Nullable
+  public static File getBaseDirectory(@NotNull JpsModule module) {
+    JpsModuleSerializationDataExtension extension = getModuleExtension(module);
+    return extension != null ? extension.getBaseDirectory() : null;
+  }
+  @Nullable
+  public static String getPathVariableValue(@NotNull JpsGlobal global, @NotNull String name) {
+    String value = PathMacroUtil.getGlobalSystemMacroValue(name);
+    if (value != null) {
+      return value;
+    }
+    JpsPathVariablesConfiguration configuration = getPathVariablesConfiguration(global);
+    return configuration != null ? configuration.getUserVariableValue(name) : null;
+  }
+}",class,
+"  @NotNull
+  public static Map<String, String> getAllPathVariables(JpsGlobal global) {
+    return computeAllPathVariables(global);
+  }",method,
+"  public static Map<String, String> computeAllPathVariables(JpsGlobal global) {
+    Map<String, String> pathVariables = new HashMap<>(PathMacroUtil.getGlobalSystemMacros());
+    JpsPathVariablesConfiguration configuration = getPathVariablesConfiguration(global);
+    if (configuration != null) {
+      pathVariables.putAll(configuration.getAllUserVariables());
+    }
+    return pathVariables;
+  }",method,
+"    if (configuration != null) {
+      pathVariables.putAll(configuration.getAllUserVariables());
+    }",method,
+"  @Nullable
+  public static JpsPathVariablesConfiguration getPathVariablesConfiguration(JpsGlobal global) {
+    return global.getContainer().getChild(JpsGlobalLoader.PATH_VARIABLES_ROLE);
+  }",method,
+"  @NotNull
+  public static JpsPathVariablesConfiguration getOrCreatePathVariablesConfiguration(JpsGlobal global) {
+    JpsPathVariablesConfiguration child = global.getContainer().getChild(JpsGlobalLoader.PATH_VARIABLES_ROLE);
+    if (child == null) {
+      return global.getContainer().setChild(JpsGlobalLoader.PATH_VARIABLES_ROLE, new JpsPathVariablesConfigurationImpl());
+    }
+    return child;
+  }",method,
+"    if (child == null) {
+      return global.getContainer().setChild(JpsGlobalLoader.PATH_VARIABLES_ROLE, new JpsPathVariablesConfigurationImpl());
+    }",method,
+"  @Nullable
+  public static JpsProjectSerializationDataExtension getProjectExtension(@NotNull JpsProject project) {
+    return project.getContainer().getChild(JpsProjectSerializationDataExtensionImpl.ROLE);
+  }",method,
+"  @Nullable
+  public static File getBaseDirectory(@NotNull JpsProject project) {
+    JpsProjectSerializationDataExtension extension = getProjectExtension(project);
+    return extension != null ? extension.getBaseDirectory() : null;
+  }",method,
+"  @Nullable
+  public static JpsModuleSerializationDataExtension getModuleExtension(@NotNull JpsModule project) {
+    return project.getContainer().getChild(JpsModuleSerializationDataExtensionImpl.ROLE);
+  }",method,
+"  @Nullable
+  public static File getBaseDirectory(@NotNull JpsModule module) {
+    JpsModuleSerializationDataExtension extension = getModuleExtension(module);
+    return extension != null ? extension.getBaseDirectory() : null;
+  }",method,
+"  @Nullable
+  public static String getPathVariableValue(@NotNull JpsGlobal global, @NotNull String name) {
+    String value = PathMacroUtil.getGlobalSystemMacroValue(name);
+    if (value != null) {
+      return value;
+    }
+    JpsPathVariablesConfiguration configuration = getPathVariablesConfiguration(global);
+    return configuration != null ? configuration.getUserVariableValue(name) : null;
+  }",method,
+"    if (value != null) {
+      return value;
+    }",method,
+"public class ProfileStat {
+    private Map<ProfileEntryKey, ProfileEntryStat> entries = new LinkedHashMap<ProfileEntryKey, ProfileEntryStat>(4);
+    private ReadWriteLock                          lock    = new ReentrantReadWriteLock();
+    public Map<ProfileEntryKey, ProfileEntryStat> getEntries() {
+        return entries;
+    }
+    public void record(Map<ProfileEntryKey, ProfileEntryReqStat> requestStatsMap) {
+        if (requestStatsMap == null) {
+            return;
+        }
+        for (Map.Entry<ProfileEntryKey, ProfileEntryReqStat> entry : requestStatsMap.entrySet()) {
+            ProfileEntryKey entryKey = entry.getKey();
+            ProfileEntryReqStat reqEntryStat = entry.getValue();
+            ProfileEntryStat entryStat = getProfileEntry(entryKey);
+            entryStat.addExecuteCount(reqEntryStat.getExecuteCount());
+            entryStat.addExecuteTimeNanos(reqEntryStat.getExecuteTimeNanos());
+        }
+    }
+    private ProfileEntryStat getProfileEntry(ProfileEntryKey entryKey) {
+        lock.readLock().lock();
+        try {
+            ProfileEntryStat entryStat = entries.get(entryKey);
+            if (entryStat != null) {
+                return entryStat;
+            }
+        } finally {
+            lock.readLock().unlock();
+        }
+        lock.writeLock().lock();
+        try {
+            ProfileEntryStat entryStat = entries.get(entryKey);
+            if (entryStat == null) {
+                entries.put(entryKey, new ProfileEntryStat());
+                entryStat = entries.get(entryKey);
+            }
+            return entryStat;
+        } finally {
+            lock.writeLock().unlock();
+        }
+    }
+    public List<Map<String, Object>> getStatData() {
+        List<ProfileEntryStatValue> statValueList = getStatValue(false);
+        int size = statValueList.size();
+        List<Map<String, Object>> list = new ArrayList<Map<String, Object>>(size);
+        for (ProfileEntryStatValue profileEntryStatValue : statValueList) {
+            list.add(profileEntryStatValue.getData());
+        }
+        return list;
+    }
+    public List<ProfileEntryStatValue> getStatValue(boolean reset) {
+        List<ProfileEntryStatValue> list = new ArrayList<ProfileEntryStatValue>();
+        lock.readLock().lock();
+        try {
+            for (Map.Entry<ProfileEntryKey, ProfileEntryStat> entry : entries.entrySet()) {
+                ProfileEntryStatValue entryStatValue = entry.getValue().getValue(reset);
+                entry.getKey().fillValue(entryStatValue);
+                list.add(entryStatValue);
+            }
+        } finally {
+            lock.readLock().unlock();
+        }
+        Collections.reverse(list);
+        return list;
+    }
+}",class,
+"    public Map<ProfileEntryKey, ProfileEntryStat> getEntries() {
+        return entries;
+    }",method,
+"    public void record(Map<ProfileEntryKey, ProfileEntryReqStat> requestStatsMap) {
+        if (requestStatsMap == null) {
+            return;
+        }
+        for (Map.Entry<ProfileEntryKey, ProfileEntryReqStat> entry : requestStatsMap.entrySet()) {
+            ProfileEntryKey entryKey = entry.getKey();
+            ProfileEntryReqStat reqEntryStat = entry.getValue();
+            ProfileEntryStat entryStat = getProfileEntry(entryKey);
+            entryStat.addExecuteCount(reqEntryStat.getExecuteCount());
+            entryStat.addExecuteTimeNanos(reqEntryStat.getExecuteTimeNanos());
+        }
+    }",method,
+"        if (requestStatsMap == null) {
+            return;
+        }",method,
+"    private ProfileEntryStat getProfileEntry(ProfileEntryKey entryKey) {
+        lock.readLock().lock();
+        try {
+            ProfileEntryStat entryStat = entries.get(entryKey);
+            if (entryStat != null) {
+                return entryStat;
+            }
+        } finally {
+            lock.readLock().unlock();
+        }
+        lock.writeLock().lock();
+        try {
+            ProfileEntryStat entryStat = entries.get(entryKey);
+            if (entryStat == null) {
+                entries.put(entryKey, new ProfileEntryStat());
+                entryStat = entries.get(entryKey);
+            }
+            return entryStat;
+        } finally {
+            lock.writeLock().unlock();
+        }
+    }",method,
+"            if (entryStat != null) {
+                return entryStat;
+            }",method,
+"            if (entryStat == null) {
+                entries.put(entryKey, new ProfileEntryStat());
+                entryStat = entries.get(entryKey);
+            }",method,
+"    public List<Map<String, Object>> getStatData() {
+        List<ProfileEntryStatValue> statValueList = getStatValue(false);
+        int size = statValueList.size();
+        List<Map<String, Object>> list = new ArrayList<Map<String, Object>>(size);
+        for (ProfileEntryStatValue profileEntryStatValue : statValueList) {
+            list.add(profileEntryStatValue.getData());
+        }
+        return list;
+    }",method,
+"        for (ProfileEntryStatValue profileEntryStatValue : statValueList) {
+            list.add(profileEntryStatValue.getData());
+        }",method,
+"    public List<ProfileEntryStatValue> getStatValue(boolean reset) {
+        List<ProfileEntryStatValue> list = new ArrayList<ProfileEntryStatValue>();
+        lock.readLock().lock();
+        try {
+            for (Map.Entry<ProfileEntryKey, ProfileEntryStat> entry : entries.entrySet()) {
+                ProfileEntryStatValue entryStatValue = entry.getValue().getValue(reset);
+                entry.getKey().fillValue(entryStatValue);
+                list.add(entryStatValue);
+            }
+        } finally {
+            lock.readLock().unlock();
+        }
+        Collections.reverse(list);
+        return list;
+    }",method,
+"public class DataDescription02Test extends CobolTestBase {
+	@Test
+	public void test() throws Exception {
+		final File inputFile = new File(
+				""src/test/resources/io/proleap/cobol/asg/data/localstorage/DataDescription02.cbl"");
+		final Program program = new CobolParserRunnerImpl().analyzeFile(inputFile, CobolSourceFormatEnum.TANDEM);
+		final CompilationUnit compilationUnit = program.getCompilationUnit(""DataDescription02"");
+		final ProgramUnit programUnit = compilationUnit.getProgramUnit();
+		final DataDivision dataDivision = programUnit.getDataDivision();
+		final LocalStorageSection localStorageSection = dataDivision.getLocalStorageSection();
+		assertNull(localStorageSection.getName());
+		assertEquals(DataDescriptionEntryContainerType.LOCAL_STORAGE_SECTION, localStorageSection.getContainerType());
+		assertEquals(2, localStorageSection.getDataDescriptionEntries().size());
+		assertEquals(1, localStorageSection.getRootDataDescriptionEntries().size());
+		{
+			final DataDescriptionEntry dataDescriptionEntryItems = localStorageSection.getDataDescriptionEntry(""ITEMS"");
+			assertNotNull(dataDescriptionEntryItems);
+			assertEquals(""ITEMS"", dataDescriptionEntryItems.getName());
+			assertEquals(DataDescriptionEntry.DataDescriptionEntryType.GROUP, dataDescriptionEntryItems.getDataDescriptionEntryType());
+			assertEquals(new Integer(1), dataDescriptionEntryItems.getLevelNumber());
+			assertNull(dataDescriptionEntryItems.getParentDataDescriptionEntryGroup());
+			{
+				final DataDescriptionEntry dataDescriptionEntryItem1 = localStorageSection
+						.getDataDescriptionEntry(""ITEM1"");
+				assertNotNull(dataDescriptionEntryItem1);
+				assertEquals(""ITEM1"", dataDescriptionEntryItem1.getName());
+				assertEquals(DataDescriptionEntry.DataDescriptionEntryType.GROUP, dataDescriptionEntryItem1.getDataDescriptionEntryType());
+				assertEquals(new Integer(2), dataDescriptionEntryItem1.getLevelNumber());
+				assertEquals(dataDescriptionEntryItems, dataDescriptionEntryItem1.getParentDataDescriptionEntryGroup());
+			}
+		}
+	}
+}",class,
+"	@Test
+	public void test() throws Exception {
+		final File inputFile = new File(
+				""src/test/resources/io/proleap/cobol/asg/data/localstorage/DataDescription02.cbl"");
+		final Program program = new CobolParserRunnerImpl().analyzeFile(inputFile, CobolSourceFormatEnum.TANDEM);
+		final CompilationUnit compilationUnit = program.getCompilationUnit(""DataDescription02"");
+		final ProgramUnit programUnit = compilationUnit.getProgramUnit();
+		final DataDivision dataDivision = programUnit.getDataDivision();
+		final LocalStorageSection localStorageSection = dataDivision.getLocalStorageSection();
+		assertNull(localStorageSection.getName());
+		assertEquals(DataDescriptionEntryContainerType.LOCAL_STORAGE_SECTION, localStorageSection.getContainerType());
+		assertEquals(2, localStorageSection.getDataDescriptionEntries().size());
+		assertEquals(1, localStorageSection.getRootDataDescriptionEntries().size());
+		{
+			final DataDescriptionEntry dataDescriptionEntryItems = localStorageSection.getDataDescriptionEntry(""ITEMS"");
+			assertNotNull(dataDescriptionEntryItems);
+			assertEquals(""ITEMS"", dataDescriptionEntryItems.getName());
+			assertEquals(DataDescriptionEntry.DataDescriptionEntryType.GROUP, dataDescriptionEntryItems.getDataDescriptionEntryType());
+			assertEquals(new Integer(1), dataDescriptionEntryItems.getLevelNumber());
+			assertNull(dataDescriptionEntryItems.getParentDataDescriptionEntryGroup());
+			{
+				final DataDescriptionEntry dataDescriptionEntryItem1 = localStorageSection
+						.getDataDescriptionEntry(""ITEM1"");
+				assertNotNull(dataDescriptionEntryItem1);
+				assertEquals(""ITEM1"", dataDescriptionEntryItem1.getName());
+				assertEquals(DataDescriptionEntry.DataDescriptionEntryType.GROUP, dataDescriptionEntryItem1.getDataDescriptionEntryType());
+				assertEquals(new Integer(2), dataDescriptionEntryItem1.getLevelNumber());
+				assertEquals(dataDescriptionEntryItems, dataDescriptionEntryItem1.getParentDataDescriptionEntryGroup());
+			}
+		}
+	}",method,
+"public class ClientC {
+  public void perform() {
+    Util.perform();
+  }
+}",class,
+}class DummyA {},class,
+"public class Client {
+  ShortName dep;
+}",class,
+public class ShortName {},class,
+public class ShortName {}class DummyB {},class,
+"public class ShortName {}class DummyB {}class Client {
+  public static void main(String[] args) {
+    System.out.println(Server.CONSTANT);
+  }
+}",class,
+"}public class Server{
+  public static final int CONSTANT = 100;
+}",class,
+"}
+class Client {
+  public static void main(String[] args) {
+    System.out.println(Server.CONSTANT);
+  }
+}",class,
+"public class Server{
+  public static final int CONSTANT = 100;
+}",class,
+"}
+class TestClient {
+  public static void main(String[] args) {
+    System.out.println(Server.CONSTANT + new com.MyClass().get());
+  }
+}",class,
+"  public void perform() {
+    Util.perform();
+  }",method,
+"  public static void main(String[] args) {
+    System.out.println(Server.CONSTANT);
+  }",method,
+"  public static void main(String[] args) {
+    System.out.println(Server.CONSTANT);
+  }",method,
+"  public static void main(String[] args) {
+    System.out.println(Server.CONSTANT + new com.MyClass().get());
+  }",method,
+"public abstract class ProviderTestCase<T extends ContentProvider>
+       extends InstrumentationTestCase {
+    Class<T> mProviderClass;
+    String mProviderAuthority;
+    private IsolatedContext mProviderContext;
+    private MockContentResolver mResolver;
+    public ProviderTestCase(Class<T> providerClass, String providerAuthority) {
+        mProviderClass = providerClass;
+        mProviderAuthority = providerAuthority;
+    }
+    private T mProvider;
+    public T getProvider() {
+        return mProvider;
+    }
+    @Override
+    protected void setUp() throws Exception {
+        super.setUp();
+        mResolver = new MockContentResolver();
+        final String filenamePrefix = ""test."";
+        RenamingDelegatingContext targetContextWrapper = new RenamingDelegatingContext(
+                new MockContext(), // The context that most methods are delegated to
+                getInstrumentation().getTargetContext(), // The context that file methods are delegated to
+                filenamePrefix);
+        mProviderContext = new IsolatedContext(mResolver, targetContextWrapper);
+        mProvider = ProviderTestCase2.createProviderForTest(
+                mProviderContext, mProviderClass, mProviderAuthority);
+        mResolver.addProvider(mProviderAuthority, getProvider());
+    }
+    @Override
+    protected void tearDown() throws Exception {
+        mProvider.shutdown();
+        super.tearDown();
+    }
+    public MockContentResolver getMockContentResolver() {
+        return mResolver;
+    }
+    public IsolatedContext getMockContext() {
+        return mProviderContext;
+    }
+    public static <T extends ContentProvider> ContentResolver newResolverWithContentProviderFromSql(
+            Context targetContext, Class<T> providerClass, String authority,
+            String databaseName, int databaseVersion, String sql)
+            throws IllegalAccessException, InstantiationException {
+        final String filenamePrefix = ""test."";
+        MockContentResolver resolver = new MockContentResolver();
+        RenamingDelegatingContext targetContextWrapper = new RenamingDelegatingContext(
+                new MockContext(), // The context that most methods are delegated to
+                targetContext, // The context that file methods are delegated to
+                filenamePrefix);
+        Context context = new IsolatedContext(
+                resolver, targetContextWrapper);
+        DatabaseUtils.createDbFromSqlStatements(context, databaseName, databaseVersion, sql);
+        T provider = ProviderTestCase2.createProviderForTest(context, providerClass, authority);
+        resolver.addProvider(authority, provider);
+        return resolver;
+    }
+}",class,
+"    public ProviderTestCase(Class<T> providerClass, String providerAuthority) {
+        mProviderClass = providerClass;
+        mProviderAuthority = providerAuthority;
+    }",method,
+"    public T getProvider() {
+        return mProvider;
+    }",method,
+"    @Override
+    protected void setUp() throws Exception {
+        super.setUp();
+        mResolver = new MockContentResolver();
+        final String filenamePrefix = ""test."";
+        RenamingDelegatingContext targetContextWrapper = new RenamingDelegatingContext(
+                new MockContext(), // The context that most methods are delegated to
+                getInstrumentation().getTargetContext(), // The context that file methods are delegated to
+                filenamePrefix);
+        mProviderContext = new IsolatedContext(mResolver, targetContextWrapper);
+        mProvider = ProviderTestCase2.createProviderForTest(
+                mProviderContext, mProviderClass, mProviderAuthority);
+        mResolver.addProvider(mProviderAuthority, getProvider());
+    }",method,
+"    @Override
+    protected void tearDown() throws Exception {
+        mProvider.shutdown();
+        super.tearDown();
+    }",method,
+"    public MockContentResolver getMockContentResolver() {
+        return mResolver;
+    }",method,
+"    public IsolatedContext getMockContext() {
+        return mProviderContext;
+    }",method,
+"    public static <T extends ContentProvider> ContentResolver newResolverWithContentProviderFromSql(
+            Context targetContext, Class<T> providerClass, String authority,
+            String databaseName, int databaseVersion, String sql)
+            throws IllegalAccessException, InstantiationException {
+        final String filenamePrefix = ""test."";
+        MockContentResolver resolver = new MockContentResolver();
+        RenamingDelegatingContext targetContextWrapper = new RenamingDelegatingContext(
+                new MockContext(), // The context that most methods are delegated to
+                targetContext, // The context that file methods are delegated to
+                filenamePrefix);
+        Context context = new IsolatedContext(
+                resolver, targetContextWrapper);
+        DatabaseUtils.createDbFromSqlStatements(context, databaseName, databaseVersion, sql);
+        T provider = ProviderTestCase2.createProviderForTest(context, providerClass, authority);
+        resolver.addProvider(authority, provider);
+        return resolver;
+    }",method,
+"public class LessThanEqualToExpression extends BinaryConditionalExpression {
+  private static final long serialVersionUID = 1L;
+  public LessThanEqualToExpression(Expression left, Expression right) {
+    super(left, right);
+  }
+  public ExpressionResult evaluate(RowIntf value)
+      throws FilterUnsupportedException, FilterIllegalMemberException {
+    ExpressionResult elRes = left.evaluate(value);
+    ExpressionResult erRes = right.evaluate(value);
+    ExpressionResult exprResValue1 = elRes;
+    if (elRes.isNull() || erRes.isNull()) {
+      elRes.set(DataTypes.BOOLEAN, false);
+      return elRes;
+    }
+    if (elRes.getDataType() != erRes.getDataType()) {
+      if (elRes.getDataType().getPrecedenceOrder() < erRes.getDataType().getPrecedenceOrder()) {
+        exprResValue1 = erRes;
+      }
+    }
+    boolean result = false;
+    DataType dataType = exprResValue1.getDataType();
+    if (dataType == DataTypes.BOOLEAN) {
+      result = elRes.getBoolean().compareTo(erRes.getBoolean()) <= 0;
+    } else if (dataType == DataTypes.STRING) {
+      result = elRes.getString().compareTo(erRes.getString()) <= 0;
+    } else if (dataType == DataTypes.SHORT) {
+      result = elRes.getShort() <= (erRes.getShort());
+    } else if (dataType == DataTypes.INT) {
+      result = elRes.getInt() <= (erRes.getInt());
+    } else if (dataType == DataTypes.DOUBLE) {
+      result = elRes.getDouble() <= (erRes.getDouble());
+    } else if (dataType == DataTypes.DATE || dataType == DataTypes.TIMESTAMP) {
+      result = elRes.getTime() <= (erRes.getTime());
+    } else if (dataType == DataTypes.LONG) {
+      result = elRes.getLong() <= (erRes.getLong());
+    } else if (dataType == DataTypes.DECIMAL) {
+      result = elRes.getDecimal().compareTo(erRes.getDecimal()) <= 0;
+    } else {
+      throw new FilterUnsupportedException(""DataType: "" + exprResValue1.getDataType()
+          + "" not supported for the filter expression"");
+    }
+    exprResValue1.set(DataTypes.BOOLEAN, result);
+    return exprResValue1;
+  }
+  @Override public ExpressionType getFilterExpressionType() {
+    // TODO Auto-generated method stub
+    return ExpressionType.LESSTHAN_EQUALTO;
+  }
+  @Override public String getString() {
+    return ""LessThanEqualTo("" + left.getString() + ',' + right.getString() + ')';
+  }
+}",class,
+"  public LessThanEqualToExpression(Expression left, Expression right) {
+    super(left, right);
+  }",method,
+"  public ExpressionResult evaluate(RowIntf value)
+      throws FilterUnsupportedException, FilterIllegalMemberException {
+    ExpressionResult elRes = left.evaluate(value);
+    ExpressionResult erRes = right.evaluate(value);
+    ExpressionResult exprResValue1 = elRes;
+    if (elRes.isNull() || erRes.isNull()) {
+      elRes.set(DataTypes.BOOLEAN, false);
+      return elRes;
+    }
+    if (elRes.getDataType() != erRes.getDataType()) {
+      if (elRes.getDataType().getPrecedenceOrder() < erRes.getDataType().getPrecedenceOrder()) {
+        exprResValue1 = erRes;
+      }
+    }
+    boolean result = false;
+    DataType dataType = exprResValue1.getDataType();
+    if (dataType == DataTypes.BOOLEAN) {
+      result = elRes.getBoolean().compareTo(erRes.getBoolean()) <= 0;
+    } else if (dataType == DataTypes.STRING) {
+      result = elRes.getString().compareTo(erRes.getString()) <= 0;
+    } else if (dataType == DataTypes.SHORT) {
+      result = elRes.getShort() <= (erRes.getShort());
+    } else if (dataType == DataTypes.INT) {
+      result = elRes.getInt() <= (erRes.getInt());
+    } else if (dataType == DataTypes.DOUBLE) {
+      result = elRes.getDouble() <= (erRes.getDouble());
+    } else if (dataType == DataTypes.DATE || dataType == DataTypes.TIMESTAMP) {
+      result = elRes.getTime() <= (erRes.getTime());
+    } else if (dataType == DataTypes.LONG) {
+      result = elRes.getLong() <= (erRes.getLong());
+    } else if (dataType == DataTypes.DECIMAL) {
+      result = elRes.getDecimal().compareTo(erRes.getDecimal()) <= 0;
+    } else {
+      throw new FilterUnsupportedException(""DataType: "" + exprResValue1.getDataType()
+          + "" not supported for the filter expression"");
+    }
+    exprResValue1.set(DataTypes.BOOLEAN, result);
+    return exprResValue1;
+  }",method,
+"    if (dataType == DataTypes.BOOLEAN) {
+      result = elRes.getBoolean().compareTo(erRes.getBoolean()) <= 0;
+    }",method,
+"public class ColumnUtils {
+    private ColumnUtils() {
+    }
+    private static final HashSet<String> DB_PRIMITIVE_TYPES = new HashSet<String>(14);
+    static {
+        DB_PRIMITIVE_TYPES.add(int.class.getName());
+        DB_PRIMITIVE_TYPES.add(long.class.getName());
+        DB_PRIMITIVE_TYPES.add(short.class.getName());
+        DB_PRIMITIVE_TYPES.add(byte.class.getName());
+        DB_PRIMITIVE_TYPES.add(float.class.getName());
+        DB_PRIMITIVE_TYPES.add(double.class.getName());
+        DB_PRIMITIVE_TYPES.add(Integer.class.getName());
+        DB_PRIMITIVE_TYPES.add(Long.class.getName());
+        DB_PRIMITIVE_TYPES.add(Short.class.getName());
+        DB_PRIMITIVE_TYPES.add(Byte.class.getName());
+        DB_PRIMITIVE_TYPES.add(Float.class.getName());
+        DB_PRIMITIVE_TYPES.add(Double.class.getName());
+        DB_PRIMITIVE_TYPES.add(String.class.getName());
+        DB_PRIMITIVE_TYPES.add(byte[].class.getName());
+    }
+    public static boolean isDbPrimitiveType(Class<?> fieldType) {
+        return DB_PRIMITIVE_TYPES.contains(fieldType.getName());
+    }
+    public static Method getColumnGetMethod(Class<?> entityType, Field field) {
+        String fieldName = field.getName();
+        Method getMethod = null;
+        if (field.getType() == boolean.class) {
+            getMethod = getBooleanColumnGetMethod(entityType, fieldName);
+        }
+        if (getMethod == null) {
+            String methodName = ""get"" + fieldName.substring(0, 1).toUpperCase() + fieldName.substring(1);
+            try {
+                getMethod = entityType.getDeclaredMethod(methodName);
+            } catch (NoSuchMethodException e) {
+                LogUtils.d(methodName + "" not exist"");
+            }
+        }
+        if (getMethod == null && !Object.class.equals(entityType.getSuperclass())) {
+            return getColumnGetMethod(entityType.getSuperclass(), field);
+        }
+        return getMethod;
+    }
+    public static Method getColumnSetMethod(Class<?> entityType, Field field) {
+        String fieldName = field.getName();
+        Method setMethod = null;
+        if (field.getType() == boolean.class) {
+            setMethod = getBooleanColumnSetMethod(entityType, field);
+        }
+        if (setMethod == null) {
+            String methodName = ""set"" + fieldName.substring(0, 1).toUpperCase() + fieldName.substring(1);
+            try {
+                setMethod = entityType.getDeclaredMethod(methodName, field.getType());
+            } catch (NoSuchMethodException e) {
+                LogUtils.d(methodName + "" not exist"");
+            }
+        }
+        if (setMethod == null && !Object.class.equals(entityType.getSuperclass())) {
+            return getColumnSetMethod(entityType.getSuperclass(), field);
+        }
+        return setMethod;
+    }
+    public static String getColumnNameByField(Field field) {
+        Column column = field.getAnnotation(Column.class);
+        if (column != null && !TextUtils.isEmpty(column.column())) {
+            return column.column();
+        }
+        Id id = field.getAnnotation(Id.class);
+        if (id != null && !TextUtils.isEmpty(id.column())) {
+            return id.column();
+        }
+        Foreign foreign = field.getAnnotation(Foreign.class);
+        if (foreign != null && !TextUtils.isEmpty(foreign.column())) {
+            return foreign.column();
+        }
+        Finder finder = field.getAnnotation(Finder.class);
+        if (finder != null) {
+            return field.getName();
+        }
+        return field.getName();
+    }
+    public static String getForeignColumnNameByField(Field field) {
+        Foreign foreign = field.getAnnotation(Foreign.class);
+        if (foreign != null) {
+            return foreign.foreign();
+        }
+        return field.getName();
+    }
+    public static String getColumnDefaultValue(Field field) {
+        Column column = field.getAnnotation(Column.class);
+        if (column != null && !TextUtils.isEmpty(column.defaultValue())) {
+            return column.defaultValue();
+        }
+        return null;
+    }
+    public static boolean isTransient(Field field) {
+        return field.getAnnotation(Transient.class) != null;
+    }
+    public static boolean isForeign(Field field) {
+        return field.getAnnotation(Foreign.class) != null;
+    }
+    public static boolean isFinder(Field field) {
+        return field.getAnnotation(Finder.class) != null;
+    }
+    public static boolean isUnique(Field field) {
+        return field.getAnnotation(Unique.class) != null;
+    }
+    public static boolean isNotNull(Field field) {
+        return field.getAnnotation(NotNull.class) != null;
+    }
+    public static String getCheck(Field field) {
+        Check check = field.getAnnotation(Check.class);
+        if (check != null) {
+            return check.value();
+        } else {
+            return null;
+        }
+    }
+    @SuppressWarnings(""unchecked"")
+    public static Class<?> getForeignEntityType(com.lidroid.xutils.db.table.Foreign foreignColumn) {
+        Class<?> result = foreignColumn.getColumnField().getType();
+        if (result.equals(ForeignLazyLoader.class) || result.equals(List.class)) {
+            result = (Class<?>) ((ParameterizedType) foreignColumn.getColumnField().getGenericType()).getActualTypeArguments()[0];
+        }
+        return result;
+    }
+    @SuppressWarnings(""unchecked"")
+    public static Class<?> getFinderTargetEntityType(com.lidroid.xutils.db.table.Finder finderColumn) {
+        Class<?> result = finderColumn.getColumnField().getType();
+        if (result.equals(FinderLazyLoader.class) || result.equals(List.class)) {
+            result = (Class<?>) ((ParameterizedType) finderColumn.getColumnField().getGenericType()).getActualTypeArguments()[0];
+        }
+        return result;
+    }
+    @SuppressWarnings(""unchecked"")
+    public static Object convert2DbColumnValueIfNeeded(final Object value) {
+        Object result = value;
+        if (value != null) {
+            Class<?> valueType = value.getClass();
+            if (!isDbPrimitiveType(valueType)) {
+                ColumnConverter converter = ColumnConverterFactory.getColumnConverter(valueType);
+                if (converter != null) {
+                    result = converter.fieldValue2ColumnValue(value);
+                } else {
+                    result = value;
+                }
+            }
+        }
+        return result;
+    }
+    private static boolean isStartWithIs(final String fieldName) {
+        return fieldName != null && fieldName.startsWith(""is"");
+    }
+    private static Method getBooleanColumnGetMethod(Class<?> entityType, final String fieldName) {
+        String methodName = ""is"" + fieldName.substring(0, 1).toUpperCase() + fieldName.substring(1);
+        if (isStartWithIs(fieldName)) {
+            methodName = fieldName;
+        }
+        try {
+            return entityType.getDeclaredMethod(methodName);
+        } catch (NoSuchMethodException e) {
+            LogUtils.d(methodName + "" not exist"");
+        }
+        return null;
+    }
+    private static Method getBooleanColumnSetMethod(Class<?> entityType, Field field) {
+        String fieldName = field.getName();
+        String methodName = null;
+        if (isStartWithIs(field.getName())) {
+            methodName = ""set"" + fieldName.substring(2, 3).toUpperCase() + fieldName.substring(3);
+        } else {
+            methodName = ""set"" + fieldName.substring(0, 1).toUpperCase() + fieldName.substring(1);
+        }
+        try {
+            return entityType.getDeclaredMethod(methodName, field.getType());
+        } catch (NoSuchMethodException e) {
+            LogUtils.d(methodName + "" not exist"");
+        }
+        return null;
+    }
+}",class,
+"    private ColumnUtils() {
+    }",method,
+"    public static boolean isDbPrimitiveType(Class<?> fieldType) {
+        return DB_PRIMITIVE_TYPES.contains(fieldType.getName());
+    }",method,
+"    public static Method getColumnGetMethod(Class<?> entityType, Field field) {
+        String fieldName = field.getName();
+        Method getMethod = null;
+        if (field.getType() == boolean.class) {
+            getMethod = getBooleanColumnGetMethod(entityType, fieldName);
+        }
+        if (getMethod == null) {
+            String methodName = ""get"" + fieldName.substring(0, 1).toUpperCase() + fieldName.substring(1);
+            try {
+                getMethod = entityType.getDeclaredMethod(methodName);
+            } catch (NoSuchMethodException e) {
+                LogUtils.d(methodName + "" not exist"");
+            }
+        }
+        if (getMethod == null && !Object.class.equals(entityType.getSuperclass())) {
+            return getColumnGetMethod(entityType.getSuperclass(), field);
+        }
+        return getMethod;
+    }",method,
+"        if (getMethod == null) {
+            String methodName = ""get"" + fieldName.substring(0, 1).toUpperCase() + fieldName.substring(1);
+            try {
+                getMethod = entityType.getDeclaredMethod(methodName);
+            } catch (NoSuchMethodException e) {
+                LogUtils.d(methodName + "" not exist"");
+            }
+        }",method,
+"    public static Method getColumnSetMethod(Class<?> entityType, Field field) {
+        String fieldName = field.getName();
+        Method setMethod = null;
+        if (field.getType() == boolean.class) {
+            setMethod = getBooleanColumnSetMethod(entityType, field);
+        }
+        if (setMethod == null) {
+            String methodName = ""set"" + fieldName.substring(0, 1).toUpperCase() + fieldName.substring(1);
+            try {
+                setMethod = entityType.getDeclaredMethod(methodName, field.getType());
+            } catch (NoSuchMethodException e) {
+                LogUtils.d(methodName + "" not exist"");
+            }
+        }
+        if (setMethod == null && !Object.class.equals(entityType.getSuperclass())) {
+            return getColumnSetMethod(entityType.getSuperclass(), field);
+        }
+        return setMethod;
+    }",method,
+"        if (setMethod == null) {
+            String methodName = ""set"" + fieldName.substring(0, 1).toUpperCase() + fieldName.substring(1);
+            try {
+                setMethod = entityType.getDeclaredMethod(methodName, field.getType());
+            } catch (NoSuchMethodException e) {
+                LogUtils.d(methodName + "" not exist"");
+            }
+        }",method,
+"    public static String getColumnNameByField(Field field) {
+        Column column = field.getAnnotation(Column.class);
+        if (column != null && !TextUtils.isEmpty(column.column())) {
+            return column.column();
+        }
+        Id id = field.getAnnotation(Id.class);
+        if (id != null && !TextUtils.isEmpty(id.column())) {
+            return id.column();
+        }
+        Foreign foreign = field.getAnnotation(Foreign.class);
+        if (foreign != null && !TextUtils.isEmpty(foreign.column())) {
+            return foreign.column();
+        }
+        Finder finder = field.getAnnotation(Finder.class);
+        if (finder != null) {
+            return field.getName();
+        }
+        return field.getName();
+    }",method,
+"        if (finder != null) {
+            return field.getName();
+        }",method,
+"    public static String getForeignColumnNameByField(Field field) {
+        Foreign foreign = field.getAnnotation(Foreign.class);
+        if (foreign != null) {
+            return foreign.foreign();
+        }
+        return field.getName();
+    }",method,
+"        if (foreign != null) {
+            return foreign.foreign();
+        }",method,
+"    public static String getColumnDefaultValue(Field field) {
+        Column column = field.getAnnotation(Column.class);
+        if (column != null && !TextUtils.isEmpty(column.defaultValue())) {
+            return column.defaultValue();
+        }
+        return null;
+    }",method,
+"    public static boolean isTransient(Field field) {
+        return field.getAnnotation(Transient.class) != null;
+    }",method,
+"    public static boolean isForeign(Field field) {
+        return field.getAnnotation(Foreign.class) != null;
+    }",method,
+"    public static boolean isFinder(Field field) {
+        return field.getAnnotation(Finder.class) != null;
+    }",method,
+"    public static boolean isUnique(Field field) {
+        return field.getAnnotation(Unique.class) != null;
+    }",method,
+"    public static boolean isNotNull(Field field) {
+        return field.getAnnotation(NotNull.class) != null;
+    }",method,
+"    public static String getCheck(Field field) {
+        Check check = field.getAnnotation(Check.class);
+        if (check != null) {
+            return check.value();
+        } else {
+            return null;
+        }
+    }",method,
+"        if (check != null) {
+            return check.value();
+        }",method,
+"    @SuppressWarnings(""unchecked"")
+    public static Class<?> getForeignEntityType(com.lidroid.xutils.db.table.Foreign foreignColumn) {
+        Class<?> result = foreignColumn.getColumnField().getType();
+        if (result.equals(ForeignLazyLoader.class) || result.equals(List.class)) {
+            result = (Class<?>) ((ParameterizedType) foreignColumn.getColumnField().getGenericType()).getActualTypeArguments()[0];
+        }
+        return result;
+    }",method,
+"    @SuppressWarnings(""unchecked"")
+    public static Class<?> getFinderTargetEntityType(com.lidroid.xutils.db.table.Finder finderColumn) {
+        Class<?> result = finderColumn.getColumnField().getType();
+        if (result.equals(FinderLazyLoader.class) || result.equals(List.class)) {
+            result = (Class<?>) ((ParameterizedType) finderColumn.getColumnField().getGenericType()).getActualTypeArguments()[0];
+        }
+        return result;
+    }",method,
+"    @SuppressWarnings(""unchecked"")
+    public static Object convert2DbColumnValueIfNeeded(final Object value) {
+        Object result = value;
+        if (value != null) {
+            Class<?> valueType = value.getClass();
+            if (!isDbPrimitiveType(valueType)) {
+                ColumnConverter converter = ColumnConverterFactory.getColumnConverter(valueType);
+                if (converter != null) {
+                    result = converter.fieldValue2ColumnValue(value);
+                } else {
+                    result = value;
+                }
+            }
+        }
+        return result;
+    }",method,
+"        if (value != null) {
+            Class<?> valueType = value.getClass();
+            if (!isDbPrimitiveType(valueType)) {
+                ColumnConverter converter = ColumnConverterFactory.getColumnConverter(valueType);
+                if (converter != null) {
+                    result = converter.fieldValue2ColumnValue(value);
+                } else {
+                    result = value;
+                }
+            }
+        }",method,
+"                if (converter != null) {
+                    result = converter.fieldValue2ColumnValue(value);
+                }",method,
+"    private static boolean isStartWithIs(final String fieldName) {
+        return fieldName != null && fieldName.startsWith(""is"");
+    }",method,
+"    private static Method getBooleanColumnGetMethod(Class<?> entityType, final String fieldName) {
+        String methodName = ""is"" + fieldName.substring(0, 1).toUpperCase() + fieldName.substring(1);
+        if (isStartWithIs(fieldName)) {
+            methodName = fieldName;
+        }
+        try {
+            return entityType.getDeclaredMethod(methodName);
+        } catch (NoSuchMethodException e) {
+            LogUtils.d(methodName + "" not exist"");
+        }
+        return null;
+    }",method,
+"    private static Method getBooleanColumnSetMethod(Class<?> entityType, Field field) {
+        String fieldName = field.getName();
+        String methodName = null;
+        if (isStartWithIs(field.getName())) {
+            methodName = ""set"" + fieldName.substring(2, 3).toUpperCase() + fieldName.substring(3);
+        } else {
+            methodName = ""set"" + fieldName.substring(0, 1).toUpperCase() + fieldName.substring(1);
+        }
+        try {
+            return entityType.getDeclaredMethod(methodName, field.getType());
+        } catch (NoSuchMethodException e) {
+            LogUtils.d(methodName + "" not exist"");
+        }
+        return null;
+    }",method,
+"public class SetAlarm extends Instrumentation {
+    private static final String COMMAND = ""command"";
+    private static final String PARAM = ""param"";
+    private static final String CMD_PREPARE = ""prepare"";
+    private static final String CMD_SET = ""set_wait"";
+    private static final String CMD_DONE = ""done"";
+    private static final String SERVICE_ACTION = ""com.android.testing.ALARM_SERVICE"";
+    private static final String SERVICE_PKG = ""com.android.testing.alarmservice"";
+    private static final String LOG_TAG = SetAlarm.class.getSimpleName();
+    private Alarm mAlarmService = null;
+    private Bundle mArgs = null;
+    private String mCommand = null;
+    private Intent mServceIntent = new Intent(SERVICE_ACTION).setPackage(SERVICE_PKG);
+    private ServiceConnection mConn = new ServiceConnection() {
+        @Override
+        public void onServiceDisconnected(ComponentName name) {
+            Log.d(LOG_TAG, ""Service disconnected."");
+            mAlarmService = null;
+            errorFinish(""service disconnected"");
+        }
+        @Override
+        public void onServiceConnected(ComponentName name, IBinder service) {
+            Log.d(LOG_TAG, ""Service connected."");
+            mAlarmService = Alarm.Stub.asInterface(service);
+            handleCommands();
+        }
+    };
+    private void handleCommands() {
+        if (CMD_PREPARE.equals(mCommand)) {
+            callPrepare();
+        } else if (CMD_SET.equals(mCommand)) {
+            String paramString = mArgs.getString(PARAM);
+            if (paramString == null) {
+                errorFinish(""argument expected for alarm time"");
+            }
+            long timeout = -1;
+            try {
+                timeout = Long.parseLong(paramString);
+            } catch (NumberFormatException nfe) {
+                errorFinish(""a number argument is expected"");
+            }
+            callSetAndWait(timeout);
+        } else if (CMD_DONE.equals(mCommand)) {
+            callDone();
+        } else {
+            errorFinish(""Unrecognized command: "" + mCommand);
+        }
+        finish(Activity.RESULT_OK, new Bundle());
+    }
+    @Override
+    public void onCreate(Bundle arguments) {
+        super.onCreate(arguments);
+        mCommand = arguments.getString(COMMAND);
+        if (""true"".equals(arguments.getString(""debug""))) {
+            Debug.waitForDebugger();
+        }
+        if (mCommand == null) {
+            errorFinish(""No command specified"");
+        }
+        mArgs = arguments;
+        connectToAlarmService();
+    }
+    private void errorFinish(String msg) {
+        Bundle ret = new Bundle();
+        ret.putString(""error"", msg);
+        finish(Activity.RESULT_CANCELED, ret);
+    }
+    private void connectToAlarmService() {
+        // start the service with an intent, this ensures the service keeps running after unbind
+        ComponentName cn = getContext().startService(mServceIntent);
+        if (cn == null) {
+            errorFinish(""failed to start service"");
+        }
+        if (!getContext().bindService(mServceIntent, mConn, Context.BIND_AUTO_CREATE)) {
+            errorFinish(""failed to bind service"");
+        }
+    }
+    private void callPrepare() {
+        try {
+            mAlarmService.prepare();
+        } catch (RemoteException e) {
+            errorFinish(""RemoteExeption in prepare()"");
+        } finally {
+            getContext().unbindService(mConn);
+        }
+    }
+    private void callDone() {
+        try {
+            mAlarmService.done();
+        } catch (RemoteException e) {
+            errorFinish(""RemoteExeption in prepare()"");
+        } finally {
+            getContext().unbindService(mConn);
+        }
+        // explicitly stop the service (started in prepare()) so that the service is now free
+        // to be reclaimed
+        getContext().stopService(mServceIntent);
+    }
+    private void callSetAndWait(long timeoutMills) {
+        try {
+            mAlarmService.setAlarmAndWait(timeoutMills);
+        } catch (RemoteException e) {
+            errorFinish(""RemoteExeption in setAlarmAndWait()"");
+        } finally {
+            getContext().unbindService(mConn);
+        }
+    }
+}",class,
+"        @Override
+        public void onServiceDisconnected(ComponentName name) {
+            Log.d(LOG_TAG, ""Service disconnected."");
+            mAlarmService = null;
+            errorFinish(""service disconnected"");
+        }",method,
+"        @Override
+        public void onServiceConnected(ComponentName name, IBinder service) {
+            Log.d(LOG_TAG, ""Service connected."");
+            mAlarmService = Alarm.Stub.asInterface(service);
+            handleCommands();
+        }",method,
+"    private void handleCommands() {
+        if (CMD_PREPARE.equals(mCommand)) {
+            callPrepare();
+        } else if (CMD_SET.equals(mCommand)) {
+            String paramString = mArgs.getString(PARAM);
+            if (paramString == null) {
+                errorFinish(""argument expected for alarm time"");
+            }
+            long timeout = -1;
+            try {
+                timeout = Long.parseLong(paramString);
+            } catch (NumberFormatException nfe) {
+                errorFinish(""a number argument is expected"");
+            }
+            callSetAndWait(timeout);
+        } else if (CMD_DONE.equals(mCommand)) {
+            callDone();
+        } else {
+            errorFinish(""Unrecognized command: "" + mCommand);
+        }
+        finish(Activity.RESULT_OK, new Bundle());
+    }",method,
+"            if (paramString == null) {
+                errorFinish(""argument expected for alarm time"");
+            }",method,
+"    @Override
+    public void onCreate(Bundle arguments) {
+        super.onCreate(arguments);
+        mCommand = arguments.getString(COMMAND);
+        if (""true"".equals(arguments.getString(""debug""))) {
+            Debug.waitForDebugger();
+        }
+        if (mCommand == null) {
+            errorFinish(""No command specified"");
+        }
+        mArgs = arguments;
+        connectToAlarmService();
+    }",method,
+"        if (mCommand == null) {
+            errorFinish(""No command specified"");
+        }",method,
+"    private void errorFinish(String msg) {
+        Bundle ret = new Bundle();
+        ret.putString(""error"", msg);
+        finish(Activity.RESULT_CANCELED, ret);
+    }",method,
+"    private void connectToAlarmService() {
+        // start the service with an intent, this ensures the service keeps running after unbind
+        ComponentName cn = getContext().startService(mServceIntent);
+        if (cn == null) {
+            errorFinish(""failed to start service"");
+        }
+        if (!getContext().bindService(mServceIntent, mConn, Context.BIND_AUTO_CREATE)) {
+            errorFinish(""failed to bind service"");
+        }
+    }",method,
+"        if (cn == null) {
+            errorFinish(""failed to start service"");
+        }",method,
+"    private void callPrepare() {
+        try {
+            mAlarmService.prepare();
+        } catch (RemoteException e) {
+            errorFinish(""RemoteExeption in prepare()"");
+        } finally {
+            getContext().unbindService(mConn);
+        }
+    }",method,
+"    private void callDone() {
+        try {
+            mAlarmService.done();
+        } catch (RemoteException e) {
+            errorFinish(""RemoteExeption in prepare()"");
+        } finally {
+            getContext().unbindService(mConn);
+        }
+        // explicitly stop the service (started in prepare()) so that the service is now free
+        // to be reclaimed
+        getContext().stopService(mServceIntent);
+    }",method,

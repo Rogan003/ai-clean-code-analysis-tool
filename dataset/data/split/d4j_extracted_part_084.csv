@@ -1,0 +1,1574 @@
+code_snippet,type,score
+"    public OtpErlangObject getResult() {
+        return this.resultRaw;
+    }",method,
+"    public boolean getResultCompressed() {
+        return this.resultCompressed;
+    }",method,
+"    public ErlangValue processResult() throws NotFoundException,
+            UnknownException {
+        try {
+            final OtpErlangTuple received = (OtpErlangTuple) resultRaw;
+            final OtpErlangObject state = received.elementAt(0);
+            if (received.arity() != 2) {
+                throw new UnknownException(resultRaw);
+            }
+            if (state.equals(CommonErlangObjects.okAtom)) {
+                OtpErlangObject result = received.elementAt(1);
+                if (resultCompressed) {
+                    result = CommonErlangObjects.decode(result);
+                }
+                return new ErlangValue(result);
+            } else if (state.equals(CommonErlangObjects.failAtom)) {
+                final OtpErlangObject reason = received.elementAt(1);
+                if (reason.equals(CommonErlangObjects.notFoundAtom)) {
+                    throw new NotFoundException(resultRaw);
+                }
+            }
+            throw new UnknownException(resultRaw);
+        } catch (final ClassCastException e) {
+            // e.printStackTrace();
+            throw new UnknownException(e, resultRaw);
+        } catch (final OtpErlangDecodeException e) {
+            // e.printStackTrace();
+            throw new UnknownException(e, resultRaw);
+        }
+    }",method,
+"                if (resultCompressed) {
+                    result = CommonErlangObjects.decode(result);
+                }",method,
+"    public ErlangValue processResultSingle() throws NotFoundException,
+            KeyChangedException, NotANumberException, NotAListException,
+            AbortException, UnknownException {
+        return processResult();
+    }",method,
+"    @Override
+    public String toString() {
+        return ""read("" + key + "")"";
+    }",method,
+"public class WritePipelineResponseTests extends ESTestCase {
+    public void testSerializationWithoutError() throws IOException {
+        boolean isAcknowledged = randomBoolean();
+        WritePipelineResponse response;
+        response = new WritePipelineResponse(isAcknowledged);
+        BytesStreamOutput out = new BytesStreamOutput();
+        response.writeTo(out);
+        StreamInput streamInput = out.bytes().streamInput();
+        WritePipelineResponse otherResponse = new WritePipelineResponse();
+        otherResponse.readFrom(streamInput);
+        assertThat(otherResponse.isAcknowledged(), equalTo(response.isAcknowledged()));
+    }
+    public void testSerializationWithError() throws IOException {
+        WritePipelineResponse response = new WritePipelineResponse();
+        BytesStreamOutput out = new BytesStreamOutput();
+        response.writeTo(out);
+        StreamInput streamInput = out.bytes().streamInput();
+        WritePipelineResponse otherResponse = new WritePipelineResponse();
+        otherResponse.readFrom(streamInput);
+        assertThat(otherResponse.isAcknowledged(), equalTo(response.isAcknowledged()));
+    }
+}",class,
+"    public void testSerializationWithoutError() throws IOException {
+        boolean isAcknowledged = randomBoolean();
+        WritePipelineResponse response;
+        response = new WritePipelineResponse(isAcknowledged);
+        BytesStreamOutput out = new BytesStreamOutput();
+        response.writeTo(out);
+        StreamInput streamInput = out.bytes().streamInput();
+        WritePipelineResponse otherResponse = new WritePipelineResponse();
+        otherResponse.readFrom(streamInput);
+        assertThat(otherResponse.isAcknowledged(), equalTo(response.isAcknowledged()));
+    }",method,
+"    public void testSerializationWithError() throws IOException {
+        WritePipelineResponse response = new WritePipelineResponse();
+        BytesStreamOutput out = new BytesStreamOutput();
+        response.writeTo(out);
+        StreamInput streamInput = out.bytes().streamInput();
+        WritePipelineResponse otherResponse = new WritePipelineResponse();
+        otherResponse.readFrom(streamInput);
+        assertThat(otherResponse.isAcknowledged(), equalTo(response.isAcknowledged()));
+    }",method,
+"                    ""final class MyActivityPermissionsDispatcher {"",
+                    ""   private static final int REQUEST_SHOWCAMERA = 0;"",
+                    ""   private static final String[] PERMISSION_SHOWCAMERA = new String[] {\""android.permission.CAMERA\""};"",
+                    ""   private static GrantableRequest PENDING_SHOWCAMERA;"",
+                    ""   private MyActivityPermissionsDispatcher() {"",
+                    ""   }"",
+                    ""   static void showCameraWithPermissionCheck(MyActivity target, int value) {"",
+                    ""       if (PermissionUtils.hasSelfPermissions(target, PERMISSION_SHOWCAMERA)) {"",
+                    ""           target.showCamera(value);"",
+                    ""       } else {"",
+                    ""           PENDING_SHOWCAMERA = new MyActivityShowCameraPermissionRequest(target, value);"",
+                    ""           if (PermissionUtils.shouldShowRequestPermissionRationale(target, PERMISSION_SHOWCAMERA)) {"",
+                    ""               target.cameraRationale(PENDING_SHOWCAMERA);"",
+                    ""           } else {"",
+                    ""               ActivityCompat.requestPermissions(target, PERMISSION_SHOWCAMERA, REQUEST_SHOWCAMERA);"",
+                    ""           }"",
+                    ""       }"",
+                    ""   }"",
+                    ""   static void onRequestPermissionsResult(MyActivity target, int requestCode, int[] grantResults) {"",
+                    ""       switch (requestCode) {"",
+                    ""           case REQUEST_SHOWCAMERA:"",
+                    ""               if (PermissionUtils.verifyPermissions(grantResults)) {"",
+                    ""                   if (PENDING_SHOWCAMERA != null) {"",
+                    ""                       PENDING_SHOWCAMERA.grant();"",
+                    ""                   }"",
+                    ""               } else {"",
+                    ""                   target.cameraDenied();"",
+                    ""               }"",
+                    ""               PENDING_SHOWCAMERA = null;"",
+                    ""               break;"",
+                    ""           default:"",
+                    ""               break;"",
+                    ""       }"",
+                    ""   }"",
+                    ""   private static final class MyActivityShowCameraPermissionRequest implements GrantableRequest {"",
+                    ""        private final WeakReference<MyActivity> weakTarget;"",
+                    ""        private final int value;"",
+                    ""        private MyActivityShowCameraPermissionRequest(MyActivity target, int value) {"",
+                    ""            this.weakTarget = new WeakReference<MyActivity>(target);"",
+                    ""            this.value = value;"",
+                    ""        }"",
+                    ""        @Override"",
+                    ""        public void proceed() {"",
+                    ""            MyActivity target = weakTarget.get();"",
+                    ""            if (target == null) return;"",
+                    ""            ActivityCompat.requestPermissions(target, PERMISSION_SHOWCAMERA, REQUEST_SHOWCAMERA);"",
+                    ""        }"",
+                    ""        @Override"",
+                    ""        public void cancel() {"",
+                    ""            MyActivity target = weakTarget.get();"",
+                    ""            if (target == null) return;"",
+                    ""            target.cameraDenied();"",
+                    ""        }"",
+                    ""        @Override"",
+                    ""        public void grant() {"",
+                    ""            MyActivity target = weakTarget.get();"",
+                    ""            if (target == null) return;"",
+                    ""            target.showCamera(value);"",
+                    ""        }"",
+                    ""   }"",
+                    ""}""
+            };
+        }",class,
+"        @Override
+        protected String getName() {
+            return ""MyActivity"";
+        }",method,
+"public class PyDictCreationInspection extends PyInspection {
+  @Nls
+  @NotNull
+  @Override
+  public String getDisplayName() {
+    return PyBundle.message(""INSP.NAME.dict.creation"");
+  }
+  @NotNull
+  @Override
+  public PsiElementVisitor buildVisitor(@NotNull ProblemsHolder holder,
+                                        boolean isOnTheFly,
+                                        @NotNull LocalInspectionToolSession session) {
+    return new Visitor(holder, session);
+  }
+  private static class Visitor extends PyInspectionVisitor {
+    public Visitor(@Nullable ProblemsHolder holder, @NotNull LocalInspectionToolSession session) {
+      super(holder, session);
+    }
+    @Override
+    public void visitPyAssignmentStatement(PyAssignmentStatement node) {
+      if (node.getAssignedValue() instanceof PyDictLiteralExpression) {
+        if (node.getTargets().length != 1) {
+          return;
+        }
+        final PyExpression target = node.getTargets()[0];
+        final String name = target.getName();
+        if (name == null) {
+          return;
+        }
+        PyStatement statement = PsiTreeUtil.getNextSiblingOfType(node, PyStatement.class);
+        while (statement instanceof PyAssignmentStatement) {
+          final PyAssignmentStatement assignmentStatement = (PyAssignmentStatement)statement;
+          final List<Pair<PyExpression, PyExpression>> targets = getDictTargets(target, name, assignmentStatement);
+          if (targets == null)
+            return;
+          if (!targets.isEmpty()) {
+            registerProblem(node, ""This dictionary creation could be rewritten as a dictionary literal"", new DictCreationQuickFix(node));
+            break;
+          }
+          statement = PsiTreeUtil.getNextSiblingOfType(assignmentStatement, PyStatement.class);
+        }
+      }
+    }
+  }
+  @Nullable
+  public static List<Pair<PyExpression, PyExpression>> getDictTargets(@NotNull final PyExpression target,
+                                                                      @NotNull final String name,
+                                                                      @NotNull final PyAssignmentStatement assignmentStatement) {
+    final List<Pair<PyExpression, PyExpression>> targets = new ArrayList<>();
+    for (Pair<PyExpression, PyExpression> targetToValue : assignmentStatement.getTargetsToValuesMapping()) {
+      if (targetToValue.first instanceof PySubscriptionExpression) {
+        final PySubscriptionExpression subscriptionExpression = (PySubscriptionExpression)targetToValue.first;
+        if (name.equals(subscriptionExpression.getOperand().getName()) &&
+            subscriptionExpression.getIndexExpression() != null &&
+            !referencesTarget(targetToValue.second, target)) {
+          targets.add(targetToValue);
+        }
+      }
+      else
+        return null;
+    }
+    return targets;
+  }
+  private static boolean referencesTarget(@NotNull final PyExpression expression, @NotNull final PsiElement target) {
+    final List<PsiElement> refs = new ArrayList<>();
+    expression.accept(new PyRecursiveElementVisitor() {
+      @Override
+      public void visitPyReferenceExpression(PyReferenceExpression node) {
+        super.visitPyReferenceExpression(node);
+        final PsiPolyVariantReference ref = node.getReference();
+        if (ref.isReferenceTo(target)) {
+          refs.add(node);
+        }
+      }
+    });
+    return !refs.isEmpty();
+  }
+}",class,
+"  private static class Visitor extends PyInspectionVisitor {
+    public Visitor(@Nullable ProblemsHolder holder, @NotNull LocalInspectionToolSession session) {
+      super(holder, session);
+    }
+    @Override
+    public void visitPyAssignmentStatement(PyAssignmentStatement node) {
+      if (node.getAssignedValue() instanceof PyDictLiteralExpression) {
+        if (node.getTargets().length != 1) {
+          return;
+        }
+        final PyExpression target = node.getTargets()[0];
+        final String name = target.getName();
+        if (name == null) {
+          return;
+        }
+        PyStatement statement = PsiTreeUtil.getNextSiblingOfType(node, PyStatement.class);
+        while (statement instanceof PyAssignmentStatement) {
+          final PyAssignmentStatement assignmentStatement = (PyAssignmentStatement)statement;
+          final List<Pair<PyExpression, PyExpression>> targets = getDictTargets(target, name, assignmentStatement);
+          if (targets == null)
+            return;
+          if (!targets.isEmpty()) {
+            registerProblem(node, ""This dictionary creation could be rewritten as a dictionary literal"", new DictCreationQuickFix(node));
+            break;
+          }
+          statement = PsiTreeUtil.getNextSiblingOfType(assignmentStatement, PyStatement.class);
+        }
+      }
+    }
+  }",class,
+"  @Nls
+  @NotNull
+  @Override
+  public String getDisplayName() {
+    return PyBundle.message(""INSP.NAME.dict.creation"");
+  }",method,
+"  @NotNull
+  @Override
+  public PsiElementVisitor buildVisitor(@NotNull ProblemsHolder holder,
+                                        boolean isOnTheFly,
+                                        @NotNull LocalInspectionToolSession session) {
+    return new Visitor(holder, session);
+  }",method,
+"    public Visitor(@Nullable ProblemsHolder holder, @NotNull LocalInspectionToolSession session) {
+      super(holder, session);
+    }",method,
+"    @Override
+    public void visitPyAssignmentStatement(PyAssignmentStatement node) {
+      if (node.getAssignedValue() instanceof PyDictLiteralExpression) {
+        if (node.getTargets().length != 1) {
+          return;
+        }
+        final PyExpression target = node.getTargets()[0];
+        final String name = target.getName();
+        if (name == null) {
+          return;
+        }
+        PyStatement statement = PsiTreeUtil.getNextSiblingOfType(node, PyStatement.class);
+        while (statement instanceof PyAssignmentStatement) {
+          final PyAssignmentStatement assignmentStatement = (PyAssignmentStatement)statement;
+          final List<Pair<PyExpression, PyExpression>> targets = getDictTargets(target, name, assignmentStatement);
+          if (targets == null)
+            return;
+          if (!targets.isEmpty()) {
+            registerProblem(node, ""This dictionary creation could be rewritten as a dictionary literal"", new DictCreationQuickFix(node));
+            break;
+          }
+          statement = PsiTreeUtil.getNextSiblingOfType(assignmentStatement, PyStatement.class);
+        }
+      }
+    }",method,
+"        if (name == null) {
+          return;
+        }",method,
+"        while (statement instanceof PyAssignmentStatement) {
+          final PyAssignmentStatement assignmentStatement = (PyAssignmentStatement)statement;
+          final List<Pair<PyExpression, PyExpression>> targets = getDictTargets(target, name, assignmentStatement);
+          if (targets == null)
+            return;
+          if (!targets.isEmpty()) {
+            registerProblem(node, ""This dictionary creation could be rewritten as a dictionary literal"", new DictCreationQuickFix(node));
+            break;
+          }
+          statement = PsiTreeUtil.getNextSiblingOfType(assignmentStatement, PyStatement.class);
+        }",method,
+"  @Nullable
+  public static List<Pair<PyExpression, PyExpression>> getDictTargets(@NotNull final PyExpression target,
+                                                                      @NotNull final String name,
+                                                                      @NotNull final PyAssignmentStatement assignmentStatement) {
+    final List<Pair<PyExpression, PyExpression>> targets = new ArrayList<>();
+    for (Pair<PyExpression, PyExpression> targetToValue : assignmentStatement.getTargetsToValuesMapping()) {
+      if (targetToValue.first instanceof PySubscriptionExpression) {
+        final PySubscriptionExpression subscriptionExpression = (PySubscriptionExpression)targetToValue.first;
+        if (name.equals(subscriptionExpression.getOperand().getName()) &&
+            subscriptionExpression.getIndexExpression() != null &&
+            !referencesTarget(targetToValue.second, target)) {
+          targets.add(targetToValue);
+        }
+      }
+      else
+        return null;
+    }
+    return targets;
+  }",method,
+"      if (targetToValue.first instanceof PySubscriptionExpression) {
+        final PySubscriptionExpression subscriptionExpression = (PySubscriptionExpression)targetToValue.first;
+        if (name.equals(subscriptionExpression.getOperand().getName()) &&
+            subscriptionExpression.getIndexExpression() != null &&
+            !referencesTarget(targetToValue.second, target)) {
+          targets.add(targetToValue);
+        }
+      }",method,
+"  private static boolean referencesTarget(@NotNull final PyExpression expression, @NotNull final PsiElement target) {
+    final List<PsiElement> refs = new ArrayList<>();
+    expression.accept(new PyRecursiveElementVisitor() {
+      @Override
+      public void visitPyReferenceExpression(PyReferenceExpression node) {
+        super.visitPyReferenceExpression(node);
+        final PsiPolyVariantReference ref = node.getReference();
+        if (ref.isReferenceTo(target)) {
+          refs.add(node);
+        }
+      }
+    });
+    return !refs.isEmpty();
+  }",method,
+"    expression.accept(new PyRecursiveElementVisitor() {
+      @Override
+      public void visitPyReferenceExpression(PyReferenceExpression node) {
+        super.visitPyReferenceExpression(node);
+        final PsiPolyVariantReference ref = node.getReference();
+        if (ref.isReferenceTo(target)) {
+          refs.add(node);
+        }
+      }
+    }",method,
+"      @Override
+      public void visitPyReferenceExpression(PyReferenceExpression node) {
+        super.visitPyReferenceExpression(node);
+        final PsiPolyVariantReference ref = node.getReference();
+        if (ref.isReferenceTo(target)) {
+          refs.add(node);
+        }
+      }",method,
+"public class MockingMultipleInterfacesTest {
+    class Foo {}
+    interface IFoo {}
+    interface IBar {}
+    @Test
+    public void should_allow_multiple_interfaces() {
+        //when
+        Foo mock = mock(Foo.class, withSettings().extraInterfaces(IFoo.class, IBar.class));
+        //then
+        assertThat(mock).isInstanceOf(IFoo.class);
+        assertThat(mock).isInstanceOf(IBar.class);
+    }
+    @Test
+    public void should_scream_when_null_passed_instead_of_an_interface() {
+        try {
+            //when
+            mock(Foo.class, withSettings().extraInterfaces(IFoo.class, null));
+            fail();
+        } catch (MockitoException e) {
+            //then
+            assertThat(e.getMessage()).contains(""extraInterfaces() does not accept null parameters"");
+        }
+    }
+    @Test
+    public void should_scream_when_no_args_passed() {
+        try {
+            //when
+            mock(Foo.class, withSettings().extraInterfaces());
+            fail();
+        } catch (MockitoException e) {
+            //then
+            assertThat(e.getMessage()).contains(""extraInterfaces() requires at least one interface"");
+        }
+    }
+    @Test
+    public void should_scream_when_null_passed_instead_of_an_array() {
+        try {
+            //when
+            mock(Foo.class, withSettings().extraInterfaces((Class[]) null));
+            fail();
+        } catch (MockitoException e) {
+            //then
+            assertThat(e.getMessage()).contains(""extraInterfaces() requires at least one interface"");
+        }
+    }
+    @Test
+    public void should_scream_when_non_interface_passed() {
+        try {
+            //when
+            mock(Foo.class, withSettings().extraInterfaces(Foo.class));
+            fail();
+        } catch (MockitoException e) {
+            //then
+            assertThat(e.getMessage()).contains(""Foo which is not an interface"");
+        }
+    }
+    @Test
+    public void should_scream_when_the_same_interfaces_passed() {
+        try {
+            //when
+            mock(IMethods.class, withSettings().extraInterfaces(IMethods.class));
+            fail();
+        } catch (MockitoException e) {
+            //then
+            assertThat(e.getMessage()).contains(""You mocked following type: IMethods"");
+        }
+    }
+    @Test
+    public void should_mock_class_with_interfaces_of_different_class_loader_AND_different_classpaths() throws ClassNotFoundException {
+        // Note : if classes are in the same classpath, SearchingClassLoader can find the class/classes and load them in the first matching classloader
+        Class<?> interface1 = inMemoryClassLoader()
+                .withClassDefinition(""test.Interface1"", makeMarkerInterface(""test.Interface1""))
+                .build()
+                .loadClass(""test.Interface1"");
+        Class<?> interface2 = inMemoryClassLoader()
+                .withClassDefinition(""test.Interface2"", makeMarkerInterface(""test.Interface2""))
+                .build()
+                .loadClass(""test.Interface2"");
+        Object mocked = mock(interface1, withSettings().extraInterfaces(interface2));
+        assertThat(interface2.isInstance(mocked)).describedAs(""mock should be assignable from interface2 type"").isTrue();
+    }
+}",class,
+    class Foo {},class,
+"    @Test
+    public void should_allow_multiple_interfaces() {
+        //when
+        Foo mock = mock(Foo.class, withSettings().extraInterfaces(IFoo.class, IBar.class));
+        //then
+        assertThat(mock).isInstanceOf(IFoo.class);
+        assertThat(mock).isInstanceOf(IBar.class);
+    }",method,
+"    @Test
+    public void should_scream_when_null_passed_instead_of_an_interface() {
+        try {
+            //when
+            mock(Foo.class, withSettings().extraInterfaces(IFoo.class, null));
+            fail();
+        } catch (MockitoException e) {
+            //then
+            assertThat(e.getMessage()).contains(""extraInterfaces() does not accept null parameters"");
+        }
+    }",method,
+"    @Test
+    public void should_scream_when_no_args_passed() {
+        try {
+            //when
+            mock(Foo.class, withSettings().extraInterfaces());
+            fail();
+        } catch (MockitoException e) {
+            //then
+            assertThat(e.getMessage()).contains(""extraInterfaces() requires at least one interface"");
+        }
+    }",method,
+"    @Test
+    public void should_scream_when_null_passed_instead_of_an_array() {
+        try {
+            //when
+            mock(Foo.class, withSettings().extraInterfaces((Class[]) null));
+            fail();
+        } catch (MockitoException e) {
+            //then
+            assertThat(e.getMessage()).contains(""extraInterfaces() requires at least one interface"");
+        }
+    }",method,
+"    @Test
+    public void should_scream_when_non_interface_passed() {
+        try {
+            //when
+            mock(Foo.class, withSettings().extraInterfaces(Foo.class));
+            fail();
+        } catch (MockitoException e) {
+            //then
+            assertThat(e.getMessage()).contains(""Foo which is not an interface"");
+        }
+    }",method,
+"    @Test
+    public void should_scream_when_the_same_interfaces_passed() {
+        try {
+            //when
+            mock(IMethods.class, withSettings().extraInterfaces(IMethods.class));
+            fail();
+        } catch (MockitoException e) {
+            //then
+            assertThat(e.getMessage()).contains(""You mocked following type: IMethods"");
+        }
+    }",method,
+"    @Test
+    public void should_mock_class_with_interfaces_of_different_class_loader_AND_different_classpaths() throws ClassNotFoundException {
+        // Note : if classes are in the same classpath, SearchingClassLoader can find the class/classes and load them in the first matching classloader
+        Class<?> interface1 = inMemoryClassLoader()
+                .withClassDefinition(""test.Interface1"", makeMarkerInterface(""test.Interface1""))
+                .build()
+                .loadClass(""test.Interface1"");
+        Class<?> interface2 = inMemoryClassLoader()
+                .withClassDefinition(""test.Interface2"", makeMarkerInterface(""test.Interface2""))
+                .build()
+                .loadClass(""test.Interface2"");
+        Object mocked = mock(interface1, withSettings().extraInterfaces(interface2));
+        assertThat(interface2.isInstance(mocked)).describedAs(""mock should be assignable from interface2 type"").isTrue();
+    }",method,
+"public class DoubleSceneSplitScreenEngine extends Engine {
+	// ===========================================================
+	// Constants
+	// ===========================================================
+	// ===========================================================
+	// Fields
+	// ===========================================================
+	private Scene mSecondScene;
+	private final Camera mSecondCamera;
+	// ===========================================================
+	// Constructors
+	// ===========================================================
+	public DoubleSceneSplitScreenEngine(final EngineOptions pEngineOptions, final Camera pSecondCamera) {
+		super(pEngineOptions);
+		this.mSecondCamera = pSecondCamera;
+	}
+	// ===========================================================
+	// Getter & Setter
+	// ===========================================================
+	@Deprecated
+	@Override
+	public Camera getCamera() {
+		return super.mCamera;
+	}
+	public Camera getFirstCamera() {
+		return super.mCamera;
+	}
+	public Camera getSecondCamera() {
+		return this.mSecondCamera;
+	}
+	@Deprecated
+	@Override
+	public Scene getScene() {
+		return super.getScene();
+	}
+	public Scene getFirstScene() {
+		return super.getScene();
+	}
+	public Scene getSecondScene() {
+		return this.mSecondScene;
+	}
+	@Deprecated
+	@Override
+	public void setScene(final Scene pScene) {
+		super.setScene(pScene);
+	}
+	public void setFirstScene(final Scene pScene) {
+		super.setScene(pScene);
+	}
+	public void setSecondScene(final Scene pScene) {
+		this.mSecondScene = pScene;
+	}
+	// ===========================================================
+	// Methods for/from SuperClass/Interfaces
+	// ===========================================================
+	@Override
+	protected void onDrawScene(final GL10 pGL) {
+		final Camera firstCamera = this.getFirstCamera();
+		final Camera secondCamera = this.getSecondCamera();
+		final int surfaceWidth = this.mSurfaceWidth;
+		final int surfaceWidthHalf = surfaceWidth >> 1;
+		final int surfaceHeight = this.mSurfaceHeight;
+		GLHelper.enableScissorTest(pGL);
+		{
+			pGL.glScissor(0, 0, surfaceWidthHalf, surfaceHeight);
+			pGL.glViewport(0, 0, surfaceWidthHalf, surfaceHeight);
+			super.mScene.onDraw(pGL, firstCamera);
+			firstCamera.onDrawHUD(pGL);
+		}
+		{
+			pGL.glScissor(surfaceWidthHalf, 0, surfaceWidthHalf, surfaceHeight);
+			pGL.glViewport(surfaceWidthHalf, 0, surfaceWidthHalf, surfaceHeight);
+			this.mSecondScene.onDraw(pGL, secondCamera);
+			secondCamera.onDrawHUD(pGL);
+		}
+		GLHelper.disableScissorTest(pGL);
+	}
+	@Override
+	protected Camera getCameraFromSurfaceTouchEvent(final TouchEvent pTouchEvent) {
+		if(pTouchEvent.getX() <= this.mSurfaceWidth >> 1) {
+			return this.getFirstCamera();
+		} else {
+			return this.getSecondCamera();
+		}
+	}
+	@Override
+	protected Scene getSceneFromSurfaceTouchEvent(final TouchEvent pTouchEvent) {
+		if(pTouchEvent.getX() <= this.mSurfaceWidth >> 1) {
+			return this.getFirstScene();
+		} else {
+			return this.getSecondScene();
+		}
+	}
+	@Override
+	protected void onUpdateScene(final float pSecondsElapsed) {
+		super.onUpdateScene(pSecondsElapsed);
+		if(this.mSecondScene != null) {
+			this.mSecondScene.onUpdate(pSecondsElapsed);
+		}
+	}
+	@Override
+	protected void convertSurfaceToSceneTouchEvent(final Camera pCamera, final TouchEvent pSurfaceTouchEvent) {
+		final int surfaceWidthHalf = this.mSurfaceWidth >> 1;
+		if(pCamera == this.getFirstCamera()) {
+			pCamera.convertSurfaceToSceneTouchEvent(pSurfaceTouchEvent, surfaceWidthHalf, this.mSurfaceHeight);
+		} else {
+			pSurfaceTouchEvent.offset(-surfaceWidthHalf, 0);
+			pCamera.convertSurfaceToSceneTouchEvent(pSurfaceTouchEvent, surfaceWidthHalf, this.mSurfaceHeight);
+		}
+	}
+	@Override
+	protected void updateUpdateHandlers(final float pSecondsElapsed) {
+		super.updateUpdateHandlers(pSecondsElapsed);
+		this.getSecondCamera().onUpdate(pSecondsElapsed);
+	}
+	// ===========================================================
+	// Methods
+	// ===========================================================
+	// ===========================================================
+	// Inner and Anonymous Classes
+	// ===========================================================
+}",class,
+"	public DoubleSceneSplitScreenEngine(final EngineOptions pEngineOptions, final Camera pSecondCamera) {
+		super(pEngineOptions);
+		this.mSecondCamera = pSecondCamera;
+	}",method,
+"	@Deprecated
+	@Override
+	public Camera getCamera() {
+		return super.mCamera;
+	}",method,
+"	public Camera getFirstCamera() {
+		return super.mCamera;
+	}",method,
+"	public Camera getSecondCamera() {
+		return this.mSecondCamera;
+	}",method,
+"	@Deprecated
+	@Override
+	public Scene getScene() {
+		return super.getScene();
+	}",method,
+"	public Scene getFirstScene() {
+		return super.getScene();
+	}",method,
+"	public Scene getSecondScene() {
+		return this.mSecondScene;
+	}",method,
+"	@Deprecated
+	@Override
+	public void setScene(final Scene pScene) {
+		super.setScene(pScene);
+	}",method,
+"	public void setFirstScene(final Scene pScene) {
+		super.setScene(pScene);
+	}",method,
+"	public void setSecondScene(final Scene pScene) {
+		this.mSecondScene = pScene;
+	}",method,
+"	@Override
+	protected void onDrawScene(final GL10 pGL) {
+		final Camera firstCamera = this.getFirstCamera();
+		final Camera secondCamera = this.getSecondCamera();
+		final int surfaceWidth = this.mSurfaceWidth;
+		final int surfaceWidthHalf = surfaceWidth >> 1;
+		final int surfaceHeight = this.mSurfaceHeight;
+		GLHelper.enableScissorTest(pGL);
+		{
+			pGL.glScissor(0, 0, surfaceWidthHalf, surfaceHeight);
+			pGL.glViewport(0, 0, surfaceWidthHalf, surfaceHeight);
+			super.mScene.onDraw(pGL, firstCamera);
+			firstCamera.onDrawHUD(pGL);
+		}
+		{
+			pGL.glScissor(surfaceWidthHalf, 0, surfaceWidthHalf, surfaceHeight);
+			pGL.glViewport(surfaceWidthHalf, 0, surfaceWidthHalf, surfaceHeight);
+			this.mSecondScene.onDraw(pGL, secondCamera);
+			secondCamera.onDrawHUD(pGL);
+		}
+		GLHelper.disableScissorTest(pGL);
+	}",method,
+"	@Override
+	protected Camera getCameraFromSurfaceTouchEvent(final TouchEvent pTouchEvent) {
+		if(pTouchEvent.getX() <= this.mSurfaceWidth >> 1) {
+			return this.getFirstCamera();
+		} else {
+			return this.getSecondCamera();
+		}
+	}",method,
+"	@Override
+	protected Scene getSceneFromSurfaceTouchEvent(final TouchEvent pTouchEvent) {
+		if(pTouchEvent.getX() <= this.mSurfaceWidth >> 1) {
+			return this.getFirstScene();
+		} else {
+			return this.getSecondScene();
+		}
+	}",method,
+"	@Override
+	protected void onUpdateScene(final float pSecondsElapsed) {
+		super.onUpdateScene(pSecondsElapsed);
+		if(this.mSecondScene != null) {
+			this.mSecondScene.onUpdate(pSecondsElapsed);
+		}
+	}",method,
+"		if(this.mSecondScene != null) {
+			this.mSecondScene.onUpdate(pSecondsElapsed);
+		}",method,
+"	@Override
+	protected void convertSurfaceToSceneTouchEvent(final Camera pCamera, final TouchEvent pSurfaceTouchEvent) {
+		final int surfaceWidthHalf = this.mSurfaceWidth >> 1;
+		if(pCamera == this.getFirstCamera()) {
+			pCamera.convertSurfaceToSceneTouchEvent(pSurfaceTouchEvent, surfaceWidthHalf, this.mSurfaceHeight);
+		} else {
+			pSurfaceTouchEvent.offset(-surfaceWidthHalf, 0);
+			pCamera.convertSurfaceToSceneTouchEvent(pSurfaceTouchEvent, surfaceWidthHalf, this.mSurfaceHeight);
+		}
+	}",method,
+"	@Override
+	protected void updateUpdateHandlers(final float pSecondsElapsed) {
+		super.updateUpdateHandlers(pSecondsElapsed);
+		this.getSecondCamera().onUpdate(pSecondsElapsed);
+	}",method,
+"public class ShaderProgramLoader extends AsynchronousAssetLoader<ShaderProgram, ShaderProgramLoader.ShaderProgramParameter> {
+	private String vertexFileSuffix = "".vert"";
+	private String fragmentFileSuffix = "".frag"";
+	public ShaderProgramLoader (FileHandleResolver resolver) {
+		super(resolver);
+	}
+	public ShaderProgramLoader (FileHandleResolver resolver, String vertexFileSuffix, String fragmentFileSuffix) {
+		super(resolver);
+		this.vertexFileSuffix = vertexFileSuffix;
+		this.fragmentFileSuffix = fragmentFileSuffix;
+	}
+	@Override
+	public Array<AssetDescriptor> getDependencies (String fileName, FileHandle file, ShaderProgramParameter parameter) {
+		return null;
+	}
+	@Override
+	public void loadAsync (AssetManager manager, String fileName, FileHandle file, ShaderProgramParameter parameter) {
+	}
+	@Override
+	public ShaderProgram loadSync (AssetManager manager, String fileName, FileHandle file, ShaderProgramParameter parameter) {
+		String vertFileName = null, fragFileName = null;
+		if (parameter != null) {
+			if (parameter.vertexFile != null) vertFileName = parameter.vertexFile;
+			if (parameter.fragmentFile != null) fragFileName = parameter.fragmentFile;
+		}
+		if (vertFileName == null && fileName.endsWith(fragmentFileSuffix)) {
+			vertFileName = fileName.substring(0, fileName.length() - fragmentFileSuffix.length()) + vertexFileSuffix;
+		}
+		if (fragFileName == null && fileName.endsWith(vertexFileSuffix)) {
+			fragFileName = fileName.substring(0, fileName.length() - vertexFileSuffix.length()) + fragmentFileSuffix;
+		}
+		FileHandle vertexFile = vertFileName == null ? file : resolve(vertFileName);
+		FileHandle fragmentFile = fragFileName == null ? file : resolve(fragFileName);
+		String vertexCode = vertexFile.readString();
+		String fragmentCode = vertexFile.equals(fragmentFile) ? vertexCode : fragmentFile.readString();
+		if (parameter != null) {
+			if (parameter.prependVertexCode != null) vertexCode = parameter.prependVertexCode + vertexCode;
+			if (parameter.prependFragmentCode != null) fragmentCode = parameter.prependFragmentCode + fragmentCode;
+		}
+		ShaderProgram shaderProgram = new ShaderProgram(vertexCode, fragmentCode);
+		if ((parameter == null || parameter.logOnCompileFailure) && !shaderProgram.isCompiled()) {
+			manager.getLogger().error(""ShaderProgram "" + fileName + "" failed to compile:\n"" + shaderProgram.getLog());
+		}
+		return shaderProgram;
+	}
+	static public class ShaderProgramParameter extends AssetLoaderParameters<ShaderProgram> {
+		public String vertexFile;
+		public String fragmentFile;
+		public boolean logOnCompileFailure = true;
+		public String prependVertexCode;
+		public String prependFragmentCode;
+	}
+}",class,
+"	static public class ShaderProgramParameter extends AssetLoaderParameters<ShaderProgram> {
+		public String vertexFile;
+		public String fragmentFile;
+		public boolean logOnCompileFailure = true;
+		public String prependVertexCode;
+		public String prependFragmentCode;
+	}",class,
+"	public ShaderProgramLoader (FileHandleResolver resolver) {
+		super(resolver);
+	}",method,
+"	public ShaderProgramLoader (FileHandleResolver resolver, String vertexFileSuffix, String fragmentFileSuffix) {
+		super(resolver);
+		this.vertexFileSuffix = vertexFileSuffix;
+		this.fragmentFileSuffix = fragmentFileSuffix;
+	}",method,
+"	@Override
+	public Array<AssetDescriptor> getDependencies (String fileName, FileHandle file, ShaderProgramParameter parameter) {
+		return null;
+	}",method,
+"	@Override
+	public void loadAsync (AssetManager manager, String fileName, FileHandle file, ShaderProgramParameter parameter) {
+	}",method,
+"	@Override
+	public ShaderProgram loadSync (AssetManager manager, String fileName, FileHandle file, ShaderProgramParameter parameter) {
+		String vertFileName = null, fragFileName = null;
+		if (parameter != null) {
+			if (parameter.vertexFile != null) vertFileName = parameter.vertexFile;
+			if (parameter.fragmentFile != null) fragFileName = parameter.fragmentFile;
+		}
+		if (vertFileName == null && fileName.endsWith(fragmentFileSuffix)) {
+			vertFileName = fileName.substring(0, fileName.length() - fragmentFileSuffix.length()) + vertexFileSuffix;
+		}
+		if (fragFileName == null && fileName.endsWith(vertexFileSuffix)) {
+			fragFileName = fileName.substring(0, fileName.length() - vertexFileSuffix.length()) + fragmentFileSuffix;
+		}
+		FileHandle vertexFile = vertFileName == null ? file : resolve(vertFileName);
+		FileHandle fragmentFile = fragFileName == null ? file : resolve(fragFileName);
+		String vertexCode = vertexFile.readString();
+		String fragmentCode = vertexFile.equals(fragmentFile) ? vertexCode : fragmentFile.readString();
+		if (parameter != null) {
+			if (parameter.prependVertexCode != null) vertexCode = parameter.prependVertexCode + vertexCode;
+			if (parameter.prependFragmentCode != null) fragmentCode = parameter.prependFragmentCode + fragmentCode;
+		}
+		ShaderProgram shaderProgram = new ShaderProgram(vertexCode, fragmentCode);
+		if ((parameter == null || parameter.logOnCompileFailure) && !shaderProgram.isCompiled()) {
+			manager.getLogger().error(""ShaderProgram "" + fileName + "" failed to compile:\n"" + shaderProgram.getLog());
+		}
+		return shaderProgram;
+	}",method,
+"		if (parameter != null) {
+			if (parameter.vertexFile != null) vertFileName = parameter.vertexFile;
+			if (parameter.fragmentFile != null) fragFileName = parameter.fragmentFile;
+		}",method,
+"		if (parameter != null) {
+			if (parameter.prependVertexCode != null) vertexCode = parameter.prependVertexCode + vertexCode;
+			if (parameter.prependFragmentCode != null) fragmentCode = parameter.prependFragmentCode + fragmentCode;
+		}",method,
+"public class QueryQueueRuleFactory
+        implements Provider<List<QueryQueueRule>>
+{
+    private final List<QueryQueueRule> selectors;
+    @Inject
+    public QueryQueueRuleFactory(QueryManagerConfig config, ObjectMapper mapper)
+    {
+        requireNonNull(config, ""config is null"");
+        ImmutableList.Builder<QueryQueueRule> rules = ImmutableList.builder();
+        if (config.getQueueConfigFile() == null) {
+            QueryQueueDefinition global = new QueryQueueDefinition(""global"", config.getMaxConcurrentQueries(), config.getMaxQueuedQueries());
+            rules.add(new QueryQueueRule(null, null, ImmutableMap.of(), ImmutableList.of(global)));
+        }
+        else {
+            File file = new File(config.getQueueConfigFile());
+            ManagerSpec managerSpec;
+            try {
+                managerSpec = mapper.readValue(file, ManagerSpec.class);
+            }
+            catch (IOException e) {
+                throw Throwables.propagate(e);
+            }
+            Map<String, QueryQueueDefinition> definitions = new HashMap<>();
+            for (Map.Entry<String, QueueSpec> queue : managerSpec.getQueues().entrySet()) {
+                definitions.put(queue.getKey(), new QueryQueueDefinition(queue.getKey(), queue.getValue().getMaxConcurrent(), queue.getValue().getMaxQueued()));
+            }
+            for (RuleSpec rule : managerSpec.getRules()) {
+                rules.add(QueryQueueRule.createRule(rule.getUserRegex(), rule.getSourceRegex(), rule.getSessionPropertyRegexes(), rule.getQueues(), definitions));
+            }
+        }
+        checkIsTree(rules.build());
+        this.selectors = rules.build();
+    }
+    private static void checkIsTree(List<QueryQueueRule> rules)
+    {
+        DirectedGraph<String, DefaultEdge> graph = new DefaultDirectedGraph<>(DefaultEdge.class);
+        for (QueryQueueRule rule : rules) {
+            String lastQueueName = null;
+            for (QueryQueueDefinition queue : rule.getQueues()) {
+                String currentQueueName = queue.getTemplate();
+                graph.addVertex(currentQueueName);
+                if (lastQueueName != null) {
+                    graph.addEdge(lastQueueName, currentQueueName);
+                }
+                lastQueueName = currentQueueName;
+            }
+        }
+        for (String vertex : graph.vertexSet()) {
+            if (graph.outDegreeOf(vertex) > 1) {
+                List<String> targets = graph.outgoingEdgesOf(vertex).stream()
+                        .map(graph::getEdgeTarget)
+                        .collect(Collectors.toList());
+                throw new IllegalArgumentException(format(""Queues must form a tree. Queue %s feeds into %s"", vertex, targets));
+            }
+        }
+        List<String> shortestCycle = shortestCycle(graph);
+        if (shortestCycle != null) {
+            String s = Joiner.on("", "").join(shortestCycle);
+            throw new IllegalArgumentException(format(""Queues must not contain a cycle. The shortest cycle found is [%s]"", s));
+        }
+    }
+    private static List<String> shortestCycle(DirectedGraph<String, DefaultEdge> graph)
+    {
+        FloydWarshallShortestPaths<String, DefaultEdge> floyd = new FloydWarshallShortestPaths<>(graph);
+        int minDistance = Integer.MAX_VALUE;
+        String minSource = null;
+        String minDestination = null;
+        for (DefaultEdge edge : graph.edgeSet()) {
+            String src = graph.getEdgeSource(edge);
+            String dst = graph.getEdgeTarget(edge);
+            int dist = (int) Math.round(floyd.shortestDistance(dst, src)); // from dst to src
+            if (dist < 0) {
+                continue;
+            }
+            if (dist < minDistance) {
+                minDistance = dist;
+                minSource = src;
+                minDestination = dst;
+            }
+        }
+        if (minSource == null) {
+            return null;
+        }
+        GraphPath<String, DefaultEdge> shortestPath = floyd.getShortestPath(minDestination, minSource);
+        List<String> pathVertexList = Graphs.getPathVertexList(shortestPath);
+        // note: pathVertexList will be [a, a] instead of [a] when the shortest path is a loop edge
+        if (!Objects.equals(shortestPath.getStartVertex(), shortestPath.getEndVertex())) {
+            pathVertexList.add(pathVertexList.get(0));
+        }
+        return pathVertexList;
+    }
+    @Override
+    public List<QueryQueueRule> get()
+    {
+        return selectors;
+    }
+    public static class ManagerSpec
+    {
+        private final Map<String, QueueSpec> queues;
+        private final List<RuleSpec> rules;
+        @JsonCreator
+        public ManagerSpec(
+                @JsonProperty(""queues"") Map<String, QueueSpec> queues,
+                @JsonProperty(""rules"") List<RuleSpec> rules)
+        {
+            this.queues = ImmutableMap.copyOf(requireNonNull(queues, ""queues is null""));
+            this.rules = ImmutableList.copyOf(requireNonNull(rules, ""rules is null""));
+        }
+        public Map<String, QueueSpec> getQueues()
+        {
+            return queues;
+        }
+        public List<RuleSpec> getRules()
+        {
+            return rules;
+        }
+    }
+    public static class QueueSpec
+    {
+        private final int maxQueued;
+        private final int maxConcurrent;
+        @JsonCreator
+        public QueueSpec(
+                @JsonProperty(""maxQueued"") int maxQueued,
+                @JsonProperty(""maxConcurrent"") int maxConcurrent)
+        {
+            this.maxQueued = maxQueued;
+            this.maxConcurrent = maxConcurrent;
+        }
+        public int getMaxQueued()
+        {
+            return maxQueued;
+        }
+        public int getMaxConcurrent()
+        {
+            return maxConcurrent;
+        }
+    }
+    public static class RuleSpec
+    {
+        @Nullable
+        private final Pattern userRegex;
+        @Nullable
+        private final Pattern sourceRegex;
+        private final Map<String, Pattern> sessionPropertyRegexes = new HashMap<>();
+        private final List<String> queues;
+        @JsonCreator
+        public RuleSpec(
+                @JsonProperty(""user"") @Nullable Pattern userRegex,
+                @JsonProperty(""source"") @Nullable Pattern sourceRegex,
+                @JsonProperty(""queues"") List<String> queues)
+        {
+            this.userRegex = userRegex;
+            this.sourceRegex = sourceRegex;
+            this.queues = ImmutableList.copyOf(queues);
+        }
+        @JsonAnySetter
+        public void setSessionProperty(String property, Pattern value)
+        {
+            checkArgument(property.startsWith(""session.""), ""Unrecognized property: %s"", property);
+            sessionPropertyRegexes.put(property.substring(""session."".length(), property.length()), value);
+        }
+        @Nullable
+        public Pattern getUserRegex()
+        {
+            return userRegex;
+        }
+        @Nullable
+        public Pattern getSourceRegex()
+        {
+            return sourceRegex;
+        }
+        public Map<String, Pattern> getSessionPropertyRegexes()
+        {
+            return ImmutableMap.copyOf(sessionPropertyRegexes);
+        }
+        public List<String> getQueues()
+        {
+            return queues;
+        }
+    }
+}",class,
+"    public static class ManagerSpec
+    {
+        private final Map<String, QueueSpec> queues;
+        private final List<RuleSpec> rules;
+        @JsonCreator
+        public ManagerSpec(
+                @JsonProperty(""queues"") Map<String, QueueSpec> queues,
+                @JsonProperty(""rules"") List<RuleSpec> rules)
+        {
+            this.queues = ImmutableMap.copyOf(requireNonNull(queues, ""queues is null""));
+            this.rules = ImmutableList.copyOf(requireNonNull(rules, ""rules is null""));
+        }
+        public Map<String, QueueSpec> getQueues()
+        {
+            return queues;
+        }
+        public List<RuleSpec> getRules()
+        {
+            return rules;
+        }
+    }",class,
+"    public static class QueueSpec
+    {
+        private final int maxQueued;
+        private final int maxConcurrent;
+        @JsonCreator
+        public QueueSpec(
+                @JsonProperty(""maxQueued"") int maxQueued,
+                @JsonProperty(""maxConcurrent"") int maxConcurrent)
+        {
+            this.maxQueued = maxQueued;
+            this.maxConcurrent = maxConcurrent;
+        }
+        public int getMaxQueued()
+        {
+            return maxQueued;
+        }
+        public int getMaxConcurrent()
+        {
+            return maxConcurrent;
+        }
+    }",class,
+"    public static class RuleSpec
+    {
+        @Nullable
+        private final Pattern userRegex;
+        @Nullable
+        private final Pattern sourceRegex;
+        private final Map<String, Pattern> sessionPropertyRegexes = new HashMap<>();
+        private final List<String> queues;
+        @JsonCreator
+        public RuleSpec(
+                @JsonProperty(""user"") @Nullable Pattern userRegex,
+                @JsonProperty(""source"") @Nullable Pattern sourceRegex,
+                @JsonProperty(""queues"") List<String> queues)
+        {
+            this.userRegex = userRegex;
+            this.sourceRegex = sourceRegex;
+            this.queues = ImmutableList.copyOf(queues);
+        }
+        @JsonAnySetter
+        public void setSessionProperty(String property, Pattern value)
+        {
+            checkArgument(property.startsWith(""session.""), ""Unrecognized property: %s"", property);
+            sessionPropertyRegexes.put(property.substring(""session."".length(), property.length()), value);
+        }
+        @Nullable
+        public Pattern getUserRegex()
+        {
+            return userRegex;
+        }
+        @Nullable
+        public Pattern getSourceRegex()
+        {
+            return sourceRegex;
+        }
+        public Map<String, Pattern> getSessionPropertyRegexes()
+        {
+            return ImmutableMap.copyOf(sessionPropertyRegexes);
+        }
+        public List<String> getQueues()
+        {
+            return queues;
+        }
+    }",class,
+"    @Inject
+    public QueryQueueRuleFactory(QueryManagerConfig config, ObjectMapper mapper)
+    {
+        requireNonNull(config, ""config is null"");
+        ImmutableList.Builder<QueryQueueRule> rules = ImmutableList.builder();
+        if (config.getQueueConfigFile() == null) {
+            QueryQueueDefinition global = new QueryQueueDefinition(""global"", config.getMaxConcurrentQueries(), config.getMaxQueuedQueries());
+            rules.add(new QueryQueueRule(null, null, ImmutableMap.of(), ImmutableList.of(global)));
+        }
+        else {
+            File file = new File(config.getQueueConfigFile());
+            ManagerSpec managerSpec;
+            try {
+                managerSpec = mapper.readValue(file, ManagerSpec.class);
+            }
+            catch (IOException e) {
+                throw Throwables.propagate(e);
+            }
+            Map<String, QueryQueueDefinition> definitions = new HashMap<>();
+            for (Map.Entry<String, QueueSpec> queue : managerSpec.getQueues().entrySet()) {
+                definitions.put(queue.getKey(), new QueryQueueDefinition(queue.getKey(), queue.getValue().getMaxConcurrent(), queue.getValue().getMaxQueued()));
+            }
+            for (RuleSpec rule : managerSpec.getRules()) {
+                rules.add(QueryQueueRule.createRule(rule.getUserRegex(), rule.getSourceRegex(), rule.getSessionPropertyRegexes(), rule.getQueues(), definitions));
+            }
+        }
+        checkIsTree(rules.build());
+        this.selectors = rules.build();
+    }",method,
+"            catch (IOException e) {
+                throw Throwables.propagate(e);
+            }",method,
+"    private static void checkIsTree(List<QueryQueueRule> rules)
+    {
+        DirectedGraph<String, DefaultEdge> graph = new DefaultDirectedGraph<>(DefaultEdge.class);
+        for (QueryQueueRule rule : rules) {
+            String lastQueueName = null;
+            for (QueryQueueDefinition queue : rule.getQueues()) {
+                String currentQueueName = queue.getTemplate();
+                graph.addVertex(currentQueueName);
+                if (lastQueueName != null) {
+                    graph.addEdge(lastQueueName, currentQueueName);
+                }
+                lastQueueName = currentQueueName;
+            }
+        }
+        for (String vertex : graph.vertexSet()) {
+            if (graph.outDegreeOf(vertex) > 1) {
+                List<String> targets = graph.outgoingEdgesOf(vertex).stream()
+                        .map(graph::getEdgeTarget)
+                        .collect(Collectors.toList());
+                throw new IllegalArgumentException(format(""Queues must form a tree. Queue %s feeds into %s"", vertex, targets));
+            }
+        }
+        List<String> shortestCycle = shortestCycle(graph);
+        if (shortestCycle != null) {
+            String s = Joiner.on("", "").join(shortestCycle);
+            throw new IllegalArgumentException(format(""Queues must not contain a cycle. The shortest cycle found is [%s]"", s));
+        }
+    }",method,
+"        for (QueryQueueRule rule : rules) {
+            String lastQueueName = null;
+            for (QueryQueueDefinition queue : rule.getQueues()) {
+                String currentQueueName = queue.getTemplate();
+                graph.addVertex(currentQueueName);
+                if (lastQueueName != null) {
+                    graph.addEdge(lastQueueName, currentQueueName);
+                }
+                lastQueueName = currentQueueName;
+            }
+        }",method,
+"                if (lastQueueName != null) {
+                    graph.addEdge(lastQueueName, currentQueueName);
+                }",method,
+"        if (shortestCycle != null) {
+            String s = Joiner.on("", "").join(shortestCycle);
+            throw new IllegalArgumentException(format(""Queues must not contain a cycle. The shortest cycle found is [%s]"", s));
+        }",method,
+"    private static List<String> shortestCycle(DirectedGraph<String, DefaultEdge> graph)
+    {
+        FloydWarshallShortestPaths<String, DefaultEdge> floyd = new FloydWarshallShortestPaths<>(graph);
+        int minDistance = Integer.MAX_VALUE;
+        String minSource = null;
+        String minDestination = null;
+        for (DefaultEdge edge : graph.edgeSet()) {
+            String src = graph.getEdgeSource(edge);
+            String dst = graph.getEdgeTarget(edge);
+            int dist = (int) Math.round(floyd.shortestDistance(dst, src)); // from dst to src
+            if (dist < 0) {
+                continue;
+            }
+            if (dist < minDistance) {
+                minDistance = dist;
+                minSource = src;
+                minDestination = dst;
+            }
+        }
+        if (minSource == null) {
+            return null;
+        }
+        GraphPath<String, DefaultEdge> shortestPath = floyd.getShortestPath(minDestination, minSource);
+        List<String> pathVertexList = Graphs.getPathVertexList(shortestPath);
+        // note: pathVertexList will be [a, a] instead of [a] when the shortest path is a loop edge
+        if (!Objects.equals(shortestPath.getStartVertex(), shortestPath.getEndVertex())) {
+            pathVertexList.add(pathVertexList.get(0));
+        }
+        return pathVertexList;
+    }",method,
+"            if (dist < 0) {
+                continue;
+            }",method,
+"            if (dist < minDistance) {
+                minDistance = dist;
+                minSource = src;
+                minDestination = dst;
+            }",method,
+"        if (minSource == null) {
+            return null;
+        }",method,
+"    @Override
+    public List<QueryQueueRule> get()
+    {
+        return selectors;
+    }",method,
+"        public Map<String, QueueSpec> getQueues()
+        {
+            return queues;
+        }",method,
+"        public List<RuleSpec> getRules()
+        {
+            return rules;
+        }",method,
+"        public int getMaxQueued()
+        {
+            return maxQueued;
+        }",method,
+"        public int getMaxConcurrent()
+        {
+            return maxConcurrent;
+        }",method,
+"        @JsonAnySetter
+        public void setSessionProperty(String property, Pattern value)
+        {
+            checkArgument(property.startsWith(""session.""), ""Unrecognized property: %s"", property);
+            sessionPropertyRegexes.put(property.substring(""session."".length(), property.length()), value);
+        }",method,
+"        @Nullable
+        public Pattern getUserRegex()
+        {
+            return userRegex;
+        }",method,
+"        @Nullable
+        public Pattern getSourceRegex()
+        {
+            return sourceRegex;
+        }",method,
+"        public Map<String, Pattern> getSessionPropertyRegexes()
+        {
+            return ImmutableMap.copyOf(sessionPropertyRegexes);
+        }",method,
+"        public List<String> getQueues()
+        {
+            return queues;
+        }",method,
+"public class SuppressionAnnotationInspectionBase extends BaseInspection {
+  public List<String> myAllowedSuppressions = new ArrayList<>();
+  @Override
+  @NotNull
+  public String getDisplayName() {
+    return InspectionGadgetsBundle.message(
+      ""inspection.suppression.annotation.display.name"");
+  }
+  @Override
+  @NotNull
+  public String buildErrorString(Object... infos) {
+    return InspectionGadgetsBundle.message(
+      ""inspection.suppression.annotation.problem.descriptor"");
+  }
+  @Override
+  public boolean isSuppressedFor(@NotNull PsiElement element) {
+    return false;
+  }
+  @NotNull
+  @Override
+  public SuppressQuickFix[] getBatchSuppressActions(@Nullable PsiElement element) {
+    return SuppressQuickFix.EMPTY_ARRAY;
+  }
+  @Override
+  public BaseInspectionVisitor buildVisitor() {
+    return new SuppressionAnnotationVisitor();
+  }
+  private class SuppressionAnnotationVisitor extends BaseInspectionVisitor {
+    @Override
+    public void visitComment(PsiComment comment) {
+      super.visitComment(comment);
+      final IElementType tokenType = comment.getTokenType();
+      if (!tokenType.equals(JavaTokenType.END_OF_LINE_COMMENT)
+          && !tokenType.equals(JavaTokenType.C_STYLE_COMMENT)) {
+        return;
+      }
+      final String commentText = comment.getText();
+      if (commentText.length() <= 2) {
+        return;
+      }
+      @NonNls final String strippedComment = commentText.substring(2).trim();
+      if (!strippedComment.startsWith(SuppressionUtilCore.SUPPRESS_INSPECTIONS_TAG_NAME)) {
+        return;
+      }
+      final String suppressedIds = JavaSuppressionUtil.getSuppressedInspectionIdsIn(comment);
+      if (suppressedIds == null) {
+        registerError(comment, comment, Boolean.FALSE);
+        return;
+      }
+      final Iterable<String> ids = StringUtil.tokenize(suppressedIds, "","");
+      for (String id : ids) {
+        if (!myAllowedSuppressions.contains(id)) {
+          registerError(comment, comment, Boolean.TRUE);
+          break;
+        }
+      }
+    }
+    @Override
+    public void visitAnnotation(PsiAnnotation annotation) {
+      super.visitAnnotation(annotation);
+      final PsiJavaCodeReferenceElement reference = annotation.getNameReferenceElement();
+      if (reference == null) {
+        return;
+      }
+      @NonNls final String text = reference.getText();
+      if (""SuppressWarnings"".equals(text) ||
+          BatchSuppressManager.SUPPRESS_INSPECTIONS_ANNOTATION_NAME.equals(text)) {
+        final PsiElement annotationParent = annotation.getParent();
+        if (annotationParent instanceof PsiModifierList) {
+          final Collection<String> ids = JavaSuppressionUtil.getInspectionIdsSuppressedInAnnotation((PsiModifierList)annotationParent);
+          if (!myAllowedSuppressions.containsAll(ids)) {
+            registerError(annotation, annotation, Boolean.TRUE);
+          }
+          else if (ids.isEmpty()) {
+            registerError(annotation, annotation, Boolean.FALSE);
+          }
+        }
+      }
+    }
+  }
+}",class,
+"  private class SuppressionAnnotationVisitor extends BaseInspectionVisitor {
+    @Override
+    public void visitComment(PsiComment comment) {
+      super.visitComment(comment);
+      final IElementType tokenType = comment.getTokenType();
+      if (!tokenType.equals(JavaTokenType.END_OF_LINE_COMMENT)
+          && !tokenType.equals(JavaTokenType.C_STYLE_COMMENT)) {
+        return;
+      }
+      final String commentText = comment.getText();
+      if (commentText.length() <= 2) {
+        return;
+      }
+      @NonNls final String strippedComment = commentText.substring(2).trim();
+      if (!strippedComment.startsWith(SuppressionUtilCore.SUPPRESS_INSPECTIONS_TAG_NAME)) {
+        return;
+      }
+      final String suppressedIds = JavaSuppressionUtil.getSuppressedInspectionIdsIn(comment);
+      if (suppressedIds == null) {
+        registerError(comment, comment, Boolean.FALSE);
+        return;
+      }
+      final Iterable<String> ids = StringUtil.tokenize(suppressedIds, "","");
+      for (String id : ids) {
+        if (!myAllowedSuppressions.contains(id)) {
+          registerError(comment, comment, Boolean.TRUE);
+          break;
+        }
+      }
+    }
+    @Override
+    public void visitAnnotation(PsiAnnotation annotation) {
+      super.visitAnnotation(annotation);
+      final PsiJavaCodeReferenceElement reference = annotation.getNameReferenceElement();
+      if (reference == null) {
+        return;
+      }
+      @NonNls final String text = reference.getText();
+      if (""SuppressWarnings"".equals(text) ||
+          BatchSuppressManager.SUPPRESS_INSPECTIONS_ANNOTATION_NAME.equals(text)) {
+        final PsiElement annotationParent = annotation.getParent();
+        if (annotationParent instanceof PsiModifierList) {
+          final Collection<String> ids = JavaSuppressionUtil.getInspectionIdsSuppressedInAnnotation((PsiModifierList)annotationParent);
+          if (!myAllowedSuppressions.containsAll(ids)) {
+            registerError(annotation, annotation, Boolean.TRUE);
+          }
+          else if (ids.isEmpty()) {
+            registerError(annotation, annotation, Boolean.FALSE);
+          }
+        }
+      }
+    }
+  }",class,
+"  @Override
+  @NotNull
+  public String getDisplayName() {
+    return InspectionGadgetsBundle.message(
+      ""inspection.suppression.annotation.display.name"");
+  }",method,
+"  @Override
+  @NotNull
+  public String buildErrorString(Object... infos) {
+    return InspectionGadgetsBundle.message(
+      ""inspection.suppression.annotation.problem.descriptor"");
+  }",method,
+"  @Override
+  public boolean isSuppressedFor(@NotNull PsiElement element) {
+    return false;
+  }",method,
+"  @NotNull
+  @Override
+  public SuppressQuickFix[] getBatchSuppressActions(@Nullable PsiElement element) {
+    return SuppressQuickFix.EMPTY_ARRAY;
+  }",method,
+"  @Override
+  public BaseInspectionVisitor buildVisitor() {
+    return new SuppressionAnnotationVisitor();
+  }",method,
+"    @Override
+    public void visitComment(PsiComment comment) {
+      super.visitComment(comment);
+      final IElementType tokenType = comment.getTokenType();
+      if (!tokenType.equals(JavaTokenType.END_OF_LINE_COMMENT)
+          && !tokenType.equals(JavaTokenType.C_STYLE_COMMENT)) {
+        return;
+      }
+      final String commentText = comment.getText();
+      if (commentText.length() <= 2) {
+        return;
+      }
+      @NonNls final String strippedComment = commentText.substring(2).trim();
+      if (!strippedComment.startsWith(SuppressionUtilCore.SUPPRESS_INSPECTIONS_TAG_NAME)) {
+        return;
+      }
+      final String suppressedIds = JavaSuppressionUtil.getSuppressedInspectionIdsIn(comment);
+      if (suppressedIds == null) {
+        registerError(comment, comment, Boolean.FALSE);
+        return;
+      }
+      final Iterable<String> ids = StringUtil.tokenize(suppressedIds, "","");
+      for (String id : ids) {
+        if (!myAllowedSuppressions.contains(id)) {
+          registerError(comment, comment, Boolean.TRUE);
+          break;
+        }
+      }
+    }",method,
+"      if (suppressedIds == null) {
+        registerError(comment, comment, Boolean.FALSE);
+        return;
+      }",method,
+"      for (String id : ids) {
+        if (!myAllowedSuppressions.contains(id)) {
+          registerError(comment, comment, Boolean.TRUE);
+          break;
+        }
+      }",method,
+"    @Override
+    public void visitAnnotation(PsiAnnotation annotation) {
+      super.visitAnnotation(annotation);
+      final PsiJavaCodeReferenceElement reference = annotation.getNameReferenceElement();
+      if (reference == null) {
+        return;
+      }
+      @NonNls final String text = reference.getText();
+      if (""SuppressWarnings"".equals(text) ||
+          BatchSuppressManager.SUPPRESS_INSPECTIONS_ANNOTATION_NAME.equals(text)) {
+        final PsiElement annotationParent = annotation.getParent();
+        if (annotationParent instanceof PsiModifierList) {
+          final Collection<String> ids = JavaSuppressionUtil.getInspectionIdsSuppressedInAnnotation((PsiModifierList)annotationParent);
+          if (!myAllowedSuppressions.containsAll(ids)) {
+            registerError(annotation, annotation, Boolean.TRUE);
+          }
+          else if (ids.isEmpty()) {
+            registerError(annotation, annotation, Boolean.FALSE);
+          }
+        }
+      }
+    }",method,
+"      if (reference == null) {
+        return;
+      }",method,
+"        if (annotationParent instanceof PsiModifierList) {
+          final Collection<String> ids = JavaSuppressionUtil.getInspectionIdsSuppressedInAnnotation((PsiModifierList)annotationParent);
+          if (!myAllowedSuppressions.containsAll(ids)) {
+            registerError(annotation, annotation, Boolean.TRUE);
+          }
+          else if (ids.isEmpty()) {
+            registerError(annotation, annotation, Boolean.FALSE);
+          }
+        }",method,
+"public class PrometheusScrapeEndpoint {
+	private final CollectorRegistry collectorRegistry;
+	public PrometheusScrapeEndpoint(CollectorRegistry collectorRegistry) {
+		this.collectorRegistry = collectorRegistry;
+	}
+	@ReadOperation(produces = TextFormat.CONTENT_TYPE_004)
+	public String scrape() {
+		try {
+			Writer writer = new StringWriter();
+			TextFormat.write004(writer, this.collectorRegistry.metricFamilySamples());
+			return writer.toString();
+		}
+		catch (IOException e) {
+			// This actually never happens since StringWriter::write() doesn't throw any
+			// IOException
+			throw new RuntimeException(""Writing metrics failed"", e);
+		}
+	}
+}",class,
+"	public PrometheusScrapeEndpoint(CollectorRegistry collectorRegistry) {
+		this.collectorRegistry = collectorRegistry;
+	}",method,
+"	@ReadOperation(produces = TextFormat.CONTENT_TYPE_004)
+	public String scrape() {
+		try {
+			Writer writer = new StringWriter();
+			TextFormat.write004(writer, this.collectorRegistry.metricFamilySamples());
+			return writer.toString();
+		}
+		catch (IOException e) {
+			// This actually never happens since StringWriter::write() doesn't throw any
+			// IOException
+			throw new RuntimeException(""Writing metrics failed"", e);
+		}
+	}",method,
+"		catch (IOException e) {
+			// This actually never happens since StringWriter::write() doesn't throw any
+			// IOException
+			throw new RuntimeException(""Writing metrics failed"", e);
+		}",method,

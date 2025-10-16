@@ -1,0 +1,1196 @@
+code_snippet,type,score
+"  @Override
+  public String toString() {
+    return myMavenId != null ? myMavenId : ""null"";
+  }",method,good
+"    @Override
+    public String toString() {
+      return ""compiled root"";
+    }",method,good
+"    @Override
+    public String toString() {
+      return ""sources root"";
+    }",method,good
+"    @Override
+    public String toString() {
+      return ""documentation root"";
+    }",method,good
+"public class TransactionalHandler extends BaseAnnotationHandler<EComponentHolder> {
+	public TransactionalHandler(AndroidAnnotationsEnvironment environment) {
+		super(Transactional.class, environment);
+	}
+	@Override
+	public void validate(Element element, ElementValidation validation) {
+		validatorHelper.enclosingElementHasEnhancedComponentAnnotation(element, validation);
+		validatorHelper.isNotPrivate(element, validation);
+		ExecutableElement executableElement = (ExecutableElement) element;
+		validatorHelper.doesntThrowException(executableElement, validation);
+		validatorHelper.isNotFinal(element, validation);
+		validatorHelper.param.inOrder() //
+				.type(CanonicalNameConstants.SQLITE_DATABASE) //
+				.anyType().multiple().optional() //
+				.validate(executableElement, validation);
+	}
+	@Override
+	public void process(Element element, EComponentHolder holder) {
+		ExecutableElement executableElement = (ExecutableElement) element;
+		String returnTypeName = executableElement.getReturnType().toString();
+		AbstractJClass returnType = getJClass(returnTypeName);
+		JMethod method = codeModelHelper.overrideAnnotatedMethod(executableElement, holder);
+		codeModelHelper.removeBody(method);
+		JVar db = method.params().get(0);
+		JBlock body = method.body();
+		body.invoke(db, ""beginTransaction"");
+		JTryBlock tryBlock = body._try();
+		IJExpression activitySuper = holder.getGeneratedClass().staticRef(""super"");
+		JInvocation superCall = JExpr.invoke(activitySuper, method);
+		for (JVar param : method.params()) {
+			superCall.arg(param);
+		}
+		JBlock tryBody = tryBlock.body();
+		if (returnTypeName.equals(""void"")) {
+			tryBody.add(superCall);
+			tryBody.invoke(db, ""setTransactionSuccessful"");
+			tryBody._return();
+		} else {
+			JVar result = tryBody.decl(returnType, ""result_"", superCall);
+			tryBody.invoke(db, ""setTransactionSuccessful"");
+			tryBody._return(result);
+		}
+		JCatchBlock catchBlock = tryBlock._catch(getJClass(RuntimeException.class));
+		JVar exceptionParam = catchBlock.param(""e"");
+		JBlock catchBody = catchBlock.body();
+		JInvocation errorInvoke = catchBody.staticInvoke(getClasses().LOG, ""e"");
+		errorInvoke.arg(logTagForClassHolder(holder));
+		errorInvoke.arg(""Error in transaction"");
+		errorInvoke.arg(exceptionParam);
+		catchBody._throw(exceptionParam);
+		tryBlock._finally().invoke(db, ""endTransaction"");
+	}
+}",class,changes_recommended
+"	public TransactionalHandler(AndroidAnnotationsEnvironment environment) {
+		super(Transactional.class, environment);
+	}",method,good
+"	@Override
+	public void validate(Element element, ElementValidation validation) {
+		validatorHelper.enclosingElementHasEnhancedComponentAnnotation(element, validation);
+		validatorHelper.isNotPrivate(element, validation);
+		ExecutableElement executableElement = (ExecutableElement) element;
+		validatorHelper.doesntThrowException(executableElement, validation);
+		validatorHelper.isNotFinal(element, validation);
+		validatorHelper.param.inOrder() //
+				.type(CanonicalNameConstants.SQLITE_DATABASE) //
+				.anyType().multiple().optional() //
+				.validate(executableElement, validation);
+	}",method,good
+"	@Override
+	public void process(Element element, EComponentHolder holder) {
+		ExecutableElement executableElement = (ExecutableElement) element;
+		String returnTypeName = executableElement.getReturnType().toString();
+		AbstractJClass returnType = getJClass(returnTypeName);
+		JMethod method = codeModelHelper.overrideAnnotatedMethod(executableElement, holder);
+		codeModelHelper.removeBody(method);
+		JVar db = method.params().get(0);
+		JBlock body = method.body();
+		body.invoke(db, ""beginTransaction"");
+		JTryBlock tryBlock = body._try();
+		IJExpression activitySuper = holder.getGeneratedClass().staticRef(""super"");
+		JInvocation superCall = JExpr.invoke(activitySuper, method);
+		for (JVar param : method.params()) {
+			superCall.arg(param);
+		}
+		JBlock tryBody = tryBlock.body();
+		if (returnTypeName.equals(""void"")) {
+			tryBody.add(superCall);
+			tryBody.invoke(db, ""setTransactionSuccessful"");
+			tryBody._return();
+		} else {
+			JVar result = tryBody.decl(returnType, ""result_"", superCall);
+			tryBody.invoke(db, ""setTransactionSuccessful"");
+			tryBody._return(result);
+		}
+		JCatchBlock catchBlock = tryBlock._catch(getJClass(RuntimeException.class));
+		JVar exceptionParam = catchBlock.param(""e"");
+		JBlock catchBody = catchBlock.body();
+		JInvocation errorInvoke = catchBody.staticInvoke(getClasses().LOG, ""e"");
+		errorInvoke.arg(logTagForClassHolder(holder));
+		errorInvoke.arg(""Error in transaction"");
+		errorInvoke.arg(exceptionParam);
+		catchBody._throw(exceptionParam);
+		tryBlock._finally().invoke(db, ""endTransaction"");
+	}",method,good
+"public class JarjarTask extends ConventionTask {
+    private class FilterSpec implements Spec<File> {
+        private final String message;
+        private final Iterable<? extends Pattern> patterns;
+        private final boolean result;
+        public FilterSpec(@Nonnull String message, @Nonnull Iterable<? extends Pattern> patterns, boolean result) {
+            this.message = message;
+            this.patterns = patterns;
+            this.result = result;
+        }
+        @Override
+        public boolean isSatisfiedBy(File t) {
+            if (matchesAny(patterns, t.getName())) {
+                getLogger().info(message + "" "" + t);
+                return result;
+            }
+            return !result;
+        }
+        @Override
+        public String toString() {
+            return getClass().getSimpleName() + ""(patterns="" + patterns + "")"";
+        }
+    }
+    private static final Perl5Matcher globMatcher = new Perl5Matcher();
+    private static boolean matchesAny(@Nonnull Iterable<? extends Pattern> patterns, @Nonnull String text) {
+        for (Pattern pattern : patterns) {
+            if (globMatcher.matches(text, pattern)) {
+                return true;
+            }
+        }
+        return false;
+    }
+    @Nonnull
+    private static Iterable<Pattern> toPatterns(@Nonnull Iterable<? extends String>... patterns) throws MalformedPatternException {
+        GlobCompiler compiler = new GlobCompiler();
+        List<Pattern> out = new ArrayList<Pattern>();
+        for (Iterable<? extends String> in : patterns)
+            for (String pattern : in)
+                out.add(compiler.compile(pattern));
+        return out;
+    }
+    private final ConfigurableFileCollection sourceFiles;
+    private final Set<String> archiveBypasses = new HashSet<String>();
+    private final Set<String> archiveExcludes = new HashSet<String>();
+    private File destinationDir;
+    private String destinationName;
+    private final DefaultJarProcessor processor = new DefaultJarProcessor();
+    public JarjarTask() {
+        sourceFiles = getProject().files();
+    }
+    @InputFiles
+    public FileCollection getSourceFiles() {
+        return sourceFiles;
+    }
+    public File getDestinationDir() {
+        File out = destinationDir;
+        if (out == null)
+            out = new File(getProject().getBuildDir(), ""jarjar"");
+        return out;
+    }
+    public void setDestinationDir(File destinationDir) {
+        this.destinationDir = destinationDir;
+    }
+    public String getDestinationName() {
+        String out = destinationName;
+        if (out == null)
+            out = getName() + "".jar"";
+        return out;
+    }
+    public void setDestinationName(String destinationName) {
+        this.destinationName = destinationName;
+    }
+    @OutputFile
+    public File getDestinationPath() {
+        return new File(getDestinationDir(), getDestinationName());
+    }
+    @OutputFiles
+    public FileCollection getBypassedArchives() throws MalformedPatternException {
+        return sourceFiles.filter(new FilterSpec(""Bypassing archive"", toPatterns(archiveBypasses), true));
+    }
+    public void from(@Nonnull FileCollection files) {
+        sourceFiles.from(files);
+    }
+    public void from(@Nonnull Dependency dependency) {
+        Configuration configuration = getProject().getConfigurations().detachedConfiguration(dependency);
+        from(configuration);
+    }
+    public void from(@Nonnull String dependencyNotation, Closure configClosure) {
+        from(getProject().getDependencies().create(dependencyNotation, configClosure));
+    }
+    public void from(@Nonnull String dependencyNotation) {
+        from(getProject().getDependencies().create(dependencyNotation));
+    }
+    public void archiveBypass(@Nonnull String pattern) throws MalformedPatternException {
+        archiveBypasses.add(pattern);
+    }
+    public void archiveExclude(@Nonnull String pattern) throws MalformedPatternException {
+        archiveExcludes.add(pattern);
+    }
+    public void classRename(@Nonnull String pattern, @Nonnull String replacement) {
+        processor.addClassRename(new ClassRename(pattern, replacement));
+    }
+    public void classDelete(@Nonnull String pattern) {
+        processor.addClassDelete(new ClassDelete(pattern));
+    }
+    public void classClosureRoot(@Nonnull String pattern) {
+        processor.addClassKeepTransitive(new ClassKeepTransitive(pattern));
+    }
+    @TaskAction
+    public void run() throws Exception {
+        FileCollection inputFiles = sourceFiles.filter(new FilterSpec(""Excluding archive"", toPatterns(archiveBypasses, archiveExcludes), false));
+        final File outputFile = getDestinationPath();
+        outputFile.getParentFile().mkdirs();
+        getLogger().info(""Running jarjar for {}"", outputFile);
+        getLogger().info(""Inputs are {}"", inputFiles);
+        JarTransformer transformer = new JarTransformer(outputFile, processor);
+        transformer.transform(new ClassPath(getProject().getProjectDir(), inputFiles));
+    }
+}",class,changes_recommended
+"    private class FilterSpec implements Spec<File> {
+        private final String message;
+        private final Iterable<? extends Pattern> patterns;
+        private final boolean result;
+        public FilterSpec(@Nonnull String message, @Nonnull Iterable<? extends Pattern> patterns, boolean result) {
+            this.message = message;
+            this.patterns = patterns;
+            this.result = result;
+        }
+        @Override
+        public boolean isSatisfiedBy(File t) {
+            if (matchesAny(patterns, t.getName())) {
+                getLogger().info(message + "" "" + t);
+                return result;
+            }
+            return !result;
+        }
+        @Override
+        public String toString() {
+            return getClass().getSimpleName() + ""(patterns="" + patterns + "")"";
+        }
+    }",class,good
+"        public FilterSpec(@Nonnull String message, @Nonnull Iterable<? extends Pattern> patterns, boolean result) {
+            this.message = message;
+            this.patterns = patterns;
+            this.result = result;
+        }",method,good
+"        @Override
+        public boolean isSatisfiedBy(File t) {
+            if (matchesAny(patterns, t.getName())) {
+                getLogger().info(message + "" "" + t);
+                return result;
+            }
+            return !result;
+        }",method,good
+"        @Override
+        public String toString() {
+            return getClass().getSimpleName() + ""(patterns="" + patterns + "")"";
+        }",method,good
+"    private static boolean matchesAny(@Nonnull Iterable<? extends Pattern> patterns, @Nonnull String text) {
+        for (Pattern pattern : patterns) {
+            if (globMatcher.matches(text, pattern)) {
+                return true;
+            }
+        }
+        return false;
+    }",method,good
+"        for (Pattern pattern : patterns) {
+            if (globMatcher.matches(text, pattern)) {
+                return true;
+            }
+        }",method,good
+"    @Nonnull
+    private static Iterable<Pattern> toPatterns(@Nonnull Iterable<? extends String>... patterns) throws MalformedPatternException {
+        GlobCompiler compiler = new GlobCompiler();
+        List<Pattern> out = new ArrayList<Pattern>();
+        for (Iterable<? extends String> in : patterns)
+            for (String pattern : in)
+                out.add(compiler.compile(pattern));
+        return out;
+    }",method,good
+"    public JarjarTask() {
+        sourceFiles = getProject().files();
+    }",method,good
+"    @InputFiles
+    public FileCollection getSourceFiles() {
+        return sourceFiles;
+    }",method,good
+"    public File getDestinationDir() {
+        File out = destinationDir;
+        if (out == null)
+            out = new File(getProject().getBuildDir(), ""jarjar"");
+        return out;
+    }",method,good
+"    public void setDestinationDir(File destinationDir) {
+        this.destinationDir = destinationDir;
+    }",method,good
+"    public String getDestinationName() {
+        String out = destinationName;
+        if (out == null)
+            out = getName() + "".jar"";
+        return out;
+    }",method,good
+"    public void setDestinationName(String destinationName) {
+        this.destinationName = destinationName;
+    }",method,good
+"    @OutputFile
+    public File getDestinationPath() {
+        return new File(getDestinationDir(), getDestinationName());
+    }",method,good
+"    @OutputFiles
+    public FileCollection getBypassedArchives() throws MalformedPatternException {
+        return sourceFiles.filter(new FilterSpec(""Bypassing archive"", toPatterns(archiveBypasses), true));
+    }",method,good
+"    public void from(@Nonnull FileCollection files) {
+        sourceFiles.from(files);
+    }",method,good
+"    public void from(@Nonnull Dependency dependency) {
+        Configuration configuration = getProject().getConfigurations().detachedConfiguration(dependency);
+        from(configuration);
+    }",method,good
+"    public void from(@Nonnull String dependencyNotation, Closure configClosure) {
+        from(getProject().getDependencies().create(dependencyNotation, configClosure));
+    }",method,good
+"    public void from(@Nonnull String dependencyNotation) {
+        from(getProject().getDependencies().create(dependencyNotation));
+    }",method,good
+"    public void archiveBypass(@Nonnull String pattern) throws MalformedPatternException {
+        archiveBypasses.add(pattern);
+    }",method,good
+"    public void archiveExclude(@Nonnull String pattern) throws MalformedPatternException {
+        archiveExcludes.add(pattern);
+    }",method,good
+"    public void classRename(@Nonnull String pattern, @Nonnull String replacement) {
+        processor.addClassRename(new ClassRename(pattern, replacement));
+    }",method,good
+"    public void classDelete(@Nonnull String pattern) {
+        processor.addClassDelete(new ClassDelete(pattern));
+    }",method,good
+"    public void classClosureRoot(@Nonnull String pattern) {
+        processor.addClassKeepTransitive(new ClassKeepTransitive(pattern));
+    }",method,good
+"    @TaskAction
+    public void run() throws Exception {
+        FileCollection inputFiles = sourceFiles.filter(new FilterSpec(""Excluding archive"", toPatterns(archiveBypasses, archiveExcludes), false));
+        final File outputFile = getDestinationPath();
+        outputFile.getParentFile().mkdirs();
+        getLogger().info(""Running jarjar for {}"", outputFile);
+        getLogger().info(""Inputs are {}"", inputFiles);
+        JarTransformer transformer = new JarTransformer(outputFile, processor);
+        transformer.transform(new ClassPath(getProject().getProjectDir(), inputFiles));
+    }",method,good
+"public class TestStatsListener {
+    @Test
+    public void testListenerBasic() {
+        for (boolean useJ7 : new boolean[] {false, true}) {
+            DataSet ds = new IrisDataSetIterator(150, 150).next();
+            MultiLayerConfiguration conf =
+                            new NeuralNetConfiguration.Builder().iterations(1)
+                                            .optimizationAlgo(OptimizationAlgorithm.STOCHASTIC_GRADIENT_DESCENT)
+                                            .list().layer(0,
+                                                            new OutputLayer.Builder(LossFunctions.LossFunction.MCXENT)
+                                                                            .nIn(4).nOut(3).build())
+                                            .pretrain(false).backprop(true).build();
+            MultiLayerNetwork net = new MultiLayerNetwork(conf);
+            net.init();
+            StatsStorage ss = new MapDBStatsStorage(); //in-memory
+            if (useJ7) {
+                net.setListeners(new J7StatsListener(ss));
+            } else {
+                net.setListeners(new StatsListener(ss));
+            }
+            for (int i = 0; i < 3; i++) {
+                net.fit(ds);
+            }
+            List<String> sids = ss.listSessionIDs();
+            assertEquals(1, sids.size());
+            String sessionID = ss.listSessionIDs().get(0);
+            assertEquals(1, ss.listTypeIDsForSession(sessionID).size());
+            String typeID = ss.listTypeIDsForSession(sessionID).get(0);
+            assertEquals(1, ss.listWorkerIDsForSession(sessionID).size());
+            String workerID = ss.listWorkerIDsForSession(sessionID).get(0);
+            Persistable staticInfo = ss.getStaticInfo(sessionID, typeID, workerID);
+            assertNotNull(staticInfo);
+            System.out.println(staticInfo);
+            List<Persistable> updates = ss.getAllUpdatesAfter(sessionID, typeID, workerID, 0);
+            assertEquals(3, updates.size());
+            for (Persistable p : updates) {
+                System.out.println(p);
+            }
+        }
+    }
+}",class,changes_recommended
+"    @Test
+    public void testListenerBasic() {
+        for (boolean useJ7 : new boolean[] {false, true}) {
+            DataSet ds = new IrisDataSetIterator(150, 150).next();
+            MultiLayerConfiguration conf =
+                            new NeuralNetConfiguration.Builder().iterations(1)
+                                            .optimizationAlgo(OptimizationAlgorithm.STOCHASTIC_GRADIENT_DESCENT)
+                                            .list().layer(0,
+                                                            new OutputLayer.Builder(LossFunctions.LossFunction.MCXENT)
+                                                                            .nIn(4).nOut(3).build())
+                                            .pretrain(false).backprop(true).build();
+            MultiLayerNetwork net = new MultiLayerNetwork(conf);
+            net.init();
+            StatsStorage ss = new MapDBStatsStorage(); //in-memory
+            if (useJ7) {
+                net.setListeners(new J7StatsListener(ss));
+            } else {
+                net.setListeners(new StatsListener(ss));
+            }
+            for (int i = 0; i < 3; i++) {
+                net.fit(ds);
+            }
+            List<String> sids = ss.listSessionIDs();
+            assertEquals(1, sids.size());
+            String sessionID = ss.listSessionIDs().get(0);
+            assertEquals(1, ss.listTypeIDsForSession(sessionID).size());
+            String typeID = ss.listTypeIDsForSession(sessionID).get(0);
+            assertEquals(1, ss.listWorkerIDsForSession(sessionID).size());
+            String workerID = ss.listWorkerIDsForSession(sessionID).get(0);
+            Persistable staticInfo = ss.getStaticInfo(sessionID, typeID, workerID);
+            assertNotNull(staticInfo);
+            System.out.println(staticInfo);
+            List<Persistable> updates = ss.getAllUpdatesAfter(sessionID, typeID, workerID, 0);
+            assertEquals(3, updates.size());
+            for (Persistable p : updates) {
+                System.out.println(p);
+            }
+        }
+    }",method,changes_recommended
+"        for (boolean useJ7 : new boolean[] {false, true}) {
+            DataSet ds = new IrisDataSetIterator(150, 150).next();
+            MultiLayerConfiguration conf =
+                            new NeuralNetConfiguration.Builder().iterations(1)
+                                            .optimizationAlgo(OptimizationAlgorithm.STOCHASTIC_GRADIENT_DESCENT)
+                                            .list().layer(0,
+                                                            new OutputLayer.Builder(LossFunctions.LossFunction.MCXENT)
+                                                                            .nIn(4).nOut(3).build())
+                                            .pretrain(false).backprop(true).build();
+            MultiLayerNetwork net = new MultiLayerNetwork(conf);
+            net.init();
+            StatsStorage ss = new MapDBStatsStorage(); //in-memory
+            if (useJ7) {
+                net.setListeners(new J7StatsListener(ss));
+            } else {
+                net.setListeners(new StatsListener(ss));
+            }
+            for (int i = 0; i < 3; i++) {
+                net.fit(ds);
+            }
+            List<String> sids = ss.listSessionIDs();
+            assertEquals(1, sids.size());
+            String sessionID = ss.listSessionIDs().get(0);
+            assertEquals(1, ss.listTypeIDsForSession(sessionID).size());
+            String typeID = ss.listTypeIDsForSession(sessionID).get(0);
+            assertEquals(1, ss.listWorkerIDsForSession(sessionID).size());
+            String workerID = ss.listWorkerIDsForSession(sessionID).get(0);
+            Persistable staticInfo = ss.getStaticInfo(sessionID, typeID, workerID);
+            assertNotNull(staticInfo);
+            System.out.println(staticInfo);
+            List<Persistable> updates = ss.getAllUpdatesAfter(sessionID, typeID, workerID, 0);
+            assertEquals(3, updates.size());
+            for (Persistable p : updates) {
+                System.out.println(p);
+            }
+        }",method,changes_recommended
+"            if (useJ7) {
+                net.setListeners(new J7StatsListener(ss));
+            }",method,good
+"            for (int i = 0; i < 3; i++) {
+                net.fit(ds);
+            }",method,good
+"            for (Persistable p : updates) {
+                System.out.println(p);
+            }",method,good
+"public class MessageCardView extends CardView implements View.OnClickListener {
+    private static final String TAG = makeLogTag(MessageCardView.class);
+    private TextView mTitleView;
+    private TextView mMessageView;
+    private Button[] mButtons;
+    private String[] mButtonTags;
+    private OnMessageCardButtonClicked mListener = null;
+    private View mRoot;
+    public static final int ANIM_DURATION = 200;
+    public interface OnMessageCardButtonClicked {
+        void onMessageCardButtonClicked(String tag);
+    }
+    public MessageCardView(Context context) {
+        super(context, null, 0);
+        initialize(context, null, 0);
+    }
+    public MessageCardView(Context context, AttributeSet attrs) {
+        super(context, attrs, 0);
+        initialize(context, attrs, 0);
+    }
+    public MessageCardView(Context context, AttributeSet attrs, int defStyle) {
+        super(context, attrs, defStyle);
+        initialize(context, attrs, defStyle);
+    }
+    private void initialize(Context context, AttributeSet attrs, int defStyle) {
+        LayoutInflater inflater = (LayoutInflater) context.getSystemService(
+                Context.LAYOUT_INFLATER_SERVICE);
+        mRoot = inflater.inflate(R.layout.message_card, this, true);
+        mTitleView = (TextView) mRoot.findViewById(R.id.title);
+        mMessageView = (TextView) mRoot.findViewById(R.id.text);
+        mButtons = new Button[] {
+                (Button) mRoot.findViewById(R.id.negative_button),
+                (Button) mRoot.findViewById(R.id.positive_button)
+        };
+        mButtonTags = new String[] { """", """" };
+        for (Button button : mButtons) {
+            button.setVisibility(View.GONE);
+            button.setOnClickListener(this);
+        }
+        TypedArray a = context.obtainStyledAttributes(attrs, R.styleable.MessageCard, defStyle, 0);
+        String title = a.getString(R.styleable.MessageCard_messageTitle);
+        setTitle(title);
+        String text = a.getString(R.styleable.MessageCard_messageText);
+        if (text != null) {
+            setText(text);
+        }
+        String button1text = a.getString(R.styleable.MessageCard_button1text);
+        boolean button1emphasis = a.getBoolean(R.styleable.MessageCard_button1emphasis, false);
+        String button1tag = a.getString(R.styleable.MessageCard_button1tag);
+        String button2text = a.getString(R.styleable.MessageCard_button2text);
+        boolean button2emphasis = a.getBoolean(R.styleable.MessageCard_button2emphasis, false);
+        String button2tag = a.getString(R.styleable.MessageCard_button2tag);
+        int emphasisColor = a.getColor(R.styleable.MessageCard_emphasisColor,
+                getResources().getColor(R.color.lightish_blue_a11y));
+        a.recycle();
+        if (button1text != null) {
+            setButton(0, button1text, button1tag, button1emphasis, 0);
+        }
+        if (button2text != null) {
+            setButton(1, button2text, button2tag, button2emphasis, emphasisColor);
+        }
+        setRadius(getResources().getDimensionPixelSize(R.dimen.card_corner_radius));
+        setCardElevation(getResources().getDimensionPixelSize(R.dimen.card_elevation));
+        setPreventCornerOverlap(false);
+    }
+    public void setListener(OnMessageCardButtonClicked listener) {
+        mListener = listener;
+    }
+    public void setButton(int index, String text, String tag, boolean emphasis, int emphasisColor) {
+        if (index < 0 || index >= mButtons.length) {
+            LOGW(TAG, ""Invalid button index: "" + index);
+            return;
+        }
+        mButtons[index].setText(text);
+        mButtons[index].setVisibility(View.VISIBLE);
+        mButtonTags[index] = tag;
+        if (emphasis) {
+            if (emphasisColor == 0) {
+                emphasisColor = getResources().getColor(R.color.lightish_blue_a11y);
+            }
+            mButtons[index].setTextColor(emphasisColor);
+            mButtons[index].setTypeface(null, Typeface.BOLD);
+        }
+    }
+    public void setTitle(String title) {
+        if (TextUtils.isEmpty(title)) {
+            mTitleView.setVisibility(View.GONE);
+        } else {
+            mTitleView.setVisibility(View.VISIBLE);
+            mTitleView.setText(title);
+        }
+    }
+    public void setText(String text) {
+        mMessageView.setText(text);
+    }
+    public void overrideBackground(int bgResId) {
+        findViewById(R.id.card_root).setBackgroundResource(bgResId);
+    }
+    @Override
+    public void onClick(View v) {
+        if (mListener == null) {
+            return;
+        }
+        for (int i = 0; i < mButtons.length; i++) {
+            if (mButtons[i] == v) {
+                mListener.onMessageCardButtonClicked(mButtonTags[i]);
+                break;
+            }
+        }
+    }
+    public void dismiss() {
+        dismiss(false);
+    }
+    public void dismiss(boolean animate) {
+        if (!animate) {
+            setVisibility(View.GONE);
+        } else {
+            animate().scaleY(0.1f).alpha(0.1f).setDuration(ANIM_DURATION);
+        }
+    }
+    public void show() {
+        setVisibility(View.VISIBLE);
+    }
+}",class,changes_required
+"    public MessageCardView(Context context) {
+        super(context, null, 0);
+        initialize(context, null, 0);
+    }",method,good
+"    public MessageCardView(Context context, AttributeSet attrs) {
+        super(context, attrs, 0);
+        initialize(context, attrs, 0);
+    }",method,good
+"    public MessageCardView(Context context, AttributeSet attrs, int defStyle) {
+        super(context, attrs, defStyle);
+        initialize(context, attrs, defStyle);
+    }",method,good
+"    private void initialize(Context context, AttributeSet attrs, int defStyle) {
+        LayoutInflater inflater = (LayoutInflater) context.getSystemService(
+                Context.LAYOUT_INFLATER_SERVICE);
+        mRoot = inflater.inflate(R.layout.message_card, this, true);
+        mTitleView = (TextView) mRoot.findViewById(R.id.title);
+        mMessageView = (TextView) mRoot.findViewById(R.id.text);
+        mButtons = new Button[] {
+                (Button) mRoot.findViewById(R.id.negative_button),
+                (Button) mRoot.findViewById(R.id.positive_button)
+        };
+        mButtonTags = new String[] { """", """" };
+        for (Button button : mButtons) {
+            button.setVisibility(View.GONE);
+            button.setOnClickListener(this);
+        }
+        TypedArray a = context.obtainStyledAttributes(attrs, R.styleable.MessageCard, defStyle, 0);
+        String title = a.getString(R.styleable.MessageCard_messageTitle);
+        setTitle(title);
+        String text = a.getString(R.styleable.MessageCard_messageText);
+        if (text != null) {
+            setText(text);
+        }
+        String button1text = a.getString(R.styleable.MessageCard_button1text);
+        boolean button1emphasis = a.getBoolean(R.styleable.MessageCard_button1emphasis, false);
+        String button1tag = a.getString(R.styleable.MessageCard_button1tag);
+        String button2text = a.getString(R.styleable.MessageCard_button2text);
+        boolean button2emphasis = a.getBoolean(R.styleable.MessageCard_button2emphasis, false);
+        String button2tag = a.getString(R.styleable.MessageCard_button2tag);
+        int emphasisColor = a.getColor(R.styleable.MessageCard_emphasisColor,
+                getResources().getColor(R.color.lightish_blue_a11y));
+        a.recycle();
+        if (button1text != null) {
+            setButton(0, button1text, button1tag, button1emphasis, 0);
+        }
+        if (button2text != null) {
+            setButton(1, button2text, button2tag, button2emphasis, emphasisColor);
+        }
+        setRadius(getResources().getDimensionPixelSize(R.dimen.card_corner_radius));
+        setCardElevation(getResources().getDimensionPixelSize(R.dimen.card_elevation));
+        setPreventCornerOverlap(false);
+    }",method,changes_recommended
+"        for (Button button : mButtons) {
+            button.setVisibility(View.GONE);
+            button.setOnClickListener(this);
+        }",method,good
+"        if (text != null) {
+            setText(text);
+        }",method,good
+"        if (button1text != null) {
+            setButton(0, button1text, button1tag, button1emphasis, 0);
+        }",method,good
+"        if (button2text != null) {
+            setButton(1, button2text, button2tag, button2emphasis, emphasisColor);
+        }",method,good
+"    public void setListener(OnMessageCardButtonClicked listener) {
+        mListener = listener;
+    }",method,good
+"    public void setButton(int index, String text, String tag, boolean emphasis, int emphasisColor) {
+        if (index < 0 || index >= mButtons.length) {
+            LOGW(TAG, ""Invalid button index: "" + index);
+            return;
+        }
+        mButtons[index].setText(text);
+        mButtons[index].setVisibility(View.VISIBLE);
+        mButtonTags[index] = tag;
+        if (emphasis) {
+            if (emphasisColor == 0) {
+                emphasisColor = getResources().getColor(R.color.lightish_blue_a11y);
+            }
+            mButtons[index].setTextColor(emphasisColor);
+            mButtons[index].setTypeface(null, Typeface.BOLD);
+        }
+    }",method,good
+"        if (index < 0 || index >= mButtons.length) {
+            LOGW(TAG, ""Invalid button index: "" + index);
+            return;
+        }",method,good
+"        if (emphasis) {
+            if (emphasisColor == 0) {
+                emphasisColor = getResources().getColor(R.color.lightish_blue_a11y);
+            }
+            mButtons[index].setTextColor(emphasisColor);
+            mButtons[index].setTypeface(null, Typeface.BOLD);
+        }",method,good
+"            if (emphasisColor == 0) {
+                emphasisColor = getResources().getColor(R.color.lightish_blue_a11y);
+            }",method,good
+"    public void setTitle(String title) {
+        if (TextUtils.isEmpty(title)) {
+            mTitleView.setVisibility(View.GONE);
+        } else {
+            mTitleView.setVisibility(View.VISIBLE);
+            mTitleView.setText(title);
+        }
+    }",method,good
+"    public void setText(String text) {
+        mMessageView.setText(text);
+    }",method,good
+"    public void overrideBackground(int bgResId) {
+        findViewById(R.id.card_root).setBackgroundResource(bgResId);
+    }",method,good
+"    @Override
+    public void onClick(View v) {
+        if (mListener == null) {
+            return;
+        }
+        for (int i = 0; i < mButtons.length; i++) {
+            if (mButtons[i] == v) {
+                mListener.onMessageCardButtonClicked(mButtonTags[i]);
+                break;
+            }
+        }
+    }",method,good
+"        if (mListener == null) {
+            return;
+        }",method,good
+"        for (int i = 0; i < mButtons.length; i++) {
+            if (mButtons[i] == v) {
+                mListener.onMessageCardButtonClicked(mButtonTags[i]);
+                break;
+            }
+        }",method,good
+"            if (mButtons[i] == v) {
+                mListener.onMessageCardButtonClicked(mButtonTags[i]);
+                break;
+            }",method,good
+"    public void dismiss() {
+        dismiss(false);
+    }",method,good
+"    public void dismiss(boolean animate) {
+        if (!animate) {
+            setVisibility(View.GONE);
+        } else {
+            animate().scaleY(0.1f).alpha(0.1f).setDuration(ANIM_DURATION);
+        }
+    }",method,good
+"        if (!animate) {
+            setVisibility(View.GONE);
+        }",method,good
+"    public void show() {
+        setVisibility(View.VISIBLE);
+    }",method,good
+"public class VectorCheckbox extends Activity {
+    private static final String LOGCAT = ""VectorDrawable1"";
+    int[] icon = {
+            R.drawable.vector_drawable01,
+            R.drawable.vector_drawable02,
+            R.drawable.vector_drawable03,
+            R.drawable.vector_drawable04,
+            R.drawable.vector_drawable05,
+            R.drawable.vector_drawable06,
+            R.drawable.vector_drawable07,
+            R.drawable.vector_drawable08,
+            R.drawable.vector_drawable09,
+            R.drawable.vector_drawable10,
+            R.drawable.vector_drawable11,
+            R.drawable.vector_drawable12,
+            R.drawable.vector_drawable13,
+            R.drawable.vector_drawable14,
+            R.drawable.vector_drawable15,
+            R.drawable.vector_drawable16,
+            R.drawable.vector_drawable17,
+            R.drawable.vector_drawable18,
+            R.drawable.vector_drawable19,
+            R.drawable.vector_drawable20
+    };
+    @Override
+    protected void onCreate(Bundle savedInstanceState) {
+        super.onCreate(savedInstanceState);
+        GridLayout container = new GridLayout(this);
+        container.setColumnCount(5);
+        container.setBackgroundColor(0xFF888888);
+        final Button []bArray = new Button[icon.length];
+        for (int i = 0; i < icon.length; i++) {
+            CheckBox checkBox = new CheckBox(this);
+            bArray[i] = checkBox;
+            checkBox.setWidth(200);
+            checkBox.setButtonDrawable(icon[i]);
+            container.addView(checkBox);
+        }
+        setContentView(container);
+    }
+}",class,good
+"    @Override
+    protected void onCreate(Bundle savedInstanceState) {
+        super.onCreate(savedInstanceState);
+        GridLayout container = new GridLayout(this);
+        container.setColumnCount(5);
+        container.setBackgroundColor(0xFF888888);
+        final Button []bArray = new Button[icon.length];
+        for (int i = 0; i < icon.length; i++) {
+            CheckBox checkBox = new CheckBox(this);
+            bArray[i] = checkBox;
+            checkBox.setWidth(200);
+            checkBox.setButtonDrawable(icon[i]);
+            container.addView(checkBox);
+        }
+        setContentView(container);
+    }",method,good
+"        for (int i = 0; i < icon.length; i++) {
+            CheckBox checkBox = new CheckBox(this);
+            bArray[i] = checkBox;
+            checkBox.setWidth(200);
+            checkBox.setButtonDrawable(icon[i]);
+            container.addView(checkBox);
+        }",method,good
+"public class GenerateGetterAndSetterHandler extends GenerateGetterSetterHandlerBase{
+  private final GenerateGetterHandler myGenerateGetterHandler = new GenerateGetterHandler();
+  private final GenerateSetterHandler myGenerateSetterHandler = new GenerateSetterHandler();
+  public GenerateGetterAndSetterHandler(){
+    super(CodeInsightBundle.message(""generate.getter.setter.title""));
+  }
+  @Nullable
+  @Override
+  protected JComponent getHeaderPanel(Project project) {
+    final JPanel panel = new JPanel(new BorderLayout(2, 2));
+    panel.add(getHeaderPanel(project, GetterTemplatesManager.getInstance(), CodeInsightBundle.message(""generate.getter.template"")), BorderLayout.NORTH);
+    panel.add(getHeaderPanel(project, SetterTemplatesManager.getInstance(), CodeInsightBundle.message(""generate.setter.template"")), BorderLayout.SOUTH);
+    return panel;
+  }
+  @Override
+  public GenerationInfo[] generateMemberPrototypes(PsiClass aClass, ClassMember original) throws IncorrectOperationException {
+    ArrayList<GenerationInfo> array = new ArrayList<>();
+    GenerationInfo[] getters = myGenerateGetterHandler.generateMemberPrototypes(aClass, original);
+    GenerationInfo[] setters = myGenerateSetterHandler.generateMemberPrototypes(aClass, original);
+    if (getters.length + setters.length > 0){
+      Collections.addAll(array, getters);
+      Collections.addAll(array, setters);
+    }
+    return array.toArray(new GenerationInfo[array.size()]);
+  }
+  @Override
+  protected String getNothingFoundMessage() {
+    return ""No fields have been found to generate getters/setters for"";
+  }
+  @Override
+  protected String getNothingAcceptedMessage() {
+    return ""No fields without getter/setter were found"";
+  }
+}",class,good
+"  public GenerateGetterAndSetterHandler(){
+    super(CodeInsightBundle.message(""generate.getter.setter.title""));
+  }",method,good
+"  @Nullable
+  @Override
+  protected JComponent getHeaderPanel(Project project) {
+    final JPanel panel = new JPanel(new BorderLayout(2, 2));
+    panel.add(getHeaderPanel(project, GetterTemplatesManager.getInstance(), CodeInsightBundle.message(""generate.getter.template"")), BorderLayout.NORTH);
+    panel.add(getHeaderPanel(project, SetterTemplatesManager.getInstance(), CodeInsightBundle.message(""generate.setter.template"")), BorderLayout.SOUTH);
+    return panel;
+  }",method,good
+"  @Override
+  public GenerationInfo[] generateMemberPrototypes(PsiClass aClass, ClassMember original) throws IncorrectOperationException {
+    ArrayList<GenerationInfo> array = new ArrayList<>();
+    GenerationInfo[] getters = myGenerateGetterHandler.generateMemberPrototypes(aClass, original);
+    GenerationInfo[] setters = myGenerateSetterHandler.generateMemberPrototypes(aClass, original);
+    if (getters.length + setters.length > 0){
+      Collections.addAll(array, getters);
+      Collections.addAll(array, setters);
+    }
+    return array.toArray(new GenerationInfo[array.size()]);
+  }",method,good
+"    if (getters.length + setters.length > 0){
+      Collections.addAll(array, getters);
+      Collections.addAll(array, setters);
+    }",method,good
+"  @Override
+  protected String getNothingFoundMessage() {
+    return ""No fields have been found to generate getters/setters for"";
+  }",method,good
+"  @Override
+  protected String getNothingAcceptedMessage() {
+    return ""No fields without getter/setter were found"";
+  }",method,good
+"  public static Visibility ofElement(Element element) {
+    checkNotNull(element);
+    // packages and module don't have modifiers, but they're obviously ""public""
+    if (element.getKind().equals(PACKAGE) || element.getKind().equals(MODULE)) {
+      return PUBLIC;
+    }
+    Set<Modifier> modifiers = element.getModifiers();
+    if (modifiers.contains(Modifier.PRIVATE)) {
+      return PRIVATE;
+    } else if (modifiers.contains(Modifier.PROTECTED)) {
+      return PROTECTED;
+    } else if (modifiers.contains(Modifier.PUBLIC)) {
+      return PUBLIC;
+    } else {
+      return DEFAULT;
+    }
+  }",method,good
+"  public static Visibility effectiveVisibilityOfElement(Element element) {
+    checkNotNull(element);
+    Visibility effectiveVisibility = PUBLIC;
+    Element currentElement = element;
+    while (currentElement != null) {
+      effectiveVisibility =
+          Ordering.natural().min(effectiveVisibility, ofElement(currentElement));
+      currentElement = currentElement.getEnclosingElement();
+    }
+    return effectiveVisibility;
+  }",method,good
+"    while (currentElement != null) {
+      effectiveVisibility =
+          Ordering.natural().min(effectiveVisibility, ofElement(currentElement));
+      currentElement = currentElement.getEnclosingElement();
+    }",method,good
+"public class EventLoopContext extends ContextImpl {
+  private static final Logger log = LoggerFactory.getLogger(EventLoopContext.class);
+  public EventLoopContext(VertxInternal vertx, WorkerPool internalBlockingPool, WorkerPool workerPool, String deploymentID, JsonObject config,
+                          ClassLoader tccl) {
+    super(vertx, internalBlockingPool, workerPool, deploymentID, config, tccl);
+  }
+  public EventLoopContext(VertxInternal vertx, EventLoop eventLoop, WorkerPool internalBlockingPool, WorkerPool workerPool, String deploymentID, JsonObject config,
+                          ClassLoader tccl) {
+    super(vertx, eventLoop, internalBlockingPool, workerPool, deploymentID, config, tccl);
+  }
+  public void executeAsync(Handler<Void> task) {
+    // No metrics, we are on the event loop.
+    nettyEventLoop().execute(wrapTask(null, task, true, null));
+  }
+  @Override
+  public boolean isEventLoopContext() {
+    return true;
+  }
+  @Override
+  public boolean isMultiThreadedWorkerContext() {
+    return false;
+  }
+  @Override
+  protected void checkCorrectThread() {
+    Thread current = Thread.currentThread();
+    if (!(current instanceof VertxThread)) {
+      throw new IllegalStateException(""Expected to be on Vert.x thread, but actually on: "" + current);
+    } else if (contextThread != null && current != contextThread) {
+      throw new IllegalStateException(""Event delivered on unexpected thread "" + current + "" expected: "" + contextThread);
+    }
+  }
+}",class,changes_required
+"  public EventLoopContext(VertxInternal vertx, WorkerPool internalBlockingPool, WorkerPool workerPool, String deploymentID, JsonObject config,
+                          ClassLoader tccl) {
+    super(vertx, internalBlockingPool, workerPool, deploymentID, config, tccl);
+  }",method,changes_recommended
+"  public EventLoopContext(VertxInternal vertx, EventLoop eventLoop, WorkerPool internalBlockingPool, WorkerPool workerPool, String deploymentID, JsonObject config,
+                          ClassLoader tccl) {
+    super(vertx, eventLoop, internalBlockingPool, workerPool, deploymentID, config, tccl);
+  }",method,changes_recommended
+"  public void executeAsync(Handler<Void> task) {
+    // No metrics, we are on the event loop.
+    nettyEventLoop().execute(wrapTask(null, task, true, null));
+  }",method,good
+"  @Override
+  public boolean isEventLoopContext() {
+    return true;
+  }",method,good
+"  @Override
+  public boolean isMultiThreadedWorkerContext() {
+    return false;
+  }",method,good
+"  @Override
+  protected void checkCorrectThread() {
+    Thread current = Thread.currentThread();
+    if (!(current instanceof VertxThread)) {
+      throw new IllegalStateException(""Expected to be on Vert.x thread, but actually on: "" + current);
+    } else if (contextThread != null && current != contextThread) {
+      throw new IllegalStateException(""Event delivered on unexpected thread "" + current + "" expected: "" + contextThread);
+    }
+  }",method,good
+"public class MainActivity extends Activity {
+	@Override
+	public void onCreate(Bundle savedInstanceState) {
+		super.onCreate(savedInstanceState);
+		setContentView(R.layout.activity_main);
+		TabHost tabs = (TabHost) findViewById(R.id.tabhost);
+		tabs.setup();
+		TabHost.TabSpec tabSpecAnalog = tabs.newTabSpec(""tagAnalogClock"");
+		tabSpecAnalog.setContent(R.id.tabAnalogClock);
+		tabSpecAnalog.setIndicator(""Analog"");
+		TabHost.TabSpec tabSpecDigital = tabs.newTabSpec(""tagDigitalClock"");
+		tabSpecDigital.setContent(R.id.tabDigitalClock);
+		tabSpecDigital.setIndicator(""Digitl"");
+		tabs.addTab(tabSpecAnalog);
+		tabs.addTab(tabSpecDigital);
+	}
+}",class,good
+"public final class BuildConfig {
+    public final static boolean DEBUG = true;
+}",class,good
+"public final class R {
+    public static final class attr {
+    }
+    public static final class dimen {
+        public static final int activity_horizontal_margin=0x7f040000;
+        public static final int activity_vertical_margin=0x7f040001;
+    }
+    public static final class drawable {
+        public static final int ic_launcher=0x7f020000;
+    }
+    public static final class id {
+        public static final int action_settings=0x7f080001;
+        public static final int thumbnail=0x7f080000;
+    }
+    public static final class layout {
+        public static final int activity_main=0x7f030000;
+    }
+    public static final class menu {
+        public static final int main=0x7f070000;
+    }
+    public static final class string {
+        public static final int action_settings=0x7f050001;
+        public static final int app_name=0x7f050000;
+        public static final int hello_world=0x7f050002;
+    }
+    public static final class style {
+        public static final int AppBaseTheme=0x7f060000;
+        public static final int AppTheme=0x7f060001;
+    }
+}",class,good
+"    public static final class attr {
+    }",class,good
+"    public static final class dimen {
+        public static final int activity_horizontal_margin=0x7f040000;
+        public static final int activity_vertical_margin=0x7f040001;
+    }",class,good
+"    public static final class drawable {
+        public static final int ic_launcher=0x7f020000;
+    }",class,good
+"    public static final class id {
+        public static final int action_settings=0x7f080001;
+        public static final int thumbnail=0x7f080000;
+    }",class,good
+"    public static final class layout {
+        public static final int activity_main=0x7f030000;
+    }",class,good
+"    public static final class menu {
+        public static final int main=0x7f070000;
+    }",class,good
+"    public static final class string {
+        public static final int action_settings=0x7f050001;
+        public static final int app_name=0x7f050000;
+        public static final int hello_world=0x7f050002;
+    }",class,good
+"    public static final class style {
+        public static final int AppBaseTheme=0x7f060000;
+        public static final int AppTheme=0x7f060001;
+    }",class,good
+"	@Override
+	public void onCreate(Bundle savedInstanceState) {
+		super.onCreate(savedInstanceState);
+		setContentView(R.layout.activity_main);
+		TabHost tabs = (TabHost) findViewById(R.id.tabhost);
+		tabs.setup();
+		TabHost.TabSpec tabSpecAnalog = tabs.newTabSpec(""tagAnalogClock"");
+		tabSpecAnalog.setContent(R.id.tabAnalogClock);
+		tabSpecAnalog.setIndicator(""Analog"");
+		TabHost.TabSpec tabSpecDigital = tabs.newTabSpec(""tagDigitalClock"");
+		tabSpecDigital.setContent(R.id.tabDigitalClock);
+		tabSpecDigital.setIndicator(""Digitl"");
+		tabs.addTab(tabSpecAnalog);
+		tabs.addTab(tabSpecDigital);
+	}",method,good
+"public class LineStatusTrackerDrawing {
+  private LineStatusTrackerDrawing() {
+  }
+  public static void moveToRange(Range range, Editor editor, LineStatusTracker tracker) {
+    new MyLineStatusMarkerPopup(tracker, editor, range).scrollAndShow();
+  }
+  public static void showHint(Range range, Editor editor, LineStatusTracker tracker) {
+    new MyLineStatusMarkerPopup(tracker, editor, range).showAfterScroll();
+  }
+  public static class MyLineStatusMarkerPopup extends LineStatusMarkerPopup {
+    @NotNull private final LineStatusTracker myTracker;
+    public MyLineStatusMarkerPopup(@NotNull LineStatusTracker tracker,
+                                   @NotNull Editor editor,
+                                   @NotNull Range range) {
+      super(tracker, editor, range);
+      myTracker = tracker;
+    }
+    @NotNull
+    @Override
+    protected List<AnAction> createToolbarActions(@Nullable Point mousePosition) {
+      List<AnAction> actions = new ArrayList<>();
+      actions.add(new ShowPrevChangeMarkerAction(myTracker.getPrevRange(myRange), myTracker, myEditor));
+      actions.add(new ShowNextChangeMarkerAction(myTracker.getNextRange(myRange), myTracker, myEditor));
+      actions.add(new RollbackLineStatusRangeAction(myTracker, myRange, myEditor));
+      actions.add(new ShowLineStatusRangeDiffAction(myTracker, myRange, myEditor));
+      actions.add(new CopyLineStatusRangeAction(myTracker, myRange));
+      actions.add(new ToggleByWordDiffAction(myRange, myEditor, myTracker, mousePosition));
+      return actions;
+    }
+    @NotNull
+    @Override
+    protected FileType getFileType() {
+      return myTracker.getVirtualFile().getFileType();
+    }
+  }
+  private static class ToggleByWordDiffAction extends LineStatusMarkerPopup.ToggleByWordDiffActionBase {
+    @NotNull private final Range myRange;
+    @NotNull private final Editor myEditor;
+    @NotNull private final LineStatusTracker myTracker;
+    @Nullable private final Point myMousePosition;
+    public ToggleByWordDiffAction(@NotNull Range range,
+                                  @NotNull Editor editor,
+                                  @NotNull LineStatusTracker tracker,
+                                  @Nullable Point mousePosition) {
+      myRange = range;
+      myEditor = editor;
+      myTracker = tracker;
+      myMousePosition = mousePosition;
+    }
+    @Override
+    protected void reshowPopup() {
+      new MyLineStatusMarkerPopup(myTracker, myEditor, myRange).showHintAt(myMousePosition);
+    }
+  }
+}",class,changes_required
+"  public static class MyLineStatusMarkerPopup extends LineStatusMarkerPopup {
+    @NotNull private final LineStatusTracker myTracker;
+    public MyLineStatusMarkerPopup(@NotNull LineStatusTracker tracker,
+                                   @NotNull Editor editor,
+                                   @NotNull Range range) {
+      super(tracker, editor, range);
+      myTracker = tracker;
+    }
+    @NotNull
+    @Override
+    protected List<AnAction> createToolbarActions(@Nullable Point mousePosition) {
+      List<AnAction> actions = new ArrayList<>();
+      actions.add(new ShowPrevChangeMarkerAction(myTracker.getPrevRange(myRange), myTracker, myEditor));
+      actions.add(new ShowNextChangeMarkerAction(myTracker.getNextRange(myRange), myTracker, myEditor));
+      actions.add(new RollbackLineStatusRangeAction(myTracker, myRange, myEditor));
+      actions.add(new ShowLineStatusRangeDiffAction(myTracker, myRange, myEditor));
+      actions.add(new CopyLineStatusRangeAction(myTracker, myRange));
+      actions.add(new ToggleByWordDiffAction(myRange, myEditor, myTracker, mousePosition));
+      return actions;
+    }
+    @NotNull
+    @Override
+    protected FileType getFileType() {
+      return myTracker.getVirtualFile().getFileType();
+    }
+  }",class,changes_recommended
+"  private static class ToggleByWordDiffAction extends LineStatusMarkerPopup.ToggleByWordDiffActionBase {
+    @NotNull private final Range myRange;
+    @NotNull private final Editor myEditor;
+    @NotNull private final LineStatusTracker myTracker;
+    @Nullable private final Point myMousePosition;
+    public ToggleByWordDiffAction(@NotNull Range range,
+                                  @NotNull Editor editor,
+                                  @NotNull LineStatusTracker tracker,
+                                  @Nullable Point mousePosition) {
+      myRange = range;
+      myEditor = editor;
+      myTracker = tracker;
+      myMousePosition = mousePosition;
+    }
+    @Override
+    protected void reshowPopup() {
+      new MyLineStatusMarkerPopup(myTracker, myEditor, myRange).showHintAt(myMousePosition);
+    }
+  }",class,changes_recommended
+"  private LineStatusTrackerDrawing() {
+  }",method,good

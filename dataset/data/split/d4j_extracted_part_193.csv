@@ -1,0 +1,1300 @@
+code_snippet,type,score
+"        public int getKey()
+        {
+            return key;
+        }",method,
+"        public long getValue()
+        {
+            return value;
+        }",method,
+"        public void setValue(long value)
+        {
+            this.value = value;
+        }",method,
+"    @Override
+    public void dispose() {
+    }",method,
+"    @Override
+    public Object peek() {
+      throw new NoSuchElementException();
+    }",method,
+"    @Override
+    public boolean hasNext() {
+      return false;
+    }",method,
+"    @Override
+    public Object next() {
+      throw new NoSuchElementException();
+    }",method,
+"    @Override
+    public void remove() {
+      throw new NoSuchElementException();
+    }",method,
+"  @NotNull
+  static <T> MarkupIterator<T> mergeIterators(@NotNull final MarkupIterator<T> iterator1,
+                                              @NotNull final MarkupIterator<T> iterator2,
+                                              @NotNull final Comparator<? super T> comparator) {
+    return new MarkupIterator<T>() {
+      @Override
+      public void dispose() {
+        iterator1.dispose();
+        iterator2.dispose();
+      }
+      @Override
+      public boolean hasNext() {
+        return iterator1.hasNext() || iterator2.hasNext();
+      }
+      @Override
+      public T next() {
+        return choose().next();
+      }
+      @NotNull
+      private MarkupIterator<T> choose() {
+        T t1 = iterator1.hasNext() ? iterator1.peek() : null;
+        T t2 = iterator2.hasNext() ? iterator2.peek() : null;
+        if (t1 == null) {
+          return iterator2;
+        }
+        if (t2 == null) {
+          return iterator1;
+        }
+        int compare = comparator.compare(t1, t2);
+        return compare < 0 ? iterator1 : iterator2;
+      }
+      @Override
+      public void remove() {
+        throw new NoSuchElementException();
+      }
+      @Override
+      public T peek() {
+        return choose().peek();
+      }
+    };
+  }",method,
+"      @Override
+      public void dispose() {
+        iterator1.dispose();
+        iterator2.dispose();
+      }",method,
+"      @Override
+      public boolean hasNext() {
+        return iterator1.hasNext() || iterator2.hasNext();
+      }",method,
+"      @Override
+      public T next() {
+        return choose().next();
+      }",method,
+"      @NotNull
+      private MarkupIterator<T> choose() {
+        T t1 = iterator1.hasNext() ? iterator1.peek() : null;
+        T t2 = iterator2.hasNext() ? iterator2.peek() : null;
+        if (t1 == null) {
+          return iterator2;
+        }
+        if (t2 == null) {
+          return iterator1;
+        }
+        int compare = comparator.compare(t1, t2);
+        return compare < 0 ? iterator1 : iterator2;
+      }",method,
+"        if (t1 == null) {
+          return iterator2;
+        }",method,
+"        if (t2 == null) {
+          return iterator1;
+        }",method,
+"      @Override
+      public void remove() {
+        throw new NoSuchElementException();
+      }",method,
+"      @Override
+      public T peek() {
+        return choose().peek();
+      }",method,
+"public class Scan {
+  @Internal
+  public static Vector scan(@Current Context context,
+                            SEXP file,
+                            Vector what,
+                            int nmax,
+                            String seperator,
+                            String dec,
+                            String quote,
+                            int skip,
+                            int nlines,
+                            StringVector naStrings,
+                            boolean flush,
+                            boolean fill,
+                            boolean stripWhite,
+                            boolean quiet,
+                            boolean blankLinesSkip,
+                            boolean multiLine,
+                            String commentChar,
+                            boolean allowEscapes,
+                            String encoding) throws IOException {
+    PushbackBufferedReader lineReader;
+    if(file instanceof StringVector) {
+      String fileName = ((StringVector) file).getElementAsString(0);
+      if(fileName.length() == 0) {
+        lineReader = context.getSession().getConnectionTable().getStdin().getReader();
+      } else {
+        SEXP fileConn = Connections.file(context,fileName,""o"",true,encoding,false);
+        lineReader = Connections.getConnection(context, fileConn).getReader();
+      }
+    } else {
+      lineReader = Connections.getConnection(context, file).getReader();
+    }
+    Splitter splitter;
+    if(Strings.isNullOrEmpty(seperator)) {
+      splitter = new WhitespaceSplitter(quote);
+    } else {
+      splitter = new CharSplitter(quote, seperator);
+    }
+    Scanner scanner;
+    if(what instanceof ListVector) {
+      scanner = new ListReader((ListVector)what, splitter, dec.charAt(0));
+    } else {
+      scanner = new ScalarReader(getAtomicScanner(what, dec.charAt(0)), splitter);
+    }
+    String line;
+    int linesRead = 0;
+    int linesSkipped = 0;
+    while( (linesRead < nlines || nlines <= 0) &&
+            (line=lineReader.readLine())!=null) {
+      if (linesSkipped < skip) {
+        linesSkipped++;
+        continue;
+      }
+      linesRead ++;
+      if(blankLinesSkip && line.isEmpty()) {
+        continue;
+      }
+      if(!Strings.isNullOrEmpty(commentChar) && line.startsWith(commentChar)) {
+        continue;
+      }
+      scanner.read(line);
+    }
+    return scanner.build();
+  }
+  interface Scanner {
+    void read(String line);
+    Vector build();
+  }
+  private static class StringReader implements Scanner {
+    private final StringVector.Builder builder;
+    private StringReader() {
+      this.builder = new StringVector.Builder();
+    }
+    public void read(String value) {
+      this.builder.add(value);
+    }
+    public StringVector build() {
+      return builder.build();
+    }
+  }
+  private static class DoubleReader implements Scanner {
+    private final char decimal;
+    private final DoubleArrayVector.Builder builder;
+    private DoubleReader(char decimal) {
+      this.decimal = decimal;
+      this.builder = new DoubleArrayVector.Builder();
+    }
+    @Override
+    public void read(String line) {
+      builder.add( NumericLiterals.parseDouble(line, 0, line.length(), decimal, false) );
+    }
+    @Override
+    public Vector build() {
+      return builder.build();
+    }
+  }
+  private static class IntReader implements Scanner {
+    private final IntArrayVector.Builder builder = new IntArrayVector.Builder();
+    @Override
+    public void read(String line) {
+      builder.add( NumericLiterals.parseInt(line));
+    }
+    @Override
+    public Vector build() {
+      return builder.build();
+    }
+  }
+  private static Scanner getAtomicScanner(SEXP exp, char decimal) {
+    if(exp instanceof StringVector) {
+      return new StringReader();
+    } else if(exp instanceof DoubleVector) {
+      return new DoubleReader(decimal);
+    } else if(exp instanceof IntVector) {
+      return new IntReader();
+    } else {
+      throw new UnsupportedOperationException(
+          String.format(""column type '%s' not implemented"", exp.getTypeName()));
+    }
+  }
+  private static class ScalarReader implements Scanner {
+    private Splitter splitter;
+    private Scanner columnReader;
+    public ScalarReader(Scanner scanner, Splitter splitter) {
+      this.splitter = splitter;
+      this.columnReader = scanner;
+    }
+    @Override
+    public void read(String line) {
+      List<String> fields = splitter.split(line);
+      for(int i=0;i!=fields.size();++i) {
+        columnReader.read(fields.get(i));
+      }
+    }
+    @Override
+    public Vector build() {
+      return columnReader.build();
+    }
+  }
+  private static class ListReader implements Scanner {
+    private Splitter splitter;
+    private StringVector names;
+    private List<Scanner> columnReaders = Lists.newArrayList();
+    public ListReader(ListVector columns, Splitter splitter, char decimal) {
+      this.splitter = splitter;
+      this.names = (StringVector) columns.getAttribute(Symbols.NAMES);
+      for(SEXP column : columns) {
+        columnReaders.add(getAtomicScanner(column, decimal));
+      }
+    }
+    @Override
+    public void read(String line) {
+      List<String> fields = splitter.split(line);
+      for(int i=0;i!=fields.size();++i) {
+        columnReaders.get(i).read(fields.get(i));
+      }
+    }
+    @Override
+    public Vector build() {
+      ListVector.Builder result = new ListVector.Builder();
+      for(Scanner scanner : columnReaders) {
+        result.add(scanner.build());
+      }
+      result.setAttribute(Symbols.NAMES, names);
+      return result.build();
+    }
+  }
+  interface Splitter {
+    List<String> split(String line);
+  }
+  static class CharSplitter implements Splitter {
+    private char quote;
+    private char separator;
+    public CharSplitter(String quote, String separator) {
+      this.quote = quote.charAt(0);
+      this.separator = separator.charAt(0);
+    }
+    public List<String> split(String line) {
+      StringBuilder sb = new StringBuilder();
+      List<String> fields = Lists.newArrayList();
+      boolean quoted = false;
+      for (int i = 0; i != line.length(); ++i) {
+        char c = line.charAt(i);
+        if (c == quote) {
+          quoted = !quoted;
+        } else if (!quoted && c == separator) {
+          fields.add(sb.toString());
+          sb.setLength(0);
+        } else {
+          sb.append(c);
+        }
+      }
+      fields.add(sb.toString());
+      return fields;
+    }
+  }
+  static class WhitespaceSplitter implements Splitter {
+    private final char quote;
+    public WhitespaceSplitter(String quote) {
+      this.quote = quote.charAt(0);
+    }
+    @Override
+    public List<String> split(String line) {
+      StringBuilder sb = new StringBuilder();
+      List<String> fields = Lists.newArrayList();
+      boolean quoted = false;
+      for (int i = 0; i != line.length(); ++i) {
+        char c = line.charAt(i);
+        if (c == quote) {
+          quoted = !quoted;
+        } else if (!quoted && Character.isWhitespace(c)) {
+          if(sb.length() > 0) {
+            fields.add(sb.toString());
+            sb.setLength(0);
+          }
+        } else {
+          sb.append(c);
+        }
+      }
+      if(sb.length() > 0) {
+        fields.add(sb.toString());
+      }
+      return fields;    
+    }
+  }
+}",class,
+"  private static class StringReader implements Scanner {
+    private final StringVector.Builder builder;
+    private StringReader() {
+      this.builder = new StringVector.Builder();
+    }
+    public void read(String value) {
+      this.builder.add(value);
+    }
+    public StringVector build() {
+      return builder.build();
+    }
+  }",class,
+"  private static class DoubleReader implements Scanner {
+    private final char decimal;
+    private final DoubleArrayVector.Builder builder;
+    private DoubleReader(char decimal) {
+      this.decimal = decimal;
+      this.builder = new DoubleArrayVector.Builder();
+    }
+    @Override
+    public void read(String line) {
+      builder.add( NumericLiterals.parseDouble(line, 0, line.length(), decimal, false) );
+    }
+    @Override
+    public Vector build() {
+      return builder.build();
+    }
+  }",class,
+"  private static class IntReader implements Scanner {
+    private final IntArrayVector.Builder builder = new IntArrayVector.Builder();
+    @Override
+    public void read(String line) {
+      builder.add( NumericLiterals.parseInt(line));
+    }
+    @Override
+    public Vector build() {
+      return builder.build();
+    }
+  }",class,
+"  private static class ScalarReader implements Scanner {
+    private Splitter splitter;
+    private Scanner columnReader;
+    public ScalarReader(Scanner scanner, Splitter splitter) {
+      this.splitter = splitter;
+      this.columnReader = scanner;
+    }
+    @Override
+    public void read(String line) {
+      List<String> fields = splitter.split(line);
+      for(int i=0;i!=fields.size();++i) {
+        columnReader.read(fields.get(i));
+      }
+    }
+    @Override
+    public Vector build() {
+      return columnReader.build();
+    }
+  }",class,
+"  private static class ListReader implements Scanner {
+    private Splitter splitter;
+    private StringVector names;
+    private List<Scanner> columnReaders = Lists.newArrayList();
+    public ListReader(ListVector columns, Splitter splitter, char decimal) {
+      this.splitter = splitter;
+      this.names = (StringVector) columns.getAttribute(Symbols.NAMES);
+      for(SEXP column : columns) {
+        columnReaders.add(getAtomicScanner(column, decimal));
+      }
+    }
+    @Override
+    public void read(String line) {
+      List<String> fields = splitter.split(line);
+      for(int i=0;i!=fields.size();++i) {
+        columnReaders.get(i).read(fields.get(i));
+      }
+    }
+    @Override
+    public Vector build() {
+      ListVector.Builder result = new ListVector.Builder();
+      for(Scanner scanner : columnReaders) {
+        result.add(scanner.build());
+      }
+      result.setAttribute(Symbols.NAMES, names);
+      return result.build();
+    }
+  }",class,
+"  static class CharSplitter implements Splitter {
+    private char quote;
+    private char separator;
+    public CharSplitter(String quote, String separator) {
+      this.quote = quote.charAt(0);
+      this.separator = separator.charAt(0);
+    }
+    public List<String> split(String line) {
+      StringBuilder sb = new StringBuilder();
+      List<String> fields = Lists.newArrayList();
+      boolean quoted = false;
+      for (int i = 0; i != line.length(); ++i) {
+        char c = line.charAt(i);
+        if (c == quote) {
+          quoted = !quoted;
+        } else if (!quoted && c == separator) {
+          fields.add(sb.toString());
+          sb.setLength(0);
+        } else {
+          sb.append(c);
+        }
+      }
+      fields.add(sb.toString());
+      return fields;
+    }
+  }",class,
+"  static class WhitespaceSplitter implements Splitter {
+    private final char quote;
+    public WhitespaceSplitter(String quote) {
+      this.quote = quote.charAt(0);
+    }
+    @Override
+    public List<String> split(String line) {
+      StringBuilder sb = new StringBuilder();
+      List<String> fields = Lists.newArrayList();
+      boolean quoted = false;
+      for (int i = 0; i != line.length(); ++i) {
+        char c = line.charAt(i);
+        if (c == quote) {
+          quoted = !quoted;
+        } else if (!quoted && Character.isWhitespace(c)) {
+          if(sb.length() > 0) {
+            fields.add(sb.toString());
+            sb.setLength(0);
+          }
+        } else {
+          sb.append(c);
+        }
+      }
+      if(sb.length() > 0) {
+        fields.add(sb.toString());
+      }
+      return fields;    
+    }
+  }",class,
+"  @Internal
+  public static Vector scan(@Current Context context,
+                            SEXP file,
+                            Vector what,
+                            int nmax,
+                            String seperator,
+                            String dec,
+                            String quote,
+                            int skip,
+                            int nlines,
+                            StringVector naStrings,
+                            boolean flush,
+                            boolean fill,
+                            boolean stripWhite,
+                            boolean quiet,
+                            boolean blankLinesSkip,
+                            boolean multiLine,
+                            String commentChar,
+                            boolean allowEscapes,
+                            String encoding) throws IOException {
+    PushbackBufferedReader lineReader;
+    if(file instanceof StringVector) {
+      String fileName = ((StringVector) file).getElementAsString(0);
+      if(fileName.length() == 0) {
+        lineReader = context.getSession().getConnectionTable().getStdin().getReader();
+      } else {
+        SEXP fileConn = Connections.file(context,fileName,""o"",true,encoding,false);
+        lineReader = Connections.getConnection(context, fileConn).getReader();
+      }
+    } else {
+      lineReader = Connections.getConnection(context, file).getReader();
+    }
+    Splitter splitter;
+    if(Strings.isNullOrEmpty(seperator)) {
+      splitter = new WhitespaceSplitter(quote);
+    } else {
+      splitter = new CharSplitter(quote, seperator);
+    }
+    Scanner scanner;
+    if(what instanceof ListVector) {
+      scanner = new ListReader((ListVector)what, splitter, dec.charAt(0));
+    } else {
+      scanner = new ScalarReader(getAtomicScanner(what, dec.charAt(0)), splitter);
+    }
+    String line;
+    int linesRead = 0;
+    int linesSkipped = 0;
+    while( (linesRead < nlines || nlines <= 0) &&
+            (line=lineReader.readLine())!=null) {
+      if (linesSkipped < skip) {
+        linesSkipped++;
+        continue;
+      }
+      linesRead ++;
+      if(blankLinesSkip && line.isEmpty()) {
+        continue;
+      }
+      if(!Strings.isNullOrEmpty(commentChar) && line.startsWith(commentChar)) {
+        continue;
+      }
+      scanner.read(line);
+    }
+    return scanner.build();
+  }",method,
+"    if(file instanceof StringVector) {
+      String fileName = ((StringVector) file).getElementAsString(0);
+      if(fileName.length() == 0) {
+        lineReader = context.getSession().getConnectionTable().getStdin().getReader();
+      } else {
+        SEXP fileConn = Connections.file(context,fileName,""o"",true,encoding,false);
+        lineReader = Connections.getConnection(context, fileConn).getReader();
+      }
+    }",method,
+"    if(what instanceof ListVector) {
+      scanner = new ListReader((ListVector)what, splitter, dec.charAt(0));
+    }",method,
+"      if (linesSkipped < skip) {
+        linesSkipped++;
+        continue;
+      }",method,
+"    private StringReader() {
+      this.builder = new StringVector.Builder();
+    }",method,
+"    public void read(String value) {
+      this.builder.add(value);
+    }",method,
+"    public StringVector build() {
+      return builder.build();
+    }",method,
+"    private DoubleReader(char decimal) {
+      this.decimal = decimal;
+      this.builder = new DoubleArrayVector.Builder();
+    }",method,
+"    @Override
+    public void read(String line) {
+      builder.add( NumericLiterals.parseDouble(line, 0, line.length(), decimal, false) );
+    }",method,
+"    @Override
+    public Vector build() {
+      return builder.build();
+    }",method,
+"    @Override
+    public void read(String line) {
+      builder.add( NumericLiterals.parseInt(line));
+    }",method,
+"    @Override
+    public Vector build() {
+      return builder.build();
+    }",method,
+"  private static Scanner getAtomicScanner(SEXP exp, char decimal) {
+    if(exp instanceof StringVector) {
+      return new StringReader();
+    } else if(exp instanceof DoubleVector) {
+      return new DoubleReader(decimal);
+    } else if(exp instanceof IntVector) {
+      return new IntReader();
+    } else {
+      throw new UnsupportedOperationException(
+          String.format(""column type '%s' not implemented"", exp.getTypeName()));
+    }
+  }",method,
+"    if(exp instanceof StringVector) {
+      return new StringReader();
+    }",method,
+"    public ScalarReader(Scanner scanner, Splitter splitter) {
+      this.splitter = splitter;
+      this.columnReader = scanner;
+    }",method,
+"    @Override
+    public void read(String line) {
+      List<String> fields = splitter.split(line);
+      for(int i=0;i!=fields.size();++i) {
+        columnReader.read(fields.get(i));
+      }
+    }",method,
+"    @Override
+    public Vector build() {
+      return columnReader.build();
+    }",method,
+"    public ListReader(ListVector columns, Splitter splitter, char decimal) {
+      this.splitter = splitter;
+      this.names = (StringVector) columns.getAttribute(Symbols.NAMES);
+      for(SEXP column : columns) {
+        columnReaders.add(getAtomicScanner(column, decimal));
+      }
+    }",method,
+"      for(SEXP column : columns) {
+        columnReaders.add(getAtomicScanner(column, decimal));
+      }",method,
+"    @Override
+    public void read(String line) {
+      List<String> fields = splitter.split(line);
+      for(int i=0;i!=fields.size();++i) {
+        columnReaders.get(i).read(fields.get(i));
+      }
+    }",method,
+"    @Override
+    public Vector build() {
+      ListVector.Builder result = new ListVector.Builder();
+      for(Scanner scanner : columnReaders) {
+        result.add(scanner.build());
+      }
+      result.setAttribute(Symbols.NAMES, names);
+      return result.build();
+    }",method,
+"      for(Scanner scanner : columnReaders) {
+        result.add(scanner.build());
+      }",method,
+"    public CharSplitter(String quote, String separator) {
+      this.quote = quote.charAt(0);
+      this.separator = separator.charAt(0);
+    }",method,
+"    public List<String> split(String line) {
+      StringBuilder sb = new StringBuilder();
+      List<String> fields = Lists.newArrayList();
+      boolean quoted = false;
+      for (int i = 0; i != line.length(); ++i) {
+        char c = line.charAt(i);
+        if (c == quote) {
+          quoted = !quoted;
+        } else if (!quoted && c == separator) {
+          fields.add(sb.toString());
+          sb.setLength(0);
+        } else {
+          sb.append(c);
+        }
+      }
+      fields.add(sb.toString());
+      return fields;
+    }",method,
+"        if (c == quote) {
+          quoted = !quoted;
+        }",method,
+"    public WhitespaceSplitter(String quote) {
+      this.quote = quote.charAt(0);
+    }",method,
+"    @Override
+    public List<String> split(String line) {
+      StringBuilder sb = new StringBuilder();
+      List<String> fields = Lists.newArrayList();
+      boolean quoted = false;
+      for (int i = 0; i != line.length(); ++i) {
+        char c = line.charAt(i);
+        if (c == quote) {
+          quoted = !quoted;
+        } else if (!quoted && Character.isWhitespace(c)) {
+          if(sb.length() > 0) {
+            fields.add(sb.toString());
+            sb.setLength(0);
+          }
+        } else {
+          sb.append(c);
+        }
+      }
+      if(sb.length() > 0) {
+        fields.add(sb.toString());
+      }
+      return fields;    
+    }",method,
+"        if (c == quote) {
+          quoted = !quoted;
+        }",method,
+"public class ByteSourceTester extends SourceSinkTester<ByteSource, byte[], ByteSourceFactory> {
+  private static final ImmutableList<Method> testMethods
+      = getTestMethods(ByteSourceTester.class);
+  static TestSuite tests(String name, ByteSourceFactory factory, boolean testAsCharSource) {
+    TestSuite suite = new TestSuite(name);
+    for (Map.Entry<String, String> entry : TEST_STRINGS.entrySet()) {
+      if (testAsCharSource) {
+        suite.addTest(suiteForString(factory, entry.getValue(), name, entry.getKey()));
+      } else {
+        suite.addTest(suiteForBytes(factory,
+            entry.getValue().getBytes(Charsets.UTF_8), name, entry.getKey(), true));
+      }
+    }
+    return suite;
+  }
+  static TestSuite suiteForString(ByteSourceFactory factory, String string,
+      String name, String desc) {
+    TestSuite suite = suiteForBytes(
+        factory, string.getBytes(Charsets.UTF_8), name, desc, true);
+    CharSourceFactory charSourceFactory = SourceSinkFactories.asCharSourceFactory(factory);
+    suite.addTest(CharSourceTester.suiteForString(charSourceFactory, string,
+        name + "".asCharSource[Charset]"", desc));
+    return suite;
+  }
+  static TestSuite suiteForBytes(ByteSourceFactory factory, byte[] bytes,
+      String name, String desc, boolean slice) {
+    TestSuite suite = new TestSuite(name + "" ["" + desc + ""]"");
+    for (Method method : testMethods) {
+      suite.addTest(new ByteSourceTester(factory, bytes, name, desc, method));
+    }
+    if (slice && bytes.length > 0) {
+      // test a random slice() of the ByteSource
+      Random random = new Random();
+      byte[] expected = factory.getExpected(bytes);
+      // if expected.length == 0, off has to be 0 but length doesn't matter--result will be empty
+      int off = expected.length == 0 ? 0 : random.nextInt(expected.length);
+      int len = expected.length == 0 ? 4 : random.nextInt(expected.length - off);
+      ByteSourceFactory sliced = SourceSinkFactories.asSlicedByteSourceFactory(factory, off, len);
+      suite.addTest(suiteForBytes(sliced, bytes, name + "".slice[long, long]"",
+          desc, false));
+      // test a slice() of the ByteSource starting at a random offset with a length of
+      // Long.MAX_VALUE
+      ByteSourceFactory slicedLongMaxValue = SourceSinkFactories.asSlicedByteSourceFactory(
+          factory, off, Long.MAX_VALUE);
+      suite.addTest(suiteForBytes(slicedLongMaxValue, bytes, name + "".slice[long, Long.MAX_VALUE]"",
+          desc, false));
+      // test a slice() of the ByteSource starting at an offset greater than its size
+      ByteSourceFactory slicedOffsetPastEnd = SourceSinkFactories.asSlicedByteSourceFactory(
+          factory, expected.length + 2, expected.length + 10);
+      suite.addTest(suiteForBytes(slicedOffsetPastEnd, bytes, name + "".slice[size + 2, long]"",
+          desc, false));
+    }
+    return suite;
+  }
+  private ByteSource source;
+  public ByteSourceTester(ByteSourceFactory factory, byte[] bytes,
+      String suiteName, String caseDesc, Method method) {
+    super(factory, bytes, suiteName, caseDesc, method);
+  }
+  @Override
+  public void setUp() throws IOException {
+    source = factory.createSource(data);
+  }
+  public void testOpenStream() throws IOException {
+    InputStream in = source.openStream();
+    try {
+      byte[] readBytes = ByteStreams.toByteArray(in);
+      assertExpectedBytes(readBytes);
+    } finally {
+      in.close();
+    }
+  }
+  public void testOpenBufferedStream() throws IOException {
+    InputStream in = source.openBufferedStream();
+    try {
+      byte[] readBytes = ByteStreams.toByteArray(in);
+      assertExpectedBytes(readBytes);
+    } finally {
+      in.close();
+    }
+  }
+  public void testRead() throws IOException {
+    byte[] readBytes = source.read();
+    assertExpectedBytes(readBytes);
+  }
+  public void testCopyTo_outputStream() throws IOException {
+    ByteArrayOutputStream out = new ByteArrayOutputStream();
+    source.copyTo(out);
+    assertExpectedBytes(out.toByteArray());
+  }
+  public void testCopyTo_byteSink() throws IOException {
+    final ByteArrayOutputStream out = new ByteArrayOutputStream();
+    // HERESY! but it's ok just for this I guess
+    source.copyTo(new ByteSink() {
+      @Override
+      public OutputStream openStream() throws IOException {
+        return out;
+      }
+    });
+    assertExpectedBytes(out.toByteArray());
+  }
+  public void testIsEmpty() throws IOException {
+    assertEquals(expected.length == 0, source.isEmpty());
+  }
+  public void testSize() throws IOException {
+    assertEquals(expected.length, source.size());
+  }
+  public void testSizeIfKnown() throws IOException {
+    Optional<Long> sizeIfKnown = source.sizeIfKnown();
+    if (sizeIfKnown.isPresent()) {
+      assertEquals(expected.length, (long) sizeIfKnown.get());
+    }
+  }
+  public void testContentEquals() throws IOException {
+    assertTrue(source.contentEquals(new ByteSource() {
+      @Override
+      public InputStream openStream() throws IOException {
+        return new RandomAmountInputStream(
+            new ByteArrayInputStream(expected), new Random());
+      }
+    }));
+  }
+  public void testRead_usingByteProcessor() throws IOException {
+    byte[] readBytes = source.read(new ByteProcessor<byte[]>() {
+      final ByteArrayOutputStream out = new ByteArrayOutputStream();
+      @Override
+      public boolean processBytes(byte[] buf, int off, int len) throws IOException {
+        out.write(buf, off, len);
+        return true;
+      }
+      @Override
+      public byte[] getResult() {
+        return out.toByteArray();
+      }
+    });
+    assertExpectedBytes(readBytes);
+  }
+  public void testHash() throws IOException {
+    HashCode expectedHash = Hashing.md5().hashBytes(expected);
+    assertEquals(expectedHash, source.hash(Hashing.md5()));
+  }
+  public void testSlice_illegalArguments() {
+    try {
+      source.slice(-1, 0);
+      fail(""expected IllegalArgumentException for call to slice with offset -1: "" + source);
+    } catch (IllegalArgumentException expected) {
+    }
+    try {
+      source.slice(0, -1);
+      fail(""expected IllegalArgumentException for call to slice with length -1: "" + source);
+    } catch (IllegalArgumentException expected) {
+    }
+  }
+  // Test that you can not expand the readable data in a previously sliced ByteSource.
+  public void testSlice_constrainedRange() throws IOException {
+    long size = source.read().length;
+    if (size >= 2) {
+      ByteSource sliced = source.slice(1, size - 2);
+      assertEquals(size - 2, sliced.read().length);
+      ByteSource resliced = sliced.slice(0, size - 1);
+      assertTrue(sliced.contentEquals(resliced));
+    }
+  }
+  private void assertExpectedBytes(byte[] readBytes) {
+    assertArrayEquals(expected, readBytes);
+  }
+}",class,
+"  static TestSuite tests(String name, ByteSourceFactory factory, boolean testAsCharSource) {
+    TestSuite suite = new TestSuite(name);
+    for (Map.Entry<String, String> entry : TEST_STRINGS.entrySet()) {
+      if (testAsCharSource) {
+        suite.addTest(suiteForString(factory, entry.getValue(), name, entry.getKey()));
+      } else {
+        suite.addTest(suiteForBytes(factory,
+            entry.getValue().getBytes(Charsets.UTF_8), name, entry.getKey(), true));
+      }
+    }
+    return suite;
+  }",method,
+"      if (testAsCharSource) {
+        suite.addTest(suiteForString(factory, entry.getValue(), name, entry.getKey()));
+      }",method,
+"  static TestSuite suiteForString(ByteSourceFactory factory, String string,
+      String name, String desc) {
+    TestSuite suite = suiteForBytes(
+        factory, string.getBytes(Charsets.UTF_8), name, desc, true);
+    CharSourceFactory charSourceFactory = SourceSinkFactories.asCharSourceFactory(factory);
+    suite.addTest(CharSourceTester.suiteForString(charSourceFactory, string,
+        name + "".asCharSource[Charset]"", desc));
+    return suite;
+  }",method,
+"  static TestSuite suiteForBytes(ByteSourceFactory factory, byte[] bytes,
+      String name, String desc, boolean slice) {
+    TestSuite suite = new TestSuite(name + "" ["" + desc + ""]"");
+    for (Method method : testMethods) {
+      suite.addTest(new ByteSourceTester(factory, bytes, name, desc, method));
+    }
+    if (slice && bytes.length > 0) {
+      // test a random slice() of the ByteSource
+      Random random = new Random();
+      byte[] expected = factory.getExpected(bytes);
+      // if expected.length == 0, off has to be 0 but length doesn't matter--result will be empty
+      int off = expected.length == 0 ? 0 : random.nextInt(expected.length);
+      int len = expected.length == 0 ? 4 : random.nextInt(expected.length - off);
+      ByteSourceFactory sliced = SourceSinkFactories.asSlicedByteSourceFactory(factory, off, len);
+      suite.addTest(suiteForBytes(sliced, bytes, name + "".slice[long, long]"",
+          desc, false));
+      // test a slice() of the ByteSource starting at a random offset with a length of
+      // Long.MAX_VALUE
+      ByteSourceFactory slicedLongMaxValue = SourceSinkFactories.asSlicedByteSourceFactory(
+          factory, off, Long.MAX_VALUE);
+      suite.addTest(suiteForBytes(slicedLongMaxValue, bytes, name + "".slice[long, Long.MAX_VALUE]"",
+          desc, false));
+      // test a slice() of the ByteSource starting at an offset greater than its size
+      ByteSourceFactory slicedOffsetPastEnd = SourceSinkFactories.asSlicedByteSourceFactory(
+          factory, expected.length + 2, expected.length + 10);
+      suite.addTest(suiteForBytes(slicedOffsetPastEnd, bytes, name + "".slice[size + 2, long]"",
+          desc, false));
+    }
+    return suite;
+  }",method,
+"    for (Method method : testMethods) {
+      suite.addTest(new ByteSourceTester(factory, bytes, name, desc, method));
+    }",method,
+"    if (slice && bytes.length > 0) {
+      // test a random slice() of the ByteSource
+      Random random = new Random();
+      byte[] expected = factory.getExpected(bytes);
+      // if expected.length == 0, off has to be 0 but length doesn't matter--result will be empty
+      int off = expected.length == 0 ? 0 : random.nextInt(expected.length);
+      int len = expected.length == 0 ? 4 : random.nextInt(expected.length - off);
+      ByteSourceFactory sliced = SourceSinkFactories.asSlicedByteSourceFactory(factory, off, len);
+      suite.addTest(suiteForBytes(sliced, bytes, name + "".slice[long, long]"",
+          desc, false));
+      // test a slice() of the ByteSource starting at a random offset with a length of
+      // Long.MAX_VALUE
+      ByteSourceFactory slicedLongMaxValue = SourceSinkFactories.asSlicedByteSourceFactory(
+          factory, off, Long.MAX_VALUE);
+      suite.addTest(suiteForBytes(slicedLongMaxValue, bytes, name + "".slice[long, Long.MAX_VALUE]"",
+          desc, false));
+      // test a slice() of the ByteSource starting at an offset greater than its size
+      ByteSourceFactory slicedOffsetPastEnd = SourceSinkFactories.asSlicedByteSourceFactory(
+          factory, expected.length + 2, expected.length + 10);
+      suite.addTest(suiteForBytes(slicedOffsetPastEnd, bytes, name + "".slice[size + 2, long]"",
+          desc, false));
+    }",method,
+"  public ByteSourceTester(ByteSourceFactory factory, byte[] bytes,
+      String suiteName, String caseDesc, Method method) {
+    super(factory, bytes, suiteName, caseDesc, method);
+  }",method,
+"  @Override
+  public void setUp() throws IOException {
+    source = factory.createSource(data);
+  }",method,
+"  public void testOpenStream() throws IOException {
+    InputStream in = source.openStream();
+    try {
+      byte[] readBytes = ByteStreams.toByteArray(in);
+      assertExpectedBytes(readBytes);
+    } finally {
+      in.close();
+    }
+  }",method,
+"  public void testOpenBufferedStream() throws IOException {
+    InputStream in = source.openBufferedStream();
+    try {
+      byte[] readBytes = ByteStreams.toByteArray(in);
+      assertExpectedBytes(readBytes);
+    } finally {
+      in.close();
+    }
+  }",method,
+"  public void testRead() throws IOException {
+    byte[] readBytes = source.read();
+    assertExpectedBytes(readBytes);
+  }",method,
+"  public void testCopyTo_outputStream() throws IOException {
+    ByteArrayOutputStream out = new ByteArrayOutputStream();
+    source.copyTo(out);
+    assertExpectedBytes(out.toByteArray());
+  }",method,
+"  public void testCopyTo_byteSink() throws IOException {
+    final ByteArrayOutputStream out = new ByteArrayOutputStream();
+    // HERESY! but it's ok just for this I guess
+    source.copyTo(new ByteSink() {
+      @Override
+      public OutputStream openStream() throws IOException {
+        return out;
+      }
+    });
+    assertExpectedBytes(out.toByteArray());
+  }",method,
+"    source.copyTo(new ByteSink() {
+      @Override
+      public OutputStream openStream() throws IOException {
+        return out;
+      }
+    }",method,
+"      @Override
+      public OutputStream openStream() throws IOException {
+        return out;
+      }",method,
+"  public void testIsEmpty() throws IOException {
+    assertEquals(expected.length == 0, source.isEmpty());
+  }",method,
+"  public void testSize() throws IOException {
+    assertEquals(expected.length, source.size());
+  }",method,
+"  public void testSizeIfKnown() throws IOException {
+    Optional<Long> sizeIfKnown = source.sizeIfKnown();
+    if (sizeIfKnown.isPresent()) {
+      assertEquals(expected.length, (long) sizeIfKnown.get());
+    }
+  }",method,
+"  public void testContentEquals() throws IOException {
+    assertTrue(source.contentEquals(new ByteSource() {
+      @Override
+      public InputStream openStream() throws IOException {
+        return new RandomAmountInputStream(
+            new ByteArrayInputStream(expected), new Random());
+      }
+    }));
+  }",method,
+"    assertTrue(source.contentEquals(new ByteSource() {
+      @Override
+      public InputStream openStream() throws IOException {
+        return new RandomAmountInputStream(
+            new ByteArrayInputStream(expected), new Random());
+      }
+    }",method,
+"      @Override
+      public InputStream openStream() throws IOException {
+        return new RandomAmountInputStream(
+            new ByteArrayInputStream(expected), new Random());
+      }",method,
+"  public void testRead_usingByteProcessor() throws IOException {
+    byte[] readBytes = source.read(new ByteProcessor<byte[]>() {
+      final ByteArrayOutputStream out = new ByteArrayOutputStream();
+      @Override
+      public boolean processBytes(byte[] buf, int off, int len) throws IOException {
+        out.write(buf, off, len);
+        return true;
+      }
+      @Override
+      public byte[] getResult() {
+        return out.toByteArray();
+      }
+    });
+    assertExpectedBytes(readBytes);
+  }",method,
+"      @Override
+      public boolean processBytes(byte[] buf, int off, int len) throws IOException {
+        out.write(buf, off, len);
+        return true;
+      }",method,
+"      @Override
+      public byte[] getResult() {
+        return out.toByteArray();
+      }",method,
+"  public void testHash() throws IOException {
+    HashCode expectedHash = Hashing.md5().hashBytes(expected);
+    assertEquals(expectedHash, source.hash(Hashing.md5()));
+  }",method,
+"  public void testSlice_illegalArguments() {
+    try {
+      source.slice(-1, 0);
+      fail(""expected IllegalArgumentException for call to slice with offset -1: "" + source);
+    } catch (IllegalArgumentException expected) {
+    }
+    try {
+      source.slice(0, -1);
+      fail(""expected IllegalArgumentException for call to slice with length -1: "" + source);
+    } catch (IllegalArgumentException expected) {
+    }
+  }",method,
+"  public void testSlice_constrainedRange() throws IOException {
+    long size = source.read().length;
+    if (size >= 2) {
+      ByteSource sliced = source.slice(1, size - 2);
+      assertEquals(size - 2, sliced.read().length);
+      ByteSource resliced = sliced.slice(0, size - 1);
+      assertTrue(sliced.contentEquals(resliced));
+    }
+  }",method,
+"    if (size >= 2) {
+      ByteSource sliced = source.slice(1, size - 2);
+      assertEquals(size - 2, sliced.read().length);
+      ByteSource resliced = sliced.slice(0, size - 1);
+      assertTrue(sliced.contentEquals(resliced));
+    }",method,
+"  private void assertExpectedBytes(byte[] readBytes) {
+    assertArrayEquals(expected, readBytes);
+  }",method,
+"public class SigningCertificateInfo {
+    private byte[] ber = null;
+    private ESSCertId[] certId = null;
+    public SigningCertificateInfo(byte[] ber) throws IOException {
+        parse(ber);
+    }
+    public String toString() {
+        StringBuffer buffer = new StringBuffer();
+        buffer.append(""[\n"");
+        for (int i = 0; i < certId.length; i++) {
+            buffer.append(certId[i].toString());
+        }
+        // format policies as a string
+        buffer.append(""\n]"");
+        return buffer.toString();
+    }
+    public void parse(byte[] bytes) throws IOException {
+        // Parse signingCertificate
+        DerValue derValue = new DerValue(bytes);
+        if (derValue.tag != DerValue.tag_Sequence) {
+            throw new IOException(""Bad encoding for signingCertificate"");
+        }
+        // Parse certs
+        DerValue[] certs = derValue.data.getSequence(1);
+        certId = new ESSCertId[certs.length];
+        for (int i = 0; i < certs.length; i++) {
+            certId[i] = new ESSCertId(certs[i]);
+        }
+        // Parse policies, if present
+        if (derValue.data.available() > 0) {
+            DerValue[] policies = derValue.data.getSequence(1);
+            for (int i = 0; i < policies.length; i++) {
+                // parse PolicyInformation
+            }
+        }
+    }
+}",class,
+"}
+class ESSCertId {
+    private static volatile HexDumpEncoder hexDumper;
+    private byte[] certHash;
+    private GeneralNames issuer;
+    private SerialNumber serialNumber;
+    ESSCertId(DerValue certId) throws IOException {
+        // Parse certHash
+        certHash = certId.data.getDerValue().toByteArray();
+        // Parse issuerSerial, if present
+        if (certId.data.available() > 0) {
+            DerValue issuerSerial = certId.data.getDerValue();
+            // Parse issuer
+            issuer = new GeneralNames(issuerSerial.data.getDerValue());
+            // Parse serialNumber
+            serialNumber = new SerialNumber(issuerSerial.data.getDerValue());
+        }
+    }
+    public String toString() {
+        StringBuffer buffer = new StringBuffer();
+        buffer.append(""[\n\tCertificate hash (SHA-1):\n"");
+        if (hexDumper == null) {
+            hexDumper = new HexDumpEncoder();
+        }
+        buffer.append(hexDumper.encode(certHash));
+        if (issuer != null && serialNumber != null) {
+            buffer.append(""\n\tIssuer: "" + issuer + ""\n"");
+            buffer.append(""\t"" + serialNumber);
+        }
+        buffer.append(""\n]"");
+        return buffer.toString();
+    }
+}",class,
+"    public SigningCertificateInfo(byte[] ber) throws IOException {
+        parse(ber);
+    }",method,
+"    public String toString() {
+        StringBuffer buffer = new StringBuffer();
+        buffer.append(""[\n"");
+        for (int i = 0; i < certId.length; i++) {
+            buffer.append(certId[i].toString());
+        }
+        // format policies as a string
+        buffer.append(""\n]"");
+        return buffer.toString();
+    }",method,
+"        for (int i = 0; i < certId.length; i++) {
+            buffer.append(certId[i].toString());
+        }",method,
+"    public void parse(byte[] bytes) throws IOException {
+        // Parse signingCertificate
+        DerValue derValue = new DerValue(bytes);
+        if (derValue.tag != DerValue.tag_Sequence) {
+            throw new IOException(""Bad encoding for signingCertificate"");
+        }
+        // Parse certs
+        DerValue[] certs = derValue.data.getSequence(1);
+        certId = new ESSCertId[certs.length];
+        for (int i = 0; i < certs.length; i++) {
+            certId[i] = new ESSCertId(certs[i]);
+        }
+        // Parse policies, if present
+        if (derValue.data.available() > 0) {
+            DerValue[] policies = derValue.data.getSequence(1);
+            for (int i = 0; i < policies.length; i++) {
+                // parse PolicyInformation
+            }
+        }
+    }",method,
+"        if (derValue.tag != DerValue.tag_Sequence) {
+            throw new IOException(""Bad encoding for signingCertificate"");
+        }",method,
+"        for (int i = 0; i < certs.length; i++) {
+            certId[i] = new ESSCertId(certs[i]);
+        }",method,
+"            for (int i = 0; i < policies.length; i++) {
+                // parse PolicyInformation
+            }",method,
+"    ESSCertId(DerValue certId) throws IOException {
+        // Parse certHash
+        certHash = certId.data.getDerValue().toByteArray();
+        // Parse issuerSerial, if present
+        if (certId.data.available() > 0) {
+            DerValue issuerSerial = certId.data.getDerValue();
+            // Parse issuer
+            issuer = new GeneralNames(issuerSerial.data.getDerValue());
+            // Parse serialNumber
+            serialNumber = new SerialNumber(issuerSerial.data.getDerValue());
+        }
+    }",method,
+"    public String toString() {
+        StringBuffer buffer = new StringBuffer();
+        buffer.append(""[\n\tCertificate hash (SHA-1):\n"");
+        if (hexDumper == null) {
+            hexDumper = new HexDumpEncoder();
+        }
+        buffer.append(hexDumper.encode(certHash));
+        if (issuer != null && serialNumber != null) {
+            buffer.append(""\n\tIssuer: "" + issuer + ""\n"");
+            buffer.append(""\t"" + serialNumber);
+        }
+        buffer.append(""\n]"");
+        return buffer.toString();
+    }",method,
+"        if (hexDumper == null) {
+            hexDumper = new HexDumpEncoder();
+        }",method,
+"        if (issuer != null && serialNumber != null) {
+            buffer.append(""\n\tIssuer: "" + issuer + ""\n"");
+            buffer.append(""\t"" + serialNumber);
+        }",method,
+"public abstract class AbstractInvoker extends Pointer {
+    static final String CLASS_NAME = ""AbstractInvoker"";
+    protected final Arity arity;
+    public static RubyClass createAbstractInvokerClass(Ruby runtime, RubyModule module) {
+        RubyClass result = module.defineClassUnder(CLASS_NAME,
+                module.getClass(""Pointer""),
+                ObjectAllocator.NOT_ALLOCATABLE_ALLOCATOR);
+        result.defineAnnotatedMethods(AbstractInvoker.class);
+        result.defineAnnotatedConstants(AbstractInvoker.class);
+        return result;
+    }
+    protected AbstractInvoker(Ruby runtime, RubyClass klass, int arity, MemoryIO io) {
+        super(runtime, klass, io, 0);
+        this.arity = Arity.fixed(arity);
+    }
+    @JRubyMethod(name=""attach"")
+    public IRubyObject attach(ThreadContext context, IRubyObject obj, IRubyObject methodName) {
+        DynamicMethod m = createDynamicMethod(obj.getSingletonClass());
+        m.setName(methodName.asJavaString());
+        obj.getSingletonClass().addMethod(methodName.asJavaString(), m);
+        if (obj instanceof RubyModule) {
+            ((RubyModule) obj).addMethod(methodName.asJavaString(), m);
+        }
+        getRuntime().getFFI().registerAttachedMethod(m, this);
+        return this;
+    }
+    protected abstract DynamicMethod createDynamicMethod(RubyModule module);
+    public final Arity getArity() {
+        return arity;
+    }
+}",class,
+"    public static RubyClass createAbstractInvokerClass(Ruby runtime, RubyModule module) {
+        RubyClass result = module.defineClassUnder(CLASS_NAME,
+                module.getClass(""Pointer""),
+                ObjectAllocator.NOT_ALLOCATABLE_ALLOCATOR);
+        result.defineAnnotatedMethods(AbstractInvoker.class);
+        result.defineAnnotatedConstants(AbstractInvoker.class);
+        return result;
+    }",method,
+"    protected AbstractInvoker(Ruby runtime, RubyClass klass, int arity, MemoryIO io) {
+        super(runtime, klass, io, 0);
+        this.arity = Arity.fixed(arity);
+    }",method,
+"    @JRubyMethod(name=""attach"")
+    public IRubyObject attach(ThreadContext context, IRubyObject obj, IRubyObject methodName) {
+        DynamicMethod m = createDynamicMethod(obj.getSingletonClass());
+        m.setName(methodName.asJavaString());
+        obj.getSingletonClass().addMethod(methodName.asJavaString(), m);
+        if (obj instanceof RubyModule) {
+            ((RubyModule) obj).addMethod(methodName.asJavaString(), m);
+        }
+        getRuntime().getFFI().registerAttachedMethod(m, this);
+        return this;
+    }",method,
+"        if (obj instanceof RubyModule) {
+            ((RubyModule) obj).addMethod(methodName.asJavaString(), m);
+        }",method,

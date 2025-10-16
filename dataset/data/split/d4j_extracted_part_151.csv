@@ -1,0 +1,1447 @@
+code_snippet,type,score
+"  @Override
+  @NotNull
+  public String getClassName() {
+    return ""Closure"";
+  }",method,
+"  @Override
+  public int getParameterCount() {
+    PsiClass resolved = resolve();
+    return resolved != null && resolved.getTypeParameters().length == 1 ? 1 : 0;
+  }",method,
+"  @Override
+  @NotNull
+  public PsiType[] getParameters() {
+    if (myTypeArgs == null) {
+      myTypeArgs = inferParameters();
+    }
+    return myTypeArgs;
+  }",method,
+"    if (myTypeArgs == null) {
+      myTypeArgs = inferParameters();
+    }",method,
+"  @NotNull
+  private PsiType[] inferParameters() {
+    final PsiClass psiClass = resolve();
+    if (psiClass != null && psiClass.getTypeParameters().length == 1) {
+      final PsiType type = GrClosureSignatureUtil.getReturnType(mySignature);
+      if (type == PsiType.NULL || type == null) {
+        return new PsiType[]{null};
+      }
+      else {
+        return new PsiType[]{TypesUtil.boxPrimitiveType(type, getPsiManager(), getResolveScope(), true)};
+      }
+    }
+    else {
+      return PsiType.EMPTY_ARRAY;
+    }
+  }",method,
+"      if (type == PsiType.NULL || type == null) {
+        return new PsiType[]{null};
+      }",method,
+"  @NotNull
+  @Override
+  protected String getJavaClassName() {
+    return GroovyCommonClassNames.GROOVY_LANG_CLOSURE;
+  }",method,
+"  @Override
+  @NotNull
+  public PsiClassType rawType() {
+    if (myTypeArgs != null && myTypeArgs.length == 0) {
+      return this;
+    }
+    return new GrClosureType(getLanguageLevel(), getResolveScope(), myFacade, mySignature, false);
+  }",method,
+"    if (myTypeArgs != null && myTypeArgs.length == 0) {
+      return this;
+    }",method,
+"  @Override
+  public boolean isValid() {
+    return mySignature.isValid();
+  }",method,
+"  public boolean equals(Object obj) {
+    if (obj instanceof GrClosureType) {
+      return Comparing.equal(mySignature, ((GrClosureType)obj).mySignature);
+    }
+    return super.equals(obj);
+  }",method,
+"    if (obj instanceof GrClosureType) {
+      return Comparing.equal(mySignature, ((GrClosureType)obj).mySignature);
+    }",method,
+"  @Override
+  @NotNull
+  public PsiClassType setLanguageLevel(@NotNull final LanguageLevel languageLevel) {
+    return new GrClosureType(languageLevel, myScope, myFacade, mySignature, myTypeArgs);
+  }",method,
+"  public static GrClosureType create(GroovyResolveResult[] results, GroovyPsiElement context) {
+    List<GrClosureSignature> signatures = new ArrayList<>();
+    for (GroovyResolveResult result : results) {
+      if (result.getElement() instanceof PsiMethod) {
+        signatures.add(GrClosureSignatureUtil.createSignature((PsiMethod)result.getElement(), result.getSubstitutor()));
+      }
+    }
+    final GlobalSearchScope resolveScope = context.getResolveScope();
+    final JavaPsiFacade facade = JavaPsiFacade.getInstance(context.getProject());
+    if (signatures.size() == 1) {
+      return create(signatures.get(0), resolveScope, facade, LanguageLevel.JDK_1_5, true);
+    }
+    else {
+      return create(GrClosureSignatureUtil.createMultiSignature(signatures.toArray(new GrClosureSignature[signatures.size()])),
+                    resolveScope, facade, LanguageLevel.JDK_1_5, true);
+    }
+  }",method,
+"    for (GroovyResolveResult result : results) {
+      if (result.getElement() instanceof PsiMethod) {
+        signatures.add(GrClosureSignatureUtil.createSignature((PsiMethod)result.getElement(), result.getSubstitutor()));
+      }
+    }",method,
+"  public static GrClosureType create(@NotNull GrClosableBlock closure, boolean shouldInferTypeParameters) {
+    final GrClosureSignature signature = GrClosureSignatureUtil.createSignature(closure);
+    final GlobalSearchScope resolveScope = closure.getResolveScope();
+    final JavaPsiFacade facade = JavaPsiFacade.getInstance(closure.getProject());
+    return create(signature, resolveScope, facade,LanguageLevel.JDK_1_5, shouldInferTypeParameters);
+  }",method,
+"  @Deprecated
+  public static GrClosureType create(@NotNull PsiMethod method, @NotNull PsiSubstitutor substitutor) {
+    final GrClosureSignature signature = GrClosureSignatureUtil.createSignature(method, substitutor);
+    final GlobalSearchScope scope = GlobalSearchScope.allScope(method.getProject());
+    final JavaPsiFacade facade = JavaPsiFacade.getInstance(method.getProject());
+    return create(signature, scope, facade, LanguageLevel.JDK_1_5, true);
+  }",method,
+"  @Deprecated
+  public static GrClosureType create(@NotNull PsiParameter[] parameters,
+                                     @Nullable PsiType returnType,
+                                     JavaPsiFacade facade,
+                                     GlobalSearchScope scope,
+                                     LanguageLevel languageLevel) {
+    return create(GrClosureSignatureUtil.createSignature(parameters, returnType), scope, facade, languageLevel, true);
+  }",method,
+"  public static GrClosureType create(@NotNull GrSignature signature,
+                                     GlobalSearchScope scope,
+                                     JavaPsiFacade facade,
+                                     LanguageLevel languageLevel,
+                                     boolean shouldInferTypeParameters) {
+    return new GrClosureType(languageLevel, scope, facade, signature, shouldInferTypeParameters);
+  }",method,
+"  @Nullable
+  public PsiType curry(@NotNull PsiType[] args, int position, @NotNull GroovyPsiElement context) {
+    final GrSignature newSignature = mySignature.curry(args, position, context);
+    if (newSignature == null) return null;
+    return new GrClosureType(myLanguageLevel, myScope, myFacade, newSignature, myTypeArgs);
+  }",method,
+"  @NotNull
+  public GrSignature getSignature() {
+    return mySignature;
+  }",method,
+"  @Override
+  public String toString() {
+    return ""PsiType: Closure<*>"";
+  }",method,
+"public class PeskyPalindromes {
+    public static void main(String args[]) {
+        int x;
+        Scanner sc = new Scanner(System.in);
+        while(sc.hasNext()) {
+            String currentString = sc.next();
+            List<String> allSubstrings = generateSubstrings(currentString);
+            int uniquePalindromes = findUniquePalindromes(allSubstrings);
+            System.out.println(""The string "" + ""'"" + currentString + ""'"" + "" contains "" + uniquePalindromes + "" palindromes."");
+        }
+    }
+    public static List<String> generateSubstrings(String s) {
+        List<String> allSubstrings = new ArrayList<String>();
+        for(int i = 0; i < s.length(); i++) {
+            for(int j = i + 1; j <= s.length(); j++) {
+                String currentSubstring = s.substring(i, j);
+                if(!allSubstrings.contains(currentSubstring)) {
+                    allSubstrings.add(currentSubstring);
+                }
+            }
+        }
+        return allSubstrings;
+    }
+    public static int findUniquePalindromes(List<String> allSubstrings) {
+        int totalUniquePalindromes = 0;
+        for(String s : allSubstrings) {
+            int left = 0;
+            int right = s.length() - 1;
+            boolean isPalindrome = true;
+            while(left < right) {
+                if(s.charAt(left) != s.charAt(right)) {
+                    isPalindrome = false;
+                    break;
+                }
+                left++;
+                right--;
+            }
+            if(isPalindrome) {
+                totalUniquePalindromes++;
+            }
+        }
+        return totalUniquePalindromes;
+    }
+}",class,
+"    public static void main(String args[]) {
+        int x;
+        Scanner sc = new Scanner(System.in);
+        while(sc.hasNext()) {
+            String currentString = sc.next();
+            List<String> allSubstrings = generateSubstrings(currentString);
+            int uniquePalindromes = findUniquePalindromes(allSubstrings);
+            System.out.println(""The string "" + ""'"" + currentString + ""'"" + "" contains "" + uniquePalindromes + "" palindromes."");
+        }
+    }",method,
+"    public static List<String> generateSubstrings(String s) {
+        List<String> allSubstrings = new ArrayList<String>();
+        for(int i = 0; i < s.length(); i++) {
+            for(int j = i + 1; j <= s.length(); j++) {
+                String currentSubstring = s.substring(i, j);
+                if(!allSubstrings.contains(currentSubstring)) {
+                    allSubstrings.add(currentSubstring);
+                }
+            }
+        }
+        return allSubstrings;
+    }",method,
+"    public static int findUniquePalindromes(List<String> allSubstrings) {
+        int totalUniquePalindromes = 0;
+        for(String s : allSubstrings) {
+            int left = 0;
+            int right = s.length() - 1;
+            boolean isPalindrome = true;
+            while(left < right) {
+                if(s.charAt(left) != s.charAt(right)) {
+                    isPalindrome = false;
+                    break;
+                }
+                left++;
+                right--;
+            }
+            if(isPalindrome) {
+                totalUniquePalindromes++;
+            }
+        }
+        return totalUniquePalindromes;
+    }",method,
+"        for(String s : allSubstrings) {
+            int left = 0;
+            int right = s.length() - 1;
+            boolean isPalindrome = true;
+            while(left < right) {
+                if(s.charAt(left) != s.charAt(right)) {
+                    isPalindrome = false;
+                    break;
+                }
+                left++;
+                right--;
+            }
+            if(isPalindrome) {
+                totalUniquePalindromes++;
+            }
+        }",method,
+"            while(left < right) {
+                if(s.charAt(left) != s.charAt(right)) {
+                    isPalindrome = false;
+                    break;
+                }
+                left++;
+                right--;
+            }",method,
+"            if(isPalindrome) {
+                totalUniquePalindromes++;
+            }",method,
+"public class Cursor {
+    int col; // count from left of screen, 0 = left most
+    int row; // count from bottom of screen, 0 = bottom most, 1 == 2nd from bottom
+    public void copyFrom(Cursor position) {
+        if (position == this) {
+            return;
+        }
+        this.col = position.col;
+        this.row = position.row;
+    }
+    public void bottomLeft() {
+        col = 0;
+        row = 0;
+    }
+    @Override
+    public boolean equals(Object obj) {
+        if (obj == null) {
+            return false;
+        }
+        if (obj == this) {
+            return true;
+        }
+        if (obj.getClass() != getClass()) {
+            return false;
+        }
+        Cursor rhs = (Cursor) obj;
+        return col == rhs.col && row == rhs.row;
+    }
+    @Override
+    public int hashCode() {
+        return Objects.hashCode(col, row);
+    }
+    @Override
+    public String toString() {
+        return Objects.toStringHelper(this.getClass())
+            .add(""row"", row)
+            .add(""col"", col)
+            .toString();
+    }
+    public static Cursor at(int row, int col) {
+        Cursor result = new Cursor();
+        result.row = row;
+        result.col = col;
+        return result;
+    }
+    public static Cursor newBottomLeft() {
+        Cursor result = new Cursor();
+        result.bottomLeft();
+        return result;
+    }
+    public static Cursor from(Cursor position) {
+        Cursor result = new Cursor();
+        result.copyFrom(position);
+        return result;
+    }
+}",class,
+"    public void copyFrom(Cursor position) {
+        if (position == this) {
+            return;
+        }
+        this.col = position.col;
+        this.row = position.row;
+    }",method,
+"        if (position == this) {
+            return;
+        }",method,
+"    public void bottomLeft() {
+        col = 0;
+        row = 0;
+    }",method,
+"    @Override
+    public boolean equals(Object obj) {
+        if (obj == null) {
+            return false;
+        }
+        if (obj == this) {
+            return true;
+        }
+        if (obj.getClass() != getClass()) {
+            return false;
+        }
+        Cursor rhs = (Cursor) obj;
+        return col == rhs.col && row == rhs.row;
+    }",method,
+"        if (obj == null) {
+            return false;
+        }",method,
+"        if (obj == this) {
+            return true;
+        }",method,
+"    @Override
+    public int hashCode() {
+        return Objects.hashCode(col, row);
+    }",method,
+"    @Override
+    public String toString() {
+        return Objects.toStringHelper(this.getClass())
+            .add(""row"", row)
+            .add(""col"", col)
+            .toString();
+    }",method,
+"    public static Cursor at(int row, int col) {
+        Cursor result = new Cursor();
+        result.row = row;
+        result.col = col;
+        return result;
+    }",method,
+"    public static Cursor newBottomLeft() {
+        Cursor result = new Cursor();
+        result.bottomLeft();
+        return result;
+    }",method,
+"    public static Cursor from(Cursor position) {
+        Cursor result = new Cursor();
+        result.copyFrom(position);
+        return result;
+    }",method,
+"public class AsmAnalyzerTest {
+    private MockLog mLog;
+    private ArrayList<String> mOsJarPath;
+    private AsmAnalyzer mAa;
+    @Before
+    public void setUp() throws Exception {
+        mLog = new MockLog();
+        URL url = this.getClass().getClassLoader().getResource(""data/mock_android.jar"");
+        mOsJarPath = new ArrayList<>();
+        //noinspection ConstantConditions
+        mOsJarPath.add(url.getFile());
+        Set<String> excludeClasses = Collections.singleton(""java.lang.JavaClass"");
+        String[] includeFiles = new String[]{""mock_android/data/data*""};
+        mAa = new AsmAnalyzer(mLog, mOsJarPath, null , null ,
+                null , excludeClasses, includeFiles);
+    }
+    @Test
+    public void testParseZip() throws IOException {
+        Map<String, ClassReader> map = new TreeMap<>();
+        Map<String, InputStream> filesFound = new TreeMap<>();
+        mAa.parseZip(mOsJarPath, map, filesFound);
+        assertArrayEquals(new String[] {
+                ""java.lang.JavaClass"",
+                ""mock_android.dummy.InnerTest"",
+                ""mock_android.dummy.InnerTest$DerivingClass"",
+                ""mock_android.dummy.InnerTest$MyGenerics1"",
+                ""mock_android.dummy.InnerTest$MyIntEnum"",
+                ""mock_android.dummy.InnerTest$MyStaticInnerClass"",
+                ""mock_android.dummy.InnerTest$NotStaticInner1"",
+                ""mock_android.dummy.InnerTest$NotStaticInner2"",
+                ""mock_android.util.EmptyArray"",
+                ""mock_android.view.View"",
+                ""mock_android.view.ViewGroup"",
+                ""mock_android.view.ViewGroup$LayoutParams"",
+                ""mock_android.view.ViewGroup$MarginLayoutParams"",
+                ""mock_android.widget.LinearLayout"",
+                ""mock_android.widget.LinearLayout$LayoutParams"",
+                ""mock_android.widget.TableLayout"",
+                ""mock_android.widget.TableLayout$LayoutParams""
+            },
+            map.keySet().toArray());
+        assertArrayEquals(new String[] {""mock_android/data/dataFile""},
+            filesFound.keySet().toArray());
+    }
+    @Test
+    public void testFindClass() throws IOException, LogAbortException {
+        Map<String, ClassReader> zipClasses = new TreeMap<>();
+        Map<String, InputStream> filesFound = new TreeMap<>();
+        mAa.parseZip(mOsJarPath, zipClasses, filesFound);
+        TreeMap<String, ClassReader> found = new TreeMap<>();
+        ClassReader cr = mAa.findClass(""mock_android.view.ViewGroup$LayoutParams"",
+                zipClasses, found);
+        assertNotNull(cr);
+        assertEquals(""mock_android/view/ViewGroup$LayoutParams"", cr.getClassName());
+        assertArrayEquals(new String[] { ""mock_android.view.ViewGroup$LayoutParams"" },
+                found.keySet().toArray());
+        assertArrayEquals(new ClassReader[] { cr }, found.values().toArray());
+    }
+    @Test
+    public void testFindGlobs() throws IOException, LogAbortException {
+        Map<String, ClassReader> zipClasses = new TreeMap<>();
+        Map<String, InputStream> filesFound = new TreeMap<>();
+        mAa.parseZip(mOsJarPath, zipClasses, filesFound);
+        TreeMap<String, ClassReader> found = new TreeMap<>();
+        // this matches classes, a package match returns nothing
+        found.clear();
+        mAa.findGlobs(""mock_android.view"", zipClasses, found);
+        assertArrayEquals(new String[] { },
+            found.keySet().toArray());
+        // a complex glob search. * is a search pattern that matches names, not dots
+        mAa.findGlobs(""mock_android.*.*Group$*Layout*"", zipClasses, found);
+        assertArrayEquals(new String[] {
+                ""mock_android.view.ViewGroup$LayoutParams"",
+                ""mock_android.view.ViewGroup$MarginLayoutParams""
+            },
+            found.keySet().toArray());
+        // a complex glob search. ** is a search pattern that matches names including dots
+        mAa.findGlobs(""mock_android.**Group*"", zipClasses, found);
+        assertArrayEquals(new String[] {
+                ""mock_android.view.ViewGroup"",
+                ""mock_android.view.ViewGroup$LayoutParams"",
+                ""mock_android.view.ViewGroup$MarginLayoutParams""
+            },
+            found.keySet().toArray());
+        // matches a single class
+        found.clear();
+        mAa.findGlobs(""mock_android.view.View"", zipClasses, found);
+        assertArrayEquals(new String[] {
+                ""mock_android.view.View""
+            },
+            found.keySet().toArray());
+        // matches everyting inside the given package but not sub-packages
+        found.clear();
+        mAa.findGlobs(""mock_android.view.*"", zipClasses, found);
+        assertArrayEquals(new String[] {
+                ""mock_android.view.View"",
+                ""mock_android.view.ViewGroup"",
+                ""mock_android.view.ViewGroup$LayoutParams"",
+                ""mock_android.view.ViewGroup$MarginLayoutParams""
+            },
+            found.keySet().toArray());
+        for (String key : found.keySet()) {
+            ClassReader value = found.get(key);
+            assertNotNull(""No value for "" + key, value);
+            assertEquals(key, AsmAnalyzer.classReaderToClassName(value));
+        }
+    }
+    @Test
+    public void testFindClassesDerivingFrom() throws LogAbortException, IOException {
+        Map<String, ClassReader> zipClasses = new TreeMap<>();
+        Map<String, InputStream> filesFound = new TreeMap<>();
+        mAa.parseZip(mOsJarPath, zipClasses, filesFound);
+        TreeMap<String, ClassReader> found = new TreeMap<>();
+        mAa.findClassesDerivingFrom(""mock_android.view.View"", zipClasses, found);
+        assertArrayEquals(new String[] {
+                ""mock_android.view.View"",
+                ""mock_android.view.ViewGroup"",
+                ""mock_android.widget.LinearLayout"",
+                ""mock_android.widget.TableLayout"",
+            },
+            found.keySet().toArray());
+        for (String key : found.keySet()) {
+            ClassReader value = found.get(key);
+            assertNotNull(""No value for "" + key, value);
+            assertEquals(key, AsmAnalyzer.classReaderToClassName(value));
+        }
+    }
+    @Test
+    public void testDependencyVisitor() throws IOException, LogAbortException {
+        Map<String, ClassReader> zipClasses = new TreeMap<>();
+        Map<String, InputStream> filesFound = new TreeMap<>();
+        mAa.parseZip(mOsJarPath, zipClasses, filesFound);
+        TreeMap<String, ClassReader> keep = new TreeMap<>();
+        TreeMap<String, ClassReader> new_keep = new TreeMap<>();
+        TreeMap<String, ClassReader> in_deps = new TreeMap<>();
+        TreeMap<String, ClassReader> out_deps = new TreeMap<>();
+        ClassReader cr = mAa.findClass(""mock_android.widget.LinearLayout"", zipClasses, keep);
+        DependencyVisitor visitor = mAa.getVisitor(zipClasses, keep, new_keep, in_deps, out_deps);
+        // get first level dependencies
+        cr.accept(visitor, 0 );
+        assertArrayEquals(new String[] {
+                ""mock_android.util.EmptyArray"",
+                ""mock_android.view.ViewGroup"",
+                ""mock_android.widget.LinearLayout$LayoutParams"",
+            },
+            out_deps.keySet().toArray());
+        in_deps.putAll(out_deps);
+        out_deps.clear();
+        // get second level dependencies
+        for (ClassReader cr2 : in_deps.values()) {
+            cr2.accept(visitor, 0 );
+        }
+        assertArrayEquals(new String[] {
+                ""mock_android.view.View"",
+                ""mock_android.view.ViewGroup$LayoutParams"",
+                ""mock_android.view.ViewGroup$MarginLayoutParams"",
+            },
+            out_deps.keySet().toArray());
+        in_deps.putAll(out_deps);
+        out_deps.clear();
+        // get third level dependencies (there are none)
+        for (ClassReader cr2 : in_deps.values()) {
+            cr2.accept(visitor, 0 );
+        }
+        keep.putAll(new_keep);
+        assertArrayEquals(new String[] { }, out_deps.keySet().toArray());
+        assertArrayEquals(new String[] {
+                ""mock_android.widget.LinearLayout"",
+        }, keep.keySet().toArray());
+    }
+}",class,
+"        // matches a single class
+        found.clear();
+        mAa.findGlobs(""mock_android.view.View"", zipClasses, found);
+        assertArrayEquals(new String[] {
+                ""mock_android.view.View""
+            }",class,
+"    @Before
+    public void setUp() throws Exception {
+        mLog = new MockLog();
+        URL url = this.getClass().getClassLoader().getResource(""data/mock_android.jar"");
+        mOsJarPath = new ArrayList<>();
+        //noinspection ConstantConditions
+        mOsJarPath.add(url.getFile());
+        Set<String> excludeClasses = Collections.singleton(""java.lang.JavaClass"");
+        String[] includeFiles = new String[]{""mock_android/data/data*""};
+        mAa = new AsmAnalyzer(mLog, mOsJarPath, null , null ,
+                null , excludeClasses, includeFiles);
+    }",method,
+"    @Test
+    public void testParseZip() throws IOException {
+        Map<String, ClassReader> map = new TreeMap<>();
+        Map<String, InputStream> filesFound = new TreeMap<>();
+        mAa.parseZip(mOsJarPath, map, filesFound);
+        assertArrayEquals(new String[] {
+                ""java.lang.JavaClass"",
+                ""mock_android.dummy.InnerTest"",
+                ""mock_android.dummy.InnerTest$DerivingClass"",
+                ""mock_android.dummy.InnerTest$MyGenerics1"",
+                ""mock_android.dummy.InnerTest$MyIntEnum"",
+                ""mock_android.dummy.InnerTest$MyStaticInnerClass"",
+                ""mock_android.dummy.InnerTest$NotStaticInner1"",
+                ""mock_android.dummy.InnerTest$NotStaticInner2"",
+                ""mock_android.util.EmptyArray"",
+                ""mock_android.view.View"",
+                ""mock_android.view.ViewGroup"",
+                ""mock_android.view.ViewGroup$LayoutParams"",
+                ""mock_android.view.ViewGroup$MarginLayoutParams"",
+                ""mock_android.widget.LinearLayout"",
+                ""mock_android.widget.LinearLayout$LayoutParams"",
+                ""mock_android.widget.TableLayout"",
+                ""mock_android.widget.TableLayout$LayoutParams""
+            },
+            map.keySet().toArray());
+        assertArrayEquals(new String[] {""mock_android/data/dataFile""},
+            filesFound.keySet().toArray());
+    }",method,
+"    @Test
+    public void testFindClass() throws IOException, LogAbortException {
+        Map<String, ClassReader> zipClasses = new TreeMap<>();
+        Map<String, InputStream> filesFound = new TreeMap<>();
+        mAa.parseZip(mOsJarPath, zipClasses, filesFound);
+        TreeMap<String, ClassReader> found = new TreeMap<>();
+        ClassReader cr = mAa.findClass(""mock_android.view.ViewGroup$LayoutParams"",
+                zipClasses, found);
+        assertNotNull(cr);
+        assertEquals(""mock_android/view/ViewGroup$LayoutParams"", cr.getClassName());
+        assertArrayEquals(new String[] { ""mock_android.view.ViewGroup$LayoutParams"" },
+                found.keySet().toArray());
+        assertArrayEquals(new ClassReader[] { cr }, found.values().toArray());
+    }",method,
+"    @Test
+    public void testFindGlobs() throws IOException, LogAbortException {
+        Map<String, ClassReader> zipClasses = new TreeMap<>();
+        Map<String, InputStream> filesFound = new TreeMap<>();
+        mAa.parseZip(mOsJarPath, zipClasses, filesFound);
+        TreeMap<String, ClassReader> found = new TreeMap<>();
+        // this matches classes, a package match returns nothing
+        found.clear();
+        mAa.findGlobs(""mock_android.view"", zipClasses, found);
+        assertArrayEquals(new String[] { },
+            found.keySet().toArray());
+        // a complex glob search. * is a search pattern that matches names, not dots
+        mAa.findGlobs(""mock_android.*.*Group$*Layout*"", zipClasses, found);
+        assertArrayEquals(new String[] {
+                ""mock_android.view.ViewGroup$LayoutParams"",
+                ""mock_android.view.ViewGroup$MarginLayoutParams""
+            },
+            found.keySet().toArray());
+        // a complex glob search. ** is a search pattern that matches names including dots
+        mAa.findGlobs(""mock_android.**Group*"", zipClasses, found);
+        assertArrayEquals(new String[] {
+                ""mock_android.view.ViewGroup"",
+                ""mock_android.view.ViewGroup$LayoutParams"",
+                ""mock_android.view.ViewGroup$MarginLayoutParams""
+            },
+            found.keySet().toArray());
+        // matches a single class
+        found.clear();
+        mAa.findGlobs(""mock_android.view.View"", zipClasses, found);
+        assertArrayEquals(new String[] {
+                ""mock_android.view.View""
+            },
+            found.keySet().toArray());
+        // matches everyting inside the given package but not sub-packages
+        found.clear();
+        mAa.findGlobs(""mock_android.view.*"", zipClasses, found);
+        assertArrayEquals(new String[] {
+                ""mock_android.view.View"",
+                ""mock_android.view.ViewGroup"",
+                ""mock_android.view.ViewGroup$LayoutParams"",
+                ""mock_android.view.ViewGroup$MarginLayoutParams""
+            },
+            found.keySet().toArray());
+        for (String key : found.keySet()) {
+            ClassReader value = found.get(key);
+            assertNotNull(""No value for "" + key, value);
+            assertEquals(key, AsmAnalyzer.classReaderToClassName(value));
+        }
+    }",method,
+"    @Test
+    public void testFindClassesDerivingFrom() throws LogAbortException, IOException {
+        Map<String, ClassReader> zipClasses = new TreeMap<>();
+        Map<String, InputStream> filesFound = new TreeMap<>();
+        mAa.parseZip(mOsJarPath, zipClasses, filesFound);
+        TreeMap<String, ClassReader> found = new TreeMap<>();
+        mAa.findClassesDerivingFrom(""mock_android.view.View"", zipClasses, found);
+        assertArrayEquals(new String[] {
+                ""mock_android.view.View"",
+                ""mock_android.view.ViewGroup"",
+                ""mock_android.widget.LinearLayout"",
+                ""mock_android.widget.TableLayout"",
+            },
+            found.keySet().toArray());
+        for (String key : found.keySet()) {
+            ClassReader value = found.get(key);
+            assertNotNull(""No value for "" + key, value);
+            assertEquals(key, AsmAnalyzer.classReaderToClassName(value));
+        }
+    }",method,
+"    @Test
+    public void testDependencyVisitor() throws IOException, LogAbortException {
+        Map<String, ClassReader> zipClasses = new TreeMap<>();
+        Map<String, InputStream> filesFound = new TreeMap<>();
+        mAa.parseZip(mOsJarPath, zipClasses, filesFound);
+        TreeMap<String, ClassReader> keep = new TreeMap<>();
+        TreeMap<String, ClassReader> new_keep = new TreeMap<>();
+        TreeMap<String, ClassReader> in_deps = new TreeMap<>();
+        TreeMap<String, ClassReader> out_deps = new TreeMap<>();
+        ClassReader cr = mAa.findClass(""mock_android.widget.LinearLayout"", zipClasses, keep);
+        DependencyVisitor visitor = mAa.getVisitor(zipClasses, keep, new_keep, in_deps, out_deps);
+        // get first level dependencies
+        cr.accept(visitor, 0 );
+        assertArrayEquals(new String[] {
+                ""mock_android.util.EmptyArray"",
+                ""mock_android.view.ViewGroup"",
+                ""mock_android.widget.LinearLayout$LayoutParams"",
+            },
+            out_deps.keySet().toArray());
+        in_deps.putAll(out_deps);
+        out_deps.clear();
+        // get second level dependencies
+        for (ClassReader cr2 : in_deps.values()) {
+            cr2.accept(visitor, 0 );
+        }
+        assertArrayEquals(new String[] {
+                ""mock_android.view.View"",
+                ""mock_android.view.ViewGroup$LayoutParams"",
+                ""mock_android.view.ViewGroup$MarginLayoutParams"",
+            },
+            out_deps.keySet().toArray());
+        in_deps.putAll(out_deps);
+        out_deps.clear();
+        // get third level dependencies (there are none)
+        for (ClassReader cr2 : in_deps.values()) {
+            cr2.accept(visitor, 0 );
+        }
+        keep.putAll(new_keep);
+        assertArrayEquals(new String[] { }, out_deps.keySet().toArray());
+        assertArrayEquals(new String[] {
+                ""mock_android.widget.LinearLayout"",
+        }, keep.keySet().toArray());
+    }",method,
+"public class CircleBitmapTextureAtlasSourceDecoratorShape implements IBitmapTextureAtlasSourceDecoratorShape {
+	// ===========================================================
+	// Constants
+	// ===========================================================
+	// ===========================================================
+	// Fields
+	// ===========================================================
+	private static CircleBitmapTextureAtlasSourceDecoratorShape sDefaultInstance;
+	// ===========================================================
+	// Constructors
+	// ===========================================================
+	public CircleBitmapTextureAtlasSourceDecoratorShape() {
+	}
+	public static CircleBitmapTextureAtlasSourceDecoratorShape getDefaultInstance() {
+		if(sDefaultInstance == null) {
+			sDefaultInstance = new CircleBitmapTextureAtlasSourceDecoratorShape();
+		}
+		return sDefaultInstance;
+	}
+	// ===========================================================
+	// Getter & Setter
+	// ===========================================================
+	// ===========================================================
+	// Methods for/from SuperClass/Interfaces
+	// ===========================================================
+	@Override
+	public void onDecorateBitmap(final Canvas pCanvas, final Paint pPaint, final TextureAtlasSourceDecoratorOptions pDecoratorOptions) {
+		final float width = pCanvas.getWidth() - pDecoratorOptions.getInsetLeft() - pDecoratorOptions.getInsetRight();
+		final float height = pCanvas.getHeight() - pDecoratorOptions.getInsetTop() - pDecoratorOptions.getInsetBottom();
+		final float centerX = (pCanvas.getWidth() + pDecoratorOptions.getInsetLeft() - pDecoratorOptions.getInsetRight()) * 0.5f;
+		final float centerY = (pCanvas.getHeight() + pDecoratorOptions.getInsetTop() - pDecoratorOptions.getInsetBottom()) * 0.5f;
+		final float radius = Math.min(width * 0.5f, height * 0.5f);
+		pCanvas.drawCircle(centerX, centerY, radius, pPaint);
+	}
+	// ===========================================================
+	// Methods
+	// ===========================================================
+	// ===========================================================
+	// Inner and Anonymous Classes
+	// ===========================================================
+}",class,
+"	public CircleBitmapTextureAtlasSourceDecoratorShape() {
+	}",method,
+"	public static CircleBitmapTextureAtlasSourceDecoratorShape getDefaultInstance() {
+		if(sDefaultInstance == null) {
+			sDefaultInstance = new CircleBitmapTextureAtlasSourceDecoratorShape();
+		}
+		return sDefaultInstance;
+	}",method,
+"		if(sDefaultInstance == null) {
+			sDefaultInstance = new CircleBitmapTextureAtlasSourceDecoratorShape();
+		}",method,
+"	@Override
+	public void onDecorateBitmap(final Canvas pCanvas, final Paint pPaint, final TextureAtlasSourceDecoratorOptions pDecoratorOptions) {
+		final float width = pCanvas.getWidth() - pDecoratorOptions.getInsetLeft() - pDecoratorOptions.getInsetRight();
+		final float height = pCanvas.getHeight() - pDecoratorOptions.getInsetTop() - pDecoratorOptions.getInsetBottom();
+		final float centerX = (pCanvas.getWidth() + pDecoratorOptions.getInsetLeft() - pDecoratorOptions.getInsetRight()) * 0.5f;
+		final float centerY = (pCanvas.getHeight() + pDecoratorOptions.getInsetTop() - pDecoratorOptions.getInsetBottom()) * 0.5f;
+		final float radius = Math.min(width * 0.5f, height * 0.5f);
+		pCanvas.drawCircle(centerX, centerY, radius, pPaint);
+	}",method,
+"public class OracleExceptionSorterTest_setSavepointWithName extends TestCase {
+    private DruidDataSource dataSource;
+    protected void setUp() throws Exception {
+        Assert.assertEquals(0, JdbcStatManager.getInstance().getSqlList().size());
+        dataSource = new DruidDataSource();
+        dataSource.setExceptionSorter(new OracleExceptionSorter());
+        dataSource.setDriver(new OracleMockDriver());
+        dataSource.setUrl(""jdbc:mock:xxx"");
+        dataSource.setPoolPreparedStatements(true);
+        dataSource.setMaxOpenPreparedStatements(100);
+    }
+    protected void tearDown() throws Exception {
+        JdbcUtils.close(dataSource);
+    }
+    public void test_connect() throws Exception {
+        String sql = ""SELECT 1"";
+        {
+            DruidPooledConnection conn = dataSource.getConnection();
+            PreparedStatement pstmt = conn.prepareStatement(sql);
+            pstmt.execute();
+            pstmt.close();
+            conn.close();
+            Assert.assertEquals(0, dataSource.getActiveCount());
+            Assert.assertEquals(1, dataSource.getPoolingCount());
+            Assert.assertEquals(1, dataSource.getCreateCount());
+        }
+        DruidPooledConnection conn = dataSource.getConnection();
+        MockConnection mockConn = conn.unwrap(MockConnection.class);
+        Assert.assertNotNull(mockConn);
+        SQLException exception = new SQLException(""xx"", ""xxx"", 28);
+        mockConn.setError(exception);
+        Exception setError = null;
+        try {
+            conn.setSavepoint(""xxx"");
+        } catch (Exception ex) {
+            setError = ex;
+        }
+        Assert.assertNotNull(setError);
+        conn.close();
+        {
+            Connection conn2 = dataSource.getConnection();
+            conn2.close();
+        }
+        Assert.assertEquals(0, dataSource.getActiveCount());
+        Assert.assertEquals(1, dataSource.getPoolingCount());
+        Assert.assertEquals(2, dataSource.getCreateCount());
+    }
+}",class,
+"    protected void setUp() throws Exception {
+        Assert.assertEquals(0, JdbcStatManager.getInstance().getSqlList().size());
+        dataSource = new DruidDataSource();
+        dataSource.setExceptionSorter(new OracleExceptionSorter());
+        dataSource.setDriver(new OracleMockDriver());
+        dataSource.setUrl(""jdbc:mock:xxx"");
+        dataSource.setPoolPreparedStatements(true);
+        dataSource.setMaxOpenPreparedStatements(100);
+    }",method,
+"    protected void tearDown() throws Exception {
+        JdbcUtils.close(dataSource);
+    }",method,
+"    public void test_connect() throws Exception {
+        String sql = ""SELECT 1"";
+        {
+            DruidPooledConnection conn = dataSource.getConnection();
+            PreparedStatement pstmt = conn.prepareStatement(sql);
+            pstmt.execute();
+            pstmt.close();
+            conn.close();
+            Assert.assertEquals(0, dataSource.getActiveCount());
+            Assert.assertEquals(1, dataSource.getPoolingCount());
+            Assert.assertEquals(1, dataSource.getCreateCount());
+        }
+        DruidPooledConnection conn = dataSource.getConnection();
+        MockConnection mockConn = conn.unwrap(MockConnection.class);
+        Assert.assertNotNull(mockConn);
+        SQLException exception = new SQLException(""xx"", ""xxx"", 28);
+        mockConn.setError(exception);
+        Exception setError = null;
+        try {
+            conn.setSavepoint(""xxx"");
+        } catch (Exception ex) {
+            setError = ex;
+        }
+        Assert.assertNotNull(setError);
+        conn.close();
+        {
+            Connection conn2 = dataSource.getConnection();
+            conn2.close();
+        }
+        Assert.assertEquals(0, dataSource.getActiveCount());
+        Assert.assertEquals(1, dataSource.getPoolingCount());
+        Assert.assertEquals(2, dataSource.getCreateCount());
+    }",method,
+"public class TradePropertyFormController extends BaseFormController {
+	private TradePropertyManager tradePropertyManager = null;
+	private StateManager stateManager = null;
+	private AgreementTypeManager agreementTypeManager = null;
+	private PurchaserTypeManager purchaserTypeManager = null;
+	@Autowired
+	public void setTradePropertyManager(
+			TradePropertyManager tradePropertyManager) {
+		this.tradePropertyManager = tradePropertyManager;
+	}
+	@Autowired
+	public void setStateManager(StateManager stateManager) {
+		this.stateManager = stateManager;
+	}
+	@Autowired
+	public void setAgreementTypeManager(
+			AgreementTypeManager agreementTypeManager) {
+		this.agreementTypeManager = agreementTypeManager;
+	}
+	@Autowired
+	public void setPurchaserTypeManager(
+			PurchaserTypeManager purchaserTypeManager) {
+		this.purchaserTypeManager = purchaserTypeManager;
+	}
+	public TradePropertyFormController() {
+		setCancelView(""redirect:tradeproperty"");
+		setSuccessView(""redirect:tradeproperty"");
+	}
+	@ModelAttribute
+	@RequestMapping(method = RequestMethod.GET)
+	public TradeProperty showForm(HttpServletRequest request, ModelMap map)
+			throws Exception {
+		String id = request.getParameter(""id"");
+		List<State> states = stateManager.getAll();
+		List<AgreementType> agreementTypes = agreementTypeManager.getAll();
+		List<PurchaserType> purchaserTypes = purchaserTypeManager.getAll();
+		map.addAttribute(""stateList"", states);
+		map.addAttribute(""agreementTypeList"", agreementTypes);
+		map.addAttribute(""purchaserTypeList"", purchaserTypes);
+		if (!StringUtils.isBlank(id)) {
+			return tradePropertyManager.get(new Integer(id));
+		}
+		return new TradeProperty();
+	}
+	@RequestMapping(method = RequestMethod.POST)
+	public String onSubmit(TradeProperty tradeProperty, BindingResult errors,
+			HttpServletRequest request, HttpServletResponse response)
+			throws Exception {
+		if (request.getParameter(""cancel"") != null) {
+			return getCancelView();
+		}
+		if (getValidator() != null) { // validator is null during testing
+			getValidator().validate(tradeProperty, errors);
+			if (errors.hasErrors() && request.getParameter(""delete"") == null) { // don't
+																				// validate
+																				// when
+																				// deleting
+				Logger.getLogger(TradePropertyFormController.class.getName())
+						.log(Level.ERROR, ""Erros: "" + errors.toString());
+				return ""registering/tradepropertyform"";
+			}
+		}
+		log.debug(""entering 'onSubmit' method..."");
+		boolean isNew = (tradeProperty.getId() == null);
+		String success = getSuccessView();
+		Locale locale = request.getLocale();
+		if (request.getParameter(""delete"") != null) {
+			tradePropertyManager.remove(tradeProperty.getId());
+			saveMessage(request, getText(""tradeProperty.deleted"", locale));
+		} else {
+			tradePropertyManager.save(tradeProperty);
+			String key = (isNew) ? ""tradeProperty.added""
+					: ""tradeProperty.updated"";
+			saveMessage(request, getText(key, locale));
+			if (!isNew) {
+				success = ""redirect:tradepropertyform?id=""
+						+ tradeProperty.getId();
+			}
+		}
+		return success;
+	}
+}",class,
+"	@Autowired
+	public void setTradePropertyManager(
+			TradePropertyManager tradePropertyManager) {
+		this.tradePropertyManager = tradePropertyManager;
+	}",method,
+"	@Autowired
+	public void setStateManager(StateManager stateManager) {
+		this.stateManager = stateManager;
+	}",method,
+"	@Autowired
+	public void setAgreementTypeManager(
+			AgreementTypeManager agreementTypeManager) {
+		this.agreementTypeManager = agreementTypeManager;
+	}",method,
+"	@Autowired
+	public void setPurchaserTypeManager(
+			PurchaserTypeManager purchaserTypeManager) {
+		this.purchaserTypeManager = purchaserTypeManager;
+	}",method,
+"	public TradePropertyFormController() {
+		setCancelView(""redirect:tradeproperty"");
+		setSuccessView(""redirect:tradeproperty"");
+	}",method,
+"	@ModelAttribute
+	@RequestMapping(method = RequestMethod.GET)
+	public TradeProperty showForm(HttpServletRequest request, ModelMap map)
+			throws Exception {
+		String id = request.getParameter(""id"");
+		List<State> states = stateManager.getAll();
+		List<AgreementType> agreementTypes = agreementTypeManager.getAll();
+		List<PurchaserType> purchaserTypes = purchaserTypeManager.getAll();
+		map.addAttribute(""stateList"", states);
+		map.addAttribute(""agreementTypeList"", agreementTypes);
+		map.addAttribute(""purchaserTypeList"", purchaserTypes);
+		if (!StringUtils.isBlank(id)) {
+			return tradePropertyManager.get(new Integer(id));
+		}
+		return new TradeProperty();
+	}",method,
+"	@RequestMapping(method = RequestMethod.POST)
+	public String onSubmit(TradeProperty tradeProperty, BindingResult errors,
+			HttpServletRequest request, HttpServletResponse response)
+			throws Exception {
+		if (request.getParameter(""cancel"") != null) {
+			return getCancelView();
+		}
+		if (getValidator() != null) { // validator is null during testing
+			getValidator().validate(tradeProperty, errors);
+			if (errors.hasErrors() && request.getParameter(""delete"") == null) { // don't
+																				// validate
+																				// when
+																				// deleting
+				Logger.getLogger(TradePropertyFormController.class.getName())
+						.log(Level.ERROR, ""Erros: "" + errors.toString());
+				return ""registering/tradepropertyform"";
+			}
+		}
+		log.debug(""entering 'onSubmit' method..."");
+		boolean isNew = (tradeProperty.getId() == null);
+		String success = getSuccessView();
+		Locale locale = request.getLocale();
+		if (request.getParameter(""delete"") != null) {
+			tradePropertyManager.remove(tradeProperty.getId());
+			saveMessage(request, getText(""tradeProperty.deleted"", locale));
+		} else {
+			tradePropertyManager.save(tradeProperty);
+			String key = (isNew) ? ""tradeProperty.added""
+					: ""tradeProperty.updated"";
+			saveMessage(request, getText(key, locale));
+			if (!isNew) {
+				success = ""redirect:tradepropertyform?id=""
+						+ tradeProperty.getId();
+			}
+		}
+		return success;
+	}",method,
+"			if (!isNew) {
+				success = ""redirect:tradepropertyform?id=""
+						+ tradeProperty.getId();
+			}",method,
+"public class SVGOMFEDisplacementMapElement
+    extends    SVGOMFilterPrimitiveStandardAttributes
+    implements SVGFEDisplacementMapElement {
+    protected static DoublyIndexedTable xmlTraitInformation;
+    static {
+        DoublyIndexedTable t =
+            new DoublyIndexedTable(SVGOMFilterPrimitiveStandardAttributes.xmlTraitInformation);
+        t.put(null, SVG_IN_ATTRIBUTE,
+                new TraitInformation(true, SVGTypes.TYPE_CDATA));
+        t.put(null, SVG_IN2_ATTRIBUTE,
+                new TraitInformation(true, SVGTypes.TYPE_CDATA));
+        t.put(null, SVG_SCALE_ATTRIBUTE,
+                new TraitInformation(true, SVGTypes.TYPE_NUMBER));
+        t.put(null, SVG_X_CHANNEL_SELECTOR_ATTRIBUTE,
+                new TraitInformation(true, SVGTypes.TYPE_IDENT));
+        t.put(null, SVG_Y_CHANNEL_SELECTOR_ATTRIBUTE,
+                new TraitInformation(true, SVGTypes.TYPE_IDENT));
+        xmlTraitInformation = t;
+    }
+    protected static final String[] CHANNEL_SELECTOR_VALUES = {
+        """",
+        SVG_R_VALUE,
+        SVG_G_VALUE,
+        SVG_B_VALUE,
+        SVG_A_VALUE
+    };
+    protected SVGOMAnimatedString in;
+    protected SVGOMAnimatedString in2;
+    protected SVGOMAnimatedNumber scale;
+    protected SVGOMAnimatedEnumeration xChannelSelector;
+    protected SVGOMAnimatedEnumeration yChannelSelector;
+    protected SVGOMFEDisplacementMapElement() {
+    }
+    public SVGOMFEDisplacementMapElement(String prefix,
+                                         AbstractDocument owner) {
+        super(prefix, owner);
+        initializeLiveAttributes();
+    }
+    protected void initializeAllLiveAttributes() {
+        super.initializeAllLiveAttributes();
+        initializeLiveAttributes();
+    }
+    private void initializeLiveAttributes() {
+        in = createLiveAnimatedString(null, SVG_IN_ATTRIBUTE);
+        in2 = createLiveAnimatedString(null, SVG_IN2_ATTRIBUTE);
+        scale = createLiveAnimatedNumber(null, SVG_SCALE_ATTRIBUTE, 0f);
+        xChannelSelector =
+            createLiveAnimatedEnumeration
+                (null, SVG_X_CHANNEL_SELECTOR_ATTRIBUTE,
+                 CHANNEL_SELECTOR_VALUES, (short) 4);
+        yChannelSelector =
+            createLiveAnimatedEnumeration
+                (null, SVG_Y_CHANNEL_SELECTOR_ATTRIBUTE,
+                 CHANNEL_SELECTOR_VALUES, (short) 4);
+    }
+    public String getLocalName() {
+        return SVG_FE_DISPLACEMENT_MAP_TAG;
+    }
+    public SVGAnimatedString getIn1() {
+        return in;
+    }
+    public SVGAnimatedString getIn2() {
+        return in2;
+    }
+    public SVGAnimatedNumber getScale() {
+        return scale;
+    }
+    public SVGAnimatedEnumeration getXChannelSelector() {
+        return xChannelSelector;
+    }
+    public SVGAnimatedEnumeration getYChannelSelector() {
+        return yChannelSelector;
+    }
+    protected Node newNode() {
+        return new SVGOMFEDisplacementMapElement();
+    }
+    protected DoublyIndexedTable getTraitInformationTable() {
+        return xmlTraitInformation;
+    }
+}",class,
+"    protected SVGOMFEDisplacementMapElement() {
+    }",method,
+"    public SVGOMFEDisplacementMapElement(String prefix,
+                                         AbstractDocument owner) {
+        super(prefix, owner);
+        initializeLiveAttributes();
+    }",method,
+"    protected void initializeAllLiveAttributes() {
+        super.initializeAllLiveAttributes();
+        initializeLiveAttributes();
+    }",method,
+"    private void initializeLiveAttributes() {
+        in = createLiveAnimatedString(null, SVG_IN_ATTRIBUTE);
+        in2 = createLiveAnimatedString(null, SVG_IN2_ATTRIBUTE);
+        scale = createLiveAnimatedNumber(null, SVG_SCALE_ATTRIBUTE, 0f);
+        xChannelSelector =
+            createLiveAnimatedEnumeration
+                (null, SVG_X_CHANNEL_SELECTOR_ATTRIBUTE,
+                 CHANNEL_SELECTOR_VALUES, (short) 4);
+        yChannelSelector =
+            createLiveAnimatedEnumeration
+                (null, SVG_Y_CHANNEL_SELECTOR_ATTRIBUTE,
+                 CHANNEL_SELECTOR_VALUES, (short) 4);
+    }",method,
+"    public String getLocalName() {
+        return SVG_FE_DISPLACEMENT_MAP_TAG;
+    }",method,
+"    public SVGAnimatedString getIn1() {
+        return in;
+    }",method,
+"    public SVGAnimatedString getIn2() {
+        return in2;
+    }",method,
+"    public SVGAnimatedNumber getScale() {
+        return scale;
+    }",method,
+"    public SVGAnimatedEnumeration getXChannelSelector() {
+        return xChannelSelector;
+    }",method,
+"    public SVGAnimatedEnumeration getYChannelSelector() {
+        return yChannelSelector;
+    }",method,
+"    protected Node newNode() {
+        return new SVGOMFEDisplacementMapElement();
+    }",method,
+"    protected DoublyIndexedTable getTraitInformationTable() {
+        return xmlTraitInformation;
+    }",method,
+"public class GroovyShortNamesCache extends PsiShortNamesCache {
+  private final Project myProject;
+  public GroovyShortNamesCache(Project project) {
+    myProject = project;
+  }
+  public static GroovyShortNamesCache getGroovyShortNamesCache(Project project) {
+    return ObjectUtils.assertNotNull(ContainerUtil.findInstance(project.getExtensions(PsiShortNamesCache.EP_NAME), GroovyShortNamesCache.class));
+  }
+  @Override
+  @NotNull
+  public PsiClass[] getClassesByName(@NotNull @NonNls String name, @NotNull GlobalSearchScope scope) {
+    Collection<PsiClass> allClasses = new SmartList<>();
+    processClassesWithName(name, Processors.cancelableCollectProcessor(allClasses), scope, null);
+    if (allClasses.isEmpty()) return PsiClass.EMPTY_ARRAY;
+    return allClasses.toArray(new PsiClass[allClasses.size()]);
+  }
+  public List<PsiClass> getScriptClassesByFQName(final String name, final GlobalSearchScope scope, final boolean srcOnly) {
+    GlobalSearchScope actualScope = srcOnly ? new GrSourceFilterScope(scope) : scope;
+    final Collection<GroovyFile> files = StubIndex.getElements(GrFullScriptNameIndex.KEY, name.hashCode(), myProject, actualScope,
+                                                               GroovyFile.class);
+    if (files.isEmpty()) {
+      return Collections.emptyList();
+    }
+    final ArrayList<PsiClass> result = new ArrayList<>();
+    for (GroovyFile file : files) {
+      if (file.isScript()) {
+        final PsiClass scriptClass = file.getScriptClass();
+        if (scriptClass != null && name.equals(scriptClass.getQualifiedName())) {
+          result.add(scriptClass);
+        }
+      }
+    }
+    return result;
+  }
+  @NotNull
+  public List<PsiClass> getClassesByFQName(String name, GlobalSearchScope scope, boolean inSource) {
+    final List<PsiClass> result = ContainerUtil.newArrayList();
+    for (PsiElement psiClass : StubIndex.getElements(GrFullClassNameIndex.KEY, name.hashCode(), myProject,
+                                                     inSource ? new GrSourceFilterScope(scope) : scope, PsiClass.class)) {
+      //hashcode doesn't guarantee equals
+      if (name.equals(((PsiClass)psiClass).getQualifiedName())) {
+        result.add((PsiClass)psiClass);
+      }
+    }
+    result.addAll(getScriptClassesByFQName(name, scope, inSource));
+    return result;
+  }
+  @Override
+  @NotNull
+  public String[] getAllClassNames() {
+    return ArrayUtil.toStringArray(StubIndex.getInstance().getAllKeys(GrScriptClassNameIndex.KEY, myProject));
+  }
+  @Override
+  public void getAllClassNames(@NotNull HashSet<String> dest) {
+    dest.addAll(StubIndex.getInstance().getAllKeys(GrScriptClassNameIndex.KEY, myProject));
+  }
+  @Override
+  @NotNull
+  public PsiMethod[] getMethodsByName(@NonNls @NotNull String name, @NotNull GlobalSearchScope scope) {
+    final Collection<? extends PsiMethod> methods = StubIndex.getElements(GrMethodNameIndex.KEY, name, myProject,
+                                                                          new GrSourceFilterScope(scope), GrMethod.class);
+    final Collection<? extends PsiMethod> annMethods = StubIndex.getElements(GrAnnotationMethodNameIndex.KEY, name, myProject,
+                                                                             new GrSourceFilterScope(scope),
+                                                                             GrAnnotationMethod.class);
+    if (methods.isEmpty() && annMethods.isEmpty()) return PsiMethod.EMPTY_ARRAY;
+    return ArrayUtil.mergeCollections(annMethods, methods, PsiMethod.ARRAY_FACTORY);
+  }
+  @Override
+  public boolean processMethodsWithName(@NonNls @NotNull String name,
+                                        @NotNull GlobalSearchScope scope,
+                                        @NotNull Processor<PsiMethod> processor) {
+    return processMethodsWithName(name, processor, scope, null);
+  }
+  @Override
+  public boolean processMethodsWithName(@NonNls @NotNull String name,
+                                        @NotNull Processor<? super PsiMethod> processor,
+                                        @NotNull GlobalSearchScope scope,
+                                        @Nullable IdFilter filter) {
+    GrSourceFilterScope filterScope = new GrSourceFilterScope(scope);
+    return StubIndex.getInstance().processElements(GrMethodNameIndex.KEY, name, myProject, filterScope, filter, GrMethod.class, processor) &&
+           StubIndex.getInstance().processElements(GrAnnotationMethodNameIndex.KEY, name, myProject, filterScope, filter,
+                                                   GrAnnotationMethod.class, processor);
+  }
+  @Override
+  @NotNull
+  public PsiMethod[] getMethodsByNameIfNotMoreThan(@NonNls @NotNull String name, @NotNull GlobalSearchScope scope, int maxCount) {
+    return getMethodsByName(name, scope);
+  }
+  @NotNull
+  @Override
+  public PsiField[] getFieldsByNameIfNotMoreThan(@NonNls @NotNull String name, @NotNull GlobalSearchScope scope, int maxCount) {
+    return getFieldsByName(name, scope);
+  }
+  @Override
+  @NotNull
+  public String[] getAllMethodNames() {
+    Collection<String> keys = StubIndex.getInstance().getAllKeys(GrMethodNameIndex.KEY, myProject);
+    keys.addAll(StubIndex.getInstance().getAllKeys(GrAnnotationMethodNameIndex.KEY, myProject));
+    return ArrayUtil.toStringArray(keys);
+  }
+  @Override
+  public void getAllMethodNames(@NotNull HashSet<String> set) {
+    set.addAll(StubIndex.getInstance().getAllKeys(GrMethodNameIndex.KEY, myProject));
+  }
+  @Override
+  @NotNull
+  public PsiField[] getFieldsByName(@NotNull @NonNls String name, @NotNull GlobalSearchScope scope) {
+    final Collection<? extends PsiField> fields = StubIndex.getElements(GrFieldNameIndex.KEY, name, myProject,
+                                                                        new GrSourceFilterScope(scope), GrField.class);
+    if (fields.isEmpty()) return PsiField.EMPTY_ARRAY;
+    return fields.toArray(new PsiField[fields.size()]);
+  }
+  @Override
+  @NotNull
+  public String[] getAllFieldNames() {
+    Collection<String> fields = StubIndex.getInstance().getAllKeys(GrFieldNameIndex.KEY, myProject);
+    return ArrayUtil.toStringArray(fields);
+  }
+  @Override
+  public void getAllFieldNames(@NotNull HashSet<String> set) {
+    set.addAll(StubIndex.getInstance().getAllKeys(GrFieldNameIndex.KEY, myProject));
+  }
+  @Override
+  public boolean processFieldsWithName(@NotNull String name,
+                                       @NotNull Processor<? super PsiField> processor,
+                                       @NotNull GlobalSearchScope scope,
+                                       @Nullable IdFilter filter) {
+    return StubIndex.getInstance().processElements(GrFieldNameIndex.KEY, name, myProject, new GrSourceFilterScope(scope), filter,
+                                                   GrField.class, processor);
+  }
+  @Override
+  public boolean processClassesWithName(@NotNull String name,
+                                        @NotNull Processor<? super PsiClass> processor,
+                                        @NotNull GlobalSearchScope scope,
+                                        @Nullable IdFilter filter) {
+    for (GroovyFile file : StubIndex.getElements(GrScriptClassNameIndex.KEY, name, myProject, new GrSourceFilterScope(scope), filter,
+                                                 GroovyFile.class)) {
+      PsiClass aClass = file.getScriptClass();
+      if (aClass != null && !processor.process(aClass)) return true;
+    }
+    return true;
+  }
+}",class,
+"  public GroovyShortNamesCache(Project project) {
+    myProject = project;
+  }",method,
+"  public static GroovyShortNamesCache getGroovyShortNamesCache(Project project) {
+    return ObjectUtils.assertNotNull(ContainerUtil.findInstance(project.getExtensions(PsiShortNamesCache.EP_NAME), GroovyShortNamesCache.class));
+  }",method,
+"  @Override
+  @NotNull
+  public PsiClass[] getClassesByName(@NotNull @NonNls String name, @NotNull GlobalSearchScope scope) {
+    Collection<PsiClass> allClasses = new SmartList<>();
+    processClassesWithName(name, Processors.cancelableCollectProcessor(allClasses), scope, null);
+    if (allClasses.isEmpty()) return PsiClass.EMPTY_ARRAY;
+    return allClasses.toArray(new PsiClass[allClasses.size()]);
+  }",method,
+"  public List<PsiClass> getScriptClassesByFQName(final String name, final GlobalSearchScope scope, final boolean srcOnly) {
+    GlobalSearchScope actualScope = srcOnly ? new GrSourceFilterScope(scope) : scope;
+    final Collection<GroovyFile> files = StubIndex.getElements(GrFullScriptNameIndex.KEY, name.hashCode(), myProject, actualScope,
+                                                               GroovyFile.class);
+    if (files.isEmpty()) {
+      return Collections.emptyList();
+    }
+    final ArrayList<PsiClass> result = new ArrayList<>();
+    for (GroovyFile file : files) {
+      if (file.isScript()) {
+        final PsiClass scriptClass = file.getScriptClass();
+        if (scriptClass != null && name.equals(scriptClass.getQualifiedName())) {
+          result.add(scriptClass);
+        }
+      }
+    }
+    return result;
+  }",method,
+"    for (GroovyFile file : files) {
+      if (file.isScript()) {
+        final PsiClass scriptClass = file.getScriptClass();
+        if (scriptClass != null && name.equals(scriptClass.getQualifiedName())) {
+          result.add(scriptClass);
+        }
+      }
+    }",method,
+"  @NotNull
+  public List<PsiClass> getClassesByFQName(String name, GlobalSearchScope scope, boolean inSource) {
+    final List<PsiClass> result = ContainerUtil.newArrayList();
+    for (PsiElement psiClass : StubIndex.getElements(GrFullClassNameIndex.KEY, name.hashCode(), myProject,
+                                                     inSource ? new GrSourceFilterScope(scope) : scope, PsiClass.class)) {
+      //hashcode doesn't guarantee equals
+      if (name.equals(((PsiClass)psiClass).getQualifiedName())) {
+        result.add((PsiClass)psiClass);
+      }
+    }
+    result.addAll(getScriptClassesByFQName(name, scope, inSource));
+    return result;
+  }",method,
+"  @Override
+  @NotNull
+  public String[] getAllClassNames() {
+    return ArrayUtil.toStringArray(StubIndex.getInstance().getAllKeys(GrScriptClassNameIndex.KEY, myProject));
+  }",method,
+"  @Override
+  public void getAllClassNames(@NotNull HashSet<String> dest) {
+    dest.addAll(StubIndex.getInstance().getAllKeys(GrScriptClassNameIndex.KEY, myProject));
+  }",method,
+"  @Override
+  @NotNull
+  public PsiMethod[] getMethodsByName(@NonNls @NotNull String name, @NotNull GlobalSearchScope scope) {
+    final Collection<? extends PsiMethod> methods = StubIndex.getElements(GrMethodNameIndex.KEY, name, myProject,
+                                                                          new GrSourceFilterScope(scope), GrMethod.class);
+    final Collection<? extends PsiMethod> annMethods = StubIndex.getElements(GrAnnotationMethodNameIndex.KEY, name, myProject,
+                                                                             new GrSourceFilterScope(scope),
+                                                                             GrAnnotationMethod.class);
+    if (methods.isEmpty() && annMethods.isEmpty()) return PsiMethod.EMPTY_ARRAY;
+    return ArrayUtil.mergeCollections(annMethods, methods, PsiMethod.ARRAY_FACTORY);
+  }",method,
+"  @Override
+  public boolean processMethodsWithName(@NonNls @NotNull String name,
+                                        @NotNull GlobalSearchScope scope,
+                                        @NotNull Processor<PsiMethod> processor) {
+    return processMethodsWithName(name, processor, scope, null);
+  }",method,
+"  @Override
+  public boolean processMethodsWithName(@NonNls @NotNull String name,
+                                        @NotNull Processor<? super PsiMethod> processor,
+                                        @NotNull GlobalSearchScope scope,
+                                        @Nullable IdFilter filter) {
+    GrSourceFilterScope filterScope = new GrSourceFilterScope(scope);
+    return StubIndex.getInstance().processElements(GrMethodNameIndex.KEY, name, myProject, filterScope, filter, GrMethod.class, processor) &&
+           StubIndex.getInstance().processElements(GrAnnotationMethodNameIndex.KEY, name, myProject, filterScope, filter,
+                                                   GrAnnotationMethod.class, processor);
+  }",method,
+"  @Override
+  @NotNull
+  public PsiMethod[] getMethodsByNameIfNotMoreThan(@NonNls @NotNull String name, @NotNull GlobalSearchScope scope, int maxCount) {
+    return getMethodsByName(name, scope);
+  }",method,
+"  @NotNull
+  @Override
+  public PsiField[] getFieldsByNameIfNotMoreThan(@NonNls @NotNull String name, @NotNull GlobalSearchScope scope, int maxCount) {
+    return getFieldsByName(name, scope);
+  }",method,
+"  @Override
+  @NotNull
+  public String[] getAllMethodNames() {
+    Collection<String> keys = StubIndex.getInstance().getAllKeys(GrMethodNameIndex.KEY, myProject);
+    keys.addAll(StubIndex.getInstance().getAllKeys(GrAnnotationMethodNameIndex.KEY, myProject));
+    return ArrayUtil.toStringArray(keys);
+  }",method,
+"  @Override
+  public void getAllMethodNames(@NotNull HashSet<String> set) {
+    set.addAll(StubIndex.getInstance().getAllKeys(GrMethodNameIndex.KEY, myProject));
+  }",method,
+"  @Override
+  @NotNull
+  public PsiField[] getFieldsByName(@NotNull @NonNls String name, @NotNull GlobalSearchScope scope) {
+    final Collection<? extends PsiField> fields = StubIndex.getElements(GrFieldNameIndex.KEY, name, myProject,
+                                                                        new GrSourceFilterScope(scope), GrField.class);
+    if (fields.isEmpty()) return PsiField.EMPTY_ARRAY;
+    return fields.toArray(new PsiField[fields.size()]);
+  }",method,
+"  @Override
+  @NotNull
+  public String[] getAllFieldNames() {
+    Collection<String> fields = StubIndex.getInstance().getAllKeys(GrFieldNameIndex.KEY, myProject);
+    return ArrayUtil.toStringArray(fields);
+  }",method,
+"  @Override
+  public void getAllFieldNames(@NotNull HashSet<String> set) {
+    set.addAll(StubIndex.getInstance().getAllKeys(GrFieldNameIndex.KEY, myProject));
+  }",method,
+"  @Override
+  public boolean processFieldsWithName(@NotNull String name,
+                                       @NotNull Processor<? super PsiField> processor,
+                                       @NotNull GlobalSearchScope scope,
+                                       @Nullable IdFilter filter) {
+    return StubIndex.getInstance().processElements(GrFieldNameIndex.KEY, name, myProject, new GrSourceFilterScope(scope), filter,
+                                                   GrField.class, processor);
+  }",method,
+"  @Override
+  public boolean processClassesWithName(@NotNull String name,
+                                        @NotNull Processor<? super PsiClass> processor,
+                                        @NotNull GlobalSearchScope scope,
+                                        @Nullable IdFilter filter) {
+    for (GroovyFile file : StubIndex.getElements(GrScriptClassNameIndex.KEY, name, myProject, new GrSourceFilterScope(scope), filter,
+                                                 GroovyFile.class)) {
+      PsiClass aClass = file.getScriptClass();
+      if (aClass != null && !processor.process(aClass)) return true;
+    }
+    return true;
+  }",method,

@@ -1,0 +1,1422 @@
+code_snippet,type,score
+"    if (i == -1) {
+      return -1;
+    }",method,
+"public class FilesystemBackedBuildFileTreeTest {
+  @Rule public TemporaryPaths tmp = new TemporaryPaths();
+  @Test
+  @Ignore(""Remove when test passes on OS X (the case preserving file system hurts us)"")
+  public void testCanConstructBuildFileTreeFromFilesystemOnOsX()
+      throws InterruptedException, IOException {
+    Path tempDir = tmp.getRoot();
+    ProjectFilesystem filesystem = TestProjectFilesystems.createProjectFilesystem(tempDir);
+    Path command = tempDir.resolve(""src/com/facebook/buck/command"");
+    Files.createDirectories(command);
+    Path notbuck = tempDir.resolve(""src/com/facebook/buck/notbuck"");
+    Files.createDirectories(notbuck);
+    // Although these next two lines create a file and a directory, the OS X filesystem is often
+    // case insensitive. As we run File.listFiles only the directory entry is returned. Thanks OS X.
+    touch(tempDir.resolve(""src/com/facebook/BUCK""));
+    touch(tempDir.resolve(""src/com/facebook/buck/BUCK""));
+    touch(tempDir.resolve(""src/com/facebook/buck/command/BUCK""));
+    touch(tempDir.resolve(""src/com/facebook/buck/notbuck/BUCK""));
+    BuildFileTree buildFiles = new FilesystemBackedBuildFileTree(filesystem, ""BUCK"");
+    Iterable<Path> allChildren =
+        buildFiles.getChildPaths(
+            BuildTargetFactory.newInstance(tmp.getRoot(), ""src"", ""com/facebook""));
+    assertEquals(ImmutableSet.of(Paths.get(""buck"")), ImmutableSet.copyOf(allChildren));
+    Iterable<Path> subChildren =
+        buildFiles.getChildPaths(
+            BuildTargetFactory.newInstance(tmp.getRoot(), ""//src"", ""/com/facebook/buck""));
+    assertEquals(
+        ImmutableSet.of(Paths.get(""command""), Paths.get(""notbuck"")),
+        ImmutableSet.copyOf(subChildren));
+  }
+  @Test
+  public void testCanConstructBuildFileTreeFromFilesystem()
+      throws InterruptedException, IOException {
+    Path tempDir = tmp.getRoot();
+    ProjectFilesystem filesystem = TestProjectFilesystems.createProjectFilesystem(tempDir);
+    Path command = tempDir.resolve(""src/com/example/build/command"");
+    Files.createDirectories(command);
+    Path notbuck = tempDir.resolve(""src/com/example/build/notbuck"");
+    Files.createDirectories(notbuck);
+    Files.createDirectories(tempDir.resolve(""src/com/example/some/directory""));
+    touch(tempDir.resolve(""src/com/example/BUCK""));
+    touch(tempDir.resolve(""src/com/example/build/BUCK""));
+    touch(tempDir.resolve(""src/com/example/build/command/BUCK""));
+    touch(tempDir.resolve(""src/com/example/build/notbuck/BUCK""));
+    touch(tempDir.resolve(""src/com/example/some/directory/BUCK""));
+    BuildFileTree buildFiles = new FilesystemBackedBuildFileTree(filesystem, ""BUCK"");
+    Collection<Path> allChildren =
+        buildFiles.getChildPaths(BuildTargetFactory.newInstance(""//src/com/example:example""));
+    assertEquals(
+        ImmutableSet.of(Paths.get(""build""), Paths.get(""some/directory"")),
+        ImmutableSet.copyOf(allChildren));
+    Iterable<Path> subChildren =
+        buildFiles.getChildPaths(BuildTargetFactory.newInstance(""//src/com/example/build:build""));
+    assertEquals(
+        ImmutableSet.of(Paths.get(""command""), Paths.get(""notbuck"")),
+        ImmutableSet.copyOf(subChildren));
+    assertEquals(
+        Paths.get(""src/com/example""),
+        buildFiles.getBasePathOfAncestorTarget(Paths.get(""src/com/example/foo"")).get());
+    assertEquals(
+        Paths.get(""src/com/example""),
+        buildFiles.getBasePathOfAncestorTarget(Paths.get(""src/com/example/some/bar"")).get());
+    assertEquals(
+        Paths.get(""src/com/example/some/directory""),
+        buildFiles
+            .getBasePathOfAncestorTarget(Paths.get(""src/com/example/some/directory/baz""))
+            .get());
+  }
+  @Test
+  public void respectsIgnorePaths() throws InterruptedException, IOException {
+    Path tempDir = tmp.getRoot();
+    Path fooBuck = tempDir.resolve(""foo/BUCK"");
+    Path fooBarBuck = tempDir.resolve(""foo/bar/BUCK"");
+    Path fooBazBuck = tempDir.resolve(""foo/baz/BUCK"");
+    Files.createDirectories(fooBarBuck.getParent());
+    Files.createDirectories(fooBazBuck.getParent());
+    touch(fooBuck);
+    touch(fooBarBuck);
+    touch(fooBazBuck);
+    Config config = ConfigBuilder.createFromText(""[project]"", ""ignore = foo/bar"");
+    ProjectFilesystem filesystem = TestProjectFilesystems.createProjectFilesystem(tempDir, config);
+    BuildFileTree buildFiles = new FilesystemBackedBuildFileTree(filesystem, ""BUCK"");
+    Collection<Path> children =
+        buildFiles.getChildPaths(BuildTargetFactory.newInstance(tempDir, ""//foo"", ""foo""));
+    assertEquals(ImmutableSet.of(Paths.get(""baz"")), children);
+    Path ancestor = buildFiles.getBasePathOfAncestorTarget(Paths.get(""foo/bar/xyzzy"")).get();
+    assertEquals(Paths.get(""foo""), ancestor);
+  }
+  @Test
+  public void rootBasePath() throws InterruptedException, IOException {
+    Path root = tmp.getRoot();
+    Files.createFile(root.resolve(""BUCK""));
+    Files.createDirectory(root.resolve(""foo""));
+    Files.createFile(root.resolve(""foo/BUCK""));
+    ProjectFilesystem filesystem = TestProjectFilesystems.createProjectFilesystem(root);
+    BuildFileTree buildFileTree = new FilesystemBackedBuildFileTree(filesystem, ""BUCK"");
+    Optional<Path> ancestor = buildFileTree.getBasePathOfAncestorTarget(Paths.get(""bar/baz""));
+    assertEquals(Optional.of(Paths.get("""")), ancestor);
+  }
+  @Test
+  public void missingBasePath() throws InterruptedException, IOException {
+    Path root = tmp.getRoot();
+    Files.createDirectory(root.resolve(""foo""));
+    Files.createFile(root.resolve(""foo/BUCK""));
+    ProjectFilesystem filesystem = TestProjectFilesystems.createProjectFilesystem(root);
+    BuildFileTree buildFileTree = new FilesystemBackedBuildFileTree(filesystem, ""BUCK"");
+    Optional<Path> ancestor = buildFileTree.getBasePathOfAncestorTarget(Paths.get(""bar/baz""));
+    assertEquals(Optional.empty(), ancestor);
+  }
+  @Test
+  public void shouldIgnoreBuckOutputDirectoriesByDefault()
+      throws InterruptedException, IOException {
+    Path root = tmp.getRoot();
+    ProjectFilesystem filesystem =
+        TestProjectFilesystems.createProjectFilesystem(root, new Config());
+    Path buckOut = root.resolve(filesystem.getBuckPaths().getBuckOut());
+    Files.createDirectories(buckOut);
+    touch(buckOut.resolve(""BUCK""));
+    Path sibling = buckOut.resolve(""someFile"");
+    touch(sibling);
+    // Config doesn't set any ""ignore"" entries.
+    BuildFileTree buildFileTree = new FilesystemBackedBuildFileTree(filesystem, ""BUCK"");
+    Optional<Path> ancestor =
+        buildFileTree.getBasePathOfAncestorTarget(
+            filesystem.getBuckPaths().getBuckOut().resolve(""someFile""));
+    assertFalse(ancestor.isPresent());
+  }
+  @Test
+  public void shouldIgnoreBuckCacheDirectoriesByDefault() throws InterruptedException, IOException {
+    Path root = tmp.getRoot();
+    Path cacheDir = root.resolve(""buck-out/cache"");
+    Files.createDirectories(cacheDir);
+    touch(cacheDir.resolve(""BUCK""));
+    Path sibling = cacheDir.resolve(""someFile"");
+    touch(sibling);
+    // Config doesn't set any ""ignore"" entries.
+    ProjectFilesystem filesystem =
+        TestProjectFilesystems.createProjectFilesystem(root, new Config());
+    BuildFileTree buildFileTree = new FilesystemBackedBuildFileTree(filesystem, ""BUCK"");
+    Optional<Path> ancestor =
+        buildFileTree.getBasePathOfAncestorTarget(cacheDir.resolve(""someFile""));
+    assertFalse(ancestor.isPresent());
+  }
+  private void touch(Path path) throws IOException {
+    Files.write(path, """".getBytes(UTF_8));
+  }
+}",class,
+"  @Rule public TemporaryPaths tmp = new TemporaryPaths();
+  @Test
+  @Ignore(""Remove when test passes on OS X (the case preserving file system hurts us)"")
+  public void testCanConstructBuildFileTreeFromFilesystemOnOsX()
+      throws InterruptedException, IOException {
+    Path tempDir = tmp.getRoot();
+    ProjectFilesystem filesystem = TestProjectFilesystems.createProjectFilesystem(tempDir);
+    Path command = tempDir.resolve(""src/com/facebook/buck/command"");
+    Files.createDirectories(command);
+    Path notbuck = tempDir.resolve(""src/com/facebook/buck/notbuck"");
+    Files.createDirectories(notbuck);
+    // Although these next two lines create a file and a directory, the OS X filesystem is often
+    // case insensitive. As we run File.listFiles only the directory entry is returned. Thanks OS X.
+    touch(tempDir.resolve(""src/com/facebook/BUCK""));
+    touch(tempDir.resolve(""src/com/facebook/buck/BUCK""));
+    touch(tempDir.resolve(""src/com/facebook/buck/command/BUCK""));
+    touch(tempDir.resolve(""src/com/facebook/buck/notbuck/BUCK""));
+    BuildFileTree buildFiles = new FilesystemBackedBuildFileTree(filesystem, ""BUCK"");
+    Iterable<Path> allChildren =
+        buildFiles.getChildPaths(
+            BuildTargetFactory.newInstance(tmp.getRoot(), ""src"", ""com/facebook""));
+    assertEquals(ImmutableSet.of(Paths.get(""buck"")), ImmutableSet.copyOf(allChildren));
+    Iterable<Path> subChildren =
+        buildFiles.getChildPaths(
+            BuildTargetFactory.newInstance(tmp.getRoot(), ""//src"", ""/com/facebook/buck""));
+    assertEquals(
+        ImmutableSet.of(Paths.get(""command""), Paths.get(""notbuck"")),
+        ImmutableSet.copyOf(subChildren));
+  }
+  @Test
+  public void testCanConstructBuildFileTreeFromFilesystem()
+      throws InterruptedException, IOException {
+    Path tempDir = tmp.getRoot();
+    ProjectFilesystem filesystem = TestProjectFilesystems.createProjectFilesystem(tempDir);
+    Path command = tempDir.resolve(""src/com/example/build/command"");
+    Files.createDirectories(command);
+    Path notbuck = tempDir.resolve(""src/com/example/build/notbuck"");
+    Files.createDirectories(notbuck);
+    Files.createDirectories(tempDir.resolve(""src/com/example/some/directory""));
+    touch(tempDir.resolve(""src/com/example/BUCK""));
+    touch(tempDir.resolve(""src/com/example/build/BUCK""));
+    touch(tempDir.resolve(""src/com/example/build/command/BUCK""));
+    touch(tempDir.resolve(""src/com/example/build/notbuck/BUCK""));
+    touch(tempDir.resolve(""src/com/example/some/directory/BUCK""));
+    BuildFileTree buildFiles = new FilesystemBackedBuildFileTree(filesystem, ""BUCK"");
+    Collection<Path> allChildren =
+        buildFiles.getChildPaths(BuildTargetFactory.newInstance(""//src/com/example:example""));
+    assertEquals(
+        ImmutableSet.of(Paths.get(""build""), Paths.get(""some/directory"")),
+        ImmutableSet.copyOf(allChildren));
+    Iterable<Path> subChildren =
+        buildFiles.getChildPaths(BuildTargetFactory.newInstance(""//src/com/example/build:build""));
+    assertEquals(
+        ImmutableSet.of(Paths.get(""command""), Paths.get(""notbuck"")),
+        ImmutableSet.copyOf(subChildren));
+    assertEquals(
+        Paths.get(""src/com/example""),
+        buildFiles.getBasePathOfAncestorTarget(Paths.get(""src/com/example/foo"")).get());
+    assertEquals(
+        Paths.get(""src/com/example""),
+        buildFiles.getBasePathOfAncestorTarget(Paths.get(""src/com/example/some/bar"")).get());
+    assertEquals(
+        Paths.get(""src/com/example/some/directory""),
+        buildFiles
+            .getBasePathOfAncestorTarget(Paths.get(""src/com/example/some/directory/baz""))
+            .get());
+  }
+  @Test
+  public void respectsIgnorePaths() throws InterruptedException, IOException {
+    Path tempDir = tmp.getRoot();
+    Path fooBuck = tempDir.resolve(""foo/BUCK"");
+    Path fooBarBuck = tempDir.resolve(""foo/bar/BUCK"");
+    Path fooBazBuck = tempDir.resolve(""foo/baz/BUCK"");
+    Files.createDirectories(fooBarBuck.getParent());
+    Files.createDirectories(fooBazBuck.getParent());
+    touch(fooBuck);
+    touch(fooBarBuck);
+    touch(fooBazBuck);
+    Config config = ConfigBuilder.createFromText(""[project]"", ""ignore = foo/bar"");
+    ProjectFilesystem filesystem = TestProjectFilesystems.createProjectFilesystem(tempDir, config);
+    BuildFileTree buildFiles = new FilesystemBackedBuildFileTree(filesystem, ""BUCK"");
+    Collection<Path> children =
+        buildFiles.getChildPaths(BuildTargetFactory.newInstance(tempDir, ""//foo"", ""foo""));
+    assertEquals(ImmutableSet.of(Paths.get(""baz"")), children);
+    Path ancestor = buildFiles.getBasePathOfAncestorTarget(Paths.get(""foo/bar/xyzzy"")).get();
+    assertEquals(Paths.get(""foo""), ancestor);
+  }",method,
+"  @Test
+  public void testCanConstructBuildFileTreeFromFilesystem()
+      throws InterruptedException, IOException {
+    Path tempDir = tmp.getRoot();
+    ProjectFilesystem filesystem = TestProjectFilesystems.createProjectFilesystem(tempDir);
+    Path command = tempDir.resolve(""src/com/example/build/command"");
+    Files.createDirectories(command);
+    Path notbuck = tempDir.resolve(""src/com/example/build/notbuck"");
+    Files.createDirectories(notbuck);
+    Files.createDirectories(tempDir.resolve(""src/com/example/some/directory""));
+    touch(tempDir.resolve(""src/com/example/BUCK""));
+    touch(tempDir.resolve(""src/com/example/build/BUCK""));
+    touch(tempDir.resolve(""src/com/example/build/command/BUCK""));
+    touch(tempDir.resolve(""src/com/example/build/notbuck/BUCK""));
+    touch(tempDir.resolve(""src/com/example/some/directory/BUCK""));
+    BuildFileTree buildFiles = new FilesystemBackedBuildFileTree(filesystem, ""BUCK"");
+    Collection<Path> allChildren =
+        buildFiles.getChildPaths(BuildTargetFactory.newInstance(""//src/com/example:example""));
+    assertEquals(
+        ImmutableSet.of(Paths.get(""build""), Paths.get(""some/directory"")),
+        ImmutableSet.copyOf(allChildren));
+    Iterable<Path> subChildren =
+        buildFiles.getChildPaths(BuildTargetFactory.newInstance(""//src/com/example/build:build""));
+    assertEquals(
+        ImmutableSet.of(Paths.get(""command""), Paths.get(""notbuck"")),
+        ImmutableSet.copyOf(subChildren));
+    assertEquals(
+        Paths.get(""src/com/example""),
+        buildFiles.getBasePathOfAncestorTarget(Paths.get(""src/com/example/foo"")).get());
+    assertEquals(
+        Paths.get(""src/com/example""),
+        buildFiles.getBasePathOfAncestorTarget(Paths.get(""src/com/example/some/bar"")).get());
+    assertEquals(
+        Paths.get(""src/com/example/some/directory""),
+        buildFiles
+            .getBasePathOfAncestorTarget(Paths.get(""src/com/example/some/directory/baz""))
+            .get());
+  }
+  @Test
+  public void respectsIgnorePaths() throws InterruptedException, IOException {
+    Path tempDir = tmp.getRoot();
+    Path fooBuck = tempDir.resolve(""foo/BUCK"");
+    Path fooBarBuck = tempDir.resolve(""foo/bar/BUCK"");
+    Path fooBazBuck = tempDir.resolve(""foo/baz/BUCK"");
+    Files.createDirectories(fooBarBuck.getParent());
+    Files.createDirectories(fooBazBuck.getParent());
+    touch(fooBuck);
+    touch(fooBarBuck);
+    touch(fooBazBuck);
+    Config config = ConfigBuilder.createFromText(""[project]"", ""ignore = foo/bar"");
+    ProjectFilesystem filesystem = TestProjectFilesystems.createProjectFilesystem(tempDir, config);
+    BuildFileTree buildFiles = new FilesystemBackedBuildFileTree(filesystem, ""BUCK"");
+    Collection<Path> children =
+        buildFiles.getChildPaths(BuildTargetFactory.newInstance(tempDir, ""//foo"", ""foo""));
+    assertEquals(ImmutableSet.of(Paths.get(""baz"")), children);
+    Path ancestor = buildFiles.getBasePathOfAncestorTarget(Paths.get(""foo/bar/xyzzy"")).get();
+    assertEquals(Paths.get(""foo""), ancestor);
+  }
+  @Test
+  public void rootBasePath() throws InterruptedException, IOException {
+    Path root = tmp.getRoot();
+    Files.createFile(root.resolve(""BUCK""));
+    Files.createDirectory(root.resolve(""foo""));
+    Files.createFile(root.resolve(""foo/BUCK""));
+    ProjectFilesystem filesystem = TestProjectFilesystems.createProjectFilesystem(root);
+    BuildFileTree buildFileTree = new FilesystemBackedBuildFileTree(filesystem, ""BUCK"");
+    Optional<Path> ancestor = buildFileTree.getBasePathOfAncestorTarget(Paths.get(""bar/baz""));
+    assertEquals(Optional.of(Paths.get("""")), ancestor);
+  }",method,
+"  @Test
+  public void respectsIgnorePaths() throws InterruptedException, IOException {
+    Path tempDir = tmp.getRoot();
+    Path fooBuck = tempDir.resolve(""foo/BUCK"");
+    Path fooBarBuck = tempDir.resolve(""foo/bar/BUCK"");
+    Path fooBazBuck = tempDir.resolve(""foo/baz/BUCK"");
+    Files.createDirectories(fooBarBuck.getParent());
+    Files.createDirectories(fooBazBuck.getParent());
+    touch(fooBuck);
+    touch(fooBarBuck);
+    touch(fooBazBuck);
+    Config config = ConfigBuilder.createFromText(""[project]"", ""ignore = foo/bar"");
+    ProjectFilesystem filesystem = TestProjectFilesystems.createProjectFilesystem(tempDir, config);
+    BuildFileTree buildFiles = new FilesystemBackedBuildFileTree(filesystem, ""BUCK"");
+    Collection<Path> children =
+        buildFiles.getChildPaths(BuildTargetFactory.newInstance(tempDir, ""//foo"", ""foo""));
+    assertEquals(ImmutableSet.of(Paths.get(""baz"")), children);
+    Path ancestor = buildFiles.getBasePathOfAncestorTarget(Paths.get(""foo/bar/xyzzy"")).get();
+    assertEquals(Paths.get(""foo""), ancestor);
+  }
+  @Test
+  public void rootBasePath() throws InterruptedException, IOException {
+    Path root = tmp.getRoot();
+    Files.createFile(root.resolve(""BUCK""));
+    Files.createDirectory(root.resolve(""foo""));
+    Files.createFile(root.resolve(""foo/BUCK""));
+    ProjectFilesystem filesystem = TestProjectFilesystems.createProjectFilesystem(root);
+    BuildFileTree buildFileTree = new FilesystemBackedBuildFileTree(filesystem, ""BUCK"");
+    Optional<Path> ancestor = buildFileTree.getBasePathOfAncestorTarget(Paths.get(""bar/baz""));
+    assertEquals(Optional.of(Paths.get("""")), ancestor);
+  }",method,
+"  @Test
+  public void rootBasePath() throws InterruptedException, IOException {
+    Path root = tmp.getRoot();
+    Files.createFile(root.resolve(""BUCK""));
+    Files.createDirectory(root.resolve(""foo""));
+    Files.createFile(root.resolve(""foo/BUCK""));
+    ProjectFilesystem filesystem = TestProjectFilesystems.createProjectFilesystem(root);
+    BuildFileTree buildFileTree = new FilesystemBackedBuildFileTree(filesystem, ""BUCK"");
+    Optional<Path> ancestor = buildFileTree.getBasePathOfAncestorTarget(Paths.get(""bar/baz""));
+    assertEquals(Optional.of(Paths.get("""")), ancestor);
+  }",method,
+"  @Test
+  public void missingBasePath() throws InterruptedException, IOException {
+    Path root = tmp.getRoot();
+    Files.createDirectory(root.resolve(""foo""));
+    Files.createFile(root.resolve(""foo/BUCK""));
+    ProjectFilesystem filesystem = TestProjectFilesystems.createProjectFilesystem(root);
+    BuildFileTree buildFileTree = new FilesystemBackedBuildFileTree(filesystem, ""BUCK"");
+    Optional<Path> ancestor = buildFileTree.getBasePathOfAncestorTarget(Paths.get(""bar/baz""));
+    assertEquals(Optional.empty(), ancestor);
+  }",method,
+"  @Test
+  public void shouldIgnoreBuckOutputDirectoriesByDefault()
+      throws InterruptedException, IOException {
+    Path root = tmp.getRoot();
+    ProjectFilesystem filesystem =
+        TestProjectFilesystems.createProjectFilesystem(root, new Config());
+    Path buckOut = root.resolve(filesystem.getBuckPaths().getBuckOut());
+    Files.createDirectories(buckOut);
+    touch(buckOut.resolve(""BUCK""));
+    Path sibling = buckOut.resolve(""someFile"");
+    touch(sibling);
+    // Config doesn't set any ""ignore"" entries.
+    BuildFileTree buildFileTree = new FilesystemBackedBuildFileTree(filesystem, ""BUCK"");
+    Optional<Path> ancestor =
+        buildFileTree.getBasePathOfAncestorTarget(
+            filesystem.getBuckPaths().getBuckOut().resolve(""someFile""));
+    assertFalse(ancestor.isPresent());
+  }",method,
+"  @Test
+  public void shouldIgnoreBuckCacheDirectoriesByDefault() throws InterruptedException, IOException {
+    Path root = tmp.getRoot();
+    Path cacheDir = root.resolve(""buck-out/cache"");
+    Files.createDirectories(cacheDir);
+    touch(cacheDir.resolve(""BUCK""));
+    Path sibling = cacheDir.resolve(""someFile"");
+    touch(sibling);
+    // Config doesn't set any ""ignore"" entries.
+    ProjectFilesystem filesystem =
+        TestProjectFilesystems.createProjectFilesystem(root, new Config());
+    BuildFileTree buildFileTree = new FilesystemBackedBuildFileTree(filesystem, ""BUCK"");
+    Optional<Path> ancestor =
+        buildFileTree.getBasePathOfAncestorTarget(cacheDir.resolve(""someFile""));
+    assertFalse(ancestor.isPresent());
+  }",method,
+"  private void touch(Path path) throws IOException {
+    Files.write(path, """".getBytes(UTF_8));
+  }",method,
+"public class TestingPrestoServerLauncher
+{
+    @Inject
+    CommandMetadata commandMetadata;
+    @Inject
+    public HelpOption helpOption;
+    @Inject
+    TestingPrestoServerLauncherOptions options = new TestingPrestoServerLauncherOptions();
+    private static void waitForInterruption()
+    {
+        try {
+            Thread.currentThread().join();
+        }
+        catch (InterruptedException e) {
+            Thread.currentThread().interrupt();
+        }
+    }
+    public void run()
+            throws Exception
+    {
+        try (TestingPrestoServer server = new TestingPrestoServer()) {
+            for (String pluginClass : options.getPluginClassNames()) {
+                Plugin plugin = (Plugin) Class.forName(pluginClass).newInstance();
+                server.installPlugin(plugin);
+            }
+            for (Catalog catalog : options.getCatalogs()) {
+                server.createCatalog(catalog.getCatalogName(), catalog.getConnectorName());
+            }
+            System.out.println(server.getAddress());
+            waitForInterruption();
+        }
+    }
+    public static void main(String[] args)
+            throws Exception
+    {
+        TestingPrestoServerLauncher launcher = singleCommand(TestingPrestoServerLauncher.class).parse(args);
+        if (launcher.helpOption.showHelpIfRequested()) {
+            return;
+        }
+        try {
+            launcher.validateOptions();
+        }
+        catch (IllegalStateException e) {
+            System.out.println(""ERROR: "" + e.getMessage());
+            System.out.println();
+            Help.help(launcher.commandMetadata);
+            return;
+        }
+        launcher.run();
+    }
+    private void validateOptions()
+    {
+        options.validate();
+    }
+}",class,
+"    private static void waitForInterruption()
+    {
+        try {
+            Thread.currentThread().join();
+        }
+        catch (InterruptedException e) {
+            Thread.currentThread().interrupt();
+        }
+    }",method,
+"        catch (InterruptedException e) {
+            Thread.currentThread().interrupt();
+        }",method,
+"    public void run()
+            throws Exception
+    {
+        try (TestingPrestoServer server = new TestingPrestoServer()) {
+            for (String pluginClass : options.getPluginClassNames()) {
+                Plugin plugin = (Plugin) Class.forName(pluginClass).newInstance();
+                server.installPlugin(plugin);
+            }
+            for (Catalog catalog : options.getCatalogs()) {
+                server.createCatalog(catalog.getCatalogName(), catalog.getConnectorName());
+            }
+            System.out.println(server.getAddress());
+            waitForInterruption();
+        }
+    }",method,
+"    public static void main(String[] args)
+            throws Exception
+    {
+        TestingPrestoServerLauncher launcher = singleCommand(TestingPrestoServerLauncher.class).parse(args);
+        if (launcher.helpOption.showHelpIfRequested()) {
+            return;
+        }
+        try {
+            launcher.validateOptions();
+        }
+        catch (IllegalStateException e) {
+            System.out.println(""ERROR: "" + e.getMessage());
+            System.out.println();
+            Help.help(launcher.commandMetadata);
+            return;
+        }
+        launcher.run();
+    }",method,
+"        catch (IllegalStateException e) {
+            System.out.println(""ERROR: "" + e.getMessage());
+            System.out.println();
+            Help.help(launcher.commandMetadata);
+            return;
+        }",method,
+"    private void validateOptions()
+    {
+        options.validate();
+    }",method,
+"public class Person implements MultiItemEntity{
+    public Person(String name, int age) {
+        this.age = age;
+        this.name = name;
+    }
+    public String name;
+    public int age;
+    @Override
+    public int getItemType() {
+        return ExpandableItemAdapter.TYPE_PERSON;
+    }
+}",class,
+"public class Status {
+    private boolean isRetweet;
+    private String text;
+    private String userName;
+    private String userAvatar;
+    private String createdAt;
+    public boolean isRetweet() {
+        return isRetweet;
+    }
+    public void setRetweet(boolean retweet) {
+        isRetweet = retweet;
+    }
+    public String getText() {
+        return text;
+    }
+    public void setText(String text) {
+        this.text = text;
+    }
+    public String getUserName() {
+        return userName;
+    }
+    public void setUserName(String userName) {
+        this.userName = userName;
+    }
+    public String getUserAvatar() {
+        return userAvatar;
+    }
+    public void setUserAvatar(String userAvatar) {
+        this.userAvatar = userAvatar;
+    }
+    public String getCreatedAt() {
+        return createdAt;
+    }
+    public void setCreatedAt(String createdAt) {
+        this.createdAt = createdAt;
+    }
+    @Override
+    public String toString() {
+        return ""Status{"" +
+                ""isRetweet="" + isRetweet +
+                "", text='"" + text + '\'' +
+                "", userName='"" + userName + '\'' +
+                "", userAvatar='"" + userAvatar + '\'' +
+                "", createdAt='"" + createdAt + '\'' +
+                '}';
+    }
+}",class,
+"public class Video {
+    private String img;
+    private String name;
+    public Video(String img, String name) {
+        this.img = img;
+        this.name = name;
+    }
+    public String getImg() {
+        return img;
+    }
+    public void setImg(String img) {
+        this.img = img;
+    }
+    public String getName() {
+        return name;
+    }
+    public void setName(String name) {
+        this.name = name;
+    }
+}",class,
+"    public Person(String name, int age) {
+        this.age = age;
+        this.name = name;
+    }",method,
+"    @Override
+    public int getItemType() {
+        return ExpandableItemAdapter.TYPE_PERSON;
+    }",method,
+"    public boolean isRetweet() {
+        return isRetweet;
+    }",method,
+"    public void setRetweet(boolean retweet) {
+        isRetweet = retweet;
+    }",method,
+"    public String getText() {
+        return text;
+    }",method,
+"    public void setText(String text) {
+        this.text = text;
+    }",method,
+"    public String getUserName() {
+        return userName;
+    }",method,
+"    public void setUserName(String userName) {
+        this.userName = userName;
+    }",method,
+"    public String getUserAvatar() {
+        return userAvatar;
+    }",method,
+"    public void setUserAvatar(String userAvatar) {
+        this.userAvatar = userAvatar;
+    }",method,
+"    public String getCreatedAt() {
+        return createdAt;
+    }",method,
+"    public void setCreatedAt(String createdAt) {
+        this.createdAt = createdAt;
+    }",method,
+"    @Override
+    public String toString() {
+        return ""Status{"" +
+                ""isRetweet="" + isRetweet +
+                "", text='"" + text + '\'' +
+                "", userName='"" + userName + '\'' +
+                "", userAvatar='"" + userAvatar + '\'' +
+                "", createdAt='"" + createdAt + '\'' +
+                '}';
+    }",method,
+"    public Video(String img, String name) {
+        this.img = img;
+        this.name = name;
+    }",method,
+"    public String getImg() {
+        return img;
+    }",method,
+"    public void setImg(String img) {
+        this.img = img;
+    }",method,
+"    public String getName() {
+        return name;
+    }",method,
+"    public void setName(String name) {
+        this.name = name;
+    }",method,
+" class IntDeltaCompressor implements IntList {
+  @NotNull
+  public static IntDeltaCompressor newInstance(@NotNull IntList deltaList) {
+    if (deltaList.size() < 0) throw new NegativeArraySizeException(""size < 0: "" + deltaList.size());
+    int bytesAfterCompression = ByteArrayUtils.countBytesAfterCompression(deltaList);
+    Flags startedDeltaIndex = new BitSetFlags(bytesAfterCompression);
+    byte[] compressedDeltas = new byte[bytesAfterCompression];
+    int currentStartIndex = 0;
+    for (int i = 0; i < deltaList.size(); i++) {
+      startedDeltaIndex.set(currentStartIndex, true);
+      int value = deltaList.get(i);
+      int sizeOf = ByteArrayUtils.sizeOf(value);
+      ByteArrayUtils.writeDelta(currentStartIndex, value, sizeOf, compressedDeltas);
+      currentStartIndex += sizeOf;
+    }
+    return new IntDeltaCompressor(compressedDeltas, startedDeltaIndex, deltaList.size());
+  }
+  @NotNull private final byte[] myCompressedDeltas;
+  @NotNull private final Flags myStartedDeltaIndex;
+  @NotNull private final IntToIntMap myStartIndexMap;
+  private IntDeltaCompressor(@NotNull byte[] compressedDeltas, @NotNull final Flags startedDeltaIndex, int countDeltas) {
+    myCompressedDeltas = compressedDeltas;
+    myStartedDeltaIndex = startedDeltaIndex;
+    myStartIndexMap = PermanentListIntToIntMap.newInstance(startedDeltaIndex, countDeltas);
+  }
+  // [left, right)
+  public int getSumOfInterval(int left, int right) {
+    if (left < 0 || left > right || right > size()) {
+      throw new IllegalArgumentException(""Size is: "" + size() + "", but interval is: ("" + left + "", "" + right + "")"");
+    }
+    if (left == size()) return 0;
+    int startIndex = myStartIndexMap.getLongIndex(left);
+    int sum = 0;
+    for (int i = 0; i < right - left; i++) {
+      int sizeOf = getNextStartIndex(startIndex) - startIndex;
+      sum += ByteArrayUtils.readDelta(startIndex, sizeOf, myCompressedDeltas);
+      startIndex += sizeOf;
+    }
+    return sum;
+  }
+  @Override
+  public int get(int index) {
+    if (index < 0 || index >= size()) throw new IllegalArgumentException(""Size is: "" + size() + "", but index is: "" + index);
+    int startIndex = myStartIndexMap.getLongIndex(index);
+    int sizeOf = getNextStartIndex(startIndex) - startIndex;
+    return ByteArrayUtils.readDelta(startIndex, sizeOf, myCompressedDeltas);
+  }
+  @Override
+  public int size() {
+    return myStartIndexMap.shortSize();
+  }
+  private int getNextStartIndex(int currentIndex) {
+    for (int i = currentIndex + 1; i < myStartedDeltaIndex.size(); i++) {
+      if (myStartedDeltaIndex.get(i)) return i;
+    }
+    return myStartedDeltaIndex.size();
+  }
+}",class,
+"  @NotNull
+  public static IntDeltaCompressor newInstance(@NotNull IntList deltaList) {
+    if (deltaList.size() < 0) throw new NegativeArraySizeException(""size < 0: "" + deltaList.size());
+    int bytesAfterCompression = ByteArrayUtils.countBytesAfterCompression(deltaList);
+    Flags startedDeltaIndex = new BitSetFlags(bytesAfterCompression);
+    byte[] compressedDeltas = new byte[bytesAfterCompression];
+    int currentStartIndex = 0;
+    for (int i = 0; i < deltaList.size(); i++) {
+      startedDeltaIndex.set(currentStartIndex, true);
+      int value = deltaList.get(i);
+      int sizeOf = ByteArrayUtils.sizeOf(value);
+      ByteArrayUtils.writeDelta(currentStartIndex, value, sizeOf, compressedDeltas);
+      currentStartIndex += sizeOf;
+    }
+    return new IntDeltaCompressor(compressedDeltas, startedDeltaIndex, deltaList.size());
+  }",method,
+"  @NotNull private final byte[] myCompressedDeltas;
+  @NotNull private final Flags myStartedDeltaIndex;
+  @NotNull private final IntToIntMap myStartIndexMap;
+  private IntDeltaCompressor(@NotNull byte[] compressedDeltas, @NotNull final Flags startedDeltaIndex, int countDeltas) {
+    myCompressedDeltas = compressedDeltas;
+    myStartedDeltaIndex = startedDeltaIndex;
+    myStartIndexMap = PermanentListIntToIntMap.newInstance(startedDeltaIndex, countDeltas);
+  }",method,
+"  public int getSumOfInterval(int left, int right) {
+    if (left < 0 || left > right || right > size()) {
+      throw new IllegalArgumentException(""Size is: "" + size() + "", but interval is: ("" + left + "", "" + right + "")"");
+    }
+    if (left == size()) return 0;
+    int startIndex = myStartIndexMap.getLongIndex(left);
+    int sum = 0;
+    for (int i = 0; i < right - left; i++) {
+      int sizeOf = getNextStartIndex(startIndex) - startIndex;
+      sum += ByteArrayUtils.readDelta(startIndex, sizeOf, myCompressedDeltas);
+      startIndex += sizeOf;
+    }
+    return sum;
+  }",method,
+"    for (int i = 0; i < right - left; i++) {
+      int sizeOf = getNextStartIndex(startIndex) - startIndex;
+      sum += ByteArrayUtils.readDelta(startIndex, sizeOf, myCompressedDeltas);
+      startIndex += sizeOf;
+    }",method,
+"  @Override
+  public int get(int index) {
+    if (index < 0 || index >= size()) throw new IllegalArgumentException(""Size is: "" + size() + "", but index is: "" + index);
+    int startIndex = myStartIndexMap.getLongIndex(index);
+    int sizeOf = getNextStartIndex(startIndex) - startIndex;
+    return ByteArrayUtils.readDelta(startIndex, sizeOf, myCompressedDeltas);
+  }",method,
+"  @Override
+  public int size() {
+    return myStartIndexMap.shortSize();
+  }",method,
+"  private int getNextStartIndex(int currentIndex) {
+    for (int i = currentIndex + 1; i < myStartedDeltaIndex.size(); i++) {
+      if (myStartedDeltaIndex.get(i)) return i;
+    }
+    return myStartedDeltaIndex.size();
+  }",method,
+"public class ColorParserTest extends InstrumentationTestCase {
+  // Negative tests.
+  public void testParseUnknownColor() {
+    try {
+      ColorParser.parseTtmlColor(""colorOfAnElectron"");
+      fail();
+    } catch (IllegalArgumentException e) {
+      // expected
+    }
+  }
+  public void testParseNull() {
+    try {
+      ColorParser.parseTtmlColor(null);
+      fail();
+    } catch (IllegalArgumentException e) {
+      // expected
+    }
+  }
+  public void testParseEmpty() {
+    try {
+      ColorParser.parseTtmlColor("""");
+      fail();
+    } catch (IllegalArgumentException e) {
+      // expected
+    }
+  }
+  public void testRgbColorParsingRgbValuesNegative() {
+    try {
+      ColorParser.parseTtmlColor(""rgb(-4, 55, 209)"");
+      fail();
+    } catch (IllegalArgumentException e) {
+      // expected
+    }
+  }
+  // Positive tests.
+  public void testHexCodeParsing() {
+    assertEquals(Color.WHITE, ColorParser.parseTtmlColor(""#FFFFFF""));
+    assertEquals(Color.WHITE, ColorParser.parseTtmlColor(""#FFFFFFFF""));
+    assertEquals(Color.parseColor(""#FF123456""), ColorParser.parseTtmlColor(""#123456""));
+    // Hex colors in ColorParser are RGBA, where-as {@link Color#parseColor} takes ARGB.
+    assertEquals(Color.parseColor(""#00FFFFFF""), ColorParser.parseTtmlColor(""#FFFFFF00""));
+    assertEquals(Color.parseColor(""#78123456""), ColorParser.parseTtmlColor(""#12345678""));
+  }
+  public void testRgbColorParsing() {
+    assertEquals(Color.WHITE, ColorParser.parseTtmlColor(""rgb(255,255,255)""));
+    // Spaces are ignored.
+    assertEquals(Color.WHITE, ColorParser.parseTtmlColor(""   rgb (      255, 255, 255)""));
+  }
+  public void testRgbColorParsingRgbValuesOutOfBounds() {
+    int outOfBounds = ColorParser.parseTtmlColor(""rgb(999, 999, 999)"");
+    int color = Color.rgb(999, 999, 999);
+    // Behave like the framework does.
+    assertEquals(color, outOfBounds);
+  }
+  public void testRgbaColorParsing() {
+    assertEquals(Color.WHITE, ColorParser.parseTtmlColor(""rgba(255,255,255,255)""));
+    assertEquals(Color.argb(255, 255, 255, 255),
+        ColorParser.parseTtmlColor(""rgba(255,255,255,255)""));
+    assertEquals(Color.BLACK, ColorParser.parseTtmlColor(""rgba(0, 0, 0, 255)""));
+    assertEquals(Color.argb(0, 0, 0, 255), ColorParser.parseTtmlColor(""rgba(0, 0, 255, 0)""));
+    assertEquals(Color.RED, ColorParser.parseTtmlColor(""rgba(255, 0, 0, 255)""));
+    assertEquals(Color.argb(0, 255, 0, 255), ColorParser.parseTtmlColor(""rgba(255, 0, 255, 0)""));
+    assertEquals(Color.argb(205, 255, 0, 0), ColorParser.parseTtmlColor(""rgba(255, 0, 0, 205)""));
+  }
+}",class,
+"  public void testParseUnknownColor() {
+    try {
+      ColorParser.parseTtmlColor(""colorOfAnElectron"");
+      fail();
+    } catch (IllegalArgumentException e) {
+      // expected
+    }
+  }",method,
+"  public void testParseNull() {
+    try {
+      ColorParser.parseTtmlColor(null);
+      fail();
+    } catch (IllegalArgumentException e) {
+      // expected
+    }
+  }",method,
+"  public void testParseEmpty() {
+    try {
+      ColorParser.parseTtmlColor("""");
+      fail();
+    } catch (IllegalArgumentException e) {
+      // expected
+    }
+  }",method,
+"  public void testRgbColorParsingRgbValuesNegative() {
+    try {
+      ColorParser.parseTtmlColor(""rgb(-4, 55, 209)"");
+      fail();
+    } catch (IllegalArgumentException e) {
+      // expected
+    }
+  }",method,
+"  public void testHexCodeParsing() {
+    assertEquals(Color.WHITE, ColorParser.parseTtmlColor(""#FFFFFF""));
+    assertEquals(Color.WHITE, ColorParser.parseTtmlColor(""#FFFFFFFF""));
+    assertEquals(Color.parseColor(""#FF123456""), ColorParser.parseTtmlColor(""#123456""));
+    // Hex colors in ColorParser are RGBA, where-as {@link Color#parseColor} takes ARGB.
+    assertEquals(Color.parseColor(""#00FFFFFF""), ColorParser.parseTtmlColor(""#FFFFFF00""));
+    assertEquals(Color.parseColor(""#78123456""), ColorParser.parseTtmlColor(""#12345678""));
+  }",method,
+"  public void testRgbColorParsing() {
+    assertEquals(Color.WHITE, ColorParser.parseTtmlColor(""rgb(255,255,255)""));
+    // Spaces are ignored.
+    assertEquals(Color.WHITE, ColorParser.parseTtmlColor(""   rgb (      255, 255, 255)""));
+  }",method,
+"  public void testRgbColorParsingRgbValuesOutOfBounds() {
+    int outOfBounds = ColorParser.parseTtmlColor(""rgb(999, 999, 999)"");
+    int color = Color.rgb(999, 999, 999);
+    // Behave like the framework does.
+    assertEquals(color, outOfBounds);
+  }",method,
+"  public void testRgbaColorParsing() {
+    assertEquals(Color.WHITE, ColorParser.parseTtmlColor(""rgba(255,255,255,255)""));
+    assertEquals(Color.argb(255, 255, 255, 255),
+        ColorParser.parseTtmlColor(""rgba(255,255,255,255)""));
+    assertEquals(Color.BLACK, ColorParser.parseTtmlColor(""rgba(0, 0, 0, 255)""));
+    assertEquals(Color.argb(0, 0, 0, 255), ColorParser.parseTtmlColor(""rgba(0, 0, 255, 0)""));
+    assertEquals(Color.RED, ColorParser.parseTtmlColor(""rgba(255, 0, 0, 255)""));
+    assertEquals(Color.argb(0, 255, 0, 255), ColorParser.parseTtmlColor(""rgba(255, 0, 255, 0)""));
+    assertEquals(Color.argb(205, 255, 0, 0), ColorParser.parseTtmlColor(""rgba(255, 0, 0, 205)""));
+  }",method,
+"public class ApplicationStatus {
+    private static final DataSources dataSources = DataSources.loadDataSources();
+    private static final Gson gson = new GsonBuilder().setDateFormat(""yyyy-MM-dd'T'HH:mm:ssZ"").create();
+    private static final SimpleDateFormat sdf = new SimpleDateFormat(""yyyy-MM-dd'T'HH:mm:ssZ"");
+    public String googleKey;
+    public String tmdbKey;
+    public SupportedFeatures supportedFeatures;
+    public String geocodingService;
+    public String mappingService;
+    public long movieCount = 0;
+    public long theaterCount = 0;
+    public long screeningCount = 0;
+    public long posterCount = 0;
+    public Position currentPosition = new Position(0, 0);
+    public static class SupportedFeatures {
+        public boolean $near = true;
+        public boolean $contains = true;
+        public SupportedFeatures(boolean $near, boolean $contains) {
+            this.$near = $near;
+            this.$contains = $contains;
+        }
+    }
+    public static class Position {
+        public Position(double latitude, double longitude) {
+            coords = new Coords(latitude, longitude);
+        }
+        public Coords coords;
+        public class Coords {
+            public double latitude;
+            public double longitude;
+            public Coords(double latitude, double longitude) {
+                this.latitude = latitude;
+                this.longitude = longitude;
+            }
+        }
+    }
+    public ApplicationStatus(OracleDatabase db) throws OracleException, IOException {
+        super();
+        this.googleKey = dataSources.google.apiKey;
+        this.tmdbKey = dataSources.tmdb.apiKey;
+        this.geocodingService = dataSources.geocodingService;
+        this.supportedFeatures =
+            new SupportedFeatures(DBConnection.isNearSupported(), DBConnection.isContainsSupported());
+        this.mappingService = dataSources.mappingService;
+        this.movieCount = Movie.getMovieCount(db);
+        this.theaterCount = Theater.getTheaterCount(db);
+        this.posterCount = Poster.getPosterCount(db);
+        this.screeningCount = Screening.getScreeningCount(db);
+        this.currentPosition = Theater.getTheaterCentroid(db);
+    }
+    public String toJson() {
+        return gson.toJson(this);
+    }
+}",class,
+"    public static class SupportedFeatures {
+        public boolean $near = true;
+        public boolean $contains = true;
+        public SupportedFeatures(boolean $near, boolean $contains) {
+            this.$near = $near;
+            this.$contains = $contains;
+        }
+    }",class,
+"    public static class Position {
+        public Position(double latitude, double longitude) {
+            coords = new Coords(latitude, longitude);
+        }
+        public Coords coords;
+        public class Coords {
+            public double latitude;
+            public double longitude;
+            public Coords(double latitude, double longitude) {
+                this.latitude = latitude;
+                this.longitude = longitude;
+            }
+        }
+    }",class,
+"        public class Coords {
+            public double latitude;
+            public double longitude;
+            public Coords(double latitude, double longitude) {
+                this.latitude = latitude;
+                this.longitude = longitude;
+            }
+        }",class,
+"        public SupportedFeatures(boolean $near, boolean $contains) {
+            this.$near = $near;
+            this.$contains = $contains;
+        }",method,
+"        public Position(double latitude, double longitude) {
+            coords = new Coords(latitude, longitude);
+        }",method,
+"            public Coords(double latitude, double longitude) {
+                this.latitude = latitude;
+                this.longitude = longitude;
+            }",method,
+"    public ApplicationStatus(OracleDatabase db) throws OracleException, IOException {
+        super();
+        this.googleKey = dataSources.google.apiKey;
+        this.tmdbKey = dataSources.tmdb.apiKey;
+        this.geocodingService = dataSources.geocodingService;
+        this.supportedFeatures =
+            new SupportedFeatures(DBConnection.isNearSupported(), DBConnection.isContainsSupported());
+        this.mappingService = dataSources.mappingService;
+        this.movieCount = Movie.getMovieCount(db);
+        this.theaterCount = Theater.getTheaterCount(db);
+        this.posterCount = Poster.getPosterCount(db);
+        this.screeningCount = Screening.getScreeningCount(db);
+        this.currentPosition = Theater.getTheaterCentroid(db);
+    }",method,
+"    public String toJson() {
+        return gson.toJson(this);
+    }",method,
+"public class CapitalizationInspectionTest extends LightCodeInsightFixtureTestCase {
+  public void testTitleCapitalization() {
+    doTest(true);
+  }
+  public void testSentenceCapitalization() {
+    doTest(true);
+  }
+  public void testMultipleReturns() {
+    doTest(true);
+  }
+  public void testEmptySentence() {
+    doTest(false);
+  }
+  public void testArgument() {
+    doTest(false);
+  }
+  public void testConstructorArgument() {
+    doTest(false);
+  }
+  public void testSuperConstructorArgument() {
+    doTest(false);
+  }
+  public void testRecursiveMethod() {
+    myFixture.testHighlighting(getTestName(false) + "".java"");
+    assertEmpty(myFixture.filterAvailableIntentions(""Properly capitalize""));
+  }
+  public void testIntention() {
+    myFixture.configureByFile(""Intention.java"");
+    AnnotateCapitalizationIntention intention = new AnnotateCapitalizationIntention();
+    assertTrue(intention.isAvailable(getProject(), getEditor(), getFile()));
+    intention.invoke(getProject(), getEditor(), getFile());
+    myFixture.checkResultByFile(""Intention_after.java"");
+    assertFalse(intention.isAvailable(getProject(), getEditor(), getFile()));
+  }
+  private void doTest(boolean fix) {
+    myFixture.testHighlighting(getTestName(false) + "".java"");
+    if (!fix) return;
+    final IntentionAction action = myFixture.filterAvailableIntentions(""Properly capitalize"").get(0);
+    new WriteCommandAction.Simple(getProject()) {
+      @Override
+      protected void run() {
+        action.invoke(getProject(), myFixture.getEditor(), getFile());
+      }
+    }.execute();
+    myFixture.checkResultByFile(getTestName(false) + ""_after.java"");
+  }
+  @Override
+  public void setUp() throws Exception {
+    super.setUp();
+    myFixture.addClass(""package com.intellij.codeInspection; public class CommonProblemDescriptor {}"");
+    myFixture.addClass(""package com.intellij.codeInspection; public class QuickFix {}"");
+    myFixture.enableInspections(TitleCapitalizationInspection.class);
+  }
+  @Override
+  protected String getBasePath() {
+    return PluginPathManager.getPluginHomePathRelative(""devkit"") + ""/testData/inspections/capitalization"";
+  }
+}",class,
+"    myFixture.addClass(""package com.intellij.codeInspection; public class CommonProblemDescriptor {}"");
+    myFixture.addClass(""package com.intellij.codeInspection; public class QuickFix {}"");
+    myFixture.enableInspections(TitleCapitalizationInspection.class);
+  }
+  @Override
+  protected String getBasePath() {
+    return PluginPathManager.getPluginHomePathRelative(""devkit"") + ""/testData/inspections/capitalization"";
+  }",class,
+"    myFixture.addClass(""package com.intellij.codeInspection; public class QuickFix {}"");
+    myFixture.enableInspections(TitleCapitalizationInspection.class);
+  }
+  @Override
+  protected String getBasePath() {
+    return PluginPathManager.getPluginHomePathRelative(""devkit"") + ""/testData/inspections/capitalization"";
+  }",class,
+"  public void testTitleCapitalization() {
+    doTest(true);
+  }",method,
+"  public void testSentenceCapitalization() {
+    doTest(true);
+  }",method,
+"  public void testMultipleReturns() {
+    doTest(true);
+  }",method,
+"  public void testEmptySentence() {
+    doTest(false);
+  }",method,
+"  public void testArgument() {
+    doTest(false);
+  }",method,
+"  public void testConstructorArgument() {
+    doTest(false);
+  }",method,
+"  public void testSuperConstructorArgument() {
+    doTest(false);
+  }",method,
+"  public void testRecursiveMethod() {
+    myFixture.testHighlighting(getTestName(false) + "".java"");
+    assertEmpty(myFixture.filterAvailableIntentions(""Properly capitalize""));
+  }",method,
+"  public void testIntention() {
+    myFixture.configureByFile(""Intention.java"");
+    AnnotateCapitalizationIntention intention = new AnnotateCapitalizationIntention();
+    assertTrue(intention.isAvailable(getProject(), getEditor(), getFile()));
+    intention.invoke(getProject(), getEditor(), getFile());
+    myFixture.checkResultByFile(""Intention_after.java"");
+    assertFalse(intention.isAvailable(getProject(), getEditor(), getFile()));
+  }",method,
+"  private void doTest(boolean fix) {
+    myFixture.testHighlighting(getTestName(false) + "".java"");
+    if (!fix) return;
+    final IntentionAction action = myFixture.filterAvailableIntentions(""Properly capitalize"").get(0);
+    new WriteCommandAction.Simple(getProject()) {
+      @Override
+      protected void run() {
+        action.invoke(getProject(), myFixture.getEditor(), getFile());
+      }
+    }.execute();
+    myFixture.checkResultByFile(getTestName(false) + ""_after.java"");
+  }",method,
+"      @Override
+      protected void run() {
+        action.invoke(getProject(), myFixture.getEditor(), getFile());
+      }",method,
+"  @Override
+  public void setUp() throws Exception {
+    super.setUp();
+    myFixture.addClass(""package com.intellij.codeInspection; public class CommonProblemDescriptor {}"");
+    myFixture.addClass(""package com.intellij.codeInspection; public class QuickFix {}"");
+    myFixture.enableInspections(TitleCapitalizationInspection.class);
+  }",method,
+"  @Override
+  protected String getBasePath() {
+    return PluginPathManager.getPluginHomePathRelative(""devkit"") + ""/testData/inspections/capitalization"";
+  }",method,
+"public abstract class RepositoryListAdapter<V> extends SingleTypeAdapter<V> {
+    public RepositoryListAdapter(int viewId, LayoutInflater inflater,
+            Object[] elements) {
+        super(inflater, viewId);
+        setItems(elements);
+    }
+    protected void updateDetails(final String description,
+            final String language, final int watchers, final int forks,
+            final boolean isPrivate, final boolean isFork,
+            final String mirrorUrl) {
+        if (TextUtils.isEmpty(mirrorUrl)) {
+            if (isPrivate) {
+                setText(0, ICON_PRIVATE);
+            } else if (isFork) {
+                setText(0, ICON_FORK);
+            } else {
+                setText(0, ICON_PUBLIC);
+            }
+        } else {
+            if (isPrivate) {
+                setText(0, ICON_MIRROR_PRIVATE);
+            } else {
+                setText(0, ICON_MIRROR_PUBLIC);
+            }
+        }
+        if (!TextUtils.isEmpty(description)) {
+            setText(1, description).setVisibility(View.VISIBLE);
+        } else {
+            setGone(1, true);
+        }
+        if (!TextUtils.isEmpty(language)) {
+            setText(2, language).setVisibility(View.VISIBLE);
+        } else {
+            setGone(2, true);
+        }
+        setNumber(3, watchers);
+        setNumber(4, forks);
+    }
+}",class,
+"    public RepositoryListAdapter(int viewId, LayoutInflater inflater,
+            Object[] elements) {
+        super(inflater, viewId);
+        setItems(elements);
+    }",method,
+"    protected void updateDetails(final String description,
+            final String language, final int watchers, final int forks,
+            final boolean isPrivate, final boolean isFork,
+            final String mirrorUrl) {
+        if (TextUtils.isEmpty(mirrorUrl)) {
+            if (isPrivate) {
+                setText(0, ICON_PRIVATE);
+            } else if (isFork) {
+                setText(0, ICON_FORK);
+            } else {
+                setText(0, ICON_PUBLIC);
+            }
+        } else {
+            if (isPrivate) {
+                setText(0, ICON_MIRROR_PRIVATE);
+            } else {
+                setText(0, ICON_MIRROR_PUBLIC);
+            }
+        }
+        if (!TextUtils.isEmpty(description)) {
+            setText(1, description).setVisibility(View.VISIBLE);
+        } else {
+            setGone(1, true);
+        }
+        if (!TextUtils.isEmpty(language)) {
+            setText(2, language).setVisibility(View.VISIBLE);
+        } else {
+            setGone(2, true);
+        }
+        setNumber(3, watchers);
+        setNumber(4, forks);
+    }",method,
+"            if (isPrivate) {
+                setText(0, ICON_PRIVATE);
+            }",method,
+"            if (isPrivate) {
+                setText(0, ICON_MIRROR_PRIVATE);
+            }",method,
+"public class EwmaModel extends MovAvgModel {
+    public static final String NAME = ""ewma"";
+    public static final double DEFAULT_ALPHA = 0.3;
+    private final double alpha;
+    public EwmaModel() {
+        this(DEFAULT_ALPHA);
+    }
+    public EwmaModel(double alpha) {
+        this.alpha = alpha;
+    }
+    public EwmaModel(StreamInput in) throws IOException {
+        alpha = in.readDouble();
+    }
+    @Override
+    public void writeTo(StreamOutput out) throws IOException {
+        out.writeDouble(alpha);
+    }
+    @Override
+    public String getWriteableName() {
+        return NAME;
+    }
+    @Override
+    public boolean canBeMinimized() {
+        return true;
+    }
+    @Override
+    public MovAvgModel neighboringModel() {
+        double alpha = Math.random();
+        return new EwmaModel(alpha);
+    }
+    @Override
+    public MovAvgModel clone() {
+        return new EwmaModel(this.alpha);
+    }
+    @Override
+    protected <T extends Number> double[] doPredict(Collection<T> values, int numPredictions) {
+        double[] predictions = new double[numPredictions];
+        // EWMA just emits the same final prediction repeatedly.
+        Arrays.fill(predictions, next(values));
+        return predictions;
+    }
+    @Override
+    public <T extends Number> double next(Collection<T> values) {
+        double avg = 0;
+        boolean first = true;
+        for (T v : values) {
+            if (first) {
+                avg = v.doubleValue();
+                first = false;
+            } else {
+                avg = (v.doubleValue() * alpha) + (avg * (1 - alpha));
+            }
+        }
+        return avg;
+    }
+    @Override
+    public XContentBuilder toXContent(XContentBuilder builder, Params params) throws IOException {
+        builder.field(MovAvgPipelineAggregationBuilder.MODEL.getPreferredName(), NAME);
+        builder.startObject(MovAvgPipelineAggregationBuilder.SETTINGS.getPreferredName());
+        builder.field(""alpha"", alpha);
+        builder.endObject();
+        return builder;
+    }
+    public static final AbstractModelParser PARSER = new AbstractModelParser() {
+        @Override
+        public MovAvgModel parse(@Nullable Map<String, Object> settings, String pipelineName, int windowSize) throws ParseException {
+            double alpha = parseDoubleParam(settings, ""alpha"", DEFAULT_ALPHA);
+            checkUnrecognizedParams(settings);
+            return new EwmaModel(alpha);
+        }
+    };
+    @Override
+    public int hashCode() {
+        return Objects.hash(alpha);
+    }
+    @Override
+    public boolean equals(Object obj) {
+        if (obj == null) {
+            return false;
+        }
+        if (getClass() != obj.getClass()) {
+            return false;
+        }
+        EwmaModel other = (EwmaModel) obj;
+        return Objects.equals(alpha, other.alpha);
+    }
+    public static class EWMAModelBuilder implements MovAvgModelBuilder {
+        private double alpha = DEFAULT_ALPHA;
+        public EWMAModelBuilder alpha(double alpha) {
+            this.alpha = alpha;
+            return this;
+        }
+        @Override
+        public XContentBuilder toXContent(XContentBuilder builder, Params params) throws IOException {
+            builder.field(MovAvgPipelineAggregationBuilder.MODEL.getPreferredName(), NAME);
+            builder.startObject(MovAvgPipelineAggregationBuilder.SETTINGS.getPreferredName());
+            builder.field(""alpha"", alpha);
+            builder.endObject();
+            return builder;
+        }
+        @Override
+        public MovAvgModel build() {
+            return new EwmaModel(alpha);
+        }
+    }
+}",class,
+"    public static class EWMAModelBuilder implements MovAvgModelBuilder {
+        private double alpha = DEFAULT_ALPHA;
+        public EWMAModelBuilder alpha(double alpha) {
+            this.alpha = alpha;
+            return this;
+        }
+        @Override
+        public XContentBuilder toXContent(XContentBuilder builder, Params params) throws IOException {
+            builder.field(MovAvgPipelineAggregationBuilder.MODEL.getPreferredName(), NAME);
+            builder.startObject(MovAvgPipelineAggregationBuilder.SETTINGS.getPreferredName());
+            builder.field(""alpha"", alpha);
+            builder.endObject();
+            return builder;
+        }
+        @Override
+        public MovAvgModel build() {
+            return new EwmaModel(alpha);
+        }
+    }",class,
+"    public EwmaModel() {
+        this(DEFAULT_ALPHA);
+    }",method,
+"    public EwmaModel(double alpha) {
+        this.alpha = alpha;
+    }",method,
+"    public EwmaModel(StreamInput in) throws IOException {
+        alpha = in.readDouble();
+    }",method,
+"    @Override
+    public void writeTo(StreamOutput out) throws IOException {
+        out.writeDouble(alpha);
+    }",method,
+"    @Override
+    public String getWriteableName() {
+        return NAME;
+    }",method,
+"    @Override
+    public boolean canBeMinimized() {
+        return true;
+    }",method,
+"    @Override
+    public MovAvgModel neighboringModel() {
+        double alpha = Math.random();
+        return new EwmaModel(alpha);
+    }",method,
+"    @Override
+    public MovAvgModel clone() {
+        return new EwmaModel(this.alpha);
+    }",method,
+"    @Override
+    protected <T extends Number> double[] doPredict(Collection<T> values, int numPredictions) {
+        double[] predictions = new double[numPredictions];
+        // EWMA just emits the same final prediction repeatedly.
+        Arrays.fill(predictions, next(values));
+        return predictions;
+    }",method,
+"    @Override
+    public <T extends Number> double next(Collection<T> values) {
+        double avg = 0;
+        boolean first = true;
+        for (T v : values) {
+            if (first) {
+                avg = v.doubleValue();
+                first = false;
+            } else {
+                avg = (v.doubleValue() * alpha) + (avg * (1 - alpha));
+            }
+        }
+        return avg;
+    }",method,
+"        for (T v : values) {
+            if (first) {
+                avg = v.doubleValue();
+                first = false;
+            } else {
+                avg = (v.doubleValue() * alpha) + (avg * (1 - alpha));
+            }
+        }",method,
+"            if (first) {
+                avg = v.doubleValue();
+                first = false;
+            }",method,
+"    @Override
+    public XContentBuilder toXContent(XContentBuilder builder, Params params) throws IOException {
+        builder.field(MovAvgPipelineAggregationBuilder.MODEL.getPreferredName(), NAME);
+        builder.startObject(MovAvgPipelineAggregationBuilder.SETTINGS.getPreferredName());
+        builder.field(""alpha"", alpha);
+        builder.endObject();
+        return builder;
+    }",method,
+"        @Override
+        public MovAvgModel parse(@Nullable Map<String, Object> settings, String pipelineName, int windowSize) throws ParseException {
+            double alpha = parseDoubleParam(settings, ""alpha"", DEFAULT_ALPHA);
+            checkUnrecognizedParams(settings);
+            return new EwmaModel(alpha);
+        }",method,

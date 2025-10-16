@@ -1,0 +1,949 @@
+code_snippet,type,score
+"          @Override
+          public void visitClassDef(JCClassDecl tree) {
+            recordSuperClosure(tree.sym);
+            super.visitClassDef(tree);
+          }",method,
+"  public void finish() {
+    Set<ClassSymbol> directChildren = new LinkedHashSet<>();
+    for (ClassSymbol sym : closure) {
+      for (Symbol member : sym.getEnclosedElements()) {
+        if (member instanceof ClassSymbol) {
+          directChildren.add((ClassSymbol) member);
+        }
+      }
+    }
+    closure.addAll(directChildren);
+    for (ClassSymbol sym : closure) {
+      String name = sym.flatName().toString().replace('.', '/');
+      if (transitive.containsKey(name)) {
+        continue;
+      }
+      if (StrictJavaDepsPlugin.getJarName(sym, platformJars) == null) {
+        // Don't repackage symbols we wouldn't report in jdeps, e.g. because they're on the
+        // bootclasspath.
+        continue;
+      }
+      JavaFileObject jfo = sym.classfile;
+      if (jfo == null || jfo.getKind() != Kind.CLASS) {
+        continue;
+      }
+      ClassFile cf;
+      try {
+        cf = ClassReader.read(ByteStreams.toByteArray(jfo.openInputStream()));
+      } catch (IOException e) {
+        throw new IOError(e);
+      }
+      transitive.put(name, ClassWriter.writeClass(Transitive.trimClass(cf)));
+    }
+    closure.clear();
+  }",method,
+"    for (ClassSymbol sym : closure) {
+      for (Symbol member : sym.getEnclosedElements()) {
+        if (member instanceof ClassSymbol) {
+          directChildren.add((ClassSymbol) member);
+        }
+      }
+    }",method,
+"        if (member instanceof ClassSymbol) {
+          directChildren.add((ClassSymbol) member);
+        }",method,
+"    for (ClassSymbol sym : closure) {
+      String name = sym.flatName().toString().replace('.', '/');
+      if (transitive.containsKey(name)) {
+        continue;
+      }
+      if (StrictJavaDepsPlugin.getJarName(sym, platformJars) == null) {
+        // Don't repackage symbols we wouldn't report in jdeps, e.g. because they're on the
+        // bootclasspath.
+        continue;
+      }
+      JavaFileObject jfo = sym.classfile;
+      if (jfo == null || jfo.getKind() != Kind.CLASS) {
+        continue;
+      }
+      ClassFile cf;
+      try {
+        cf = ClassReader.read(ByteStreams.toByteArray(jfo.openInputStream()));
+      } catch (IOException e) {
+        throw new IOError(e);
+      }
+      transitive.put(name, ClassWriter.writeClass(Transitive.trimClass(cf)));
+    }",method,
+"  private void recordSuperClosure(Symbol bound) {
+    if (!(bound instanceof ClassSymbol)) {
+      return;
+    }
+    ClassSymbol info = (ClassSymbol) bound;
+    closure.add(info);
+    recordSuperClosure(info.getSuperclass().asElement());
+    for (Type i : info.getInterfaces()) {
+      recordSuperClosure(i.asElement());
+    }
+  }",method,
+"public class ListWithFirstScreenUnSelectableTest
+        extends ActivityInstrumentationTestCase2<ListWithFirstScreenUnSelectable> {
+    private ListView mListView;
+    public ListWithFirstScreenUnSelectableTest() {
+        super(""com.android.frameworks.coretests"", ListWithFirstScreenUnSelectable.class);
+    }
+    protected void setUp() throws Exception {
+        super.setUp();
+        setActivityInitialTouchMode(true);
+        mListView = getActivity().getListView();
+    }
+    public void testPreconditions() {
+        assertTrue(mListView.isInTouchMode());
+        assertEquals(1, mListView.getChildCount());
+        assertFalse(mListView.getAdapter().isEnabled(0));
+        assertEquals(AdapterView.INVALID_POSITION, mListView.getSelectedItemPosition());
+    }
+    public void testRessurectSelection() {
+        sendKeys(KeyEvent.KEYCODE_SPACE);
+        assertEquals(AdapterView.INVALID_POSITION, mListView.getSelectedItemPosition());
+    }
+    public void testScrollUpDoesNothing() {
+        sendKeys(KeyEvent.KEYCODE_DPAD_UP);
+        assertEquals(AdapterView.INVALID_POSITION, mListView.getSelectedItemPosition());
+        assertEquals(1, mListView.getChildCount());
+        assertEquals(0, mListView.getFirstVisiblePosition());
+    }
+    public void testScrollDownPansNextItemOn() {
+        sendKeys(KeyEvent.KEYCODE_DPAD_DOWN);
+        assertEquals(2, mListView.getChildCount());
+    }
+}",class,
+"    public ListWithFirstScreenUnSelectableTest() {
+        super(""com.android.frameworks.coretests"", ListWithFirstScreenUnSelectable.class);
+    }",method,
+"    protected void setUp() throws Exception {
+        super.setUp();
+        setActivityInitialTouchMode(true);
+        mListView = getActivity().getListView();
+    }",method,
+"    public void testPreconditions() {
+        assertTrue(mListView.isInTouchMode());
+        assertEquals(1, mListView.getChildCount());
+        assertFalse(mListView.getAdapter().isEnabled(0));
+        assertEquals(AdapterView.INVALID_POSITION, mListView.getSelectedItemPosition());
+    }",method,
+"    public void testRessurectSelection() {
+        sendKeys(KeyEvent.KEYCODE_SPACE);
+        assertEquals(AdapterView.INVALID_POSITION, mListView.getSelectedItemPosition());
+    }",method,
+"    public void testScrollUpDoesNothing() {
+        sendKeys(KeyEvent.KEYCODE_DPAD_UP);
+        assertEquals(AdapterView.INVALID_POSITION, mListView.getSelectedItemPosition());
+        assertEquals(1, mListView.getChildCount());
+        assertEquals(0, mListView.getFirstVisiblePosition());
+    }",method,
+"    public void testScrollDownPansNextItemOn() {
+        sendKeys(KeyEvent.KEYCODE_DPAD_DOWN);
+        assertEquals(2, mListView.getChildCount());
+    }",method,
+"abstract class GwtFuturesCatchingSpecialization {
+  @Deprecated
+  public static <V> ListenableFuture<V> catching(
+      ListenableFuture<? extends V> input,
+      Class<Throwable> exceptionType,
+      Function<? super Throwable, ? extends V> fallback) {
+    return AbstractCatchingFuture.create(input, exceptionType, fallback, directExecutor());
+  }
+  public static <V> ListenableFuture<V> catching(
+      ListenableFuture<? extends V> input,
+      Class<Throwable> exceptionType,
+      Function<? super Throwable, ? extends V> fallback,
+      Executor executor) {
+    return AbstractCatchingFuture.create(input, exceptionType, fallback, executor);
+  }
+  @Deprecated
+  public static <V> ListenableFuture<V> catchingAsync(
+      ListenableFuture<? extends V> input,
+      Class<Throwable> exceptionType,
+      AsyncFunction<? super Throwable, ? extends V> fallback) {
+    return AbstractCatchingFuture.create(input, exceptionType, fallback, directExecutor());
+  }
+  public static <V> ListenableFuture<V> catchingAsync(
+      ListenableFuture<? extends V> input,
+      Class<Throwable> exceptionType,
+      AsyncFunction<? super Throwable, ? extends V> fallback,
+      Executor executor) {
+    return AbstractCatchingFuture.create(input, exceptionType, fallback, executor);
+  }
+}",class,
+"abstract class InterruptibleTask<V> implements Runnable {
+  @Override
+  public void run() {
+    V result = null;
+    Throwable error = null;
+    if (isDone()) {
+      return;
+    }
+    try {
+      result = runInterruptibly();
+    } catch (Throwable t) {
+      error = t;
+    }
+    afterRanInterruptibly(result, error);
+  }
+  abstract boolean isDone();
+  abstract V runInterruptibly() throws Exception;
+  abstract void afterRanInterruptibly(V result, Throwable error);
+  final void interruptTask() {}
+}",class,
+"final class Platform {
+  static boolean isInstanceOfThrowableClass(Throwable t, Class<? extends Throwable> expectedClass) {
+    return true;
+  }
+  private Platform() {}
+}",class,
+"  @Deprecated
+  public static <V> ListenableFuture<V> catching(
+      ListenableFuture<? extends V> input,
+      Class<Throwable> exceptionType,
+      Function<? super Throwable, ? extends V> fallback) {
+    return AbstractCatchingFuture.create(input, exceptionType, fallback, directExecutor());
+  }",method,
+"  public static <V> ListenableFuture<V> catching(
+      ListenableFuture<? extends V> input,
+      Class<Throwable> exceptionType,
+      Function<? super Throwable, ? extends V> fallback,
+      Executor executor) {
+    return AbstractCatchingFuture.create(input, exceptionType, fallback, executor);
+  }",method,
+"  @Deprecated
+  public static <V> ListenableFuture<V> catchingAsync(
+      ListenableFuture<? extends V> input,
+      Class<Throwable> exceptionType,
+      AsyncFunction<? super Throwable, ? extends V> fallback) {
+    return AbstractCatchingFuture.create(input, exceptionType, fallback, directExecutor());
+  }",method,
+"  public static <V> ListenableFuture<V> catchingAsync(
+      ListenableFuture<? extends V> input,
+      Class<Throwable> exceptionType,
+      AsyncFunction<? super Throwable, ? extends V> fallback,
+      Executor executor) {
+    return AbstractCatchingFuture.create(input, exceptionType, fallback, executor);
+  }",method,
+"  @Override
+  public void run() {
+    V result = null;
+    Throwable error = null;
+    if (isDone()) {
+      return;
+    }
+    try {
+      result = runInterruptibly();
+    } catch (Throwable t) {
+      error = t;
+    }
+    afterRanInterruptibly(result, error);
+  }",method,
+  final void interruptTask() {},method,
+"  static boolean isInstanceOfThrowableClass(Throwable t, Class<? extends Throwable> expectedClass) {
+    return true;
+  }",method,
+  private Platform() {},method,
+"public class ColorPickerPreference extends DialogPreference {
+  private static final String TAG = ColorPickerPreference.class.getSimpleName();
+  private int[] colors;
+  private CharSequence[] colorDescriptions;
+  private int color;
+  private int columns;
+  private int size;
+  private boolean sortColors;
+  private ImageView colorWidget;
+  private OnPreferenceChangeListener listener;
+  public ColorPickerPreference(Context context, AttributeSet attrs, int defStyleAttr, int defStyleRes) {
+    super(context, attrs, defStyleAttr, defStyleRes);
+    TypedArray a = context.obtainStyledAttributes(attrs, R.styleable.ColorPickerPreference, defStyleAttr, 0);
+    int colorsId = a.getResourceId(R.styleable.ColorPickerPreference_colors, R.array.color_picker_default_colors);
+    if (colorsId != 0) {
+      colors = context.getResources().getIntArray(colorsId);
+    }
+    colorDescriptions = a.getTextArray(R.styleable.ColorPickerPreference_colorDescriptions);
+    color = a.getColor(R.styleable.ColorPickerPreference_currentColor, 0);
+    columns = a.getInt(R.styleable.ColorPickerPreference_columns, 4);
+    size = a.getInt(R.styleable.ColorPickerPreference_colorSize, 2);
+    sortColors = a.getBoolean(R.styleable.ColorPickerPreference_sortColors, false);
+    a.recycle();
+    setWidgetLayoutResource(R.layout.preference_widget_color_swatch);
+  }
+  public ColorPickerPreference(Context context, AttributeSet attrs, int defStyleAttr) {
+    this(context, attrs, defStyleAttr, 0);
+  }
+  @SuppressLint(""RestrictedApi"")
+  public ColorPickerPreference(Context context, AttributeSet attrs) {
+    this(context, attrs, TypedArrayUtils.getAttr(context, R.attr.dialogPreferenceStyle,
+                                                 android.R.attr.dialogPreferenceStyle));
+  }
+  public ColorPickerPreference(Context context) {
+    this(context, null);
+  }
+  @Override
+  public void setOnPreferenceChangeListener(OnPreferenceChangeListener listener) {
+    super.setOnPreferenceChangeListener(listener);
+    this.listener = listener;
+  }
+  @Override
+  public void onBindViewHolder(PreferenceViewHolder holder) {
+    super.onBindViewHolder(holder);
+    colorWidget = (ImageView) holder.findViewById(R.id.color_picker_widget);
+    setColorOnWidget(color);
+  }
+  private void setColorOnWidget(int color) {
+    if (colorWidget == null) {
+      return;
+    }
+    Drawable[] colorDrawable = new Drawable[]
+        {ContextCompat.getDrawable(getContext(), R.drawable.colorpickerpreference_pref_swatch)};
+    colorWidget.setImageDrawable(new ColorStateDrawable(colorDrawable, color));
+  }
+  public int getColor() {
+    return color;
+  }
+  public void setColor(int color) {
+    setInternalColor(color, false);
+  }
+  public int[] getColors() {
+    return colors;
+  }
+  public void setColors(int[] colors) {
+    this.colors = colors;
+  }
+  public boolean isSortColors() {
+    return sortColors;
+  }
+  public void setSortColors(boolean sortColors) {
+    this.sortColors = sortColors;
+  }
+  public CharSequence[] getColorDescriptions() {
+    return colorDescriptions;
+  }
+  public void setColorDescriptions(CharSequence[] colorDescriptions) {
+    this.colorDescriptions = colorDescriptions;
+  }
+  public int getColumns() {
+    return columns;
+  }
+  public void setColumns(int columns) {
+    this.columns = columns;
+  }
+  @Size
+  public int getSize() {
+    return size;
+  }
+  public void setSize(@Size int size) {
+    this.size = size;
+  }
+  private void setInternalColor(int color, boolean force) {
+    int oldColor = getPersistedInt(0);
+    boolean changed = oldColor != color;
+    if (changed || force) {
+      this.color = color;
+      persistInt(color);
+      setColorOnWidget(color);
+      if (listener != null) listener.onPreferenceChange(this, color);
+      notifyChanged();
+    }
+  }
+  @Override
+  protected Object onGetDefaultValue(TypedArray a, int index) {
+    return a.getString(index);
+  }
+  @Override
+  protected void onSetInitialValue(boolean restoreValue, Object defaultValueObj) {
+    final String defaultValue = (String) defaultValueObj;
+    setInternalColor(restoreValue ? getPersistedInt(0) : (!TextUtils.isEmpty(defaultValue) ? Color.parseColor(defaultValue) : 0), true);
+  }
+}",class,
+"  public ColorPickerPreference(Context context, AttributeSet attrs, int defStyleAttr, int defStyleRes) {
+    super(context, attrs, defStyleAttr, defStyleRes);
+    TypedArray a = context.obtainStyledAttributes(attrs, R.styleable.ColorPickerPreference, defStyleAttr, 0);
+    int colorsId = a.getResourceId(R.styleable.ColorPickerPreference_colors, R.array.color_picker_default_colors);
+    if (colorsId != 0) {
+      colors = context.getResources().getIntArray(colorsId);
+    }
+    colorDescriptions = a.getTextArray(R.styleable.ColorPickerPreference_colorDescriptions);
+    color = a.getColor(R.styleable.ColorPickerPreference_currentColor, 0);
+    columns = a.getInt(R.styleable.ColorPickerPreference_columns, 4);
+    size = a.getInt(R.styleable.ColorPickerPreference_colorSize, 2);
+    sortColors = a.getBoolean(R.styleable.ColorPickerPreference_sortColors, false);
+    a.recycle();
+    setWidgetLayoutResource(R.layout.preference_widget_color_swatch);
+  }",method,
+"    if (colorsId != 0) {
+      colors = context.getResources().getIntArray(colorsId);
+    }",method,
+"  public ColorPickerPreference(Context context, AttributeSet attrs, int defStyleAttr) {
+    this(context, attrs, defStyleAttr, 0);
+  }",method,
+"  @SuppressLint(""RestrictedApi"")
+  public ColorPickerPreference(Context context, AttributeSet attrs) {
+    this(context, attrs, TypedArrayUtils.getAttr(context, R.attr.dialogPreferenceStyle,
+                                                 android.R.attr.dialogPreferenceStyle));
+  }",method,
+"  public ColorPickerPreference(Context context) {
+    this(context, null);
+  }",method,
+"  @Override
+  public void setOnPreferenceChangeListener(OnPreferenceChangeListener listener) {
+    super.setOnPreferenceChangeListener(listener);
+    this.listener = listener;
+  }",method,
+"  @Override
+  public void onBindViewHolder(PreferenceViewHolder holder) {
+    super.onBindViewHolder(holder);
+    colorWidget = (ImageView) holder.findViewById(R.id.color_picker_widget);
+    setColorOnWidget(color);
+  }",method,
+"  private void setColorOnWidget(int color) {
+    if (colorWidget == null) {
+      return;
+    }
+    Drawable[] colorDrawable = new Drawable[]
+        {ContextCompat.getDrawable(getContext(), R.drawable.colorpickerpreference_pref_swatch)};
+    colorWidget.setImageDrawable(new ColorStateDrawable(colorDrawable, color));
+  }",method,
+"    if (colorWidget == null) {
+      return;
+    }",method,
+"  public int getColor() {
+    return color;
+  }",method,
+"  public void setColor(int color) {
+    setInternalColor(color, false);
+  }",method,
+"  public int[] getColors() {
+    return colors;
+  }",method,
+"  public void setColors(int[] colors) {
+    this.colors = colors;
+  }",method,
+"  public boolean isSortColors() {
+    return sortColors;
+  }",method,
+"  public void setSortColors(boolean sortColors) {
+    this.sortColors = sortColors;
+  }",method,
+"  public CharSequence[] getColorDescriptions() {
+    return colorDescriptions;
+  }",method,
+"  public void setColorDescriptions(CharSequence[] colorDescriptions) {
+    this.colorDescriptions = colorDescriptions;
+  }",method,
+"  public int getColumns() {
+    return columns;
+  }",method,
+"  public void setColumns(int columns) {
+    this.columns = columns;
+  }",method,
+"  @Size
+  public int getSize() {
+    return size;
+  }",method,
+"  public void setSize(@Size int size) {
+    this.size = size;
+  }",method,
+"  private void setInternalColor(int color, boolean force) {
+    int oldColor = getPersistedInt(0);
+    boolean changed = oldColor != color;
+    if (changed || force) {
+      this.color = color;
+      persistInt(color);
+      setColorOnWidget(color);
+      if (listener != null) listener.onPreferenceChange(this, color);
+      notifyChanged();
+    }
+  }",method,
+"    if (changed || force) {
+      this.color = color;
+      persistInt(color);
+      setColorOnWidget(color);
+      if (listener != null) listener.onPreferenceChange(this, color);
+      notifyChanged();
+    }",method,
+"  @Override
+  protected Object onGetDefaultValue(TypedArray a, int index) {
+    return a.getString(index);
+  }",method,
+"  @Override
+  protected void onSetInitialValue(boolean restoreValue, Object defaultValueObj) {
+    final String defaultValue = (String) defaultValueObj;
+    setInternalColor(restoreValue ? getPersistedInt(0) : (!TextUtils.isEmpty(defaultValue) ? Color.parseColor(defaultValue) : 0), true);
+  }",method,
+"public class WebAsyncTask<V> implements BeanFactoryAware {
+	private final Callable<V> callable;
+	private Long timeout;
+	private AsyncTaskExecutor executor;
+	private String executorName;
+	private BeanFactory beanFactory;
+	private Callable<V> timeoutCallback;
+	private Callable<V> errorCallback;
+	private Runnable completionCallback;
+	public WebAsyncTask(Callable<V> callable) {
+		Assert.notNull(callable, ""Callable must not be null"");
+		this.callable = callable;
+	}
+	public WebAsyncTask(long timeout, Callable<V> callable) {
+		this(callable);
+		this.timeout = timeout;
+	}
+	public WebAsyncTask(@Nullable Long timeout, String executorName, Callable<V> callable) {
+		this(callable);
+		Assert.notNull(executorName, ""Executor name must not be null"");
+		this.executorName = executorName;
+		this.timeout = timeout;
+	}
+	public WebAsyncTask(@Nullable Long timeout, AsyncTaskExecutor executor, Callable<V> callable) {
+		this(callable);
+		Assert.notNull(executor, ""Executor must not be null"");
+		this.executor = executor;
+		this.timeout = timeout;
+	}
+	public Callable<?> getCallable() {
+		return this.callable;
+	}
+	@Nullable
+	public Long getTimeout() {
+		return this.timeout;
+	}
+	public void setBeanFactory(BeanFactory beanFactory) {
+		this.beanFactory = beanFactory;
+	}
+	@Nullable
+	public AsyncTaskExecutor getExecutor() {
+		if (this.executor != null) {
+			return this.executor;
+		}
+		else if (this.executorName != null) {
+			Assert.state(this.beanFactory != null, ""BeanFactory is required to look up an executor bean by name"");
+			return this.beanFactory.getBean(this.executorName, AsyncTaskExecutor.class);
+		}
+		else {
+			return null;
+		}
+	}
+	public void onTimeout(Callable<V> callback) {
+		this.timeoutCallback = callback;
+	}
+	public void onError(Callable<V> callback) {
+		this.errorCallback = callback;
+	}
+	public void onCompletion(Runnable callback) {
+		this.completionCallback = callback;
+	}
+	CallableProcessingInterceptor getInterceptor() {
+		return new CallableProcessingInterceptor() {
+			@Override
+			public <T> Object handleTimeout(NativeWebRequest request, Callable<T> task) throws Exception {
+				return (timeoutCallback != null ? timeoutCallback.call() : CallableProcessingInterceptor.RESULT_NONE);
+			}
+			@Override
+			public <T> Object handleError(NativeWebRequest request, Callable<T> task, Throwable t) throws Exception {
+				return (errorCallback != null ? errorCallback.call() : CallableProcessingInterceptor.RESULT_NONE);
+			}
+			@Override
+			public <T> void afterCompletion(NativeWebRequest request, Callable<T> task) throws Exception {
+				if (completionCallback != null) {
+					completionCallback.run();
+				}
+			}
+		};
+	}
+}",class,
+"	public WebAsyncTask(Callable<V> callable) {
+		Assert.notNull(callable, ""Callable must not be null"");
+		this.callable = callable;
+	}",method,
+"	public WebAsyncTask(long timeout, Callable<V> callable) {
+		this(callable);
+		this.timeout = timeout;
+	}",method,
+"	public WebAsyncTask(@Nullable Long timeout, String executorName, Callable<V> callable) {
+		this(callable);
+		Assert.notNull(executorName, ""Executor name must not be null"");
+		this.executorName = executorName;
+		this.timeout = timeout;
+	}",method,
+"	public WebAsyncTask(@Nullable Long timeout, AsyncTaskExecutor executor, Callable<V> callable) {
+		this(callable);
+		Assert.notNull(executor, ""Executor must not be null"");
+		this.executor = executor;
+		this.timeout = timeout;
+	}",method,
+"	public Callable<?> getCallable() {
+		return this.callable;
+	}",method,
+"	@Nullable
+	public Long getTimeout() {
+		return this.timeout;
+	}",method,
+"	public void setBeanFactory(BeanFactory beanFactory) {
+		this.beanFactory = beanFactory;
+	}",method,
+"	@Nullable
+	public AsyncTaskExecutor getExecutor() {
+		if (this.executor != null) {
+			return this.executor;
+		}
+		else if (this.executorName != null) {
+			Assert.state(this.beanFactory != null, ""BeanFactory is required to look up an executor bean by name"");
+			return this.beanFactory.getBean(this.executorName, AsyncTaskExecutor.class);
+		}
+		else {
+			return null;
+		}
+	}",method,
+"		if (this.executor != null) {
+			return this.executor;
+		}",method,
+"		else if (this.executorName != null) {
+			Assert.state(this.beanFactory != null, ""BeanFactory is required to look up an executor bean by name"");
+			return this.beanFactory.getBean(this.executorName, AsyncTaskExecutor.class);
+		}",method,
+"	public void onTimeout(Callable<V> callback) {
+		this.timeoutCallback = callback;
+	}",method,
+"	public void onError(Callable<V> callback) {
+		this.errorCallback = callback;
+	}",method,
+"	public void onCompletion(Runnable callback) {
+		this.completionCallback = callback;
+	}",method,
+"	CallableProcessingInterceptor getInterceptor() {
+		return new CallableProcessingInterceptor() {
+			@Override
+			public <T> Object handleTimeout(NativeWebRequest request, Callable<T> task) throws Exception {
+				return (timeoutCallback != null ? timeoutCallback.call() : CallableProcessingInterceptor.RESULT_NONE);
+			}
+			@Override
+			public <T> Object handleError(NativeWebRequest request, Callable<T> task, Throwable t) throws Exception {
+				return (errorCallback != null ? errorCallback.call() : CallableProcessingInterceptor.RESULT_NONE);
+			}
+			@Override
+			public <T> void afterCompletion(NativeWebRequest request, Callable<T> task) throws Exception {
+				if (completionCallback != null) {
+					completionCallback.run();
+				}
+			}
+		};
+	}",method,
+"		return new CallableProcessingInterceptor() {
+			@Override
+			public <T> Object handleTimeout(NativeWebRequest request, Callable<T> task) throws Exception {
+				return (timeoutCallback != null ? timeoutCallback.call() : CallableProcessingInterceptor.RESULT_NONE);
+			}
+			@Override
+			public <T> Object handleError(NativeWebRequest request, Callable<T> task, Throwable t) throws Exception {
+				return (errorCallback != null ? errorCallback.call() : CallableProcessingInterceptor.RESULT_NONE);
+			}
+			@Override
+			public <T> void afterCompletion(NativeWebRequest request, Callable<T> task) throws Exception {
+				if (completionCallback != null) {
+					completionCallback.run();
+				}
+			}
+		}",method,
+"			@Override
+			public <T> Object handleTimeout(NativeWebRequest request, Callable<T> task) throws Exception {
+				return (timeoutCallback != null ? timeoutCallback.call() : CallableProcessingInterceptor.RESULT_NONE);
+			}",method,
+"			@Override
+			public <T> Object handleError(NativeWebRequest request, Callable<T> task, Throwable t) throws Exception {
+				return (errorCallback != null ? errorCallback.call() : CallableProcessingInterceptor.RESULT_NONE);
+			}",method,
+"			@Override
+			public <T> void afterCompletion(NativeWebRequest request, Callable<T> task) throws Exception {
+				if (completionCallback != null) {
+					completionCallback.run();
+				}
+			}",method,
+"				if (completionCallback != null) {
+					completionCallback.run();
+				}",method,
+"        new Observer() {
+          @Override
+          public void onDuplicateEntry(String jarFile, JarEntrySupplier entrySupplier) {}
+          @Override
+          public void onEntryOmitted(String jarFile, JarEntrySupplier entrySupplier) {}
+        }",method,
+"          @Override
+          public void onDuplicateEntry(String jarFile, JarEntrySupplier entrySupplier) {}",method,
+"          @Override
+          public void onEntryOmitted(String jarFile, JarEntrySupplier entrySupplier) {}",method,
+"  public JarBuilder setObserver(Observer observer) {
+    this.observer = observer;
+    return this;
+  }",method,
+"  public JarBuilder setEntriesToJar(Stream<Path> entriesToJar) {
+    return setEntriesToJar(entriesToJar::iterator);
+  }",method,
+"  public JarBuilder setEntriesToJar(Iterable<Path> entriesToJar) {
+    RichStream.from(entriesToJar)
+        .peek(path -> Preconditions.checkArgument(path.isAbsolute()))
+        .map(JarEntryContainer::of)
+        .forEach(sourceContainers::add);
+    return this;
+  }",method,
+"  public JarBuilder addEntry(JarEntrySupplier supplier) {
+    sourceContainers.add(new SingletonJarEntryContainer(supplier));
+    return this;
+  }",method,
+"  public JarBuilder addEntryContainer(JarEntryContainer container) {
+    sourceContainers.add(container);
+    return this;
+  }",method,
+"  public JarBuilder setMainClass(String mainClass) {
+    this.mainClass = mainClass;
+    return this;
+  }",method,
+"  public JarBuilder setManifestFile(@Nullable Path manifestFile) {
+    Preconditions.checkArgument(manifestFile == null || manifestFile.isAbsolute());
+    this.manifestFile = manifestFile;
+    return this;
+  }",method,
+"  public JarBuilder setShouldMergeManifests(boolean shouldMergeManifests) {
+    this.shouldMergeManifests = shouldMergeManifests;
+    return this;
+  }",method,
+"  public JarBuilder setShouldDisallowAllDuplicates(boolean shouldDisallowAllDuplicates) {
+    this.shouldDisallowAllDuplicates = shouldDisallowAllDuplicates;
+    return this;
+  }",method,
+"  public JarBuilder setShouldHashEntries(boolean shouldHashEntries) {
+    this.shouldHashEntries = shouldHashEntries;
+    return this;
+  }",method,
+"  public JarBuilder setRemoveEntryPredicate(
+      Predicate<? super CustomZipEntry> removeEntryPredicate) {
+    this.removeEntryPredicate = removeEntryPredicate;
+    return this;
+  }",method,
+"  public int createJarFile(Path outputFile) throws IOException {
+    Preconditions.checkArgument(outputFile.isAbsolute());
+    try (CustomJarOutputStream jar =
+        ZipOutputStreams.newJarOutputStream(
+            outputFile, ZipOutputStreams.HandleDuplicates.APPEND_TO_ZIP)) {
+      jar.setEntryHashingEnabled(shouldHashEntries);
+      this.outputFile = outputFile;
+      // Write the manifest first.
+      writeManifest(jar);
+      // Sort entries across all suppliers
+      List<JarEntrySupplier> sortedEntries = new ArrayList<>();
+      for (JarEntryContainer sourceContainer : sourceContainers) {
+        sourceContainer.stream().forEach(sortedEntries::add);
+      }
+      sortedEntries.sort(Comparator.comparing(supplier -> supplier.getEntry().getName()));
+      addEntriesToJar(sortedEntries, jar);
+      addServices(jar);
+      if (mainClass != null && !classPresent(mainClass)) {
+        throw new HumanReadableException(""ERROR: Main class %s does not exist."", mainClass);
+      }
+      return 0;
+    }
+  }",method,
+"      for (JarEntryContainer sourceContainer : sourceContainers) {
+        sourceContainer.stream().forEach(sortedEntries::add);
+      }",method,
+"  private void addServices(CustomJarOutputStream jar) throws IOException {
+    Joiner joiner = Joiner.on(""\n"");
+    for (String entryName : services.keySet()) {
+      CustomZipEntry entry = new CustomZipEntry(entryName);
+      jar.putNextEntry(entry);
+      jar.write(joiner.join(services.get(entryName)).getBytes());
+      jar.closeEntry();
+    }
+  }",method,
+"  private void writeManifest(CustomJarOutputStream jar) throws IOException {
+    mkdirs(""META-INF/"", jar);
+    DeterministicManifest manifest = jar.getManifest();
+    manifest.getMainAttributes().put(Attributes.Name.MANIFEST_VERSION, ""1.0"");
+    if (shouldMergeManifests) {
+      for (JarEntryContainer sourceContainer : sourceContainers) {
+        Manifest readManifest = sourceContainer.getManifest();
+        if (readManifest != null) {
+          merge(manifest, readManifest);
+        }
+      }
+    }
+    // Even if not merging manifests, we should include the one the user gave us. We do this last
+    // so that values from the user overwrite values from merged manifests.
+    if (manifestFile != null) {
+      try (InputStream stream = Files.newInputStream(manifestFile)) {
+        Manifest readManifest = new Manifest(stream);
+        merge(manifest, readManifest);
+      }
+    }
+    // We may have merged manifests and over-written the user-supplied main class. Add it back.
+    if (mainClass != null) {
+      manifest.getMainAttributes().put(Attributes.Name.MAIN_CLASS, mainClass);
+    }
+    jar.writeManifest();
+  }",method,
+"    if (shouldMergeManifests) {
+      for (JarEntryContainer sourceContainer : sourceContainers) {
+        Manifest readManifest = sourceContainer.getManifest();
+        if (readManifest != null) {
+          merge(manifest, readManifest);
+        }
+      }
+    }",method,
+"      for (JarEntryContainer sourceContainer : sourceContainers) {
+        Manifest readManifest = sourceContainer.getManifest();
+        if (readManifest != null) {
+          merge(manifest, readManifest);
+        }
+      }",method,
+"        if (readManifest != null) {
+          merge(manifest, readManifest);
+        }",method,
+"    if (manifestFile != null) {
+      try (InputStream stream = Files.newInputStream(manifestFile)) {
+        Manifest readManifest = new Manifest(stream);
+        merge(manifest, readManifest);
+      }
+    }",method,
+"    if (mainClass != null) {
+      manifest.getMainAttributes().put(Attributes.Name.MAIN_CLASS, mainClass);
+    }",method,
+"  private boolean classPresent(String className) {
+    String classPath = classNameToPath(className);
+    return alreadyAddedEntries.contains(classPath);
+  }",method,
+"  private String classNameToPath(String className) {
+    return className.replace('.', '/') + "".class"";
+  }",method,
+"  public static String pathToClassName(String relativePath) {
+    String entry = relativePath;
+    if (relativePath.contains("".class"")) {
+      entry = relativePath.replace('/', '.').replace("".class"", """");
+    }
+    return entry;
+  }",method,
+"  private void addEntriesToJar(Iterable<JarEntrySupplier> entries, CustomJarOutputStream jar)
+      throws IOException {
+    for (JarEntrySupplier entrySupplier : entries) {
+      addEntryToJar(entrySupplier, jar);
+    }
+  }",method,
+"    for (JarEntrySupplier entrySupplier : entries) {
+      addEntryToJar(entrySupplier, jar);
+    }",method,
+"public class ParticleSystemNexusExample extends BaseExample {
+	// ===========================================================
+	// Constants
+	// ===========================================================
+	private static final int CAMERA_WIDTH = 480;
+	private static final int CAMERA_HEIGHT = 320;
+	private static final float RATE_MIN = 8;
+	private static final float RATE_MAX = 12;
+	private static final int PARTICLES_MAX = 200;
+	// ===========================================================
+	// Fields
+	// ===========================================================
+	private Camera mCamera;
+	private BitmapTextureAtlas mBitmapTextureAtlas;
+	private TextureRegion mParticleTextureRegion;
+	// ===========================================================
+	// Constructors
+	// ===========================================================
+	// ===========================================================
+	// Getter & Setter
+	// ===========================================================
+	// ===========================================================
+	// Methods for/from SuperClass/Interfaces
+	// ===========================================================
+	@Override
+	public Engine onLoadEngine() {
+		this.mCamera = new Camera(0, 0, CAMERA_WIDTH, CAMERA_HEIGHT);
+		return new Engine(new EngineOptions(true, ScreenOrientation.LANDSCAPE, new RatioResolutionPolicy(CAMERA_WIDTH, CAMERA_HEIGHT), this.mCamera));
+	}
+	@Override
+	public void onLoadResources() {
+		this.mBitmapTextureAtlas = new BitmapTextureAtlas(32, 32, TextureOptions.BILINEAR_PREMULTIPLYALPHA);
+		BitmapTextureAtlasTextureRegionFactory.setAssetBasePath(""gfx/"");
+		this.mParticleTextureRegion = BitmapTextureAtlasTextureRegionFactory.createFromAsset(this.mBitmapTextureAtlas, this, ""particle_fire.png"", 0, 0);
+		this.mEngine.getTextureManager().loadTexture(this.mBitmapTextureAtlas);
+	}
+	@Override
+	public Scene onLoadScene() {
+		this.mEngine.registerUpdateHandler(new FPSLogger());
+		final Scene scene = new Scene();
+		scene.setBackground(new ColorBackground(0.0f, 0.0f, 0.0f));
+		{
+			final ParticleSystem particleSystem = new ParticleSystem(new PointParticleEmitter(-32, CAMERA_HEIGHT - 32), RATE_MIN, RATE_MAX, PARTICLES_MAX, this.mParticleTextureRegion);
+			particleSystem.setBlendFunction(GL10.GL_SRC_ALPHA, GL10.GL_ONE);
+			particleSystem.addParticleInitializer(new VelocityInitializer(35, 45, 0, -10));
+			particleSystem.addParticleInitializer(new AccelerationInitializer(5, -11));
+			particleSystem.addParticleInitializer(new RotationInitializer(0.0f, 360.0f));
+			particleSystem.addParticleInitializer(new ColorInitializer(1.0f, 1.0f, 0.0f));
+			particleSystem.addParticleModifier(new ScaleModifier(0.5f, 2.0f, 0, 5));
+			particleSystem.addParticleModifier(new ExpireModifier(6.5f));
+			particleSystem.addParticleModifier(new ColorModifier(1.0f, 1.0f, 1.0f, 1.0f, 0.0f, 1.0f, 2.5f, 5.5f));
+			particleSystem.addParticleModifier(new AlphaModifier(1.0f, 0.0f, 2.5f, 6.5f));
+			scene.attachChild(particleSystem);
+		}
+		{
+			final ParticleSystem particleSystem = new ParticleSystem(new PointParticleEmitter(CAMERA_WIDTH, CAMERA_HEIGHT - 32), RATE_MIN, RATE_MAX, PARTICLES_MAX, this.mParticleTextureRegion);
+			particleSystem.setBlendFunction(GL10.GL_SRC_ALPHA, GL10.GL_ONE);
+			particleSystem.addParticleInitializer(new VelocityInitializer(-35, -45, 0, -10));
+			particleSystem.addParticleInitializer(new AccelerationInitializer(-5, -11));
+			particleSystem.addParticleInitializer(new RotationInitializer(0.0f, 360.0f));
+			particleSystem.addParticleInitializer(new ColorInitializer(0.0f, 1.0f, 0.0f));
+			particleSystem.addParticleModifier(new ScaleModifier(0.5f, 2.0f, 0, 5));
+			particleSystem.addParticleModifier(new ExpireModifier(6.5f));
+			particleSystem.addParticleModifier(new ColorModifier(0.0f, 1.0f, 1.0f, 1.0f, 0.0f, 1.0f, 2.5f, 5.5f));
+			particleSystem.addParticleModifier(new AlphaModifier(1.0f, 0.0f, 2.5f, 6.5f));
+			scene.attachChild(particleSystem);
+		}
+		{
+			final ParticleSystem particleSystem = new ParticleSystem(new PointParticleEmitter(-32, 0), RATE_MIN, RATE_MAX, PARTICLES_MAX, this.mParticleTextureRegion);
+			particleSystem.setBlendFunction(GL10.GL_SRC_ALPHA, GL10.GL_ONE);
+			particleSystem.addParticleInitializer(new VelocityInitializer(35, 45, 0, 10));
+			particleSystem.addParticleInitializer(new AccelerationInitializer(5, 11));
+			particleSystem.addParticleInitializer(new RotationInitializer(0.0f, 360.0f));
+			particleSystem.addParticleInitializer(new ColorInitializer(0.0f, 0.0f, 1.0f));
+			particleSystem.addParticleModifier(new ScaleModifier(0.5f, 2.0f, 0, 5));
+			particleSystem.addParticleModifier(new ExpireModifier(6.5f));
+			particleSystem.addParticleModifier(new ColorModifier(0.0f, 1.0f, 0.0f, 1.0f, 1.0f, 1.0f, 2.5f, 5.5f));
+			particleSystem.addParticleModifier(new AlphaModifier(1.0f, 0.0f, 2.5f, 6.5f));
+			scene.attachChild(particleSystem);
+		}
+		{
+			final ParticleSystem particleSystem = new ParticleSystem(new PointParticleEmitter(CAMERA_WIDTH, 0), RATE_MIN, RATE_MAX, PARTICLES_MAX, this.mParticleTextureRegion);
+			particleSystem.setBlendFunction(GL10.GL_SRC_ALPHA, GL10.GL_ONE);
+			particleSystem.addParticleInitializer(new VelocityInitializer(-35, -45, 0, 10));
+			particleSystem.addParticleInitializer(new AccelerationInitializer(-5, 11));
+			particleSystem.addParticleInitializer(new RotationInitializer(0.0f, 360.0f));
+			particleSystem.addParticleInitializer(new ColorInitializer(1.0f, 0.0f, 0.0f));
+			particleSystem.addParticleModifier(new ScaleModifier(0.5f, 2.0f, 0, 5));
+			particleSystem.addParticleModifier(new ExpireModifier(6.5f));
+			particleSystem.addParticleModifier(new ColorModifier(1.0f, 1.0f, 0.0f, 1.0f, 0.0f, 1.0f, 2.5f, 5.5f));
+			particleSystem.addParticleModifier(new AlphaModifier(1.0f, 0.0f, 2.5f, 6.5f));
+			scene.attachChild(particleSystem);
+		}
+		return scene;
+	}
+	@Override
+	public void onLoadComplete() {
+	}
+	// ===========================================================
+	// Methods
+	// ===========================================================
+	// ===========================================================
+	// Inner and Anonymous Classes
+	// ===========================================================
+}",class,
+"	@Override
+	public Engine onLoadEngine() {
+		this.mCamera = new Camera(0, 0, CAMERA_WIDTH, CAMERA_HEIGHT);
+		return new Engine(new EngineOptions(true, ScreenOrientation.LANDSCAPE, new RatioResolutionPolicy(CAMERA_WIDTH, CAMERA_HEIGHT), this.mCamera));
+	}",method,
+"	@Override
+	public void onLoadResources() {
+		this.mBitmapTextureAtlas = new BitmapTextureAtlas(32, 32, TextureOptions.BILINEAR_PREMULTIPLYALPHA);
+		BitmapTextureAtlasTextureRegionFactory.setAssetBasePath(""gfx/"");
+		this.mParticleTextureRegion = BitmapTextureAtlasTextureRegionFactory.createFromAsset(this.mBitmapTextureAtlas, this, ""particle_fire.png"", 0, 0);
+		this.mEngine.getTextureManager().loadTexture(this.mBitmapTextureAtlas);
+	}",method,

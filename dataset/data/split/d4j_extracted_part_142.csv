@@ -1,0 +1,1396 @@
+code_snippet,type,score
+"    public static class TableMetadataBuilder
+    {
+        public static TableMetadataBuilder tableMetadataBuilder(String schemaName, String tableName)
+        {
+            return new TableMetadataBuilder(new SchemaTableName(schemaName, tableName));
+        }
+        public static TableMetadataBuilder tableMetadataBuilder(SchemaTableName tableName)
+        {
+            return new TableMetadataBuilder(tableName);
+        }
+        private final SchemaTableName tableName;
+        private final ImmutableList.Builder<ColumnMetadata> columns = ImmutableList.builder();
+        private final ImmutableMap.Builder<String, Object> properties = ImmutableMap.builder();
+        private final Optional<String> comment;
+        private TableMetadataBuilder(SchemaTableName tableName)
+        {
+            this(tableName, Optional.empty());
+        }
+        private TableMetadataBuilder(SchemaTableName tableName, Optional<String> comment)
+        {
+            this.tableName = tableName;
+            this.comment = comment;
+        }
+        public TableMetadataBuilder column(String columnName, Type type)
+        {
+            columns.add(new ColumnMetadata(columnName, type));
+            return this;
+        }
+        public TableMetadataBuilder property(String name, Object value)
+        {
+            properties.put(name, value);
+            return this;
+        }
+        public ConnectorTableMetadata build()
+        {
+            return new ConnectorTableMetadata(tableName, columns.build(), properties.build(), comment);
+        }
+    }",class,
+    private MetadataUtil() {},method,
+"    public static void checkTableName(String catalogName, Optional<String> schemaName, Optional<String> tableName)
+    {
+        checkCatalogName(catalogName);
+        schemaName.ifPresent(name -> checkLowerCase(name, ""schemaName""));
+        tableName.ifPresent(name -> checkLowerCase(name, ""tableName""));
+        checkArgument(schemaName.isPresent() || !tableName.isPresent(), ""tableName specified but schemaName is missing"");
+    }",method,
+"    public static String checkCatalogName(String catalogName)
+    {
+        return checkLowerCase(catalogName, ""catalogName"");
+    }",method,
+"    public static String checkSchemaName(String schemaName)
+    {
+        return checkLowerCase(schemaName, ""schemaName"");
+    }",method,
+"    public static String checkTableName(String tableName)
+    {
+        return checkLowerCase(tableName, ""tableName"");
+    }",method,
+"    public static void checkObjectName(String catalogName, String schemaName, String objectName)
+    {
+        checkLowerCase(catalogName, ""catalogName"");
+        checkLowerCase(schemaName, ""schemaName"");
+        checkLowerCase(objectName, ""objectName"");
+    }",method,
+"    public static String checkLowerCase(String value, String name)
+    {
+        if (value == null) {
+            throw new NullPointerException(format(""%s is null"", name));
+        }
+        checkArgument(value.equals(value.toLowerCase(ENGLISH)), ""%s is not lowercase: %s"", name, value);
+        return value;
+    }",method,
+"        if (value == null) {
+            throw new NullPointerException(format(""%s is null"", name));
+        }",method,
+"    public static ColumnMetadata findColumnMetadata(ConnectorTableMetadata tableMetadata, String columnName)
+    {
+        for (ColumnMetadata columnMetadata : tableMetadata.getColumns()) {
+            if (columnName.equals(columnMetadata.getName())) {
+                return columnMetadata;
+            }
+        }
+        return null;
+    }",method,
+"    public static CatalogSchemaName createCatalogSchemaName(Session session, Node node, Optional<QualifiedName> schema)
+    {
+        String catalogName = session.getCatalog().orElse(null);
+        String schemaName = session.getSchema().orElse(null);
+        if (schema.isPresent()) {
+            List<String> parts = schema.get().getParts();
+            if (parts.size() > 2) {
+                throw new SemanticException(INVALID_SCHEMA_NAME, node, ""Too many parts in schema name: %s"", schema.get());
+            }
+            if (parts.size() == 2) {
+                catalogName = parts.get(0);
+            }
+            schemaName = schema.get().getSuffix();
+        }
+        if (catalogName == null) {
+            throw new SemanticException(CATALOG_NOT_SPECIFIED, node, ""Catalog must be specified when session catalog is not set"");
+        }
+        if (schemaName == null) {
+            throw new SemanticException(SCHEMA_NOT_SPECIFIED, node, ""Schema must be specified when session schema is not set"");
+        }
+        return new CatalogSchemaName(catalogName, schemaName);
+    }",method,
+"        if (catalogName == null) {
+            throw new SemanticException(CATALOG_NOT_SPECIFIED, node, ""Catalog must be specified when session catalog is not set"");
+        }",method,
+"        if (schemaName == null) {
+            throw new SemanticException(SCHEMA_NOT_SPECIFIED, node, ""Schema must be specified when session schema is not set"");
+        }",method,
+"    public static QualifiedObjectName createQualifiedObjectName(Session session, Node node, QualifiedName name)
+    {
+        requireNonNull(session, ""session is null"");
+        requireNonNull(name, ""name is null"");
+        if (name.getParts().size() > 3) {
+            throw new PrestoException(SYNTAX_ERROR, format(""Too many dots in table name: %s"", name));
+        }
+        List<String> parts = Lists.reverse(name.getParts());
+        String objectName = parts.get(0);
+        String schemaName = (parts.size() > 1) ? parts.get(1) : session.getSchema().orElseThrow(() ->
+                new SemanticException(SCHEMA_NOT_SPECIFIED, node, ""Schema must be specified when session schema is not set""));
+        String catalogName = (parts.size() > 2) ? parts.get(2) : session.getCatalog().orElseThrow(() ->
+                new SemanticException(CATALOG_NOT_SPECIFIED, node, ""Catalog must be specified when session catalog is not set""));
+        return new QualifiedObjectName(catalogName, schemaName, objectName);
+    }",method,
+"    public static QualifiedName createQualifiedName(QualifiedObjectName name)
+    {
+        return QualifiedName.of(name.getCatalogName(), name.getSchemaName(), name.getObjectName());
+    }",method,
+"    public static boolean tableExists(Metadata metadata, Session session, String table)
+    {
+        if (!session.getCatalog().isPresent() || !session.getSchema().isPresent()) {
+            return false;
+        }
+        QualifiedObjectName name = new QualifiedObjectName(session.getCatalog().get(), session.getSchema().get(), table);
+        return metadata.getTableHandle(session, name).isPresent();
+    }",method,
+"        public static SchemaMetadataBuilder schemaMetadataBuilder()
+        {
+            return new SchemaMetadataBuilder();
+        }",method,
+"        public SchemaMetadataBuilder table(ConnectorTableMetadata tableMetadata)
+        {
+            tables.put(tableMetadata.getTable(), tableMetadata);
+            return this;
+        }",method,
+"        public ImmutableMap<SchemaTableName, ConnectorTableMetadata> build()
+        {
+            return tables.build();
+        }",method,
+"        public static TableMetadataBuilder tableMetadataBuilder(String schemaName, String tableName)
+        {
+            return new TableMetadataBuilder(new SchemaTableName(schemaName, tableName));
+        }",method,
+"        public static TableMetadataBuilder tableMetadataBuilder(SchemaTableName tableName)
+        {
+            return new TableMetadataBuilder(tableName);
+        }",method,
+"        private TableMetadataBuilder(SchemaTableName tableName)
+        {
+            this(tableName, Optional.empty());
+        }",method,
+"        private TableMetadataBuilder(SchemaTableName tableName, Optional<String> comment)
+        {
+            this.tableName = tableName;
+            this.comment = comment;
+        }",method,
+"        public TableMetadataBuilder column(String columnName, Type type)
+        {
+            columns.add(new ColumnMetadata(columnName, type));
+            return this;
+        }",method,
+"        public TableMetadataBuilder property(String name, Object value)
+        {
+            properties.put(name, value);
+            return this;
+        }",method,
+"        public ConnectorTableMetadata build()
+        {
+            return new ConnectorTableMetadata(tableName, columns.build(), properties.build(), comment);
+        }",method,
+"public class RepackZipEntriesStepTest {
+  @Rule public TemporaryPaths tmp = new TemporaryPaths();
+  private Path parent;
+  private Path zipFile;
+  private ProjectFilesystem filesystem;
+  @Before
+  public void buildSampleZipFile() throws InterruptedException, IOException {
+    parent = tmp.newFolder(""foo"");
+    filesystem = TestProjectFilesystems.createProjectFilesystem(parent);
+    zipFile = parent.resolve(""example.zip"");
+    // Turns out that the zip filesystem generates slightly different output from the output stream.
+    // Since we've modeled our outputstreams after the zip output stream, be compatible with that.
+    try (ZipOutputStream stream = new ZipOutputStream(Files.newOutputStream(zipFile))) {
+      ZipEntry entry = new ZipEntry(""file"");
+      stream.putNextEntry(entry);
+      String packageName = getClass().getPackage().getName().replace('.', '/');
+      URL sample = Resources.getResource(packageName + ""/sample-bytes.properties"");
+      stream.write(Resources.toByteArray(sample));
+    }
+  }
+  @Test
+  public void shouldLeaveZipAloneIfEntriesToCompressIsEmpty() throws Exception {
+    Path out = parent.resolve(""output.zip"");
+    RepackZipEntriesStep step =
+        new RepackZipEntriesStep(filesystem, zipFile, out, ImmutableSet.of());
+    step.execute(TestExecutionContext.newInstance());
+    byte[] expected = Files.readAllBytes(zipFile);
+    byte[] actual = Files.readAllBytes(out);
+    assertArrayEquals(expected, actual);
+  }
+  @Test
+  public void repackWithHigherCompressionResultsInFewerBytes() throws Exception {
+    Path out = parent.resolve(""output.zip"");
+    RepackZipEntriesStep step =
+        new RepackZipEntriesStep(filesystem, zipFile, out, ImmutableSet.of(""file""));
+    step.execute(TestExecutionContext.newInstance());
+    assertTrue(Files.size(out) < Files.size(zipFile));
+  }
+  @Test
+  public void justStoringEntriesLeadsToMoreBytesInOuputZip() throws Exception {
+    Path out = parent.resolve(""output.zip"");
+    RepackZipEntriesStep step =
+        new RepackZipEntriesStep(
+            filesystem,
+            zipFile,
+            out,
+            ImmutableSet.of(""file""),
+            ZipCompressionLevel.MIN_COMPRESSION_LEVEL);
+    step.execute(TestExecutionContext.newInstance());
+    byte[] expected = Files.readAllBytes(zipFile);
+    byte[] actual = Files.readAllBytes(out);
+    assertTrue(expected.length < actual.length);
+  }
+}",class,
+"  @Before
+  public void buildSampleZipFile() throws InterruptedException, IOException {
+    parent = tmp.newFolder(""foo"");
+    filesystem = TestProjectFilesystems.createProjectFilesystem(parent);
+    zipFile = parent.resolve(""example.zip"");
+    // Turns out that the zip filesystem generates slightly different output from the output stream.
+    // Since we've modeled our outputstreams after the zip output stream, be compatible with that.
+    try (ZipOutputStream stream = new ZipOutputStream(Files.newOutputStream(zipFile))) {
+      ZipEntry entry = new ZipEntry(""file"");
+      stream.putNextEntry(entry);
+      String packageName = getClass().getPackage().getName().replace('.', '/');
+      URL sample = Resources.getResource(packageName + ""/sample-bytes.properties"");
+      stream.write(Resources.toByteArray(sample));
+    }
+  }",method,
+"  @Test
+  public void shouldLeaveZipAloneIfEntriesToCompressIsEmpty() throws Exception {
+    Path out = parent.resolve(""output.zip"");
+    RepackZipEntriesStep step =
+        new RepackZipEntriesStep(filesystem, zipFile, out, ImmutableSet.of());
+    step.execute(TestExecutionContext.newInstance());
+    byte[] expected = Files.readAllBytes(zipFile);
+    byte[] actual = Files.readAllBytes(out);
+    assertArrayEquals(expected, actual);
+  }",method,
+"  @Test
+  public void repackWithHigherCompressionResultsInFewerBytes() throws Exception {
+    Path out = parent.resolve(""output.zip"");
+    RepackZipEntriesStep step =
+        new RepackZipEntriesStep(filesystem, zipFile, out, ImmutableSet.of(""file""));
+    step.execute(TestExecutionContext.newInstance());
+    assertTrue(Files.size(out) < Files.size(zipFile));
+  }",method,
+"  @Test
+  public void justStoringEntriesLeadsToMoreBytesInOuputZip() throws Exception {
+    Path out = parent.resolve(""output.zip"");
+    RepackZipEntriesStep step =
+        new RepackZipEntriesStep(
+            filesystem,
+            zipFile,
+            out,
+            ImmutableSet.of(""file""),
+            ZipCompressionLevel.MIN_COMPRESSION_LEVEL);
+    step.execute(TestExecutionContext.newInstance());
+    byte[] expected = Files.readAllBytes(zipFile);
+    byte[] actual = Files.readAllBytes(out);
+    assertTrue(expected.length < actual.length);
+  }",method,
+"public class InvertedIndexGenerateMapper extends Mapper<LongWritable, Text, Text, Text> {
+    private int total_size_ = 0; // file size, offset
+    private int total_line_count_ = 0; //
+    private long begin_docid_ = -1;
+    private String log_name_ = null;
+    private int total_line_per_doc_ = 0;
+    private int is_middle_ = 0;
+    private int log_dir_level_ = 0;
+    private int process_line_count_ = 0;
+    private LogParser logparser = null;
+    static {
+        System.err.println(""InvertedIndexGenerateMapper-Encoding: "" + Charset.defaultCharset().displayName());
+    }
+    @Override
+    protected void setup(org.apache.hadoop.mapreduce.Mapper.Context context)
+            throws java.io.IOException, java.lang.InterruptedException {
+        super.setup(context);
+        Configuration conf = context.getConfiguration();
+        total_line_per_doc_ = conf.getInt(""total_line_per_doc"", 128);
+        log_dir_level_ = conf.getInt(""log_dir_level"", 1);
+        FileSplit split = (FileSplit) context.getInputSplit();
+        String filename = GetFileName(split);
+        GetBeginDocId(filename, context);
+        LogParserFactory logParserFactory = new LogParserFactory();
+        logparser = logParserFactory.Create(context.getConfiguration());
+    }
+    private String GetFileName(FileSplit split) {
+        String filename = new String();
+        String fname = split.getPath().getName();
+        String hour = split.getPath().getParent().getName();
+        if (fname.startsWith(""part"")) {
+            is_middle_ = 1;
+        }
+        System.err.println(""GetFileName: "" + fname + ""  hour:"" + hour);
+        //String day = split.getPath().getParent().getParent().getName();
+        //String[] paths = fname.split(""-"");
+        //filename = hour + paths[1].substring(0, 5);
+        if (log_dir_level_ > 1) {
+            filename = hour + fname; //paths[0].substring(0, paths[0].length()-5) + paths[3]+paths[4].substring(0, 1);
+        } else {
+            filename = fname;
+        }
+        //filename = hour + ""/"" + fname;
+        return filename;
+    }
+    private void GetBeginDocId(String filename, org.apache.hadoop.mapreduce.Mapper.Context context) {
+        System.err.println(""GetBeginDocId: "" + filename);
+        BufferedReader in = null;
+        try {
+            Path[] cacheFiles = null;
+            try {
+                cacheFiles = DistributedCache.getLocalCacheFiles(context.getConfiguration());
+            } catch (IOException e1) {
+                // TODO Auto-generated catch block
+                e1.printStackTrace();
+            }
+            for (int i = 0; i < cacheFiles.length; ++i) {
+                String path = cacheFiles[i].toString();
+                System.err.println(path);
+                if (in == null && path.indexOf(""fname_begin_docid.txt"") != -1) {
+                    System.err.println(""found fname_begin_docid.txt:"" + path);
+                    String prefix = ""file:"";
+                    if (path.startsWith(prefix)) {
+                        path = path.substring(prefix.length());
+                    }
+                    in = new BufferedReader(new FileReader(path));
+                }
+            }
+            try {
+                if (in != null) {
+                    String s = null;
+                    while ((s = in.readLine()) != null) {
+                        String[] fname_docid_parts = s.split(""[ \t]"");//old is \t
+                        if (fname_docid_parts[0].compareTo(filename) == 0) {
+                            begin_docid_ = Long.parseLong(fname_docid_parts[1]);
+                            System.err.println(""get begin id: "" + begin_docid_);
+                            break;
+                        }
+                    }
+                }
+            } catch (IOException e) {
+                e.printStackTrace();
+            }
+        } catch (FileNotFoundException e) {
+            e.printStackTrace();
+        }
+        if (begin_docid_ == -1) {
+            System.err.println(""def begin id: -1"");
+        }
+    }
+    @Override
+    protected void cleanup(Context context) throws IOException, InterruptedException {
+        super.cleanup(context);
+    }
+    @Override
+    protected void map(LongWritable key, Text value, Mapper<LongWritable, Text, Text, Text>.Context context)
+            throws IOException, InterruptedException {
+        if (process_line_count_ % 100 == 0) {
+            context.progress();
+        }
+        ++process_line_count_;
+        if (is_middle_ == 1) {
+            if (value.toString().isEmpty()) {
+                return;
+            }
+            String val = value.toString();
+            int token_pos = val.indexOf(""\t"");
+            //String[] arr = value.toString().split(""\t"", 2);
+            if (token_pos <= 0 || token_pos > 256) {
+                return;
+            }
+            String token = val.substring(0, token_pos);
+            byte[] token_buf = token.getBytes();
+            int token_hash = MurmurHash3.murmurhash3_x86_32(token_buf, 0, token_buf.length, 0);
+            if (token_hash < 0) {
+                token_hash = 0 - token_hash;
+            }
+            int partition_hash = token_hash / 200;
+            String new_key = String.format(""%08d"", partition_hash);
+            context.write(new Text(new_key), new Text(value.toString()));
+            return;
+        }
+        if (begin_docid_ == -1) {
+            cleanup(context);
+            context.setStatus(""0"");
+            //context.getCounter(Counter.MAP_READ_WALLCLOCK).setValue(0);
+            System.exit(0);
+        }
+        if (value != null) {
+            logparser.ParseLine(value.toString(), begin_docid_ + total_line_count_ / total_line_per_doc_,
+                    total_line_count_ % total_line_per_doc_, context);
+            total_line_count_++;
+            //line_ = """";
+        }
+    }
+}",class,
+"    @Override
+    protected void setup(org.apache.hadoop.mapreduce.Mapper.Context context)
+            throws java.io.IOException, java.lang.InterruptedException {
+        super.setup(context);
+        Configuration conf = context.getConfiguration();
+        total_line_per_doc_ = conf.getInt(""total_line_per_doc"", 128);
+        log_dir_level_ = conf.getInt(""log_dir_level"", 1);
+        FileSplit split = (FileSplit) context.getInputSplit();
+        String filename = GetFileName(split);
+        GetBeginDocId(filename, context);
+        LogParserFactory logParserFactory = new LogParserFactory();
+        logparser = logParserFactory.Create(context.getConfiguration());
+    }",method,
+"    private String GetFileName(FileSplit split) {
+        String filename = new String();
+        String fname = split.getPath().getName();
+        String hour = split.getPath().getParent().getName();
+        if (fname.startsWith(""part"")) {
+            is_middle_ = 1;
+        }
+        System.err.println(""GetFileName: "" + fname + ""  hour:"" + hour);
+        //String day = split.getPath().getParent().getParent().getName();
+        //String[] paths = fname.split(""-"");
+        //filename = hour + paths[1].substring(0, 5);
+        if (log_dir_level_ > 1) {
+            filename = hour + fname; //paths[0].substring(0, paths[0].length()-5) + paths[3]+paths[4].substring(0, 1);
+        } else {
+            filename = fname;
+        }
+        //filename = hour + ""/"" + fname;
+        return filename;
+    }",method,
+"        if (log_dir_level_ > 1) {
+            filename = hour + fname; //paths[0].substring(0, paths[0].length()-5) + paths[3]+paths[4].substring(0, 1);
+        }",method,
+"    private void GetBeginDocId(String filename, org.apache.hadoop.mapreduce.Mapper.Context context) {
+        System.err.println(""GetBeginDocId: "" + filename);
+        BufferedReader in = null;
+        try {
+            Path[] cacheFiles = null;
+            try {
+                cacheFiles = DistributedCache.getLocalCacheFiles(context.getConfiguration());
+            } catch (IOException e1) {
+                // TODO Auto-generated catch block
+                e1.printStackTrace();
+            }
+            for (int i = 0; i < cacheFiles.length; ++i) {
+                String path = cacheFiles[i].toString();
+                System.err.println(path);
+                if (in == null && path.indexOf(""fname_begin_docid.txt"") != -1) {
+                    System.err.println(""found fname_begin_docid.txt:"" + path);
+                    String prefix = ""file:"";
+                    if (path.startsWith(prefix)) {
+                        path = path.substring(prefix.length());
+                    }
+                    in = new BufferedReader(new FileReader(path));
+                }
+            }
+            try {
+                if (in != null) {
+                    String s = null;
+                    while ((s = in.readLine()) != null) {
+                        String[] fname_docid_parts = s.split(""[ \t]"");//old is \t
+                        if (fname_docid_parts[0].compareTo(filename) == 0) {
+                            begin_docid_ = Long.parseLong(fname_docid_parts[1]);
+                            System.err.println(""get begin id: "" + begin_docid_);
+                            break;
+                        }
+                    }
+                }
+            } catch (IOException e) {
+                e.printStackTrace();
+            }
+        } catch (FileNotFoundException e) {
+            e.printStackTrace();
+        }
+        if (begin_docid_ == -1) {
+            System.err.println(""def begin id: -1"");
+        }
+    }",method,
+"            for (int i = 0; i < cacheFiles.length; ++i) {
+                String path = cacheFiles[i].toString();
+                System.err.println(path);
+                if (in == null && path.indexOf(""fname_begin_docid.txt"") != -1) {
+                    System.err.println(""found fname_begin_docid.txt:"" + path);
+                    String prefix = ""file:"";
+                    if (path.startsWith(prefix)) {
+                        path = path.substring(prefix.length());
+                    }
+                    in = new BufferedReader(new FileReader(path));
+                }
+            }",method,
+"                if (in != null) {
+                    String s = null;
+                    while ((s = in.readLine()) != null) {
+                        String[] fname_docid_parts = s.split(""[ \t]"");//old is \t
+                        if (fname_docid_parts[0].compareTo(filename) == 0) {
+                            begin_docid_ = Long.parseLong(fname_docid_parts[1]);
+                            System.err.println(""get begin id: "" + begin_docid_);
+                            break;
+                        }
+                    }
+                }",method,
+"        if (begin_docid_ == -1) {
+            System.err.println(""def begin id: -1"");
+        }",method,
+"    @Override
+    protected void cleanup(Context context) throws IOException, InterruptedException {
+        super.cleanup(context);
+    }",method,
+"    @Override
+    protected void map(LongWritable key, Text value, Mapper<LongWritable, Text, Text, Text>.Context context)
+            throws IOException, InterruptedException {
+        if (process_line_count_ % 100 == 0) {
+            context.progress();
+        }
+        ++process_line_count_;
+        if (is_middle_ == 1) {
+            if (value.toString().isEmpty()) {
+                return;
+            }
+            String val = value.toString();
+            int token_pos = val.indexOf(""\t"");
+            //String[] arr = value.toString().split(""\t"", 2);
+            if (token_pos <= 0 || token_pos > 256) {
+                return;
+            }
+            String token = val.substring(0, token_pos);
+            byte[] token_buf = token.getBytes();
+            int token_hash = MurmurHash3.murmurhash3_x86_32(token_buf, 0, token_buf.length, 0);
+            if (token_hash < 0) {
+                token_hash = 0 - token_hash;
+            }
+            int partition_hash = token_hash / 200;
+            String new_key = String.format(""%08d"", partition_hash);
+            context.write(new Text(new_key), new Text(value.toString()));
+            return;
+        }
+        if (begin_docid_ == -1) {
+            cleanup(context);
+            context.setStatus(""0"");
+            //context.getCounter(Counter.MAP_READ_WALLCLOCK).setValue(0);
+            System.exit(0);
+        }
+        if (value != null) {
+            logparser.ParseLine(value.toString(), begin_docid_ + total_line_count_ / total_line_per_doc_,
+                    total_line_count_ % total_line_per_doc_, context);
+            total_line_count_++;
+            //line_ = """";
+        }
+    }",method,
+"        if (process_line_count_ % 100 == 0) {
+            context.progress();
+        }",method,
+"        if (is_middle_ == 1) {
+            if (value.toString().isEmpty()) {
+                return;
+            }
+            String val = value.toString();
+            int token_pos = val.indexOf(""\t"");
+            //String[] arr = value.toString().split(""\t"", 2);
+            if (token_pos <= 0 || token_pos > 256) {
+                return;
+            }
+            String token = val.substring(0, token_pos);
+            byte[] token_buf = token.getBytes();
+            int token_hash = MurmurHash3.murmurhash3_x86_32(token_buf, 0, token_buf.length, 0);
+            if (token_hash < 0) {
+                token_hash = 0 - token_hash;
+            }
+            int partition_hash = token_hash / 200;
+            String new_key = String.format(""%08d"", partition_hash);
+            context.write(new Text(new_key), new Text(value.toString()));
+            return;
+        }",method,
+"            if (token_pos <= 0 || token_pos > 256) {
+                return;
+            }",method,
+"            if (token_hash < 0) {
+                token_hash = 0 - token_hash;
+            }",method,
+"        if (begin_docid_ == -1) {
+            cleanup(context);
+            context.setStatus(""0"");
+            //context.getCounter(Counter.MAP_READ_WALLCLOCK).setValue(0);
+            System.exit(0);
+        }",method,
+"        if (value != null) {
+            logparser.ParseLine(value.toString(), begin_docid_ + total_line_count_ / total_line_per_doc_,
+                    total_line_count_ % total_line_per_doc_, context);
+            total_line_count_++;
+            //line_ = """";
+        }",method,
+"public class TemporaryFolder extends ExternalResource {
+    private final File parentFolder;
+    private final boolean assureDeletion;
+    private File folder;
+    private static final int TEMP_DIR_ATTEMPTS = 10000;
+    private static final String TMP_PREFIX = ""junit"";
+    public TemporaryFolder() {
+        this((File) null);
+    }
+    public TemporaryFolder(File parentFolder) {
+        this.parentFolder = parentFolder;
+        this.assureDeletion = false;
+    }
+    protected TemporaryFolder(Builder builder) {
+        this.parentFolder = builder.parentFolder;
+        this.assureDeletion = builder.assureDeletion;
+    }
+    public static Builder builder() {
+        return new Builder();
+    }
+    public static class Builder {
+        private File parentFolder;
+        private boolean assureDeletion;
+        protected Builder() {}
+        public Builder parentFolder(File parentFolder) {
+            this.parentFolder = parentFolder;
+            return this;
+        }
+        public Builder assureDeletion() {
+            this.assureDeletion = true;
+            return this;
+        }
+        public TemporaryFolder build() {
+            return new TemporaryFolder(this);
+        }
+    }
+    @Override
+    protected void before() throws Throwable {
+        create();
+    }
+    @Override
+    protected void after() {
+        delete();
+    }
+    // testing purposes only
+    public void create() throws IOException {
+        folder = createTemporaryFolderIn(parentFolder);
+    }
+    public File newFile(String fileName) throws IOException {
+        File file = new File(getRoot(), fileName);
+        if (!file.createNewFile()) {
+            throw new IOException(
+                    ""a file with the name \'"" + fileName + ""\' already exists in the test folder"");
+        }
+        return file;
+    }
+    public File newFile() throws IOException {
+        return File.createTempFile(TMP_PREFIX, null, getRoot());
+    }
+    public File newFolder(String path) throws IOException {
+        return newFolder(new String[]{path});
+    }
+    public File newFolder(String... paths) throws IOException {
+        if (paths.length == 0) {
+            throw new IllegalArgumentException(""must pass at least one path"");
+        }
+        File root = getRoot();
+        for (String path : paths) {
+            if (new File(path).isAbsolute()) {
+                throw new IOException(""folder path \'"" + path + ""\' is not a relative path"");
+            }
+        }
+        File relativePath = null;
+        File file = root;
+        boolean lastMkdirsCallSuccessful = true;
+        for (int i = 0; i < paths.length; i++) {
+            relativePath = new File(relativePath, paths[i]);
+            file = new File(root, relativePath.getPath());
+            lastMkdirsCallSuccessful = file.mkdirs();
+            if (!lastMkdirsCallSuccessful && !file.isDirectory()) {
+                throw new IOException(
+                        ""could not create a folder with the path \'"" + relativePath.getPath() + ""\'"");
+            }
+        }
+        if (!lastMkdirsCallSuccessful) {
+            throw new IOException(
+                    ""a folder with the path \'"" + relativePath.getPath() + ""\' already exists"");
+        }
+        return file;
+    }
+    public File newFolder() throws IOException {
+        return createTemporaryFolderIn(getRoot());
+    }
+    private File createTemporaryFolderIn(File parentFolder) throws IOException {
+        File createdFolder = null;
+        for (int i = 0; i < TEMP_DIR_ATTEMPTS; ++i) {
+            // Use createTempFile to get a suitable folder name.
+            String suffix = "".tmp"";
+            File tmpFile = File.createTempFile(TMP_PREFIX, suffix, parentFolder);
+            String tmpName = tmpFile.toString();
+            // Discard .tmp suffix of tmpName.
+            String folderName = tmpName.substring(0, tmpName.length() - suffix.length());
+            createdFolder = new File(folderName);
+            if (createdFolder.mkdir()) {
+                tmpFile.delete();
+                return createdFolder;
+            }
+            tmpFile.delete();
+        }
+        throw new IOException(""Unable to create temporary directory in: ""
+            + parentFolder.toString() + "". Tried "" + TEMP_DIR_ATTEMPTS + "" times. ""
+            + ""Last attempted to create: "" + createdFolder.toString());
+    }
+    public File getRoot() {
+        if (folder == null) {
+            throw new IllegalStateException(
+                    ""the temporary folder has not yet been created"");
+        }
+        return folder;
+    }
+    public void delete() {
+        if (!tryDelete()) {
+            if (assureDeletion) {
+                fail(""Unable to clean up temporary folder "" + folder);
+            }
+        }
+    }
+    protected boolean tryDelete() {
+        if (folder == null) {
+            return true;
+        }
+        return recursiveDelete(folder);
+    }
+    private boolean recursiveDelete(File file) {
+        // Try deleting file before assuming file is a directory
+        // to prevent following symbolic links.
+        if (file.delete()) {
+            return true;
+        }
+        boolean result = true;
+        File[] files = file.listFiles();
+        if (files != null) {
+            for (File each : files) {
+                result = result && recursiveDelete(each);
+            }
+        }
+        return result && file.delete();
+    }
+}",class,
+"    public static class Builder {
+        private File parentFolder;
+        private boolean assureDeletion;
+        protected Builder() {}
+        public Builder parentFolder(File parentFolder) {
+            this.parentFolder = parentFolder;
+            return this;
+        }
+        public Builder assureDeletion() {
+            this.assureDeletion = true;
+            return this;
+        }
+        public TemporaryFolder build() {
+            return new TemporaryFolder(this);
+        }
+    }",class,
+"    public TemporaryFolder() {
+        this((File) null);
+    }",method,
+"    public TemporaryFolder(File parentFolder) {
+        this.parentFolder = parentFolder;
+        this.assureDeletion = false;
+    }",method,
+"    protected TemporaryFolder(Builder builder) {
+        this.parentFolder = builder.parentFolder;
+        this.assureDeletion = builder.assureDeletion;
+    }",method,
+"    public static Builder builder() {
+        return new Builder();
+    }",method,
+        protected Builder() {},method,
+"        public Builder parentFolder(File parentFolder) {
+            this.parentFolder = parentFolder;
+            return this;
+        }",method,
+"        public Builder assureDeletion() {
+            this.assureDeletion = true;
+            return this;
+        }",method,
+"        public TemporaryFolder build() {
+            return new TemporaryFolder(this);
+        }",method,
+"    @Override
+    protected void before() throws Throwable {
+        create();
+    }",method,
+"    @Override
+    protected void after() {
+        delete();
+    }",method,
+"    public void create() throws IOException {
+        folder = createTemporaryFolderIn(parentFolder);
+    }",method,
+"    public File newFile(String fileName) throws IOException {
+        File file = new File(getRoot(), fileName);
+        if (!file.createNewFile()) {
+            throw new IOException(
+                    ""a file with the name \'"" + fileName + ""\' already exists in the test folder"");
+        }
+        return file;
+    }",method,
+"    public File newFile() throws IOException {
+        return File.createTempFile(TMP_PREFIX, null, getRoot());
+    }",method,
+"    public File newFolder(String path) throws IOException {
+        return newFolder(new String[]{path});
+    }",method,
+"    public File newFolder(String... paths) throws IOException {
+        if (paths.length == 0) {
+            throw new IllegalArgumentException(""must pass at least one path"");
+        }
+        File root = getRoot();
+        for (String path : paths) {
+            if (new File(path).isAbsolute()) {
+                throw new IOException(""folder path \'"" + path + ""\' is not a relative path"");
+            }
+        }
+        File relativePath = null;
+        File file = root;
+        boolean lastMkdirsCallSuccessful = true;
+        for (int i = 0; i < paths.length; i++) {
+            relativePath = new File(relativePath, paths[i]);
+            file = new File(root, relativePath.getPath());
+            lastMkdirsCallSuccessful = file.mkdirs();
+            if (!lastMkdirsCallSuccessful && !file.isDirectory()) {
+                throw new IOException(
+                        ""could not create a folder with the path \'"" + relativePath.getPath() + ""\'"");
+            }
+        }
+        if (!lastMkdirsCallSuccessful) {
+            throw new IOException(
+                    ""a folder with the path \'"" + relativePath.getPath() + ""\' already exists"");
+        }
+        return file;
+    }",method,
+"        if (paths.length == 0) {
+            throw new IllegalArgumentException(""must pass at least one path"");
+        }",method,
+"        for (String path : paths) {
+            if (new File(path).isAbsolute()) {
+                throw new IOException(""folder path \'"" + path + ""\' is not a relative path"");
+            }
+        }",method,
+"        for (int i = 0; i < paths.length; i++) {
+            relativePath = new File(relativePath, paths[i]);
+            file = new File(root, relativePath.getPath());
+            lastMkdirsCallSuccessful = file.mkdirs();
+            if (!lastMkdirsCallSuccessful && !file.isDirectory()) {
+                throw new IOException(
+                        ""could not create a folder with the path \'"" + relativePath.getPath() + ""\'"");
+            }
+        }",method,
+"        if (!lastMkdirsCallSuccessful) {
+            throw new IOException(
+                    ""a folder with the path \'"" + relativePath.getPath() + ""\' already exists"");
+        }",method,
+"    public File newFolder() throws IOException {
+        return createTemporaryFolderIn(getRoot());
+    }",method,
+"    private File createTemporaryFolderIn(File parentFolder) throws IOException {
+        File createdFolder = null;
+        for (int i = 0; i < TEMP_DIR_ATTEMPTS; ++i) {
+            // Use createTempFile to get a suitable folder name.
+            String suffix = "".tmp"";
+            File tmpFile = File.createTempFile(TMP_PREFIX, suffix, parentFolder);
+            String tmpName = tmpFile.toString();
+            // Discard .tmp suffix of tmpName.
+            String folderName = tmpName.substring(0, tmpName.length() - suffix.length());
+            createdFolder = new File(folderName);
+            if (createdFolder.mkdir()) {
+                tmpFile.delete();
+                return createdFolder;
+            }
+            tmpFile.delete();
+        }
+        throw new IOException(""Unable to create temporary directory in: ""
+            + parentFolder.toString() + "". Tried "" + TEMP_DIR_ATTEMPTS + "" times. ""
+            + ""Last attempted to create: "" + createdFolder.toString());
+    }",method,
+"        for (int i = 0; i < TEMP_DIR_ATTEMPTS; ++i) {
+            // Use createTempFile to get a suitable folder name.
+            String suffix = "".tmp"";
+            File tmpFile = File.createTempFile(TMP_PREFIX, suffix, parentFolder);
+            String tmpName = tmpFile.toString();
+            // Discard .tmp suffix of tmpName.
+            String folderName = tmpName.substring(0, tmpName.length() - suffix.length());
+            createdFolder = new File(folderName);
+            if (createdFolder.mkdir()) {
+                tmpFile.delete();
+                return createdFolder;
+            }
+            tmpFile.delete();
+        }",method,
+"    public File getRoot() {
+        if (folder == null) {
+            throw new IllegalStateException(
+                    ""the temporary folder has not yet been created"");
+        }
+        return folder;
+    }",method,
+"        if (folder == null) {
+            throw new IllegalStateException(
+                    ""the temporary folder has not yet been created"");
+        }",method,
+"    public void delete() {
+        if (!tryDelete()) {
+            if (assureDeletion) {
+                fail(""Unable to clean up temporary folder "" + folder);
+            }
+        }
+    }",method,
+"            if (assureDeletion) {
+                fail(""Unable to clean up temporary folder "" + folder);
+            }",method,
+"    protected boolean tryDelete() {
+        if (folder == null) {
+            return true;
+        }
+        return recursiveDelete(folder);
+    }",method,
+"        if (folder == null) {
+            return true;
+        }",method,
+"    private boolean recursiveDelete(File file) {
+        // Try deleting file before assuming file is a directory
+        // to prevent following symbolic links.
+        if (file.delete()) {
+            return true;
+        }
+        boolean result = true;
+        File[] files = file.listFiles();
+        if (files != null) {
+            for (File each : files) {
+                result = result && recursiveDelete(each);
+            }
+        }
+        return result && file.delete();
+    }",method,
+"        if (files != null) {
+            for (File each : files) {
+                result = result && recursiveDelete(each);
+            }
+        }",method,
+"            for (File each : files) {
+                result = result && recursiveDelete(each);
+            }",method,
+"public class Counter
+{
+  static final int MAXCOUNTNODES = 500;
+  int m_countNodesStartCount = 0;
+  NodeSetDTM m_countNodes;
+  int m_fromNode = DTM.NULL;
+  ElemNumber m_numberElem;
+  int m_countResult;
+  Counter(ElemNumber numberElem, NodeSetDTM countNodes) throws TransformerException
+  {
+    m_countNodes = countNodes;
+    m_numberElem = numberElem;
+  }
+  int getPreviouslyCounted(XPathContext support, int node)
+  {
+    int n = m_countNodes.size();
+    m_countResult = 0;
+    for (int i = n - 1; i >= 0; i--)
+    {
+      int countedNode = m_countNodes.elementAt(i);
+      if (node == countedNode)
+      {
+        // Since the list is in backwards order, the count is 
+        // how many are in the rest of the list.
+        m_countResult = i + 1 + m_countNodesStartCount;
+        break;
+      }
+      DTM dtm = support.getDTM(countedNode);
+      // Try to see if the given node falls after the counted node...
+      // if it does, don't keep searching backwards.
+      if (dtm.isNodeAfter(countedNode, node))
+        break;
+    }
+    return m_countResult;
+  }
+  int getLast()
+  {
+    int size = m_countNodes.size();
+    return (size > 0) ? m_countNodes.elementAt(size - 1) : DTM.NULL;
+  }
+}",class,
+"  Counter(ElemNumber numberElem, NodeSetDTM countNodes) throws TransformerException
+  {
+    m_countNodes = countNodes;
+    m_numberElem = numberElem;
+  }",method,
+"  int getPreviouslyCounted(XPathContext support, int node)
+  {
+    int n = m_countNodes.size();
+    m_countResult = 0;
+    for (int i = n - 1; i >= 0; i--)
+    {
+      int countedNode = m_countNodes.elementAt(i);
+      if (node == countedNode)
+      {
+        // Since the list is in backwards order, the count is 
+        // how many are in the rest of the list.
+        m_countResult = i + 1 + m_countNodesStartCount;
+        break;
+      }
+      DTM dtm = support.getDTM(countedNode);
+      // Try to see if the given node falls after the counted node...
+      // if it does, don't keep searching backwards.
+      if (dtm.isNodeAfter(countedNode, node))
+        break;
+    }
+    return m_countResult;
+  }",method,
+"    for (int i = n - 1; i >= 0; i--)
+    {
+      int countedNode = m_countNodes.elementAt(i);
+      if (node == countedNode)
+      {
+        // Since the list is in backwards order, the count is 
+        // how many are in the rest of the list.
+        m_countResult = i + 1 + m_countNodesStartCount;
+        break;
+      }
+      DTM dtm = support.getDTM(countedNode);
+      // Try to see if the given node falls after the counted node...
+      // if it does, don't keep searching backwards.
+      if (dtm.isNodeAfter(countedNode, node))
+        break;
+    }",method,
+"      if (node == countedNode)
+      {
+        // Since the list is in backwards order, the count is 
+        // how many are in the rest of the list.
+        m_countResult = i + 1 + m_countNodesStartCount;
+        break;
+      }",method,
+"  int getLast()
+  {
+    int size = m_countNodes.size();
+    return (size > 0) ? m_countNodes.elementAt(size - 1) : DTM.NULL;
+  }",method,
+"public abstract class AbstractNewProjectDialog extends DialogWrapper {
+  private Pair<JPanel, JBList<AnAction>> myPair;
+  public AbstractNewProjectDialog() {
+    super(ProjectManager.getInstance().getDefaultProject());
+    init();
+  }
+  @Override
+  protected void init() {
+    super.init();
+    DialogWrapperPeer peer = getPeer();
+    JRootPane pane = peer.getRootPane();
+    if (pane != null) {
+      JBDimension size = JBUI.size(FlatWelcomeFrame.MAX_DEFAULT_WIDTH, FlatWelcomeFrame.DEFAULT_HEIGHT);
+      pane.setMinimumSize(size);
+      pane.setPreferredSize(size);
+    }
+  }
+  @Nullable
+  @Override
+  protected JComponent createCenterPanel() {
+    DirectoryProjectGenerator[] generators = Extensions.getExtensions(DirectoryProjectGenerator.EP_NAME);
+    setTitle(generators.length == 0 ? ""Create Project"" : ""New Project"");
+    DefaultActionGroup root = createRootStep();
+    Disposer.register(getDisposable(), () -> root.removeAll());
+    Pair<JPanel, JBList<AnAction>> pair = FlatWelcomeFrame.createActionGroupPanel(root, null, getDisposable());
+    JPanel component = pair.first;
+    DumbAwareAction.create(e -> close(CANCEL_EXIT_CODE))
+      .registerCustomShortcutSet(KeyEvent.VK_ESCAPE, 0, component);
+    myPair = pair;
+    UiNotifyConnector.doWhenFirstShown(myPair.second, () -> ScrollingUtil.ensureSelectionExists(myPair.second));
+    FlatWelcomeFrame.installQuickSearch(pair.second);
+    return component;
+  }
+  @Nullable
+  @Override
+  public JComponent getPreferredFocusedComponent() {
+    return FlatWelcomeFrame.getPreferredFocusedComponent(myPair);
+  }
+  @Nullable
+  @Override
+  protected JComponent createSouthPanel() {
+    return null;
+  }
+  @NotNull
+  @Override
+  protected DialogStyle getStyle() {
+    return DialogStyle.COMPACT;
+  }
+  protected abstract DefaultActionGroup createRootStep();
+  @Override
+  protected String getHelpId() {
+    return ""create_new_project_dialog"";
+  }
+  @NotNull
+  protected Action[] createActions() {
+    return new Action[0];
+  }
+}",class,
+"  public AbstractNewProjectDialog() {
+    super(ProjectManager.getInstance().getDefaultProject());
+    init();
+  }",method,
+"  @Override
+  protected void init() {
+    super.init();
+    DialogWrapperPeer peer = getPeer();
+    JRootPane pane = peer.getRootPane();
+    if (pane != null) {
+      JBDimension size = JBUI.size(FlatWelcomeFrame.MAX_DEFAULT_WIDTH, FlatWelcomeFrame.DEFAULT_HEIGHT);
+      pane.setMinimumSize(size);
+      pane.setPreferredSize(size);
+    }
+  }",method,
+"    if (pane != null) {
+      JBDimension size = JBUI.size(FlatWelcomeFrame.MAX_DEFAULT_WIDTH, FlatWelcomeFrame.DEFAULT_HEIGHT);
+      pane.setMinimumSize(size);
+      pane.setPreferredSize(size);
+    }",method,
+"  @Nullable
+  @Override
+  protected JComponent createCenterPanel() {
+    DirectoryProjectGenerator[] generators = Extensions.getExtensions(DirectoryProjectGenerator.EP_NAME);
+    setTitle(generators.length == 0 ? ""Create Project"" : ""New Project"");
+    DefaultActionGroup root = createRootStep();
+    Disposer.register(getDisposable(), () -> root.removeAll());
+    Pair<JPanel, JBList<AnAction>> pair = FlatWelcomeFrame.createActionGroupPanel(root, null, getDisposable());
+    JPanel component = pair.first;
+    DumbAwareAction.create(e -> close(CANCEL_EXIT_CODE))
+      .registerCustomShortcutSet(KeyEvent.VK_ESCAPE, 0, component);
+    myPair = pair;
+    UiNotifyConnector.doWhenFirstShown(myPair.second, () -> ScrollingUtil.ensureSelectionExists(myPair.second));
+    FlatWelcomeFrame.installQuickSearch(pair.second);
+    return component;
+  }",method,
+"  @Nullable
+  @Override
+  public JComponent getPreferredFocusedComponent() {
+    return FlatWelcomeFrame.getPreferredFocusedComponent(myPair);
+  }",method,
+"  @Nullable
+  @Override
+  protected JComponent createSouthPanel() {
+    return null;
+  }",method,
+"  @NotNull
+  @Override
+  protected DialogStyle getStyle() {
+    return DialogStyle.COMPACT;
+  }",method,
+"  @Override
+  protected String getHelpId() {
+    return ""create_new_project_dialog"";
+  }",method,
+"  @NotNull
+  protected Action[] createActions() {
+    return new Action[0];
+  }",method,
+"public class CodeBlockUtil {
+  private CodeBlockUtil() {
+  }
+  private static Language getBraceType(HighlighterIterator iterator) {
+    final IElementType type = iterator.getTokenType();
+    return type.getLanguage();
+  }
+  public static void moveCaretToCodeBlockEnd(Project project, Editor editor, boolean isWithSelection) {
+    Document document = editor.getDocument();
+    int selectionStart = editor.getSelectionModel().getLeadSelectionOffset();
+    PsiFile file = PsiDocumentManager.getInstance(project).getPsiFile(document);
+    if (file == null) return;
+    IdeDocumentHistory.getInstance(project).includeCurrentCommandAsNavigation();
+    final CodeBlockProvider provider = CodeBlockProviders.INSTANCE.forLanguage(file.getLanguage());
+    if (provider != null) {
+      final TextRange range = provider.getCodeBlockRange(editor, file);
+      if (range != null) {
+        editor.getCaretModel().moveToOffset(range.getEndOffset());
+      }
+    }
+    else {
+      final IndentGuideDescriptor guide = editor.getIndentsModel().getCaretIndentGuide();
+      if (guide != null) {
+        editor.getCaretModel().moveToLogicalPosition(new LogicalPosition(guide.endLine, guide.indentLevel));
+      }
+      else {
+        int endOffset = calcBlockEndOffset(editor, file);
+        if (endOffset != -1) {
+          editor.getCaretModel().moveToOffset(endOffset);
+        }
+      }
+    }
+    editor.getScrollingModel().scrollToCaret(ScrollType.RELATIVE);
+    if (isWithSelection) {
+      editor.getSelectionModel().setSelection(selectionStart, editor.getCaretModel().getOffset());
+    }
+    else {
+      editor.getSelectionModel().removeSelection();
+    }
+  }
+  public static void moveCaretToCodeBlockStart(Project project, Editor editor, boolean isWithSelection) {
+    Document document = editor.getDocument();
+    PsiFile file = PsiDocumentManager.getInstance(project).getPsiFile(document);
+    int selectionStart = editor.getSelectionModel().getLeadSelectionOffset();
+    if (file == null) return;
+    IdeDocumentHistory.getInstance(project).includeCurrentCommandAsNavigation();
+    final CodeBlockProvider provider = CodeBlockProviders.INSTANCE.forLanguage(file.getLanguage());
+    if (provider != null) {
+      final TextRange range = provider.getCodeBlockRange(editor, file);
+      if (range != null) {
+        editor.getCaretModel().moveToOffset(range.getStartOffset());
+      }
+    }
+    else {
+      final IndentGuideDescriptor guide = editor.getIndentsModel().getCaretIndentGuide();
+      if (guide != null && guide.startLine != editor.getCaretModel().getLogicalPosition().line) {
+        editor.getCaretModel().moveToLogicalPosition(new LogicalPosition(guide.startLine, guide.indentLevel));
+      }
+      else {
+        int start = calcBlockStartOffset(editor, file);
+        if (start < 0) return;
+        editor.getCaretModel().moveToOffset(start);
+      }
+    }
+    editor.getScrollingModel().scrollToCaret(ScrollType.RELATIVE);
+    if (isWithSelection) {
+      editor.getSelectionModel().setSelection(selectionStart, editor.getCaretModel().getOffset());
+    }
+    else {
+      editor.getSelectionModel().removeSelection();
+    }
+  }
+  private static int calcBlockEndOffset(Editor editor, PsiFile file) {
+    Document document = editor.getDocument();
+    int offset = editor.getCaretModel().getOffset();
+    final FileType fileType = file.getFileType();
+    HighlighterIterator iterator = ((EditorEx)editor).getHighlighter().createIterator(offset);
+    if (iterator.atEnd()) return -1;
+    int depth = 0;
+    Language braceType;
+    boolean isBeforeLBrace = false;
+    if (isLStructuralBrace(fileType, iterator, document.getCharsSequence())) {
+      isBeforeLBrace = true;
+      depth = -1;
+      braceType = getBraceType(iterator);
+    } else {
+      braceType = null;
+    }
+    boolean moved = false;
+    while (true) {
+      if (iterator.atEnd()) return -1;
+      if (isRStructuralBrace(fileType, iterator,document.getCharsSequence()) &&
+          ( braceType == getBraceType(iterator) ||
+            braceType == null
+          )
+          ) {
+        if (moved) {
+          if (depth == 0) break;
+          depth--;
+        }
+        if (braceType == null) {
+          braceType = getBraceType(iterator);
+        }
+      }
+      else if (isLStructuralBrace(fileType, iterator,document.getCharsSequence()) &&
+               ( braceType == getBraceType(iterator) ||
+                 braceType == null
+               )
+              ) {
+        if (braceType == null) {
+          braceType = getBraceType(iterator);
+        }
+        depth++;
+      }
+      moved = true;
+      iterator.advance();
+    }
+    return isBeforeLBrace? iterator.getEnd() : iterator.getStart();
+  }
+  private static int calcBlockStartOffset(Editor editor, PsiFile file) {
+    int offset = editor.getCaretModel().getOffset() - 1;
+    if (offset < 0) return -1;
+    Document document = editor.getDocument();
+    final FileType fileType = file.getFileType();
+    HighlighterIterator iterator = ((EditorEx)editor).getHighlighter().createIterator(offset);
+    int depth = 0;
+    Language braceType;
+    boolean isAfterRBrace = false;
+    if (isRStructuralBrace(fileType, iterator, document.getCharsSequence())) {
+      isAfterRBrace = true;
+      depth = -1;
+      braceType = getBraceType(iterator);
+    }
+    else {
+      braceType = null;
+    }
+    boolean moved = false;
+    while (true) {
+      if (iterator.atEnd()) return -1;
+      if (isLStructuralBrace(fileType, iterator, document.getCharsSequence()) &&
+          (braceType == getBraceType(iterator) || braceType == null)) {
+        if (braceType == null) {
+          braceType = getBraceType(iterator);
+        }
+        if (moved) {
+          if (depth == 0) break;
+          depth--;
+        }
+      }
+      else if (isRStructuralBrace(fileType, iterator, document.getCharsSequence()) &&
+               (braceType == getBraceType(iterator) || braceType == null)) {
+        if (braceType == null) {
+          braceType = getBraceType(iterator);
+        }
+        depth++;
+      }
+      moved = true;
+      iterator.retreat();
+    }
+    return isAfterRBrace ? iterator.getStart() : iterator.getEnd();
+  }
+  private static boolean isLStructuralBrace(final FileType fileType, HighlighterIterator iterator, CharSequence fileText) {
+    return BraceMatchingUtil.isLBraceToken(iterator, fileText, fileType) && BraceMatchingUtil.isStructuralBraceToken(fileType, iterator,fileText);
+  }
+  private static boolean isRStructuralBrace(final FileType fileType, HighlighterIterator iterator, CharSequence fileText) {
+    return BraceMatchingUtil.isRBraceToken(iterator, fileText, fileType) && BraceMatchingUtil.isStructuralBraceToken(fileType, iterator,fileText);
+  }
+}",class,
+"  private CodeBlockUtil() {
+  }",method,
+"  private static Language getBraceType(HighlighterIterator iterator) {
+    final IElementType type = iterator.getTokenType();
+    return type.getLanguage();
+  }",method,
+"  public static void moveCaretToCodeBlockEnd(Project project, Editor editor, boolean isWithSelection) {
+    Document document = editor.getDocument();
+    int selectionStart = editor.getSelectionModel().getLeadSelectionOffset();
+    PsiFile file = PsiDocumentManager.getInstance(project).getPsiFile(document);
+    if (file == null) return;
+    IdeDocumentHistory.getInstance(project).includeCurrentCommandAsNavigation();
+    final CodeBlockProvider provider = CodeBlockProviders.INSTANCE.forLanguage(file.getLanguage());
+    if (provider != null) {
+      final TextRange range = provider.getCodeBlockRange(editor, file);
+      if (range != null) {
+        editor.getCaretModel().moveToOffset(range.getEndOffset());
+      }
+    }
+    else {
+      final IndentGuideDescriptor guide = editor.getIndentsModel().getCaretIndentGuide();
+      if (guide != null) {
+        editor.getCaretModel().moveToLogicalPosition(new LogicalPosition(guide.endLine, guide.indentLevel));
+      }
+      else {
+        int endOffset = calcBlockEndOffset(editor, file);
+        if (endOffset != -1) {
+          editor.getCaretModel().moveToOffset(endOffset);
+        }
+      }
+    }
+    editor.getScrollingModel().scrollToCaret(ScrollType.RELATIVE);
+    if (isWithSelection) {
+      editor.getSelectionModel().setSelection(selectionStart, editor.getCaretModel().getOffset());
+    }
+    else {
+      editor.getSelectionModel().removeSelection();
+    }
+  }",method,
+"    if (provider != null) {
+      final TextRange range = provider.getCodeBlockRange(editor, file);
+      if (range != null) {
+        editor.getCaretModel().moveToOffset(range.getEndOffset());
+      }
+    }",method,

@@ -1,0 +1,995 @@
+code_snippet,type,score
+"  @CollectionSize.Require(SEVERAL)
+  @MapFeature.Require(SUPPORTS_PUT)
+  public void testAsMapEntrySetReflectsPutSameKey() {
+    resetContainer(Helpers.mapEntry(k0(), v0()), Helpers.mapEntry(k0(), v3()));
+    Set<Entry<K, Collection<V>>> asMapEntrySet = multimap().asMap().entrySet();
+    Collection<V> valueCollection = Iterables.getOnlyElement(asMapEntrySet).getValue();
+    assertContentsAnyOrder(valueCollection, v0(), v3());
+    assertTrue(multimap().put(k0(), v4()));
+    assertContentsAnyOrder(valueCollection, v0(), v3(), v4());
+  }",method,
+"  @CollectionSize.Require(SEVERAL)
+  @MapFeature.Require(SUPPORTS_PUT)
+  public void testAsMapEntrySetReflectsPutDifferentKey() {
+    resetContainer(Helpers.mapEntry(k0(), v0()), Helpers.mapEntry(k0(), v3()));
+    Set<Entry<K, Collection<V>>> asMapEntrySet = multimap().asMap().entrySet();
+    assertTrue(multimap().put(k1(), v4()));
+    assertEquals(2, asMapEntrySet.size());
+  }",method,
+"  @CollectionSize.Require(SEVERAL)
+  @MapFeature.Require({SUPPORTS_PUT, SUPPORTS_REMOVE})
+  public void testAsMapEntrySetRemovePropagatesToMultimap() {
+    resetContainer(Helpers.mapEntry(k0(), v0()), Helpers.mapEntry(k0(), v3()));
+    Set<Entry<K, Collection<V>>> asMapEntrySet = multimap().asMap().entrySet();
+    Entry<K, Collection<V>> asMapEntry0 = Iterables.getOnlyElement(asMapEntrySet);
+    assertTrue(multimap().put(k1(), v4()));
+    assertTrue(asMapEntrySet.remove(asMapEntry0));
+    assertEquals(1, multimap().size());
+    assertContentsInOrder(multimap().keySet(), k1());
+  }",method,
+"  @CollectionSize.Require(SEVERAL)
+  @CollectionFeature.Require(SUPPORTS_ITERATOR_REMOVE)
+  public void testAsMapEntrySetIteratorRemovePropagatesToMultimap() {
+    resetContainer(Helpers.mapEntry(k0(), v0()), Helpers.mapEntry(k0(), v3()));
+    Set<Entry<K, Collection<V>>> asMapEntrySet = multimap().asMap().entrySet();
+    Iterator<Entry<K, Collection<V>>> asMapEntryItr = asMapEntrySet.iterator();
+    asMapEntryItr.next();
+    asMapEntryItr.remove();
+    assertTrue(multimap().isEmpty());
+  }",method,
+"	private ExampleGroup(final int pNameResourceID, final Example ... pExamples) {
+		this.mNameResourceID = pNameResourceID;
+		this.mExamples = pExamples;
+	}",method,
+"public class Http2ClientInitializer extends ChannelInitializer<SocketChannel> {
+    private static final Http2FrameLogger logger = new Http2FrameLogger(INFO, Http2ClientInitializer.class);
+    private final SslContext sslCtx;
+    private final int maxContentLength;
+    private HttpToHttp2ConnectionHandler connectionHandler;
+    private HttpResponseHandler responseHandler;
+    private Http2SettingsHandler settingsHandler;
+    public Http2ClientInitializer(SslContext sslCtx, int maxContentLength) {
+        this.sslCtx = sslCtx;
+        this.maxContentLength = maxContentLength;
+    }
+    @Override
+    public void initChannel(SocketChannel ch) throws Exception {
+        final Http2Connection connection = new DefaultHttp2Connection(false);
+        connectionHandler = new HttpToHttp2ConnectionHandlerBuilder()
+                .frameListener(new DelegatingDecompressorFrameListener(
+                        connection,
+                        new InboundHttp2ToHttpAdapterBuilder(connection)
+                                .maxContentLength(maxContentLength)
+                                .propagateSettings(true)
+                                .build()))
+                .frameLogger(logger)
+                .connection(connection)
+                .build();
+        responseHandler = new HttpResponseHandler();
+        settingsHandler = new Http2SettingsHandler(ch.newPromise());
+        if (sslCtx != null) {
+            configureSsl(ch);
+        } else {
+            configureClearText(ch);
+        }
+    }
+    public HttpResponseHandler responseHandler() {
+        return responseHandler;
+    }
+    public Http2SettingsHandler settingsHandler() {
+        return settingsHandler;
+    }
+    protected void configureEndOfPipeline(ChannelPipeline pipeline) {
+        pipeline.addLast(settingsHandler, responseHandler);
+    }
+    private void configureSsl(SocketChannel ch) {
+        ChannelPipeline pipeline = ch.pipeline();
+        pipeline.addLast(sslCtx.newHandler(ch.alloc()));
+        // We must wait for the handshake to finish and the protocol to be negotiated before configuring
+        // the HTTP/2 components of the pipeline.
+        pipeline.addLast(new ApplicationProtocolNegotiationHandler("""") {
+            @Override
+            protected void configurePipeline(ChannelHandlerContext ctx, String protocol) {
+                if (ApplicationProtocolNames.HTTP_2.equals(protocol)) {
+                    ChannelPipeline p = ctx.pipeline();
+                    p.addLast(connectionHandler);
+                    configureEndOfPipeline(p);
+                    return;
+                }
+                ctx.close();
+                throw new IllegalStateException(""unknown protocol: "" + protocol);
+            }
+        });
+    }
+    private void configureClearText(SocketChannel ch) {
+        HttpClientCodec sourceCodec = new HttpClientCodec();
+        Http2ClientUpgradeCodec upgradeCodec = new Http2ClientUpgradeCodec(connectionHandler);
+        HttpClientUpgradeHandler upgradeHandler = new HttpClientUpgradeHandler(sourceCodec, upgradeCodec, 65536);
+        ch.pipeline().addLast(sourceCodec,
+                              upgradeHandler,
+                              new UpgradeRequestHandler(),
+                              new UserEventLogger());
+    }
+    private final class UpgradeRequestHandler extends ChannelInboundHandlerAdapter {
+        @Override
+        public void channelActive(ChannelHandlerContext ctx) throws Exception {
+            DefaultFullHttpRequest upgradeRequest =
+                    new DefaultFullHttpRequest(HttpVersion.HTTP_1_1, HttpMethod.GET, ""/"");
+            ctx.writeAndFlush(upgradeRequest);
+            ctx.fireChannelActive();
+            // Done with this handler, remove it from the pipeline.
+            ctx.pipeline().remove(this);
+            configureEndOfPipeline(ctx.pipeline());
+        }
+    }
+    private static class UserEventLogger extends ChannelInboundHandlerAdapter {
+        @Override
+        public void userEventTriggered(ChannelHandlerContext ctx, Object evt) throws Exception {
+            System.out.println(""User Event Triggered: "" + evt);
+            ctx.fireUserEventTriggered(evt);
+        }
+    }
+}",class,
+"    private final class UpgradeRequestHandler extends ChannelInboundHandlerAdapter {
+        @Override
+        public void channelActive(ChannelHandlerContext ctx) throws Exception {
+            DefaultFullHttpRequest upgradeRequest =
+                    new DefaultFullHttpRequest(HttpVersion.HTTP_1_1, HttpMethod.GET, ""/"");
+            ctx.writeAndFlush(upgradeRequest);
+            ctx.fireChannelActive();
+            // Done with this handler, remove it from the pipeline.
+            ctx.pipeline().remove(this);
+            configureEndOfPipeline(ctx.pipeline());
+        }
+    }",class,
+"    private static class UserEventLogger extends ChannelInboundHandlerAdapter {
+        @Override
+        public void userEventTriggered(ChannelHandlerContext ctx, Object evt) throws Exception {
+            System.out.println(""User Event Triggered: "" + evt);
+            ctx.fireUserEventTriggered(evt);
+        }
+    }",class,
+"    public Http2ClientInitializer(SslContext sslCtx, int maxContentLength) {
+        this.sslCtx = sslCtx;
+        this.maxContentLength = maxContentLength;
+    }",method,
+"    @Override
+    public void initChannel(SocketChannel ch) throws Exception {
+        final Http2Connection connection = new DefaultHttp2Connection(false);
+        connectionHandler = new HttpToHttp2ConnectionHandlerBuilder()
+                .frameListener(new DelegatingDecompressorFrameListener(
+                        connection,
+                        new InboundHttp2ToHttpAdapterBuilder(connection)
+                                .maxContentLength(maxContentLength)
+                                .propagateSettings(true)
+                                .build()))
+                .frameLogger(logger)
+                .connection(connection)
+                .build();
+        responseHandler = new HttpResponseHandler();
+        settingsHandler = new Http2SettingsHandler(ch.newPromise());
+        if (sslCtx != null) {
+            configureSsl(ch);
+        } else {
+            configureClearText(ch);
+        }
+    }",method,
+"        if (sslCtx != null) {
+            configureSsl(ch);
+        }",method,
+"    public HttpResponseHandler responseHandler() {
+        return responseHandler;
+    }",method,
+"    public Http2SettingsHandler settingsHandler() {
+        return settingsHandler;
+    }",method,
+"    protected void configureEndOfPipeline(ChannelPipeline pipeline) {
+        pipeline.addLast(settingsHandler, responseHandler);
+    }",method,
+"    private void configureSsl(SocketChannel ch) {
+        ChannelPipeline pipeline = ch.pipeline();
+        pipeline.addLast(sslCtx.newHandler(ch.alloc()));
+        // We must wait for the handshake to finish and the protocol to be negotiated before configuring
+        // the HTTP/2 components of the pipeline.
+        pipeline.addLast(new ApplicationProtocolNegotiationHandler("""") {
+            @Override
+            protected void configurePipeline(ChannelHandlerContext ctx, String protocol) {
+                if (ApplicationProtocolNames.HTTP_2.equals(protocol)) {
+                    ChannelPipeline p = ctx.pipeline();
+                    p.addLast(connectionHandler);
+                    configureEndOfPipeline(p);
+                    return;
+                }
+                ctx.close();
+                throw new IllegalStateException(""unknown protocol: "" + protocol);
+            }
+        });
+    }",method,
+"        pipeline.addLast(new ApplicationProtocolNegotiationHandler("""") {
+            @Override
+            protected void configurePipeline(ChannelHandlerContext ctx, String protocol) {
+                if (ApplicationProtocolNames.HTTP_2.equals(protocol)) {
+                    ChannelPipeline p = ctx.pipeline();
+                    p.addLast(connectionHandler);
+                    configureEndOfPipeline(p);
+                    return;
+                }
+                ctx.close();
+                throw new IllegalStateException(""unknown protocol: "" + protocol);
+            }
+        }",method,
+"            @Override
+            protected void configurePipeline(ChannelHandlerContext ctx, String protocol) {
+                if (ApplicationProtocolNames.HTTP_2.equals(protocol)) {
+                    ChannelPipeline p = ctx.pipeline();
+                    p.addLast(connectionHandler);
+                    configureEndOfPipeline(p);
+                    return;
+                }
+                ctx.close();
+                throw new IllegalStateException(""unknown protocol: "" + protocol);
+            }",method,
+"    private void configureClearText(SocketChannel ch) {
+        HttpClientCodec sourceCodec = new HttpClientCodec();
+        Http2ClientUpgradeCodec upgradeCodec = new Http2ClientUpgradeCodec(connectionHandler);
+        HttpClientUpgradeHandler upgradeHandler = new HttpClientUpgradeHandler(sourceCodec, upgradeCodec, 65536);
+        ch.pipeline().addLast(sourceCodec,
+                              upgradeHandler,
+                              new UpgradeRequestHandler(),
+                              new UserEventLogger());
+    }",method,
+"        @Override
+        public void channelActive(ChannelHandlerContext ctx) throws Exception {
+            DefaultFullHttpRequest upgradeRequest =
+                    new DefaultFullHttpRequest(HttpVersion.HTTP_1_1, HttpMethod.GET, ""/"");
+            ctx.writeAndFlush(upgradeRequest);
+            ctx.fireChannelActive();
+            // Done with this handler, remove it from the pipeline.
+            ctx.pipeline().remove(this);
+            configureEndOfPipeline(ctx.pipeline());
+        }",method,
+"        @Override
+        public void userEventTriggered(ChannelHandlerContext ctx, Object evt) throws Exception {
+            System.out.println(""User Event Triggered: "" + evt);
+            ctx.fireUserEventTriggered(evt);
+        }",method,
+"public class ViewPagerTabActivityTest extends ActivityInstrumentationTestCase2<ViewPagerTabActivity> {
+    private ViewPagerTabActivity activity;
+    public ViewPagerTabActivityTest() {
+        super(ViewPagerTabActivity.class);
+    }
+    @Override
+    protected void setUp() throws Exception {
+        super.setUp();
+        setActivityInitialTouchMode(true);
+        activity = getActivity();
+    }
+    public void testScroll() throws Throwable {
+        for (int i = 0; i < 3; i++) {
+            UiTestUtils.swipeHorizontally(this, activity.findViewById(R.id.pager), UiTestUtils.Direction.LEFT);
+            getInstrumentation().waitForIdleSync();
+            scroll();
+        }
+        for (int i = 0; i < 3; i++) {
+            UiTestUtils.swipeHorizontally(this, activity.findViewById(R.id.pager), UiTestUtils.Direction.RIGHT);
+            getInstrumentation().waitForIdleSync();
+            scroll();
+        }
+    }
+    public void scroll() throws Throwable {
+        View scrollable = ((View) activity.getCurrentScrollable()).findViewById(R.id.scroll);
+        UiTestUtils.swipeVertically(this, scrollable, UiTestUtils.Direction.UP);
+        getInstrumentation().waitForIdleSync();
+        UiTestUtils.swipeVertically(this, scrollable, UiTestUtils.Direction.DOWN);
+        getInstrumentation().waitForIdleSync();
+    }
+    public void testSaveAndRestoreInstanceState() throws Throwable {
+        for (int i = 0; i < 3; i++) {
+            UiTestUtils.saveAndRestoreInstanceState(this, activity);
+            scroll();
+            UiTestUtils.swipeHorizontally(this, activity.findViewById(R.id.pager), UiTestUtils.Direction.LEFT);
+            getInstrumentation().waitForIdleSync();
+        }
+    }
+}",class,
+"    public ViewPagerTabActivityTest() {
+        super(ViewPagerTabActivity.class);
+    }",method,
+"    @Override
+    protected void setUp() throws Exception {
+        super.setUp();
+        setActivityInitialTouchMode(true);
+        activity = getActivity();
+    }",method,
+"    public void testScroll() throws Throwable {
+        for (int i = 0; i < 3; i++) {
+            UiTestUtils.swipeHorizontally(this, activity.findViewById(R.id.pager), UiTestUtils.Direction.LEFT);
+            getInstrumentation().waitForIdleSync();
+            scroll();
+        }
+        for (int i = 0; i < 3; i++) {
+            UiTestUtils.swipeHorizontally(this, activity.findViewById(R.id.pager), UiTestUtils.Direction.RIGHT);
+            getInstrumentation().waitForIdleSync();
+            scroll();
+        }
+    }",method,
+"        for (int i = 0; i < 3; i++) {
+            UiTestUtils.swipeHorizontally(this, activity.findViewById(R.id.pager), UiTestUtils.Direction.LEFT);
+            getInstrumentation().waitForIdleSync();
+            scroll();
+        }",method,
+"        for (int i = 0; i < 3; i++) {
+            UiTestUtils.swipeHorizontally(this, activity.findViewById(R.id.pager), UiTestUtils.Direction.RIGHT);
+            getInstrumentation().waitForIdleSync();
+            scroll();
+        }",method,
+"    public void scroll() throws Throwable {
+        View scrollable = ((View) activity.getCurrentScrollable()).findViewById(R.id.scroll);
+        UiTestUtils.swipeVertically(this, scrollable, UiTestUtils.Direction.UP);
+        getInstrumentation().waitForIdleSync();
+        UiTestUtils.swipeVertically(this, scrollable, UiTestUtils.Direction.DOWN);
+        getInstrumentation().waitForIdleSync();
+    }",method,
+"    public void testSaveAndRestoreInstanceState() throws Throwable {
+        for (int i = 0; i < 3; i++) {
+            UiTestUtils.saveAndRestoreInstanceState(this, activity);
+            scroll();
+            UiTestUtils.swipeHorizontally(this, activity.findViewById(R.id.pager), UiTestUtils.Direction.LEFT);
+            getInstrumentation().waitForIdleSync();
+        }
+    }",method,
+"        for (int i = 0; i < 3; i++) {
+            UiTestUtils.saveAndRestoreInstanceState(this, activity);
+            scroll();
+            UiTestUtils.swipeHorizontally(this, activity.findViewById(R.id.pager), UiTestUtils.Direction.LEFT);
+            getInstrumentation().waitForIdleSync();
+        }",method,
+"public abstract class BaseAdapter implements ListAdapter, SpinnerAdapter {
+    private final DataSetObservable mDataSetObservable = new DataSetObservable();
+    public boolean hasStableIds() {
+        return false;
+    }
+    public void registerDataSetObserver(DataSetObserver observer) {
+        mDataSetObservable.registerObserver(observer);
+    }
+    public void unregisterDataSetObserver(DataSetObserver observer) {
+        mDataSetObservable.unregisterObserver(observer);
+    }
+    public void notifyDataSetChanged() {
+        mDataSetObservable.notifyChanged();
+    }
+    public void notifyDataSetInvalidated() {
+        mDataSetObservable.notifyInvalidated();
+    }
+    public boolean areAllItemsEnabled() {
+        return true;
+    }
+    public boolean isEnabled(int position) {
+        return true;
+    }
+    public View getDropDownView(int position, View convertView, ViewGroup parent) {
+        return getView(position, convertView, parent);
+    }
+    public int getItemViewType(int position) {
+        return 0;
+    }
+    public int getViewTypeCount() {
+        return 1;
+    }
+    public boolean isEmpty() {
+        return getCount() == 0;
+    }
+}",class,
+"    public boolean hasStableIds() {
+        return false;
+    }",method,
+"    public void registerDataSetObserver(DataSetObserver observer) {
+        mDataSetObservable.registerObserver(observer);
+    }",method,
+"    public void unregisterDataSetObserver(DataSetObserver observer) {
+        mDataSetObservable.unregisterObserver(observer);
+    }",method,
+"    public void notifyDataSetChanged() {
+        mDataSetObservable.notifyChanged();
+    }",method,
+"    public void notifyDataSetInvalidated() {
+        mDataSetObservable.notifyInvalidated();
+    }",method,
+"    public boolean areAllItemsEnabled() {
+        return true;
+    }",method,
+"    public boolean isEnabled(int position) {
+        return true;
+    }",method,
+"    public View getDropDownView(int position, View convertView, ViewGroup parent) {
+        return getView(position, convertView, parent);
+    }",method,
+"    public int getItemViewType(int position) {
+        return 0;
+    }",method,
+"    public int getViewTypeCount() {
+        return 1;
+    }",method,
+"    public boolean isEmpty() {
+        return getCount() == 0;
+    }",method,
+"public abstract class TNonblockingTransport extends TTransport {
+  public abstract boolean startConnect() throws IOException;
+  public abstract boolean finishConnect() throws IOException;
+  public abstract SelectionKey registerSelector(Selector selector, int interests) throws IOException;
+  public abstract int read(ByteBuffer buffer) throws IOException;
+  public abstract int write(ByteBuffer buffer) throws IOException;
+}",class,
+"public class AutoExpandingBuffer {
+  private byte[] array;
+  private final double growthCoefficient;
+  public AutoExpandingBuffer(int initialCapacity, double growthCoefficient) {
+    if (growthCoefficient < 1.0) {
+      throw new IllegalArgumentException(""Growth coefficient must be >= 1.0"");
+    }
+    array = new byte[initialCapacity];
+    this.growthCoefficient = growthCoefficient;
+  }
+  public void resizeIfNecessary(int size) {
+    if (array.length < size) {
+      byte[] newBuf = new byte[(int)(size * growthCoefficient)];
+      System.arraycopy(array, 0, newBuf, 0, array.length);
+      array = newBuf;
+    }
+  }
+  public byte[] array() {
+    return array;
+  }
+}",class,
+"public class AutoExpandingBufferReadTransport extends TTransport {
+  private final AutoExpandingBuffer buf;
+  private int pos = 0;
+  private int limit = 0;
+  public AutoExpandingBufferReadTransport(int initialCapacity, double overgrowthCoefficient) {
+    this.buf = new AutoExpandingBuffer(initialCapacity, overgrowthCoefficient);
+  }
+  public void fill(TTransport inTrans, int length) throws TTransportException {
+    buf.resizeIfNecessary(length);
+    inTrans.readAll(buf.array(), 0, length);
+    pos = 0;
+    limit = length;
+  }
+  @Override
+  public void close() {}
+  @Override
+  public boolean isOpen() { return true; }
+  @Override
+  public void open() throws TTransportException {}
+  @Override
+  public final int read(byte[] target, int off, int len) throws TTransportException {
+    int amtToRead = Math.min(len, getBytesRemainingInBuffer());
+    System.arraycopy(buf.array(), pos, target, off, amtToRead);
+    consumeBuffer(amtToRead);
+    return amtToRead;
+  }
+  @Override
+  public void write(byte[] buf, int off, int len) throws TTransportException {
+    throw new UnsupportedOperationException();
+  }
+  @Override
+  public final void consumeBuffer(int len) {
+    pos += len;
+  }
+  @Override
+  public final byte[] getBuffer() {
+    return buf.array();
+  }
+  @Override
+  public final int getBufferPosition() {
+    return pos;
+  }
+  @Override
+  public final int getBytesRemainingInBuffer() {
+    return limit - pos;
+  }
+}",class,
+"public final class AutoExpandingBufferWriteTransport extends TTransport {
+  private final AutoExpandingBuffer buf;
+  private int pos;
+  public AutoExpandingBufferWriteTransport(int initialCapacity, double growthCoefficient) {
+    this.buf = new AutoExpandingBuffer(initialCapacity, growthCoefficient);
+    this.pos = 0;
+  }
+  @Override
+  public void close() {}
+  @Override
+  public boolean isOpen() {return true;}
+  @Override
+  public void open() throws TTransportException {}
+  @Override
+  public int read(byte[] buf, int off, int len) throws TTransportException {
+    throw new UnsupportedOperationException();
+  }
+  @Override
+  public void write(byte[] toWrite, int off, int len) throws TTransportException {
+    buf.resizeIfNecessary(pos + len);
+    System.arraycopy(toWrite, off, buf.array(), pos, len);
+    pos += len;
+  }
+  public AutoExpandingBuffer getBuf() {
+    return buf;
+  }
+  public int getPos() {
+    return pos;
+  }
+  public void reset() {
+    pos = 0;
+  }
+}",class,
+"  public AutoExpandingBuffer(int initialCapacity, double growthCoefficient) {
+    if (growthCoefficient < 1.0) {
+      throw new IllegalArgumentException(""Growth coefficient must be >= 1.0"");
+    }
+    array = new byte[initialCapacity];
+    this.growthCoefficient = growthCoefficient;
+  }",method,
+"    if (growthCoefficient < 1.0) {
+      throw new IllegalArgumentException(""Growth coefficient must be >= 1.0"");
+    }",method,
+"  public void resizeIfNecessary(int size) {
+    if (array.length < size) {
+      byte[] newBuf = new byte[(int)(size * growthCoefficient)];
+      System.arraycopy(array, 0, newBuf, 0, array.length);
+      array = newBuf;
+    }
+  }",method,
+"    if (array.length < size) {
+      byte[] newBuf = new byte[(int)(size * growthCoefficient)];
+      System.arraycopy(array, 0, newBuf, 0, array.length);
+      array = newBuf;
+    }",method,
+"  public byte[] array() {
+    return array;
+  }",method,
+"  public AutoExpandingBufferReadTransport(int initialCapacity, double overgrowthCoefficient) {
+    this.buf = new AutoExpandingBuffer(initialCapacity, overgrowthCoefficient);
+  }",method,
+"  public void fill(TTransport inTrans, int length) throws TTransportException {
+    buf.resizeIfNecessary(length);
+    inTrans.readAll(buf.array(), 0, length);
+    pos = 0;
+    limit = length;
+  }",method,
+"  @Override
+  public void close() {}",method,
+"  @Override
+  public boolean isOpen() { return true; }",method,
+"  @Override
+  public void open() throws TTransportException {}",method,
+"  @Override
+  public final int read(byte[] target, int off, int len) throws TTransportException {
+    int amtToRead = Math.min(len, getBytesRemainingInBuffer());
+    System.arraycopy(buf.array(), pos, target, off, amtToRead);
+    consumeBuffer(amtToRead);
+    return amtToRead;
+  }",method,
+"  @Override
+  public void write(byte[] buf, int off, int len) throws TTransportException {
+    throw new UnsupportedOperationException();
+  }",method,
+"  @Override
+  public final void consumeBuffer(int len) {
+    pos += len;
+  }",method,
+"  @Override
+  public final byte[] getBuffer() {
+    return buf.array();
+  }",method,
+"  @Override
+  public final int getBufferPosition() {
+    return pos;
+  }",method,
+"  @Override
+  public final int getBytesRemainingInBuffer() {
+    return limit - pos;
+  }",method,
+"  public AutoExpandingBufferWriteTransport(int initialCapacity, double growthCoefficient) {
+    this.buf = new AutoExpandingBuffer(initialCapacity, growthCoefficient);
+    this.pos = 0;
+  }",method,
+"  @Override
+  public void close() {}",method,
+"  @Override
+  public boolean isOpen() {return true;}",method,
+"  @Override
+  public void open() throws TTransportException {}",method,
+"  @Override
+  public int read(byte[] buf, int off, int len) throws TTransportException {
+    throw new UnsupportedOperationException();
+  }",method,
+"  @Override
+  public void write(byte[] toWrite, int off, int len) throws TTransportException {
+    buf.resizeIfNecessary(pos + len);
+    System.arraycopy(toWrite, off, buf.array(), pos, len);
+    pos += len;
+  }",method,
+"  public AutoExpandingBuffer getBuf() {
+    return buf;
+  }",method,
+"  public int getPos() {
+    return pos;
+  }",method,
+"  public void reset() {
+    pos = 0;
+  }",method,
+"  class SERVICE {
+    private SERVICE() {
+    }
+    @Nullable
+    private static PreviewManager getInstance(@NotNull Project project) {
+      return null;//disabled for a while
+      //if (!UISettings.getInstance().NAVIGATE_TO_PREVIEW) return null;
+      //return ServiceManager.getService(project, PreviewManager.class);
+    }
+    @Nullable
+    public static <V, C> C preview(@NotNull Project project, @NotNull PreviewProviderId<V, C> id, V data, boolean requestFocus) {
+      PreviewManager instance = getInstance(project);
+      if (instance == null) return null;
+      return instance.preview(id, data, requestFocus);
+    }
+    public static <V, C> void close(@NotNull Project project, @NotNull PreviewProviderId<V, C> id, V data) {
+      PreviewManager instance = getInstance(project);
+      if (instance != null) {
+        instance.close(id, data);
+      }
+    }
+    public static <V, C> void moveToStandardPlaceImpl(@NotNull Project project, @NotNull PreviewProviderId<V, C> id, V data) {
+      PreviewManager instance = getInstance(project);
+      if (instance != null) {
+        instance.moveToStandardPlaceImpl(id, data);
+      }
+    }
+  }",class,
+"    private SERVICE() {
+    }",method,
+"    @Nullable
+    private static PreviewManager getInstance(@NotNull Project project) {
+      return null;//disabled for a while
+      //if (!UISettings.getInstance().NAVIGATE_TO_PREVIEW) return null;
+      //return ServiceManager.getService(project, PreviewManager.class);
+    }",method,
+"    @Nullable
+    public static <V, C> C preview(@NotNull Project project, @NotNull PreviewProviderId<V, C> id, V data, boolean requestFocus) {
+      PreviewManager instance = getInstance(project);
+      if (instance == null) return null;
+      return instance.preview(id, data, requestFocus);
+    }",method,
+"    public static <V, C> void close(@NotNull Project project, @NotNull PreviewProviderId<V, C> id, V data) {
+      PreviewManager instance = getInstance(project);
+      if (instance != null) {
+        instance.close(id, data);
+      }
+    }",method,
+"      if (instance != null) {
+        instance.close(id, data);
+      }",method,
+"    public static <V, C> void moveToStandardPlaceImpl(@NotNull Project project, @NotNull PreviewProviderId<V, C> id, V data) {
+      PreviewManager instance = getInstance(project);
+      if (instance != null) {
+        instance.moveToStandardPlaceImpl(id, data);
+      }
+    }",method,
+"      if (instance != null) {
+        instance.moveToStandardPlaceImpl(id, data);
+      }",method,
+"public final class ClientRequest {
+    private final String destination;
+    private final AbstractRequest.Builder<?> requestBuilder;
+    private final int correlationId;
+    private final String clientId;
+    private final long createdTimeMs;
+    private final boolean expectResponse;
+    private final RequestCompletionHandler callback;
+    public ClientRequest(String destination,
+                         AbstractRequest.Builder<?> requestBuilder,
+                         int correlationId,
+                         String clientId,
+                         long createdTimeMs,
+                         boolean expectResponse,
+                         RequestCompletionHandler callback) {
+        this.destination = destination;
+        this.requestBuilder = requestBuilder;
+        this.correlationId = correlationId;
+        this.clientId = clientId;
+        this.createdTimeMs = createdTimeMs;
+        this.expectResponse = expectResponse;
+        this.callback = callback;
+    }
+    @Override
+    public String toString() {
+        return ""ClientRequest(expectResponse="" + expectResponse +
+            "", callback="" + callback +
+            "", destination="" + destination +
+            "", correlationId="" + correlationId +
+            "", clientId="" + clientId +
+            "", createdTimeMs="" + createdTimeMs +
+            "", requestBuilder="" + requestBuilder +
+            "")"";
+    }
+    public boolean expectResponse() {
+        return expectResponse;
+    }
+    public ApiKeys apiKey() {
+        return requestBuilder.apiKey();
+    }
+    public RequestHeader makeHeader(short version) {
+        return new RequestHeader(apiKey(), version, clientId, correlationId);
+    }
+    public AbstractRequest.Builder<?> requestBuilder() {
+        return requestBuilder;
+    }
+    public String destination() {
+        return destination;
+    }
+    public RequestCompletionHandler callback() {
+        return callback;
+    }
+    public long createdTimeMs() {
+        return createdTimeMs;
+    }
+    public int correlationId() {
+        return correlationId;
+    }
+}",class,
+"    public ClientRequest(String destination,
+                         AbstractRequest.Builder<?> requestBuilder,
+                         int correlationId,
+                         String clientId,
+                         long createdTimeMs,
+                         boolean expectResponse,
+                         RequestCompletionHandler callback) {
+        this.destination = destination;
+        this.requestBuilder = requestBuilder;
+        this.correlationId = correlationId;
+        this.clientId = clientId;
+        this.createdTimeMs = createdTimeMs;
+        this.expectResponse = expectResponse;
+        this.callback = callback;
+    }",method,
+"    @Override
+    public String toString() {
+        return ""ClientRequest(expectResponse="" + expectResponse +
+            "", callback="" + callback +
+            "", destination="" + destination +
+            "", correlationId="" + correlationId +
+            "", clientId="" + clientId +
+            "", createdTimeMs="" + createdTimeMs +
+            "", requestBuilder="" + requestBuilder +
+            "")"";
+    }",method,
+"    public boolean expectResponse() {
+        return expectResponse;
+    }",method,
+"    public ApiKeys apiKey() {
+        return requestBuilder.apiKey();
+    }",method,
+"    public RequestHeader makeHeader(short version) {
+        return new RequestHeader(apiKey(), version, clientId, correlationId);
+    }",method,
+"    public AbstractRequest.Builder<?> requestBuilder() {
+        return requestBuilder;
+    }",method,
+"    public String destination() {
+        return destination;
+    }",method,
+"    public RequestCompletionHandler callback() {
+        return callback;
+    }",method,
+"    public long createdTimeMs() {
+        return createdTimeMs;
+    }",method,
+"    public int correlationId() {
+        return correlationId;
+    }",method,
+"public class AndroidAppModularityGraphEnhancer {
+  private final BuildTarget originalBuildTarget;
+  private final SortedSet<BuildRule> originalDeps;
+  private final BuildRuleResolver ruleResolver;
+  private final SourcePathRuleFinder ruleFinder;
+  private final ImmutableSet<BuildTarget> buildTargetsToExcludeFromDex;
+  private final APKModuleGraph apkModuleGraph;
+  AndroidAppModularityGraphEnhancer(
+      BuildTarget buildTarget,
+      BuildRuleParams originalParams,
+      BuildRuleResolver ruleResolver,
+      ImmutableSet<BuildTarget> buildTargetsToExcludeFromDex,
+      APKModuleGraph apkModuleGraph) {
+    this.originalBuildTarget = buildTarget;
+    this.originalDeps = originalParams.getBuildDeps();
+    this.ruleResolver = ruleResolver;
+    this.ruleFinder = new SourcePathRuleFinder(ruleResolver);
+    this.buildTargetsToExcludeFromDex = buildTargetsToExcludeFromDex;
+    this.apkModuleGraph = apkModuleGraph;
+  }
+  AndroidAppModularityGraphEnhancementResult createAdditionalBuildables() {
+    ImmutableSortedSet.Builder<BuildRule> enhancedDeps = ImmutableSortedSet.naturalOrder();
+    enhancedDeps.addAll(originalDeps);
+    AndroidPackageableCollector collector =
+        new AndroidPackageableCollector(
+            originalBuildTarget, buildTargetsToExcludeFromDex, ImmutableSet.of(), apkModuleGraph);
+    collector.addPackageables(AndroidPackageableCollector.getPackageableRules(originalDeps));
+    AndroidPackageableCollection packageableCollection = collector.build();
+    enhancedDeps.addAll(getTargetsAsRules(packageableCollection.getJavaLibrariesToDex()));
+    // Add dependencies on all the build rules generating third-party JARs.  This is mainly to
+    // correctly capture deps when a prebuilt_jar forwards the output from another build rule.
+    enhancedDeps.addAll(
+        ruleFinder.filterBuildRuleInputs(packageableCollection.getPathsToThirdPartyJars()));
+    return AndroidAppModularityGraphEnhancementResult.builder()
+        .setPackageableCollection(packageableCollection)
+        .setFinalDeps(enhancedDeps.build())
+        .setAPKModuleGraph(apkModuleGraph)
+        .build();
+  }
+  private ImmutableSortedSet<BuildRule> getTargetsAsRules(Collection<BuildTarget> buildTargets) {
+    return BuildRules.toBuildRulesFor(originalBuildTarget, ruleResolver, buildTargets);
+  }
+}",class,
+"  AndroidAppModularityGraphEnhancer(
+      BuildTarget buildTarget,
+      BuildRuleParams originalParams,
+      BuildRuleResolver ruleResolver,
+      ImmutableSet<BuildTarget> buildTargetsToExcludeFromDex,
+      APKModuleGraph apkModuleGraph) {
+    this.originalBuildTarget = buildTarget;
+    this.originalDeps = originalParams.getBuildDeps();
+    this.ruleResolver = ruleResolver;
+    this.ruleFinder = new SourcePathRuleFinder(ruleResolver);
+    this.buildTargetsToExcludeFromDex = buildTargetsToExcludeFromDex;
+    this.apkModuleGraph = apkModuleGraph;
+  }",method,
+"  AndroidAppModularityGraphEnhancementResult createAdditionalBuildables() {
+    ImmutableSortedSet.Builder<BuildRule> enhancedDeps = ImmutableSortedSet.naturalOrder();
+    enhancedDeps.addAll(originalDeps);
+    AndroidPackageableCollector collector =
+        new AndroidPackageableCollector(
+            originalBuildTarget, buildTargetsToExcludeFromDex, ImmutableSet.of(), apkModuleGraph);
+    collector.addPackageables(AndroidPackageableCollector.getPackageableRules(originalDeps));
+    AndroidPackageableCollection packageableCollection = collector.build();
+    enhancedDeps.addAll(getTargetsAsRules(packageableCollection.getJavaLibrariesToDex()));
+    // Add dependencies on all the build rules generating third-party JARs.  This is mainly to
+    // correctly capture deps when a prebuilt_jar forwards the output from another build rule.
+    enhancedDeps.addAll(
+        ruleFinder.filterBuildRuleInputs(packageableCollection.getPathsToThirdPartyJars()));
+    return AndroidAppModularityGraphEnhancementResult.builder()
+        .setPackageableCollection(packageableCollection)
+        .setFinalDeps(enhancedDeps.build())
+        .setAPKModuleGraph(apkModuleGraph)
+        .build();
+  }",method,
+"  private ImmutableSortedSet<BuildRule> getTargetsAsRules(Collection<BuildTarget> buildTargets) {
+    return BuildRules.toBuildRulesFor(originalBuildTarget, ruleResolver, buildTargets);
+  }",method,
+" * <p>See {@link android.media.audiofx.AudioEffect} class for more details on
+ * controlling audio effects.
+ */
+public class AutomaticGainControl extends AudioEffect {
+    private final static String TAG = ""AutomaticGainControl"";
+    public static boolean isAvailable() {
+        return AudioEffect.isEffectTypeAvailable(AudioEffect.EFFECT_TYPE_AGC);
+    }
+    public static AutomaticGainControl create(int audioSession) {
+        AutomaticGainControl agc = null;
+        try {
+            agc = new AutomaticGainControl(audioSession);
+        } catch (IllegalArgumentException e) {
+            Log.w(TAG, ""not implemented on this device ""+agc);
+        } catch (UnsupportedOperationException e) {
+            Log.w(TAG, ""not enough resources"");
+        } catch (RuntimeException e) {
+            Log.w(TAG, ""not enough memory"");
+        }
+        return agc;
+    }
+    private AutomaticGainControl(int audioSession)
+            throws IllegalArgumentException, UnsupportedOperationException, RuntimeException {
+        super(EFFECT_TYPE_AGC, EFFECT_TYPE_NULL, 0, audioSession);
+    }
+}",class,
+"    public static boolean isAvailable() {
+        return AudioEffect.isEffectTypeAvailable(AudioEffect.EFFECT_TYPE_AGC);
+    }",method,
+"    public static AutomaticGainControl create(int audioSession) {
+        AutomaticGainControl agc = null;
+        try {
+            agc = new AutomaticGainControl(audioSession);
+        } catch (IllegalArgumentException e) {
+            Log.w(TAG, ""not implemented on this device ""+agc);
+        } catch (UnsupportedOperationException e) {
+            Log.w(TAG, ""not enough resources"");
+        } catch (RuntimeException e) {
+            Log.w(TAG, ""not enough memory"");
+        }
+        return agc;
+    }",method,
+"    private AutomaticGainControl(int audioSession)
+            throws IllegalArgumentException, UnsupportedOperationException, RuntimeException {
+        super(EFFECT_TYPE_AGC, EFFECT_TYPE_NULL, 0, audioSession);
+    }",method,
+"public class SyncBaseInstrumentation extends InstrumentationTestCase {
+    private Context mTargetContext;
+    ContentResolver mContentResolver;
+    private static final int MAX_TIME_FOR_SYNC_IN_MINS = 20;
+    @Override
+    protected void setUp() throws Exception {
+        super.setUp();
+        mTargetContext = getInstrumentation().getTargetContext();
+        mContentResolver = mTargetContext.getContentResolver();
+    }
+    protected void syncProvider(Uri uri, String accountName, String authority) throws Exception {
+        Bundle extras = new Bundle();
+        extras.putBoolean(ContentResolver.SYNC_EXTRAS_IGNORE_SETTINGS, true);
+        Account account = new Account(accountName, ""com.google"");
+        ContentResolver.requestSync(account, authority, extras);
+        long startTimeInMillis = SystemClock.elapsedRealtime();
+        long endTimeInMillis = startTimeInMillis + MAX_TIME_FOR_SYNC_IN_MINS * 60000;
+        int counter = 0;
+        // Making sure race condition does not occur when en entry have been removed from pending
+        // and active tables and loaded in memory (therefore sync might be still in progress)
+        while (counter < 2) {
+            // Sleep for 1 second.
+            Thread.sleep(1000);
+            // Finish test if time to sync has exceeded max time.
+            if (SystemClock.elapsedRealtime() > endTimeInMillis) {
+                break;
+            }
+            if (ContentResolver.isSyncActive(account, authority)) {
+                counter = 0;
+                continue;
+            }
+            counter++;
+        }
+    }
+    protected void cancelSyncsandDisableAutoSync() {
+        ContentResolver.setMasterSyncAutomatically(false);
+        ContentResolver.cancelSync(null , null );
+    }
+}",class,
+"    @Override
+    protected void setUp() throws Exception {
+        super.setUp();
+        mTargetContext = getInstrumentation().getTargetContext();
+        mContentResolver = mTargetContext.getContentResolver();
+    }",method,
+"    protected void syncProvider(Uri uri, String accountName, String authority) throws Exception {
+        Bundle extras = new Bundle();
+        extras.putBoolean(ContentResolver.SYNC_EXTRAS_IGNORE_SETTINGS, true);
+        Account account = new Account(accountName, ""com.google"");
+        ContentResolver.requestSync(account, authority, extras);
+        long startTimeInMillis = SystemClock.elapsedRealtime();
+        long endTimeInMillis = startTimeInMillis + MAX_TIME_FOR_SYNC_IN_MINS * 60000;
+        int counter = 0;
+        // Making sure race condition does not occur when en entry have been removed from pending
+        // and active tables and loaded in memory (therefore sync might be still in progress)
+        while (counter < 2) {
+            // Sleep for 1 second.
+            Thread.sleep(1000);
+            // Finish test if time to sync has exceeded max time.
+            if (SystemClock.elapsedRealtime() > endTimeInMillis) {
+                break;
+            }
+            if (ContentResolver.isSyncActive(account, authority)) {
+                counter = 0;
+                continue;
+            }
+            counter++;
+        }
+    }",method,
+"        while (counter < 2) {
+            // Sleep for 1 second.
+            Thread.sleep(1000);
+            // Finish test if time to sync has exceeded max time.
+            if (SystemClock.elapsedRealtime() > endTimeInMillis) {
+                break;
+            }
+            if (ContentResolver.isSyncActive(account, authority)) {
+                counter = 0;
+                continue;
+            }
+            counter++;
+        }",method,

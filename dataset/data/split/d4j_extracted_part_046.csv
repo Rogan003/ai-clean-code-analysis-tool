@@ -1,0 +1,1737 @@
+code_snippet,type,score
+"  @Test
+  public void testFilesToCompileOutputGroup() throws Exception {
+    checkFilesToCompileOutputGroup(RULE_TYPE);
+  }",method,
+"  @Test
+  public void testSysrootArgSpecifiedWithGrteTopFlag() throws Exception {
+    MockObjcSupport.setup(mockToolsConfig, ""default_grte_top : '//x'"");
+    useConfiguration(
+        ObjcCrosstoolMode.ALL,
+        ""--cpu=ios_x86_64"",
+        ""--ios_cpu=x86_64"");
+    scratch.file(
+        ""x/BUILD"",
+        ""objc_library("",
+        ""   name = 'objc',"",
+        ""   srcs = ['source.m'],"",
+        "")"",
+        ""filegroup("",
+        ""    name = 'everything',"",
+        ""    srcs = ['header.h'],"",
+        "")"");
+    CommandAction compileAction = compileAction(""//x:objc"", ""source.o"");
+    assertThat(compileAction.getArguments()).contains(""--sysroot=x"");
+  }",method,
+"  @Test
+  public void testDefaultEnabledFeatureIsUsed() throws Exception {
+    MockObjcSupport.setup(mockToolsConfig,
+        ""feature {"",
+        ""  name: 'default'"",
+        ""  enabled : true"",
+        ""  flag_set {"",
+        ""    action: 'objc-compile'"",
+        ""    flag_group {"",
+        ""      flag: '-dummy'"",
+        ""    }"",
+        ""  }"",
+        ""}"");
+    useConfiguration(
+        ObjcCrosstoolMode.ALL,
+        ""--cpu=ios_x86_64"",
+        ""--ios_cpu=x86_64"");
+    scratch.file(
+        ""x/BUILD"",
+        ""objc_library("",
+        ""   name = 'objc',"",
+        ""   srcs = ['source.m'],"",
+        "")"");
+    CommandAction compileAction = compileAction(""//x:objc"", ""source.o"");
+    assertThat(compileAction.getArguments()).contains(""-dummy"");
+  }
+  @Test
+  public void testCustomModuleMap() throws Exception {
+    checkCustomModuleMap(RULE_TYPE);
+  }
+  private boolean containsObjcFeature(String srcName) throws Exception {
+     MockObjcSupport.setup(
+        mockToolsConfig,
+        ""feature {"",
+        ""  name: 'contains_objc_sources'"",
+        ""  flag_set {"",
+        ""    flag_group {"",
+        ""      flag: 'DUMMY_FLAG'"",
+        ""    }"",
+        ""    action: 'c++-compile'"",
+        ""  }"",
+        ""}"");
+    createLibraryTargetWriter(""//bottom:lib"").setList(""srcs"", srcName).write();
+    createLibraryTargetWriter(""//middle:lib"")
+        .setList(""srcs"", ""b.cc"")
+        .setList(""deps"", ""//bottom:lib"")
+        .write();
+    createLibraryTargetWriter(""//top:lib"")
+        .setList(""srcs"", ""a.cc"")
+        .setList(""deps"", ""//middle:lib"")
+        .write();
+    CommandAction compileAction = compileAction(""//top:lib"", ""a.o"");
+    return compileAction.getArguments().contains(""DUMMY_FLAG"");
+  }
+  @Test
+  public void testObjcSourcesFeatureCC() throws Exception {
+    assertThat(containsObjcFeature(""c.cc"")).isFalse();
+  }
+  @Test
+  public void testObjcSourcesFeatureObjc() throws Exception {
+     assertThat(containsObjcFeature(""c.m"")).isTrue();
+  }
+  @Test
+  public void testObjcSourcesFeatureObjcPlusPlus() throws Exception {
+     assertThat(containsObjcFeature(""c.mm"")).isTrue();
+  }",method,
+"  @Test
+  public void testCustomModuleMap() throws Exception {
+    checkCustomModuleMap(RULE_TYPE);
+  }
+  private boolean containsObjcFeature(String srcName) throws Exception {
+     MockObjcSupport.setup(
+        mockToolsConfig,
+        ""feature {"",
+        ""  name: 'contains_objc_sources'"",
+        ""  flag_set {"",
+        ""    flag_group {"",
+        ""      flag: 'DUMMY_FLAG'"",
+        ""    }"",
+        ""    action: 'c++-compile'"",
+        ""  }"",
+        ""}",method,
+"  private boolean containsObjcFeature(String srcName) throws Exception {
+     MockObjcSupport.setup(
+        mockToolsConfig,
+        ""feature {"",
+        ""  name: 'contains_objc_sources'"",
+        ""  flag_set {"",
+        ""    flag_group {"",
+        ""      flag: 'DUMMY_FLAG'"",
+        ""    }"",
+        ""    action: 'c++-compile'"",
+        ""  }"",
+        ""}",method,
+"public class GenericTokenParserTest {
+  public static class VariableTokenHandler implements TokenHandler {
+    private Map<String, String> variables = new HashMap<String, String>();
+    public VariableTokenHandler(Map<String, String> variables) {
+      this.variables = variables;
+    }
+    @Override
+    public String handleToken(String content) {
+      return variables.get(content);
+    }
+  }
+  @Test
+  public void shouldDemonstrateGenericTokenReplacement() {
+    GenericTokenParser parser = new GenericTokenParser(""${"", ""}"", new VariableTokenHandler(new HashMap<String, String>() {
+      {
+        put(""first_name"", ""James"");
+        put(""initial"", ""T"");
+        put(""last_name"", ""Kirk"");
+        put(""var{with}brace"", ""Hiya"");
+        put("""", """");
+      }
+    }));
+    assertEquals(""James T Kirk reporting."", parser.parse(""${first_name} ${initial} ${last_name} reporting.""));
+    assertEquals(""Hello captain James T Kirk"", parser.parse(""Hello captain ${first_name} ${initial} ${last_name}""));
+    assertEquals(""James T Kirk"", parser.parse(""${first_name} ${initial} ${last_name}""));
+    assertEquals(""JamesTKirk"", parser.parse(""${first_name}${initial}${last_name}""));
+    assertEquals(""{}JamesTKirk"", parser.parse(""{}${first_name}${initial}${last_name}""));
+    assertEquals(""}JamesTKirk"", parser.parse(""}${first_name}${initial}${last_name}""));
+    assertEquals(""}James{{T}}Kirk"", parser.parse(""}${first_name}{{${initial}}}${last_name}""));
+    assertEquals(""}James}T{Kirk"", parser.parse(""}${first_name}}${initial}{${last_name}""));
+    assertEquals(""}James}T{Kirk"", parser.parse(""}${first_name}}${initial}{${last_name}""));
+    assertEquals(""}James}T{Kirk{{}}"", parser.parse(""}${first_name}}${initial}{${last_name}{{}}""));
+    assertEquals(""}James}T{Kirk{{}}"", parser.parse(""}${first_name}}${initial}{${last_name}{{}}${}""));
+    assertEquals(""{$$something}JamesTKirk"", parser.parse(""{$$something}${first_name}${initial}${last_name}""));
+    assertEquals(""${"", parser.parse(""${""));
+    assertEquals(""${\\}"", parser.parse(""${\\}""));
+    assertEquals(""Hiya"", parser.parse(""${var{with\\}brace}""));
+    assertEquals("""", parser.parse(""${}""));
+    assertEquals(""}"", parser.parse(""}""));
+    assertEquals(""Hello ${ this is a test."", parser.parse(""Hello ${ this is a test.""));
+    assertEquals(""Hello } this is a test."", parser.parse(""Hello } this is a test.""));
+    assertEquals(""Hello } ${ this is a test."", parser.parse(""Hello } ${ this is a test.""));
+  }
+  @Test
+  public void shallNotInterpolateSkippedVaiables() {
+    GenericTokenParser parser = new GenericTokenParser(""${"", ""}"", new VariableTokenHandler(new HashMap<String, String>()));
+    assertEquals(""${skipped} variable"", parser.parse(""\\${skipped} variable""));
+    assertEquals(""This is a ${skipped} variable"", parser.parse(""This is a \\${skipped} variable""));
+    assertEquals(""null ${skipped} variable"", parser.parse(""${skipped} \\${skipped} variable""));
+    assertEquals(""The null is ${skipped} variable"", parser.parse(""The ${skipped} is \\${skipped} variable""));
+  }
+  @Ignore(""Because it randomly fails on Travis CI. It could be useful during development."")
+  @Test(timeout = 1000)
+  public void shouldParseFastOnJdk7u6() {
+    // issue #760
+    GenericTokenParser parser = new GenericTokenParser(""${"", ""}"", new VariableTokenHandler(new HashMap<String, String>() {
+      {
+        put(""first_name"", ""James"");
+        put(""initial"", ""T"");
+        put(""last_name"", ""Kirk"");
+        put("""", """");
+      }
+    }));
+    StringBuilder input = new StringBuilder();
+    for (int i = 0; i < 10000; i++) {
+      input.append(""${first_name} ${initial} ${last_name} reporting. "");
+    }
+    StringBuilder expected = new StringBuilder();
+    for (int i = 0; i < 10000; i++) {
+      expected.append(""James T Kirk reporting. "");
+    }
+    assertEquals(expected.toString(), parser.parse(input.toString()));
+  }
+}",class,
+"  public static class VariableTokenHandler implements TokenHandler {
+    private Map<String, String> variables = new HashMap<String, String>();
+    public VariableTokenHandler(Map<String, String> variables) {
+      this.variables = variables;
+    }
+    @Override
+    public String handleToken(String content) {
+      return variables.get(content);
+    }
+  }",class,
+"    public VariableTokenHandler(Map<String, String> variables) {
+      this.variables = variables;
+    }",method,
+"    @Override
+    public String handleToken(String content) {
+      return variables.get(content);
+    }",method,
+"  @Test
+  public void shouldDemonstrateGenericTokenReplacement() {
+    GenericTokenParser parser = new GenericTokenParser(""${"", ""}"", new VariableTokenHandler(new HashMap<String, String>() {
+      {
+        put(""first_name"", ""James"");
+        put(""initial"", ""T"");
+        put(""last_name"", ""Kirk"");
+        put(""var{with}brace"", ""Hiya"");
+        put("""", """");
+      }
+    }));
+    assertEquals(""James T Kirk reporting."", parser.parse(""${first_name} ${initial} ${last_name} reporting.""));
+    assertEquals(""Hello captain James T Kirk"", parser.parse(""Hello captain ${first_name} ${initial} ${last_name}""));
+    assertEquals(""James T Kirk"", parser.parse(""${first_name} ${initial} ${last_name}""));
+    assertEquals(""JamesTKirk"", parser.parse(""${first_name}${initial}${last_name}""));
+    assertEquals(""{}JamesTKirk"", parser.parse(""{}${first_name}${initial}${last_name}""));
+    assertEquals(""}JamesTKirk"", parser.parse(""}${first_name}${initial}${last_name}""));
+    assertEquals(""}James{{T}}Kirk"", parser.parse(""}${first_name}{{${initial}}}${last_name}""));
+    assertEquals(""}James}T{Kirk"", parser.parse(""}${first_name}}${initial}{${last_name}""));
+    assertEquals(""}James}T{Kirk"", parser.parse(""}${first_name}}${initial}{${last_name}""));
+    assertEquals(""}James}T{Kirk{{}}"", parser.parse(""}${first_name}}${initial}{${last_name}{{}}""));
+    assertEquals(""}James}T{Kirk{{}}"", parser.parse(""}${first_name}}${initial}{${last_name}{{}}${}""));
+    assertEquals(""{$$something}JamesTKirk"", parser.parse(""{$$something}${first_name}${initial}${last_name}""));
+    assertEquals(""${"", parser.parse(""${""));
+    assertEquals(""${\\}"", parser.parse(""${\\}""));
+    assertEquals(""Hiya"", parser.parse(""${var{with\\}brace}""));
+    assertEquals("""", parser.parse(""${}""));
+    assertEquals(""}"", parser.parse(""}""));
+    assertEquals(""Hello ${ this is a test."", parser.parse(""Hello ${ this is a test.""));
+    assertEquals(""Hello } this is a test."", parser.parse(""Hello } this is a test.""));
+    assertEquals(""Hello } ${ this is a test."", parser.parse(""Hello } ${ this is a test.""));
+  }",method,
+"  @Test
+  public void shallNotInterpolateSkippedVaiables() {
+    GenericTokenParser parser = new GenericTokenParser(""${"", ""}"", new VariableTokenHandler(new HashMap<String, String>()));
+    assertEquals(""${skipped} variable"", parser.parse(""\\${skipped} variable""));
+    assertEquals(""This is a ${skipped} variable"", parser.parse(""This is a \\${skipped} variable""));
+    assertEquals(""null ${skipped} variable"", parser.parse(""${skipped} \\${skipped} variable""));
+    assertEquals(""The null is ${skipped} variable"", parser.parse(""The ${skipped} is \\${skipped} variable""));
+  }",method,
+"  @Ignore(""Because it randomly fails on Travis CI. It could be useful during development."")
+  @Test(timeout = 1000)
+  public void shouldParseFastOnJdk7u6() {
+    // issue #760
+    GenericTokenParser parser = new GenericTokenParser(""${"", ""}"", new VariableTokenHandler(new HashMap<String, String>() {
+      {
+        put(""first_name"", ""James"");
+        put(""initial"", ""T"");
+        put(""last_name"", ""Kirk"");
+        put("""", """");
+      }
+    }));
+    StringBuilder input = new StringBuilder();
+    for (int i = 0; i < 10000; i++) {
+      input.append(""${first_name} ${initial} ${last_name} reporting. "");
+    }
+    StringBuilder expected = new StringBuilder();
+    for (int i = 0; i < 10000; i++) {
+      expected.append(""James T Kirk reporting. "");
+    }
+    assertEquals(expected.toString(), parser.parse(input.toString()));
+  }",method,
+"    for (int i = 0; i < 10000; i++) {
+      input.append(""${first_name} ${initial} ${last_name} reporting. "");
+    }",method,
+"    for (int i = 0; i < 10000; i++) {
+      expected.append(""James T Kirk reporting. "");
+    }",method,
+"public class RefUtilsTest extends AndroidTestCase {
+    public void testIsBranch() {
+        assertFalse(RefUtils.isBranch(null));
+        assertFalse(RefUtils.isBranch(GitReference.builder().build()));
+        assertFalse(RefUtils.isBranch(createGitReference("""")));
+        assertFalse(RefUtils.isBranch(createGitReference(""navigation_drawer_header_background"")));
+        assertFalse(RefUtils.isBranch(createGitReference(""refs/tags/v1"")));
+        assertFalse(RefUtils.isBranch(createGitReference(""refs/b1"")));
+        assertTrue(RefUtils.isBranch(createGitReference(""refs/heads/b2"")));
+    }
+    public void testIsTag() {
+        assertFalse(RefUtils.isTag((GitReference) null));
+        assertFalse(RefUtils.isTag(GitReference.builder().build()));
+        assertFalse(RefUtils.isTag(createGitReference("""")));
+        assertFalse(RefUtils.isTag(createGitReference(""navigation_drawer_header_background"")));
+        assertFalse(RefUtils.isTag(createGitReference(""refs/b1"")));
+        assertFalse(RefUtils.isTag(createGitReference(""refs/heads/b2"")));
+        assertTrue(RefUtils.isTag(createGitReference(""refs/tags/v1"")));
+    }
+    public void testIsValid() {
+        assertFalse(RefUtils.isValid(null));
+        assertFalse(RefUtils.isValid(GitReference.builder().build()));
+        assertFalse(RefUtils.isValid(createGitReference("""")));
+        assertFalse(RefUtils.isValid(createGitReference(""refs/pull/6/merge"")));
+        assertFalse(RefUtils.isValid(createGitReference(""refs/pull/6/head"")));
+        assertTrue(RefUtils.isValid(createGitReference(""refs/pull"")));
+        assertTrue(RefUtils.isValid(createGitReference(""refs/heads/b1"")));
+        assertTrue(RefUtils.isValid(createGitReference(""refs/tags/v1"")));
+    }
+    public void testGetName() {
+        assertNull(RefUtils.getName((GitReference) null));
+        assertNull(RefUtils.getName(GitReference.builder().build()));
+        assertEquals("""", RefUtils.getName(createGitReference("""")));
+        assertEquals(""unchanged"",
+            RefUtils.getName(createGitReference(""unchanged"")));
+        assertEquals(""branch"",
+            RefUtils.getName(createGitReference(""refs/heads/branch"")));
+        assertEquals(""tag"",
+            RefUtils.getName(createGitReference(""refs/tags/tag"")));
+        assertEquals(""notes"",
+            RefUtils.getName(createGitReference(""refs/notes"")));
+    }
+    public void testGetPath() {
+        assertNull(RefUtils.getPath(null));
+        assertNull(RefUtils.getPath(GitReference.builder().build()));
+        assertEquals("""", RefUtils.getPath(createGitReference("""")));
+        assertEquals(""unchanged"",
+            RefUtils.getPath(createGitReference(""unchanged"")));
+        assertEquals(""heads/branch"",
+            RefUtils.getPath(createGitReference(""refs/heads/branch"")));
+        assertEquals(""tags/tag"",
+            RefUtils.getPath(createGitReference(""refs/tags/tag"")));
+        assertEquals(""notes"",
+            RefUtils.getPath(createGitReference(""refs/notes"")));
+    }
+    private GitReference createGitReference(String ref){
+        return GitReference.builder()
+                .ref(ref)
+                .build();
+    }
+}",class,
+"    public void testIsBranch() {
+        assertFalse(RefUtils.isBranch(null));
+        assertFalse(RefUtils.isBranch(GitReference.builder().build()));
+        assertFalse(RefUtils.isBranch(createGitReference("""")));
+        assertFalse(RefUtils.isBranch(createGitReference(""navigation_drawer_header_background"")));
+        assertFalse(RefUtils.isBranch(createGitReference(""refs/tags/v1"")));
+        assertFalse(RefUtils.isBranch(createGitReference(""refs/b1"")));
+        assertTrue(RefUtils.isBranch(createGitReference(""refs/heads/b2"")));
+    }",method,
+"    public void testIsTag() {
+        assertFalse(RefUtils.isTag((GitReference) null));
+        assertFalse(RefUtils.isTag(GitReference.builder().build()));
+        assertFalse(RefUtils.isTag(createGitReference("""")));
+        assertFalse(RefUtils.isTag(createGitReference(""navigation_drawer_header_background"")));
+        assertFalse(RefUtils.isTag(createGitReference(""refs/b1"")));
+        assertFalse(RefUtils.isTag(createGitReference(""refs/heads/b2"")));
+        assertTrue(RefUtils.isTag(createGitReference(""refs/tags/v1"")));
+    }",method,
+"    public void testIsValid() {
+        assertFalse(RefUtils.isValid(null));
+        assertFalse(RefUtils.isValid(GitReference.builder().build()));
+        assertFalse(RefUtils.isValid(createGitReference("""")));
+        assertFalse(RefUtils.isValid(createGitReference(""refs/pull/6/merge"")));
+        assertFalse(RefUtils.isValid(createGitReference(""refs/pull/6/head"")));
+        assertTrue(RefUtils.isValid(createGitReference(""refs/pull"")));
+        assertTrue(RefUtils.isValid(createGitReference(""refs/heads/b1"")));
+        assertTrue(RefUtils.isValid(createGitReference(""refs/tags/v1"")));
+    }",method,
+"    public void testGetName() {
+        assertNull(RefUtils.getName((GitReference) null));
+        assertNull(RefUtils.getName(GitReference.builder().build()));
+        assertEquals("""", RefUtils.getName(createGitReference("""")));
+        assertEquals(""unchanged"",
+            RefUtils.getName(createGitReference(""unchanged"")));
+        assertEquals(""branch"",
+            RefUtils.getName(createGitReference(""refs/heads/branch"")));
+        assertEquals(""tag"",
+            RefUtils.getName(createGitReference(""refs/tags/tag"")));
+        assertEquals(""notes"",
+            RefUtils.getName(createGitReference(""refs/notes"")));
+    }",method,
+"    public void testGetPath() {
+        assertNull(RefUtils.getPath(null));
+        assertNull(RefUtils.getPath(GitReference.builder().build()));
+        assertEquals("""", RefUtils.getPath(createGitReference("""")));
+        assertEquals(""unchanged"",
+            RefUtils.getPath(createGitReference(""unchanged"")));
+        assertEquals(""heads/branch"",
+            RefUtils.getPath(createGitReference(""refs/heads/branch"")));
+        assertEquals(""tags/tag"",
+            RefUtils.getPath(createGitReference(""refs/tags/tag"")));
+        assertEquals(""notes"",
+            RefUtils.getPath(createGitReference(""refs/notes"")));
+    }",method,
+"    private GitReference createGitReference(String ref){
+        return GitReference.builder()
+                .ref(ref)
+                .build();
+    }",method,
+"public class StubbingWithThrowablesTest extends TestBase {
+    private LinkedList mock;
+    private Map mockTwo;
+    @Rule
+    public ExpectedException exception = ExpectedException.none();
+    @Before
+    public void setup() {
+        mock = mock(LinkedList.class);
+        mockTwo = mock(HashMap.class);
+    }
+    @Test
+    public void shouldStubWithThrowable() throws Exception {
+        IllegalArgumentException expected = new IllegalArgumentException(""thrown by mock"");
+        when(mock.add(""throw"")).thenThrow(expected);
+        exception.expect(sameInstance(expected));
+        mock.add(""throw"");
+    }
+    @Test
+    public void shouldSetThrowableToVoidMethod() throws Exception {
+        IllegalArgumentException expected = new IllegalArgumentException(""thrown by mock"");
+        doThrow(expected).when(mock).clear();
+        exception.expect(sameInstance(expected));
+        mock.clear();
+    }
+    @Test
+    public void shouldLastStubbingVoidBeImportant() throws Exception {
+        doThrow(new ExceptionOne()).when(mock).clear();
+        doThrow(new ExceptionTwo()).when(mock).clear();
+        exception.expect(ExceptionTwo.class);
+        mock.clear();
+    }
+    @Test
+    public void shouldFailStubbingThrowableOnTheSameInvocationDueToAcceptableLimitation() throws Exception {
+        when(mock.size()).thenThrow(new ExceptionOne());
+        exception.expect(ExceptionOne.class);
+        when(mock.size()).thenThrow(new ExceptionTwo());
+    }
+    @Test
+    public void shouldAllowSettingCheckedException() throws Exception {
+        Reader reader = mock(Reader.class);
+        IOException ioException = new IOException();
+        when(reader.read()).thenThrow(ioException);
+        exception.expect(sameInstance(ioException));
+        reader.read();
+    }
+    @Test
+    public void shouldAllowSettingError() throws Exception {
+        Error error = new Error();
+        when(mock.add(""quake"")).thenThrow(error);
+        exception.expect(Error.class);
+        mock.add(""quake"");
+    }
+    @Test
+    public void shouldNotAllowNullExceptionType() {
+        exception.expect(MockitoException.class);
+        exception.expectMessage(""Cannot stub with null throwable"");
+        when(mock.add(null)).thenThrow((Exception) null);
+    }
+    @Test
+    public void shouldInstantiateExceptionClassOnInteraction() {
+        when(mock.add(null)).thenThrow(NaughtyException.class);
+        exception.expect(NaughtyException.class);
+        mock.add(null);
+    }
+    @Test
+    public void shouldInstantiateExceptionClassWithOngoingStubbingOnInteraction() {
+        doThrow(NaughtyException.class).when(mock).add(null);
+        exception.expect(NaughtyException.class);
+        mock.add(null);
+    }
+    @Test
+    public void shouldNotAllowSettingInvalidCheckedException() {
+        exception.expect(MockitoException.class);
+        exception.expectMessage(""Checked exception is invalid for this method"");
+        when(mock.add(""monkey island"")).thenThrow(new Exception());
+    }
+    @Test
+    public void shouldNotAllowSettingNullThrowable() {
+        exception.expect(MockitoException.class);
+        exception.expectMessage(""Cannot stub with null throwable"");
+        when(mock.add(""monkey island"")).thenThrow((Throwable) null);
+    }
+    @Test
+    public void shouldNotAllowSettingNullThrowableArray() {
+        exception.expect(MockitoException.class);
+        exception.expectMessage(""Cannot stub with null throwable"");
+        when(mock.add(""monkey island"")).thenThrow((Throwable[]) null);
+    }
+    @Test
+    public void shouldNotAllowSettingNullThrowableClass() {
+        exception.expect(MockitoException.class);
+        exception.expectMessage(""Exception type cannot be null"");
+        when(mock.isEmpty()).thenThrow((Class) null);
+    }
+    @Test
+    public void shouldNotAllowSettingNullThrowableClasses() {
+        exception.expect(MockitoException.class);
+        exception.expectMessage(""Exception type cannot be null"");
+        when(mock.isEmpty()).thenThrow(RuntimeException.class, (Class[]) null);
+    }
+    @Test
+    public void shouldNotAllowSettingNullVarArgThrowableClass() {
+        exception.expect(MockitoException.class);
+        exception.expectMessage(""Exception type cannot be null"");
+        when(mock.isEmpty()).thenThrow(RuntimeException.class, (Class) null);
+    }
+    @Test
+    public void doThrowShouldNotAllowSettingNullThrowableClass() {
+        exception.expect(MockitoException.class);
+        exception.expectMessage(""Exception type cannot be null"");
+        doThrow((Class) null).when(mock).isEmpty();
+    }
+    @Test
+    public void doThrowShouldNotAllowSettingNullThrowableClasses() throws Exception {
+        exception.expect(MockitoException.class);
+        exception.expectMessage(""Exception type cannot be null"");
+        doThrow(RuntimeException.class, (Class) null).when(mock).isEmpty();
+    }
+    @Test
+    public void doThrowShouldNotAllowSettingNullVarArgThrowableClasses() throws Exception {
+        exception.expect(MockitoException.class);
+        exception.expectMessage(""Exception type cannot be null"");
+        doThrow(RuntimeException.class, (Class[]) null).when(mock).isEmpty();
+    }
+    @Test
+    public void shouldNotAllowSettingNullVarArgsThrowableClasses() throws Exception {
+        exception.expect(MockitoException.class);
+        exception.expectMessage(""Exception type cannot be null"");
+        when(mock.isEmpty()).thenThrow(RuntimeException.class, (Class<RuntimeException>[]) null);
+    }
+    @Test
+    public void shouldNotAllowDifferntCheckedException() throws Exception {
+        IMethods mock = mock(IMethods.class);
+        exception.expect(MockitoException.class);
+        exception.expectMessage(""Checked exception is invalid for this method"");
+        when(mock.throwsIOException(0)).thenThrow(CheckedException.class);
+    }
+    @Test
+    public void shouldNotAllowCheckedExceptionWhenErrorIsDeclared() throws Exception {
+        IMethods mock = mock(IMethods.class);
+        exception.expect(MockitoException.class);
+        exception.expectMessage(""Checked exception is invalid for this method"");
+        when(mock.throwsError(0)).thenThrow(CheckedException.class);
+    }
+    @Test
+    public void shouldNotAllowCheckedExceptionWhenNothingIsDeclared() throws Exception {
+        IMethods mock = mock(IMethods.class);
+        exception.expect(MockitoException.class);
+        exception.expectMessage(""Checked exception is invalid for this method"");
+        when(mock.throwsNothing(true)).thenThrow(CheckedException.class);
+    }
+    @Test
+    public void shouldMixThrowablesAndReturnsOnDifferentMocks() throws Exception {
+        when(mock.add(""ExceptionOne"")).thenThrow(new ExceptionOne());
+        when(mock.getLast()).thenReturn(""last"");
+        doThrow(new ExceptionTwo()).when(mock).clear();
+        doThrow(new ExceptionThree()).when(mockTwo).clear();
+        when(mockTwo.containsValue(""ExceptionFour"")).thenThrow(new ExceptionFour());
+        when(mockTwo.get(""Are you there?"")).thenReturn(""Yes!"");
+        assertNull(mockTwo.get(""foo""));
+        assertTrue(mockTwo.keySet().isEmpty());
+        assertEquals(""Yes!"", mockTwo.get(""Are you there?""));
+        try {
+            mockTwo.clear();
+            fail();
+        } catch (ExceptionThree e) {
+        }
+        try {
+            mockTwo.containsValue(""ExceptionFour"");
+            fail();
+        } catch (ExceptionFour e) {
+        }
+        assertNull(mock.getFirst());
+        assertEquals(""last"", mock.getLast());
+        try {
+            mock.add(""ExceptionOne"");
+            fail();
+        } catch (ExceptionOne e) {
+        }
+        try {
+            mock.clear();
+            fail();
+        } catch (ExceptionTwo e) {
+        }
+    }
+    @Test
+    public void shouldStubbingWithThrowableBeVerifiable() {
+        when(mock.size()).thenThrow(new RuntimeException());
+        doThrow(new RuntimeException()).when(mock).clone();
+        try {
+            mock.size();
+            fail();
+        } catch (RuntimeException e) {
+        }
+        try {
+            mock.clone();
+            fail();
+        } catch (RuntimeException e) {
+        }
+        verify(mock).size();
+        verify(mock).clone();
+        verifyNoMoreInteractions(mock);
+    }
+    @Test
+    public void shouldStubbingWithThrowableFailVerification() {
+        when(mock.size()).thenThrow(new RuntimeException());
+        doThrow(new RuntimeException()).when(mock).clone();
+        verifyZeroInteractions(mock);
+        mock.add(""test"");
+        try {
+            verify(mock).size();
+            fail();
+        } catch (WantedButNotInvoked e) {
+        }
+        try {
+            verify(mock).clone();
+            fail();
+        } catch (WantedButNotInvoked e) {
+        }
+        try {
+            verifyNoMoreInteractions(mock);
+            fail();
+        } catch (NoInteractionsWanted e) {
+        }
+    }
+    private class ExceptionOne extends RuntimeException {
+    }
+    private class ExceptionTwo extends RuntimeException {
+    }
+    private class ExceptionThree extends RuntimeException {
+    }
+    private class ExceptionFour extends RuntimeException {
+    }
+    private class CheckedException extends Exception {
+    }
+    public class NaughtyException extends RuntimeException {
+        public NaughtyException() {
+            throw new RuntimeException(""boo!"");
+        }
+    }
+}",class,
+"    private class ExceptionOne extends RuntimeException {
+    }",class,
+"    private class ExceptionTwo extends RuntimeException {
+    }",class,
+"    private class ExceptionThree extends RuntimeException {
+    }",class,
+"    private class ExceptionFour extends RuntimeException {
+    }",class,
+"    private class CheckedException extends Exception {
+    }",class,
+"    public class NaughtyException extends RuntimeException {
+        public NaughtyException() {
+            throw new RuntimeException(""boo!"");
+        }
+    }",class,
+"    @Before
+    public void setup() {
+        mock = mock(LinkedList.class);
+        mockTwo = mock(HashMap.class);
+    }",method,
+"    @Test
+    public void shouldStubWithThrowable() throws Exception {
+        IllegalArgumentException expected = new IllegalArgumentException(""thrown by mock"");
+        when(mock.add(""throw"")).thenThrow(expected);
+        exception.expect(sameInstance(expected));
+        mock.add(""throw"");
+    }",method,
+"    @Test
+    public void shouldSetThrowableToVoidMethod() throws Exception {
+        IllegalArgumentException expected = new IllegalArgumentException(""thrown by mock"");
+        doThrow(expected).when(mock).clear();
+        exception.expect(sameInstance(expected));
+        mock.clear();
+    }",method,
+"    @Test
+    public void shouldLastStubbingVoidBeImportant() throws Exception {
+        doThrow(new ExceptionOne()).when(mock).clear();
+        doThrow(new ExceptionTwo()).when(mock).clear();
+        exception.expect(ExceptionTwo.class);
+        mock.clear();
+    }",method,
+"    @Test
+    public void shouldFailStubbingThrowableOnTheSameInvocationDueToAcceptableLimitation() throws Exception {
+        when(mock.size()).thenThrow(new ExceptionOne());
+        exception.expect(ExceptionOne.class);
+        when(mock.size()).thenThrow(new ExceptionTwo());
+    }",method,
+"    @Test
+    public void shouldAllowSettingCheckedException() throws Exception {
+        Reader reader = mock(Reader.class);
+        IOException ioException = new IOException();
+        when(reader.read()).thenThrow(ioException);
+        exception.expect(sameInstance(ioException));
+        reader.read();
+    }",method,
+"    @Test
+    public void shouldAllowSettingError() throws Exception {
+        Error error = new Error();
+        when(mock.add(""quake"")).thenThrow(error);
+        exception.expect(Error.class);
+        mock.add(""quake"");
+    }",method,
+"    @Test
+    public void shouldNotAllowNullExceptionType() {
+        exception.expect(MockitoException.class);
+        exception.expectMessage(""Cannot stub with null throwable"");
+        when(mock.add(null)).thenThrow((Exception) null);
+    }",method,
+"    @Test
+    public void shouldInstantiateExceptionClassOnInteraction() {
+        when(mock.add(null)).thenThrow(NaughtyException.class);
+        exception.expect(NaughtyException.class);
+        mock.add(null);
+    }",method,
+"    @Test
+    public void shouldInstantiateExceptionClassWithOngoingStubbingOnInteraction() {
+        doThrow(NaughtyException.class).when(mock).add(null);
+        exception.expect(NaughtyException.class);
+        mock.add(null);
+    }",method,
+"    @Test
+    public void shouldNotAllowSettingInvalidCheckedException() {
+        exception.expect(MockitoException.class);
+        exception.expectMessage(""Checked exception is invalid for this method"");
+        when(mock.add(""monkey island"")).thenThrow(new Exception());
+    }",method,
+"    @Test
+    public void shouldNotAllowSettingNullThrowable() {
+        exception.expect(MockitoException.class);
+        exception.expectMessage(""Cannot stub with null throwable"");
+        when(mock.add(""monkey island"")).thenThrow((Throwable) null);
+    }",method,
+"    @Test
+    public void shouldNotAllowSettingNullThrowableArray() {
+        exception.expect(MockitoException.class);
+        exception.expectMessage(""Cannot stub with null throwable"");
+        when(mock.add(""monkey island"")).thenThrow((Throwable[]) null);
+    }",method,
+"    @Test
+    public void shouldNotAllowSettingNullThrowableClass() {
+        exception.expect(MockitoException.class);
+        exception.expectMessage(""Exception type cannot be null"");
+        when(mock.isEmpty()).thenThrow((Class) null);
+    }",method,
+"    @Test
+    public void shouldNotAllowSettingNullThrowableClasses() {
+        exception.expect(MockitoException.class);
+        exception.expectMessage(""Exception type cannot be null"");
+        when(mock.isEmpty()).thenThrow(RuntimeException.class, (Class[]) null);
+    }",method,
+"    @Test
+    public void shouldNotAllowSettingNullVarArgThrowableClass() {
+        exception.expect(MockitoException.class);
+        exception.expectMessage(""Exception type cannot be null"");
+        when(mock.isEmpty()).thenThrow(RuntimeException.class, (Class) null);
+    }",method,
+"    @Test
+    public void doThrowShouldNotAllowSettingNullThrowableClass() {
+        exception.expect(MockitoException.class);
+        exception.expectMessage(""Exception type cannot be null"");
+        doThrow((Class) null).when(mock).isEmpty();
+    }",method,
+"    @Test
+    public void doThrowShouldNotAllowSettingNullThrowableClasses() throws Exception {
+        exception.expect(MockitoException.class);
+        exception.expectMessage(""Exception type cannot be null"");
+        doThrow(RuntimeException.class, (Class) null).when(mock).isEmpty();
+    }",method,
+"    @Test
+    public void doThrowShouldNotAllowSettingNullVarArgThrowableClasses() throws Exception {
+        exception.expect(MockitoException.class);
+        exception.expectMessage(""Exception type cannot be null"");
+        doThrow(RuntimeException.class, (Class[]) null).when(mock).isEmpty();
+    }",method,
+"    @Test
+    public void shouldNotAllowSettingNullVarArgsThrowableClasses() throws Exception {
+        exception.expect(MockitoException.class);
+        exception.expectMessage(""Exception type cannot be null"");
+        when(mock.isEmpty()).thenThrow(RuntimeException.class, (Class<RuntimeException>[]) null);
+    }",method,
+"    @Test
+    public void shouldNotAllowDifferntCheckedException() throws Exception {
+        IMethods mock = mock(IMethods.class);
+        exception.expect(MockitoException.class);
+        exception.expectMessage(""Checked exception is invalid for this method"");
+        when(mock.throwsIOException(0)).thenThrow(CheckedException.class);
+    }",method,
+"    @Test
+    public void shouldNotAllowCheckedExceptionWhenErrorIsDeclared() throws Exception {
+        IMethods mock = mock(IMethods.class);
+        exception.expect(MockitoException.class);
+        exception.expectMessage(""Checked exception is invalid for this method"");
+        when(mock.throwsError(0)).thenThrow(CheckedException.class);
+    }",method,
+"    @Test
+    public void shouldNotAllowCheckedExceptionWhenNothingIsDeclared() throws Exception {
+        IMethods mock = mock(IMethods.class);
+        exception.expect(MockitoException.class);
+        exception.expectMessage(""Checked exception is invalid for this method"");
+        when(mock.throwsNothing(true)).thenThrow(CheckedException.class);
+    }",method,
+"    @Test
+    public void shouldMixThrowablesAndReturnsOnDifferentMocks() throws Exception {
+        when(mock.add(""ExceptionOne"")).thenThrow(new ExceptionOne());
+        when(mock.getLast()).thenReturn(""last"");
+        doThrow(new ExceptionTwo()).when(mock).clear();
+        doThrow(new ExceptionThree()).when(mockTwo).clear();
+        when(mockTwo.containsValue(""ExceptionFour"")).thenThrow(new ExceptionFour());
+        when(mockTwo.get(""Are you there?"")).thenReturn(""Yes!"");
+        assertNull(mockTwo.get(""foo""));
+        assertTrue(mockTwo.keySet().isEmpty());
+        assertEquals(""Yes!"", mockTwo.get(""Are you there?""));
+        try {
+            mockTwo.clear();
+            fail();
+        } catch (ExceptionThree e) {
+        }
+        try {
+            mockTwo.containsValue(""ExceptionFour"");
+            fail();
+        } catch (ExceptionFour e) {
+        }
+        assertNull(mock.getFirst());
+        assertEquals(""last"", mock.getLast());
+        try {
+            mock.add(""ExceptionOne"");
+            fail();
+        } catch (ExceptionOne e) {
+        }
+        try {
+            mock.clear();
+            fail();
+        } catch (ExceptionTwo e) {
+        }
+    }",method,
+"    @Test
+    public void shouldStubbingWithThrowableBeVerifiable() {
+        when(mock.size()).thenThrow(new RuntimeException());
+        doThrow(new RuntimeException()).when(mock).clone();
+        try {
+            mock.size();
+            fail();
+        } catch (RuntimeException e) {
+        }
+        try {
+            mock.clone();
+            fail();
+        } catch (RuntimeException e) {
+        }
+        verify(mock).size();
+        verify(mock).clone();
+        verifyNoMoreInteractions(mock);
+    }",method,
+"    @Test
+    public void shouldStubbingWithThrowableFailVerification() {
+        when(mock.size()).thenThrow(new RuntimeException());
+        doThrow(new RuntimeException()).when(mock).clone();
+        verifyZeroInteractions(mock);
+        mock.add(""test"");
+        try {
+            verify(mock).size();
+            fail();
+        } catch (WantedButNotInvoked e) {
+        }
+        try {
+            verify(mock).clone();
+            fail();
+        } catch (WantedButNotInvoked e) {
+        }
+        try {
+            verifyNoMoreInteractions(mock);
+            fail();
+        } catch (NoInteractionsWanted e) {
+        }
+    }",method,
+"        public NaughtyException() {
+            throw new RuntimeException(""boo!"");
+        }",method,
+"public class RedirectTests {
+	private MockMvc mockMvc;
+	@Before
+	public void setup() {
+		this.mockMvc = standaloneSetup(new PersonController()).build();
+	}
+	@Test
+	public void save() throws Exception {
+		this.mockMvc.perform(post(""/persons"").param(""name"", ""Andy""))
+			.andExpect(status().isFound())
+			.andExpect(redirectedUrl(""/persons/Joe""))
+			.andExpect(model().size(1))
+			.andExpect(model().attributeExists(""name""))
+			.andExpect(flash().attributeCount(1))
+			.andExpect(flash().attribute(""message"", ""success!""));
+	}
+	@Test
+	public void saveSpecial() throws Exception {
+		this.mockMvc.perform(post(""/people"").param(""name"", ""Andy""))
+				.andExpect(status().isFound())
+				.andExpect(redirectedUrl(""/persons/Joe""))
+				.andExpect(model().size(1))
+				.andExpect(model().attributeExists(""name""))
+				.andExpect(flash().attributeCount(1))
+				.andExpect(flash().attribute(""message"", ""success!""));
+	}
+	@Test
+	public void saveWithErrors() throws Exception {
+		this.mockMvc.perform(post(""/persons""))
+			.andExpect(status().isOk())
+			.andExpect(forwardedUrl(""persons/add""))
+			.andExpect(model().size(1))
+			.andExpect(model().attributeExists(""person""))
+			.andExpect(flash().attributeCount(0));
+	}
+	@Test
+	public void saveSpecialWithErrors() throws Exception {
+		this.mockMvc.perform(post(""/people""))
+				.andExpect(status().isOk())
+				.andExpect(forwardedUrl(""persons/add""))
+				.andExpect(model().size(1))
+				.andExpect(model().attributeExists(""person""))
+				.andExpect(flash().attributeCount(0));
+	}
+	@Test
+	public void getPerson() throws Exception {
+		this.mockMvc.perform(get(""/persons/Joe"").flashAttr(""message"", ""success!""))
+			.andExpect(status().isOk())
+			.andExpect(forwardedUrl(""persons/index""))
+			.andExpect(model().size(2))
+			.andExpect(model().attribute(""person"", new Person(""Joe"")))
+			.andExpect(model().attribute(""message"", ""success!""))
+			.andExpect(flash().attributeCount(0));
+	}
+	@Controller
+	private static class PersonController {
+		@RequestMapping(value=""/persons/{name}"", method=RequestMethod.GET)
+		public String getPerson(@PathVariable String name, Model model) {
+			model.addAttribute(new Person(name));
+			return ""persons/index"";
+		}
+		@RequestMapping(value=""/persons"", method=RequestMethod.POST)
+		public String save(@Valid Person person, Errors errors, RedirectAttributes redirectAttrs) {
+			if (errors.hasErrors()) {
+				return ""persons/add"";
+			}
+			redirectAttrs.addAttribute(""name"", ""Joe"");
+			redirectAttrs.addFlashAttribute(""message"", ""success!"");
+			return ""redirect:/persons/{name}"";
+		}
+		@RequestMapping(value=""/people"", method=RequestMethod.POST)
+		public Object saveSpecial(@Valid Person person, Errors errors, RedirectAttributes redirectAttrs) {
+			if (errors.hasErrors()) {
+				return ""persons/add"";
+			}
+			redirectAttrs.addAttribute(""name"", ""Joe"");
+			redirectAttrs.addFlashAttribute(""message"", ""success!"");
+			return new StringBuilder(""redirect:"").append(""/persons"").append(""/{name}"");
+		}
+	}
+}",class,
+"	private static class PersonController {
+		@RequestMapping(value=""/persons/{name}"", method=RequestMethod.GET)
+		public String getPerson(@PathVariable String name, Model model) {
+			model.addAttribute(new Person(name));
+			return ""persons/index"";
+		}
+		@RequestMapping(value=""/persons"", method=RequestMethod.POST)
+		public String save(@Valid Person person, Errors errors, RedirectAttributes redirectAttrs) {
+			if (errors.hasErrors()) {
+				return ""persons/add"";
+			}
+			redirectAttrs.addAttribute(""name"", ""Joe"");
+			redirectAttrs.addFlashAttribute(""message"", ""success!"");
+			return ""redirect:/persons/{name}"";
+		}
+		@RequestMapping(value=""/people"", method=RequestMethod.POST)
+		public Object saveSpecial(@Valid Person person, Errors errors, RedirectAttributes redirectAttrs) {
+			if (errors.hasErrors()) {
+				return ""persons/add"";
+			}
+			redirectAttrs.addAttribute(""name"", ""Joe"");
+			redirectAttrs.addFlashAttribute(""message"", ""success!"");
+			return new StringBuilder(""redirect:"").append(""/persons"").append(""/{name}"");
+		}
+	}",class,
+"	@Before
+	public void setup() {
+		this.mockMvc = standaloneSetup(new PersonController()).build();
+	}",method,
+"	@Test
+	public void save() throws Exception {
+		this.mockMvc.perform(post(""/persons"").param(""name"", ""Andy""))
+			.andExpect(status().isFound())
+			.andExpect(redirectedUrl(""/persons/Joe""))
+			.andExpect(model().size(1))
+			.andExpect(model().attributeExists(""name""))
+			.andExpect(flash().attributeCount(1))
+			.andExpect(flash().attribute(""message"", ""success!""));
+	}",method,
+"	@Test
+	public void saveSpecial() throws Exception {
+		this.mockMvc.perform(post(""/people"").param(""name"", ""Andy""))
+				.andExpect(status().isFound())
+				.andExpect(redirectedUrl(""/persons/Joe""))
+				.andExpect(model().size(1))
+				.andExpect(model().attributeExists(""name""))
+				.andExpect(flash().attributeCount(1))
+				.andExpect(flash().attribute(""message"", ""success!""));
+	}",method,
+"	@Test
+	public void saveWithErrors() throws Exception {
+		this.mockMvc.perform(post(""/persons""))
+			.andExpect(status().isOk())
+			.andExpect(forwardedUrl(""persons/add""))
+			.andExpect(model().size(1))
+			.andExpect(model().attributeExists(""person""))
+			.andExpect(flash().attributeCount(0));
+	}",method,
+"	@Test
+	public void saveSpecialWithErrors() throws Exception {
+		this.mockMvc.perform(post(""/people""))
+				.andExpect(status().isOk())
+				.andExpect(forwardedUrl(""persons/add""))
+				.andExpect(model().size(1))
+				.andExpect(model().attributeExists(""person""))
+				.andExpect(flash().attributeCount(0));
+	}",method,
+"	@Test
+	public void getPerson() throws Exception {
+		this.mockMvc.perform(get(""/persons/Joe"").flashAttr(""message"", ""success!""))
+			.andExpect(status().isOk())
+			.andExpect(forwardedUrl(""persons/index""))
+			.andExpect(model().size(2))
+			.andExpect(model().attribute(""person"", new Person(""Joe"")))
+			.andExpect(model().attribute(""message"", ""success!""))
+			.andExpect(flash().attributeCount(0));
+	}",method,
+"		@RequestMapping(value=""/persons/{name}"", method=RequestMethod.GET)
+		public String getPerson(@PathVariable String name, Model model) {
+			model.addAttribute(new Person(name));
+			return ""persons/index"";
+		}",method,
+"		@RequestMapping(value=""/persons"", method=RequestMethod.POST)
+		public String save(@Valid Person person, Errors errors, RedirectAttributes redirectAttrs) {
+			if (errors.hasErrors()) {
+				return ""persons/add"";
+			}
+			redirectAttrs.addAttribute(""name"", ""Joe"");
+			redirectAttrs.addFlashAttribute(""message"", ""success!"");
+			return ""redirect:/persons/{name}"";
+		}",method,
+"		@RequestMapping(value=""/people"", method=RequestMethod.POST)
+		public Object saveSpecial(@Valid Person person, Errors errors, RedirectAttributes redirectAttrs) {
+			if (errors.hasErrors()) {
+				return ""persons/add"";
+			}
+			redirectAttrs.addAttribute(""name"", ""Joe"");
+			redirectAttrs.addFlashAttribute(""message"", ""success!"");
+			return new StringBuilder(""redirect:"").append(""/persons"").append(""/{name}"");
+		}",method,
+"public class SuperInvocationMarker
+extends      SimplifiedVisitor
+implements   InstructionVisitor,
+             ConstantVisitor
+{
+    private boolean invokesSuperMethods;
+    // Implementations for InstructionVisitor.
+    public void visitAnyInstruction(Clazz clazz, Method method, CodeAttribute codeAttribute, int offset, Instruction instruction) {}
+    public void visitConstantInstruction(Clazz clazz, Method method, CodeAttribute codeAttribute, int offset, ConstantInstruction constantInstruction)
+    {
+        if (constantInstruction.opcode == InstructionConstants.OP_INVOKESPECIAL)
+        {
+            invokesSuperMethods = false;
+            clazz.constantPoolEntryAccept(constantInstruction.constantIndex, this);
+            if (invokesSuperMethods)
+            {
+                setInvokesSuperMethods(method);
+            }
+        }
+    }
+    // Implementations for ConstantVisitor.
+    public void visitAnyMethodrefConstant(Clazz clazz, RefConstant refConstant)
+    {
+        invokesSuperMethods =
+            !clazz.equals(refConstant.referencedClass) &&
+            !refConstant.getName(clazz).equals(ClassConstants.METHOD_NAME_INIT);
+    }
+    // Small utility methods.
+    private static void setInvokesSuperMethods(Method method)
+    {
+        MethodOptimizationInfo info = MethodOptimizationInfo.getMethodOptimizationInfo(method);
+        if (info != null)
+        {
+            info.setInvokesSuperMethods();
+        }
+    }
+    public static boolean invokesSuperMethods(Method method)
+    {
+        MethodOptimizationInfo info = MethodOptimizationInfo.getMethodOptimizationInfo(method);
+        return info == null || info.invokesSuperMethods();
+    }
+}",class,
+"    public void visitAnyInstruction(Clazz clazz, Method method, CodeAttribute codeAttribute, int offset, Instruction instruction) {}",method,
+"    public void visitConstantInstruction(Clazz clazz, Method method, CodeAttribute codeAttribute, int offset, ConstantInstruction constantInstruction)
+    {
+        if (constantInstruction.opcode == InstructionConstants.OP_INVOKESPECIAL)
+        {
+            invokesSuperMethods = false;
+            clazz.constantPoolEntryAccept(constantInstruction.constantIndex, this);
+            if (invokesSuperMethods)
+            {
+                setInvokesSuperMethods(method);
+            }
+        }
+    }",method,
+"        if (constantInstruction.opcode == InstructionConstants.OP_INVOKESPECIAL)
+        {
+            invokesSuperMethods = false;
+            clazz.constantPoolEntryAccept(constantInstruction.constantIndex, this);
+            if (invokesSuperMethods)
+            {
+                setInvokesSuperMethods(method);
+            }
+        }",method,
+"            if (invokesSuperMethods)
+            {
+                setInvokesSuperMethods(method);
+            }",method,
+"    public void visitAnyMethodrefConstant(Clazz clazz, RefConstant refConstant)
+    {
+        invokesSuperMethods =
+            !clazz.equals(refConstant.referencedClass) &&
+            !refConstant.getName(clazz).equals(ClassConstants.METHOD_NAME_INIT);
+    }",method,
+"    private static void setInvokesSuperMethods(Method method)
+    {
+        MethodOptimizationInfo info = MethodOptimizationInfo.getMethodOptimizationInfo(method);
+        if (info != null)
+        {
+            info.setInvokesSuperMethods();
+        }
+    }",method,
+"        if (info != null)
+        {
+            info.setInvokesSuperMethods();
+        }",method,
+"    public static boolean invokesSuperMethods(Method method)
+    {
+        MethodOptimizationInfo info = MethodOptimizationInfo.getMethodOptimizationInfo(method);
+        return info == null || info.invokesSuperMethods();
+    }",method,
+"public class InstructionSequencesReplacer
+extends      MultiInstructionVisitor
+implements   InstructionVisitor
+{
+    private static final int PATTERN_INDEX     = 0;
+    private static final int REPLACEMENT_INDEX = 1;
+    public InstructionSequencesReplacer(Constant[]          patternConstants,
+                                        Instruction[][][]   instructionSequences,
+                                        BranchTargetFinder  branchTargetFinder,
+                                        CodeAttributeEditor codeAttributeEditor)
+    {
+        this(patternConstants,
+             instructionSequences,
+             branchTargetFinder,
+             codeAttributeEditor,
+             null);
+    }
+    public InstructionSequencesReplacer(Constant[]          patternConstants,
+                                        Instruction[][][]   instructionSequences,
+                                        BranchTargetFinder  branchTargetFinder,
+                                        CodeAttributeEditor codeAttributeEditor,
+                                        InstructionVisitor  extraInstructionVisitor)
+    {
+        super(createInstructionSequenceReplacers(patternConstants,
+                                                 instructionSequences,
+                                                 branchTargetFinder,
+                                                 codeAttributeEditor,
+                                                 extraInstructionVisitor));
+    }
+    private static InstructionVisitor[] createInstructionSequenceReplacers(Constant[]          patternConstants,
+                                                                           Instruction[][][]   instructionSequences,
+                                                                           BranchTargetFinder  branchTargetFinder,
+                                                                           CodeAttributeEditor codeAttributeEditor,
+                                                                           InstructionVisitor  extraInstructionVisitor)
+    {
+        InstructionVisitor[] instructionSequenceReplacers =
+            new InstructionSequenceReplacer[instructionSequences.length];
+        for (int index = 0; index < instructionSequenceReplacers.length; index++)
+        {
+            Instruction[][] instructionSequencePair = instructionSequences[index];
+            instructionSequenceReplacers[index] =
+                new InstructionSequenceReplacer(patternConstants,
+                                                instructionSequencePair[PATTERN_INDEX],
+                                                instructionSequencePair[REPLACEMENT_INDEX],
+                                                branchTargetFinder,
+                                                codeAttributeEditor,
+                                                extraInstructionVisitor);
+        }
+        return instructionSequenceReplacers;
+    }
+}",class,
+"    public InstructionSequencesReplacer(Constant[]          patternConstants,
+                                        Instruction[][][]   instructionSequences,
+                                        BranchTargetFinder  branchTargetFinder,
+                                        CodeAttributeEditor codeAttributeEditor)
+    {
+        this(patternConstants,
+             instructionSequences,
+             branchTargetFinder,
+             codeAttributeEditor,
+             null);
+    }",method,
+"    public InstructionSequencesReplacer(Constant[]          patternConstants,
+                                        Instruction[][][]   instructionSequences,
+                                        BranchTargetFinder  branchTargetFinder,
+                                        CodeAttributeEditor codeAttributeEditor,
+                                        InstructionVisitor  extraInstructionVisitor)
+    {
+        super(createInstructionSequenceReplacers(patternConstants,
+                                                 instructionSequences,
+                                                 branchTargetFinder,
+                                                 codeAttributeEditor,
+                                                 extraInstructionVisitor));
+    }",method,
+"    private static InstructionVisitor[] createInstructionSequenceReplacers(Constant[]          patternConstants,
+                                                                           Instruction[][][]   instructionSequences,
+                                                                           BranchTargetFinder  branchTargetFinder,
+                                                                           CodeAttributeEditor codeAttributeEditor,
+                                                                           InstructionVisitor  extraInstructionVisitor)
+    {
+        InstructionVisitor[] instructionSequenceReplacers =
+            new InstructionSequenceReplacer[instructionSequences.length];
+        for (int index = 0; index < instructionSequenceReplacers.length; index++)
+        {
+            Instruction[][] instructionSequencePair = instructionSequences[index];
+            instructionSequenceReplacers[index] =
+                new InstructionSequenceReplacer(patternConstants,
+                                                instructionSequencePair[PATTERN_INDEX],
+                                                instructionSequencePair[REPLACEMENT_INDEX],
+                                                branchTargetFinder,
+                                                codeAttributeEditor,
+                                                extraInstructionVisitor);
+        }
+        return instructionSequenceReplacers;
+    }",method,
+"        for (int index = 0; index < instructionSequenceReplacers.length; index++)
+        {
+            Instruction[][] instructionSequencePair = instructionSequences[index];
+            instructionSequenceReplacers[index] =
+                new InstructionSequenceReplacer(patternConstants,
+                                                instructionSequencePair[PATTERN_INDEX],
+                                                instructionSequencePair[REPLACEMENT_INDEX],
+                                                branchTargetFinder,
+                                                codeAttributeEditor,
+                                                extraInstructionVisitor);
+        }",method,
+"public class TestAccumuloSplit
+{
+    private final JsonCodec<AccumuloSplit> codec = JsonCodec.jsonCodec(AccumuloSplit.class);
+    @Test
+    public void testJsonRoundTrip()
+    {
+        AccumuloSplit expected = new AccumuloSplit(
+                ""accumulo"",
+                ""schema"",
+                ""table"",
+                ""id"",
+                LexicoderRowSerializer.class.getCanonicalName(),
+                ImmutableList.of(new Range(), new Range(""bar"", ""foo""), new Range(""bar"", false, ""baz"", false)).stream().map(WrappedRange::new).collect(Collectors.toList()),
+                ImmutableList.of(
+                        new AccumuloColumnConstraint(
+                                ""id"",
+                                ""fam1"",
+                                ""qual1"",
+                                Optional.empty(),
+                                true),
+                        new AccumuloColumnConstraint(
+                                ""bar"",
+                                ""fam2"",
+                                ""qual2"",
+                                Optional.empty(),
+                                true)),
+                Optional.of(""foo,bar""),
+                Optional.of(""localhost:9000""));
+        String json = codec.toJson(expected);
+        AccumuloSplit actual = codec.fromJson(json);
+        assertSplit(actual, expected);
+    }
+    @Test
+    public void testJsonRoundTripEmptyThings()
+    {
+        AccumuloSplit expected = new AccumuloSplit(
+                ""accumulo"",
+                ""schema"",
+                ""table"",
+                ""id"",
+                LexicoderRowSerializer.class.getCanonicalName(),
+                ImmutableList.of(),
+                ImmutableList.of(),
+                Optional.empty(),
+                Optional.empty());
+        String json = codec.toJson(expected);
+        AccumuloSplit actual = codec.fromJson(json);
+        assertSplit(actual, expected);
+    }
+    private static void assertSplit(AccumuloSplit actual, AccumuloSplit expected)
+    {
+        assertEquals(actual.getAddresses(), expected.getAddresses());
+        assertEquals(actual.getConnectorId(), expected.getConnectorId());
+        assertEquals(actual.getConstraints(), expected.getConstraints());
+        assertEquals(actual.getRowId(), expected.getRowId());
+        assertEquals(actual.getHostPort(), expected.getHostPort());
+        assertEquals(actual.getRanges(), expected.getRanges());
+        assertEquals(actual.getRowId(), expected.getRowId());
+        assertEquals(actual.getScanAuthorizations(), expected.getScanAuthorizations());
+        assertEquals(actual.getSchema(), expected.getSchema());
+        assertEquals(actual.getSerializerClass(), expected.getSerializerClass());
+        assertEquals(actual.getSerializerClassName(), expected.getSerializerClassName());
+        assertEquals(actual.getTable(), expected.getTable());
+    }
+}",class,
+"    @Test
+    public void testJsonRoundTrip()
+    {
+        AccumuloSplit expected = new AccumuloSplit(
+                ""accumulo"",
+                ""schema"",
+                ""table"",
+                ""id"",
+                LexicoderRowSerializer.class.getCanonicalName(),
+                ImmutableList.of(new Range(), new Range(""bar"", ""foo""), new Range(""bar"", false, ""baz"", false)).stream().map(WrappedRange::new).collect(Collectors.toList()),
+                ImmutableList.of(
+                        new AccumuloColumnConstraint(
+                                ""id"",
+                                ""fam1"",
+                                ""qual1"",
+                                Optional.empty(),
+                                true),
+                        new AccumuloColumnConstraint(
+                                ""bar"",
+                                ""fam2"",
+                                ""qual2"",
+                                Optional.empty(),
+                                true)),
+                Optional.of(""foo,bar""),
+                Optional.of(""localhost:9000""));
+        String json = codec.toJson(expected);
+        AccumuloSplit actual = codec.fromJson(json);
+        assertSplit(actual, expected);
+    }",method,
+"    @Test
+    public void testJsonRoundTripEmptyThings()
+    {
+        AccumuloSplit expected = new AccumuloSplit(
+                ""accumulo"",
+                ""schema"",
+                ""table"",
+                ""id"",
+                LexicoderRowSerializer.class.getCanonicalName(),
+                ImmutableList.of(),
+                ImmutableList.of(),
+                Optional.empty(),
+                Optional.empty());
+        String json = codec.toJson(expected);
+        AccumuloSplit actual = codec.fromJson(json);
+        assertSplit(actual, expected);
+    }",method,
+"    private static void assertSplit(AccumuloSplit actual, AccumuloSplit expected)
+    {
+        assertEquals(actual.getAddresses(), expected.getAddresses());
+        assertEquals(actual.getConnectorId(), expected.getConnectorId());
+        assertEquals(actual.getConstraints(), expected.getConstraints());
+        assertEquals(actual.getRowId(), expected.getRowId());
+        assertEquals(actual.getHostPort(), expected.getHostPort());
+        assertEquals(actual.getRanges(), expected.getRanges());
+        assertEquals(actual.getRowId(), expected.getRowId());
+        assertEquals(actual.getScanAuthorizations(), expected.getScanAuthorizations());
+        assertEquals(actual.getSchema(), expected.getSchema());
+        assertEquals(actual.getSerializerClass(), expected.getSerializerClass());
+        assertEquals(actual.getSerializerClassName(), expected.getSerializerClassName());
+        assertEquals(actual.getTable(), expected.getTable());
+    }",method,
+"public class NetworkState {
+    public enum StateTransitionDirection {
+        TO_DISCONNECTION, TO_CONNECTION, DO_NOTHING
+    }
+    private final String LOG_TAG = ""NetworkState"";
+    private List<State> mStateDepository;
+    private State mTransitionTarget;
+    private StateTransitionDirection mTransitionDirection;
+    private String mReason = null;         // record mReason of state transition failure
+    public NetworkState() {
+        mStateDepository = new ArrayList<State>();
+        mTransitionDirection = StateTransitionDirection.DO_NOTHING;
+        mTransitionTarget = State.UNKNOWN;
+    }
+    public NetworkState(State currentState) {
+        mStateDepository = new ArrayList<State>();
+        mStateDepository.add(currentState);
+        mTransitionDirection = StateTransitionDirection.DO_NOTHING;
+        mTransitionTarget = State.UNKNOWN;
+    }
+    public void resetNetworkState() {
+        mStateDepository.clear();
+        mTransitionDirection = StateTransitionDirection.DO_NOTHING;
+        mTransitionTarget = State.UNKNOWN;
+    }
+    public void setStateTransitionCriteria(State initState, StateTransitionDirection transitionDir,
+            State targetState) {
+        if (!mStateDepository.isEmpty()) {
+            mStateDepository.clear();
+        }
+        mStateDepository.add(initState);
+        mTransitionDirection = transitionDir;
+        mTransitionTarget = targetState;
+        Log.v(LOG_TAG, ""setStateTransitionCriteria: "" + printStates());
+    }
+    public void recordState(State currentState) {
+        mStateDepository.add(currentState);
+    }
+    public boolean validateStateTransition() {
+        Log.v(LOG_TAG, String.format(""Print state depository: %s"", printStates()));
+        switch (mTransitionDirection) {
+            case DO_NOTHING:
+                Log.v(LOG_TAG, ""No direction requested, verifying network states"");
+                return validateNetworkStates();
+            case TO_CONNECTION:
+                Log.v(LOG_TAG, ""Transition to CONNECTED"");
+                return validateNetworkConnection();
+            case TO_DISCONNECTION:
+                Log.v(LOG_TAG, ""Transition to DISCONNECTED"");
+                return validateNetworkDisconnection();
+            default:
+                Log.e(LOG_TAG, ""Invalid transition direction."");
+                return false;
+        }
+    }
+    private boolean validateNetworkStates() {
+        if (mStateDepository.isEmpty()) {
+            Log.v(LOG_TAG, ""no state is recorded"");
+            mReason = ""no state is recorded."";
+            return false;
+        } else if (mStateDepository.size() > 1) {
+            Log.v(LOG_TAG, ""no broadcast is expected, instead broadcast is probably received"");
+            mReason = ""no broadcast is expected, instead broadcast is probably received"";
+            return false;
+        } else if (mStateDepository.get(0) != mTransitionTarget) {
+            Log.v(LOG_TAG, String.format(""%s is expected, but it is %s"",
+                    mTransitionTarget.toString(),
+                    mStateDepository.get(0).toString()));
+            mReason = String.format(""%s is expected, but it is %s"",
+                    mTransitionTarget.toString(),
+                    mStateDepository.get(0).toString());
+            return false;
+        }
+        return true;
+    }
+    private boolean validateNetworkDisconnection() {
+        // Transition from CONNECTED -> DISCONNECTED: CONNECTED->DISCONNECTING->DISCONNECTED
+        StringBuffer str = new StringBuffer (""States: "");
+        str.append(printStates());
+        if (mStateDepository.get(0) != State.CONNECTED) {
+            str.append(String.format("" Initial state should be CONNECTED, but it is %s."",
+                    mStateDepository.get(0)));
+            mReason = str.toString();
+            return false;
+        }
+        State lastState = mStateDepository.get(mStateDepository.size() - 1);
+        if ( lastState != mTransitionTarget) {
+            str.append(String.format("" Last state should be DISCONNECTED, but it is %s"",
+                    lastState));
+            mReason = str.toString();
+            return false;
+        }
+        for (int i = 1; i < mStateDepository.size() - 1; i++) {
+            State preState = mStateDepository.get(i-1);
+            State curState = mStateDepository.get(i);
+            if ((preState == State.CONNECTED) && ((curState == State.DISCONNECTING) ||
+                    (curState == State.DISCONNECTED))) {
+                continue;
+            } else if ((preState == State.DISCONNECTING) && (curState == State.DISCONNECTED)) {
+                continue;
+            } else if ((preState == State.DISCONNECTED) && (curState == State.DISCONNECTED)) {
+                continue;
+            } else {
+                str.append(String.format("" Transition state from %s to %s is not valid"",
+                        preState.toString(), curState.toString()));
+                mReason = str.toString();
+                return false;
+            }
+        }
+        mReason = str.toString();
+        return true;
+    }
+    private boolean validateNetworkConnection() {
+        StringBuffer str = new StringBuffer(""States "");
+        str.append(printStates());
+        if (mStateDepository.get(0) != State.DISCONNECTED) {
+            str.append(String.format("" Initial state should be DISCONNECTED, but it is %s."",
+                    mStateDepository.get(0)));
+            mReason = str.toString();
+            return false;
+        }
+        State lastState = mStateDepository.get(mStateDepository.size() - 1);
+        if ( lastState != mTransitionTarget) {
+            str.append(String.format("" Last state should be %s, but it is %s"", mTransitionTarget,
+                    lastState));
+            mReason = str.toString();
+            return false;
+        }
+        for (int i = 1; i < mStateDepository.size(); i++) {
+            State preState = mStateDepository.get(i-1);
+            State curState = mStateDepository.get(i);
+            if ((preState == State.DISCONNECTED) && ((curState == State.CONNECTING) ||
+                    (curState == State.CONNECTED) || (curState == State.DISCONNECTED))) {
+                continue;
+            } else if ((preState == State.CONNECTING) && (curState == State.CONNECTED)) {
+                continue;
+            } else if ((preState == State.CONNECTED) && (curState == State.CONNECTED)) {
+                continue;
+            } else {
+                str.append(String.format("" Transition state from %s to %s is not valid."",
+                        preState.toString(), curState.toString()));
+                mReason = str.toString();
+                return false;
+            }
+        }
+        mReason = str.toString();
+        return true;
+    }
+    public List<State> getTransitionStates() {
+        return mStateDepository;
+    }
+    public String getFailureReason() {
+        return mReason;
+    }
+    public String printStates() {
+        StringBuilder stateBuilder = new StringBuilder();
+        for (int i = 0; i < mStateDepository.size(); i++) {
+            stateBuilder.append("" "").append(mStateDepository.get(i).toString()).append(""->"");
+        }
+        return stateBuilder.toString();
+    }
+    @Override
+    public String toString() {
+        StringBuilder builder = new StringBuilder();
+        builder.append(""mTransitionDirection: "").append(mTransitionDirection.toString()).
+        append(""; "").append(""states:"").
+        append(printStates()).append(""; "");
+        return builder.toString();
+    }
+}",class,
+"    public NetworkState() {
+        mStateDepository = new ArrayList<State>();
+        mTransitionDirection = StateTransitionDirection.DO_NOTHING;
+        mTransitionTarget = State.UNKNOWN;
+    }",method,
+"    public NetworkState(State currentState) {
+        mStateDepository = new ArrayList<State>();
+        mStateDepository.add(currentState);
+        mTransitionDirection = StateTransitionDirection.DO_NOTHING;
+        mTransitionTarget = State.UNKNOWN;
+    }",method,
+"    public void resetNetworkState() {
+        mStateDepository.clear();
+        mTransitionDirection = StateTransitionDirection.DO_NOTHING;
+        mTransitionTarget = State.UNKNOWN;
+    }",method,
+"    public void setStateTransitionCriteria(State initState, StateTransitionDirection transitionDir,
+            State targetState) {
+        if (!mStateDepository.isEmpty()) {
+            mStateDepository.clear();
+        }
+        mStateDepository.add(initState);
+        mTransitionDirection = transitionDir;
+        mTransitionTarget = targetState;
+        Log.v(LOG_TAG, ""setStateTransitionCriteria: "" + printStates());
+    }",method,
+"    public void recordState(State currentState) {
+        mStateDepository.add(currentState);
+    }",method,
+"    public boolean validateStateTransition() {
+        Log.v(LOG_TAG, String.format(""Print state depository: %s"", printStates()));
+        switch (mTransitionDirection) {
+            case DO_NOTHING:
+                Log.v(LOG_TAG, ""No direction requested, verifying network states"");
+                return validateNetworkStates();
+            case TO_CONNECTION:
+                Log.v(LOG_TAG, ""Transition to CONNECTED"");
+                return validateNetworkConnection();
+            case TO_DISCONNECTION:
+                Log.v(LOG_TAG, ""Transition to DISCONNECTED"");
+                return validateNetworkDisconnection();
+            default:
+                Log.e(LOG_TAG, ""Invalid transition direction."");
+                return false;
+        }
+    }",method,
+"        switch (mTransitionDirection) {
+            case DO_NOTHING:
+                Log.v(LOG_TAG, ""No direction requested, verifying network states"");
+                return validateNetworkStates();
+            case TO_CONNECTION:
+                Log.v(LOG_TAG, ""Transition to CONNECTED"");
+                return validateNetworkConnection();
+            case TO_DISCONNECTION:
+                Log.v(LOG_TAG, ""Transition to DISCONNECTED"");
+                return validateNetworkDisconnection();
+            default:
+                Log.e(LOG_TAG, ""Invalid transition direction."");
+                return false;
+        }",method,
+"    private boolean validateNetworkStates() {
+        if (mStateDepository.isEmpty()) {
+            Log.v(LOG_TAG, ""no state is recorded"");
+            mReason = ""no state is recorded."";
+            return false;
+        } else if (mStateDepository.size() > 1) {
+            Log.v(LOG_TAG, ""no broadcast is expected, instead broadcast is probably received"");
+            mReason = ""no broadcast is expected, instead broadcast is probably received"";
+            return false;
+        } else if (mStateDepository.get(0) != mTransitionTarget) {
+            Log.v(LOG_TAG, String.format(""%s is expected, but it is %s"",
+                    mTransitionTarget.toString(),
+                    mStateDepository.get(0).toString()));
+            mReason = String.format(""%s is expected, but it is %s"",
+                    mTransitionTarget.toString(),
+                    mStateDepository.get(0).toString());
+            return false;
+        }
+        return true;
+    }",method,
+"    private boolean validateNetworkDisconnection() {
+        // Transition from CONNECTED -> DISCONNECTED: CONNECTED->DISCONNECTING->DISCONNECTED
+        StringBuffer str = new StringBuffer (""States: "");
+        str.append(printStates());
+        if (mStateDepository.get(0) != State.CONNECTED) {
+            str.append(String.format("" Initial state should be CONNECTED, but it is %s."",
+                    mStateDepository.get(0)));
+            mReason = str.toString();
+            return false;
+        }
+        State lastState = mStateDepository.get(mStateDepository.size() - 1);
+        if ( lastState != mTransitionTarget) {
+            str.append(String.format("" Last state should be DISCONNECTED, but it is %s"",
+                    lastState));
+            mReason = str.toString();
+            return false;
+        }
+        for (int i = 1; i < mStateDepository.size() - 1; i++) {
+            State preState = mStateDepository.get(i-1);
+            State curState = mStateDepository.get(i);
+            if ((preState == State.CONNECTED) && ((curState == State.DISCONNECTING) ||
+                    (curState == State.DISCONNECTED))) {
+                continue;
+            } else if ((preState == State.DISCONNECTING) && (curState == State.DISCONNECTED)) {
+                continue;
+            } else if ((preState == State.DISCONNECTED) && (curState == State.DISCONNECTED)) {
+                continue;
+            } else {
+                str.append(String.format("" Transition state from %s to %s is not valid"",
+                        preState.toString(), curState.toString()));
+                mReason = str.toString();
+                return false;
+            }
+        }
+        mReason = str.toString();
+        return true;
+    }",method,
+"        if ( lastState != mTransitionTarget) {
+            str.append(String.format("" Last state should be DISCONNECTED, but it is %s"",
+                    lastState));
+            mReason = str.toString();
+            return false;
+        }",method,
+"    private boolean validateNetworkConnection() {
+        StringBuffer str = new StringBuffer(""States "");
+        str.append(printStates());
+        if (mStateDepository.get(0) != State.DISCONNECTED) {
+            str.append(String.format("" Initial state should be DISCONNECTED, but it is %s."",
+                    mStateDepository.get(0)));
+            mReason = str.toString();
+            return false;
+        }
+        State lastState = mStateDepository.get(mStateDepository.size() - 1);
+        if ( lastState != mTransitionTarget) {
+            str.append(String.format("" Last state should be %s, but it is %s"", mTransitionTarget,
+                    lastState));
+            mReason = str.toString();
+            return false;
+        }
+        for (int i = 1; i < mStateDepository.size(); i++) {
+            State preState = mStateDepository.get(i-1);
+            State curState = mStateDepository.get(i);
+            if ((preState == State.DISCONNECTED) && ((curState == State.CONNECTING) ||
+                    (curState == State.CONNECTED) || (curState == State.DISCONNECTED))) {
+                continue;
+            } else if ((preState == State.CONNECTING) && (curState == State.CONNECTED)) {
+                continue;
+            } else if ((preState == State.CONNECTED) && (curState == State.CONNECTED)) {
+                continue;
+            } else {
+                str.append(String.format("" Transition state from %s to %s is not valid."",
+                        preState.toString(), curState.toString()));
+                mReason = str.toString();
+                return false;
+            }
+        }
+        mReason = str.toString();
+        return true;
+    }",method,
+"        if ( lastState != mTransitionTarget) {
+            str.append(String.format("" Last state should be %s, but it is %s"", mTransitionTarget,
+                    lastState));
+            mReason = str.toString();
+            return false;
+        }",method,
+"    public List<State> getTransitionStates() {
+        return mStateDepository;
+    }",method,
+"    public String getFailureReason() {
+        return mReason;
+    }",method,
+"    public String printStates() {
+        StringBuilder stateBuilder = new StringBuilder();
+        for (int i = 0; i < mStateDepository.size(); i++) {
+            stateBuilder.append("" "").append(mStateDepository.get(i).toString()).append(""->"");
+        }
+        return stateBuilder.toString();
+    }",method,
+"    @Override
+    public String toString() {
+        StringBuilder builder = new StringBuilder();
+        builder.append(""mTransitionDirection: "").append(mTransitionDirection.toString()).
+        append(""; "").append(""states:"").
+        append(printStates()).append(""; "");
+        return builder.toString();
+    }",method,

@@ -1,0 +1,1341 @@
+code_snippet,type,score
+"public class ClipSprite implements Sprite
+{
+    private final VariableColor insideClipColor;
+    private final VariableColor outsideClipColor;
+    private final Sprite        clipSprite;
+    private final Sprite        sprite;
+    public ClipSprite(VariableColor insideClipColor,
+                      VariableColor outsideClipColor,
+                      Sprite        clipSprite,
+                      Sprite        sprite)
+    {
+        this.insideClipColor  = insideClipColor;
+        this.outsideClipColor = outsideClipColor;
+        this.clipSprite       = clipSprite;
+        this.sprite           = sprite;
+    }
+    // Implementation for Sprite.
+    public void paint(Graphics graphics, long time)
+    {
+        // Clear the background.
+        Color outsideColor = outsideClipColor.getColor(time);
+        Rectangle clip = graphics.getClipBounds();
+        graphics.setPaintMode();
+        graphics.setColor(outsideColor);
+        graphics.fillRect(0, 0, clip.width, clip.height);
+        // Draw the sprite in XOR mode.
+        OverrideGraphics2D g = new OverrideGraphics2D((Graphics2D)graphics);
+        Color insideColor = insideClipColor.getColor(time);
+        g.setOverrideXORMode(insideColor);
+        sprite.paint(g, time);
+        g.setOverrideXORMode(null);
+        // Clear the clip area.
+        g.setOverrideColor(insideColor);
+        clipSprite.paint(g, time);
+        g.setOverrideColor(null);
+        // Draw the sprite in XOR mode.
+        g.setOverrideXORMode(insideColor);
+        sprite.paint(g, time);
+        g.setOverrideXORMode(null);
+    }
+}",class,
+"    public ClipSprite(VariableColor insideClipColor,
+                      VariableColor outsideClipColor,
+                      Sprite        clipSprite,
+                      Sprite        sprite)
+    {
+        this.insideClipColor  = insideClipColor;
+        this.outsideClipColor = outsideClipColor;
+        this.clipSprite       = clipSprite;
+        this.sprite           = sprite;
+    }",method,
+"    public void paint(Graphics graphics, long time)
+    {
+        // Clear the background.
+        Color outsideColor = outsideClipColor.getColor(time);
+        Rectangle clip = graphics.getClipBounds();
+        graphics.setPaintMode();
+        graphics.setColor(outsideColor);
+        graphics.fillRect(0, 0, clip.width, clip.height);
+        // Draw the sprite in XOR mode.
+        OverrideGraphics2D g = new OverrideGraphics2D((Graphics2D)graphics);
+        Color insideColor = insideClipColor.getColor(time);
+        g.setOverrideXORMode(insideColor);
+        sprite.paint(g, time);
+        g.setOverrideXORMode(null);
+        // Clear the clip area.
+        g.setOverrideColor(insideColor);
+        clipSprite.paint(g, time);
+        g.setOverrideColor(null);
+        // Draw the sprite in XOR mode.
+        g.setOverrideXORMode(insideColor);
+        sprite.paint(g, time);
+        g.setOverrideXORMode(null);
+    }",method,
+"public class EddystoneBeacon {
+  private static final byte URL_FRAME_TYPE = 0x10;
+  private static final byte TITLE_TYPE = 0x0e;
+  private static final String URN_UUID = ""urn:uuid:"";
+  private static final HashMap<Byte, String> URI_SCHEMES = new HashMap<Byte, String>() {{
+    put((byte) 0, ""http://www."");
+    put((byte) 1, ""https://www."");
+    put((byte) 2, ""http://"");
+    put((byte) 3, ""https://"");
+    put((byte) 4, URN_UUID);
+  }};
+  private static final HashMap<Byte, String> URL_CODES = new HashMap<Byte, String>() {{
+    put((byte) 0, "".com/"");
+    put((byte) 1, "".org/"");
+    put((byte) 2, "".edu/"");
+    put((byte) 3, "".net/"");
+    put((byte) 4, "".info/"");
+    put((byte) 5, "".biz/"");
+    put((byte) 6, "".gov/"");
+    put((byte) 7, "".com"");
+    put((byte) 8, "".org"");
+    put((byte) 9, "".edu"");
+    put((byte) 10, "".net"");
+    put((byte) 11, "".info"");
+    put((byte) 12, "".biz"");
+    put((byte) 13, "".gov"");
+  }};
+  private final byte mFlags;
+  private final byte mTxPower;
+  private final String mUrl;
+  private EddystoneBeacon(byte flags, byte txPower, String url) {
+    mFlags = flags;
+    mTxPower = txPower;
+    mUrl = url;
+  }
+  public static String getFatBeaconTitle(byte[] serviceData) {
+    if (serviceData.length > 2) {
+      byte[] bytes = Arrays.copyOfRange(serviceData, 3, serviceData.length);
+      String title = new String(bytes, Charset.forName(""UTF-8"")).trim();
+      return  title.indexOf('\uFFFD') == -1 ? title : """";
+    }
+    return """";
+  }
+  public static boolean isFatBeacon(byte[] serviceData) {
+    return (serviceData != null && serviceData.length > 3 && isUrlFrame(serviceData) &&
+            serviceData[2] == TITLE_TYPE);
+  }
+  public static boolean isUrlFrame(byte[] serviceData) {
+    return serviceData != null && serviceData.length > 0 &&
+        (serviceData[0] & 0xf0) == URL_FRAME_TYPE;
+  }
+  public static EddystoneBeacon parseFromServiceData(byte[] urlServiceData, byte[] uriServiceData) {
+    if (urlServiceData != null && urlServiceData.length > 2) {
+      byte flags = (byte) (urlServiceData[0] & 0x0f);
+      byte txPowerLevel = urlServiceData[1];
+      return eddystoneBeaconBuilder(flags, txPowerLevel, decode(urlServiceData));
+    }
+    if (uriServiceData != null && uriServiceData.length > 2) {
+      byte flags = uriServiceData[0];
+      byte txPowerLevel = uriServiceData[1];
+      return eddystoneBeaconBuilder(flags, txPowerLevel, decode(uriServiceData));
+    }
+    return null;
+  }
+  private static EddystoneBeacon eddystoneBeaconBuilder(byte flags, byte txPower, String url) {
+    if (url == null || url.isEmpty()) {
+      return null;
+    }
+    return new EddystoneBeacon(flags, txPower, url);
+  }
+  private static String decode(byte[] serviceData) {
+    StringBuilder urlBuilder = new StringBuilder();
+    String scheme = URI_SCHEMES.get(serviceData[2]);
+    if (scheme != null) {
+      urlBuilder.append(scheme);
+      if (scheme.equals(URN_UUID)) {
+        return decodeUrnUuid(serviceData, urlBuilder);
+      }
+      return decodeUrl(serviceData, urlBuilder);
+    }
+    return null;
+  }
+  private static String decodeUrl(byte[] serviceData, StringBuilder urlBuilder) {
+    for (int i = 3; i < serviceData.length; i++) {
+      byte b = serviceData[i];
+      String expansion = URL_CODES.get(b);
+      if (expansion == null) {
+        urlBuilder.append((char) b);
+      } else {
+        urlBuilder.append(expansion);
+      }
+    }
+    return urlBuilder.toString();
+  }
+  private static String decodeUrnUuid(byte[] serviceData, StringBuilder urnBuilder) {
+    ByteBuffer buf = ByteBuffer.wrap(serviceData);
+    buf.order(ByteOrder.BIG_ENDIAN);
+    long mostSignificantBytes, leastSignificantBytes;
+    try {
+      buf.position(3);
+      mostSignificantBytes = buf.getLong();
+      leastSignificantBytes = buf.getLong();
+    } catch (BufferUnderflowException e){
+      return """";
+    }
+    UUID uuid = new UUID(mostSignificantBytes, leastSignificantBytes);
+    urnBuilder.append(uuid.toString());
+    return urnBuilder.toString();
+  }
+  public String getUrl() {
+    return mUrl;
+  }
+  public byte getTxPowerLevel() {
+    return mTxPower;
+  }
+  public byte getFlags() {
+    return mFlags;
+  }
+}",class,
+"  private EddystoneBeacon(byte flags, byte txPower, String url) {
+    mFlags = flags;
+    mTxPower = txPower;
+    mUrl = url;
+  }",method,
+"  public static String getFatBeaconTitle(byte[] serviceData) {
+    if (serviceData.length > 2) {
+      byte[] bytes = Arrays.copyOfRange(serviceData, 3, serviceData.length);
+      String title = new String(bytes, Charset.forName(""UTF-8"")).trim();
+      return  title.indexOf('\uFFFD') == -1 ? title : """";
+    }
+    return """";
+  }",method,
+"    if (serviceData.length > 2) {
+      byte[] bytes = Arrays.copyOfRange(serviceData, 3, serviceData.length);
+      String title = new String(bytes, Charset.forName(""UTF-8"")).trim();
+      return  title.indexOf('\uFFFD') == -1 ? title : """";
+    }",method,
+"  public static boolean isFatBeacon(byte[] serviceData) {
+    return (serviceData != null && serviceData.length > 3 && isUrlFrame(serviceData) &&
+            serviceData[2] == TITLE_TYPE);
+  }",method,
+"  public static boolean isUrlFrame(byte[] serviceData) {
+    return serviceData != null && serviceData.length > 0 &&
+        (serviceData[0] & 0xf0) == URL_FRAME_TYPE;
+  }",method,
+"  public static EddystoneBeacon parseFromServiceData(byte[] urlServiceData, byte[] uriServiceData) {
+    if (urlServiceData != null && urlServiceData.length > 2) {
+      byte flags = (byte) (urlServiceData[0] & 0x0f);
+      byte txPowerLevel = urlServiceData[1];
+      return eddystoneBeaconBuilder(flags, txPowerLevel, decode(urlServiceData));
+    }
+    if (uriServiceData != null && uriServiceData.length > 2) {
+      byte flags = uriServiceData[0];
+      byte txPowerLevel = uriServiceData[1];
+      return eddystoneBeaconBuilder(flags, txPowerLevel, decode(uriServiceData));
+    }
+    return null;
+  }",method,
+"    if (urlServiceData != null && urlServiceData.length > 2) {
+      byte flags = (byte) (urlServiceData[0] & 0x0f);
+      byte txPowerLevel = urlServiceData[1];
+      return eddystoneBeaconBuilder(flags, txPowerLevel, decode(urlServiceData));
+    }",method,
+"    if (uriServiceData != null && uriServiceData.length > 2) {
+      byte flags = uriServiceData[0];
+      byte txPowerLevel = uriServiceData[1];
+      return eddystoneBeaconBuilder(flags, txPowerLevel, decode(uriServiceData));
+    }",method,
+"  private static EddystoneBeacon eddystoneBeaconBuilder(byte flags, byte txPower, String url) {
+    if (url == null || url.isEmpty()) {
+      return null;
+    }
+    return new EddystoneBeacon(flags, txPower, url);
+  }",method,
+"  private static String decode(byte[] serviceData) {
+    StringBuilder urlBuilder = new StringBuilder();
+    String scheme = URI_SCHEMES.get(serviceData[2]);
+    if (scheme != null) {
+      urlBuilder.append(scheme);
+      if (scheme.equals(URN_UUID)) {
+        return decodeUrnUuid(serviceData, urlBuilder);
+      }
+      return decodeUrl(serviceData, urlBuilder);
+    }
+    return null;
+  }",method,
+"    if (scheme != null) {
+      urlBuilder.append(scheme);
+      if (scheme.equals(URN_UUID)) {
+        return decodeUrnUuid(serviceData, urlBuilder);
+      }
+      return decodeUrl(serviceData, urlBuilder);
+    }",method,
+"  private static String decodeUrl(byte[] serviceData, StringBuilder urlBuilder) {
+    for (int i = 3; i < serviceData.length; i++) {
+      byte b = serviceData[i];
+      String expansion = URL_CODES.get(b);
+      if (expansion == null) {
+        urlBuilder.append((char) b);
+      } else {
+        urlBuilder.append(expansion);
+      }
+    }
+    return urlBuilder.toString();
+  }",method,
+"    for (int i = 3; i < serviceData.length; i++) {
+      byte b = serviceData[i];
+      String expansion = URL_CODES.get(b);
+      if (expansion == null) {
+        urlBuilder.append((char) b);
+      } else {
+        urlBuilder.append(expansion);
+      }
+    }",method,
+"      if (expansion == null) {
+        urlBuilder.append((char) b);
+      }",method,
+"  private static String decodeUrnUuid(byte[] serviceData, StringBuilder urnBuilder) {
+    ByteBuffer buf = ByteBuffer.wrap(serviceData);
+    buf.order(ByteOrder.BIG_ENDIAN);
+    long mostSignificantBytes, leastSignificantBytes;
+    try {
+      buf.position(3);
+      mostSignificantBytes = buf.getLong();
+      leastSignificantBytes = buf.getLong();
+    } catch (BufferUnderflowException e){
+      return """";
+    }
+    UUID uuid = new UUID(mostSignificantBytes, leastSignificantBytes);
+    urnBuilder.append(uuid.toString());
+    return urnBuilder.toString();
+  }",method,
+"  public String getUrl() {
+    return mUrl;
+  }",method,
+"  public byte getTxPowerLevel() {
+    return mTxPower;
+  }",method,
+"  public byte getFlags() {
+    return mFlags;
+  }",method,
+"public class ClassRewriter implements DataEntryReader
+{
+    private final ClassPool       classPool;
+    private final DataEntryWriter dataEntryWriter;
+    public ClassRewriter(ClassPool       classPool,
+                         DataEntryWriter dataEntryWriter)
+    {
+        this.classPool       = classPool;
+        this.dataEntryWriter = dataEntryWriter;
+    }
+    // Implementations for DataEntryReader.
+    public void read(DataEntry dataEntry) throws IOException
+    {
+        String inputName = dataEntry.getName();
+        String className = inputName.substring(0, inputName.length() - ClassConstants.CLASS_FILE_EXTENSION.length());
+        // Find the modified class corrsponding to the input entry.
+        ProgramClass programClass = (ProgramClass)classPool.getClass(className);
+        if (programClass != null)
+        {
+            // Rename the data entry if necessary.
+            String newClassName = programClass.getName();
+            if (!className.equals(newClassName))
+            {
+                dataEntry = new RenamedDataEntry(dataEntry, newClassName + ClassConstants.CLASS_FILE_EXTENSION);
+            }
+            // Get the output entry corresponding to this input entry.
+            OutputStream outputStream = dataEntryWriter.getOutputStream(dataEntry);
+            if (outputStream != null)
+            {
+                // Write the class to the output entry.
+                DataOutputStream classOutputStream = new DataOutputStream(outputStream);
+                new ProgramClassWriter(classOutputStream).visitProgramClass(programClass);
+                classOutputStream.flush();
+            }
+        }
+    }
+}",class,
+"        // Find the modified class corrsponding to the input entry.
+        ProgramClass programClass = (ProgramClass)classPool.getClass(className);
+        if (programClass != null)
+        {
+            // Rename the data entry if necessary.
+            String newClassName = programClass.getName();
+            if (!className.equals(newClassName))
+            {
+                dataEntry = new RenamedDataEntry(dataEntry, newClassName + ClassConstants.CLASS_FILE_EXTENSION);
+            }
+            // Get the output entry corresponding to this input entry.
+            OutputStream outputStream = dataEntryWriter.getOutputStream(dataEntry);
+            if (outputStream != null)
+            {
+                // Write the class to the output entry.
+                DataOutputStream classOutputStream = new DataOutputStream(outputStream);
+                new ProgramClassWriter(classOutputStream).visitProgramClass(programClass);
+                classOutputStream.flush();
+            }
+        }",class,
+"    public ClassRewriter(ClassPool       classPool,
+                         DataEntryWriter dataEntryWriter)
+    {
+        this.classPool       = classPool;
+        this.dataEntryWriter = dataEntryWriter;
+    }",method,
+"    public void read(DataEntry dataEntry) throws IOException
+    {
+        String inputName = dataEntry.getName();
+        String className = inputName.substring(0, inputName.length() - ClassConstants.CLASS_FILE_EXTENSION.length());
+        // Find the modified class corrsponding to the input entry.
+        ProgramClass programClass = (ProgramClass)classPool.getClass(className);
+        if (programClass != null)
+        {
+            // Rename the data entry if necessary.
+            String newClassName = programClass.getName();
+            if (!className.equals(newClassName))
+            {
+                dataEntry = new RenamedDataEntry(dataEntry, newClassName + ClassConstants.CLASS_FILE_EXTENSION);
+            }
+            // Get the output entry corresponding to this input entry.
+            OutputStream outputStream = dataEntryWriter.getOutputStream(dataEntry);
+            if (outputStream != null)
+            {
+                // Write the class to the output entry.
+                DataOutputStream classOutputStream = new DataOutputStream(outputStream);
+                new ProgramClassWriter(classOutputStream).visitProgramClass(programClass);
+                classOutputStream.flush();
+            }
+        }
+    }",method,
+"        if (programClass != null)
+        {
+            // Rename the data entry if necessary.
+            String newClassName = programClass.getName();
+            if (!className.equals(newClassName))
+            {
+                dataEntry = new RenamedDataEntry(dataEntry, newClassName + ClassConstants.CLASS_FILE_EXTENSION);
+            }
+            // Get the output entry corresponding to this input entry.
+            OutputStream outputStream = dataEntryWriter.getOutputStream(dataEntry);
+            if (outputStream != null)
+            {
+                // Write the class to the output entry.
+                DataOutputStream classOutputStream = new DataOutputStream(outputStream);
+                new ProgramClassWriter(classOutputStream).visitProgramClass(programClass);
+                classOutputStream.flush();
+            }
+        }",method,
+"            if (outputStream != null)
+            {
+                // Write the class to the output entry.
+                DataOutputStream classOutputStream = new DataOutputStream(outputStream);
+                new ProgramClassWriter(classOutputStream).visitProgramClass(programClass);
+                classOutputStream.flush();
+            }",method,
+"public class SurroundElementWithAction extends LayoutTreeActionBase {
+  public SurroundElementWithAction(ArtifactEditorEx artifactEditor) {
+    super(""Surround With..."", artifactEditor);
+    registerCustomShortcutSet(getActiveKeymapShortcuts(""SurroundWith""), artifactEditor.getLayoutTreeComponent().getLayoutTree());
+  }
+  @Override
+  protected boolean isEnabled() {
+    return myArtifactEditor.getLayoutTreeComponent().getSelection().getCommonParentElement() != null;
+  }
+  @Override
+  public void actionPerformed(AnActionEvent e) {
+    final LayoutTreeComponent treeComponent = myArtifactEditor.getLayoutTreeComponent();
+    final LayoutTreeSelection selection = treeComponent.getSelection();
+    final CompositePackagingElement<?> parent = selection.getCommonParentElement();
+    if (parent == null) return;
+    final PackagingElementNode<?> parentNode = selection.getNodes().get(0).getParentNode();
+    if (parentNode == null) return;
+    if (!treeComponent.checkCanModifyChildren(parent, parentNode, selection.getNodes())) {
+      return;
+    }
+    final CompositePackagingElementType<?>[] types = PackagingElementFactory.getInstance().getCompositeElementTypes();
+    final List<PackagingElement<?>> selected = selection.getElements();
+    if (types.length == 1) {
+      surroundWith(types[0], parent, selected, treeComponent);
+    }
+    else {
+      JBPopupFactory.getInstance().createListPopup(new BaseListPopupStep<CompositePackagingElementType>(""Surround With..."", types) {
+        @Override
+        public Icon getIconFor(CompositePackagingElementType aValue) {
+          return aValue.getCreateElementIcon();
+        }
+        @NotNull
+        @Override
+        public String getTextFor(CompositePackagingElementType value) {
+          return value.getPresentableName();
+        }
+        @Override
+        public PopupStep onChosen(final CompositePackagingElementType selectedValue, boolean finalChoice) {
+          return doFinalStep(() -> surroundWith(selectedValue, parent, selected, treeComponent));
+        }
+      }).showInBestPositionFor(e.getDataContext());
+    }
+  }
+  private void surroundWith(final CompositePackagingElementType<?> type, final CompositePackagingElement<?> parent, final List<PackagingElement<?>> selected,
+                            LayoutTreeComponent treeComponent) {
+    if (myArtifactEditor.isDisposed() || selected.isEmpty()) return;
+    final Project project = myArtifactEditor.getContext().getProject();
+    final String elementName = ContainerUtil.getFirstItem(selected, null).createPresentation(myArtifactEditor.getContext()).getPresentableName();
+    final String baseName = PathUtil.suggestFileName(elementName);
+    final CompositePackagingElement<?> newParent = type.createComposite(parent, baseName, myArtifactEditor.getContext());
+    if (newParent != null) {
+      treeComponent.editLayout(() -> {
+        for (PackagingElement<?> element : selected) {
+          newParent.addOrFindChild(ArtifactUtil.copyWithChildren(element, project));
+        }
+        for (PackagingElement<?> element : selected) {
+          parent.removeChild(element);
+        }
+        parent.addOrFindChild(newParent);
+      });
+      treeComponent.rebuildTree();
+    }
+  }
+}",class,
+"  public SurroundElementWithAction(ArtifactEditorEx artifactEditor) {
+    super(""Surround With..."", artifactEditor);
+    registerCustomShortcutSet(getActiveKeymapShortcuts(""SurroundWith""), artifactEditor.getLayoutTreeComponent().getLayoutTree());
+  }",method,
+"  @Override
+  protected boolean isEnabled() {
+    return myArtifactEditor.getLayoutTreeComponent().getSelection().getCommonParentElement() != null;
+  }",method,
+"  @Override
+  public void actionPerformed(AnActionEvent e) {
+    final LayoutTreeComponent treeComponent = myArtifactEditor.getLayoutTreeComponent();
+    final LayoutTreeSelection selection = treeComponent.getSelection();
+    final CompositePackagingElement<?> parent = selection.getCommonParentElement();
+    if (parent == null) return;
+    final PackagingElementNode<?> parentNode = selection.getNodes().get(0).getParentNode();
+    if (parentNode == null) return;
+    if (!treeComponent.checkCanModifyChildren(parent, parentNode, selection.getNodes())) {
+      return;
+    }
+    final CompositePackagingElementType<?>[] types = PackagingElementFactory.getInstance().getCompositeElementTypes();
+    final List<PackagingElement<?>> selected = selection.getElements();
+    if (types.length == 1) {
+      surroundWith(types[0], parent, selected, treeComponent);
+    }
+    else {
+      JBPopupFactory.getInstance().createListPopup(new BaseListPopupStep<CompositePackagingElementType>(""Surround With..."", types) {
+        @Override
+        public Icon getIconFor(CompositePackagingElementType aValue) {
+          return aValue.getCreateElementIcon();
+        }
+        @NotNull
+        @Override
+        public String getTextFor(CompositePackagingElementType value) {
+          return value.getPresentableName();
+        }
+        @Override
+        public PopupStep onChosen(final CompositePackagingElementType selectedValue, boolean finalChoice) {
+          return doFinalStep(() -> surroundWith(selectedValue, parent, selected, treeComponent));
+        }
+      }).showInBestPositionFor(e.getDataContext());
+    }
+  }",method,
+"    if (types.length == 1) {
+      surroundWith(types[0], parent, selected, treeComponent);
+    }",method,
+"        @Override
+        public Icon getIconFor(CompositePackagingElementType aValue) {
+          return aValue.getCreateElementIcon();
+        }",method,
+"        @NotNull
+        @Override
+        public String getTextFor(CompositePackagingElementType value) {
+          return value.getPresentableName();
+        }",method,
+"        @Override
+        public PopupStep onChosen(final CompositePackagingElementType selectedValue, boolean finalChoice) {
+          return doFinalStep(() -> surroundWith(selectedValue, parent, selected, treeComponent));
+        }",method,
+"  private void surroundWith(final CompositePackagingElementType<?> type, final CompositePackagingElement<?> parent, final List<PackagingElement<?>> selected,
+                            LayoutTreeComponent treeComponent) {
+    if (myArtifactEditor.isDisposed() || selected.isEmpty()) return;
+    final Project project = myArtifactEditor.getContext().getProject();
+    final String elementName = ContainerUtil.getFirstItem(selected, null).createPresentation(myArtifactEditor.getContext()).getPresentableName();
+    final String baseName = PathUtil.suggestFileName(elementName);
+    final CompositePackagingElement<?> newParent = type.createComposite(parent, baseName, myArtifactEditor.getContext());
+    if (newParent != null) {
+      treeComponent.editLayout(() -> {
+        for (PackagingElement<?> element : selected) {
+          newParent.addOrFindChild(ArtifactUtil.copyWithChildren(element, project));
+        }
+        for (PackagingElement<?> element : selected) {
+          parent.removeChild(element);
+        }
+        parent.addOrFindChild(newParent);
+      });
+      treeComponent.rebuildTree();
+    }
+  }",method,
+"    if (newParent != null) {
+      treeComponent.editLayout(() -> {
+        for (PackagingElement<?> element : selected) {
+          newParent.addOrFindChild(ArtifactUtil.copyWithChildren(element, project));
+        }
+        for (PackagingElement<?> element : selected) {
+          parent.removeChild(element);
+        }
+        parent.addOrFindChild(newParent);
+      });
+      treeComponent.rebuildTree();
+    }",method,
+"        for (PackagingElement<?> element : selected) {
+          newParent.addOrFindChild(ArtifactUtil.copyWithChildren(element, project));
+        }",method,
+"        for (PackagingElement<?> element : selected) {
+          parent.removeChild(element);
+        }",method,
+"public class DeferredGraph {
+  private List<DeferredNode> rootNodes = new ArrayList<>();
+  private List<DeferredNode> nodes = Lists.newArrayList();
+  private IdentityHashMap<Vector, DeferredNode> vectorMap = Maps.newIdentityHashMap();
+  private IdentityHashMap<DeferredNativeCall, CallNode> callMap = Maps.newIdentityHashMap();
+  private Multimap<String, FunctionNode> computationIndex = HashMultimap.create();
+  public DeferredGraph(DeferredNativeCall call) {
+    addRoot(call);
+  }
+  public DeferredGraph(Vector root) {
+    addRoot(root);
+  }
+  public DeferredGraph() {
+  }
+  public void optimize(LoopKernelCache loopKernelCache) {
+    Optimizers optimizers = new Optimizers();
+    optimizers.optimize(this);
+    fuse(loopKernelCache);
+  }
+  public void fuse(LoopKernelCache loopKernelCache) {
+    // Conduct a depth-first search of summary operators we can collapse
+    Set<DeferredNode> visited = Sets.newIdentityHashSet();
+    List<DeferredNode> toCheck = new ArrayList<>(rootNodes);
+    for (DeferredNode rootNode : toCheck) {
+      fuse(loopKernelCache, visited, rootNode);
+    }
+  }
+  private void fuse(LoopKernelCache loopKernelCache, Set<DeferredNode> visited, DeferredNode node) {
+    if(visited.add(node)) {
+      // First time we've seen this node, try to fuse its operands
+      // before trying itself
+      for (DeferredNode operand : node.getOperands()) {
+        fuse(loopKernelCache, visited, operand);
+      }
+    }
+    FusedNode fused = tryFuse(node);
+    if(fused != null) {
+      fused.startCompilation(loopKernelCache);
+      replaceNode(node, fused);
+    }
+  }
+  private FusedNode tryFuse(DeferredNode root) {
+    if(LoopKernels.INSTANCE.supports(root)) {
+      return new FusedNode((FunctionNode) root);
+    }
+    return null;
+  }
+  void addRoot(Vector root) {
+    DeferredNode rootNode = addNode(root);
+    rootNodes.add(rootNode);
+  }
+  private DeferredNode addNode(Vector vector) {
+    DeferredNode node = vectorMap.get(vector);
+    if(node != null) {
+      return node;
+    }
+    if(vector.isDeferred()) {
+      if(vector instanceof NativeOutputVector) {
+        // Add as the output of a native function call
+        node = addOutputNode(vector);
+      } else if(vector instanceof DeferredComputation) {
+        node = addComputeNode((DeferredComputation) vector);
+      } else {
+        throw new UnsupportedOperationException(""deferred: "" + vector.getClass().getName());
+      }
+    } else {
+      node = addDataNode(vector);
+    }
+    return node;
+  }
+  private DataNode addDataNode(Vector vector) {
+    DataNode dataNode = new DataNode(vector);
+    vectorMap.put(vector, dataNode);
+    nodes.add(dataNode);
+    return dataNode;
+  }
+  private DeferredNode addComputeNode(DeferredComputation vector) {
+    // First find the nodes of all the children
+    Vector[] operands = vector.getOperands();
+    DeferredNode[] children = new DeferredNode[operands.length];
+    for (int i = 0; i < operands.length; i++) {
+      children[i] = addNode(operands[i]);
+    }
+    // Does the operation already exist in the graph?
+    if(computationIndex.containsKey(vector.getComputationName())) {
+      for (FunctionNode existingNode : computationIndex.get(vector.getComputationName())) {
+        if(equivalent(children, existingNode.getOperands())) {
+          return existingNode;
+        }
+      }
+    }
+    FunctionNode newNode = new FunctionNode(vector);
+    newNode.addInputs(children);
+    nodes.add(newNode);
+    vectorMap.put(vector, newNode);
+    computationIndex.put(vector.getComputationName(), newNode);
+    return newNode;
+  }
+  private boolean equivalent(DeferredNode[] a, List<DeferredNode> b) {
+    if(a.length != b.size()) {
+      return false;
+    }
+    for (int i = 0; i < a.length; i++) {
+      if(!equivalent(a[i], b.get(i))) {
+        return false;
+      }
+    }
+    return true;
+  }
+  private boolean equivalent(DeferredNode a, DeferredNode b) {
+    if(a == b) {
+      return true;
+    }
+    if(a instanceof DataNode) {
+      return ((DataNode) a).equivalent(b);
+    }
+    return false;
+  }
+  private DeferredNode addOutputNode(Vector vector) {
+    DeferredNode node;
+    node = new OutputNode((NativeOutputVector) vector);
+    vectorMap.put(vector, node);
+    nodes.add(node);
+    addCallChild(node, ((NativeOutputVector) vector).getCall());
+    return node;
+  }
+  private CallNode addNode(DeferredNativeCall call) {
+    CallNode node = callMap.get(call);
+    if(node != null) {
+      return node;
+    }
+    node = new CallNode(call);
+    nodes.add(node);
+    callMap.put(call, node);
+    addChildren(node, call.getOperands());
+    return node;
+  }
+  private void addCallChild(DeferredNode parentNode, DeferredNativeCall call) {
+    CallNode callNode = addNode(call);
+    parentNode.addInput(callNode);
+    callNode.addOutput(parentNode);
+  }
+  private void addRoot(DeferredNativeCall call) {
+    DeferredNode rootNode = new CallNode(call);
+    rootNodes.add(rootNode);
+    nodes.add(rootNode);
+    addChildren(rootNode, call.getOperands());
+  }
+  private void addChildren(DeferredNode parent, Vector[] operands) {
+    for(Vector operand : operands) {
+      DeferredNode node = addNode(operand);
+      parent.addInput(node);
+      node.addOutput(parent);
+    }
+  }
+  public void dumpGraph() {
+    try {
+      File tempFile = File.createTempFile(""deferred"", "".dot"");
+      PrintWriter writer = new PrintWriter(tempFile);
+      printGraph(writer);
+      writer.close();
+      System.out.println(""Dumping compute graph to "" + tempFile.getAbsolutePath());
+    } catch (IOException e) {
+    }
+  }
+  public void printGraph(PrintWriter writer) {
+    // Only list the nodes reacheable from roots
+    Set<DeferredNode> nodes = Sets.newIdentityHashSet();
+    ArrayDeque<DeferredNode> workingList = new ArrayDeque<>(rootNodes);
+    while(!workingList.isEmpty()) {
+      DeferredNode node = workingList.poll();
+      if(nodes.add(node)) {
+        workingList.addAll(node.getOperands());
+      }
+    }
+    writer.println(""digraph G {"");
+    printEdges(writer, nodes);
+    printNodes(writer, nodes);
+    writer.println(""}"");
+    writer.flush();
+  }
+  private void printEdges(PrintWriter writer, Set<DeferredNode> nodes) {
+    for(DeferredNode node : nodes) {
+      for(DeferredNode operand : node.getOperands()) {
+        writer.println(operand.getDebugId() + "" -> "" + node.getDebugId());
+      }
+    }
+  }
+  private void printNodes(PrintWriter writer, Set<DeferredNode> nodes) {
+    for(DeferredNode node : nodes) {
+      writer.println(node.getDebugId() + "" [ label=\"""" + node.getDebugLabel() + ""\"",  "" +
+          ""shape=\"""" + node.getShape().name().toLowerCase() + ""\""]"");
+    }
+  }
+  public List<DeferredNode> getRoots() {
+    return rootNodes;
+  }
+  public Vector getRootResult(int rootIndex) {
+    return rootNodes.get(rootIndex).getVector();
+  }
+  public DeferredNode getRoot() {
+    Preconditions.checkState(rootNodes.size() == 1);
+    return rootNodes.get(0);
+  }
+  public List<DeferredNode> getNodes() {
+    return nodes;
+  }
+  public void replaceNode(DeferredNode toReplace, DeferredNode replacementNode) {
+    nodes.remove(toReplace);
+    if(!nodes.contains(replacementNode)) {
+      nodes.add(replacementNode);
+    }
+    if(rootNodes.remove(toReplace)) {
+      rootNodes.add(replacementNode);
+    }
+    for(DeferredNode operand : toReplace.getOperands()) {
+      operand.removeUse(toReplace);
+    }
+    for(DeferredNode node : toReplace.getUses()) {
+      node.replaceOperand(toReplace, replacementNode);
+    }
+  }
+}",class,
+"  public DeferredGraph(DeferredNativeCall call) {
+    addRoot(call);
+  }",method,
+"  public DeferredGraph(Vector root) {
+    addRoot(root);
+  }",method,
+"  public DeferredGraph() {
+  }",method,
+"  public void optimize(LoopKernelCache loopKernelCache) {
+    Optimizers optimizers = new Optimizers();
+    optimizers.optimize(this);
+    fuse(loopKernelCache);
+  }",method,
+"  public void fuse(LoopKernelCache loopKernelCache) {
+    // Conduct a depth-first search of summary operators we can collapse
+    Set<DeferredNode> visited = Sets.newIdentityHashSet();
+    List<DeferredNode> toCheck = new ArrayList<>(rootNodes);
+    for (DeferredNode rootNode : toCheck) {
+      fuse(loopKernelCache, visited, rootNode);
+    }
+  }",method,
+"    for (DeferredNode rootNode : toCheck) {
+      fuse(loopKernelCache, visited, rootNode);
+    }",method,
+"  private void fuse(LoopKernelCache loopKernelCache, Set<DeferredNode> visited, DeferredNode node) {
+    if(visited.add(node)) {
+      // First time we've seen this node, try to fuse its operands
+      // before trying itself
+      for (DeferredNode operand : node.getOperands()) {
+        fuse(loopKernelCache, visited, operand);
+      }
+    }
+    FusedNode fused = tryFuse(node);
+    if(fused != null) {
+      fused.startCompilation(loopKernelCache);
+      replaceNode(node, fused);
+    }
+  }",method,
+"    if(fused != null) {
+      fused.startCompilation(loopKernelCache);
+      replaceNode(node, fused);
+    }",method,
+"  private FusedNode tryFuse(DeferredNode root) {
+    if(LoopKernels.INSTANCE.supports(root)) {
+      return new FusedNode((FunctionNode) root);
+    }
+    return null;
+  }",method,
+"  void addRoot(Vector root) {
+    DeferredNode rootNode = addNode(root);
+    rootNodes.add(rootNode);
+  }",method,
+"  private DeferredNode addNode(Vector vector) {
+    DeferredNode node = vectorMap.get(vector);
+    if(node != null) {
+      return node;
+    }
+    if(vector.isDeferred()) {
+      if(vector instanceof NativeOutputVector) {
+        // Add as the output of a native function call
+        node = addOutputNode(vector);
+      } else if(vector instanceof DeferredComputation) {
+        node = addComputeNode((DeferredComputation) vector);
+      } else {
+        throw new UnsupportedOperationException(""deferred: "" + vector.getClass().getName());
+      }
+    } else {
+      node = addDataNode(vector);
+    }
+    return node;
+  }",method,
+"    if(node != null) {
+      return node;
+    }",method,
+"      if(vector instanceof NativeOutputVector) {
+        // Add as the output of a native function call
+        node = addOutputNode(vector);
+      }",method,
+"  private DataNode addDataNode(Vector vector) {
+    DataNode dataNode = new DataNode(vector);
+    vectorMap.put(vector, dataNode);
+    nodes.add(dataNode);
+    return dataNode;
+  }",method,
+"  private DeferredNode addComputeNode(DeferredComputation vector) {
+    // First find the nodes of all the children
+    Vector[] operands = vector.getOperands();
+    DeferredNode[] children = new DeferredNode[operands.length];
+    for (int i = 0; i < operands.length; i++) {
+      children[i] = addNode(operands[i]);
+    }
+    // Does the operation already exist in the graph?
+    if(computationIndex.containsKey(vector.getComputationName())) {
+      for (FunctionNode existingNode : computationIndex.get(vector.getComputationName())) {
+        if(equivalent(children, existingNode.getOperands())) {
+          return existingNode;
+        }
+      }
+    }
+    FunctionNode newNode = new FunctionNode(vector);
+    newNode.addInputs(children);
+    nodes.add(newNode);
+    vectorMap.put(vector, newNode);
+    computationIndex.put(vector.getComputationName(), newNode);
+    return newNode;
+  }",method,
+"    for (int i = 0; i < operands.length; i++) {
+      children[i] = addNode(operands[i]);
+    }",method,
+"  private boolean equivalent(DeferredNode[] a, List<DeferredNode> b) {
+    if(a.length != b.size()) {
+      return false;
+    }
+    for (int i = 0; i < a.length; i++) {
+      if(!equivalent(a[i], b.get(i))) {
+        return false;
+      }
+    }
+    return true;
+  }",method,
+"    for (int i = 0; i < a.length; i++) {
+      if(!equivalent(a[i], b.get(i))) {
+        return false;
+      }
+    }",method,
+"  private boolean equivalent(DeferredNode a, DeferredNode b) {
+    if(a == b) {
+      return true;
+    }
+    if(a instanceof DataNode) {
+      return ((DataNode) a).equivalent(b);
+    }
+    return false;
+  }",method,
+"    if(a == b) {
+      return true;
+    }",method,
+"    if(a instanceof DataNode) {
+      return ((DataNode) a).equivalent(b);
+    }",method,
+"  private DeferredNode addOutputNode(Vector vector) {
+    DeferredNode node;
+    node = new OutputNode((NativeOutputVector) vector);
+    vectorMap.put(vector, node);
+    nodes.add(node);
+    addCallChild(node, ((NativeOutputVector) vector).getCall());
+    return node;
+  }",method,
+"  private CallNode addNode(DeferredNativeCall call) {
+    CallNode node = callMap.get(call);
+    if(node != null) {
+      return node;
+    }
+    node = new CallNode(call);
+    nodes.add(node);
+    callMap.put(call, node);
+    addChildren(node, call.getOperands());
+    return node;
+  }",method,
+"    if(node != null) {
+      return node;
+    }",method,
+"  private void addCallChild(DeferredNode parentNode, DeferredNativeCall call) {
+    CallNode callNode = addNode(call);
+    parentNode.addInput(callNode);
+    callNode.addOutput(parentNode);
+  }",method,
+"  private void addRoot(DeferredNativeCall call) {
+    DeferredNode rootNode = new CallNode(call);
+    rootNodes.add(rootNode);
+    nodes.add(rootNode);
+    addChildren(rootNode, call.getOperands());
+  }",method,
+"  private void addChildren(DeferredNode parent, Vector[] operands) {
+    for(Vector operand : operands) {
+      DeferredNode node = addNode(operand);
+      parent.addInput(node);
+      node.addOutput(parent);
+    }
+  }",method,
+"    for(Vector operand : operands) {
+      DeferredNode node = addNode(operand);
+      parent.addInput(node);
+      node.addOutput(parent);
+    }",method,
+"  public void dumpGraph() {
+    try {
+      File tempFile = File.createTempFile(""deferred"", "".dot"");
+      PrintWriter writer = new PrintWriter(tempFile);
+      printGraph(writer);
+      writer.close();
+      System.out.println(""Dumping compute graph to "" + tempFile.getAbsolutePath());
+    } catch (IOException e) {
+    }
+  }",method,
+"  public void printGraph(PrintWriter writer) {
+    // Only list the nodes reacheable from roots
+    Set<DeferredNode> nodes = Sets.newIdentityHashSet();
+    ArrayDeque<DeferredNode> workingList = new ArrayDeque<>(rootNodes);
+    while(!workingList.isEmpty()) {
+      DeferredNode node = workingList.poll();
+      if(nodes.add(node)) {
+        workingList.addAll(node.getOperands());
+      }
+    }
+    writer.println(""digraph G {"");
+    printEdges(writer, nodes);
+    printNodes(writer, nodes);
+    writer.println(""}"");
+    writer.flush();
+  }",method,
+"  private void printEdges(PrintWriter writer, Set<DeferredNode> nodes) {
+    for(DeferredNode node : nodes) {
+      for(DeferredNode operand : node.getOperands()) {
+        writer.println(operand.getDebugId() + "" -> "" + node.getDebugId());
+      }
+    }
+  }",method,
+"    for(DeferredNode node : nodes) {
+      for(DeferredNode operand : node.getOperands()) {
+        writer.println(operand.getDebugId() + "" -> "" + node.getDebugId());
+      }
+    }",method,
+"  private void printNodes(PrintWriter writer, Set<DeferredNode> nodes) {
+    for(DeferredNode node : nodes) {
+      writer.println(node.getDebugId() + "" [ label=\"""" + node.getDebugLabel() + ""\"",  "" +
+          ""shape=\"""" + node.getShape().name().toLowerCase() + ""\""]"");
+    }
+  }",method,
+"    for(DeferredNode node : nodes) {
+      writer.println(node.getDebugId() + "" [ label=\"""" + node.getDebugLabel() + ""\"",  "" +
+          ""shape=\"""" + node.getShape().name().toLowerCase() + ""\""]"");
+    }",method,
+"  public List<DeferredNode> getRoots() {
+    return rootNodes;
+  }",method,
+"  public Vector getRootResult(int rootIndex) {
+    return rootNodes.get(rootIndex).getVector();
+  }",method,
+"  public DeferredNode getRoot() {
+    Preconditions.checkState(rootNodes.size() == 1);
+    return rootNodes.get(0);
+  }",method,
+"  public List<DeferredNode> getNodes() {
+    return nodes;
+  }",method,
+"  public void replaceNode(DeferredNode toReplace, DeferredNode replacementNode) {
+    nodes.remove(toReplace);
+    if(!nodes.contains(replacementNode)) {
+      nodes.add(replacementNode);
+    }
+    if(rootNodes.remove(toReplace)) {
+      rootNodes.add(replacementNode);
+    }
+    for(DeferredNode operand : toReplace.getOperands()) {
+      operand.removeUse(toReplace);
+    }
+    for(DeferredNode node : toReplace.getUses()) {
+      node.replaceOperand(toReplace, replacementNode);
+    }
+  }",method,
+"public class DefaultRuleActionValidator<T> implements RuleActionValidator<T> {
+    private static final String VALID_SINGLE_TYPES = ""Rule may not have an input parameter of type: %s. Second parameter must be of type: %s."";
+    private static final String VALID_MULTIPLE_TYPES = ""Rule may not have an input parameter of type: %s. Valid types (for the second and subsequent parameters) are: %s."";
+    private final List<Class<?>> validInputTypes;
+    public DefaultRuleActionValidator(List<Class<?>> validInputTypes) {
+        this.validInputTypes = validInputTypes;
+    }
+    public RuleAction<? super T> validate(RuleAction<? super T> ruleAction) {
+        validateInputTypes(ruleAction);
+        return ruleAction;
+    }
+    private void validateInputTypes(RuleAction<? super T> ruleAction) {
+        for (Class<?> inputType : ruleAction.getInputTypes()) {
+            if (!validInputTypes.contains(inputType)) {
+                throw new RuleActionValidationException(invalidParameterMessage(inputType));
+            }
+        }
+    }
+    private String invalidParameterMessage(Class<?> inputType) {
+        if (validInputTypes.size() == 1) {
+            return String.format(VALID_SINGLE_TYPES, inputType.getName(), className(validInputTypes.get(0)));
+        }
+        return String.format(VALID_MULTIPLE_TYPES, inputType.getName(),
+                             CollectionUtils.collect(validInputTypes, new ClassNameTransformer()));
+    }
+    private static String className(Class<?> aClass) {
+        return ModelType.of(aClass).toString();
+    }
+    private static class ClassNameTransformer implements Transformer<String, Class<?>> {
+        public String transform(Class<?> aClass) {
+            return className(aClass);
+        }
+    }
+}",class,
+"    private static class ClassNameTransformer implements Transformer<String, Class<?>> {
+        public String transform(Class<?> aClass) {
+            return className(aClass);
+        }
+    }",class,
+"    public DefaultRuleActionValidator(List<Class<?>> validInputTypes) {
+        this.validInputTypes = validInputTypes;
+    }",method,
+"    public RuleAction<? super T> validate(RuleAction<? super T> ruleAction) {
+        validateInputTypes(ruleAction);
+        return ruleAction;
+    }",method,
+"    private void validateInputTypes(RuleAction<? super T> ruleAction) {
+        for (Class<?> inputType : ruleAction.getInputTypes()) {
+            if (!validInputTypes.contains(inputType)) {
+                throw new RuleActionValidationException(invalidParameterMessage(inputType));
+            }
+        }
+    }",method,
+"    private String invalidParameterMessage(Class<?> inputType) {
+        if (validInputTypes.size() == 1) {
+            return String.format(VALID_SINGLE_TYPES, inputType.getName(), className(validInputTypes.get(0)));
+        }
+        return String.format(VALID_MULTIPLE_TYPES, inputType.getName(),
+                             CollectionUtils.collect(validInputTypes, new ClassNameTransformer()));
+    }",method,
+"    private static String className(Class<?> aClass) {
+        return ModelType.of(aClass).toString();
+    }",method,
+"        public String transform(Class<?> aClass) {
+            return className(aClass);
+        }",method,
+"public class SampleWebMustacheApplicationTests {
+	@Autowired
+	private TestRestTemplate restTemplate;
+	@Test
+	public void testMustacheTemplate() throws Exception {
+		ResponseEntity<String> entity = this.restTemplate.getForEntity(""/"", String.class);
+		assertThat(entity.getStatusCode()).isEqualTo(HttpStatus.OK);
+		assertThat(entity.getBody()).contains(""Hello, Andy"");
+	}
+	@Test
+	public void testMustacheErrorTemplate() throws Exception {
+		HttpHeaders headers = new HttpHeaders();
+		headers.setAccept(Arrays.asList(MediaType.TEXT_HTML));
+		HttpEntity<String> requestEntity = new HttpEntity<>(headers);
+		ResponseEntity<String> responseEntity = this.restTemplate
+				.exchange(""/does-not-exist"", HttpMethod.GET, requestEntity, String.class);
+		assertThat(responseEntity.getStatusCode()).isEqualTo(HttpStatus.NOT_FOUND);
+		assertThat(responseEntity.getBody())
+				.contains(""Something went wrong: 404 Not Found"");
+	}
+	@Test
+	public void test503HtmlResource() throws Exception {
+		HttpHeaders headers = new HttpHeaders();
+		headers.setAccept(Arrays.asList(MediaType.TEXT_HTML));
+		HttpEntity<String> requestEntity = new HttpEntity<>(headers);
+		ResponseEntity<String> entity = this.restTemplate.exchange(""/serviceUnavailable"",
+				HttpMethod.GET, requestEntity, String.class);
+		assertThat(entity.getStatusCode()).isEqualTo(HttpStatus.SERVICE_UNAVAILABLE);
+		assertThat(entity.getBody()).contains(""I'm a 503"");
+	}
+	@Test
+	public void test5xxHtmlResource() throws Exception {
+		HttpHeaders headers = new HttpHeaders();
+		headers.setAccept(Arrays.asList(MediaType.TEXT_HTML));
+		HttpEntity<String> requestEntity = new HttpEntity<>(headers);
+		ResponseEntity<String> entity = this.restTemplate.exchange(""/bang"",
+				HttpMethod.GET, requestEntity, String.class);
+		assertThat(entity.getStatusCode()).isEqualTo(HttpStatus.INTERNAL_SERVER_ERROR);
+		assertThat(entity.getBody()).contains(""I'm a 5xx"");
+	}
+	@Test
+	public void test507Template() throws Exception {
+		HttpHeaders headers = new HttpHeaders();
+		headers.setAccept(Arrays.asList(MediaType.TEXT_HTML));
+		HttpEntity<String> requestEntity = new HttpEntity<>(headers);
+		ResponseEntity<String> entity = this.restTemplate.exchange(""/insufficientStorage"",
+				HttpMethod.GET, requestEntity, String.class);
+		assertThat(entity.getStatusCode()).isEqualTo(HttpStatus.INSUFFICIENT_STORAGE);
+		assertThat(entity.getBody()).contains(""I'm a 507"");
+	}
+}",class,
+"	@Test
+	public void testMustacheTemplate() throws Exception {
+		ResponseEntity<String> entity = this.restTemplate.getForEntity(""/"", String.class);
+		assertThat(entity.getStatusCode()).isEqualTo(HttpStatus.OK);
+		assertThat(entity.getBody()).contains(""Hello, Andy"");
+	}",method,
+"	@Test
+	public void testMustacheErrorTemplate() throws Exception {
+		HttpHeaders headers = new HttpHeaders();
+		headers.setAccept(Arrays.asList(MediaType.TEXT_HTML));
+		HttpEntity<String> requestEntity = new HttpEntity<>(headers);
+		ResponseEntity<String> responseEntity = this.restTemplate
+				.exchange(""/does-not-exist"", HttpMethod.GET, requestEntity, String.class);
+		assertThat(responseEntity.getStatusCode()).isEqualTo(HttpStatus.NOT_FOUND);
+		assertThat(responseEntity.getBody())
+				.contains(""Something went wrong: 404 Not Found"");
+	}",method,
+"	@Test
+	public void test503HtmlResource() throws Exception {
+		HttpHeaders headers = new HttpHeaders();
+		headers.setAccept(Arrays.asList(MediaType.TEXT_HTML));
+		HttpEntity<String> requestEntity = new HttpEntity<>(headers);
+		ResponseEntity<String> entity = this.restTemplate.exchange(""/serviceUnavailable"",
+				HttpMethod.GET, requestEntity, String.class);
+		assertThat(entity.getStatusCode()).isEqualTo(HttpStatus.SERVICE_UNAVAILABLE);
+		assertThat(entity.getBody()).contains(""I'm a 503"");
+	}",method,
+"	@Test
+	public void test5xxHtmlResource() throws Exception {
+		HttpHeaders headers = new HttpHeaders();
+		headers.setAccept(Arrays.asList(MediaType.TEXT_HTML));
+		HttpEntity<String> requestEntity = new HttpEntity<>(headers);
+		ResponseEntity<String> entity = this.restTemplate.exchange(""/bang"",
+				HttpMethod.GET, requestEntity, String.class);
+		assertThat(entity.getStatusCode()).isEqualTo(HttpStatus.INTERNAL_SERVER_ERROR);
+		assertThat(entity.getBody()).contains(""I'm a 5xx"");
+	}",method,
+"	@Test
+	public void test507Template() throws Exception {
+		HttpHeaders headers = new HttpHeaders();
+		headers.setAccept(Arrays.asList(MediaType.TEXT_HTML));
+		HttpEntity<String> requestEntity = new HttpEntity<>(headers);
+		ResponseEntity<String> entity = this.restTemplate.exchange(""/insufficientStorage"",
+				HttpMethod.GET, requestEntity, String.class);
+		assertThat(entity.getStatusCode()).isEqualTo(HttpStatus.INSUFFICIENT_STORAGE);
+		assertThat(entity.getBody()).contains(""I'm a 507"");
+	}",method,
+"public class MessagingMessageListenerAdapter extends AbstractAdaptableMessageListener {
+	@Nullable
+	private InvocableHandlerMethod handlerMethod;
+	public void setHandlerMethod(InvocableHandlerMethod handlerMethod) {
+		this.handlerMethod = handlerMethod;
+	}
+	private InvocableHandlerMethod getHandlerMethod() {
+		Assert.state(this.handlerMethod != null, ""No HandlerMethod set"");
+		return this.handlerMethod;
+	}
+	@Override
+	public void onMessage(javax.jms.Message jmsMessage, @Nullable Session session) throws JMSException {
+		Message<?> message = toMessagingMessage(jmsMessage);
+		if (logger.isDebugEnabled()) {
+			logger.debug(""Processing ["" + message + ""]"");
+		}
+		Object result = invokeHandler(jmsMessage, session, message);
+		if (result != null) {
+			handleResult(result, jmsMessage, session);
+		}
+		else {
+			logger.trace(""No result object given - no result to handle"");
+		}
+	}
+	@Override
+	protected Object preProcessResponse(Object result) {
+		MethodParameter returnType = getHandlerMethod().getReturnType();
+		if (result instanceof Message) {
+			return MessageBuilder.fromMessage((Message<?>) result)
+					.setHeader(AbstractMessageSendingTemplate.CONVERSION_HINT_HEADER, returnType).build();
+		}
+		return MessageBuilder.withPayload(result).setHeader(
+				AbstractMessageSendingTemplate.CONVERSION_HINT_HEADER, returnType).build();
+	}
+	protected Message<?> toMessagingMessage(javax.jms.Message jmsMessage) {
+		try {
+			return (Message<?>) getMessagingMessageConverter().fromMessage(jmsMessage);
+		}
+		catch (JMSException ex) {
+			throw new MessageConversionException(""Could not convert JMS message"", ex);
+		}
+	}
+	@Nullable
+	private Object invokeHandler(javax.jms.Message jmsMessage, @Nullable Session session, Message<?> message) {
+		InvocableHandlerMethod handlerMethod = getHandlerMethod();
+		try {
+			return handlerMethod.invoke(message, jmsMessage, session);
+		}
+		catch (MessagingException ex) {
+			throw new ListenerExecutionFailedException(
+					createMessagingErrorMessage(""Listener method could not be invoked with incoming message""), ex);
+		}
+		catch (Exception ex) {
+			throw new ListenerExecutionFailedException(""Listener method '"" +
+					handlerMethod.getMethod().toGenericString() + ""' threw exception"", ex);
+		}
+	}
+	private String createMessagingErrorMessage(String description) {
+		InvocableHandlerMethod handlerMethod = getHandlerMethod();
+		StringBuilder sb = new StringBuilder(description).append(""\n"")
+				.append(""Endpoint handler details:\n"")
+				.append(""Method ["").append(handlerMethod.getMethod()).append(""]\n"")
+				.append(""Bean ["").append(handlerMethod.getBean()).append(""]\n"");
+		return sb.toString();
+	}
+}",class,
+"	public void setHandlerMethod(InvocableHandlerMethod handlerMethod) {
+		this.handlerMethod = handlerMethod;
+	}",method,
+"	private InvocableHandlerMethod getHandlerMethod() {
+		Assert.state(this.handlerMethod != null, ""No HandlerMethod set"");
+		return this.handlerMethod;
+	}",method,
+"	@Override
+	public void onMessage(javax.jms.Message jmsMessage, @Nullable Session session) throws JMSException {
+		Message<?> message = toMessagingMessage(jmsMessage);
+		if (logger.isDebugEnabled()) {
+			logger.debug(""Processing ["" + message + ""]"");
+		}
+		Object result = invokeHandler(jmsMessage, session, message);
+		if (result != null) {
+			handleResult(result, jmsMessage, session);
+		}
+		else {
+			logger.trace(""No result object given - no result to handle"");
+		}
+	}",method,
+"		if (result != null) {
+			handleResult(result, jmsMessage, session);
+		}",method,
+"	@Override
+	protected Object preProcessResponse(Object result) {
+		MethodParameter returnType = getHandlerMethod().getReturnType();
+		if (result instanceof Message) {
+			return MessageBuilder.fromMessage((Message<?>) result)
+					.setHeader(AbstractMessageSendingTemplate.CONVERSION_HINT_HEADER, returnType).build();
+		}
+		return MessageBuilder.withPayload(result).setHeader(
+				AbstractMessageSendingTemplate.CONVERSION_HINT_HEADER, returnType).build();
+	}",method,
+"		if (result instanceof Message) {
+			return MessageBuilder.fromMessage((Message<?>) result)
+					.setHeader(AbstractMessageSendingTemplate.CONVERSION_HINT_HEADER, returnType).build();
+		}",method,

@@ -1,0 +1,2001 @@
+code_snippet,type,score
+"public class Shareable {
+    private static final String TAG = ""Shareable"";
+    final private Resources resources;
+    final private PackageManager packageManager;
+    final private LanternMainActivity activity;
+    public Shareable(final LanternMainActivity activity) {
+        this.activity = activity;
+        this.resources = activity.getResources();
+        this.packageManager = activity.getPackageManager();
+    }
+    public File getApkFile(Context context, String packageName) {
+        HashMap<String, String> installedApkFilePaths = getAllInstalledApkFiles(context);
+        File apkFile = new File(installedApkFilePaths.get(packageName));
+        if (apkFile.exists()) {
+            return apkFile;
+        }
+        return null;
+    }
+    private static void copyFile(InputStream in, OutputStream out) throws IOException {
+        byte[] buffer = new byte[1024];
+        int read;
+        while ((read = in.read(buffer)) > 0) {
+            Log.d(TAG, ""Copying file "" + read);
+            out.write(buffer, 0, read);
+        }
+    }
+    // createCachedFile is used to copy the APK file to external storage
+    // to prevent issues GMail 5.0 security checks
+    public static File createCachedFile(Context context, String fileName,
+            File apkFile) throws IOException {
+        File cacheFile = new File(context.getExternalCacheDir() + File.separator
+                + fileName);
+        cacheFile.createNewFile();
+        FileInputStream fis = new FileInputStream(apkFile);
+        FileOutputStream fos = new FileOutputStream(cacheFile);
+        copyFile(fis, fos);
+        fis.close();
+        fos.close();
+        return cacheFile;
+    }
+    private boolean isValid(List<PackageInfo> packageInfos) {
+        return packageInfos != null && !packageInfos.isEmpty();
+    }
+    // getAllInstalledApkFiles iterates through the list of apps installed
+    // and returns a map of package names mapped to absolute file locations
+    private HashMap<String, String> getAllInstalledApkFiles(Context context) {
+        HashMap<String, String> installedApkFilePaths = new HashMap<>();
+        PackageManager packageManager = context.getPackageManager();
+        List<PackageInfo> packageInfoList = packageManager.getInstalledPackages(PackageManager.SIGNATURE_MATCH);
+        if (isValid(packageInfoList)) {
+            final PackageManager pm = this.activity.getApplicationContext().getPackageManager();
+            for (PackageInfo packageInfo : packageInfoList) {
+                ApplicationInfo applicationInfo;
+                try {
+                    applicationInfo = pm.getApplicationInfo(packageInfo.packageName, 0);
+                    String packageName = applicationInfo.packageName;
+                    String versionName = packageInfo.versionName;
+                    int versionCode = packageInfo.versionCode;
+                    File apkFile = new File(applicationInfo.publicSourceDir);
+                    if (apkFile.exists()) {
+                        installedApkFilePaths.put(packageName, apkFile.getAbsolutePath());
+                        Log.d(TAG, packageName + "" = "" + apkFile.getName());
+                    }
+                } catch (PackageManager.NameNotFoundException error) {
+                    error.printStackTrace();
+                }
+            }
+        }
+        return installedApkFilePaths;
+    }
+    // showOption is used to present the share intent
+    // we customize the apps shown (here limited to WhatsApp, Twitter, FB,
+    // Weibo, and the normal mail clients)
+    public void showOption() {
+        Intent emailIntent = new Intent();
+        emailIntent.setAction(Intent.ACTION_SEND);
+        // Native email client doesn't currently support HTML, but it doesn't hurt to try in case they fix it
+        emailIntent.putExtra(Intent.EXTRA_TEXT, Html.fromHtml(resources.getString(R.string.share_email_native)));
+        emailIntent.putExtra(Intent.EXTRA_SUBJECT, resources.getString(R.string.share_email_subject));
+        emailIntent.setType(""message/rfc822"");
+        Intent sendIntent = new Intent(Intent.ACTION_SEND);     
+        sendIntent.setType(""text/plain"");
+        Intent openInChooser = Intent.createChooser(emailIntent, resources.getString(R.string.share_chooser_text));
+        List<ResolveInfo> resInfo = this.packageManager.queryIntentActivities(sendIntent, 0);
+        List<LabeledIntent> intentList = new ArrayList<LabeledIntent>();        
+        for (int i = 0; i < resInfo.size(); i++) {
+            // Extract the label, append it, and repackage it in a LabeledIntent
+            ResolveInfo ri = resInfo.get(i);
+            String packageName = ri.activityInfo.packageName;
+            if(packageName.contains(""android.email"")) {
+                emailIntent.setPackage(packageName);
+            } else if (""com.twitter.android.composer.ComposerActivity"".equals(ri.activityInfo.name) || 
+                packageName.contains(""facebook"") || 
+                ""com.tencent.mm.ui.tools.ShareImgUI"".equals(ri.activityInfo.name) ||
+                packageName.contains(""weibo"") ||
+                packageName.contains(""mms"") || packageName.contains(""android.gm"")) {
+                Intent intent = new Intent();
+                intent.setComponent(new ComponentName(packageName, ri.activityInfo.name));
+                intent.setAction(Intent.ACTION_SEND);
+                intent.setType(""text/plain"");
+                if(packageName.contains(""twitter"") || packageName.contains(""tencent.mm"")) {
+                    intent.putExtra(Intent.EXTRA_TEXT, resources.getString(R.string.share_twitter));
+                } else if(packageName.contains(""facebook"")) {
+                    // Warning: Facebook IGNORES our text. They say ""These fields are intended for users to express themselves. Pre-filling these fields erodes the authenticity of the user voice.""
+                    // One workaround is to use the Facebook SDK to post, but that doesn't allow the user to choose how they want to share. We can also make a custom landing page, and the link
+                    // will show the <meta content =""...""> text from that page with our link in Facebook.
+                    intent.putExtra(Intent.EXTRA_TEXT, resources.getString(R.string.share_facebook));
+                } else if(packageName.contains(""mms"")) {
+                    intent.putExtra(Intent.EXTRA_TEXT, resources.getString(R.string.share_sms));
+                } else if(packageName.contains(""android.gm"")) { // If Gmail shows up twice, try removing this else-if clause and the reference to ""android.gm"" above
+                    intent.putExtra(Intent.EXTRA_TEXT, Html.fromHtml(resources.getString(R.string.share_email_gmail)));
+                    intent.putExtra(Intent.EXTRA_SUBJECT, resources.getString(R.string.share_email_subject));               
+                    intent.setType(""message/rfc822"");
+                }
+                if (packageName.contains(""android.gm"") || packageName.contains(""android.email"")) {
+                    File f = getApkFile(this.activity, ""org.getlantern.lantern"");
+                    Uri currentUri = Uri.fromFile(f);
+                    Log.d(TAG, ""current uri is "" + currentUri);
+                    if (f != null) {
+                        try {
+                            String fileName = ""lantern.apk"";
+                            File newFile = createCachedFile(this.activity, fileName, f);
+                            Uri uri = Uri.fromFile(newFile);
+                            Log.d(TAG, ""New uri is "" + uri);
+                            intent.putExtra(Intent.EXTRA_STREAM, uri);
+                        } catch (Exception e) {
+                            Log.d(TAG, ""Error attaching APK file "" + e.getMessage());
+                        }
+                    }
+                }
+                intentList.add(new LabeledIntent(intent, packageName, ri.loadLabel(this.packageManager), ri.icon));
+            }
+        }
+        // convert intentList to array
+        LabeledIntent[] extraIntents = intentList.toArray( new LabeledIntent[ intentList.size() ]);
+        openInChooser.putExtra(Intent.EXTRA_INITIAL_INTENTS, extraIntents);
+        activity.startActivityForResult(openInChooser, 0);     
+    }
+}",class,
+"    public Shareable(final LanternMainActivity activity) {
+        this.activity = activity;
+        this.resources = activity.getResources();
+        this.packageManager = activity.getPackageManager();
+    }",method,
+"    public File getApkFile(Context context, String packageName) {
+        HashMap<String, String> installedApkFilePaths = getAllInstalledApkFiles(context);
+        File apkFile = new File(installedApkFilePaths.get(packageName));
+        if (apkFile.exists()) {
+            return apkFile;
+        }
+        return null;
+    }",method,
+"    private static void copyFile(InputStream in, OutputStream out) throws IOException {
+        byte[] buffer = new byte[1024];
+        int read;
+        while ((read = in.read(buffer)) > 0) {
+            Log.d(TAG, ""Copying file "" + read);
+            out.write(buffer, 0, read);
+        }
+    }",method,
+"    public static File createCachedFile(Context context, String fileName,
+            File apkFile) throws IOException {
+        File cacheFile = new File(context.getExternalCacheDir() + File.separator
+                + fileName);
+        cacheFile.createNewFile();
+        FileInputStream fis = new FileInputStream(apkFile);
+        FileOutputStream fos = new FileOutputStream(cacheFile);
+        copyFile(fis, fos);
+        fis.close();
+        fos.close();
+        return cacheFile;
+    }",method,
+"    private boolean isValid(List<PackageInfo> packageInfos) {
+        return packageInfos != null && !packageInfos.isEmpty();
+    }",method,
+"    private HashMap<String, String> getAllInstalledApkFiles(Context context) {
+        HashMap<String, String> installedApkFilePaths = new HashMap<>();
+        PackageManager packageManager = context.getPackageManager();
+        List<PackageInfo> packageInfoList = packageManager.getInstalledPackages(PackageManager.SIGNATURE_MATCH);
+        if (isValid(packageInfoList)) {
+            final PackageManager pm = this.activity.getApplicationContext().getPackageManager();
+            for (PackageInfo packageInfo : packageInfoList) {
+                ApplicationInfo applicationInfo;
+                try {
+                    applicationInfo = pm.getApplicationInfo(packageInfo.packageName, 0);
+                    String packageName = applicationInfo.packageName;
+                    String versionName = packageInfo.versionName;
+                    int versionCode = packageInfo.versionCode;
+                    File apkFile = new File(applicationInfo.publicSourceDir);
+                    if (apkFile.exists()) {
+                        installedApkFilePaths.put(packageName, apkFile.getAbsolutePath());
+                        Log.d(TAG, packageName + "" = "" + apkFile.getName());
+                    }
+                } catch (PackageManager.NameNotFoundException error) {
+                    error.printStackTrace();
+                }
+            }
+        }
+        return installedApkFilePaths;
+    }",method,
+"            for (PackageInfo packageInfo : packageInfoList) {
+                ApplicationInfo applicationInfo;
+                try {
+                    applicationInfo = pm.getApplicationInfo(packageInfo.packageName, 0);
+                    String packageName = applicationInfo.packageName;
+                    String versionName = packageInfo.versionName;
+                    int versionCode = packageInfo.versionCode;
+                    File apkFile = new File(applicationInfo.publicSourceDir);
+                    if (apkFile.exists()) {
+                        installedApkFilePaths.put(packageName, apkFile.getAbsolutePath());
+                        Log.d(TAG, packageName + "" = "" + apkFile.getName());
+                    }
+                } catch (PackageManager.NameNotFoundException error) {
+                    error.printStackTrace();
+                }
+            }",method,
+"    public void showOption() {
+        Intent emailIntent = new Intent();
+        emailIntent.setAction(Intent.ACTION_SEND);
+        // Native email client doesn't currently support HTML, but it doesn't hurt to try in case they fix it
+        emailIntent.putExtra(Intent.EXTRA_TEXT, Html.fromHtml(resources.getString(R.string.share_email_native)));
+        emailIntent.putExtra(Intent.EXTRA_SUBJECT, resources.getString(R.string.share_email_subject));
+        emailIntent.setType(""message/rfc822"");
+        Intent sendIntent = new Intent(Intent.ACTION_SEND);     
+        sendIntent.setType(""text/plain"");
+        Intent openInChooser = Intent.createChooser(emailIntent, resources.getString(R.string.share_chooser_text));
+        List<ResolveInfo> resInfo = this.packageManager.queryIntentActivities(sendIntent, 0);
+        List<LabeledIntent> intentList = new ArrayList<LabeledIntent>();        
+        for (int i = 0; i < resInfo.size(); i++) {
+            // Extract the label, append it, and repackage it in a LabeledIntent
+            ResolveInfo ri = resInfo.get(i);
+            String packageName = ri.activityInfo.packageName;
+            if(packageName.contains(""android.email"")) {
+                emailIntent.setPackage(packageName);
+            } else if (""com.twitter.android.composer.ComposerActivity"".equals(ri.activityInfo.name) || 
+                packageName.contains(""facebook"") || 
+                ""com.tencent.mm.ui.tools.ShareImgUI"".equals(ri.activityInfo.name) ||
+                packageName.contains(""weibo"") ||
+                packageName.contains(""mms"") || packageName.contains(""android.gm"")) {
+                Intent intent = new Intent();
+                intent.setComponent(new ComponentName(packageName, ri.activityInfo.name));
+                intent.setAction(Intent.ACTION_SEND);
+                intent.setType(""text/plain"");
+                if(packageName.contains(""twitter"") || packageName.contains(""tencent.mm"")) {
+                    intent.putExtra(Intent.EXTRA_TEXT, resources.getString(R.string.share_twitter));
+                } else if(packageName.contains(""facebook"")) {
+                    // Warning: Facebook IGNORES our text. They say ""These fields are intended for users to express themselves. Pre-filling these fields erodes the authenticity of the user voice.""
+                    // One workaround is to use the Facebook SDK to post, but that doesn't allow the user to choose how they want to share. We can also make a custom landing page, and the link
+                    // will show the <meta content =""...""> text from that page with our link in Facebook.
+                    intent.putExtra(Intent.EXTRA_TEXT, resources.getString(R.string.share_facebook));
+                } else if(packageName.contains(""mms"")) {
+                    intent.putExtra(Intent.EXTRA_TEXT, resources.getString(R.string.share_sms));
+                } else if(packageName.contains(""android.gm"")) { // If Gmail shows up twice, try removing this else-if clause and the reference to ""android.gm"" above
+                    intent.putExtra(Intent.EXTRA_TEXT, Html.fromHtml(resources.getString(R.string.share_email_gmail)));
+                    intent.putExtra(Intent.EXTRA_SUBJECT, resources.getString(R.string.share_email_subject));               
+                    intent.setType(""message/rfc822"");
+                }
+                if (packageName.contains(""android.gm"") || packageName.contains(""android.email"")) {
+                    File f = getApkFile(this.activity, ""org.getlantern.lantern"");
+                    Uri currentUri = Uri.fromFile(f);
+                    Log.d(TAG, ""current uri is "" + currentUri);
+                    if (f != null) {
+                        try {
+                            String fileName = ""lantern.apk"";
+                            File newFile = createCachedFile(this.activity, fileName, f);
+                            Uri uri = Uri.fromFile(newFile);
+                            Log.d(TAG, ""New uri is "" + uri);
+                            intent.putExtra(Intent.EXTRA_STREAM, uri);
+                        } catch (Exception e) {
+                            Log.d(TAG, ""Error attaching APK file "" + e.getMessage());
+                        }
+                    }
+                }
+                intentList.add(new LabeledIntent(intent, packageName, ri.loadLabel(this.packageManager), ri.icon));
+            }
+        }
+        // convert intentList to array
+        LabeledIntent[] extraIntents = intentList.toArray( new LabeledIntent[ intentList.size() ]);
+        openInChooser.putExtra(Intent.EXTRA_INITIAL_INTENTS, extraIntents);
+        activity.startActivityForResult(openInChooser, 0);     
+    }",method,
+"                    if (f != null) {
+                        try {
+                            String fileName = ""lantern.apk"";
+                            File newFile = createCachedFile(this.activity, fileName, f);
+                            Uri uri = Uri.fromFile(newFile);
+                            Log.d(TAG, ""New uri is "" + uri);
+                            intent.putExtra(Intent.EXTRA_STREAM, uri);
+                        } catch (Exception e) {
+                            Log.d(TAG, ""Error attaching APK file "" + e.getMessage());
+                        }
+                    }",method,
+"public class Trans_CreateView_2 extends TestCase {
+    public void test_createView() throws Exception {
+        String sql = ""CREATE OR REPLACE VIEW \""AUTH\"".\""HR_DEPTEMP_VIEW\"" (\n"" +
+                ""\t\""MY_PK\"", \n"" +
+                ""\t\""FK_EMP\"", \n"" +
+                ""\t\""FK_DEPT\"", \n"" +
+                ""\t\""FK_DUTY\"", \n"" +
+                ""\t\""DUTYLEVEL\"", \n"" +
+                ""\t\""LEADER\"", \n"" +
+                ""\t\""DEPT\"", \n"" +
+                ""\t\""STORENO\"", \n"" +
+                ""\t\""AREA\"", \n"" +
+                ""\t\""TYPE\""\n"" +
+                "")\n"" +
+                ""AS\n"" +
+                ""WITH struct AS (\n"" +
+                ""\t\tSELECT d.code AS dept, s.code AS storeno, a.code AS area, 'S' AS type\n"" +
+                ""\t\tFROM (\n"" +
+                ""\t\t\tSELECT code, name, sjcode\n"" +
+                ""\t\t\tFROM hr_structure\n"" +
+                ""\t\t\tWHERE type = 'A'\n"" +
+                ""\t\t) a, (\n"" +
+                ""\t\t\tSELECT code, name, sjcode\n"" +
+                ""\t\t\tFROM hr_structure\n"" +
+                ""\t\t\tWHERE type = 'S'\n"" +
+                ""\t\t) s, (\n"" +
+                ""\t\t\tSELECT code, name, sjcode\n"" +
+                ""\t\t\tFROM hr_structure\n"" +
+                ""\t\t\tWHERE type = 'D'\n"" +
+                ""\t\t) d\n"" +
+                ""\t\tWHERE d.sjcode = s.code\n"" +
+                ""\t\t\tAND s.sjcode = a.code\n"" +
+                ""\t\tUNION\n"" +
+                ""\t\tSELECT d.code AS dept, NULL AS storeno, a.code AS area, 'A' AS type\n"" +
+                ""\t\tFROM (\n"" +
+                ""\t\t\tSELECT code, name, sjcode\n"" +
+                ""\t\t\tFROM hr_structure\n"" +
+                ""\t\t\tWHERE type = 'A'\n"" +
+                ""\t\t) a, (\n"" +
+                ""\t\t\tSELECT code, name, sjcode\n"" +
+                ""\t\t\tFROM hr_structure\n"" +
+                ""\t\t\tWHERE type = 'D'\n"" +
+                ""\t\t) d\n"" +
+                ""\t\tWHERE d.sjcode = a.code\n"" +
+                ""\t\tUNION\n"" +
+                ""\t\tSELECT d.code AS dept, NULL AS storeno, g.code AS area, 'G' AS type\n"" +
+                ""\t\tFROM (\n"" +
+                ""\t\t\tSELECT code, name, sjcode\n"" +
+                ""\t\t\tFROM hr_structure\n"" +
+                ""\t\t\tWHERE type = 'G'\n"" +
+                ""\t\t) g, (\n"" +
+                ""\t\t\tSELECT code, name, sjcode\n"" +
+                ""\t\t\tFROM hr_structure\n"" +
+                ""\t\t\tWHERE type = 'D'\n"" +
+                ""\t\t) d\n"" +
+                ""\t\tWHERE d.sjcode = g.code\n"" +
+                ""\t)\n"" +
+                ""SELECT \""MY_PK\"", \""FK_EMP\"", \""FK_DEPT\"", \""FK_DUTY\"", \""DUTYLEVEL\""\n"" +
+                ""\t, \""LEADER\"", \""DEPT\"", \""STORENO\"", \""AREA\"", \""TYPE\""\n"" +
+                ""FROM hr_deptemp t1, struct t2\n"" +
+                ""WHERE t1.FK_DEPT = t2.dept"";
+        List<SQLStatement> stmtList = SQLUtils.parseStatements(sql, JdbcConstants.ORACLE);
+        assertEquals(1, stmtList.size());
+        SQLStatement stmt = stmtList.get(0);
+        List<SQLStatement> targetList = FromSubqueryResolver.resolve((SQLCreateViewStatement) stmt);
+        String targetSql = SQLUtils.toSQLString(targetList, JdbcConstants.ORACLE);
+        assertEquals(9, targetList.size());
+        System.out.println(targetSql);
+    }
+}",class,
+"    public void test_createView() throws Exception {
+        String sql = ""CREATE OR REPLACE VIEW \""AUTH\"".\""HR_DEPTEMP_VIEW\"" (\n"" +
+                ""\t\""MY_PK\"", \n"" +
+                ""\t\""FK_EMP\"", \n"" +
+                ""\t\""FK_DEPT\"", \n"" +
+                ""\t\""FK_DUTY\"", \n"" +
+                ""\t\""DUTYLEVEL\"", \n"" +
+                ""\t\""LEADER\"", \n"" +
+                ""\t\""DEPT\"", \n"" +
+                ""\t\""STORENO\"", \n"" +
+                ""\t\""AREA\"", \n"" +
+                ""\t\""TYPE\""\n"" +
+                "")\n"" +
+                ""AS\n"" +
+                ""WITH struct AS (\n"" +
+                ""\t\tSELECT d.code AS dept, s.code AS storeno, a.code AS area, 'S' AS type\n"" +
+                ""\t\tFROM (\n"" +
+                ""\t\t\tSELECT code, name, sjcode\n"" +
+                ""\t\t\tFROM hr_structure\n"" +
+                ""\t\t\tWHERE type = 'A'\n"" +
+                ""\t\t) a, (\n"" +
+                ""\t\t\tSELECT code, name, sjcode\n"" +
+                ""\t\t\tFROM hr_structure\n"" +
+                ""\t\t\tWHERE type = 'S'\n"" +
+                ""\t\t) s, (\n"" +
+                ""\t\t\tSELECT code, name, sjcode\n"" +
+                ""\t\t\tFROM hr_structure\n"" +
+                ""\t\t\tWHERE type = 'D'\n"" +
+                ""\t\t) d\n"" +
+                ""\t\tWHERE d.sjcode = s.code\n"" +
+                ""\t\t\tAND s.sjcode = a.code\n"" +
+                ""\t\tUNION\n"" +
+                ""\t\tSELECT d.code AS dept, NULL AS storeno, a.code AS area, 'A' AS type\n"" +
+                ""\t\tFROM (\n"" +
+                ""\t\t\tSELECT code, name, sjcode\n"" +
+                ""\t\t\tFROM hr_structure\n"" +
+                ""\t\t\tWHERE type = 'A'\n"" +
+                ""\t\t) a, (\n"" +
+                ""\t\t\tSELECT code, name, sjcode\n"" +
+                ""\t\t\tFROM hr_structure\n"" +
+                ""\t\t\tWHERE type = 'D'\n"" +
+                ""\t\t) d\n"" +
+                ""\t\tWHERE d.sjcode = a.code\n"" +
+                ""\t\tUNION\n"" +
+                ""\t\tSELECT d.code AS dept, NULL AS storeno, g.code AS area, 'G' AS type\n"" +
+                ""\t\tFROM (\n"" +
+                ""\t\t\tSELECT code, name, sjcode\n"" +
+                ""\t\t\tFROM hr_structure\n"" +
+                ""\t\t\tWHERE type = 'G'\n"" +
+                ""\t\t) g, (\n"" +
+                ""\t\t\tSELECT code, name, sjcode\n"" +
+                ""\t\t\tFROM hr_structure\n"" +
+                ""\t\t\tWHERE type = 'D'\n"" +
+                ""\t\t) d\n"" +
+                ""\t\tWHERE d.sjcode = g.code\n"" +
+                ""\t)\n"" +
+                ""SELECT \""MY_PK\"", \""FK_EMP\"", \""FK_DEPT\"", \""FK_DUTY\"", \""DUTYLEVEL\""\n"" +
+                ""\t, \""LEADER\"", \""DEPT\"", \""STORENO\"", \""AREA\"", \""TYPE\""\n"" +
+                ""FROM hr_deptemp t1, struct t2\n"" +
+                ""WHERE t1.FK_DEPT = t2.dept"";
+        List<SQLStatement> stmtList = SQLUtils.parseStatements(sql, JdbcConstants.ORACLE);
+        assertEquals(1, stmtList.size());
+        SQLStatement stmt = stmtList.get(0);
+        List<SQLStatement> targetList = FromSubqueryResolver.resolve((SQLCreateViewStatement) stmt);
+        String targetSql = SQLUtils.toSQLString(targetList, JdbcConstants.ORACLE);
+        assertEquals(9, targetList.size());
+        System.out.println(targetSql);
+    }",method,
+"public class AntArtifactPropertiesEditor extends ArtifactPropertiesEditor {
+  private static final ListProperty<BuildFileProperty> ANT_PROPERTIES = ListProperty.create(""ant-properties"");
+  private static final ColumnInfo<BuildFileProperty, String> NAME_COLUMN =
+    new ColumnInfo<BuildFileProperty, String>(AntBundle.message(""edit.ant.properties.name.column.name"")) {
+      public String valueOf(BuildFileProperty buildFileProperty) {
+        return buildFileProperty.getPropertyName();
+      }
+      public boolean isCellEditable(BuildFileProperty buildFileProperty) {
+        return USER_PROPERTY_CONDITION.value(buildFileProperty);
+      }
+      public void setValue(BuildFileProperty buildFileProperty, String name) {
+        buildFileProperty.setPropertyName(name);
+      }
+    };
+  private static final ColumnInfo<BuildFileProperty, String> VALUE_COLUMN =
+    new ColumnInfo<BuildFileProperty, String>(AntBundle.message(""edit.ant.properties.value.column.name"")) {
+      public boolean isCellEditable(BuildFileProperty buildFileProperty) {
+        return USER_PROPERTY_CONDITION.value(buildFileProperty);
+      }
+      public String valueOf(BuildFileProperty buildFileProperty) {
+        return buildFileProperty.getPropertyValue();
+      }
+      public void setValue(BuildFileProperty buildFileProperty, String value) {
+        buildFileProperty.setPropertyValue(value);
+      }
+    };
+  private static final ColumnInfo[] PROPERTY_COLUMNS = new ColumnInfo[]{NAME_COLUMN, VALUE_COLUMN};
+  private static final Condition<BuildFileProperty> USER_PROPERTY_CONDITION =
+    property -> !AntArtifactProperties.isPredefinedProperty(property.getPropertyName());
+  private final AntArtifactProperties myProperties;
+  private final ArtifactEditorContext myContext;
+  private final AntConfigurationListener myAntConfigurationListener;
+  private JPanel myMainPanel;
+  private JCheckBox myRunTargetCheckBox;
+  private FixedSizeButton mySelectTargetButton;
+  private JBTable myPropertiesTable;
+  private JPanel myPropertiesPanel;
+  private AntBuildTarget myTarget;
+  private final boolean myPostProcessing;
+  private UIPropertyBinding.TableListBinding<BuildFileProperty> myBinding;
+  protected SinglePropertyContainer<ListProperty> myContainer;
+  public AntArtifactPropertiesEditor(AntArtifactProperties properties, ArtifactEditorContext context, boolean postProcessing) {
+    myProperties = properties;
+    myContext = context;
+    myPostProcessing = postProcessing;
+    mySelectTargetButton.addActionListener(new ActionListener() {
+      public void actionPerformed(ActionEvent e) {
+        selectTarget();
+      }
+    });
+    myRunTargetCheckBox.addActionListener(new ActionListener() {
+      public void actionPerformed(ActionEvent e) {
+        mySelectTargetButton.setEnabled(myRunTargetCheckBox.isSelected());
+        if (myRunTargetCheckBox.isSelected() && myTarget == null) {
+          selectTarget();
+        }
+        updatePanel();
+      }
+    });
+    myPropertiesTable = new JBTable();
+    UIPropertyBinding.Composite binding = new UIPropertyBinding.Composite();
+    myBinding = binding.bindList(myPropertiesTable, PROPERTY_COLUMNS, ANT_PROPERTIES);
+    myPropertiesPanel.add(
+      ToolbarDecorator.createDecorator(myPropertiesTable)
+        .setAddAction(new AnActionButtonRunnable() {
+          @Override
+          public void run(AnActionButton button) {
+            ListTableModel<BuildFileProperty> model = (ListTableModel<BuildFileProperty>)myPropertiesTable.getModel();
+            if (myPropertiesTable.isEditing() && !myPropertiesTable.getCellEditor().stopCellEditing()) {
+              return;
+            }
+            BuildFileProperty item = new BuildFileProperty();
+            ArrayList<BuildFileProperty> items = new ArrayList<>(model.getItems());
+            items.add(item);
+            model.setItems(items);
+            int newIndex = model.indexOf(item);
+            ListSelectionModel selectionModel = myPropertiesTable.getSelectionModel();
+            selectionModel.clearSelection();
+            selectionModel.setSelectionInterval(newIndex, newIndex);
+            ColumnInfo[] columns = model.getColumnInfos();
+            for (int i = 0; i < columns.length; i++) {
+              ColumnInfo column = columns[i];
+              if (column.isCellEditable(item)) {
+                myPropertiesTable.requestFocusInWindow();
+                myPropertiesTable.editCellAt(newIndex, i);
+                break;
+              }
+            }
+          }
+        }).setRemoveAction(new AnActionButtonRunnable() {
+        @Override
+        public void run(AnActionButton button) {
+          TableUtil.removeSelectedItems(myPropertiesTable);
+        }
+      }).setRemoveActionUpdater(new AnActionButtonUpdater() {
+        @Override
+        public boolean isEnabled(AnActionEvent e) {
+          final ListSelectionModel selectionModel = myPropertiesTable.getSelectionModel();
+          ListTableModel<BuildFileProperty> model = (ListTableModel<BuildFileProperty>)myPropertiesTable.getModel();
+          boolean enable = false;
+          if (!selectionModel.isSelectionEmpty()) {
+            enable = true;
+            for (int i : myPropertiesTable.getSelectedRows()) {
+              if (AntArtifactProperties.isPredefinedProperty(model.getItems().get(i).getPropertyName())) {
+                enable = false;
+                break;
+              }
+            }
+          }
+          return enable;
+        }
+      }).disableUpDownActions().createPanel(), BorderLayout.CENTER);
+    final AntConfiguration antConfiguration = AntConfiguration.getInstance(context.getProject());
+    myAntConfigurationListener = new AntConfigurationListener() {
+      @Override
+      public void configurationLoaded() {
+        if (myTarget == null) {
+          myTarget = myProperties.findTarget(antConfiguration);
+          updatePanel();
+        }
+      }
+    };
+    antConfiguration.addAntConfigurationListener(myAntConfigurationListener);
+  }
+  private void selectTarget() {
+    final TargetChooserDialog dialog = new TargetChooserDialog(myContext.getProject(), myTarget);
+    if (dialog.showAndGet()) {
+      myTarget = dialog.getSelectedTarget();
+      updatePanel();
+    }
+  }
+  private void updatePanel() {
+    if (myTarget != null) {
+      myRunTargetCheckBox.setText(""Run Ant target '"" + myTarget.getName() + ""'"");
+    }
+    else {
+      myRunTargetCheckBox.setText(""Run Ant target <none>"");
+    }
+    final boolean enabled = myTarget != null && myRunTargetCheckBox.isSelected();
+    UIUtil.setEnabled(myPropertiesPanel, enabled, true);
+  }
+  public String getTabName() {
+    return myPostProcessing ? POST_PROCESSING_TAB : PRE_PROCESSING_TAB;
+  }
+  public void apply() {
+    myProperties.setEnabled(myRunTargetCheckBox.isSelected());
+    if (myTarget != null) {
+      final VirtualFile file = myTarget.getModel().getBuildFile().getVirtualFile();
+      if (file != null) {
+        myProperties.setFileUrl(file.getUrl());
+        myProperties.setTargetName(myTarget.getName());
+        final List<BuildFileProperty> properties = getUserProperties();
+        myProperties.setUserProperties(properties);
+        return;
+      }
+    }
+    myProperties.setFileUrl(null);
+    myProperties.setTargetName(null);
+  }
+  private List<BuildFileProperty> getUserProperties() {
+    final SinglePropertyContainer<ListProperty> container = new SinglePropertyContainer<>(ANT_PROPERTIES, null);
+    myBinding.apply(container);
+    final List<BuildFileProperty> allProperties = (List<BuildFileProperty>)container.getValueOf(ANT_PROPERTIES);
+    return ContainerUtil.filter(allProperties, USER_PROPERTY_CONDITION);
+  }
+  public JComponent createComponent() {
+    return myMainPanel;
+  }
+  public boolean isModified() {
+    if (myProperties.isEnabled() != myRunTargetCheckBox.isSelected()) return true;
+    if (myTarget == null) {
+      return myProperties.getFileUrl() != null;
+    }
+    if (!Comparing.equal(myTarget.getName(), myProperties.getTargetName())) return true;
+    final VirtualFile file = myTarget.getModel().getBuildFile().getVirtualFile();
+    if (file != null && !Comparing.equal(file.getUrl(), myProperties.getFileUrl())) return true;
+    return !getUserProperties().equals(myProperties.getUserProperties());
+  }
+  public void reset() {
+    myRunTargetCheckBox.setSelected(myProperties.isEnabled());
+    myTarget = myProperties.findTarget(AntConfiguration.getInstance(myContext.getProject()));
+    final List<BuildFileProperty> properties = new ArrayList<>();
+    for (BuildFileProperty property : myProperties.getAllProperties(myContext.getArtifact())) {
+      properties.add(new BuildFileProperty(property.getPropertyName(), property.getPropertyValue()));
+    }
+    myContainer = new SinglePropertyContainer<>(ANT_PROPERTIES, properties);
+    myBinding.loadValues(myContainer);
+    updatePanel();
+  }
+  public void disposeUIResources() {
+    AntConfiguration.getInstance(myContext.getProject()).removeAntConfigurationListener(myAntConfigurationListener);
+  }
+}",class,
+"      public String valueOf(BuildFileProperty buildFileProperty) {
+        return buildFileProperty.getPropertyName();
+      }",method,
+"      public boolean isCellEditable(BuildFileProperty buildFileProperty) {
+        return USER_PROPERTY_CONDITION.value(buildFileProperty);
+      }",method,
+"      public void setValue(BuildFileProperty buildFileProperty, String name) {
+        buildFileProperty.setPropertyName(name);
+      }",method,
+"      public boolean isCellEditable(BuildFileProperty buildFileProperty) {
+        return USER_PROPERTY_CONDITION.value(buildFileProperty);
+      }",method,
+"      public String valueOf(BuildFileProperty buildFileProperty) {
+        return buildFileProperty.getPropertyValue();
+      }",method,
+"      public void setValue(BuildFileProperty buildFileProperty, String value) {
+        buildFileProperty.setPropertyValue(value);
+      }",method,
+"  public AntArtifactPropertiesEditor(AntArtifactProperties properties, ArtifactEditorContext context, boolean postProcessing) {
+    myProperties = properties;
+    myContext = context;
+    myPostProcessing = postProcessing;
+    mySelectTargetButton.addActionListener(new ActionListener() {
+      public void actionPerformed(ActionEvent e) {
+        selectTarget();
+      }
+    });
+    myRunTargetCheckBox.addActionListener(new ActionListener() {
+      public void actionPerformed(ActionEvent e) {
+        mySelectTargetButton.setEnabled(myRunTargetCheckBox.isSelected());
+        if (myRunTargetCheckBox.isSelected() && myTarget == null) {
+          selectTarget();
+        }
+        updatePanel();
+      }
+    });
+    myPropertiesTable = new JBTable();
+    UIPropertyBinding.Composite binding = new UIPropertyBinding.Composite();
+    myBinding = binding.bindList(myPropertiesTable, PROPERTY_COLUMNS, ANT_PROPERTIES);
+    myPropertiesPanel.add(
+      ToolbarDecorator.createDecorator(myPropertiesTable)
+        .setAddAction(new AnActionButtonRunnable() {
+          @Override
+          public void run(AnActionButton button) {
+            ListTableModel<BuildFileProperty> model = (ListTableModel<BuildFileProperty>)myPropertiesTable.getModel();
+            if (myPropertiesTable.isEditing() && !myPropertiesTable.getCellEditor().stopCellEditing()) {
+              return;
+            }
+            BuildFileProperty item = new BuildFileProperty();
+            ArrayList<BuildFileProperty> items = new ArrayList<>(model.getItems());
+            items.add(item);
+            model.setItems(items);
+            int newIndex = model.indexOf(item);
+            ListSelectionModel selectionModel = myPropertiesTable.getSelectionModel();
+            selectionModel.clearSelection();
+            selectionModel.setSelectionInterval(newIndex, newIndex);
+            ColumnInfo[] columns = model.getColumnInfos();
+            for (int i = 0; i < columns.length; i++) {
+              ColumnInfo column = columns[i];
+              if (column.isCellEditable(item)) {
+                myPropertiesTable.requestFocusInWindow();
+                myPropertiesTable.editCellAt(newIndex, i);
+                break;
+              }
+            }
+          }
+        }).setRemoveAction(new AnActionButtonRunnable() {
+        @Override
+        public void run(AnActionButton button) {
+          TableUtil.removeSelectedItems(myPropertiesTable);
+        }
+      }).setRemoveActionUpdater(new AnActionButtonUpdater() {
+        @Override
+        public boolean isEnabled(AnActionEvent e) {
+          final ListSelectionModel selectionModel = myPropertiesTable.getSelectionModel();
+          ListTableModel<BuildFileProperty> model = (ListTableModel<BuildFileProperty>)myPropertiesTable.getModel();
+          boolean enable = false;
+          if (!selectionModel.isSelectionEmpty()) {
+            enable = true;
+            for (int i : myPropertiesTable.getSelectedRows()) {
+              if (AntArtifactProperties.isPredefinedProperty(model.getItems().get(i).getPropertyName())) {
+                enable = false;
+                break;
+              }
+            }
+          }
+          return enable;
+        }
+      }).disableUpDownActions().createPanel(), BorderLayout.CENTER);
+    final AntConfiguration antConfiguration = AntConfiguration.getInstance(context.getProject());
+    myAntConfigurationListener = new AntConfigurationListener() {
+      @Override
+      public void configurationLoaded() {
+        if (myTarget == null) {
+          myTarget = myProperties.findTarget(antConfiguration);
+          updatePanel();
+        }
+      }
+    };
+    antConfiguration.addAntConfigurationListener(myAntConfigurationListener);
+  }",method,
+"    mySelectTargetButton.addActionListener(new ActionListener() {
+      public void actionPerformed(ActionEvent e) {
+        selectTarget();
+      }
+    }",method,
+"      public void actionPerformed(ActionEvent e) {
+        selectTarget();
+      }",method,
+"    myRunTargetCheckBox.addActionListener(new ActionListener() {
+      public void actionPerformed(ActionEvent e) {
+        mySelectTargetButton.setEnabled(myRunTargetCheckBox.isSelected());
+        if (myRunTargetCheckBox.isSelected() && myTarget == null) {
+          selectTarget();
+        }
+        updatePanel();
+      }
+    }",method,
+"      public void actionPerformed(ActionEvent e) {
+        mySelectTargetButton.setEnabled(myRunTargetCheckBox.isSelected());
+        if (myRunTargetCheckBox.isSelected() && myTarget == null) {
+          selectTarget();
+        }
+        updatePanel();
+      }",method,
+"        .setAddAction(new AnActionButtonRunnable() {
+          @Override
+          public void run(AnActionButton button) {
+            ListTableModel<BuildFileProperty> model = (ListTableModel<BuildFileProperty>)myPropertiesTable.getModel();
+            if (myPropertiesTable.isEditing() && !myPropertiesTable.getCellEditor().stopCellEditing()) {
+              return;
+            }
+            BuildFileProperty item = new BuildFileProperty();
+            ArrayList<BuildFileProperty> items = new ArrayList<>(model.getItems());
+            items.add(item);
+            model.setItems(items);
+            int newIndex = model.indexOf(item);
+            ListSelectionModel selectionModel = myPropertiesTable.getSelectionModel();
+            selectionModel.clearSelection();
+            selectionModel.setSelectionInterval(newIndex, newIndex);
+            ColumnInfo[] columns = model.getColumnInfos();
+            for (int i = 0; i < columns.length; i++) {
+              ColumnInfo column = columns[i];
+              if (column.isCellEditable(item)) {
+                myPropertiesTable.requestFocusInWindow();
+                myPropertiesTable.editCellAt(newIndex, i);
+                break;
+              }
+            }
+          }
+        }",method,
+"          @Override
+          public void run(AnActionButton button) {
+            ListTableModel<BuildFileProperty> model = (ListTableModel<BuildFileProperty>)myPropertiesTable.getModel();
+            if (myPropertiesTable.isEditing() && !myPropertiesTable.getCellEditor().stopCellEditing()) {
+              return;
+            }
+            BuildFileProperty item = new BuildFileProperty();
+            ArrayList<BuildFileProperty> items = new ArrayList<>(model.getItems());
+            items.add(item);
+            model.setItems(items);
+            int newIndex = model.indexOf(item);
+            ListSelectionModel selectionModel = myPropertiesTable.getSelectionModel();
+            selectionModel.clearSelection();
+            selectionModel.setSelectionInterval(newIndex, newIndex);
+            ColumnInfo[] columns = model.getColumnInfos();
+            for (int i = 0; i < columns.length; i++) {
+              ColumnInfo column = columns[i];
+              if (column.isCellEditable(item)) {
+                myPropertiesTable.requestFocusInWindow();
+                myPropertiesTable.editCellAt(newIndex, i);
+                break;
+              }
+            }
+          }",method,
+"            for (int i = 0; i < columns.length; i++) {
+              ColumnInfo column = columns[i];
+              if (column.isCellEditable(item)) {
+                myPropertiesTable.requestFocusInWindow();
+                myPropertiesTable.editCellAt(newIndex, i);
+                break;
+              }
+            }",method,
+"        @Override
+        public void run(AnActionButton button) {
+          TableUtil.removeSelectedItems(myPropertiesTable);
+        }",method,
+"        @Override
+        public boolean isEnabled(AnActionEvent e) {
+          final ListSelectionModel selectionModel = myPropertiesTable.getSelectionModel();
+          ListTableModel<BuildFileProperty> model = (ListTableModel<BuildFileProperty>)myPropertiesTable.getModel();
+          boolean enable = false;
+          if (!selectionModel.isSelectionEmpty()) {
+            enable = true;
+            for (int i : myPropertiesTable.getSelectedRows()) {
+              if (AntArtifactProperties.isPredefinedProperty(model.getItems().get(i).getPropertyName())) {
+                enable = false;
+                break;
+              }
+            }
+          }
+          return enable;
+        }",method,
+"      @Override
+      public void configurationLoaded() {
+        if (myTarget == null) {
+          myTarget = myProperties.findTarget(antConfiguration);
+          updatePanel();
+        }
+      }",method,
+"        if (myTarget == null) {
+          myTarget = myProperties.findTarget(antConfiguration);
+          updatePanel();
+        }",method,
+"  private void selectTarget() {
+    final TargetChooserDialog dialog = new TargetChooserDialog(myContext.getProject(), myTarget);
+    if (dialog.showAndGet()) {
+      myTarget = dialog.getSelectedTarget();
+      updatePanel();
+    }
+  }",method,
+"  private void updatePanel() {
+    if (myTarget != null) {
+      myRunTargetCheckBox.setText(""Run Ant target '"" + myTarget.getName() + ""'"");
+    }
+    else {
+      myRunTargetCheckBox.setText(""Run Ant target <none>"");
+    }
+    final boolean enabled = myTarget != null && myRunTargetCheckBox.isSelected();
+    UIUtil.setEnabled(myPropertiesPanel, enabled, true);
+  }",method,
+"    if (myTarget != null) {
+      myRunTargetCheckBox.setText(""Run Ant target '"" + myTarget.getName() + ""'"");
+    }",method,
+"  public String getTabName() {
+    return myPostProcessing ? POST_PROCESSING_TAB : PRE_PROCESSING_TAB;
+  }",method,
+"  public void apply() {
+    myProperties.setEnabled(myRunTargetCheckBox.isSelected());
+    if (myTarget != null) {
+      final VirtualFile file = myTarget.getModel().getBuildFile().getVirtualFile();
+      if (file != null) {
+        myProperties.setFileUrl(file.getUrl());
+        myProperties.setTargetName(myTarget.getName());
+        final List<BuildFileProperty> properties = getUserProperties();
+        myProperties.setUserProperties(properties);
+        return;
+      }
+    }
+    myProperties.setFileUrl(null);
+    myProperties.setTargetName(null);
+  }",method,
+"    if (myTarget != null) {
+      final VirtualFile file = myTarget.getModel().getBuildFile().getVirtualFile();
+      if (file != null) {
+        myProperties.setFileUrl(file.getUrl());
+        myProperties.setTargetName(myTarget.getName());
+        final List<BuildFileProperty> properties = getUserProperties();
+        myProperties.setUserProperties(properties);
+        return;
+      }
+    }",method,
+"      if (file != null) {
+        myProperties.setFileUrl(file.getUrl());
+        myProperties.setTargetName(myTarget.getName());
+        final List<BuildFileProperty> properties = getUserProperties();
+        myProperties.setUserProperties(properties);
+        return;
+      }",method,
+"  private List<BuildFileProperty> getUserProperties() {
+    final SinglePropertyContainer<ListProperty> container = new SinglePropertyContainer<>(ANT_PROPERTIES, null);
+    myBinding.apply(container);
+    final List<BuildFileProperty> allProperties = (List<BuildFileProperty>)container.getValueOf(ANT_PROPERTIES);
+    return ContainerUtil.filter(allProperties, USER_PROPERTY_CONDITION);
+  }",method,
+"  public JComponent createComponent() {
+    return myMainPanel;
+  }",method,
+"  public boolean isModified() {
+    if (myProperties.isEnabled() != myRunTargetCheckBox.isSelected()) return true;
+    if (myTarget == null) {
+      return myProperties.getFileUrl() != null;
+    }
+    if (!Comparing.equal(myTarget.getName(), myProperties.getTargetName())) return true;
+    final VirtualFile file = myTarget.getModel().getBuildFile().getVirtualFile();
+    if (file != null && !Comparing.equal(file.getUrl(), myProperties.getFileUrl())) return true;
+    return !getUserProperties().equals(myProperties.getUserProperties());
+  }",method,
+"    if (myTarget == null) {
+      return myProperties.getFileUrl() != null;
+    }",method,
+"  public void reset() {
+    myRunTargetCheckBox.setSelected(myProperties.isEnabled());
+    myTarget = myProperties.findTarget(AntConfiguration.getInstance(myContext.getProject()));
+    final List<BuildFileProperty> properties = new ArrayList<>();
+    for (BuildFileProperty property : myProperties.getAllProperties(myContext.getArtifact())) {
+      properties.add(new BuildFileProperty(property.getPropertyName(), property.getPropertyValue()));
+    }
+    myContainer = new SinglePropertyContainer<>(ANT_PROPERTIES, properties);
+    myBinding.loadValues(myContainer);
+    updatePanel();
+  }",method,
+"  public void disposeUIResources() {
+    AntConfiguration.getInstance(myContext.getProject()).removeAntConfigurationListener(myAntConfigurationListener);
+  }",method,
+"public class MockOvsdbClient implements OvsdbClient {
+    private final Logger log = LoggerFactory.getLogger(MockOvsdbClient.class);
+    private final DatabaseSchema vtepSchema;
+    private final MonitorRegistration monitorRegistrar;
+    private final TransactionEngine engine;
+    private final OvsdbConnectionInfo info;
+    static private final String DEFAULT_IP = ""127.0.0.1"";
+    static private final int DEFAULT_PORT = 6632;
+    public interface MonitorRegistration {
+        void register(String table, Set<String> columns, MonitorCallBack cb);
+    }
+    public interface TransactionEngine {
+        ListenableFuture<List<OperationResult>> execute(TransactBuilder trans);
+    }
+    // For some obscure reason, MockTransactionBuilder is constructed from
+    // OvsdbClientImpl, instead of an object implementing the OvsdbClient
+    // interface... so we need to extend the TransactionBuilder and replace
+    // the only method that actually uses the OvsdbClient(Impl) interface.
+    private class MockTransactionBuilder extends TransactionBuilder {
+        private final OvsdbClient client;
+        private final DatabaseSchema dbSchema;
+        public MockTransactionBuilder(OvsdbClient client,
+                                      DatabaseSchema dbSchema) {
+            super(null, dbSchema);
+            this.client = client;
+            this.dbSchema = dbSchema;
+        }
+        @Override
+        public ListenableFuture<List<OperationResult>> execute() {
+            return client.transact(dbSchema, getOperations());
+        }
+    }
+    // Mock connection info
+    private class MockConnectionInfo extends OvsdbConnectionInfo {
+        private final InetAddress remoteAddr;
+        private final int remotePort;
+        private final InetAddress localAddr;
+        private final int localPort;
+        public MockConnectionInfo(IPv4Addr addr, int port)
+            throws UnknownHostException {
+            super(null, ConnectionType.ACTIVE);
+            this.remoteAddr = InetAddress.getByAddress(addr.toBytes());
+            this.remotePort = port;
+            this.localAddr = InetAddress.getLocalHost();
+            this.localPort = new Random().nextInt(1000)+51000;
+        }
+        @Override
+        public InetAddress getRemoteAddress() {
+            return remoteAddr;
+        }
+        @Override
+        public int getRemotePort() {
+            return remotePort;
+        }
+        @Override
+        public InetAddress getLocalAddress() {
+            return localAddr;
+        }
+        @Override
+        public int getLocalPort() {
+            return localPort;
+        }
+    }
+    static public class NotImplemented extends UnsupportedOperationException {
+        public NotImplemented() {
+            super(""not yet implemented"");
+        }
+    }
+    public MockOvsdbClient(DatabaseSchema vtepSchema,
+                           MonitorRegistration monitorRegistrar,
+                           TransactionEngine engine,
+                           IPv4Addr ip, int port) throws UnknownHostException {
+        this.vtepSchema = vtepSchema;
+        this.monitorRegistrar = monitorRegistrar;
+        this.engine = engine;
+        this.info = new MockConnectionInfo(ip, port);
+    }
+    public MockOvsdbClient(DatabaseSchema vtepSchema,
+                           MonitorRegistration monitorRegistrar,
+                           TransactionEngine engine)
+        throws UnknownHostException {
+        this(vtepSchema, monitorRegistrar, engine,
+             IPv4Addr.fromString(DEFAULT_IP), DEFAULT_PORT);
+    }
+    private DatabaseSchema getDbSchema(String dbName) {
+        return (vtepSchema.getName().equals(dbName))? vtepSchema: null;
+    }
+    // Schema operations
+    @Override public ListenableFuture<List<String>> getDatabases() {
+        return new MockListenableFuture<>(
+            Collections.singletonList(vtepSchema.getName()));
+    }
+    @Override public ListenableFuture<DatabaseSchema> getSchema(String s) {
+        return new MockListenableFuture<>(getDbSchema(s));
+    }
+    @Override public DatabaseSchema getDatabaseSchema(String s) {
+        return getDbSchema(s);
+    }
+    // Connection
+    @Override public void disconnect() {}
+    @Override public boolean isActive() {
+        return true;
+    }
+    @Override public OvsdbConnectionInfo getConnectionInfo() {
+        return info;
+    }
+    // Monitor support
+    @Override public <E extends TableSchema<E>> TableUpdates monitor(
+        DatabaseSchema dbSchema, List<MonitorRequest<E>> requests,
+        MonitorCallBack cb) {
+        List<Operation> ops = new ArrayList<>();
+        for (MonitorRequest<E> e: requests) {
+            monitorRegistrar.register(e.getTableName(), e.getColumns(), cb);
+            Select<GenericTableSchema> query =
+                new Select<>(vtepSchema.table(e.getTableName(),
+                                              GenericTableSchema.class));
+            if (e.getColumns() != null)
+                query.setColumns(Lists.newArrayList(e.getColumns()));
+            ops.add(query);
+        }
+        ListenableFuture<List<OperationResult>> results =
+            transact(vtepSchema, ops);
+        try {
+            return tableUpdates(results.get());
+        } catch (InterruptedException e) {
+            Thread.currentThread().interrupt();
+            return null;
+        } catch (ExecutionException e) {
+            log.error(""exception on monitored table data"", e);
+            return null;
+        }
+    }
+    @Override public void cancelMonitor(MonitorHandle monitorHandle) {
+        throw new NotImplemented();
+    }
+    // Transactions
+    @Override public TransactionBuilder transactBuilder(DatabaseSchema dbSchema) {
+        return new MockTransactionBuilder(this, dbSchema);
+    }
+    @Override public ListenableFuture<List<OperationResult>> transact(
+        DatabaseSchema dbSchema, List<Operation> operations) {
+        TransactBuilder builder = new TransactBuilder(dbSchema);
+        for (Operation o: operations) {
+            builder.addOperation(o);
+        }
+        return engine.execute(builder);
+    }
+    // Typed row wrappers
+    @Override public <T extends TypedBaseTable<?>> T getTypedRowWrapper(
+        Class<T> clazz, Row<GenericTableSchema> row) {
+        return TyperUtils.getTypedRowWrapper(vtepSchema, clazz, row);
+    }
+    @Override public <T extends TypedBaseTable<?>> T createTypedRowWrapper(
+        Class<T> clazz) {
+        return createTypedRowWrapper(vtepSchema, clazz);
+    }
+    @Override public <T extends TypedBaseTable<?>> T createTypedRowWrapper(
+        DatabaseSchema dbSchema, Class<T> clazz) {
+        return TyperUtils.getTypedRowWrapper(dbSchema, clazz, new Row<>());
+    }
+    // Vtep operation locking
+    @Override public void lock(String s,
+                               LockAquisitionCallback acquisitionCallback,
+                               LockStolenCallback stolenCallback) {
+        throw new NotImplemented();
+    }
+    @Override public ListenableFuture<Boolean> unLock(String s) {
+        throw new NotImplemented();
+    }
+    @Override public ListenableFuture<Boolean> steal(String s) {
+        throw new NotImplemented();
+    }
+    // Echo service
+    @Override public void startEchoService(
+        EchoServiceCallbackFilters callbackFilters) {
+        throw new NotImplemented();
+    }
+    @Override public void stopEchoService() {
+        throw new NotImplemented();
+    }
+    @SuppressWarnings(value = ""unchecked"")
+    public TableUpdates tableUpdates(List<OperationResult> results) {
+        Map<String, TableUpdate> map = new HashMap<>();
+        for (OperationResult r: results) {
+            for (Row<GenericTableSchema> row: r.getRows()) {
+                String table = row.getTableSchema().getName();
+                TableUpdate<GenericTableSchema> update;
+                if (map.containsKey(table)) {
+                    update = map.get(table);
+                } else {
+                    update = new TableUpdate<>();
+                    map.put(table, update);
+                }
+                GenericTableSchema ts =
+                    vtepSchema.table(table, GenericTableSchema.class);
+                UUID rowId = row.getColumn(ts.column(""_uuid"", UUID.class)).getData();
+                update.addRow(rowId, null, row);
+            }
+        }
+        return new TableUpdates(map);
+    }
+}",class,
+"    private class MockTransactionBuilder extends TransactionBuilder {
+        private final OvsdbClient client;
+        private final DatabaseSchema dbSchema;
+        public MockTransactionBuilder(OvsdbClient client,
+                                      DatabaseSchema dbSchema) {
+            super(null, dbSchema);
+            this.client = client;
+            this.dbSchema = dbSchema;
+        }
+        @Override
+        public ListenableFuture<List<OperationResult>> execute() {
+            return client.transact(dbSchema, getOperations());
+        }
+    }",class,
+"    private class MockConnectionInfo extends OvsdbConnectionInfo {
+        private final InetAddress remoteAddr;
+        private final int remotePort;
+        private final InetAddress localAddr;
+        private final int localPort;
+        public MockConnectionInfo(IPv4Addr addr, int port)
+            throws UnknownHostException {
+            super(null, ConnectionType.ACTIVE);
+            this.remoteAddr = InetAddress.getByAddress(addr.toBytes());
+            this.remotePort = port;
+            this.localAddr = InetAddress.getLocalHost();
+            this.localPort = new Random().nextInt(1000)+51000;
+        }
+        @Override
+        public InetAddress getRemoteAddress() {
+            return remoteAddr;
+        }
+        @Override
+        public int getRemotePort() {
+            return remotePort;
+        }
+        @Override
+        public InetAddress getLocalAddress() {
+            return localAddr;
+        }
+        @Override
+        public int getLocalPort() {
+            return localPort;
+        }
+    }",class,
+"    static public class NotImplemented extends UnsupportedOperationException {
+        public NotImplemented() {
+            super(""not yet implemented"");
+        }
+    }",class,
+"        public MockTransactionBuilder(OvsdbClient client,
+                                      DatabaseSchema dbSchema) {
+            super(null, dbSchema);
+            this.client = client;
+            this.dbSchema = dbSchema;
+        }",method,
+"        @Override
+        public ListenableFuture<List<OperationResult>> execute() {
+            return client.transact(dbSchema, getOperations());
+        }",method,
+"        public MockConnectionInfo(IPv4Addr addr, int port)
+            throws UnknownHostException {
+            super(null, ConnectionType.ACTIVE);
+            this.remoteAddr = InetAddress.getByAddress(addr.toBytes());
+            this.remotePort = port;
+            this.localAddr = InetAddress.getLocalHost();
+            this.localPort = new Random().nextInt(1000)+51000;
+        }",method,
+"        @Override
+        public InetAddress getRemoteAddress() {
+            return remoteAddr;
+        }",method,
+"        @Override
+        public int getRemotePort() {
+            return remotePort;
+        }",method,
+"        @Override
+        public InetAddress getLocalAddress() {
+            return localAddr;
+        }",method,
+"        @Override
+        public int getLocalPort() {
+            return localPort;
+        }",method,
+"        public NotImplemented() {
+            super(""not yet implemented"");
+        }",method,
+"    public MockOvsdbClient(DatabaseSchema vtepSchema,
+                           MonitorRegistration monitorRegistrar,
+                           TransactionEngine engine,
+                           IPv4Addr ip, int port) throws UnknownHostException {
+        this.vtepSchema = vtepSchema;
+        this.monitorRegistrar = monitorRegistrar;
+        this.engine = engine;
+        this.info = new MockConnectionInfo(ip, port);
+    }",method,
+"    public MockOvsdbClient(DatabaseSchema vtepSchema,
+                           MonitorRegistration monitorRegistrar,
+                           TransactionEngine engine)
+        throws UnknownHostException {
+        this(vtepSchema, monitorRegistrar, engine,
+             IPv4Addr.fromString(DEFAULT_IP), DEFAULT_PORT);
+    }",method,
+"    private DatabaseSchema getDbSchema(String dbName) {
+        return (vtepSchema.getName().equals(dbName))? vtepSchema: null;
+    }",method,
+"        for (MonitorRequest<E> e: requests) {
+            monitorRegistrar.register(e.getTableName(), e.getColumns(), cb);
+            Select<GenericTableSchema> query =
+                new Select<>(vtepSchema.table(e.getTableName(),
+                                              GenericTableSchema.class));
+            if (e.getColumns() != null)
+                query.setColumns(Lists.newArrayList(e.getColumns()));
+            ops.add(query);
+        }",method,
+"        for (Operation o: operations) {
+            builder.addOperation(o);
+        }",method,
+"    @SuppressWarnings(value = ""unchecked"")
+    public TableUpdates tableUpdates(List<OperationResult> results) {
+        Map<String, TableUpdate> map = new HashMap<>();
+        for (OperationResult r: results) {
+            for (Row<GenericTableSchema> row: r.getRows()) {
+                String table = row.getTableSchema().getName();
+                TableUpdate<GenericTableSchema> update;
+                if (map.containsKey(table)) {
+                    update = map.get(table);
+                } else {
+                    update = new TableUpdate<>();
+                    map.put(table, update);
+                }
+                GenericTableSchema ts =
+                    vtepSchema.table(table, GenericTableSchema.class);
+                UUID rowId = row.getColumn(ts.column(""_uuid"", UUID.class)).getData();
+                update.addRow(rowId, null, row);
+            }
+        }
+        return new TableUpdates(map);
+    }",method,
+"        for (OperationResult r: results) {
+            for (Row<GenericTableSchema> row: r.getRows()) {
+                String table = row.getTableSchema().getName();
+                TableUpdate<GenericTableSchema> update;
+                if (map.containsKey(table)) {
+                    update = map.get(table);
+                } else {
+                    update = new TableUpdate<>();
+                    map.put(table, update);
+                }
+                GenericTableSchema ts =
+                    vtepSchema.table(table, GenericTableSchema.class);
+                UUID rowId = row.getColumn(ts.column(""_uuid"", UUID.class)).getData();
+                update.addRow(rowId, null, row);
+            }
+        }",method,
+"public class RunWithDefaultTimeoutIntegrationTest {
+  @Rule public TemporaryPaths temporaryFolder = new TemporaryPaths();
+  @Test
+  public void testRunWithHonorsDefaultTimeoutOnTestThatRunsLong() throws IOException {
+    assumeThat(Platform.detect(), not(Platform.WINDOWS));
+    ProjectWorkspace workspace =
+        TestDataHelper.createProjectWorkspaceForScenario(this, ""run_with_timeout"", temporaryFolder);
+    workspace.setUp();
+    ProcessResult testResult = workspace.runBuckCommand(""test"", ""//:TestThatTakesTooLong"");
+    testResult.assertTestFailure(""Should fail due to exceeding timeout."");
+    assertThat(testResult.getStderr(), containsString(""timed out after 500 milliseconds""));
+  }
+  @Test
+  public void testRunWithHonorsDefaultTimeoutOnTestThatRunsForever() throws IOException {
+    assumeThat(Platform.detect(), not(Platform.WINDOWS));
+    ProjectWorkspace workspace =
+        TestDataHelper.createProjectWorkspaceForScenario(this, ""run_with_timeout"", temporaryFolder);
+    workspace.setUp();
+    ProcessResult testResult = workspace.runBuckCommand(""test"", ""//:TestThatRunsForever"");
+    testResult.assertTestFailure(""Should fail due to exceeding timeout."");
+    assertThat(testResult.getStderr(), containsString(""timed out after 500 milliseconds""));
+  }
+  @Test
+  public void testRunWithLetsTimeoutAnnotationOverrideDefaultTimeout() throws IOException {
+    assumeThat(Platform.detect(), not(Platform.WINDOWS));
+    ProjectWorkspace workspace =
+        TestDataHelper.createProjectWorkspaceForScenario(this, ""run_with_timeout"", temporaryFolder);
+    workspace.setUp();
+    ProcessResult testResult =
+        workspace.runBuckCommand(
+            ""test"", ""//:TestThatExceedsDefaultTimeoutButIsLessThanTimeoutAnnotation"");
+    testResult.assertSuccess();
+  }
+  @Test
+  public void testRunWithLetsTimeoutRuleOverrideDefaultTimeout() throws IOException {
+    assumeThat(Platform.detect(), not(Platform.WINDOWS));
+    ProjectWorkspace workspace =
+        TestDataHelper.createProjectWorkspaceForScenario(this, ""run_with_timeout"", temporaryFolder);
+    workspace.setUp();
+    ProcessResult testResult =
+        workspace.runBuckCommand(
+            ""test"", ""//:TestThatExceedsDefaultTimeoutButIsLessThanTimeoutRule"");
+    testResult.assertSuccess();
+  }
+  @Test
+  public void testAllTestsForRunWithAreRunOnTheSameThread() throws IOException {
+    assumeThat(Platform.detect(), not(Platform.WINDOWS));
+    ProjectWorkspace workspace =
+        TestDataHelper.createProjectWorkspaceForScenario(this, ""run_with_timeout"", temporaryFolder);
+    workspace.setUp();
+    ProcessResult testResult =
+        workspace.runBuckCommand(""test"", ""//:MultipleTestsThatExpectToBeAbleToReuseTheMainThread"");
+    testResult.assertSuccess();
+  }
+}",class,
+"  @Rule public TemporaryPaths temporaryFolder = new TemporaryPaths();
+  @Test
+  public void testRunWithHonorsDefaultTimeoutOnTestThatRunsLong() throws IOException {
+    assumeThat(Platform.detect(), not(Platform.WINDOWS));
+    ProjectWorkspace workspace =
+        TestDataHelper.createProjectWorkspaceForScenario(this, ""run_with_timeout"", temporaryFolder);
+    workspace.setUp();
+    ProcessResult testResult = workspace.runBuckCommand(""test"", ""//:TestThatTakesTooLong"");
+    testResult.assertTestFailure(""Should fail due to exceeding timeout."");
+    assertThat(testResult.getStderr(), containsString(""timed out after 500 milliseconds""));
+  }
+  @Test
+  public void testRunWithHonorsDefaultTimeoutOnTestThatRunsForever() throws IOException {
+    assumeThat(Platform.detect(), not(Platform.WINDOWS));
+    ProjectWorkspace workspace =
+        TestDataHelper.createProjectWorkspaceForScenario(this, ""run_with_timeout"", temporaryFolder);
+    workspace.setUp();
+    ProcessResult testResult = workspace.runBuckCommand(""test"", ""//:TestThatRunsForever"");
+    testResult.assertTestFailure(""Should fail due to exceeding timeout."");
+    assertThat(testResult.getStderr(), containsString(""timed out after 500 milliseconds""));
+  }",method,
+"  @Test
+  public void testRunWithHonorsDefaultTimeoutOnTestThatRunsForever() throws IOException {
+    assumeThat(Platform.detect(), not(Platform.WINDOWS));
+    ProjectWorkspace workspace =
+        TestDataHelper.createProjectWorkspaceForScenario(this, ""run_with_timeout"", temporaryFolder);
+    workspace.setUp();
+    ProcessResult testResult = workspace.runBuckCommand(""test"", ""//:TestThatRunsForever"");
+    testResult.assertTestFailure(""Should fail due to exceeding timeout."");
+    assertThat(testResult.getStderr(), containsString(""timed out after 500 milliseconds""));
+  }
+  @Test
+  public void testRunWithLetsTimeoutAnnotationOverrideDefaultTimeout() throws IOException {
+    assumeThat(Platform.detect(), not(Platform.WINDOWS));
+    ProjectWorkspace workspace =
+        TestDataHelper.createProjectWorkspaceForScenario(this, ""run_with_timeout"", temporaryFolder);
+    workspace.setUp();
+    ProcessResult testResult =
+        workspace.runBuckCommand(
+            ""test"", ""//:TestThatExceedsDefaultTimeoutButIsLessThanTimeoutAnnotation"");
+    testResult.assertSuccess();
+  }
+  @Test
+  public void testRunWithLetsTimeoutRuleOverrideDefaultTimeout() throws IOException {
+    assumeThat(Platform.detect(), not(Platform.WINDOWS));
+    ProjectWorkspace workspace =
+        TestDataHelper.createProjectWorkspaceForScenario(this, ""run_with_timeout"", temporaryFolder);
+    workspace.setUp();
+    ProcessResult testResult =
+        workspace.runBuckCommand(
+            ""test"", ""//:TestThatExceedsDefaultTimeoutButIsLessThanTimeoutRule"");
+    testResult.assertSuccess();
+  }",method,
+"  @Test
+  public void testRunWithLetsTimeoutAnnotationOverrideDefaultTimeout() throws IOException {
+    assumeThat(Platform.detect(), not(Platform.WINDOWS));
+    ProjectWorkspace workspace =
+        TestDataHelper.createProjectWorkspaceForScenario(this, ""run_with_timeout"", temporaryFolder);
+    workspace.setUp();
+    ProcessResult testResult =
+        workspace.runBuckCommand(
+            ""test"", ""//:TestThatExceedsDefaultTimeoutButIsLessThanTimeoutAnnotation"");
+    testResult.assertSuccess();
+  }
+  @Test
+  public void testRunWithLetsTimeoutRuleOverrideDefaultTimeout() throws IOException {
+    assumeThat(Platform.detect(), not(Platform.WINDOWS));
+    ProjectWorkspace workspace =
+        TestDataHelper.createProjectWorkspaceForScenario(this, ""run_with_timeout"", temporaryFolder);
+    workspace.setUp();
+    ProcessResult testResult =
+        workspace.runBuckCommand(
+            ""test"", ""//:TestThatExceedsDefaultTimeoutButIsLessThanTimeoutRule"");
+    testResult.assertSuccess();
+  }",method,
+"  @Test
+  public void testRunWithLetsTimeoutRuleOverrideDefaultTimeout() throws IOException {
+    assumeThat(Platform.detect(), not(Platform.WINDOWS));
+    ProjectWorkspace workspace =
+        TestDataHelper.createProjectWorkspaceForScenario(this, ""run_with_timeout"", temporaryFolder);
+    workspace.setUp();
+    ProcessResult testResult =
+        workspace.runBuckCommand(
+            ""test"", ""//:TestThatExceedsDefaultTimeoutButIsLessThanTimeoutRule"");
+    testResult.assertSuccess();
+  }
+  @Test
+  public void testAllTestsForRunWithAreRunOnTheSameThread() throws IOException {
+    assumeThat(Platform.detect(), not(Platform.WINDOWS));
+    ProjectWorkspace workspace =
+        TestDataHelper.createProjectWorkspaceForScenario(this, ""run_with_timeout"", temporaryFolder);
+    workspace.setUp();
+    ProcessResult testResult =
+        workspace.runBuckCommand(""test"", ""//:MultipleTestsThatExpectToBeAbleToReuseTheMainThread"");
+    testResult.assertSuccess();
+  }",method,
+"  @Test
+  public void testAllTestsForRunWithAreRunOnTheSameThread() throws IOException {
+    assumeThat(Platform.detect(), not(Platform.WINDOWS));
+    ProjectWorkspace workspace =
+        TestDataHelper.createProjectWorkspaceForScenario(this, ""run_with_timeout"", temporaryFolder);
+    workspace.setUp();
+    ProcessResult testResult =
+        workspace.runBuckCommand(""test"", ""//:MultipleTestsThatExpectToBeAbleToReuseTheMainThread"");
+    testResult.assertSuccess();
+  }",method,
+"public class TestTypedSet
+{
+    private static final String FUNCTION_NAME = ""typed_set_test"";
+    @Test
+    public void testConstructor()
+            throws Exception
+    {
+        for (int i = -2; i <= -1; i++) {
+            try {
+                //noinspection ResultOfObjectAllocationIgnored
+                new TypedSet(BIGINT, i, FUNCTION_NAME);
+                fail(""Should throw exception if expectedSize < 0"");
+            }
+            catch (IllegalArgumentException e) {
+                // ignored
+            }
+        }
+        try {
+            //noinspection ResultOfObjectAllocationIgnored
+            new TypedSet(null, 1, FUNCTION_NAME);
+            fail(""Should throw exception if type is null"");
+        }
+        catch (NullPointerException | IllegalArgumentException e) {
+            // ignored
+        }
+    }
+    @Test
+    public void testGetElementPosition()
+            throws Exception
+    {
+        int elementCount = 100;
+        TypedSet typedSet = new TypedSet(BIGINT, elementCount, FUNCTION_NAME);
+        BlockBuilder blockBuilder = BIGINT.createFixedSizeBlockBuilder(elementCount);
+        for (int i = 0; i < elementCount; i++) {
+            BIGINT.writeLong(blockBuilder, i);
+            typedSet.add(blockBuilder, i);
+        }
+        for (int j = 0; j < blockBuilder.getPositionCount(); j++) {
+            assertEquals(typedSet.positionOf(blockBuilder, j), j);
+        }
+    }
+    @Test
+    public void testGetElementPositionRandom()
+            throws Exception
+    {
+        BlockBuilder keys = VARCHAR.createBlockBuilder(new BlockBuilderStatus(), 5);
+        VARCHAR.writeSlice(keys, utf8Slice(""hello""));
+        VARCHAR.writeSlice(keys, utf8Slice(""bye""));
+        VARCHAR.writeSlice(keys, utf8Slice(""abc""));
+        TypedSet set = new TypedSet(VARCHAR, keys.getPositionCount(), FUNCTION_NAME);
+        for (int i = 0; i < keys.getPositionCount(); i++) {
+            set.add(keys, i);
+        }
+        BlockBuilder values = VARCHAR.createBlockBuilder(new BlockBuilderStatus(), 5);
+        VARCHAR.writeSlice(values, utf8Slice(""bye""));
+        VARCHAR.writeSlice(values, utf8Slice(""abc""));
+        VARCHAR.writeSlice(values, utf8Slice(""hello""));
+        VARCHAR.writeSlice(values, utf8Slice(""bad""));
+        assertEquals(set.positionOf(values, 2), 0);
+        assertEquals(set.positionOf(values, 1), 2);
+        assertEquals(set.positionOf(values, 0), 1);
+        assertFalse(set.contains(values, 3));
+    }
+    @Test
+    public void testBigintSimpleTypedSet()
+            throws Exception
+    {
+        List<Integer> expectedSetSizes = ImmutableList.of(1, 10, 100, 1000);
+        List<Block> longBlocks =
+                ImmutableList.of(
+                        createEmptyLongsBlock(),
+                        createLongsBlock(1L),
+                        createLongsBlock(1L, 2L, 3L),
+                        createLongsBlock(1L, 2L, 3L, 1L, 2L, 3L),
+                        createLongsBlock(1L, null, 3L),
+                        createLongsBlock(null, null, null),
+                        createLongSequenceBlock(0, 100),
+                        createLongSequenceBlock(-100, 100),
+                        createLongsBlock(nCopies(1, null)),
+                        createLongsBlock(nCopies(100, null)),
+                        createLongsBlock(nCopies(expectedSetSizes.get(expectedSetSizes.size() - 1) * 2, null)),
+                        createLongsBlock(nCopies(expectedSetSizes.get(expectedSetSizes.size() - 1) * 2, 0L)));
+        for (int expectedSetSize : expectedSetSizes) {
+            for (Block block : longBlocks) {
+                testBigint(block, expectedSetSize);
+            }
+        }
+    }
+    @Test
+    public void testMemoryExceeded()
+            throws Exception
+    {
+        try {
+            TypedSet typedSet = new TypedSet(BIGINT, 10, FUNCTION_NAME);
+            for (int i = 0; i <= TypedSet.FOUR_MEGABYTES + 1; i++) {
+                Block block = createLongsBlock(nCopies(1, (long) i));
+                typedSet.add(block, 0);
+            }
+            fail(""expected exception"");
+        }
+        catch (PrestoException e) {
+            assertEquals(e.getErrorCode(), EXCEEDED_FUNCTION_MEMORY_LIMIT.toErrorCode());
+        }
+    }
+    private static void testBigint(Block longBlock, int expectedSetSize)
+    {
+        TypedSet typedSet = new TypedSet(BIGINT, expectedSetSize, FUNCTION_NAME);
+        Set<Long> set = new HashSet<>();
+        for (int blockPosition = 0; blockPosition < longBlock.getPositionCount(); blockPosition++) {
+            long number = BIGINT.getLong(longBlock, blockPosition);
+            assertEquals(typedSet.contains(longBlock, blockPosition), set.contains(number));
+            assertEquals(typedSet.size(), set.size());
+            set.add(number);
+            typedSet.add(longBlock, blockPosition);
+            assertEquals(typedSet.contains(longBlock, blockPosition), set.contains(number));
+            assertEquals(typedSet.size(), set.size());
+        }
+    }
+}",class,
+"    @Test
+    public void testConstructor()
+            throws Exception
+    {
+        for (int i = -2; i <= -1; i++) {
+            try {
+                //noinspection ResultOfObjectAllocationIgnored
+                new TypedSet(BIGINT, i, FUNCTION_NAME);
+                fail(""Should throw exception if expectedSize < 0"");
+            }
+            catch (IllegalArgumentException e) {
+                // ignored
+            }
+        }
+        try {
+            //noinspection ResultOfObjectAllocationIgnored
+            new TypedSet(null, 1, FUNCTION_NAME);
+            fail(""Should throw exception if type is null"");
+        }
+        catch (NullPointerException | IllegalArgumentException e) {
+            // ignored
+        }
+    }",method,
+"        for (int i = -2; i <= -1; i++) {
+            try {
+                //noinspection ResultOfObjectAllocationIgnored
+                new TypedSet(BIGINT, i, FUNCTION_NAME);
+                fail(""Should throw exception if expectedSize < 0"");
+            }
+            catch (IllegalArgumentException e) {
+                // ignored
+            }
+        }",method,
+"            catch (IllegalArgumentException e) {
+                // ignored
+            }",method,
+"        catch (NullPointerException | IllegalArgumentException e) {
+            // ignored
+        }",method,
+"    @Test
+    public void testGetElementPosition()
+            throws Exception
+    {
+        int elementCount = 100;
+        TypedSet typedSet = new TypedSet(BIGINT, elementCount, FUNCTION_NAME);
+        BlockBuilder blockBuilder = BIGINT.createFixedSizeBlockBuilder(elementCount);
+        for (int i = 0; i < elementCount; i++) {
+            BIGINT.writeLong(blockBuilder, i);
+            typedSet.add(blockBuilder, i);
+        }
+        for (int j = 0; j < blockBuilder.getPositionCount(); j++) {
+            assertEquals(typedSet.positionOf(blockBuilder, j), j);
+        }
+    }",method,
+"        for (int i = 0; i < elementCount; i++) {
+            BIGINT.writeLong(blockBuilder, i);
+            typedSet.add(blockBuilder, i);
+        }",method,
+"    @Test
+    public void testGetElementPositionRandom()
+            throws Exception
+    {
+        BlockBuilder keys = VARCHAR.createBlockBuilder(new BlockBuilderStatus(), 5);
+        VARCHAR.writeSlice(keys, utf8Slice(""hello""));
+        VARCHAR.writeSlice(keys, utf8Slice(""bye""));
+        VARCHAR.writeSlice(keys, utf8Slice(""abc""));
+        TypedSet set = new TypedSet(VARCHAR, keys.getPositionCount(), FUNCTION_NAME);
+        for (int i = 0; i < keys.getPositionCount(); i++) {
+            set.add(keys, i);
+        }
+        BlockBuilder values = VARCHAR.createBlockBuilder(new BlockBuilderStatus(), 5);
+        VARCHAR.writeSlice(values, utf8Slice(""bye""));
+        VARCHAR.writeSlice(values, utf8Slice(""abc""));
+        VARCHAR.writeSlice(values, utf8Slice(""hello""));
+        VARCHAR.writeSlice(values, utf8Slice(""bad""));
+        assertEquals(set.positionOf(values, 2), 0);
+        assertEquals(set.positionOf(values, 1), 2);
+        assertEquals(set.positionOf(values, 0), 1);
+        assertFalse(set.contains(values, 3));
+    }",method,
+"    @Test
+    public void testBigintSimpleTypedSet()
+            throws Exception
+    {
+        List<Integer> expectedSetSizes = ImmutableList.of(1, 10, 100, 1000);
+        List<Block> longBlocks =
+                ImmutableList.of(
+                        createEmptyLongsBlock(),
+                        createLongsBlock(1L),
+                        createLongsBlock(1L, 2L, 3L),
+                        createLongsBlock(1L, 2L, 3L, 1L, 2L, 3L),
+                        createLongsBlock(1L, null, 3L),
+                        createLongsBlock(null, null, null),
+                        createLongSequenceBlock(0, 100),
+                        createLongSequenceBlock(-100, 100),
+                        createLongsBlock(nCopies(1, null)),
+                        createLongsBlock(nCopies(100, null)),
+                        createLongsBlock(nCopies(expectedSetSizes.get(expectedSetSizes.size() - 1) * 2, null)),
+                        createLongsBlock(nCopies(expectedSetSizes.get(expectedSetSizes.size() - 1) * 2, 0L)));
+        for (int expectedSetSize : expectedSetSizes) {
+            for (Block block : longBlocks) {
+                testBigint(block, expectedSetSize);
+            }
+        }
+    }",method,
+"        for (int expectedSetSize : expectedSetSizes) {
+            for (Block block : longBlocks) {
+                testBigint(block, expectedSetSize);
+            }
+        }",method,
+"            for (Block block : longBlocks) {
+                testBigint(block, expectedSetSize);
+            }",method,
+"    @Test
+    public void testMemoryExceeded()
+            throws Exception
+    {
+        try {
+            TypedSet typedSet = new TypedSet(BIGINT, 10, FUNCTION_NAME);
+            for (int i = 0; i <= TypedSet.FOUR_MEGABYTES + 1; i++) {
+                Block block = createLongsBlock(nCopies(1, (long) i));
+                typedSet.add(block, 0);
+            }
+            fail(""expected exception"");
+        }
+        catch (PrestoException e) {
+            assertEquals(e.getErrorCode(), EXCEEDED_FUNCTION_MEMORY_LIMIT.toErrorCode());
+        }
+    }",method,
+"            for (int i = 0; i <= TypedSet.FOUR_MEGABYTES + 1; i++) {
+                Block block = createLongsBlock(nCopies(1, (long) i));
+                typedSet.add(block, 0);
+            }",method,
+"        catch (PrestoException e) {
+            assertEquals(e.getErrorCode(), EXCEEDED_FUNCTION_MEMORY_LIMIT.toErrorCode());
+        }",method,
+"    private static void testBigint(Block longBlock, int expectedSetSize)
+    {
+        TypedSet typedSet = new TypedSet(BIGINT, expectedSetSize, FUNCTION_NAME);
+        Set<Long> set = new HashSet<>();
+        for (int blockPosition = 0; blockPosition < longBlock.getPositionCount(); blockPosition++) {
+            long number = BIGINT.getLong(longBlock, blockPosition);
+            assertEquals(typedSet.contains(longBlock, blockPosition), set.contains(number));
+            assertEquals(typedSet.size(), set.size());
+            set.add(number);
+            typedSet.add(longBlock, blockPosition);
+            assertEquals(typedSet.contains(longBlock, blockPosition), set.contains(number));
+            assertEquals(typedSet.size(), set.size());
+        }
+    }",method,
+"public class ClassPathResourceTests {
+	private static final String PACKAGE_PATH = ""org/springframework/core/io"";
+	private static final String NONEXISTENT_RESOURCE_NAME = ""nonexistent.xml"";
+	private static final String FQ_RESOURCE_PATH = PACKAGE_PATH + '/' + NONEXISTENT_RESOURCE_NAME;
+	private static final String FQ_RESOURCE_PATH_WITH_LEADING_SLASH = '/' + FQ_RESOURCE_PATH;
+	private static final Pattern DESCRIPTION_PATTERN = Pattern.compile(""^class path resource \\[(.+?)\\]$"");
+	private void assertDescriptionContainsExpectedPath(ClassPathResource resource, String expectedPath) {
+		Matcher matcher = DESCRIPTION_PATTERN.matcher(resource.getDescription());
+		assertTrue(matcher.matches());
+		assertEquals(1, matcher.groupCount());
+		String match = matcher.group(1);
+		assertEquals(expectedPath, match);
+	}
+	private void assertExceptionContainsFullyQualifiedPath(ClassPathResource resource) {
+		try {
+			resource.getInputStream();
+			fail(""FileNotFoundException expected for resource: "" + resource);
+		}
+		catch (IOException ex) {
+			assertThat(ex, instanceOf(FileNotFoundException.class));
+			assertThat(ex.getMessage(), containsString(FQ_RESOURCE_PATH));
+		}
+	}
+	@Test
+	public void stringConstructorRaisesExceptionWithFullyQualifiedPath() {
+		assertExceptionContainsFullyQualifiedPath(new ClassPathResource(FQ_RESOURCE_PATH));
+	}
+	@Test
+	public void classLiteralConstructorRaisesExceptionWithFullyQualifiedPath() {
+		assertExceptionContainsFullyQualifiedPath(new ClassPathResource(NONEXISTENT_RESOURCE_NAME, this.getClass()));
+	}
+	@Test
+	public void classLoaderConstructorRaisesExceptionWithFullyQualifiedPath() {
+		assertExceptionContainsFullyQualifiedPath(new ClassPathResource(FQ_RESOURCE_PATH,
+			this.getClass().getClassLoader()));
+	}
+	@Test
+	public void getDescriptionWithStringConstructor() {
+		assertDescriptionContainsExpectedPath(new ClassPathResource(FQ_RESOURCE_PATH), FQ_RESOURCE_PATH);
+	}
+	@Test
+	public void getDescriptionWithStringConstructorAndLeadingSlash() {
+		assertDescriptionContainsExpectedPath(new ClassPathResource(FQ_RESOURCE_PATH_WITH_LEADING_SLASH),
+			FQ_RESOURCE_PATH);
+	}
+	@Test
+	public void getDescriptionWithClassLiteralConstructor() {
+		assertDescriptionContainsExpectedPath(new ClassPathResource(NONEXISTENT_RESOURCE_NAME, this.getClass()),
+			FQ_RESOURCE_PATH);
+	}
+	@Test
+	public void getDescriptionWithClassLiteralConstructorAndLeadingSlash() {
+		assertDescriptionContainsExpectedPath(
+			new ClassPathResource(FQ_RESOURCE_PATH_WITH_LEADING_SLASH, this.getClass()), FQ_RESOURCE_PATH);
+	}
+	@Test
+	public void getDescriptionWithClassLoaderConstructor() {
+		assertDescriptionContainsExpectedPath(
+			new ClassPathResource(FQ_RESOURCE_PATH, this.getClass().getClassLoader()), FQ_RESOURCE_PATH);
+	}
+	@Test
+	public void getDescriptionWithClassLoaderConstructorAndLeadingSlash() {
+		assertDescriptionContainsExpectedPath(new ClassPathResource(FQ_RESOURCE_PATH_WITH_LEADING_SLASH,
+			this.getClass().getClassLoader()), FQ_RESOURCE_PATH);
+	}
+}",class,
+"	private static final Pattern DESCRIPTION_PATTERN = Pattern.compile(""^class path resource \\[(.+?)\\]$"");
+	private void assertDescriptionContainsExpectedPath(ClassPathResource resource, String expectedPath) {
+		Matcher matcher = DESCRIPTION_PATTERN.matcher(resource.getDescription());
+		assertTrue(matcher.matches());
+		assertEquals(1, matcher.groupCount());
+		String match = matcher.group(1);
+		assertEquals(expectedPath, match);
+	}",class,
+"	private void assertDescriptionContainsExpectedPath(ClassPathResource resource, String expectedPath) {
+		Matcher matcher = DESCRIPTION_PATTERN.matcher(resource.getDescription());
+		assertTrue(matcher.matches());
+		assertEquals(1, matcher.groupCount());
+		String match = matcher.group(1);
+		assertEquals(expectedPath, match);
+	}",method,
+"	private void assertExceptionContainsFullyQualifiedPath(ClassPathResource resource) {
+		try {
+			resource.getInputStream();
+			fail(""FileNotFoundException expected for resource: "" + resource);
+		}
+		catch (IOException ex) {
+			assertThat(ex, instanceOf(FileNotFoundException.class));
+			assertThat(ex.getMessage(), containsString(FQ_RESOURCE_PATH));
+		}
+	}",method,
+"		catch (IOException ex) {
+			assertThat(ex, instanceOf(FileNotFoundException.class));
+			assertThat(ex.getMessage(), containsString(FQ_RESOURCE_PATH));
+		}",method,
+"	@Test
+	public void stringConstructorRaisesExceptionWithFullyQualifiedPath() {
+		assertExceptionContainsFullyQualifiedPath(new ClassPathResource(FQ_RESOURCE_PATH));
+	}",method,
+"	@Test
+	public void classLiteralConstructorRaisesExceptionWithFullyQualifiedPath() {
+		assertExceptionContainsFullyQualifiedPath(new ClassPathResource(NONEXISTENT_RESOURCE_NAME, this.getClass()));
+	}",method,
+"	@Test
+	public void classLoaderConstructorRaisesExceptionWithFullyQualifiedPath() {
+		assertExceptionContainsFullyQualifiedPath(new ClassPathResource(FQ_RESOURCE_PATH,
+			this.getClass().getClassLoader()));
+	}",method,
+"	@Test
+	public void getDescriptionWithStringConstructor() {
+		assertDescriptionContainsExpectedPath(new ClassPathResource(FQ_RESOURCE_PATH), FQ_RESOURCE_PATH);
+	}",method,
+"	@Test
+	public void getDescriptionWithStringConstructorAndLeadingSlash() {
+		assertDescriptionContainsExpectedPath(new ClassPathResource(FQ_RESOURCE_PATH_WITH_LEADING_SLASH),
+			FQ_RESOURCE_PATH);
+	}",method,
+"	@Test
+	public void getDescriptionWithClassLiteralConstructor() {
+		assertDescriptionContainsExpectedPath(new ClassPathResource(NONEXISTENT_RESOURCE_NAME, this.getClass()),
+			FQ_RESOURCE_PATH);
+	}",method,
+"	@Test
+	public void getDescriptionWithClassLiteralConstructorAndLeadingSlash() {
+		assertDescriptionContainsExpectedPath(
+			new ClassPathResource(FQ_RESOURCE_PATH_WITH_LEADING_SLASH, this.getClass()), FQ_RESOURCE_PATH);
+	}",method,
+"	@Test
+	public void getDescriptionWithClassLoaderConstructor() {
+		assertDescriptionContainsExpectedPath(
+			new ClassPathResource(FQ_RESOURCE_PATH, this.getClass().getClassLoader()), FQ_RESOURCE_PATH);
+	}",method,
+"	@Test
+	public void getDescriptionWithClassLoaderConstructorAndLeadingSlash() {
+		assertDescriptionContainsExpectedPath(new ClassPathResource(FQ_RESOURCE_PATH_WITH_LEADING_SLASH,
+			this.getClass().getClassLoader()), FQ_RESOURCE_PATH);
+	}",method,
+"public class Frame extends JFrame
+{
+    private static JLabel IN;
+    private static JLabel GRAY;
+    private static JLabel FACE;
+    private static JLabel OUT;
+    private static Pannel pannel;
+    private static Scroll scroll;
+    public Frame(String name) throws HeadlessException
+        {
+            setName(name);
+            setResizable(false);
+            setUndecorated(true);
+            setExtendedState(JFrame.MAXIMIZED_BOTH);
+            setLayout(null);
+            setLocationRelativeTo(null);
+            setBackground(new Color(0, 0, 100, 100));
+            setDefaultCloseOperation(DISPOSE_ON_CLOSE);
+            addWindowListener
+            (
+                    new WindowAdapter()
+                        {
+                            @Override
+                            public void windowClosing(WindowEvent e)
+                            {
+                                pannel.exit();
+                                super.windowClosing(e); //To change body of generated methods, choose Tools | Templates.
+                            }
+                        }
+            );
+            java.awt.EventQueue.invokeLater(() ->
+            {
+                Border border = BorderFactory.createLineBorder(Color.BLACK,1);
+                IN = new JLabel();
+                IN.setLocation(10, 10);
+                IN.setSize(320, 240);
+                IN.setBorder(border);
+                GRAY = new JLabel();
+                GRAY.setLocation(IN.getX()+IN.getWidth()+1, IN.getY());
+                GRAY.setSize(320, 240);
+                GRAY.setBorder(border);
+                FACE = new JLabel();
+                FACE.setLocation(IN.getX(), IN.getY()+1+IN.getHeight());
+                FACE.setSize(320, 240);
+                FACE.setBorder(border);
+                OUT = new JLabel();
+                OUT.setLocation(GRAY.getX(), GRAY.getY()+GRAY.getHeight()+1);
+                OUT.setSize(320, 240);
+                OUT.setBorder(border);
+                pannel = new Pannel(getWidth(), getHeight());
+                pannel.setVisible(true);
+                scroll = new Scroll(getWidth());
+                scroll.setLocation(IN.getX(), FACE.getY()+1+FACE.getHeight());
+                scroll.setVisible(true);
+                add(IN);
+                add(GRAY);
+                add(FACE);
+                add(OUT);
+                add(pannel);
+                add(scroll);
+                pannel.repaint();
+            });
+            setVisible(true);
+        }
+    public static void setIN(ImageIcon in)
+        {
+//            IN.setIcon(new ImageIcon(in));
+            IN.setIcon(in);
+        }
+    public static void setGRAY(ImageIcon in)
+        {
+            GRAY.setIcon(in);
+        }    
+    public static void setFace(ImageIcon in)
+        {
+            FACE.setIcon(in);
+        }
+    public static void setOut(ImageIcon in)
+        {
+            OUT.setIcon(in);
+        }
+}",class,
+"    public Frame(String name) throws HeadlessException
+        {
+            setName(name);
+            setResizable(false);
+            setUndecorated(true);
+            setExtendedState(JFrame.MAXIMIZED_BOTH);
+            setLayout(null);
+            setLocationRelativeTo(null);
+            setBackground(new Color(0, 0, 100, 100));
+            setDefaultCloseOperation(DISPOSE_ON_CLOSE);
+            addWindowListener
+            (
+                    new WindowAdapter()
+                        {
+                            @Override
+                            public void windowClosing(WindowEvent e)
+                            {
+                                pannel.exit();
+                                super.windowClosing(e); //To change body of generated methods, choose Tools | Templates.
+                            }
+                        }
+            );
+            java.awt.EventQueue.invokeLater(() ->
+            {
+                Border border = BorderFactory.createLineBorder(Color.BLACK,1);
+                IN = new JLabel();
+                IN.setLocation(10, 10);
+                IN.setSize(320, 240);
+                IN.setBorder(border);
+                GRAY = new JLabel();
+                GRAY.setLocation(IN.getX()+IN.getWidth()+1, IN.getY());
+                GRAY.setSize(320, 240);
+                GRAY.setBorder(border);
+                FACE = new JLabel();
+                FACE.setLocation(IN.getX(), IN.getY()+1+IN.getHeight());
+                FACE.setSize(320, 240);
+                FACE.setBorder(border);
+                OUT = new JLabel();
+                OUT.setLocation(GRAY.getX(), GRAY.getY()+GRAY.getHeight()+1);
+                OUT.setSize(320, 240);
+                OUT.setBorder(border);
+                pannel = new Pannel(getWidth(), getHeight());
+                pannel.setVisible(true);
+                scroll = new Scroll(getWidth());
+                scroll.setLocation(IN.getX(), FACE.getY()+1+FACE.getHeight());
+                scroll.setVisible(true);
+                add(IN);
+                add(GRAY);
+                add(FACE);
+                add(OUT);
+                add(pannel);
+                add(scroll);
+                pannel.repaint();
+            });
+            setVisible(true);
+        }",method,
+"            addWindowListener
+            (
+                    new WindowAdapter()
+                        {
+                            @Override
+                            public void windowClosing(WindowEvent e)
+                            {
+                                pannel.exit();
+                                super.windowClosing(e); //To change body of generated methods, choose Tools | Templates.
+                            }
+                        }",method,

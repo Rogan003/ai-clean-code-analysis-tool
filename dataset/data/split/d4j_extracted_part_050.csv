@@ -1,0 +1,1339 @@
+code_snippet,type,score
+"    @Override
+    public boolean replace(SQLExpr expr, SQLExpr target) {
+        if (target == null) {
+            return false;
+        }
+        for (int i = 0; i < parameters.size(); ++i) {
+            if (parameters.get(i) == expr) {
+                parameters.set(i, target);
+                target.setParent(this);
+                return true;
+            }
+        }
+        return false;
+    }",method,
+"        if (target == null) {
+            return false;
+        }",method,
+"    public boolean match(String owner, String function) {
+        if (function == null) {
+            return false;
+        }
+        if (!SQLUtils.nameEquals(function, name)) {
+            return false;
+        }
+        if (owner == null && this.owner == null) {
+            return true;
+        }
+        if (owner == null || this.owner == null) {
+            return false;
+        }
+        if (this.owner instanceof SQLIdentifierExpr) {
+            return SQLUtils.nameEquals(((SQLIdentifierExpr) this.owner).name, owner);
+        }
+        return false;
+    }",method,
+"        if (function == null) {
+            return false;
+        }",method,
+"        if (owner == null && this.owner == null) {
+            return true;
+        }",method,
+"        if (owner == null || this.owner == null) {
+            return false;
+        }",method,
+"        if (this.owner instanceof SQLIdentifierExpr) {
+            return SQLUtils.nameEquals(((SQLIdentifierExpr) this.owner).name, owner);
+        }",method,
+"    public SQLDataType computeDataType() {
+        if (SQLUtils.nameEquals(""to_date"", name)
+                || SQLUtils.nameEquals(""add_months"", name)) {
+            return SQLDateExpr.DEFAULT_DATA_TYPE;
+        }
+        if (parameters.size() == 1) {
+            if (SQLUtils.nameEquals(""trunc"", name)) {
+                return parameters.get(0).computeDataType();
+            }
+        } else if (parameters.size() == 2) {
+            SQLExpr param0 = parameters.get(0);
+            SQLExpr param1 = parameters.get(1);
+            if (SQLUtils.nameEquals(""nvl"", name) || SQLUtils.nameEquals(""ifnull"", name)) {
+                SQLDataType dataType = param0.computeDataType();
+                if (dataType != null) {
+                    return dataType;
+                }
+                return param1.computeDataType();
+            }
+        }
+        return null;
+    }",method,
+"                if (dataType != null) {
+                    return dataType;
+                }",method,
+"    public SQLExpr getUsing() {
+        return using;
+    }",method,
+"    public void setUsing(SQLExpr using) {
+        if (using != null) {
+            using.setParent(this);
+        }
+        this.using = using;
+    }",method,
+"        if (using != null) {
+            using.setParent(this);
+        }",method,
+"    public SQLExpr getFor() {
+        return _for;
+    }",method,
+"    public void setFor(SQLExpr x) {
+        if (x != null) {
+            x.setParent(this);
+        }
+        this._for = x;
+    }",method,
+"        if (x != null) {
+            x.setParent(this);
+        }",method,
+"    public String getTrimOption() {
+        return trimOption;
+    }",method,
+"    public void setTrimOption(String trimOption) {
+        this.trimOption = trimOption;
+    }",method,
+"public class ResourceBundleReference extends PsiReferenceBase<PsiElement>
+  implements PsiPolyVariantReference, BundleNameEvaluator, ResolvingHint {
+  private static final Function<PropertiesFile, PsiElement> PROPERTIES_FILE_PSI_ELEMENT_FUNCTION =
+    PropertiesFile::getContainingFile;
+  private final String myBundleName;
+  public ResourceBundleReference(final PsiElement element) {
+    this(element, false);
+  }
+  public ResourceBundleReference(final PsiElement element, boolean soft) {
+    super(element, soft);
+    myBundleName = getValue().replace('/', '.');
+  }
+  @Override
+  public boolean canResolveTo(Class<? extends PsiElement> elementClass) {
+    return ReflectionUtil.isAssignable(PsiFile.class, elementClass);
+  }
+  @Override
+  @Nullable
+  public PsiElement resolve() {
+    ResolveResult[] resolveResults = multiResolve(false);
+    return resolveResults.length == 1 ? resolveResults[0].getElement() : null;
+  }
+  @Override
+  @NotNull
+  public ResolveResult[] multiResolve(final boolean incompleteCode) {
+    PropertiesReferenceManager referenceManager = PropertiesReferenceManager.getInstance(myElement.getProject());
+    List<PropertiesFile> propertiesFiles = referenceManager.findPropertiesFiles(myElement.getResolveScope(), myBundleName, this);
+    return PsiElementResolveResult.createResults(ContainerUtil.map(propertiesFiles, PROPERTIES_FILE_PSI_ELEMENT_FUNCTION));
+  }
+  @Override
+  @NotNull
+  public String getCanonicalText() {
+    return myBundleName;
+  }
+  @Override
+  public PsiElement handleElementRename(String newElementName) throws IncorrectOperationException {
+    if (newElementName.endsWith(PropertiesFileType.DOT_DEFAULT_EXTENSION)) {
+      newElementName = newElementName.substring(0, newElementName.lastIndexOf(PropertiesFileType.DOT_DEFAULT_EXTENSION));
+    }
+    final String currentValue = getValue();
+    final char packageDelimiter = getPackageDelimiter();
+    final int index = currentValue.lastIndexOf(packageDelimiter);
+    if (index != -1) {
+      newElementName = currentValue.substring(0, index) + packageDelimiter + newElementName;
+    }
+    return super.handleElementRename(newElementName);
+  }
+  private char getPackageDelimiter() {
+    return getValue().indexOf('/') != -1 ? '/' : '.';
+  }
+  @Override
+  public PsiElement bindToElement(@NotNull final PsiElement element) throws IncorrectOperationException {
+    if (!(element instanceof PropertiesFile)) {
+      throw new IncorrectOperationException();
+    }
+    final String name = ResourceBundleManager.getInstance(element.getProject()).getFullName((PropertiesFile)element);
+    return name != null ? super.handleElementRename(name) : element;
+  }
+  @Override
+  public boolean isReferenceTo(PsiElement element) {
+    if (element instanceof PropertiesFile) {
+      final String name = ResourceBundleManager.getInstance(element.getProject()).getFullName((PropertiesFile)element);
+      if (name != null && name.equals(myBundleName)) {
+        return true;
+      }
+    }
+    return false;
+  }
+  @Override
+  @NotNull
+  public Object[] getVariants() {
+    final ProjectFileIndex projectFileIndex = ProjectFileIndex.SERVICE.getInstance(getElement().getProject());
+    final PropertiesReferenceManager referenceManager = PropertiesReferenceManager.getInstance(getElement().getProject());
+    final Set<String> bundleNames = new HashSet<>();
+    final List<LookupElement> variants = new SmartList<>();
+    PropertiesFileProcessor processor = new PropertiesFileProcessor() {
+      @Override
+      public boolean process(String baseName, PropertiesFile propertiesFile) {
+        if (!bundleNames.add(baseName)) return true;
+        final LookupElementBuilder builder =
+          LookupElementBuilder.create(baseName)
+            .withIcon(AllIcons.Nodes.ResourceBundle);
+        boolean isInContent = projectFileIndex.isInContent(propertiesFile.getVirtualFile());
+        variants.add(isInContent ? PrioritizedLookupElement.withPriority(builder, Double.MAX_VALUE) : builder);
+        return true;
+      }
+    };
+    referenceManager.processPropertiesFiles(myElement.getResolveScope(), processor, this);
+    return variants.toArray(new LookupElement[variants.size()]);
+  }
+  @Override
+  public String evaluateBundleName(final PsiFile psiFile) {
+    return BundleNameEvaluator.DEFAULT.evaluateBundleName(psiFile);
+  }
+}",class,
+"  public ResourceBundleReference(final PsiElement element) {
+    this(element, false);
+  }",method,
+"  public ResourceBundleReference(final PsiElement element, boolean soft) {
+    super(element, soft);
+    myBundleName = getValue().replace('/', '.');
+  }",method,
+"  @Override
+  public boolean canResolveTo(Class<? extends PsiElement> elementClass) {
+    return ReflectionUtil.isAssignable(PsiFile.class, elementClass);
+  }",method,
+"  @Override
+  @Nullable
+  public PsiElement resolve() {
+    ResolveResult[] resolveResults = multiResolve(false);
+    return resolveResults.length == 1 ? resolveResults[0].getElement() : null;
+  }",method,
+"  @Override
+  @NotNull
+  public ResolveResult[] multiResolve(final boolean incompleteCode) {
+    PropertiesReferenceManager referenceManager = PropertiesReferenceManager.getInstance(myElement.getProject());
+    List<PropertiesFile> propertiesFiles = referenceManager.findPropertiesFiles(myElement.getResolveScope(), myBundleName, this);
+    return PsiElementResolveResult.createResults(ContainerUtil.map(propertiesFiles, PROPERTIES_FILE_PSI_ELEMENT_FUNCTION));
+  }",method,
+"  @Override
+  @NotNull
+  public String getCanonicalText() {
+    return myBundleName;
+  }",method,
+"  @Override
+  public PsiElement handleElementRename(String newElementName) throws IncorrectOperationException {
+    if (newElementName.endsWith(PropertiesFileType.DOT_DEFAULT_EXTENSION)) {
+      newElementName = newElementName.substring(0, newElementName.lastIndexOf(PropertiesFileType.DOT_DEFAULT_EXTENSION));
+    }
+    final String currentValue = getValue();
+    final char packageDelimiter = getPackageDelimiter();
+    final int index = currentValue.lastIndexOf(packageDelimiter);
+    if (index != -1) {
+      newElementName = currentValue.substring(0, index) + packageDelimiter + newElementName;
+    }
+    return super.handleElementRename(newElementName);
+  }",method,
+"    if (index != -1) {
+      newElementName = currentValue.substring(0, index) + packageDelimiter + newElementName;
+    }",method,
+"  private char getPackageDelimiter() {
+    return getValue().indexOf('/') != -1 ? '/' : '.';
+  }",method,
+"  @Override
+  public PsiElement bindToElement(@NotNull final PsiElement element) throws IncorrectOperationException {
+    if (!(element instanceof PropertiesFile)) {
+      throw new IncorrectOperationException();
+    }
+    final String name = ResourceBundleManager.getInstance(element.getProject()).getFullName((PropertiesFile)element);
+    return name != null ? super.handleElementRename(name) : element;
+  }",method,
+"  @Override
+  public boolean isReferenceTo(PsiElement element) {
+    if (element instanceof PropertiesFile) {
+      final String name = ResourceBundleManager.getInstance(element.getProject()).getFullName((PropertiesFile)element);
+      if (name != null && name.equals(myBundleName)) {
+        return true;
+      }
+    }
+    return false;
+  }",method,
+"    if (element instanceof PropertiesFile) {
+      final String name = ResourceBundleManager.getInstance(element.getProject()).getFullName((PropertiesFile)element);
+      if (name != null && name.equals(myBundleName)) {
+        return true;
+      }
+    }",method,
+"  @Override
+  @NotNull
+  public Object[] getVariants() {
+    final ProjectFileIndex projectFileIndex = ProjectFileIndex.SERVICE.getInstance(getElement().getProject());
+    final PropertiesReferenceManager referenceManager = PropertiesReferenceManager.getInstance(getElement().getProject());
+    final Set<String> bundleNames = new HashSet<>();
+    final List<LookupElement> variants = new SmartList<>();
+    PropertiesFileProcessor processor = new PropertiesFileProcessor() {
+      @Override
+      public boolean process(String baseName, PropertiesFile propertiesFile) {
+        if (!bundleNames.add(baseName)) return true;
+        final LookupElementBuilder builder =
+          LookupElementBuilder.create(baseName)
+            .withIcon(AllIcons.Nodes.ResourceBundle);
+        boolean isInContent = projectFileIndex.isInContent(propertiesFile.getVirtualFile());
+        variants.add(isInContent ? PrioritizedLookupElement.withPriority(builder, Double.MAX_VALUE) : builder);
+        return true;
+      }
+    };
+    referenceManager.processPropertiesFiles(myElement.getResolveScope(), processor, this);
+    return variants.toArray(new LookupElement[variants.size()]);
+  }",method,
+"      @Override
+      public boolean process(String baseName, PropertiesFile propertiesFile) {
+        if (!bundleNames.add(baseName)) return true;
+        final LookupElementBuilder builder =
+          LookupElementBuilder.create(baseName)
+            .withIcon(AllIcons.Nodes.ResourceBundle);
+        boolean isInContent = projectFileIndex.isInContent(propertiesFile.getVirtualFile());
+        variants.add(isInContent ? PrioritizedLookupElement.withPriority(builder, Double.MAX_VALUE) : builder);
+        return true;
+      }",method,
+"  @Override
+  public String evaluateBundleName(final PsiFile psiFile) {
+    return BundleNameEvaluator.DEFAULT.evaluateBundleName(psiFile);
+  }",method,
+"public class TestTransformCorrelatedScalarAggregationToJoin
+        extends BaseRuleTest
+{
+    @Test
+    public void doesNotFireOnPlanWithoutApplyNode()
+    {
+        tester().assertThat(new TransformCorrelatedScalarAggregationToJoin(tester().getMetadata().getFunctionRegistry()))
+                .on(p -> p.values(p.symbol(""a"")))
+                .doesNotFire();
+    }
+    @Test
+    public void doesNotFireOnCorrelatedWithoutAggregation()
+    {
+        tester().assertThat(new TransformCorrelatedScalarAggregationToJoin(tester().getMetadata().getFunctionRegistry()))
+                .on(p -> p.lateral(
+                        ImmutableList.of(p.symbol(""corr"")),
+                        p.values(p.symbol(""corr"")),
+                        p.values(p.symbol(""a""))))
+                .doesNotFire();
+    }
+    @Test
+    public void doesNotFireOnUncorrelated()
+    {
+        tester().assertThat(new TransformCorrelatedScalarAggregationToJoin(tester().getMetadata().getFunctionRegistry()))
+                .on(p -> p.lateral(
+                        ImmutableList.of(),
+                        p.values(p.symbol(""a"")),
+                        p.values(p.symbol(""b""))))
+                .doesNotFire();
+    }
+    @Test
+    public void doesNotFireOnCorrelatedWithNonScalarAggregation()
+    {
+        tester().assertThat(new TransformCorrelatedScalarAggregationToJoin(tester().getMetadata().getFunctionRegistry()))
+                .on(p -> p.lateral(
+                        ImmutableList.of(p.symbol(""corr"")),
+                        p.values(p.symbol(""corr"")),
+                        p.aggregation(ab -> ab
+                                .source(p.values(p.symbol(""a""), p.symbol(""b"")))
+                                .addAggregation(p.symbol(""sum""), PlanBuilder.expression(""sum(a)""), ImmutableList.of(BIGINT))
+                                .addGroupingSet(p.symbol(""b"")))))
+                .doesNotFire();
+    }
+    @Test
+    public void rewritesOnSubqueryWithoutProjection()
+    {
+        tester().assertThat(new TransformCorrelatedScalarAggregationToJoin(tester().getMetadata().getFunctionRegistry()))
+                .on(p -> p.lateral(
+                        ImmutableList.of(p.symbol(""corr"")),
+                        p.values(p.symbol(""corr"")),
+                        p.aggregation(ab -> ab
+                                .source(p.values(p.symbol(""a""), p.symbol(""b"")))
+                                .addAggregation(p.symbol(""sum""), PlanBuilder.expression(""sum(a)""), ImmutableList.of(BIGINT))
+                                .globalGrouping())))
+                .matches(
+                        project(ImmutableMap.of(""sum_1"", expression(""sum_1""), ""corr"", expression(""corr"")),
+                                aggregation(ImmutableMap.of(""sum_1"", functionCall(""sum"", ImmutableList.of(""a""))),
+                                        join(JoinNode.Type.LEFT,
+                                                ImmutableList.of(),
+                                                assignUniqueId(""unique"",
+                                                        values(ImmutableMap.of(""corr"", 0))),
+                                                project(ImmutableMap.of(""non_null"", expression(""true"")),
+                                                        values(ImmutableMap.of(""a"", 0, ""b"", 1)))))));
+    }
+    @Test
+    public void rewritesOnSubqueryWithProjection()
+    {
+        tester().assertThat(new TransformCorrelatedScalarAggregationToJoin(tester().getMetadata().getFunctionRegistry()))
+                .on(p -> p.lateral(
+                        ImmutableList.of(p.symbol(""corr"")),
+                        p.values(p.symbol(""corr"")),
+                        p.project(Assignments.of(p.symbol(""expr""), p.expression(""sum + 1"")),
+                                p.aggregation(ab -> ab
+                                        .source(p.values(p.symbol(""a""), p.symbol(""b"")))
+                                        .addAggregation(p.symbol(""sum""), PlanBuilder.expression(""sum(a)""), ImmutableList.of(BIGINT))
+                                        .globalGrouping()))))
+                .matches(
+                        project(ImmutableMap.of(""corr"", expression(""corr""), ""expr"", expression(""(\""sum_1\"" + 1)"")),
+                                aggregation(ImmutableMap.of(""sum_1"", functionCall(""sum"", ImmutableList.of(""a""))),
+                                        join(JoinNode.Type.LEFT,
+                                                ImmutableList.of(),
+                                                assignUniqueId(""unique"",
+                                                        values(ImmutableMap.of(""corr"", 0))),
+                                                project(ImmutableMap.of(""non_null"", expression(""true"")),
+                                                        values(ImmutableMap.of(""a"", 0, ""b"", 1)))))));
+    }
+}",class,
+"    @Test
+    public void doesNotFireOnPlanWithoutApplyNode()
+    {
+        tester().assertThat(new TransformCorrelatedScalarAggregationToJoin(tester().getMetadata().getFunctionRegistry()))
+                .on(p -> p.values(p.symbol(""a"")))
+                .doesNotFire();
+    }",method,
+"    @Test
+    public void doesNotFireOnCorrelatedWithoutAggregation()
+    {
+        tester().assertThat(new TransformCorrelatedScalarAggregationToJoin(tester().getMetadata().getFunctionRegistry()))
+                .on(p -> p.lateral(
+                        ImmutableList.of(p.symbol(""corr"")),
+                        p.values(p.symbol(""corr"")),
+                        p.values(p.symbol(""a""))))
+                .doesNotFire();
+    }",method,
+"    @Test
+    public void doesNotFireOnUncorrelated()
+    {
+        tester().assertThat(new TransformCorrelatedScalarAggregationToJoin(tester().getMetadata().getFunctionRegistry()))
+                .on(p -> p.lateral(
+                        ImmutableList.of(),
+                        p.values(p.symbol(""a"")),
+                        p.values(p.symbol(""b""))))
+                .doesNotFire();
+    }",method,
+"    @Test
+    public void doesNotFireOnCorrelatedWithNonScalarAggregation()
+    {
+        tester().assertThat(new TransformCorrelatedScalarAggregationToJoin(tester().getMetadata().getFunctionRegistry()))
+                .on(p -> p.lateral(
+                        ImmutableList.of(p.symbol(""corr"")),
+                        p.values(p.symbol(""corr"")),
+                        p.aggregation(ab -> ab
+                                .source(p.values(p.symbol(""a""), p.symbol(""b"")))
+                                .addAggregation(p.symbol(""sum""), PlanBuilder.expression(""sum(a)""), ImmutableList.of(BIGINT))
+                                .addGroupingSet(p.symbol(""b"")))))
+                .doesNotFire();
+    }",method,
+"    @Test
+    public void rewritesOnSubqueryWithoutProjection()
+    {
+        tester().assertThat(new TransformCorrelatedScalarAggregationToJoin(tester().getMetadata().getFunctionRegistry()))
+                .on(p -> p.lateral(
+                        ImmutableList.of(p.symbol(""corr"")),
+                        p.values(p.symbol(""corr"")),
+                        p.aggregation(ab -> ab
+                                .source(p.values(p.symbol(""a""), p.symbol(""b"")))
+                                .addAggregation(p.symbol(""sum""), PlanBuilder.expression(""sum(a)""), ImmutableList.of(BIGINT))
+                                .globalGrouping())))
+                .matches(
+                        project(ImmutableMap.of(""sum_1"", expression(""sum_1""), ""corr"", expression(""corr"")),
+                                aggregation(ImmutableMap.of(""sum_1"", functionCall(""sum"", ImmutableList.of(""a""))),
+                                        join(JoinNode.Type.LEFT,
+                                                ImmutableList.of(),
+                                                assignUniqueId(""unique"",
+                                                        values(ImmutableMap.of(""corr"", 0))),
+                                                project(ImmutableMap.of(""non_null"", expression(""true"")),
+                                                        values(ImmutableMap.of(""a"", 0, ""b"", 1)))))));
+    }",method,
+"    @Test
+    public void rewritesOnSubqueryWithProjection()
+    {
+        tester().assertThat(new TransformCorrelatedScalarAggregationToJoin(tester().getMetadata().getFunctionRegistry()))
+                .on(p -> p.lateral(
+                        ImmutableList.of(p.symbol(""corr"")),
+                        p.values(p.symbol(""corr"")),
+                        p.project(Assignments.of(p.symbol(""expr""), p.expression(""sum + 1"")),
+                                p.aggregation(ab -> ab
+                                        .source(p.values(p.symbol(""a""), p.symbol(""b"")))
+                                        .addAggregation(p.symbol(""sum""), PlanBuilder.expression(""sum(a)""), ImmutableList.of(BIGINT))
+                                        .globalGrouping()))))
+                .matches(
+                        project(ImmutableMap.of(""corr"", expression(""corr""), ""expr"", expression(""(\""sum_1\"" + 1)"")),
+                                aggregation(ImmutableMap.of(""sum_1"", functionCall(""sum"", ImmutableList.of(""a""))),
+                                        join(JoinNode.Type.LEFT,
+                                                ImmutableList.of(),
+                                                assignUniqueId(""unique"",
+                                                        values(ImmutableMap.of(""corr"", 0))),
+                                                project(ImmutableMap.of(""non_null"", expression(""true"")),
+                                                        values(ImmutableMap.of(""a"", 0, ""b"", 1)))))));
+    }",method,
+"public class ClassPathChangeUploaderTests {
+	@Rule
+	public ExpectedException thrown = ExpectedException.none();
+	@Rule
+	public TemporaryFolder temp = new TemporaryFolder();
+	private MockClientHttpRequestFactory requestFactory;
+	private ClassPathChangeUploader uploader;
+	@Before
+	public void setup() {
+		this.requestFactory = new MockClientHttpRequestFactory();
+		this.uploader = new ClassPathChangeUploader(""http://localhost/upload"",
+				this.requestFactory);
+	}
+	@Test
+	public void urlMustNotBeNull() throws Exception {
+		this.thrown.expect(IllegalArgumentException.class);
+		this.thrown.expectMessage(""URL must not be empty"");
+		new ClassPathChangeUploader(null, this.requestFactory);
+	}
+	@Test
+	public void urlMustNotBeEmpty() throws Exception {
+		this.thrown.expect(IllegalArgumentException.class);
+		this.thrown.expectMessage(""URL must not be empty"");
+		new ClassPathChangeUploader("""", this.requestFactory);
+	}
+	@Test
+	public void requestFactoryMustNotBeNull() throws Exception {
+		this.thrown.expect(IllegalArgumentException.class);
+		this.thrown.expectMessage(""RequestFactory must not be null"");
+		new ClassPathChangeUploader(""http://localhost:8080"", null);
+	}
+	@Test
+	public void urlMustNotBeMalformed() throws Exception {
+		this.thrown.expect(IllegalArgumentException.class);
+		this.thrown.expectMessage(""Malformed URL 'htttttp:///ttest'"");
+		new ClassPathChangeUploader(""htttttp:///ttest"", this.requestFactory);
+	}
+	@Test
+	public void sendsClassLoaderFiles() throws Exception {
+		File sourceFolder = this.temp.newFolder();
+		ClassPathChangedEvent event = createClassPathChangedEvent(sourceFolder);
+		this.requestFactory.willRespond(HttpStatus.OK);
+		this.uploader.onApplicationEvent(event);
+		assertThat(this.requestFactory.getExecutedRequests()).hasSize(1);
+		MockClientHttpRequest request = this.requestFactory.getExecutedRequests().get(0);
+		verifyUploadRequest(sourceFolder, request);
+	}
+	@Test
+	public void retriesOnConnectException() throws Exception {
+		File sourceFolder = this.temp.newFolder();
+		ClassPathChangedEvent event = createClassPathChangedEvent(sourceFolder);
+		this.requestFactory.willRespond(new ConnectException());
+		this.requestFactory.willRespond(HttpStatus.OK);
+		this.uploader.onApplicationEvent(event);
+		assertThat(this.requestFactory.getExecutedRequests()).hasSize(2);
+		verifyUploadRequest(sourceFolder,
+				this.requestFactory.getExecutedRequests().get(1));
+	}
+	private void verifyUploadRequest(File sourceFolder, MockClientHttpRequest request)
+			throws IOException, ClassNotFoundException {
+		ClassLoaderFiles classLoaderFiles = deserialize(request.getBodyAsBytes());
+		Collection<SourceFolder> sourceFolders = classLoaderFiles.getSourceFolders();
+		assertThat(sourceFolders.size()).isEqualTo(1);
+		SourceFolder classSourceFolder = sourceFolders.iterator().next();
+		assertThat(classSourceFolder.getName()).isEqualTo(sourceFolder.getAbsolutePath());
+		Iterator<ClassLoaderFile> classFiles = classSourceFolder.getFiles().iterator();
+		assertClassFile(classFiles.next(), ""File1"", ClassLoaderFile.Kind.ADDED);
+		assertClassFile(classFiles.next(), ""File2"", ClassLoaderFile.Kind.MODIFIED);
+		assertClassFile(classFiles.next(), null, ClassLoaderFile.Kind.DELETED);
+		assertThat(classFiles.hasNext()).isFalse();
+	}
+	private void assertClassFile(ClassLoaderFile file, String content, Kind kind) {
+		assertThat(file.getContents())
+				.isEqualTo(content == null ? null : content.getBytes());
+		assertThat(file.getKind()).isEqualTo(kind);
+	}
+	private ClassPathChangedEvent createClassPathChangedEvent(File sourceFolder)
+			throws IOException {
+		Set<ChangedFile> files = new LinkedHashSet<>();
+		File file1 = createFile(sourceFolder, ""File1"");
+		File file2 = createFile(sourceFolder, ""File2"");
+		File file3 = createFile(sourceFolder, ""File3"");
+		files.add(new ChangedFile(sourceFolder, file1, Type.ADD));
+		files.add(new ChangedFile(sourceFolder, file2, Type.MODIFY));
+		files.add(new ChangedFile(sourceFolder, file3, Type.DELETE));
+		Set<ChangedFiles> changeSet = new LinkedHashSet<>();
+		changeSet.add(new ChangedFiles(sourceFolder, files));
+		ClassPathChangedEvent event = new ClassPathChangedEvent(this, changeSet, false);
+		return event;
+	}
+	private File createFile(File sourceFolder, String name) throws IOException {
+		File file = new File(sourceFolder, name);
+		FileCopyUtils.copy(name.getBytes(), file);
+		return file;
+	}
+	private ClassLoaderFiles deserialize(byte[] bytes)
+			throws IOException, ClassNotFoundException {
+		ObjectInputStream objectInputStream = new ObjectInputStream(
+				new ByteArrayInputStream(bytes));
+		return (ClassLoaderFiles) objectInputStream.readObject();
+	}
+}",class,
+"	@Before
+	public void setup() {
+		this.requestFactory = new MockClientHttpRequestFactory();
+		this.uploader = new ClassPathChangeUploader(""http://localhost/upload"",
+				this.requestFactory);
+	}
+	@Test
+	public void urlMustNotBeNull() throws Exception {
+		this.thrown.expect(IllegalArgumentException.class);
+		this.thrown.expectMessage(""URL must not be empty"");
+		new ClassPathChangeUploader(null, this.requestFactory);
+	}
+	@Test
+	public void urlMustNotBeEmpty() throws Exception {
+		this.thrown.expect(IllegalArgumentException.class);
+		this.thrown.expectMessage(""URL must not be empty"");
+		new ClassPathChangeUploader("""", this.requestFactory);
+	}
+	@Test
+	public void requestFactoryMustNotBeNull() throws Exception {
+		this.thrown.expect(IllegalArgumentException.class);
+		this.thrown.expectMessage(""RequestFactory must not be null"");
+		new ClassPathChangeUploader(""http://localhost:8080"", null);
+	}",method,
+"	@Test
+	public void urlMustNotBeNull() throws Exception {
+		this.thrown.expect(IllegalArgumentException.class);
+		this.thrown.expectMessage(""URL must not be empty"");
+		new ClassPathChangeUploader(null, this.requestFactory);
+	}
+	@Test
+	public void urlMustNotBeEmpty() throws Exception {
+		this.thrown.expect(IllegalArgumentException.class);
+		this.thrown.expectMessage(""URL must not be empty"");
+		new ClassPathChangeUploader("""", this.requestFactory);
+	}
+	@Test
+	public void requestFactoryMustNotBeNull() throws Exception {
+		this.thrown.expect(IllegalArgumentException.class);
+		this.thrown.expectMessage(""RequestFactory must not be null"");
+		new ClassPathChangeUploader(""http://localhost:8080"", null);
+	}
+	@Test
+	public void urlMustNotBeMalformed() throws Exception {
+		this.thrown.expect(IllegalArgumentException.class);
+		this.thrown.expectMessage(""Malformed URL 'htttttp:///ttest'"");
+		new ClassPathChangeUploader(""htttttp:///ttest"", this.requestFactory);
+	}",method,
+"	@Test
+	public void urlMustNotBeEmpty() throws Exception {
+		this.thrown.expect(IllegalArgumentException.class);
+		this.thrown.expectMessage(""URL must not be empty"");
+		new ClassPathChangeUploader("""", this.requestFactory);
+	}
+	@Test
+	public void requestFactoryMustNotBeNull() throws Exception {
+		this.thrown.expect(IllegalArgumentException.class);
+		this.thrown.expectMessage(""RequestFactory must not be null"");
+		new ClassPathChangeUploader(""http://localhost:8080"", null);
+	}
+	@Test
+	public void urlMustNotBeMalformed() throws Exception {
+		this.thrown.expect(IllegalArgumentException.class);
+		this.thrown.expectMessage(""Malformed URL 'htttttp:///ttest'"");
+		new ClassPathChangeUploader(""htttttp:///ttest"", this.requestFactory);
+	}",method,
+"	@Test
+	public void requestFactoryMustNotBeNull() throws Exception {
+		this.thrown.expect(IllegalArgumentException.class);
+		this.thrown.expectMessage(""RequestFactory must not be null"");
+		new ClassPathChangeUploader(""http://localhost:8080"", null);
+	}
+	@Test
+	public void urlMustNotBeMalformed() throws Exception {
+		this.thrown.expect(IllegalArgumentException.class);
+		this.thrown.expectMessage(""Malformed URL 'htttttp:///ttest'"");
+		new ClassPathChangeUploader(""htttttp:///ttest"", this.requestFactory);
+	}",method,
+"	@Test
+	public void urlMustNotBeMalformed() throws Exception {
+		this.thrown.expect(IllegalArgumentException.class);
+		this.thrown.expectMessage(""Malformed URL 'htttttp:///ttest'"");
+		new ClassPathChangeUploader(""htttttp:///ttest"", this.requestFactory);
+	}",method,
+"	@Test
+	public void sendsClassLoaderFiles() throws Exception {
+		File sourceFolder = this.temp.newFolder();
+		ClassPathChangedEvent event = createClassPathChangedEvent(sourceFolder);
+		this.requestFactory.willRespond(HttpStatus.OK);
+		this.uploader.onApplicationEvent(event);
+		assertThat(this.requestFactory.getExecutedRequests()).hasSize(1);
+		MockClientHttpRequest request = this.requestFactory.getExecutedRequests().get(0);
+		verifyUploadRequest(sourceFolder, request);
+	}",method,
+"	@Test
+	public void retriesOnConnectException() throws Exception {
+		File sourceFolder = this.temp.newFolder();
+		ClassPathChangedEvent event = createClassPathChangedEvent(sourceFolder);
+		this.requestFactory.willRespond(new ConnectException());
+		this.requestFactory.willRespond(HttpStatus.OK);
+		this.uploader.onApplicationEvent(event);
+		assertThat(this.requestFactory.getExecutedRequests()).hasSize(2);
+		verifyUploadRequest(sourceFolder,
+				this.requestFactory.getExecutedRequests().get(1));
+	}",method,
+"	private void verifyUploadRequest(File sourceFolder, MockClientHttpRequest request)
+			throws IOException, ClassNotFoundException {
+		ClassLoaderFiles classLoaderFiles = deserialize(request.getBodyAsBytes());
+		Collection<SourceFolder> sourceFolders = classLoaderFiles.getSourceFolders();
+		assertThat(sourceFolders.size()).isEqualTo(1);
+		SourceFolder classSourceFolder = sourceFolders.iterator().next();
+		assertThat(classSourceFolder.getName()).isEqualTo(sourceFolder.getAbsolutePath());
+		Iterator<ClassLoaderFile> classFiles = classSourceFolder.getFiles().iterator();
+		assertClassFile(classFiles.next(), ""File1"", ClassLoaderFile.Kind.ADDED);
+		assertClassFile(classFiles.next(), ""File2"", ClassLoaderFile.Kind.MODIFIED);
+		assertClassFile(classFiles.next(), null, ClassLoaderFile.Kind.DELETED);
+		assertThat(classFiles.hasNext()).isFalse();
+	}",method,
+"	private void assertClassFile(ClassLoaderFile file, String content, Kind kind) {
+		assertThat(file.getContents())
+				.isEqualTo(content == null ? null : content.getBytes());
+		assertThat(file.getKind()).isEqualTo(kind);
+	}",method,
+"	private ClassPathChangedEvent createClassPathChangedEvent(File sourceFolder)
+			throws IOException {
+		Set<ChangedFile> files = new LinkedHashSet<>();
+		File file1 = createFile(sourceFolder, ""File1"");
+		File file2 = createFile(sourceFolder, ""File2"");
+		File file3 = createFile(sourceFolder, ""File3"");
+		files.add(new ChangedFile(sourceFolder, file1, Type.ADD));
+		files.add(new ChangedFile(sourceFolder, file2, Type.MODIFY));
+		files.add(new ChangedFile(sourceFolder, file3, Type.DELETE));
+		Set<ChangedFiles> changeSet = new LinkedHashSet<>();
+		changeSet.add(new ChangedFiles(sourceFolder, files));
+		ClassPathChangedEvent event = new ClassPathChangedEvent(this, changeSet, false);
+		return event;
+	}",method,
+"	private File createFile(File sourceFolder, String name) throws IOException {
+		File file = new File(sourceFolder, name);
+		FileCopyUtils.copy(name.getBytes(), file);
+		return file;
+	}",method,
+"	private ClassLoaderFiles deserialize(byte[] bytes)
+			throws IOException, ClassNotFoundException {
+		ObjectInputStream objectInputStream = new ObjectInputStream(
+				new ByteArrayInputStream(bytes));
+		return (ClassLoaderFiles) objectInputStream.readObject();
+	}",method,
+"public class MultiApiAutoConfigurationTests extends AbstractSocialAutoConfigurationTests {
+	@Test
+	public void expectTwitterConfigurationOnly() throws Exception {
+		setupContext(""spring.social.twitter.appId:12345"",
+				""spring.social.twitter.appSecret:secret"");
+		assertConnectionFrameworkBeans();
+		assertThat(this.context.getBean(Twitter.class)).isNotNull();
+		assertMissingBean(Facebook.class);
+		assertMissingBean(LinkedIn.class);
+	}
+	@Test
+	public void expectFacebookConfigurationOnly() throws Exception {
+		setupContext(""spring.social.facebook.appId:12345"",
+				""spring.social.facebook.appSecret:secret"");
+		assertConnectionFrameworkBeans();
+		assertThat(this.context.getBean(Facebook.class)).isNotNull();
+		assertMissingBean(Twitter.class);
+		assertMissingBean(LinkedIn.class);
+	}
+	@Test
+	public void expectLinkedInConfigurationOnly() throws Exception {
+		setupContext(""spring.social.linkedin.appId:12345"",
+				""spring.social.linkedin.appSecret:secret"");
+		assertConnectionFrameworkBeans();
+		assertThat(this.context.getBean(LinkedIn.class)).isNotNull();
+		assertMissingBean(Twitter.class);
+		assertMissingBean(Facebook.class);
+	}
+	@Test
+	public void expectFacebookAndLinkedInConfigurationOnly() throws Exception {
+		setupContext(""spring.social.facebook.appId:54321"",
+				""spring.social.facebook.appSecret:shhhhh"",
+				""spring.social.linkedin.appId:12345"",
+				""spring.social.linkedin.appSecret:secret"");
+		assertConnectionFrameworkBeans();
+		assertThat(this.context.getBean(Facebook.class)).isNotNull();
+		assertThat(this.context.getBean(LinkedIn.class)).isNotNull();
+		assertMissingBean(Twitter.class);
+	}
+	@Test
+	public void expectFacebookAndTwitterConfigurationOnly() throws Exception {
+		setupContext(""spring.social.facebook.appId:54321"",
+				""spring.social.facebook.appSecret:shhhhh"",
+				""spring.social.twitter.appId:12345"",
+				""spring.social.twitter.appSecret:secret"");
+		assertConnectionFrameworkBeans();
+		assertThat(this.context.getBean(Facebook.class)).isNotNull();
+		assertThat(this.context.getBean(Twitter.class)).isNotNull();
+		assertMissingBean(LinkedIn.class);
+	}
+	@Test
+	public void expectLinkedInAndTwitterConfigurationOnly() throws Exception {
+		setupContext(""spring.social.linkedin.appId:54321"",
+				""spring.social.linkedin.appSecret:shhhhh"",
+				""spring.social.twitter.appId:12345"",
+				""spring.social.twitter.appSecret:secret"");
+		assertConnectionFrameworkBeans();
+		assertThat(this.context.getBean(LinkedIn.class)).isNotNull();
+		assertThat(this.context.getBean(Twitter.class)).isNotNull();
+		assertMissingBean(Facebook.class);
+	}
+	@Test
+	public void noSocialBeansCreatedWhenPropertiesArentSet() throws Exception {
+		setupContext();
+		assertNoConnectionFrameworkBeans();
+		assertMissingBean(Twitter.class);
+		assertMissingBean(Facebook.class);
+		assertMissingBean(LinkedIn.class);
+	}
+	private void setupContext(String... environment) {
+		this.context = new AnnotationConfigWebApplicationContext();
+		TestPropertyValues.of(environment).applyTo(this.context);
+		ConfigurationPropertySources.attach(this.context.getEnvironment());
+		this.context.register(TwitterAutoConfiguration.class);
+		this.context.register(FacebookAutoConfiguration.class);
+		this.context.register(LinkedInAutoConfiguration.class);
+		this.context.register(SocialWebAutoConfiguration.class);
+		this.context.refresh();
+	}
+}",class,
+"	@Test
+	public void expectTwitterConfigurationOnly() throws Exception {
+		setupContext(""spring.social.twitter.appId:12345"",
+				""spring.social.twitter.appSecret:secret"");
+		assertConnectionFrameworkBeans();
+		assertThat(this.context.getBean(Twitter.class)).isNotNull();
+		assertMissingBean(Facebook.class);
+		assertMissingBean(LinkedIn.class);
+	}",method,
+"	@Test
+	public void expectFacebookConfigurationOnly() throws Exception {
+		setupContext(""spring.social.facebook.appId:12345"",
+				""spring.social.facebook.appSecret:secret"");
+		assertConnectionFrameworkBeans();
+		assertThat(this.context.getBean(Facebook.class)).isNotNull();
+		assertMissingBean(Twitter.class);
+		assertMissingBean(LinkedIn.class);
+	}",method,
+"	@Test
+	public void expectLinkedInConfigurationOnly() throws Exception {
+		setupContext(""spring.social.linkedin.appId:12345"",
+				""spring.social.linkedin.appSecret:secret"");
+		assertConnectionFrameworkBeans();
+		assertThat(this.context.getBean(LinkedIn.class)).isNotNull();
+		assertMissingBean(Twitter.class);
+		assertMissingBean(Facebook.class);
+	}",method,
+"	@Test
+	public void expectFacebookAndLinkedInConfigurationOnly() throws Exception {
+		setupContext(""spring.social.facebook.appId:54321"",
+				""spring.social.facebook.appSecret:shhhhh"",
+				""spring.social.linkedin.appId:12345"",
+				""spring.social.linkedin.appSecret:secret"");
+		assertConnectionFrameworkBeans();
+		assertThat(this.context.getBean(Facebook.class)).isNotNull();
+		assertThat(this.context.getBean(LinkedIn.class)).isNotNull();
+		assertMissingBean(Twitter.class);
+	}",method,
+"	@Test
+	public void expectFacebookAndTwitterConfigurationOnly() throws Exception {
+		setupContext(""spring.social.facebook.appId:54321"",
+				""spring.social.facebook.appSecret:shhhhh"",
+				""spring.social.twitter.appId:12345"",
+				""spring.social.twitter.appSecret:secret"");
+		assertConnectionFrameworkBeans();
+		assertThat(this.context.getBean(Facebook.class)).isNotNull();
+		assertThat(this.context.getBean(Twitter.class)).isNotNull();
+		assertMissingBean(LinkedIn.class);
+	}",method,
+"	@Test
+	public void expectLinkedInAndTwitterConfigurationOnly() throws Exception {
+		setupContext(""spring.social.linkedin.appId:54321"",
+				""spring.social.linkedin.appSecret:shhhhh"",
+				""spring.social.twitter.appId:12345"",
+				""spring.social.twitter.appSecret:secret"");
+		assertConnectionFrameworkBeans();
+		assertThat(this.context.getBean(LinkedIn.class)).isNotNull();
+		assertThat(this.context.getBean(Twitter.class)).isNotNull();
+		assertMissingBean(Facebook.class);
+	}",method,
+"	@Test
+	public void noSocialBeansCreatedWhenPropertiesArentSet() throws Exception {
+		setupContext();
+		assertNoConnectionFrameworkBeans();
+		assertMissingBean(Twitter.class);
+		assertMissingBean(Facebook.class);
+		assertMissingBean(LinkedIn.class);
+	}",method,
+"	private void setupContext(String... environment) {
+		this.context = new AnnotationConfigWebApplicationContext();
+		TestPropertyValues.of(environment).applyTo(this.context);
+		ConfigurationPropertySources.attach(this.context.getEnvironment());
+		this.context.register(TwitterAutoConfiguration.class);
+		this.context.register(FacebookAutoConfiguration.class);
+		this.context.register(LinkedInAutoConfiguration.class);
+		this.context.register(SocialWebAutoConfiguration.class);
+		this.context.refresh();
+	}",method,
+"public class StaticPathReferenceProvider extends PathReferenceProviderBase {
+  private boolean myEndingSlashNotAllowed;
+  private boolean myRelativePathsAllowed;
+  private final FileType[] mySuitableFileTypes;
+  public StaticPathReferenceProvider(@Nullable final FileType[] suitableFileTypes) {
+    mySuitableFileTypes = suitableFileTypes;
+  }
+  @Override
+  public boolean createReferences(@NotNull final PsiElement psiElement,
+                                  final int offset,
+                                  final String text,
+                                  final @NotNull List<PsiReference> references,
+                                  final boolean soft) {
+    FileReferenceSet set = new FileReferenceSet(text, psiElement, offset, null, true, myEndingSlashNotAllowed, mySuitableFileTypes) {
+      @Override
+      protected boolean isUrlEncoded() {
+        return true;
+      }
+      @Override
+      protected boolean isSoft() {
+        return soft;
+      }
+    };
+    if (!myRelativePathsAllowed) {
+      set.addCustomization(FileReferenceSet.DEFAULT_PATH_EVALUATOR_OPTION, FileReferenceSet.ABSOLUTE_TOP_LEVEL);
+    }
+    Collections.addAll(references, set.getAllReferences());
+    return true;
+  }
+  @Override
+  @Nullable
+  public PathReference getPathReference(@NotNull final String path, @NotNull final PsiElement element) {
+    final List<PsiReference> list = new SmartList<>();
+    createReferences(element, list, true);
+    if (list.isEmpty()) return null;
+    final PsiElement target = list.get(list.size() - 1).resolve();
+    if (target == null) return null;
+    return new PathReference(path, PathReference.ResolveFunction.NULL_RESOLVE_FUNCTION) {
+      @Override
+      public PsiElement resolve() {
+        return target;
+      }
+    };
+  }
+  public void setEndingSlashNotAllowed(final boolean endingSlashNotAllowed) {
+    myEndingSlashNotAllowed = endingSlashNotAllowed;
+  }
+  public void setRelativePathsAllowed(final boolean relativePathsAllowed) {
+    myRelativePathsAllowed = relativePathsAllowed;
+  }
+}",class,
+"  public StaticPathReferenceProvider(@Nullable final FileType[] suitableFileTypes) {
+    mySuitableFileTypes = suitableFileTypes;
+  }",method,
+"  @Override
+  public boolean createReferences(@NotNull final PsiElement psiElement,
+                                  final int offset,
+                                  final String text,
+                                  final @NotNull List<PsiReference> references,
+                                  final boolean soft) {
+    FileReferenceSet set = new FileReferenceSet(text, psiElement, offset, null, true, myEndingSlashNotAllowed, mySuitableFileTypes) {
+      @Override
+      protected boolean isUrlEncoded() {
+        return true;
+      }
+      @Override
+      protected boolean isSoft() {
+        return soft;
+      }
+    };
+    if (!myRelativePathsAllowed) {
+      set.addCustomization(FileReferenceSet.DEFAULT_PATH_EVALUATOR_OPTION, FileReferenceSet.ABSOLUTE_TOP_LEVEL);
+    }
+    Collections.addAll(references, set.getAllReferences());
+    return true;
+  }",method,
+"      @Override
+      protected boolean isUrlEncoded() {
+        return true;
+      }",method,
+"      @Override
+      protected boolean isSoft() {
+        return soft;
+      }",method,
+"    if (!myRelativePathsAllowed) {
+      set.addCustomization(FileReferenceSet.DEFAULT_PATH_EVALUATOR_OPTION, FileReferenceSet.ABSOLUTE_TOP_LEVEL);
+    }",method,
+"  @Override
+  @Nullable
+  public PathReference getPathReference(@NotNull final String path, @NotNull final PsiElement element) {
+    final List<PsiReference> list = new SmartList<>();
+    createReferences(element, list, true);
+    if (list.isEmpty()) return null;
+    final PsiElement target = list.get(list.size() - 1).resolve();
+    if (target == null) return null;
+    return new PathReference(path, PathReference.ResolveFunction.NULL_RESOLVE_FUNCTION) {
+      @Override
+      public PsiElement resolve() {
+        return target;
+      }
+    };
+  }",method,
+"    return new PathReference(path, PathReference.ResolveFunction.NULL_RESOLVE_FUNCTION) {
+      @Override
+      public PsiElement resolve() {
+        return target;
+      }
+    }",method,
+"      @Override
+      public PsiElement resolve() {
+        return target;
+      }",method,
+"  public void setEndingSlashNotAllowed(final boolean endingSlashNotAllowed) {
+    myEndingSlashNotAllowed = endingSlashNotAllowed;
+  }",method,
+"  public void setRelativePathsAllowed(final boolean relativePathsAllowed) {
+    myRelativePathsAllowed = relativePathsAllowed;
+  }",method,
+"public class DocumentFieldTests extends ESTestCase {
+    public void testToXContent() {
+        DocumentField documentField = new DocumentField(""field"", Arrays.asList(""value1"", ""value2""));
+        String output = Strings.toString(documentField);
+        assertEquals(""{\""field\"":[\""value1\"",\""value2\""]}"", output);
+    }
+    public void testEqualsAndHashcode() {
+        checkEqualsAndHashCode(randomDocumentField(XContentType.JSON).v1(), DocumentFieldTests::copyDocumentField,
+                DocumentFieldTests::mutateDocumentField);
+    }
+    public void testToAndFromXContent() throws Exception {
+        XContentType xContentType = randomFrom(XContentType.values());
+        Tuple<DocumentField, DocumentField> tuple = randomDocumentField(xContentType);
+        DocumentField documentField = tuple.v1();
+        DocumentField expectedDocumentField = tuple.v2();
+        boolean humanReadable = randomBoolean();
+        BytesReference originalBytes = toShuffledXContent(documentField, xContentType, ToXContent.EMPTY_PARAMS, humanReadable);
+        //test that we can parse what we print out
+        DocumentField parsedDocumentField;
+        try (XContentParser parser = createParser(xContentType.xContent(), originalBytes)) {
+            //we need to move to the next token, the start object one that we manually added is not expected
+            assertEquals(XContentParser.Token.START_OBJECT, parser.nextToken());
+            assertEquals(XContentParser.Token.FIELD_NAME, parser.nextToken());
+            parsedDocumentField = DocumentField.fromXContent(parser);
+            assertEquals(XContentParser.Token.END_ARRAY, parser.currentToken());
+            assertEquals(XContentParser.Token.END_OBJECT, parser.nextToken());
+            assertNull(parser.nextToken());
+        }
+        assertEquals(expectedDocumentField, parsedDocumentField);
+        BytesReference finalBytes = toXContent(parsedDocumentField, xContentType, humanReadable);
+        assertToXContentEquivalent(originalBytes, finalBytes, xContentType);
+    }
+    private static DocumentField copyDocumentField(DocumentField documentField) {
+        return new DocumentField(documentField.getName(), documentField.getValues());
+    }
+    private static DocumentField mutateDocumentField(DocumentField documentField) {
+        List<Supplier<DocumentField>> mutations = new ArrayList<>();
+        mutations.add(() -> new DocumentField(randomUnicodeOfCodepointLength(15), documentField.getValues()));
+        mutations.add(() -> new DocumentField(documentField.getName(), randomDocumentField(XContentType.JSON).v1().getValues()));
+        final int index = randomFrom(0, 1);
+        final DocumentField randomCandidate = mutations.get(index).get();
+        if (!documentField.equals(randomCandidate)) {
+            return randomCandidate;
+        } else {
+            // we are unlucky and our random mutation is equal to our mutation, try the other candidate
+            final DocumentField otherCandidate = mutations.get(1 - index).get();
+            assert !documentField.equals(otherCandidate) : documentField;
+            return otherCandidate;
+        }
+    }
+    public static Tuple<DocumentField, DocumentField> randomDocumentField(XContentType xContentType) {
+        if (randomBoolean()) {
+            String fieldName = randomFrom(ParentFieldMapper.NAME, RoutingFieldMapper.NAME, UidFieldMapper.NAME);
+            DocumentField documentField = new DocumentField(fieldName, Collections.singletonList(randomAlphaOfLengthBetween(3, 10)));
+            return Tuple.tuple(documentField, documentField);
+        }
+        String fieldName = randomAlphaOfLengthBetween(3, 10);
+        Tuple<List<Object>, List<Object>> tuple = RandomObjects.randomStoredFieldValues(random(), xContentType);
+        DocumentField input = new DocumentField(fieldName, tuple.v1());
+        DocumentField expected = new DocumentField(fieldName, tuple.v2());
+        return Tuple.tuple(input, expected);
+    }
+}",class,
+"    public void testToXContent() {
+        DocumentField documentField = new DocumentField(""field"", Arrays.asList(""value1"", ""value2""));
+        String output = Strings.toString(documentField);
+        assertEquals(""{\""field\"":[\""value1\"",\""value2\""]}"", output);
+    }",method,
+"    public void testEqualsAndHashcode() {
+        checkEqualsAndHashCode(randomDocumentField(XContentType.JSON).v1(), DocumentFieldTests::copyDocumentField,
+                DocumentFieldTests::mutateDocumentField);
+    }",method,
+"    public void testToAndFromXContent() throws Exception {
+        XContentType xContentType = randomFrom(XContentType.values());
+        Tuple<DocumentField, DocumentField> tuple = randomDocumentField(xContentType);
+        DocumentField documentField = tuple.v1();
+        DocumentField expectedDocumentField = tuple.v2();
+        boolean humanReadable = randomBoolean();
+        BytesReference originalBytes = toShuffledXContent(documentField, xContentType, ToXContent.EMPTY_PARAMS, humanReadable);
+        //test that we can parse what we print out
+        DocumentField parsedDocumentField;
+        try (XContentParser parser = createParser(xContentType.xContent(), originalBytes)) {
+            //we need to move to the next token, the start object one that we manually added is not expected
+            assertEquals(XContentParser.Token.START_OBJECT, parser.nextToken());
+            assertEquals(XContentParser.Token.FIELD_NAME, parser.nextToken());
+            parsedDocumentField = DocumentField.fromXContent(parser);
+            assertEquals(XContentParser.Token.END_ARRAY, parser.currentToken());
+            assertEquals(XContentParser.Token.END_OBJECT, parser.nextToken());
+            assertNull(parser.nextToken());
+        }
+        assertEquals(expectedDocumentField, parsedDocumentField);
+        BytesReference finalBytes = toXContent(parsedDocumentField, xContentType, humanReadable);
+        assertToXContentEquivalent(originalBytes, finalBytes, xContentType);
+    }",method,
+"    private static DocumentField copyDocumentField(DocumentField documentField) {
+        return new DocumentField(documentField.getName(), documentField.getValues());
+    }",method,
+"    private static DocumentField mutateDocumentField(DocumentField documentField) {
+        List<Supplier<DocumentField>> mutations = new ArrayList<>();
+        mutations.add(() -> new DocumentField(randomUnicodeOfCodepointLength(15), documentField.getValues()));
+        mutations.add(() -> new DocumentField(documentField.getName(), randomDocumentField(XContentType.JSON).v1().getValues()));
+        final int index = randomFrom(0, 1);
+        final DocumentField randomCandidate = mutations.get(index).get();
+        if (!documentField.equals(randomCandidate)) {
+            return randomCandidate;
+        } else {
+            // we are unlucky and our random mutation is equal to our mutation, try the other candidate
+            final DocumentField otherCandidate = mutations.get(1 - index).get();
+            assert !documentField.equals(otherCandidate) : documentField;
+            return otherCandidate;
+        }
+    }",method,
+"    public static Tuple<DocumentField, DocumentField> randomDocumentField(XContentType xContentType) {
+        if (randomBoolean()) {
+            String fieldName = randomFrom(ParentFieldMapper.NAME, RoutingFieldMapper.NAME, UidFieldMapper.NAME);
+            DocumentField documentField = new DocumentField(fieldName, Collections.singletonList(randomAlphaOfLengthBetween(3, 10)));
+            return Tuple.tuple(documentField, documentField);
+        }
+        String fieldName = randomAlphaOfLengthBetween(3, 10);
+        Tuple<List<Object>, List<Object>> tuple = RandomObjects.randomStoredFieldValues(random(), xContentType);
+        DocumentField input = new DocumentField(fieldName, tuple.v1());
+        DocumentField expected = new DocumentField(fieldName, tuple.v2());
+        return Tuple.tuple(input, expected);
+    }",method,
+"public abstract class DataFlowProblem<T extends DataFlowProblem<T, U>, U extends FlowGraphNode<T, U>> {
+    public enum DF_Direction { FORWARD, BACKWARD, BIDIRECTIONAL }
+    public final DF_Direction direction;
+    public DataFlowProblem(DF_Direction direction) {
+        this.direction = direction;
+    }
+// ------- Abstract methods without a default implementation -------
+    abstract public U buildFlowGraphNode(BasicBlock bb);
+    abstract public String getName();
+// ------- Default implementation methods below -------
+    public boolean isEmpty() {
+        return false;
+    }
+    public DF_Direction getFlowDirection() {
+        return direction;
+    }
+    public void setup(IRScope scope) {
+        this.scope = scope;
+        buildFlowGraph();
+    }
+    public IRScope getScope() {
+        return scope;
+    }
+    public void compute_MOP_Solution() {
+        if (isEmpty()) return;  // Don't bother to compute soln if we have no facts available.
+        // 1. Initialize work list based on flow direction to make processing efficient!
+        LinkedList<U> workList = generateWorkList();
+        // 2. Initialize a bitset with a flag set for all basic blocks
+        int numNodes = scope.getCFG().getMaxNodeID();
+        BitSet bbSet = new BitSet(1+numNodes);
+        bbSet.flip(0, numNodes); // set all bits from default of 0 to 1 (enebo: could we invert this in algo?)
+        // 3. Iteratively compute data flow info
+        while (!workList.isEmpty()) {
+            workList.removeFirst().computeDataFlowInfo(workList, bbSet);
+        }
+    }
+    protected LinkedList<U> generateWorkList() {
+        LinkedList<U> wl = new LinkedList<>();
+        Iterator<BasicBlock> it = direction == DF_Direction.FORWARD ?
+                scope.getCFG().getReversePostOrderTraverser() : scope.getCFG().getPostOrderTraverser();
+        while (it.hasNext()) {
+            wl.add(getFlowGraphNode(it.next()));
+        }
+        return wl;
+    }
+    public int getDFVarsCount() {
+        return nextVariableId + 1;
+    }
+    public String getDataFlowVarsForOutput() {
+        return """";
+    }
+    @Override
+    public String toString() {
+        StringBuilder buf = new StringBuilder();
+        buf.append(""----"").append(getName()).append(""----\n"");
+        buf.append(""---- Data Flow Vars: ----\n"");
+        buf.append(getDataFlowVarsForOutput());
+        buf.append(""-------------------------\n"");
+        for (FlowGraphNode n: flowGraphNodes) {
+            buf.append(""DF State for BB "").append(n.basicBlock.getID()).append("":\n"").append(n.toString());
+        }
+        return buf.toString();
+    }
+    public U getFlowGraphNode(BasicBlock bb) {
+        return basicBlockToFlowGraph.get(bb);
+    }
+    public U getEntryNode() {
+        return getFlowGraphNode(scope.getCFG().getEntryBB());
+    }
+    public U getExitNode() {
+        return getFlowGraphNode(scope.getCFG().getExitBB());
+    }
+    public int addDataFlowVar() {
+        nextVariableId++;
+        return nextVariableId;
+    }
+    protected List<U> flowGraphNodes;
+    protected IRScope scope;
+    private int nextVariableId = -1;
+    // Map for hash-speed retrieval of flowgraph nodes instead of walking flowGraphNodes.
+    private Map<BasicBlock, U> basicBlockToFlowGraph;
+    private void buildFlowGraph() {
+        flowGraphNodes = new LinkedList<>();
+        basicBlockToFlowGraph = new HashMap<>();
+        for (BasicBlock bb: scope.getCFG().getBasicBlocks()) {
+            U fgNode = buildFlowGraphNode(bb);
+            fgNode.init();
+            fgNode.buildDataFlowVars();
+            flowGraphNodes.add(fgNode);
+            basicBlockToFlowGraph.put(bb, fgNode);
+        }
+    }
+}",class,
+"    public DataFlowProblem(DF_Direction direction) {
+        this.direction = direction;
+    }",method,
+"    public boolean isEmpty() {
+        return false;
+    }",method,
+"    public DF_Direction getFlowDirection() {
+        return direction;
+    }",method,
+"    public void setup(IRScope scope) {
+        this.scope = scope;
+        buildFlowGraph();
+    }",method,
+"    public IRScope getScope() {
+        return scope;
+    }",method,
+"    public void compute_MOP_Solution() {
+        if (isEmpty()) return;  // Don't bother to compute soln if we have no facts available.
+        // 1. Initialize work list based on flow direction to make processing efficient!
+        LinkedList<U> workList = generateWorkList();
+        // 2. Initialize a bitset with a flag set for all basic blocks
+        int numNodes = scope.getCFG().getMaxNodeID();
+        BitSet bbSet = new BitSet(1+numNodes);
+        bbSet.flip(0, numNodes); // set all bits from default of 0 to 1 (enebo: could we invert this in algo?)
+        // 3. Iteratively compute data flow info
+        while (!workList.isEmpty()) {
+            workList.removeFirst().computeDataFlowInfo(workList, bbSet);
+        }
+    }",method,
+"    protected LinkedList<U> generateWorkList() {
+        LinkedList<U> wl = new LinkedList<>();
+        Iterator<BasicBlock> it = direction == DF_Direction.FORWARD ?
+                scope.getCFG().getReversePostOrderTraverser() : scope.getCFG().getPostOrderTraverser();
+        while (it.hasNext()) {
+            wl.add(getFlowGraphNode(it.next()));
+        }
+        return wl;
+    }",method,
+"    public int getDFVarsCount() {
+        return nextVariableId + 1;
+    }",method,
+"    public String getDataFlowVarsForOutput() {
+        return """";
+    }",method,
+"    @Override
+    public String toString() {
+        StringBuilder buf = new StringBuilder();
+        buf.append(""----"").append(getName()).append(""----\n"");
+        buf.append(""---- Data Flow Vars: ----\n"");
+        buf.append(getDataFlowVarsForOutput());
+        buf.append(""-------------------------\n"");
+        for (FlowGraphNode n: flowGraphNodes) {
+            buf.append(""DF State for BB "").append(n.basicBlock.getID()).append("":\n"").append(n.toString());
+        }
+        return buf.toString();
+    }",method,
+"        for (FlowGraphNode n: flowGraphNodes) {
+            buf.append(""DF State for BB "").append(n.basicBlock.getID()).append("":\n"").append(n.toString());
+        }",method,
+"    public U getFlowGraphNode(BasicBlock bb) {
+        return basicBlockToFlowGraph.get(bb);
+    }",method,
+"    public U getEntryNode() {
+        return getFlowGraphNode(scope.getCFG().getEntryBB());
+    }",method,
+"    public U getExitNode() {
+        return getFlowGraphNode(scope.getCFG().getExitBB());
+    }",method,
+"    public int addDataFlowVar() {
+        nextVariableId++;
+        return nextVariableId;
+    }",method,
+"    private void buildFlowGraph() {
+        flowGraphNodes = new LinkedList<>();
+        basicBlockToFlowGraph = new HashMap<>();
+        for (BasicBlock bb: scope.getCFG().getBasicBlocks()) {
+            U fgNode = buildFlowGraphNode(bb);
+            fgNode.init();
+            fgNode.buildDataFlowVars();
+            flowGraphNodes.add(fgNode);
+            basicBlockToFlowGraph.put(bb, fgNode);
+        }
+    }",method,
+"  abstract class Info implements StatusBarInfo {
+    public static final Topic<StatusBarInfo> TOPIC = Topic.create(""IdeStatusBar.Text"", StatusBarInfo.class);
+    private Info() {
+    }
+    public static void set(@Nullable final String text, @Nullable final Project project) {
+      set(text, project, null);
+    }
+    public static void set(@Nullable final String text, @Nullable final Project project, @Nullable final String requestor) {
+      if (project != null) {
+        if (project.isDisposed()) return;
+        if (!project.isInitialized()) {
+          StartupManager.getInstance(project).runWhenProjectIsInitialized(
+            () -> project.getMessageBus().syncPublisher(TOPIC).setInfo(text, requestor));
+          return;
+        }
+      }
+      final MessageBus bus = project == null ? ApplicationManager.getApplication().getMessageBus() : project.getMessageBus();
+      bus.syncPublisher(TOPIC).setInfo(text, requestor);
+    }
+  }",class,
+"    private Info() {
+    }",method,
+"    public static void set(@Nullable final String text, @Nullable final Project project) {
+      set(text, project, null);
+    }",method,
+"    public static void set(@Nullable final String text, @Nullable final Project project, @Nullable final String requestor) {
+      if (project != null) {
+        if (project.isDisposed()) return;
+        if (!project.isInitialized()) {
+          StartupManager.getInstance(project).runWhenProjectIsInitialized(
+            () -> project.getMessageBus().syncPublisher(TOPIC).setInfo(text, requestor));
+          return;
+        }
+      }
+      final MessageBus bus = project == null ? ApplicationManager.getApplication().getMessageBus() : project.getMessageBus();
+      bus.syncPublisher(TOPIC).setInfo(text, requestor);
+    }",method,

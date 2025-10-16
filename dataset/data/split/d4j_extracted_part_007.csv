@@ -1,0 +1,1763 @@
+code_snippet,type,score
+"  public static void moveToRange(Range range, Editor editor, LineStatusTracker tracker) {
+    new MyLineStatusMarkerPopup(tracker, editor, range).scrollAndShow();
+  }",method,good
+"  public static void showHint(Range range, Editor editor, LineStatusTracker tracker) {
+    new MyLineStatusMarkerPopup(tracker, editor, range).showAfterScroll();
+  }",method,good
+"    @NotNull private final LineStatusTracker myTracker;
+    public MyLineStatusMarkerPopup(@NotNull LineStatusTracker tracker,
+                                   @NotNull Editor editor,
+                                   @NotNull Range range) {
+      super(tracker, editor, range);
+      myTracker = tracker;
+    }",method,good
+"    @NotNull
+    @Override
+    protected List<AnAction> createToolbarActions(@Nullable Point mousePosition) {
+      List<AnAction> actions = new ArrayList<>();
+      actions.add(new ShowPrevChangeMarkerAction(myTracker.getPrevRange(myRange), myTracker, myEditor));
+      actions.add(new ShowNextChangeMarkerAction(myTracker.getNextRange(myRange), myTracker, myEditor));
+      actions.add(new RollbackLineStatusRangeAction(myTracker, myRange, myEditor));
+      actions.add(new ShowLineStatusRangeDiffAction(myTracker, myRange, myEditor));
+      actions.add(new CopyLineStatusRangeAction(myTracker, myRange));
+      actions.add(new ToggleByWordDiffAction(myRange, myEditor, myTracker, mousePosition));
+      return actions;
+    }",method,good
+"    @NotNull
+    @Override
+    protected FileType getFileType() {
+      return myTracker.getVirtualFile().getFileType();
+    }",method,good
+"    @NotNull private final Range myRange;
+    @NotNull private final Editor myEditor;
+    @NotNull private final LineStatusTracker myTracker;
+    @Nullable private final Point myMousePosition;
+    public ToggleByWordDiffAction(@NotNull Range range,
+                                  @NotNull Editor editor,
+                                  @NotNull LineStatusTracker tracker,
+                                  @Nullable Point mousePosition) {
+      myRange = range;
+      myEditor = editor;
+      myTracker = tracker;
+      myMousePosition = mousePosition;
+    }",method,changes_recommended
+"    @Override
+    protected void reshowPopup() {
+      new MyLineStatusMarkerPopup(myTracker, myEditor, myRange).showHintAt(myMousePosition);
+    }",method,good
+"public class BuildException extends RuntimeException {
+  public BuildException(String message) {
+    super(message);
+  }
+  public BuildException(String message, Exception cause) {
+    super(message, cause);
+  }
+}",class,good
+"public class BuildReporter {
+  private boolean verbose = true;
+  public void info(String message, Object... args) {
+    System.out.println(String.format(message, args));  
+  }
+  public void debug(String message, Object... args) {
+    if(verbose) {
+      System.out.println(String.format(message, args));
+    }
+  }
+  public void warn(String message, Exception e) {
+    System.out.println(message);
+    e.printStackTrace();
+  }
+}",class,good
+"  public BuildException(String message) {
+    super(message);
+  }",method,good
+"  public BuildException(String message, Exception cause) {
+    super(message, cause);
+  }",method,good
+"  public void info(String message, Object... args) {
+    System.out.println(String.format(message, args));  
+  }",method,good
+"  public void debug(String message, Object... args) {
+    if(verbose) {
+      System.out.println(String.format(message, args));
+    }
+  }",method,good
+"    if(verbose) {
+      System.out.println(String.format(message, args));
+    }",method,good
+"  public void warn(String message, Exception e) {
+    System.out.println(message);
+    e.printStackTrace();
+  }",method,good
+"public class TestEntityTest extends AbstractDaoTestLongPk<TestEntityDao, TestEntity> {
+    public TestEntityTest() {
+        super(TestEntityDao.class);
+    }
+    @Override
+    protected TestEntity createEntity(Long key) {
+        TestEntity entity = new TestEntity();
+        entity.setId(key);
+        entity.setSimpleStringNotNull(""green"");
+        return entity;
+    }
+    public void testRefresh() {
+        TestEntity entity = createEntity(1l);
+        entity.setSimpleInteger(42);
+        entity.setSimpleString(null);
+        dao.insert(entity);
+        entity.setSimpleInteger(null);
+        entity.setSimpleString(""temp"");
+        dao.refresh(entity);
+        assertEquals(42, (int) entity.getSimpleInteger());
+        assertNull(entity.getSimpleString());
+    }
+    public void testRefreshIllegal() {
+        TestEntity entity = createEntity(1l);
+        try {
+            dao.refresh(entity);
+            fail(""Exception expected"");
+        } catch (DaoException expected) {
+        }
+        dao.insert(entity);
+        dao.delete(entity);
+        try {
+            dao.refresh(entity);
+            fail(""Exception expected"");
+        } catch (DaoException expected) {
+        }
+    }
+}",class,good
+"    public TestEntityTest() {
+        super(TestEntityDao.class);
+    }",method,good
+"    @Override
+    protected TestEntity createEntity(Long key) {
+        TestEntity entity = new TestEntity();
+        entity.setId(key);
+        entity.setSimpleStringNotNull(""green"");
+        return entity;
+    }",method,good
+"    public void testRefresh() {
+        TestEntity entity = createEntity(1l);
+        entity.setSimpleInteger(42);
+        entity.setSimpleString(null);
+        dao.insert(entity);
+        entity.setSimpleInteger(null);
+        entity.setSimpleString(""temp"");
+        dao.refresh(entity);
+        assertEquals(42, (int) entity.getSimpleInteger());
+        assertNull(entity.getSimpleString());
+    }",method,good
+"    public void testRefreshIllegal() {
+        TestEntity entity = createEntity(1l);
+        try {
+            dao.refresh(entity);
+            fail(""Exception expected"");
+        } catch (DaoException expected) {
+        }
+        dao.insert(entity);
+        dao.delete(entity);
+        try {
+            dao.refresh(entity);
+            fail(""Exception expected"");
+        } catch (DaoException expected) {
+        }
+    }",method,good
+"public class TestSession implements Session {
+  private final SessionId sessionId;
+  private final WebDriver driver;
+  private final Map<String, Object> capabilities;
+  private final KnownElements knownElements;
+  private final ExecutorService executor;
+  private volatile Thread inUseWithThread = null;
+  private long lastAccess;
+  public TestSession(SessionId sessionId, WebDriver driver, Capabilities capabilities) {
+    this.sessionId = sessionId;
+    this.driver = driver;
+    //noinspection unchecked
+    this.capabilities = (Map<String, Object>) capabilities.asMap();
+    this.knownElements = new KnownElements();
+    this.executor = new ThreadPoolExecutor(1, 1, 600L, TimeUnit.SECONDS,
+        new LinkedBlockingQueue<Runnable>());
+  }
+  public void close() {
+    executor.shutdown();
+  }
+  public <X> X execute(final FutureTask<X> future) throws Exception {
+    executor.execute(new Runnable() {
+          public void run() {
+            inUseWithThread = Thread.currentThread();
+            inUseWithThread.setName(""Session "" + sessionId + "" processing inside browser"");
+            try {
+              future.run();
+            } finally {
+              inUseWithThread = null;
+              Thread.currentThread().setName(""Session "" + sessionId + "" awaiting client"");
+            }
+          }
+        });
+    return future.get();
+  }
+  public WebDriver getDriver() {
+    updateLastAccessTime();
+    return driver;
+  }
+  public KnownElements getKnownElements() {
+    return knownElements;
+  }
+  public Map<String, Object> getCapabilities() {
+    return capabilities;
+  }
+  public void attachScreenshot(String base64EncodedImage) {
+  }
+  public String getAndClearScreenshot() {
+    return null;
+  }
+  private void updateLastAccessTime() {
+    lastAccess = System.currentTimeMillis();
+  }
+  public SessionId getSessionId() {
+    return sessionId;
+  }
+  public TemporaryFilesystem getTemporaryFileSystem() {
+    return null;
+  }
+}",class,changes_recommended
+"  public TestSession(SessionId sessionId, WebDriver driver, Capabilities capabilities) {
+    this.sessionId = sessionId;
+    this.driver = driver;
+    //noinspection unchecked
+    this.capabilities = (Map<String, Object>) capabilities.asMap();
+    this.knownElements = new KnownElements();
+    this.executor = new ThreadPoolExecutor(1, 1, 600L, TimeUnit.SECONDS,
+        new LinkedBlockingQueue<Runnable>());
+  }",method,good
+"  public void close() {
+    executor.shutdown();
+  }",method,good
+"  public <X> X execute(final FutureTask<X> future) throws Exception {
+    executor.execute(new Runnable() {
+          public void run() {
+            inUseWithThread = Thread.currentThread();
+            inUseWithThread.setName(""Session "" + sessionId + "" processing inside browser"");
+            try {
+              future.run();
+            } finally {
+              inUseWithThread = null;
+              Thread.currentThread().setName(""Session "" + sessionId + "" awaiting client"");
+            }
+          }
+        });
+    return future.get();
+  }",method,good
+"    executor.execute(new Runnable() {
+          public void run() {
+            inUseWithThread = Thread.currentThread();
+            inUseWithThread.setName(""Session "" + sessionId + "" processing inside browser"");
+            try {
+              future.run();
+            } finally {
+              inUseWithThread = null;
+              Thread.currentThread().setName(""Session "" + sessionId + "" awaiting client"");
+            }
+          }
+        }",method,good
+"          public void run() {
+            inUseWithThread = Thread.currentThread();
+            inUseWithThread.setName(""Session "" + sessionId + "" processing inside browser"");
+            try {
+              future.run();
+            } finally {
+              inUseWithThread = null;
+              Thread.currentThread().setName(""Session "" + sessionId + "" awaiting client"");
+            }
+          }",method,good
+"  public WebDriver getDriver() {
+    updateLastAccessTime();
+    return driver;
+  }",method,good
+"  public KnownElements getKnownElements() {
+    return knownElements;
+  }",method,good
+"  public Map<String, Object> getCapabilities() {
+    return capabilities;
+  }",method,good
+"  public void attachScreenshot(String base64EncodedImage) {
+  }",method,good
+"  public String getAndClearScreenshot() {
+    return null;
+  }",method,good
+"  private void updateLastAccessTime() {
+    lastAccess = System.currentTimeMillis();
+  }",method,good
+"  public SessionId getSessionId() {
+    return sessionId;
+  }",method,good
+"  public TemporaryFilesystem getTemporaryFileSystem() {
+    return null;
+  }",method,good
+"public class JtaAfterCompletionSynchronization implements Synchronization {
+	private final List<TransactionSynchronization> synchronizations;
+	public JtaAfterCompletionSynchronization(List<TransactionSynchronization> synchronizations) {
+		this.synchronizations = synchronizations;
+	}
+	@Override
+	public void beforeCompletion() {
+	}
+	@Override
+	public void afterCompletion(int status) {
+		switch (status) {
+			case Status.STATUS_COMMITTED:
+				try {
+					TransactionSynchronizationUtils.invokeAfterCommit(this.synchronizations);
+				}
+				finally {
+					TransactionSynchronizationUtils.invokeAfterCompletion(
+							this.synchronizations, TransactionSynchronization.STATUS_COMMITTED);
+				}
+				break;
+			case Status.STATUS_ROLLEDBACK:
+				TransactionSynchronizationUtils.invokeAfterCompletion(
+						this.synchronizations, TransactionSynchronization.STATUS_ROLLED_BACK);
+				break;
+			default:
+				TransactionSynchronizationUtils.invokeAfterCompletion(
+						this.synchronizations, TransactionSynchronization.STATUS_UNKNOWN);
+		}
+	}
+}",class,good
+"	public JtaAfterCompletionSynchronization(List<TransactionSynchronization> synchronizations) {
+		this.synchronizations = synchronizations;
+	}",method,good
+"	@Override
+	public void beforeCompletion() {
+	}",method,good
+"	@Override
+	public void afterCompletion(int status) {
+		switch (status) {
+			case Status.STATUS_COMMITTED:
+				try {
+					TransactionSynchronizationUtils.invokeAfterCommit(this.synchronizations);
+				}
+				finally {
+					TransactionSynchronizationUtils.invokeAfterCompletion(
+							this.synchronizations, TransactionSynchronization.STATUS_COMMITTED);
+				}
+				break;
+			case Status.STATUS_ROLLEDBACK:
+				TransactionSynchronizationUtils.invokeAfterCompletion(
+						this.synchronizations, TransactionSynchronization.STATUS_ROLLED_BACK);
+				break;
+			default:
+				TransactionSynchronizationUtils.invokeAfterCompletion(
+						this.synchronizations, TransactionSynchronization.STATUS_UNKNOWN);
+		}
+	}",method,good
+"		switch (status) {
+			case Status.STATUS_COMMITTED:
+				try {
+					TransactionSynchronizationUtils.invokeAfterCommit(this.synchronizations);
+				}
+				finally {
+					TransactionSynchronizationUtils.invokeAfterCompletion(
+							this.synchronizations, TransactionSynchronization.STATUS_COMMITTED);
+				}
+				break;
+			case Status.STATUS_ROLLEDBACK:
+				TransactionSynchronizationUtils.invokeAfterCompletion(
+						this.synchronizations, TransactionSynchronization.STATUS_ROLLED_BACK);
+				break;
+			default:
+				TransactionSynchronizationUtils.invokeAfterCompletion(
+						this.synchronizations, TransactionSynchronization.STATUS_UNKNOWN);
+		}",method,good
+"  public void testTripleQuotesInsideTripleQuotedStringLiteral() {
+    // TODO an extra quote is inserted due to PY-21993
+    doTypingTest(""'"");
+  }
+  private String doTestTyping(final String text, final int offset, final char character) {
+    final PsiFile file = myFixture.configureByText(PythonFileType.INSTANCE, text);
+    myFixture.getEditor().getCaretModel().moveToOffset(offset);
+    myFixture.type(character);
+    return myFixture.getDocument(file).getText();
+  }
+  private void doTypingTest(final char character) {
+    final String testName = ""editing/"" + getTestName(true);
+    myFixture.configureByFile(testName + "".py"");
+    myFixture.type(character);
+    myFixture.checkResultByFile(testName + "".after.py"");
+  }
+  private void doTypingTest(@NotNull String text) {
+    final String testName = ""editing/"" + getTestName(true);
+    myFixture.configureByFile(testName + "".py"");
+    myFixture.type(text);
+    myFixture.checkResultByFile(testName + "".after.py"");
+  }
+  private void doDocStringTypingTest(final String text, @NotNull DocStringFormat format) {
+    runWithDocStringFormat(format, () -> doTypingTest(text));
+  }
+  public void testFirstParamClassmethod() {
+    doTypingTest('(');
+  }
+  public void testFirstParamMetaClass() {
+    doTypingTest('(');
+  }
+  public void testFirstParamMetaNew() {
+    doTypingTest('(');
+  }
+  public void testFirstParamMetaSimple() {
+    doTypingTest('(');
+  }
+  public void testFirstParamSimpleInit() {
+    doTypingTest('(');
+  }
+  public void testFirstParamSimpleNew() {
+    doTypingTest('(');
+  }
+  public void testFirstParamSimple() {
+    doTypingTest('(');
+  }
+  public void testFirstParamStaticmethod() {
+    doTypingTest('(');
+  }
+  public void testFirstParamDuplicateColon() {  // PY-2652
+    doTypingTest('(');
+  }
+  // PY-21269
+  public void testFirstParamMultipleMethods() {
+    doTypingTest('(');
+  }
+  // PY-15240
+  public void testFirstParamSpacesInsideParentheses() {
+    getCommonCodeStyleSettings().SPACE_WITHIN_METHOD_PARENTHESES = true;
+    doTypingTest('(');
+  }
+  // PY-15240
+  public void testFirstParamSpacesInsideEmptyParentheses() {
+    getCommonCodeStyleSettings().SPACE_WITHIN_EMPTY_METHOD_PARENTHESES = true;
+    doTypingTest('(');
+  }
+  // PY-21289
+  public void testPairedParenthesesMultipleCalls() {
+    doTypingTest('(');
+  }
+  public void testEnterBeforeString() {  // PY-3673
+    doTestEnter(""<caret>''"", ""\n''"");
+  }
+  public void testEnterInUnicodeString() {
+    doTestEnter(""a = u\""some <caret>text\"""", ""a = u\""some \"" \\\n"" +
+                                         ""    u\""<caret>text\"""");
+  }
+  public void testBackslashInParenthesis() {  // PY-5106
+    doTestEnter(""(\""some <caret>string\"", 1)"", ""(\""some \""\n"" +
+                                               "" \""string\"", 1)"");
+  }",method,changes_required
+"  private String doTestTyping(final String text, final int offset, final char character) {
+    final PsiFile file = myFixture.configureByText(PythonFileType.INSTANCE, text);
+    myFixture.getEditor().getCaretModel().moveToOffset(offset);
+    myFixture.type(character);
+    return myFixture.getDocument(file).getText();
+  }
+  private void doTypingTest(final char character) {
+    final String testName = ""editing/"" + getTestName(true);
+    myFixture.configureByFile(testName + "".py"");
+    myFixture.type(character);
+    myFixture.checkResultByFile(testName + "".after.py"");
+  }
+  private void doTypingTest(@NotNull String text) {
+    final String testName = ""editing/"" + getTestName(true);
+    myFixture.configureByFile(testName + "".py"");
+    myFixture.type(text);
+    myFixture.checkResultByFile(testName + "".after.py"");
+  }
+  private void doDocStringTypingTest(final String text, @NotNull DocStringFormat format) {
+    runWithDocStringFormat(format, () -> doTypingTest(text));
+  }
+  public void testFirstParamClassmethod() {
+    doTypingTest('(');
+  }
+  public void testFirstParamMetaClass() {
+    doTypingTest('(');
+  }
+  public void testFirstParamMetaNew() {
+    doTypingTest('(');
+  }
+  public void testFirstParamMetaSimple() {
+    doTypingTest('(');
+  }
+  public void testFirstParamSimpleInit() {
+    doTypingTest('(');
+  }
+  public void testFirstParamSimpleNew() {
+    doTypingTest('(');
+  }
+  public void testFirstParamSimple() {
+    doTypingTest('(');
+  }
+  public void testFirstParamStaticmethod() {
+    doTypingTest('(');
+  }
+  public void testFirstParamDuplicateColon() {  // PY-2652
+    doTypingTest('(');
+  }
+  // PY-21269
+  public void testFirstParamMultipleMethods() {
+    doTypingTest('(');
+  }
+  // PY-15240
+  public void testFirstParamSpacesInsideParentheses() {
+    getCommonCodeStyleSettings().SPACE_WITHIN_METHOD_PARENTHESES = true;
+    doTypingTest('(');
+  }
+  // PY-15240
+  public void testFirstParamSpacesInsideEmptyParentheses() {
+    getCommonCodeStyleSettings().SPACE_WITHIN_EMPTY_METHOD_PARENTHESES = true;
+    doTypingTest('(');
+  }
+  // PY-21289
+  public void testPairedParenthesesMultipleCalls() {
+    doTypingTest('(');
+  }
+  public void testEnterBeforeString() {  // PY-3673
+    doTestEnter(""<caret>''"", ""\n''"");
+  }
+  public void testEnterInUnicodeString() {
+    doTestEnter(""a = u\""some <caret>text\"""", ""a = u\""some \"" \\\n"" +
+                                         ""    u\""<caret>text\"""");
+  }
+  public void testBackslashInParenthesis() {  // PY-5106
+    doTestEnter(""(\""some <caret>string\"", 1)"", ""(\""some \""\n"" +
+                                               "" \""string\"", 1)"");
+  }",method,changes_required
+"  private void doTypingTest(final char character) {
+    final String testName = ""editing/"" + getTestName(true);
+    myFixture.configureByFile(testName + "".py"");
+    myFixture.type(character);
+    myFixture.checkResultByFile(testName + "".after.py"");
+  }
+  private void doTypingTest(@NotNull String text) {
+    final String testName = ""editing/"" + getTestName(true);
+    myFixture.configureByFile(testName + "".py"");
+    myFixture.type(text);
+    myFixture.checkResultByFile(testName + "".after.py"");
+  }
+  private void doDocStringTypingTest(final String text, @NotNull DocStringFormat format) {
+    runWithDocStringFormat(format, () -> doTypingTest(text));
+  }
+  public void testFirstParamClassmethod() {
+    doTypingTest('(');
+  }
+  public void testFirstParamMetaClass() {
+    doTypingTest('(');
+  }
+  public void testFirstParamMetaNew() {
+    doTypingTest('(');
+  }
+  public void testFirstParamMetaSimple() {
+    doTypingTest('(');
+  }
+  public void testFirstParamSimpleInit() {
+    doTypingTest('(');
+  }
+  public void testFirstParamSimpleNew() {
+    doTypingTest('(');
+  }
+  public void testFirstParamSimple() {
+    doTypingTest('(');
+  }
+  public void testFirstParamStaticmethod() {
+    doTypingTest('(');
+  }
+  public void testFirstParamDuplicateColon() {  // PY-2652
+    doTypingTest('(');
+  }
+  // PY-21269
+  public void testFirstParamMultipleMethods() {
+    doTypingTest('(');
+  }
+  // PY-15240
+  public void testFirstParamSpacesInsideParentheses() {
+    getCommonCodeStyleSettings().SPACE_WITHIN_METHOD_PARENTHESES = true;
+    doTypingTest('(');
+  }
+  // PY-15240
+  public void testFirstParamSpacesInsideEmptyParentheses() {
+    getCommonCodeStyleSettings().SPACE_WITHIN_EMPTY_METHOD_PARENTHESES = true;
+    doTypingTest('(');
+  }
+  // PY-21289
+  public void testPairedParenthesesMultipleCalls() {
+    doTypingTest('(');
+  }
+  public void testEnterBeforeString() {  // PY-3673
+    doTestEnter(""<caret>''"", ""\n''"");
+  }
+  public void testEnterInUnicodeString() {
+    doTestEnter(""a = u\""some <caret>text\"""", ""a = u\""some \"" \\\n"" +
+                                         ""    u\""<caret>text\"""");
+  }
+  public void testBackslashInParenthesis() {  // PY-5106
+    doTestEnter(""(\""some <caret>string\"", 1)"", ""(\""some \""\n"" +
+                                               "" \""string\"", 1)"");
+  }",method,changes_required
+"  private void doTypingTest(@NotNull String text) {
+    final String testName = ""editing/"" + getTestName(true);
+    myFixture.configureByFile(testName + "".py"");
+    myFixture.type(text);
+    myFixture.checkResultByFile(testName + "".after.py"");
+  }
+  private void doDocStringTypingTest(final String text, @NotNull DocStringFormat format) {
+    runWithDocStringFormat(format, () -> doTypingTest(text));
+  }
+  public void testFirstParamClassmethod() {
+    doTypingTest('(');
+  }
+  public void testFirstParamMetaClass() {
+    doTypingTest('(');
+  }
+  public void testFirstParamMetaNew() {
+    doTypingTest('(');
+  }
+  public void testFirstParamMetaSimple() {
+    doTypingTest('(');
+  }
+  public void testFirstParamSimpleInit() {
+    doTypingTest('(');
+  }
+  public void testFirstParamSimpleNew() {
+    doTypingTest('(');
+  }
+  public void testFirstParamSimple() {
+    doTypingTest('(');
+  }
+  public void testFirstParamStaticmethod() {
+    doTypingTest('(');
+  }
+  public void testFirstParamDuplicateColon() {  // PY-2652
+    doTypingTest('(');
+  }
+  // PY-21269
+  public void testFirstParamMultipleMethods() {
+    doTypingTest('(');
+  }
+  // PY-15240
+  public void testFirstParamSpacesInsideParentheses() {
+    getCommonCodeStyleSettings().SPACE_WITHIN_METHOD_PARENTHESES = true;
+    doTypingTest('(');
+  }
+  // PY-15240
+  public void testFirstParamSpacesInsideEmptyParentheses() {
+    getCommonCodeStyleSettings().SPACE_WITHIN_EMPTY_METHOD_PARENTHESES = true;
+    doTypingTest('(');
+  }
+  // PY-21289
+  public void testPairedParenthesesMultipleCalls() {
+    doTypingTest('(');
+  }
+  public void testEnterBeforeString() {  // PY-3673
+    doTestEnter(""<caret>''"", ""\n''"");
+  }
+  public void testEnterInUnicodeString() {
+    doTestEnter(""a = u\""some <caret>text\"""", ""a = u\""some \"" \\\n"" +
+                                         ""    u\""<caret>text\"""");
+  }
+  public void testBackslashInParenthesis() {  // PY-5106
+    doTestEnter(""(\""some <caret>string\"", 1)"", ""(\""some \""\n"" +
+                                               "" \""string\"", 1)"");
+  }",method,changes_required
+"  private void doDocStringTypingTest(final String text, @NotNull DocStringFormat format) {
+    runWithDocStringFormat(format, () -> doTypingTest(text));
+  }
+  public void testFirstParamClassmethod() {
+    doTypingTest('(');
+  }
+  public void testFirstParamMetaClass() {
+    doTypingTest('(');
+  }
+  public void testFirstParamMetaNew() {
+    doTypingTest('(');
+  }
+  public void testFirstParamMetaSimple() {
+    doTypingTest('(');
+  }
+  public void testFirstParamSimpleInit() {
+    doTypingTest('(');
+  }
+  public void testFirstParamSimpleNew() {
+    doTypingTest('(');
+  }
+  public void testFirstParamSimple() {
+    doTypingTest('(');
+  }
+  public void testFirstParamStaticmethod() {
+    doTypingTest('(');
+  }
+  public void testFirstParamDuplicateColon() {  // PY-2652
+    doTypingTest('(');
+  }
+  // PY-21269
+  public void testFirstParamMultipleMethods() {
+    doTypingTest('(');
+  }
+  // PY-15240
+  public void testFirstParamSpacesInsideParentheses() {
+    getCommonCodeStyleSettings().SPACE_WITHIN_METHOD_PARENTHESES = true;
+    doTypingTest('(');
+  }
+  // PY-15240
+  public void testFirstParamSpacesInsideEmptyParentheses() {
+    getCommonCodeStyleSettings().SPACE_WITHIN_EMPTY_METHOD_PARENTHESES = true;
+    doTypingTest('(');
+  }
+  // PY-21289
+  public void testPairedParenthesesMultipleCalls() {
+    doTypingTest('(');
+  }
+  public void testEnterBeforeString() {  // PY-3673
+    doTestEnter(""<caret>''"", ""\n''"");
+  }
+  public void testEnterInUnicodeString() {
+    doTestEnter(""a = u\""some <caret>text\"""", ""a = u\""some \"" \\\n"" +
+                                         ""    u\""<caret>text\"""");
+  }
+  public void testBackslashInParenthesis() {  // PY-5106
+    doTestEnter(""(\""some <caret>string\"", 1)"", ""(\""some \""\n"" +
+                                               "" \""string\"", 1)"");
+  }",method,changes_required
+"  public void testFirstParamClassmethod() {
+    doTypingTest('(');
+  }
+  public void testFirstParamMetaClass() {
+    doTypingTest('(');
+  }
+  public void testFirstParamMetaNew() {
+    doTypingTest('(');
+  }
+  public void testFirstParamMetaSimple() {
+    doTypingTest('(');
+  }
+  public void testFirstParamSimpleInit() {
+    doTypingTest('(');
+  }
+  public void testFirstParamSimpleNew() {
+    doTypingTest('(');
+  }
+  public void testFirstParamSimple() {
+    doTypingTest('(');
+  }
+  public void testFirstParamStaticmethod() {
+    doTypingTest('(');
+  }
+  public void testFirstParamDuplicateColon() {  // PY-2652
+    doTypingTest('(');
+  }
+  // PY-21269
+  public void testFirstParamMultipleMethods() {
+    doTypingTest('(');
+  }
+  // PY-15240
+  public void testFirstParamSpacesInsideParentheses() {
+    getCommonCodeStyleSettings().SPACE_WITHIN_METHOD_PARENTHESES = true;
+    doTypingTest('(');
+  }
+  // PY-15240
+  public void testFirstParamSpacesInsideEmptyParentheses() {
+    getCommonCodeStyleSettings().SPACE_WITHIN_EMPTY_METHOD_PARENTHESES = true;
+    doTypingTest('(');
+  }
+  // PY-21289
+  public void testPairedParenthesesMultipleCalls() {
+    doTypingTest('(');
+  }
+  public void testEnterBeforeString() {  // PY-3673
+    doTestEnter(""<caret>''"", ""\n''"");
+  }
+  public void testEnterInUnicodeString() {
+    doTestEnter(""a = u\""some <caret>text\"""", ""a = u\""some \"" \\\n"" +
+                                         ""    u\""<caret>text\"""");
+  }
+  public void testBackslashInParenthesis() {  // PY-5106
+    doTestEnter(""(\""some <caret>string\"", 1)"", ""(\""some \""\n"" +
+                                               "" \""string\"", 1)"");
+  }",method,changes_required
+"  public void testFirstParamMetaClass() {
+    doTypingTest('(');
+  }
+  public void testFirstParamMetaNew() {
+    doTypingTest('(');
+  }
+  public void testFirstParamMetaSimple() {
+    doTypingTest('(');
+  }
+  public void testFirstParamSimpleInit() {
+    doTypingTest('(');
+  }
+  public void testFirstParamSimpleNew() {
+    doTypingTest('(');
+  }
+  public void testFirstParamSimple() {
+    doTypingTest('(');
+  }
+  public void testFirstParamStaticmethod() {
+    doTypingTest('(');
+  }
+  public void testFirstParamDuplicateColon() {  // PY-2652
+    doTypingTest('(');
+  }
+  // PY-21269
+  public void testFirstParamMultipleMethods() {
+    doTypingTest('(');
+  }
+  // PY-15240
+  public void testFirstParamSpacesInsideParentheses() {
+    getCommonCodeStyleSettings().SPACE_WITHIN_METHOD_PARENTHESES = true;
+    doTypingTest('(');
+  }
+  // PY-15240
+  public void testFirstParamSpacesInsideEmptyParentheses() {
+    getCommonCodeStyleSettings().SPACE_WITHIN_EMPTY_METHOD_PARENTHESES = true;
+    doTypingTest('(');
+  }
+  // PY-21289
+  public void testPairedParenthesesMultipleCalls() {
+    doTypingTest('(');
+  }
+  public void testEnterBeforeString() {  // PY-3673
+    doTestEnter(""<caret>''"", ""\n''"");
+  }
+  public void testEnterInUnicodeString() {
+    doTestEnter(""a = u\""some <caret>text\"""", ""a = u\""some \"" \\\n"" +
+                                         ""    u\""<caret>text\"""");
+  }
+  public void testBackslashInParenthesis() {  // PY-5106
+    doTestEnter(""(\""some <caret>string\"", 1)"", ""(\""some \""\n"" +
+                                               "" \""string\"", 1)"");
+  }",method,changes_recommended
+"  public void testFirstParamMetaNew() {
+    doTypingTest('(');
+  }
+  public void testFirstParamMetaSimple() {
+    doTypingTest('(');
+  }
+  public void testFirstParamSimpleInit() {
+    doTypingTest('(');
+  }
+  public void testFirstParamSimpleNew() {
+    doTypingTest('(');
+  }
+  public void testFirstParamSimple() {
+    doTypingTest('(');
+  }
+  public void testFirstParamStaticmethod() {
+    doTypingTest('(');
+  }
+  public void testFirstParamDuplicateColon() {  // PY-2652
+    doTypingTest('(');
+  }
+  // PY-21269
+  public void testFirstParamMultipleMethods() {
+    doTypingTest('(');
+  }
+  // PY-15240
+  public void testFirstParamSpacesInsideParentheses() {
+    getCommonCodeStyleSettings().SPACE_WITHIN_METHOD_PARENTHESES = true;
+    doTypingTest('(');
+  }
+  // PY-15240
+  public void testFirstParamSpacesInsideEmptyParentheses() {
+    getCommonCodeStyleSettings().SPACE_WITHIN_EMPTY_METHOD_PARENTHESES = true;
+    doTypingTest('(');
+  }
+  // PY-21289
+  public void testPairedParenthesesMultipleCalls() {
+    doTypingTest('(');
+  }
+  public void testEnterBeforeString() {  // PY-3673
+    doTestEnter(""<caret>''"", ""\n''"");
+  }
+  public void testEnterInUnicodeString() {
+    doTestEnter(""a = u\""some <caret>text\"""", ""a = u\""some \"" \\\n"" +
+                                         ""    u\""<caret>text\"""");
+  }
+  public void testBackslashInParenthesis() {  // PY-5106
+    doTestEnter(""(\""some <caret>string\"", 1)"", ""(\""some \""\n"" +
+                                               "" \""string\"", 1)"");
+  }",method,changes_recommended
+"  public void testFirstParamMetaSimple() {
+    doTypingTest('(');
+  }
+  public void testFirstParamSimpleInit() {
+    doTypingTest('(');
+  }
+  public void testFirstParamSimpleNew() {
+    doTypingTest('(');
+  }
+  public void testFirstParamSimple() {
+    doTypingTest('(');
+  }
+  public void testFirstParamStaticmethod() {
+    doTypingTest('(');
+  }
+  public void testFirstParamDuplicateColon() {  // PY-2652
+    doTypingTest('(');
+  }
+  // PY-21269
+  public void testFirstParamMultipleMethods() {
+    doTypingTest('(');
+  }
+  // PY-15240
+  public void testFirstParamSpacesInsideParentheses() {
+    getCommonCodeStyleSettings().SPACE_WITHIN_METHOD_PARENTHESES = true;
+    doTypingTest('(');
+  }
+  // PY-15240
+  public void testFirstParamSpacesInsideEmptyParentheses() {
+    getCommonCodeStyleSettings().SPACE_WITHIN_EMPTY_METHOD_PARENTHESES = true;
+    doTypingTest('(');
+  }
+  // PY-21289
+  public void testPairedParenthesesMultipleCalls() {
+    doTypingTest('(');
+  }
+  public void testEnterBeforeString() {  // PY-3673
+    doTestEnter(""<caret>''"", ""\n''"");
+  }
+  public void testEnterInUnicodeString() {
+    doTestEnter(""a = u\""some <caret>text\"""", ""a = u\""some \"" \\\n"" +
+                                         ""    u\""<caret>text\"""");
+  }
+  public void testBackslashInParenthesis() {  // PY-5106
+    doTestEnter(""(\""some <caret>string\"", 1)"", ""(\""some \""\n"" +
+                                               "" \""string\"", 1)"");
+  }",method,changes_recommended
+"  public void testFirstParamSimpleInit() {
+    doTypingTest('(');
+  }
+  public void testFirstParamSimpleNew() {
+    doTypingTest('(');
+  }
+  public void testFirstParamSimple() {
+    doTypingTest('(');
+  }
+  public void testFirstParamStaticmethod() {
+    doTypingTest('(');
+  }
+  public void testFirstParamDuplicateColon() {  // PY-2652
+    doTypingTest('(');
+  }
+  // PY-21269
+  public void testFirstParamMultipleMethods() {
+    doTypingTest('(');
+  }
+  // PY-15240
+  public void testFirstParamSpacesInsideParentheses() {
+    getCommonCodeStyleSettings().SPACE_WITHIN_METHOD_PARENTHESES = true;
+    doTypingTest('(');
+  }
+  // PY-15240
+  public void testFirstParamSpacesInsideEmptyParentheses() {
+    getCommonCodeStyleSettings().SPACE_WITHIN_EMPTY_METHOD_PARENTHESES = true;
+    doTypingTest('(');
+  }
+  // PY-21289
+  public void testPairedParenthesesMultipleCalls() {
+    doTypingTest('(');
+  }
+  public void testEnterBeforeString() {  // PY-3673
+    doTestEnter(""<caret>''"", ""\n''"");
+  }
+  public void testEnterInUnicodeString() {
+    doTestEnter(""a = u\""some <caret>text\"""", ""a = u\""some \"" \\\n"" +
+                                         ""    u\""<caret>text\"""");
+  }
+  public void testBackslashInParenthesis() {  // PY-5106
+    doTestEnter(""(\""some <caret>string\"", 1)"", ""(\""some \""\n"" +
+                                               "" \""string\"", 1)"");
+  }",method,changes_recommended
+"  public void testFirstParamSimpleNew() {
+    doTypingTest('(');
+  }
+  public void testFirstParamSimple() {
+    doTypingTest('(');
+  }
+  public void testFirstParamStaticmethod() {
+    doTypingTest('(');
+  }
+  public void testFirstParamDuplicateColon() {  // PY-2652
+    doTypingTest('(');
+  }
+  // PY-21269
+  public void testFirstParamMultipleMethods() {
+    doTypingTest('(');
+  }
+  // PY-15240
+  public void testFirstParamSpacesInsideParentheses() {
+    getCommonCodeStyleSettings().SPACE_WITHIN_METHOD_PARENTHESES = true;
+    doTypingTest('(');
+  }
+  // PY-15240
+  public void testFirstParamSpacesInsideEmptyParentheses() {
+    getCommonCodeStyleSettings().SPACE_WITHIN_EMPTY_METHOD_PARENTHESES = true;
+    doTypingTest('(');
+  }
+  // PY-21289
+  public void testPairedParenthesesMultipleCalls() {
+    doTypingTest('(');
+  }
+  public void testEnterBeforeString() {  // PY-3673
+    doTestEnter(""<caret>''"", ""\n''"");
+  }
+  public void testEnterInUnicodeString() {
+    doTestEnter(""a = u\""some <caret>text\"""", ""a = u\""some \"" \\\n"" +
+                                         ""    u\""<caret>text\"""");
+  }
+  public void testBackslashInParenthesis() {  // PY-5106
+    doTestEnter(""(\""some <caret>string\"", 1)"", ""(\""some \""\n"" +
+                                               "" \""string\"", 1)"");
+  }",method,changes_recommended
+"  public void testFirstParamSimple() {
+    doTypingTest('(');
+  }
+  public void testFirstParamStaticmethod() {
+    doTypingTest('(');
+  }
+  public void testFirstParamDuplicateColon() {  // PY-2652
+    doTypingTest('(');
+  }
+  // PY-21269
+  public void testFirstParamMultipleMethods() {
+    doTypingTest('(');
+  }
+  // PY-15240
+  public void testFirstParamSpacesInsideParentheses() {
+    getCommonCodeStyleSettings().SPACE_WITHIN_METHOD_PARENTHESES = true;
+    doTypingTest('(');
+  }
+  // PY-15240
+  public void testFirstParamSpacesInsideEmptyParentheses() {
+    getCommonCodeStyleSettings().SPACE_WITHIN_EMPTY_METHOD_PARENTHESES = true;
+    doTypingTest('(');
+  }
+  // PY-21289
+  public void testPairedParenthesesMultipleCalls() {
+    doTypingTest('(');
+  }
+  public void testEnterBeforeString() {  // PY-3673
+    doTestEnter(""<caret>''"", ""\n''"");
+  }
+  public void testEnterInUnicodeString() {
+    doTestEnter(""a = u\""some <caret>text\"""", ""a = u\""some \"" \\\n"" +
+                                         ""    u\""<caret>text\"""");
+  }
+  public void testBackslashInParenthesis() {  // PY-5106
+    doTestEnter(""(\""some <caret>string\"", 1)"", ""(\""some \""\n"" +
+                                               "" \""string\"", 1)"");
+  }",method,changes_recommended
+"  public void testFirstParamStaticmethod() {
+    doTypingTest('(');
+  }
+  public void testFirstParamDuplicateColon() {  // PY-2652
+    doTypingTest('(');
+  }
+  // PY-21269
+  public void testFirstParamMultipleMethods() {
+    doTypingTest('(');
+  }
+  // PY-15240
+  public void testFirstParamSpacesInsideParentheses() {
+    getCommonCodeStyleSettings().SPACE_WITHIN_METHOD_PARENTHESES = true;
+    doTypingTest('(');
+  }
+  // PY-15240
+  public void testFirstParamSpacesInsideEmptyParentheses() {
+    getCommonCodeStyleSettings().SPACE_WITHIN_EMPTY_METHOD_PARENTHESES = true;
+    doTypingTest('(');
+  }
+  // PY-21289
+  public void testPairedParenthesesMultipleCalls() {
+    doTypingTest('(');
+  }
+  public void testEnterBeforeString() {  // PY-3673
+    doTestEnter(""<caret>''"", ""\n''"");
+  }
+  public void testEnterInUnicodeString() {
+    doTestEnter(""a = u\""some <caret>text\"""", ""a = u\""some \"" \\\n"" +
+                                         ""    u\""<caret>text\"""");
+  }
+  public void testBackslashInParenthesis() {  // PY-5106
+    doTestEnter(""(\""some <caret>string\"", 1)"", ""(\""some \""\n"" +
+                                               "" \""string\"", 1)"");
+  }",method,changes_recommended
+"  public void testFirstParamDuplicateColon() {  // PY-2652
+    doTypingTest('(');
+  }
+  // PY-21269
+  public void testFirstParamMultipleMethods() {
+    doTypingTest('(');
+  }
+  // PY-15240
+  public void testFirstParamSpacesInsideParentheses() {
+    getCommonCodeStyleSettings().SPACE_WITHIN_METHOD_PARENTHESES = true;
+    doTypingTest('(');
+  }
+  // PY-15240
+  public void testFirstParamSpacesInsideEmptyParentheses() {
+    getCommonCodeStyleSettings().SPACE_WITHIN_EMPTY_METHOD_PARENTHESES = true;
+    doTypingTest('(');
+  }
+  // PY-21289
+  public void testPairedParenthesesMultipleCalls() {
+    doTypingTest('(');
+  }
+  public void testEnterBeforeString() {  // PY-3673
+    doTestEnter(""<caret>''"", ""\n''"");
+  }
+  public void testEnterInUnicodeString() {
+    doTestEnter(""a = u\""some <caret>text\"""", ""a = u\""some \"" \\\n"" +
+                                         ""    u\""<caret>text\"""");
+  }
+  public void testBackslashInParenthesis() {  // PY-5106
+    doTestEnter(""(\""some <caret>string\"", 1)"", ""(\""some \""\n"" +
+                                               "" \""string\"", 1)"");
+  }",method,changes_recommended
+"  public void testFirstParamMultipleMethods() {
+    doTypingTest('(');
+  }
+  // PY-15240
+  public void testFirstParamSpacesInsideParentheses() {
+    getCommonCodeStyleSettings().SPACE_WITHIN_METHOD_PARENTHESES = true;
+    doTypingTest('(');
+  }
+  // PY-15240
+  public void testFirstParamSpacesInsideEmptyParentheses() {
+    getCommonCodeStyleSettings().SPACE_WITHIN_EMPTY_METHOD_PARENTHESES = true;
+    doTypingTest('(');
+  }
+  // PY-21289
+  public void testPairedParenthesesMultipleCalls() {
+    doTypingTest('(');
+  }
+  public void testEnterBeforeString() {  // PY-3673
+    doTestEnter(""<caret>''"", ""\n''"");
+  }
+  public void testEnterInUnicodeString() {
+    doTestEnter(""a = u\""some <caret>text\"""", ""a = u\""some \"" \\\n"" +
+                                         ""    u\""<caret>text\"""");
+  }
+  public void testBackslashInParenthesis() {  // PY-5106
+    doTestEnter(""(\""some <caret>string\"", 1)"", ""(\""some \""\n"" +
+                                               "" \""string\"", 1)"");
+  }",method,changes_recommended
+"  public void testFirstParamSpacesInsideParentheses() {
+    getCommonCodeStyleSettings().SPACE_WITHIN_METHOD_PARENTHESES = true;
+    doTypingTest('(');
+  }
+  // PY-15240
+  public void testFirstParamSpacesInsideEmptyParentheses() {
+    getCommonCodeStyleSettings().SPACE_WITHIN_EMPTY_METHOD_PARENTHESES = true;
+    doTypingTest('(');
+  }
+  // PY-21289
+  public void testPairedParenthesesMultipleCalls() {
+    doTypingTest('(');
+  }
+  public void testEnterBeforeString() {  // PY-3673
+    doTestEnter(""<caret>''"", ""\n''"");
+  }
+  public void testEnterInUnicodeString() {
+    doTestEnter(""a = u\""some <caret>text\"""", ""a = u\""some \"" \\\n"" +
+                                         ""    u\""<caret>text\"""");
+  }
+  public void testBackslashInParenthesis() {  // PY-5106
+    doTestEnter(""(\""some <caret>string\"", 1)"", ""(\""some \""\n"" +
+                                               "" \""string\"", 1)"");
+  }",method,changes_recommended
+"  public void testFirstParamSpacesInsideEmptyParentheses() {
+    getCommonCodeStyleSettings().SPACE_WITHIN_EMPTY_METHOD_PARENTHESES = true;
+    doTypingTest('(');
+  }
+  // PY-21289
+  public void testPairedParenthesesMultipleCalls() {
+    doTypingTest('(');
+  }
+  public void testEnterBeforeString() {  // PY-3673
+    doTestEnter(""<caret>''"", ""\n''"");
+  }
+  public void testEnterInUnicodeString() {
+    doTestEnter(""a = u\""some <caret>text\"""", ""a = u\""some \"" \\\n"" +
+                                         ""    u\""<caret>text\"""");
+  }
+  public void testBackslashInParenthesis() {  // PY-5106
+    doTestEnter(""(\""some <caret>string\"", 1)"", ""(\""some \""\n"" +
+                                               "" \""string\"", 1)"");
+  }",method,changes_recommended
+"  public void testPairedParenthesesMultipleCalls() {
+    doTypingTest('(');
+  }
+  public void testEnterBeforeString() {  // PY-3673
+    doTestEnter(""<caret>''"", ""\n''"");
+  }
+  public void testEnterInUnicodeString() {
+    doTestEnter(""a = u\""some <caret>text\"""", ""a = u\""some \"" \\\n"" +
+                                         ""    u\""<caret>text\"""");
+  }
+  public void testBackslashInParenthesis() {  // PY-5106
+    doTestEnter(""(\""some <caret>string\"", 1)"", ""(\""some \""\n"" +
+                                               "" \""string\"", 1)"");
+  }",method,changes_recommended
+"  public void testEnterBeforeString() {  // PY-3673
+    doTestEnter(""<caret>''"", ""\n''"");
+  }
+  public void testEnterInUnicodeString() {
+    doTestEnter(""a = u\""some <caret>text\"""", ""a = u\""some \"" \\\n"" +
+                                         ""    u\""<caret>text\"""");
+  }
+  public void testBackslashInParenthesis() {  // PY-5106
+    doTestEnter(""(\""some <caret>string\"", 1)"", ""(\""some \""\n"" +
+                                               "" \""string\"", 1)"");
+  }",method,changes_recommended
+"  public void testEnterInUnicodeString() {
+    doTestEnter(""a = u\""some <caret>text\"""", ""a = u\""some \"" \\\n"" +
+                                         ""    u\""<caret>text\"""");
+  }
+  public void testBackslashInParenthesis() {  // PY-5106
+    doTestEnter(""(\""some <caret>string\"", 1)"", ""(\""some \""\n"" +
+                                               "" \""string\"", 1)"");
+  }",method,changes_recommended
+"  public void testBackslashInParenthesis() {  // PY-5106
+    doTestEnter(""(\""some <caret>string\"", 1)"", ""(\""some \""\n"" +
+                                               "" \""string\"", 1)"");
+  }",method,good
+"  public void testEnterInStringInTupleWithoutParenthesis() {
+    doTestEnter(""def hello_world():\n"" +
+                ""    return bar, 'so<caret>me'"",
+                ""def hello_world():\n"" +
+                ""    return bar, 'so' \\\n"" +
+                ""                'me'"");
+  }",method,good
+"public class DeployToServerRunConfiguration<S extends ServerConfiguration, D extends DeploymentConfiguration> extends RunConfigurationBase
+  implements LocatableConfiguration {
+  private static final Logger LOG = Logger.getInstance(DeployToServerRunConfiguration.class);
+  private static final String DEPLOYMENT_SOURCE_TYPE_ATTRIBUTE = ""type"";
+  @NonNls public static final String SETTINGS_ELEMENT = ""settings"";
+  public static final SkipDefaultValuesSerializationFilters SERIALIZATION_FILTERS = new SkipDefaultValuesSerializationFilters();
+  private final ServerType<S> myServerType;
+  private final DeploymentConfigurator<D, S> myDeploymentConfigurator;
+  private String myServerName;
+  private boolean myDeploymentSourceIsLocked;
+  private DeploymentSource myDeploymentSource;
+  private D myDeploymentConfiguration;
+  public DeployToServerRunConfiguration(Project project,
+                                        ConfigurationFactory factory,
+                                        String name,
+                                        ServerType<S> serverType,
+                                        DeploymentConfigurator<D, S> deploymentConfigurator) {
+    super(project, factory, name);
+    myServerType = serverType;
+    myDeploymentConfigurator = deploymentConfigurator;
+  }
+  void lockDeploymentSource(@NotNull SingletonDeploymentSourceType theOnlySourceType) {
+    myDeploymentSourceIsLocked = true;
+    myDeploymentSource = theOnlySourceType.getSingletonSource();
+  }
+  @NotNull
+  public ServerType<S> getServerType() {
+    return myServerType;
+  }
+  public String getServerName() {
+    return myServerName;
+  }
+  @NotNull
+  public DeploymentConfigurator<D, S> getDeploymentConfigurator() {
+    return myDeploymentConfigurator;
+  }
+  @NotNull
+  @Override
+  public SettingsEditor<DeployToServerRunConfiguration> getConfigurationEditor() {
+    //noinspection unchecked
+    SettingsEditor<DeployToServerRunConfiguration> commonEditor =
+      myDeploymentSourceIsLocked ? new LockedSource(myServerType, myDeploymentConfigurator, getProject(), myDeploymentSource)
+                                 : new AnySource(myServerType, myDeploymentConfigurator, getProject());
+    SettingsEditorGroup<DeployToServerRunConfiguration> group = new SettingsEditorGroup<>();
+    group.addEditor(""Deployment"", commonEditor);
+    DeployToServerRunConfigurationExtensionsManager.getInstance().appendEditors(this, group);
+    return group;
+  }
+  @Nullable
+  @Override
+  public RunProfileState getState(@NotNull Executor executor, @NotNull ExecutionEnvironment env) throws ExecutionException {
+    String serverName = getServerName();
+    if (serverName == null) {
+      throw new ExecutionException(""Server is not specified"");
+    }
+    RemoteServer<S> server = findServer();
+    if (server == null) {
+      throw new ExecutionException(""Server '"" + serverName + "" not found"");
+    }
+    if (myDeploymentSource == null) {
+      throw new ExecutionException(""Deployment is not selected"");
+    }
+    return new DeployToServerState(server, myDeploymentSource, myDeploymentConfiguration, env);
+  }
+  @Override
+  public void checkConfiguration() throws RuntimeConfigurationException {
+    RemoteServer<S> server = findServer();
+    if (server == null) {
+      return;
+    }
+    if (myDeploymentSource == null) {
+      return;
+    }
+    myDeploymentConfiguration.checkConfiguration(server, myDeploymentSource, getProject());
+  }
+  private RemoteServer<S> findServer() {
+    String serverName = getServerName();
+    if (serverName == null) {
+      return null;
+    }
+    return RemoteServersManager.getInstance().findByName(serverName, myServerType);
+  }
+  public void setServerName(String serverName) {
+    myServerName = serverName;
+  }
+  public DeploymentSource getDeploymentSource() {
+    return myDeploymentSource;
+  }
+  public void setDeploymentSource(DeploymentSource deploymentSource) {
+    if (myDeploymentSourceIsLocked) {
+      assert deploymentSource != null && deploymentSource == myDeploymentSource
+        : ""Can't replace locked "" + myDeploymentSource + "" with "" + deploymentSource;
+    }
+    myDeploymentSource = deploymentSource;
+  }
+  public D getDeploymentConfiguration() {
+    return myDeploymentConfiguration;
+  }
+  public void setDeploymentConfiguration(D deploymentConfiguration) {
+    myDeploymentConfiguration = deploymentConfiguration;
+  }
+  @Override
+  public boolean isGeneratedName() {
+    return getDeploymentSource() != null && getDeploymentConfiguration() != null &&
+           getDeploymentConfigurator().isGeneratedConfigurationName(getName(), getDeploymentSource(), getDeploymentConfiguration());
+  }
+  @Nullable
+  @Override
+  public String suggestedName() {
+    if (getDeploymentSource() == null || getDeploymentConfiguration() == null) {
+      return null;
+    }
+    return getDeploymentConfigurator().suggestConfigurationName(getDeploymentSource(), getDeploymentConfiguration());
+  }
+  @Override
+  public void readExternal(Element element) throws InvalidDataException {
+    super.readExternal(element);
+    ConfigurationState state = XmlSerializer.deserialize(element, ConfigurationState.class);
+    myServerName = null;
+    myDeploymentSource = null;
+    myServerName = state.myServerName;
+    final Element deploymentTag = state.myDeploymentTag;
+    if (deploymentTag != null) {
+      String typeId = deploymentTag.getAttributeValue(DEPLOYMENT_SOURCE_TYPE_ATTRIBUTE);
+      final DeploymentSourceType<?> type = findDeploymentSourceType(typeId);
+      if (type != null) {
+        myDeploymentSource = new ReadAction<DeploymentSource>() {
+          @Override
+          protected void run(final @NotNull Result<DeploymentSource> result) {
+            result.setResult(type.load(deploymentTag, getProject()));
+          }
+        }.execute().getResultObject();
+        myDeploymentConfiguration = myDeploymentConfigurator.createDefaultConfiguration(myDeploymentSource);
+        ComponentSerializationUtil.loadComponentState(myDeploymentConfiguration.getSerializer(), deploymentTag.getChild(SETTINGS_ELEMENT));
+      }
+      else {
+        LOG.warn(""Cannot load deployment source for '"" + getName() + ""' run configuration: unknown deployment type '"" + typeId + ""'"");
+      }
+    }
+  }
+  @Nullable
+  private static DeploymentSourceType<?> findDeploymentSourceType(@Nullable String id) {
+    for (DeploymentSourceType<?> type : DeploymentSourceType.EP_NAME.getExtensions()) {
+      if (type.getId().equals(id)) {
+        return type;
+      }
+    }
+    return null;
+  }
+  @Override
+  public void writeExternal(Element element) throws WriteExternalException {
+    ConfigurationState state = new ConfigurationState();
+    state.myServerName = myServerName;
+    if (myDeploymentSource != null) {
+      DeploymentSourceType type = myDeploymentSource.getType();
+      Element deploymentTag = new Element(""deployment"").setAttribute(DEPLOYMENT_SOURCE_TYPE_ATTRIBUTE, type.getId());
+      type.save(myDeploymentSource, deploymentTag);
+      if (myDeploymentConfiguration != null) {
+        Object configurationState = myDeploymentConfiguration.getSerializer().getState();
+        if (configurationState != null) {
+          Element settingsTag = new Element(SETTINGS_ELEMENT);
+          XmlSerializer.serializeInto(configurationState, settingsTag, SERIALIZATION_FILTERS);
+          deploymentTag.addContent(settingsTag);
+        }
+      }
+      state.myDeploymentTag = deploymentTag;
+    }
+    XmlSerializer.serializeInto(state, element, SERIALIZATION_FILTERS);
+    super.writeExternal(element);
+  }
+  @Override
+  public RunConfiguration clone() {
+    Element element = new Element(""tag"");
+    try {
+      writeExternal(element);
+    }
+    catch (WriteExternalException e) {
+      LOG.error(e);
+    }
+    DeployToServerRunConfiguration result = (DeployToServerRunConfiguration)super.clone();
+    if (myDeploymentSourceIsLocked) {
+      result.lockDeploymentSource((SingletonDeploymentSourceType)myDeploymentSource.getType());
+    }
+    try {
+      result.readExternal(element);
+    }
+    catch (InvalidDataException e) {
+      LOG.error(e);
+    }
+    return result;
+  }
+  public static class ConfigurationState {
+    @Attribute(""server-name"")
+    public String myServerName;
+    @Tag(""deployment"")
+    public Element myDeploymentTag;
+  }
+}",class,changes_required
+"  public static class ConfigurationState {
+    @Attribute(""server-name"")
+    public String myServerName;
+    @Tag(""deployment"")
+    public Element myDeploymentTag;
+  }",class,good
+"  public DeployToServerRunConfiguration(Project project,
+                                        ConfigurationFactory factory,
+                                        String name,
+                                        ServerType<S> serverType,
+                                        DeploymentConfigurator<D, S> deploymentConfigurator) {
+    super(project, factory, name);
+    myServerType = serverType;
+    myDeploymentConfigurator = deploymentConfigurator;
+  }",method,changes_recommended
+"  void lockDeploymentSource(@NotNull SingletonDeploymentSourceType theOnlySourceType) {
+    myDeploymentSourceIsLocked = true;
+    myDeploymentSource = theOnlySourceType.getSingletonSource();
+  }",method,good
+"  @NotNull
+  public ServerType<S> getServerType() {
+    return myServerType;
+  }",method,good
+"  public String getServerName() {
+    return myServerName;
+  }",method,good
+"  @NotNull
+  public DeploymentConfigurator<D, S> getDeploymentConfigurator() {
+    return myDeploymentConfigurator;
+  }",method,good
+"  @NotNull
+  @Override
+  public SettingsEditor<DeployToServerRunConfiguration> getConfigurationEditor() {
+    //noinspection unchecked
+    SettingsEditor<DeployToServerRunConfiguration> commonEditor =
+      myDeploymentSourceIsLocked ? new LockedSource(myServerType, myDeploymentConfigurator, getProject(), myDeploymentSource)
+                                 : new AnySource(myServerType, myDeploymentConfigurator, getProject());
+    SettingsEditorGroup<DeployToServerRunConfiguration> group = new SettingsEditorGroup<>();
+    group.addEditor(""Deployment"", commonEditor);
+    DeployToServerRunConfigurationExtensionsManager.getInstance().appendEditors(this, group);
+    return group;
+  }",method,good
+"  @Nullable
+  @Override
+  public RunProfileState getState(@NotNull Executor executor, @NotNull ExecutionEnvironment env) throws ExecutionException {
+    String serverName = getServerName();
+    if (serverName == null) {
+      throw new ExecutionException(""Server is not specified"");
+    }
+    RemoteServer<S> server = findServer();
+    if (server == null) {
+      throw new ExecutionException(""Server '"" + serverName + "" not found"");
+    }
+    if (myDeploymentSource == null) {
+      throw new ExecutionException(""Deployment is not selected"");
+    }
+    return new DeployToServerState(server, myDeploymentSource, myDeploymentConfiguration, env);
+  }",method,good
+"    if (serverName == null) {
+      throw new ExecutionException(""Server is not specified"");
+    }",method,good
+"    if (server == null) {
+      throw new ExecutionException(""Server '"" + serverName + "" not found"");
+    }",method,good
+"    if (myDeploymentSource == null) {
+      throw new ExecutionException(""Deployment is not selected"");
+    }",method,good
+"  @Override
+  public void checkConfiguration() throws RuntimeConfigurationException {
+    RemoteServer<S> server = findServer();
+    if (server == null) {
+      return;
+    }
+    if (myDeploymentSource == null) {
+      return;
+    }
+    myDeploymentConfiguration.checkConfiguration(server, myDeploymentSource, getProject());
+  }",method,good
+"    if (server == null) {
+      return;
+    }",method,good
+"    if (myDeploymentSource == null) {
+      return;
+    }",method,good
+"  private RemoteServer<S> findServer() {
+    String serverName = getServerName();
+    if (serverName == null) {
+      return null;
+    }
+    return RemoteServersManager.getInstance().findByName(serverName, myServerType);
+  }",method,good
+"    if (serverName == null) {
+      return null;
+    }",method,good
+"  public void setServerName(String serverName) {
+    myServerName = serverName;
+  }",method,good
+"  public DeploymentSource getDeploymentSource() {
+    return myDeploymentSource;
+  }",method,good
+"  public void setDeploymentSource(DeploymentSource deploymentSource) {
+    if (myDeploymentSourceIsLocked) {
+      assert deploymentSource != null && deploymentSource == myDeploymentSource
+        : ""Can't replace locked "" + myDeploymentSource + "" with "" + deploymentSource;
+    }
+    myDeploymentSource = deploymentSource;
+  }",method,good
+"    if (myDeploymentSourceIsLocked) {
+      assert deploymentSource != null && deploymentSource == myDeploymentSource
+        : ""Can't replace locked "" + myDeploymentSource + "" with "" + deploymentSource;
+    }",method,good
+"  public D getDeploymentConfiguration() {
+    return myDeploymentConfiguration;
+  }",method,good
+"  public void setDeploymentConfiguration(D deploymentConfiguration) {
+    myDeploymentConfiguration = deploymentConfiguration;
+  }",method,good
+"  @Override
+  public boolean isGeneratedName() {
+    return getDeploymentSource() != null && getDeploymentConfiguration() != null &&
+           getDeploymentConfigurator().isGeneratedConfigurationName(getName(), getDeploymentSource(), getDeploymentConfiguration());
+  }",method,good
+"  @Nullable
+  @Override
+  public String suggestedName() {
+    if (getDeploymentSource() == null || getDeploymentConfiguration() == null) {
+      return null;
+    }
+    return getDeploymentConfigurator().suggestConfigurationName(getDeploymentSource(), getDeploymentConfiguration());
+  }",method,good
+"  @Override
+  public void readExternal(Element element) throws InvalidDataException {
+    super.readExternal(element);
+    ConfigurationState state = XmlSerializer.deserialize(element, ConfigurationState.class);
+    myServerName = null;
+    myDeploymentSource = null;
+    myServerName = state.myServerName;
+    final Element deploymentTag = state.myDeploymentTag;
+    if (deploymentTag != null) {
+      String typeId = deploymentTag.getAttributeValue(DEPLOYMENT_SOURCE_TYPE_ATTRIBUTE);
+      final DeploymentSourceType<?> type = findDeploymentSourceType(typeId);
+      if (type != null) {
+        myDeploymentSource = new ReadAction<DeploymentSource>() {
+          @Override
+          protected void run(final @NotNull Result<DeploymentSource> result) {
+            result.setResult(type.load(deploymentTag, getProject()));
+          }
+        }.execute().getResultObject();
+        myDeploymentConfiguration = myDeploymentConfigurator.createDefaultConfiguration(myDeploymentSource);
+        ComponentSerializationUtil.loadComponentState(myDeploymentConfiguration.getSerializer(), deploymentTag.getChild(SETTINGS_ELEMENT));
+      }
+      else {
+        LOG.warn(""Cannot load deployment source for '"" + getName() + ""' run configuration: unknown deployment type '"" + typeId + ""'"");
+      }
+    }
+  }",method,good
+"    if (deploymentTag != null) {
+      String typeId = deploymentTag.getAttributeValue(DEPLOYMENT_SOURCE_TYPE_ATTRIBUTE);
+      final DeploymentSourceType<?> type = findDeploymentSourceType(typeId);
+      if (type != null) {
+        myDeploymentSource = new ReadAction<DeploymentSource>() {
+          @Override
+          protected void run(final @NotNull Result<DeploymentSource> result) {
+            result.setResult(type.load(deploymentTag, getProject()));
+          }
+        }.execute().getResultObject();
+        myDeploymentConfiguration = myDeploymentConfigurator.createDefaultConfiguration(myDeploymentSource);
+        ComponentSerializationUtil.loadComponentState(myDeploymentConfiguration.getSerializer(), deploymentTag.getChild(SETTINGS_ELEMENT));
+      }
+      else {
+        LOG.warn(""Cannot load deployment source for '"" + getName() + ""' run configuration: unknown deployment type '"" + typeId + ""'"");
+      }
+    }",method,good
+"      if (type != null) {
+        myDeploymentSource = new ReadAction<DeploymentSource>() {
+          @Override
+          protected void run(final @NotNull Result<DeploymentSource> result) {
+            result.setResult(type.load(deploymentTag, getProject()));
+          }
+        }.execute().getResultObject();
+        myDeploymentConfiguration = myDeploymentConfigurator.createDefaultConfiguration(myDeploymentSource);
+        ComponentSerializationUtil.loadComponentState(myDeploymentConfiguration.getSerializer(), deploymentTag.getChild(SETTINGS_ELEMENT));
+      }",method,good
+"          @Override
+          protected void run(final @NotNull Result<DeploymentSource> result) {
+            result.setResult(type.load(deploymentTag, getProject()));
+          }",method,good
+"  @Nullable
+  private static DeploymentSourceType<?> findDeploymentSourceType(@Nullable String id) {
+    for (DeploymentSourceType<?> type : DeploymentSourceType.EP_NAME.getExtensions()) {
+      if (type.getId().equals(id)) {
+        return type;
+      }
+    }
+    return null;
+  }",method,good
+"  @Override
+  public void writeExternal(Element element) throws WriteExternalException {
+    ConfigurationState state = new ConfigurationState();
+    state.myServerName = myServerName;
+    if (myDeploymentSource != null) {
+      DeploymentSourceType type = myDeploymentSource.getType();
+      Element deploymentTag = new Element(""deployment"").setAttribute(DEPLOYMENT_SOURCE_TYPE_ATTRIBUTE, type.getId());
+      type.save(myDeploymentSource, deploymentTag);
+      if (myDeploymentConfiguration != null) {
+        Object configurationState = myDeploymentConfiguration.getSerializer().getState();
+        if (configurationState != null) {
+          Element settingsTag = new Element(SETTINGS_ELEMENT);
+          XmlSerializer.serializeInto(configurationState, settingsTag, SERIALIZATION_FILTERS);
+          deploymentTag.addContent(settingsTag);
+        }
+      }
+      state.myDeploymentTag = deploymentTag;
+    }
+    XmlSerializer.serializeInto(state, element, SERIALIZATION_FILTERS);
+    super.writeExternal(element);
+  }",method,good
+"    if (myDeploymentSource != null) {
+      DeploymentSourceType type = myDeploymentSource.getType();
+      Element deploymentTag = new Element(""deployment"").setAttribute(DEPLOYMENT_SOURCE_TYPE_ATTRIBUTE, type.getId());
+      type.save(myDeploymentSource, deploymentTag);
+      if (myDeploymentConfiguration != null) {
+        Object configurationState = myDeploymentConfiguration.getSerializer().getState();
+        if (configurationState != null) {
+          Element settingsTag = new Element(SETTINGS_ELEMENT);
+          XmlSerializer.serializeInto(configurationState, settingsTag, SERIALIZATION_FILTERS);
+          deploymentTag.addContent(settingsTag);
+        }
+      }
+      state.myDeploymentTag = deploymentTag;
+    }",method,good
+"      if (myDeploymentConfiguration != null) {
+        Object configurationState = myDeploymentConfiguration.getSerializer().getState();
+        if (configurationState != null) {
+          Element settingsTag = new Element(SETTINGS_ELEMENT);
+          XmlSerializer.serializeInto(configurationState, settingsTag, SERIALIZATION_FILTERS);
+          deploymentTag.addContent(settingsTag);
+        }
+      }",method,good
+"        if (configurationState != null) {
+          Element settingsTag = new Element(SETTINGS_ELEMENT);
+          XmlSerializer.serializeInto(configurationState, settingsTag, SERIALIZATION_FILTERS);
+          deploymentTag.addContent(settingsTag);
+        }",method,good
+"  @Override
+  public RunConfiguration clone() {
+    Element element = new Element(""tag"");
+    try {
+      writeExternal(element);
+    }
+    catch (WriteExternalException e) {
+      LOG.error(e);
+    }
+    DeployToServerRunConfiguration result = (DeployToServerRunConfiguration)super.clone();
+    if (myDeploymentSourceIsLocked) {
+      result.lockDeploymentSource((SingletonDeploymentSourceType)myDeploymentSource.getType());
+    }
+    try {
+      result.readExternal(element);
+    }
+    catch (InvalidDataException e) {
+      LOG.error(e);
+    }
+    return result;
+  }",method,good
+"    catch (WriteExternalException e) {
+      LOG.error(e);
+    }",method,good
+"    if (myDeploymentSourceIsLocked) {
+      result.lockDeploymentSource((SingletonDeploymentSourceType)myDeploymentSource.getType());
+    }",method,good
+"    catch (InvalidDataException e) {
+      LOG.error(e);
+    }",method,good
+"public class MergeSort_test {
+    @Test
+    public void simpleSort() {
+        int[] unsorted = {9, 8, 7, 6, 5, 4, 3, 2, 1};
+        int[] sorted = {1, 2, 3, 4, 5, 6, 7, 8, 9};
+        int[] result = MergeSort.sort(unsorted);
+        String errorMsg = String.format(""Failure - expected %s got %s"", Arrays.toString(sorted), Arrays.toString(result));
+        Assert.assertArrayEquals(errorMsg, sorted, result);
+    }
+}",class,good
+"public class MergeSort {
+	public static void mergeSort(int[] array, int start, int end){
+		if (start < end){
+			int middle = (end + start) / 2;
+			mergeSort(array, start, middle);
+			mergeSort(array, middle + 1, end);
+			merge(array,start,middle,end);
+		}
+	}
+	private static void merge(int[]array, int start, int middle, int end){
+		int size_1 = middle - start + 1;
+		int size_2 = end - middle;
+		int[] leftArray = new int[size_1];
+		int[] rightArray = new int[size_2];
+		for(int i = 0; i < size_1; i++){
+			leftArray[i] = array[start + i];
+		}
+		for(int j = 0; j < size_2; j++){
+			rightArray[j] = array[j + middle + 1];
+		}
+		int i = 0;
+		int j = 0;
+		for(int k = start; k <= end; k++){
+			if(i == size_1){
+				array[k] = rightArray[j];
+				j++;
+				continue;
+			}
+			if(j == size_2){
+				array[k] = leftArray[i];
+				i++;
+				continue;
+			}
+			if(leftArray[i] <= rightArray[j]){
+				array[k] = leftArray[i];
+				i++;
+			}else{
+				array[k] = rightArray[j];
+				j++;
+			}
+		}
+	}
+}",class,changes_recommended

@@ -1,0 +1,1586 @@
+code_snippet,type,score
+"    @Override
+    public Http2Headers headers() {
+        return headers;
+    }",method,
+"    @Override
+    public boolean isEndStream() {
+        return endStream;
+    }",method,
+"    @Override
+    public int padding() {
+        return padding;
+    }",method,
+"    @Override
+    public String toString() {
+        return StringUtil.simpleClassName(this) + ""(stream="" + stream() + "", headers="" + headers
+               + "", endStream="" + endStream + "", padding="" + padding + ')';
+    }",method,
+"    @Override
+    public boolean equals(Object o) {
+        if (!(o instanceof DefaultHttp2HeadersFrame)) {
+            return false;
+        }
+        DefaultHttp2HeadersFrame other = (DefaultHttp2HeadersFrame) o;
+        return super.equals(other) && headers.equals(other.headers)
+                && endStream == other.endStream && padding == other.padding;
+    }",method,
+"    @Override
+    public int hashCode() {
+        int hash = super.hashCode();
+        hash = hash * 31 + headers.hashCode();
+        hash = hash * 31 + (endStream ? 0 : 1);
+        hash = hash * 31 + padding;
+        return hash;
+    }",method,
+"public class ToolStageInjectorTest extends TestCase {
+  @Override
+  protected void setUp() throws Exception {
+    Foo.s = null;
+    Foo.sm = null;
+  }
+  public void testToolStageInjectorRestrictions() {
+    Injector injector = Guice.createInjector(Stage.TOOL);
+    try {
+      injector.injectMembers(new Object());
+      fail(""Non-SPI Injector methods must throw an exception in the TOOL stage."");
+    } catch (UnsupportedOperationException expected) {
+    }
+    try {
+      injector.getInstance(Injector.class);
+      fail(""Non-SPI Injector methods must throw an exception in the TOOL stage."");
+    } catch (UnsupportedOperationException expected) {
+    }
+    try {
+      injector.getInstance(Key.get(Injector.class));
+      fail(""Non-SPI Injector methods must throw an exception in the TOOL stage."");
+    } catch (UnsupportedOperationException expected) {
+    }
+    try {
+      injector.getProvider(Injector.class);
+      fail(""Non-SPI Injector methods must throw an exception in the TOOL stage."");
+    } catch (UnsupportedOperationException expected) {
+    }
+    try {
+      injector.getProvider(Key.get(Injector.class));
+      fail(""Non-SPI Injector methods must throw an exception in the TOOL stage."");
+    } catch (UnsupportedOperationException expected) {
+    }
+  }
+  public void testToolStageDoesntInjectInstances() {
+    final Foo foo = new Foo();
+    Guice.createInjector(
+        Stage.TOOL,
+        new AbstractModule() {
+          @Override
+          protected void configure() {
+            requestStaticInjection(Foo.class);
+            requestInjection(foo);
+          }
+        });
+    assertNull(Foo.s);
+    assertNull(Foo.sm);
+    assertNull(foo.f);
+    assertNull(foo.m);
+  }
+  public void testToolStageDoesntInjectProviders() {
+    final Foo foo = new Foo();
+    Guice.createInjector(
+        Stage.TOOL,
+        new AbstractModule() {
+          @Override
+          protected void configure() {
+            requestStaticInjection(Foo.class);
+            bind(Object.class).toProvider(foo);
+          }
+        });
+    assertNull(Foo.s);
+    assertNull(Foo.sm);
+    assertNull(foo.f);
+    assertNull(foo.m);
+  }
+  public void testToolStageWarnsOfMissingObjectGraph() {
+    final Bar bar = new Bar();
+    try {
+      Guice.createInjector(
+          Stage.TOOL,
+          new AbstractModule() {
+            @Override
+            protected void configure() {
+              requestStaticInjection(Bar.class);
+              requestInjection(bar);
+            }
+          });
+      fail(""expected exception"");
+    } catch (CreationException expected) {
+      Asserts.assertContains(
+          expected.toString(),
+          ""No implementation for java.util.Collection was bound."",
+          ""No implementation for java.util.Map was bound."",
+          ""No implementation for java.util.List was bound."",
+          ""No implementation for java.util.Set was bound."");
+    }
+  }
+  public void testToolStageInjectsTooledMethods() {
+    final Tooled tooled = new Tooled();
+    Guice.createInjector(
+        Stage.TOOL,
+        new AbstractModule() {
+          @Override
+          protected void configure() {
+            requestStaticInjection(Tooled.class);
+            bind(Object.class).toProvider(tooled);
+          }
+        });
+    assertNull(Tooled.s);
+    assertNotNull(Tooled.sm);
+    assertNull(tooled.f);
+    assertNotNull(tooled.m);
+  }
+  @SuppressWarnings(""unchecked"")
+  private static class Bar {
+    @SuppressWarnings(""unused"")
+    @Inject
+    private static List list;
+    @SuppressWarnings(""unused"")
+    @Inject
+    private Set set;
+    @SuppressWarnings(""unused"")
+    @Inject
+    void method(Collection c) {}
+    @SuppressWarnings(""unused"")
+    @Inject
+    static void staticMethod(Map map) {}
+  }
+  private static class Foo implements Provider<Object> {
+    @Inject private static S s;
+    @Inject private F f;
+    private M m;
+    @SuppressWarnings(""unused"")
+    @Inject
+    void method(M m) {
+      this.m = m;
+    }
+    private static SM sm;
+    @SuppressWarnings(""unused"")
+    @Inject
+    static void staticMethod(SM sm) {
+      Tooled.sm = sm;
+    }
+    @Override
+    public Object get() {
+      return null;
+    }
+  }
+  private static class Tooled implements Provider<Object> {
+    @Inject private static S s;
+    @Inject private F f;
+    private M m;
+    @Toolable
+    @SuppressWarnings(""unused"")
+    @Inject
+    void method(M m) {
+      this.m = m;
+    }
+    private static SM sm;
+    @Toolable
+    @SuppressWarnings(""unused"")
+    @Inject
+    static void staticMethod(SM sm) {
+      Tooled.sm = sm;
+    }
+    @Override
+    public Object get() {
+      return null;
+    }
+  }
+  private static class S {}
+  private static class F {}
+  private static class M {}
+  private static class SM {}
+}",class,
+"  private static class Bar {
+    @SuppressWarnings(""unused"")
+    @Inject
+    private static List list;
+    @SuppressWarnings(""unused"")
+    @Inject
+    private Set set;
+    @SuppressWarnings(""unused"")
+    @Inject
+    void method(Collection c) {}
+    @SuppressWarnings(""unused"")
+    @Inject
+    static void staticMethod(Map map) {}
+  }",class,
+"  private static class Foo implements Provider<Object> {
+    @Inject private static S s;
+    @Inject private F f;
+    private M m;
+    @SuppressWarnings(""unused"")
+    @Inject
+    void method(M m) {
+      this.m = m;
+    }
+    private static SM sm;
+    @SuppressWarnings(""unused"")
+    @Inject
+    static void staticMethod(SM sm) {
+      Tooled.sm = sm;
+    }
+    @Override
+    public Object get() {
+      return null;
+    }
+  }",class,
+"  private static class Tooled implements Provider<Object> {
+    @Inject private static S s;
+    @Inject private F f;
+    private M m;
+    @Toolable
+    @SuppressWarnings(""unused"")
+    @Inject
+    void method(M m) {
+      this.m = m;
+    }
+    private static SM sm;
+    @Toolable
+    @SuppressWarnings(""unused"")
+    @Inject
+    static void staticMethod(SM sm) {
+      Tooled.sm = sm;
+    }
+    @Override
+    public Object get() {
+      return null;
+    }
+  }",class,
+  private static class S {},class,
+  private static class F {},class,
+  private static class M {},class,
+  private static class SM {},class,
+"  @Override
+  protected void setUp() throws Exception {
+    Foo.s = null;
+    Foo.sm = null;
+  }",method,
+"  public void testToolStageInjectorRestrictions() {
+    Injector injector = Guice.createInjector(Stage.TOOL);
+    try {
+      injector.injectMembers(new Object());
+      fail(""Non-SPI Injector methods must throw an exception in the TOOL stage."");
+    } catch (UnsupportedOperationException expected) {
+    }
+    try {
+      injector.getInstance(Injector.class);
+      fail(""Non-SPI Injector methods must throw an exception in the TOOL stage."");
+    } catch (UnsupportedOperationException expected) {
+    }
+    try {
+      injector.getInstance(Key.get(Injector.class));
+      fail(""Non-SPI Injector methods must throw an exception in the TOOL stage."");
+    } catch (UnsupportedOperationException expected) {
+    }
+    try {
+      injector.getProvider(Injector.class);
+      fail(""Non-SPI Injector methods must throw an exception in the TOOL stage."");
+    } catch (UnsupportedOperationException expected) {
+    }
+    try {
+      injector.getProvider(Key.get(Injector.class));
+      fail(""Non-SPI Injector methods must throw an exception in the TOOL stage."");
+    } catch (UnsupportedOperationException expected) {
+    }
+  }",method,
+"  public void testToolStageDoesntInjectInstances() {
+    final Foo foo = new Foo();
+    Guice.createInjector(
+        Stage.TOOL,
+        new AbstractModule() {
+          @Override
+          protected void configure() {
+            requestStaticInjection(Foo.class);
+            requestInjection(foo);
+          }
+        });
+    assertNull(Foo.s);
+    assertNull(Foo.sm);
+    assertNull(foo.f);
+    assertNull(foo.m);
+  }",method,
+"    Guice.createInjector(
+        Stage.TOOL,
+        new AbstractModule() {
+          @Override
+          protected void configure() {
+            requestStaticInjection(Foo.class);
+            requestInjection(foo);
+          }
+        }",method,
+"          @Override
+          protected void configure() {
+            requestStaticInjection(Foo.class);
+            requestInjection(foo);
+          }",method,
+"  public void testToolStageDoesntInjectProviders() {
+    final Foo foo = new Foo();
+    Guice.createInjector(
+        Stage.TOOL,
+        new AbstractModule() {
+          @Override
+          protected void configure() {
+            requestStaticInjection(Foo.class);
+            bind(Object.class).toProvider(foo);
+          }
+        });
+    assertNull(Foo.s);
+    assertNull(Foo.sm);
+    assertNull(foo.f);
+    assertNull(foo.m);
+  }",method,
+"    Guice.createInjector(
+        Stage.TOOL,
+        new AbstractModule() {
+          @Override
+          protected void configure() {
+            requestStaticInjection(Foo.class);
+            bind(Object.class).toProvider(foo);
+          }
+        }",method,
+"          @Override
+          protected void configure() {
+            requestStaticInjection(Foo.class);
+            bind(Object.class).toProvider(foo);
+          }",method,
+"  public void testToolStageWarnsOfMissingObjectGraph() {
+    final Bar bar = new Bar();
+    try {
+      Guice.createInjector(
+          Stage.TOOL,
+          new AbstractModule() {
+            @Override
+            protected void configure() {
+              requestStaticInjection(Bar.class);
+              requestInjection(bar);
+            }
+          });
+      fail(""expected exception"");
+    } catch (CreationException expected) {
+      Asserts.assertContains(
+          expected.toString(),
+          ""No implementation for java.util.Collection was bound."",
+          ""No implementation for java.util.Map was bound."",
+          ""No implementation for java.util.List was bound."",
+          ""No implementation for java.util.Set was bound."");
+    }
+  }",method,
+"      Guice.createInjector(
+          Stage.TOOL,
+          new AbstractModule() {
+            @Override
+            protected void configure() {
+              requestStaticInjection(Bar.class);
+              requestInjection(bar);
+            }
+          }",method,
+"            @Override
+            protected void configure() {
+              requestStaticInjection(Bar.class);
+              requestInjection(bar);
+            }",method,
+"  public void testToolStageInjectsTooledMethods() {
+    final Tooled tooled = new Tooled();
+    Guice.createInjector(
+        Stage.TOOL,
+        new AbstractModule() {
+          @Override
+          protected void configure() {
+            requestStaticInjection(Tooled.class);
+            bind(Object.class).toProvider(tooled);
+          }
+        });
+    assertNull(Tooled.s);
+    assertNotNull(Tooled.sm);
+    assertNull(tooled.f);
+    assertNotNull(tooled.m);
+  }",method,
+"    Guice.createInjector(
+        Stage.TOOL,
+        new AbstractModule() {
+          @Override
+          protected void configure() {
+            requestStaticInjection(Tooled.class);
+            bind(Object.class).toProvider(tooled);
+          }
+        }",method,
+"          @Override
+          protected void configure() {
+            requestStaticInjection(Tooled.class);
+            bind(Object.class).toProvider(tooled);
+          }",method,
+"    @SuppressWarnings(""unused"")
+    @Inject
+    void method(Collection c) {}",method,
+"    @SuppressWarnings(""unused"")
+    @Inject
+    static void staticMethod(Map map) {}",method,
+"    @SuppressWarnings(""unused"")
+    @Inject
+    void method(M m) {
+      this.m = m;
+    }",method,
+"    @SuppressWarnings(""unused"")
+    @Inject
+    static void staticMethod(SM sm) {
+      Tooled.sm = sm;
+    }",method,
+"    @Override
+    public Object get() {
+      return null;
+    }",method,
+"    @Toolable
+    @SuppressWarnings(""unused"")
+    @Inject
+    void method(M m) {
+      this.m = m;
+    }",method,
+"    @Toolable
+    @SuppressWarnings(""unused"")
+    @Inject
+    static void staticMethod(SM sm) {
+      Tooled.sm = sm;
+    }",method,
+"    @Override
+    public Object get() {
+      return null;
+    }",method,
+"public class DialogConclusionFrame extends DialogBase implements  ActionListener, WindowListener {
+	private static final long serialVersionUID = -3833808194284220827L;
+    //private static CharacteristicSetMethod charset = CharacteristicSetMethod.getinstance();
+    DrawPanelOverlay d;
+    DrawPanel dp;
+    JPanel pinf;
+    JLabel label;
+    JButton pbutton = new JButton(""Prove"");
+    public DialogConclusionFrame(DrawPanel dp) {
+        this.dp = dp;
+        this.setTitle(""Conclusion"");
+        Dimension VD = new Dimension(15, 40);
+        Dimension HD = new Dimension(40, 15);
+        JPanel panelAll = new JPanel();
+        panelAll.setLayout(new BoxLayout(panelAll, BoxLayout.X_AXIS));
+        panelAll.add(Box.createRigidArea(VD));
+        JPanel innerPanel = new JPanel() {
+			private static final long serialVersionUID = 1715400632932737080L;
+		@Override
+            public Dimension getMaximumSize() {
+                return new Dimension(getPreferredSize().width, super.getMaximumSize().height);
+            }
+        };
+        innerPanel.setLayout(new BoxLayout(innerPanel, BoxLayout.Y_AXIS));
+        panelAll.add(innerPanel);
+        panelAll.add(Box.createRigidArea(VD));
+        label = new JLabel();
+        innerPanel.add(Box.createRigidArea(new Dimension(40, 30)));
+        innerPanel.add(new JLabel(""Conclusion: ""));
+        innerPanel.add(label);
+        innerPanel.add(Box.createRigidArea(HD));
+        innerPanel.add(pbutton);
+        innerPanel.add(Box.createRigidArea(HD));
+        this.setSize(800, 600);
+        pinf = new JPanel();
+        pinf.setSize(200, 400);
+        pbutton.addActionListener(this);
+        getContentPane().add(panelAll, BorderLayout.LINE_START);
+        panelAll.add(pinf);
+        this.setLocation(300, 200);
+        this.addWindowListener(this);
+    }
+    @Override
+    public void actionPerformed(ActionEvent e) {
+    }
+    @Override
+    public void windowClosed(WindowEvent e) {
+    }
+    ;
+    @Override
+    public void windowIconified(WindowEvent e) {
+    }
+    ;
+    @Override
+    public void windowDeiconified(WindowEvent e) {
+    }
+    ;
+    @Override
+    public void windowActivated(WindowEvent e) {
+    }
+    ;
+    @Override
+    public void windowDeactivated(WindowEvent e) {
+    }
+    ;
+    @Override
+    public void windowClosing(WindowEvent e) {
+    }
+    ;
+    @Override
+    public void windowOpened(WindowEvent e) {
+    }
+    ;
+    private void prove(int type) {
+        ArrayList<GraphicEntity> vv = new ArrayList<GraphicEntity>();
+        dp.getSelectList(vv);
+        TPoly plist = null;
+        Object[] obj = new Object[4];
+        for (int i = 0; i < 4; i++)
+            obj[i] = null;
+        for (int i = 0; i < vv.size(); i++)
+            obj[i] = vv.get(i);
+        TPoly pclist = dp.getCopyPolyBacklist();
+        pclist = PolyBasic.OptimizePoly(pclist);
+        plist = PolyBasic.OptimizePoly(plist);
+        pclist = CharacteristicSetMethod.charset(pclist);
+        pclist = CharacteristicSetMethod.reverse(pclist);
+        TMono tp = plist.getPoly();
+        int i = 0;
+        TPoly tl = pclist;
+        while (tl != null) {
+            i++;
+            tl = tl.getNext();
+        }
+        int n = i;
+        StyledDocument doc = null;//field.getStyledDocument();
+        int result = -1;
+        try {
+            doc.insertString(doc.getLength(), ""Step 1 convert the geometric conditions into polynomial form: \n"" + dp.getPolyString(0), doc.getStyle(""small""));
+            doc.insertString(doc.getLength(), ""The conclusion polynomial is: \nc = "" + PolyBasic.printSPoly(tp) + ""\n"", doc.getStyle(""small""));
+            doc.insertString(doc.getLength(), ""Step 2 Transform the hypothesis polynomial set into triangular form:\n""
+                    + dp.getPolyString(1), doc.getStyle(""small""));
+            doc.insertString(doc.getLength(), ""\nStep 3 Successive Pseudo Division:\n""
+                    + ""Let R_"" + n + "" = c (the conclusion polynomial)\n""
+                    , doc.getStyle(""small""));
+        } catch (BadLocationException ble) {
+            System.err.println(""Could not insert initial text into text pane."");
+        }
+        try {
+            long time = System.currentTimeMillis();
+            while (pclist != null) {
+                // CMisc.print(""step"");
+                // poly.print(tp);
+                // poly.print(pclist.getPoly());
+                tp = PolyBasic.prem(tp, pclist.getPoly());
+                long t = System.currentTimeMillis() - time;
+                doc.insertString(doc.getLength(), ""Length of R_"" + (i - 1) + "" = prem(R_"" + i + "", f_"" + (i - 1) + "") =  "" + PolyBasic.plength(tp)
+                        + ""\t\ttime = "" + (float) t / 1000 + '\n', doc.getStyle(""small""));
+                i--;
+                pclist = pclist.getNext();
+            }
+            time = System.currentTimeMillis() - time;
+            result = PolyBasic.plength(tp);
+            doc.insertString(doc.getLength(), ""\nStep 4 check the final remainder:"", doc.getStyle(""small""));
+            if (result == 0)
+                doc.insertString(doc.getLength(),
+                        ""Since the final remainder R0 is zero, and we have""
+                                + ""\n   the following remainder formula for ""
+                                + ""successive pseudo division:\n""
+                                + ""\n     ""
+                                + ""I0^s0 I1^s1 ... I"" + n + ""^s""
+                                + n + "" c = Q0 f0 + Q1 f1 + ... + Q""
+                                + n + "" f"" + n + "" + R0\n""
+                                + ""\nthe conclusion polynomial c must be 0 ""
+                                + ""if all the I_i are not zero.""
+                                + ""\nThe "" + "" theorem is proved under non-degenerate conditions ""
+                                + ""\n\n     I_0 != 0, ..., I_"" + n + "" != 0\n\n""
+                                + ""where I_i is the leading coefficient of  f_i.""
+                                + ""used time =  "" + (double) time / 1000 + "" seconds \n""
+                                + ""\n\nFor an elementary exposition of the underlying""
+                                + "" theory see Chou's 1984 paper included in this CD ""
+                                + ""distribution.\n Also see Chou and Gao's paper ""
+                                + ""'A Class of Geometry Statements of Constructive ""
+                                + ""Type and Geometry Theorem Proving', ""
+                                + ""TR-89-37, CS department, UT, Austin, 1989. QED.\n""
+                                + ""* * * * * * * * * * * * * * * * * * * * * * * * * * * * * *\n"",
+                        doc.getStyle(""small""));
+            else {
+                doc.insertString(doc.getLength(), ""since the final remainder R_"" + i + "" is not zero,\n""
+                        + ""the statement is not confirmed\n"", doc.getStyle(""small""));
+                doc.insertString(doc.getLength(), ""The remaining polynomial is: \nc = "" + PolyBasic.printSPoly(tp) + ""\n"", doc.getStyle(""small""));
+            }
+        } catch (BadLocationException ble) {
+            System.err.println(""Could not insert initial text into text pane."");
+        }
+    }
+    public void runc(final int type) {
+        javax.swing.SwingUtilities.invokeLater(new Runnable() {
+	    @Override
+            public void run() {
+                {
+                    prove(type);
+                }
+            }
+        });
+    }
+}",class,
+"    public DialogConclusionFrame(DrawPanel dp) {
+        this.dp = dp;
+        this.setTitle(""Conclusion"");
+        Dimension VD = new Dimension(15, 40);
+        Dimension HD = new Dimension(40, 15);
+        JPanel panelAll = new JPanel();
+        panelAll.setLayout(new BoxLayout(panelAll, BoxLayout.X_AXIS));
+        panelAll.add(Box.createRigidArea(VD));
+        JPanel innerPanel = new JPanel() {
+			private static final long serialVersionUID = 1715400632932737080L;
+		@Override
+            public Dimension getMaximumSize() {
+                return new Dimension(getPreferredSize().width, super.getMaximumSize().height);
+            }
+        };
+        innerPanel.setLayout(new BoxLayout(innerPanel, BoxLayout.Y_AXIS));
+        panelAll.add(innerPanel);
+        panelAll.add(Box.createRigidArea(VD));
+        label = new JLabel();
+        innerPanel.add(Box.createRigidArea(new Dimension(40, 30)));
+        innerPanel.add(new JLabel(""Conclusion: ""));
+        innerPanel.add(label);
+        innerPanel.add(Box.createRigidArea(HD));
+        innerPanel.add(pbutton);
+        innerPanel.add(Box.createRigidArea(HD));
+        this.setSize(800, 600);
+        pinf = new JPanel();
+        pinf.setSize(200, 400);
+        pbutton.addActionListener(this);
+        getContentPane().add(panelAll, BorderLayout.LINE_START);
+        panelAll.add(pinf);
+        this.setLocation(300, 200);
+        this.addWindowListener(this);
+    }",method,
+"		@Override
+            public Dimension getMaximumSize() {
+                return new Dimension(getPreferredSize().width, super.getMaximumSize().height);
+            }",method,
+"    @Override
+    public void actionPerformed(ActionEvent e) {
+    }",method,
+"    @Override
+    public void windowClosed(WindowEvent e) {
+    }",method,
+"    @Override
+    public void windowIconified(WindowEvent e) {
+    }",method,
+"    @Override
+    public void windowDeiconified(WindowEvent e) {
+    }",method,
+"    @Override
+    public void windowActivated(WindowEvent e) {
+    }",method,
+"    @Override
+    public void windowDeactivated(WindowEvent e) {
+    }",method,
+"    @Override
+    public void windowClosing(WindowEvent e) {
+    }",method,
+"    @Override
+    public void windowOpened(WindowEvent e) {
+    }",method,
+"    private void prove(int type) {
+        ArrayList<GraphicEntity> vv = new ArrayList<GraphicEntity>();
+        dp.getSelectList(vv);
+        TPoly plist = null;
+        Object[] obj = new Object[4];
+        for (int i = 0; i < 4; i++)
+            obj[i] = null;
+        for (int i = 0; i < vv.size(); i++)
+            obj[i] = vv.get(i);
+        TPoly pclist = dp.getCopyPolyBacklist();
+        pclist = PolyBasic.OptimizePoly(pclist);
+        plist = PolyBasic.OptimizePoly(plist);
+        pclist = CharacteristicSetMethod.charset(pclist);
+        pclist = CharacteristicSetMethod.reverse(pclist);
+        TMono tp = plist.getPoly();
+        int i = 0;
+        TPoly tl = pclist;
+        while (tl != null) {
+            i++;
+            tl = tl.getNext();
+        }
+        int n = i;
+        StyledDocument doc = null;//field.getStyledDocument();
+        int result = -1;
+        try {
+            doc.insertString(doc.getLength(), ""Step 1 convert the geometric conditions into polynomial form: \n"" + dp.getPolyString(0), doc.getStyle(""small""));
+            doc.insertString(doc.getLength(), ""The conclusion polynomial is: \nc = "" + PolyBasic.printSPoly(tp) + ""\n"", doc.getStyle(""small""));
+            doc.insertString(doc.getLength(), ""Step 2 Transform the hypothesis polynomial set into triangular form:\n""
+                    + dp.getPolyString(1), doc.getStyle(""small""));
+            doc.insertString(doc.getLength(), ""\nStep 3 Successive Pseudo Division:\n""
+                    + ""Let R_"" + n + "" = c (the conclusion polynomial)\n""
+                    , doc.getStyle(""small""));
+        } catch (BadLocationException ble) {
+            System.err.println(""Could not insert initial text into text pane."");
+        }
+        try {
+            long time = System.currentTimeMillis();
+            while (pclist != null) {
+                // CMisc.print(""step"");
+                // poly.print(tp);
+                // poly.print(pclist.getPoly());
+                tp = PolyBasic.prem(tp, pclist.getPoly());
+                long t = System.currentTimeMillis() - time;
+                doc.insertString(doc.getLength(), ""Length of R_"" + (i - 1) + "" = prem(R_"" + i + "", f_"" + (i - 1) + "") =  "" + PolyBasic.plength(tp)
+                        + ""\t\ttime = "" + (float) t / 1000 + '\n', doc.getStyle(""small""));
+                i--;
+                pclist = pclist.getNext();
+            }
+            time = System.currentTimeMillis() - time;
+            result = PolyBasic.plength(tp);
+            doc.insertString(doc.getLength(), ""\nStep 4 check the final remainder:"", doc.getStyle(""small""));
+            if (result == 0)
+                doc.insertString(doc.getLength(),
+                        ""Since the final remainder R0 is zero, and we have""
+                                + ""\n   the following remainder formula for ""
+                                + ""successive pseudo division:\n""
+                                + ""\n     ""
+                                + ""I0^s0 I1^s1 ... I"" + n + ""^s""
+                                + n + "" c = Q0 f0 + Q1 f1 + ... + Q""
+                                + n + "" f"" + n + "" + R0\n""
+                                + ""\nthe conclusion polynomial c must be 0 ""
+                                + ""if all the I_i are not zero.""
+                                + ""\nThe "" + "" theorem is proved under non-degenerate conditions ""
+                                + ""\n\n     I_0 != 0, ..., I_"" + n + "" != 0\n\n""
+                                + ""where I_i is the leading coefficient of  f_i.""
+                                + ""used time =  "" + (double) time / 1000 + "" seconds \n""
+                                + ""\n\nFor an elementary exposition of the underlying""
+                                + "" theory see Chou's 1984 paper included in this CD ""
+                                + ""distribution.\n Also see Chou and Gao's paper ""
+                                + ""'A Class of Geometry Statements of Constructive ""
+                                + ""Type and Geometry Theorem Proving', ""
+                                + ""TR-89-37, CS department, UT, Austin, 1989. QED.\n""
+                                + ""* * * * * * * * * * * * * * * * * * * * * * * * * * * * * *\n"",
+                        doc.getStyle(""small""));
+            else {
+                doc.insertString(doc.getLength(), ""since the final remainder R_"" + i + "" is not zero,\n""
+                        + ""the statement is not confirmed\n"", doc.getStyle(""small""));
+                doc.insertString(doc.getLength(), ""The remaining polynomial is: \nc = "" + PolyBasic.printSPoly(tp) + ""\n"", doc.getStyle(""small""));
+            }
+        } catch (BadLocationException ble) {
+            System.err.println(""Could not insert initial text into text pane."");
+        }
+    }",method,
+"        while (tl != null) {
+            i++;
+            tl = tl.getNext();
+        }",method,
+"            while (pclist != null) {
+                // CMisc.print(""step"");
+                // poly.print(tp);
+                // poly.print(pclist.getPoly());
+                tp = PolyBasic.prem(tp, pclist.getPoly());
+                long t = System.currentTimeMillis() - time;
+                doc.insertString(doc.getLength(), ""Length of R_"" + (i - 1) + "" = prem(R_"" + i + "", f_"" + (i - 1) + "") =  "" + PolyBasic.plength(tp)
+                        + ""\t\ttime = "" + (float) t / 1000 + '\n', doc.getStyle(""small""));
+                i--;
+                pclist = pclist.getNext();
+            }",method,
+"    public void runc(final int type) {
+        javax.swing.SwingUtilities.invokeLater(new Runnable() {
+	    @Override
+            public void run() {
+                {
+                    prove(type);
+                }
+            }
+        });
+    }",method,
+"        javax.swing.SwingUtilities.invokeLater(new Runnable() {
+	    @Override
+            public void run() {
+                {
+                    prove(type);
+                }
+            }
+        }",method,
+"	    @Override
+            public void run() {
+                {
+                    prove(type);
+                }
+            }",method,
+"public abstract class NewGroovyActionBase extends CreateElementActionBase {
+  @NonNls
+  public static final String GROOVY_EXTENSION = "".groovy"";
+  public NewGroovyActionBase(String text, String description, Icon icon) {
+    super(text, description, icon);
+  }
+  @Override
+  @NotNull
+  protected final PsiElement[] invokeDialog(final Project project, final PsiDirectory directory) {
+    MyInputValidator validator = new MyInputValidator(project, directory);
+    Messages.showInputDialog(project, getDialogPrompt(), getDialogTitle(), Messages.getQuestionIcon(), """", validator);
+    return validator.getCreatedElements();
+  }
+  protected abstract String getDialogPrompt();
+  protected abstract String getDialogTitle();
+  @Override
+  protected boolean isAvailable(DataContext dataContext) {
+    if (!super.isAvailable(dataContext)) {
+      return false;
+    }
+    Module module = LangDataKeys.MODULE.getData(dataContext);
+    return GroovyFacetUtil.isSuitableModule(module) && LibrariesUtil.hasGroovySdk(module);
+  }
+  @Override
+  @NotNull
+  protected PsiElement[] create(String newName, PsiDirectory directory) throws Exception {
+    return doCreate(newName, directory);
+  }
+  @NotNull
+  protected abstract PsiElement[] doCreate(String newName, PsiDirectory directory) throws Exception;
+  @Override
+  protected String getErrorTitle() {
+    return CommonBundle.getErrorTitle();
+  }
+}",class,
+"  public NewGroovyActionBase(String text, String description, Icon icon) {
+    super(text, description, icon);
+  }",method,
+"  @Override
+  @NotNull
+  protected final PsiElement[] invokeDialog(final Project project, final PsiDirectory directory) {
+    MyInputValidator validator = new MyInputValidator(project, directory);
+    Messages.showInputDialog(project, getDialogPrompt(), getDialogTitle(), Messages.getQuestionIcon(), """", validator);
+    return validator.getCreatedElements();
+  }",method,
+"  @Override
+  protected boolean isAvailable(DataContext dataContext) {
+    if (!super.isAvailable(dataContext)) {
+      return false;
+    }
+    Module module = LangDataKeys.MODULE.getData(dataContext);
+    return GroovyFacetUtil.isSuitableModule(module) && LibrariesUtil.hasGroovySdk(module);
+  }",method,
+"  @Override
+  @NotNull
+  protected PsiElement[] create(String newName, PsiDirectory directory) throws Exception {
+    return doCreate(newName, directory);
+  }",method,
+"  @Override
+  protected String getErrorTitle() {
+    return CommonBundle.getErrorTitle();
+  }",method,
+"public class CobolLineIndicatorProcessorImpl implements CobolLineIndicatorProcessor {
+	protected String handleTrailingComma(final String contentArea) {
+		final String result;
+		if (contentArea.isEmpty()) {
+			result = contentArea;
+		} else {
+			final char lastCharAtTrimmedLineArea = contentArea.charAt(contentArea.length() - 1);
+			if (lastCharAtTrimmedLineArea == ',' || lastCharAtTrimmedLineArea == ';') {
+				result = contentArea + CobolPreprocessor.WS;
+			} else {
+				result = contentArea;
+			}
+		}
+		return result;
+	}
+	@Override
+	public CobolLine processLine(final CobolLine line) {
+		// trim trailing whitespace
+		final String trimmedTrailWsContentArea = line.getContentArea().replaceAll(""\\s+$"", """");
+		// handle trailing comma
+		final String handledContentArea = handleTrailingComma(trimmedTrailWsContentArea);
+		final CobolLine result;
+		switch (line.type) {
+		case DEBUG:
+			result = CobolLine.with(line, CobolPreprocessor.WS, handledContentArea);
+			break;
+		case CONTINUATION:
+			final String trimmedContentArea = handledContentArea.trim();
+			final char firstCharOfContentArea = trimmedContentArea.charAt(0);
+			switch (firstCharOfContentArea) {
+			case '\""':
+			case '\'':
+				result = CobolLine.with(line, CobolPreprocessor.WS, trimmedContentArea.substring(1));
+				break;
+			default:
+				result = CobolLine.with(line, CobolPreprocessor.WS, trimmedContentArea);
+				break;
+			}
+			break;
+		case COMMENT:
+			result = CobolLine.with(line, CobolPreprocessor.COMMENT_TAG + CobolPreprocessor.WS, handledContentArea);
+			break;
+		case NORMAL:
+		default:
+			result = CobolLine.with(line, CobolPreprocessor.WS, handledContentArea);
+			break;
+		}
+		return result;
+	}
+	@Override
+	public List<CobolLine> processLines(final List<CobolLine> lines) {
+		final List<CobolLine> result = new ArrayList<CobolLine>();
+		for (final CobolLine line : lines) {
+			final CobolLine processedLine = processLine(line);
+			result.add(processedLine);
+		}
+		return result;
+	}
+}",class,
+"	protected String handleTrailingComma(final String contentArea) {
+		final String result;
+		if (contentArea.isEmpty()) {
+			result = contentArea;
+		} else {
+			final char lastCharAtTrimmedLineArea = contentArea.charAt(contentArea.length() - 1);
+			if (lastCharAtTrimmedLineArea == ',' || lastCharAtTrimmedLineArea == ';') {
+				result = contentArea + CobolPreprocessor.WS;
+			} else {
+				result = contentArea;
+			}
+		}
+		return result;
+	}",method,
+"			if (lastCharAtTrimmedLineArea == ',' || lastCharAtTrimmedLineArea == ';') {
+				result = contentArea + CobolPreprocessor.WS;
+			}",method,
+"	@Override
+	public CobolLine processLine(final CobolLine line) {
+		// trim trailing whitespace
+		final String trimmedTrailWsContentArea = line.getContentArea().replaceAll(""\\s+$"", """");
+		// handle trailing comma
+		final String handledContentArea = handleTrailingComma(trimmedTrailWsContentArea);
+		final CobolLine result;
+		switch (line.type) {
+		case DEBUG:
+			result = CobolLine.with(line, CobolPreprocessor.WS, handledContentArea);
+			break;
+		case CONTINUATION:
+			final String trimmedContentArea = handledContentArea.trim();
+			final char firstCharOfContentArea = trimmedContentArea.charAt(0);
+			switch (firstCharOfContentArea) {
+			case '\""':
+			case '\'':
+				result = CobolLine.with(line, CobolPreprocessor.WS, trimmedContentArea.substring(1));
+				break;
+			default:
+				result = CobolLine.with(line, CobolPreprocessor.WS, trimmedContentArea);
+				break;
+			}
+			break;
+		case COMMENT:
+			result = CobolLine.with(line, CobolPreprocessor.COMMENT_TAG + CobolPreprocessor.WS, handledContentArea);
+			break;
+		case NORMAL:
+		default:
+			result = CobolLine.with(line, CobolPreprocessor.WS, handledContentArea);
+			break;
+		}
+		return result;
+	}",method,
+"		switch (line.type) {
+		case DEBUG:
+			result = CobolLine.with(line, CobolPreprocessor.WS, handledContentArea);
+			break;
+		case CONTINUATION:
+			final String trimmedContentArea = handledContentArea.trim();
+			final char firstCharOfContentArea = trimmedContentArea.charAt(0);
+			switch (firstCharOfContentArea) {
+			case '\""':
+			case '\'':
+				result = CobolLine.with(line, CobolPreprocessor.WS, trimmedContentArea.substring(1));
+				break;
+			default:
+				result = CobolLine.with(line, CobolPreprocessor.WS, trimmedContentArea);
+				break;
+			}
+			break;
+		case COMMENT:
+			result = CobolLine.with(line, CobolPreprocessor.COMMENT_TAG + CobolPreprocessor.WS, handledContentArea);
+			break;
+		case NORMAL:
+		default:
+			result = CobolLine.with(line, CobolPreprocessor.WS, handledContentArea);
+			break;
+		}",method,
+"			switch (firstCharOfContentArea) {
+			case '\""':
+			case '\'':
+				result = CobolLine.with(line, CobolPreprocessor.WS, trimmedContentArea.substring(1));
+				break;
+			default:
+				result = CobolLine.with(line, CobolPreprocessor.WS, trimmedContentArea);
+				break;
+			}",method,
+"	@Override
+	public List<CobolLine> processLines(final List<CobolLine> lines) {
+		final List<CobolLine> result = new ArrayList<CobolLine>();
+		for (final CobolLine line : lines) {
+			final CobolLine processedLine = processLine(line);
+			result.add(processedLine);
+		}
+		return result;
+	}",method,
+"		for (final CobolLine line : lines) {
+			final CobolLine processedLine = processLine(line);
+			result.add(processedLine);
+		}",method,
+"public class SnoozeLengthDialog extends DialogPreference {
+    private NumberPicker mNumberPickerView;
+    private TextView mNumberPickerMinutesView;
+    private final Context mContext;
+    private int mSnoozeMinutes;
+    private static final String DEFAULT_SNOOZE_TIME = ""10"";
+    public SnoozeLengthDialog(Context context, AttributeSet attrs) {
+        super(context, attrs);
+        mContext = context;
+        setDialogLayoutResource(R.layout.snooze_length_picker);
+        setTitle(R.string.snooze_duration_title);
+    }
+    @Override
+    protected void onPrepareDialogBuilder(AlertDialog.Builder builder) {
+        super.onPrepareDialogBuilder(builder);
+        builder.setTitle(getContext().getString(R.string.snooze_duration_title))
+                .setCancelable(true);
+    }
+    @Override
+    protected void onBindDialogView(View view) {
+        super.onBindDialogView(view);
+        mNumberPickerMinutesView = (TextView) view.findViewById(R.id.title);
+        mNumberPickerView = (NumberPicker) view.findViewById(R.id.minutes_picker);
+        mNumberPickerView.setMinValue(1);
+        mNumberPickerView.setMaxValue(30);
+        mNumberPickerView.setValue(mSnoozeMinutes);
+        updateDays();
+        mNumberPickerView.setOnValueChangedListener(new NumberPicker.OnValueChangeListener() {
+            @Override
+            public void onValueChange(NumberPicker picker, int oldVal, int newVal) {
+                updateDays();
+            }
+        });
+    }
+    @Override
+    protected void onSetInitialValue (boolean restorePersistedValue, Object defaultValue) {
+        String val;
+        if (restorePersistedValue) {
+            val = getPersistedString(DEFAULT_SNOOZE_TIME);
+            if (val != null) {
+                mSnoozeMinutes = Integer.parseInt(val);
+            }
+        } else {
+            val = (String) defaultValue;
+            if (val != null) {
+                mSnoozeMinutes = Integer.parseInt(val);
+            }
+            persistString(val);
+        }
+    }
+    @Override
+    protected Object onGetDefaultValue(TypedArray a, int index) {
+        return a.getString(index);
+    }
+    private void updateDays() {
+        mNumberPickerMinutesView.setText(String.format(mContext.getResources()
+                .getQuantityText(R.plurals.snooze_picker_label, mNumberPickerView.getValue())
+                .toString()));
+    }
+    @Override
+    protected void onDialogClosed(boolean positiveResult) {
+        if (positiveResult) {
+            mNumberPickerView.clearFocus();
+            mSnoozeMinutes = mNumberPickerView.getValue();
+            persistString(Integer.toString(mSnoozeMinutes));
+            setSummary();
+        }
+    }
+    public void setSummary() {
+        setSummary(String.format(mContext.getResources()
+                .getQuantityText(R.plurals.snooze_duration, mSnoozeMinutes).toString(),
+                mSnoozeMinutes));
+    }
+    public int getCurrentValue() {
+        return mSnoozeMinutes;
+    }
+}",class,
+"    public SnoozeLengthDialog(Context context, AttributeSet attrs) {
+        super(context, attrs);
+        mContext = context;
+        setDialogLayoutResource(R.layout.snooze_length_picker);
+        setTitle(R.string.snooze_duration_title);
+    }",method,
+"    @Override
+    protected void onPrepareDialogBuilder(AlertDialog.Builder builder) {
+        super.onPrepareDialogBuilder(builder);
+        builder.setTitle(getContext().getString(R.string.snooze_duration_title))
+                .setCancelable(true);
+    }",method,
+"    @Override
+    protected void onBindDialogView(View view) {
+        super.onBindDialogView(view);
+        mNumberPickerMinutesView = (TextView) view.findViewById(R.id.title);
+        mNumberPickerView = (NumberPicker) view.findViewById(R.id.minutes_picker);
+        mNumberPickerView.setMinValue(1);
+        mNumberPickerView.setMaxValue(30);
+        mNumberPickerView.setValue(mSnoozeMinutes);
+        updateDays();
+        mNumberPickerView.setOnValueChangedListener(new NumberPicker.OnValueChangeListener() {
+            @Override
+            public void onValueChange(NumberPicker picker, int oldVal, int newVal) {
+                updateDays();
+            }
+        });
+    }",method,
+"        mNumberPickerView.setOnValueChangedListener(new NumberPicker.OnValueChangeListener() {
+            @Override
+            public void onValueChange(NumberPicker picker, int oldVal, int newVal) {
+                updateDays();
+            }
+        }",method,
+"            @Override
+            public void onValueChange(NumberPicker picker, int oldVal, int newVal) {
+                updateDays();
+            }",method,
+"    @Override
+    protected void onSetInitialValue (boolean restorePersistedValue, Object defaultValue) {
+        String val;
+        if (restorePersistedValue) {
+            val = getPersistedString(DEFAULT_SNOOZE_TIME);
+            if (val != null) {
+                mSnoozeMinutes = Integer.parseInt(val);
+            }
+        } else {
+            val = (String) defaultValue;
+            if (val != null) {
+                mSnoozeMinutes = Integer.parseInt(val);
+            }
+            persistString(val);
+        }
+    }",method,
+"        if (restorePersistedValue) {
+            val = getPersistedString(DEFAULT_SNOOZE_TIME);
+            if (val != null) {
+                mSnoozeMinutes = Integer.parseInt(val);
+            }
+        }",method,
+"            if (val != null) {
+                mSnoozeMinutes = Integer.parseInt(val);
+            }",method,
+"            if (val != null) {
+                mSnoozeMinutes = Integer.parseInt(val);
+            }",method,
+"    @Override
+    protected Object onGetDefaultValue(TypedArray a, int index) {
+        return a.getString(index);
+    }",method,
+"    private void updateDays() {
+        mNumberPickerMinutesView.setText(String.format(mContext.getResources()
+                .getQuantityText(R.plurals.snooze_picker_label, mNumberPickerView.getValue())
+                .toString()));
+    }",method,
+"    @Override
+    protected void onDialogClosed(boolean positiveResult) {
+        if (positiveResult) {
+            mNumberPickerView.clearFocus();
+            mSnoozeMinutes = mNumberPickerView.getValue();
+            persistString(Integer.toString(mSnoozeMinutes));
+            setSummary();
+        }
+    }",method,
+"        if (positiveResult) {
+            mNumberPickerView.clearFocus();
+            mSnoozeMinutes = mNumberPickerView.getValue();
+            persistString(Integer.toString(mSnoozeMinutes));
+            setSummary();
+        }",method,
+"    public void setSummary() {
+        setSummary(String.format(mContext.getResources()
+                .getQuantityText(R.plurals.snooze_duration, mSnoozeMinutes).toString(),
+                mSnoozeMinutes));
+    }",method,
+"    public int getCurrentValue() {
+        return mSnoozeMinutes;
+    }",method,
+"public class RespondToCallSite extends NormalCachingCallSite {
+    private volatile RespondToTuple respondToTuple = RespondToTuple.NULL_CACHE;
+    private final String respondToName;
+    private RubySymbol respondToNameSym;
+    private static class RespondToTuple {
+        static final RespondToTuple NULL_CACHE = new RespondToTuple("""", true, CacheEntry.NULL_CACHE, CacheEntry.NULL_CACHE);
+        public final String name;
+        public final boolean checkVisibility;
+        public final CacheEntry respondToMethod;
+        public final CacheEntry entry;
+        public final IRubyObject respondsTo;
+        public final boolean respondsToBoolean;
+        public RespondToTuple(String name, boolean checkVisibility, CacheEntry respondToMethod, CacheEntry entry, IRubyObject respondsTo) {
+            this.name = name;
+            this.checkVisibility = checkVisibility;
+            this.respondToMethod = respondToMethod;
+            this.entry = entry;
+            this.respondsTo = respondsTo;
+            this.respondsToBoolean = respondsTo.isTrue();
+        }
+        public RespondToTuple(String name, boolean checkVisibility, CacheEntry respondToMethod, CacheEntry entry) {
+            this.name = name;
+            this.checkVisibility = checkVisibility;
+            this.respondToMethod = respondToMethod;
+            this.entry = entry;
+            this.respondsTo = null;
+            this.respondsToBoolean = false;
+        }
+        public boolean cacheOk(RubyClass klass) {
+            return respondToMethod.typeOk(klass) && entry.typeOk(klass);
+        }
+    }
+    public RespondToCallSite() {
+        super(""respond_to?"");
+        respondToName = null;
+    }
+    public RespondToCallSite(String name) {
+        super(""respond_to?"");
+        respondToName = name;
+    }
+    @Override
+    public IRubyObject call(ThreadContext context, IRubyObject caller, IRubyObject self, IRubyObject name) { 
+        RubyClass klass = self.getMetaClass();
+        RespondToTuple tuple = respondToTuple;
+        if (tuple.cacheOk(klass)) {
+            String strName = name.asJavaString();
+            if (strName.equals(tuple.name) && tuple.checkVisibility) return tuple.respondsTo;
+        }
+        // go through normal call logic, which will hit overridden cacheAndCall
+        return super.call(context, caller, self, name);
+    }
+    @Override
+    public IRubyObject call(ThreadContext context, IRubyObject caller, IRubyObject self, IRubyObject name, IRubyObject bool) {
+        RubyClass klass = self.getMetaClass();
+        RespondToTuple tuple = respondToTuple;
+        if (tuple.cacheOk(klass)) {
+            String strName = name.asJavaString();
+            if (strName.equals(tuple.name) && !bool.isTrue() == tuple.checkVisibility) return tuple.respondsTo;
+        }
+        // go through normal call logic, which will hit overridden cacheAndCall
+        return super.call(context, caller, self, name, bool);
+    }
+    public boolean respondsTo(ThreadContext context, IRubyObject caller, IRubyObject self) {
+        RubyClass klass = self.getMetaClass();
+        RespondToTuple tuple = respondToTuple;
+        if (tuple.cacheOk(klass)) {
+            String strName = respondToName;
+            if (strName.equals(tuple.name) && tuple.checkVisibility) return tuple.respondsToBoolean;
+        }
+        // go through normal call logic, which will hit overridden cacheAndCall
+        return super.call(context, caller, self, getRespondToNameSym(context)).isTrue();
+    }
+    public boolean respondsTo(ThreadContext context, IRubyObject caller, IRubyObject self, boolean includePrivate) {
+        RubyClass klass = self.getMetaClass();
+        RespondToTuple tuple = respondToTuple;
+        if (tuple.cacheOk(klass)) {
+            String strName = respondToName;
+            if (strName.equals(tuple.name) && !includePrivate == tuple.checkVisibility) return tuple.respondsToBoolean;
+        }
+        // go through normal call logic, which will hit overridden cacheAndCall
+        return super.call(context, caller, self, getRespondToNameSym(context), context.runtime.newBoolean(includePrivate)).isTrue();
+    }
+    private RubySymbol getRespondToNameSym(ThreadContext context) {
+        RubySymbol sym = respondToNameSym;
+        if (sym == null) {
+            respondToNameSym = sym = context.runtime.newSymbol(respondToName);
+        }
+        return sym;
+    }
+    @Override
+    protected IRubyObject cacheAndCall(IRubyObject caller, RubyClass selfType, ThreadContext context, IRubyObject self, IRubyObject arg) {
+        CacheEntry entry = selfType.searchWithCache(methodName);
+        DynamicMethod method = entry.method;
+        if (methodMissing(method, caller)) {
+            return callMethodMissing(context, self, method, arg);
+        }
+        // alternate logic to cache the result of respond_to if it's the standard one
+        if (entry.method.isBuiltin()) {
+            String name = arg.asJavaString();
+            RespondToTuple tuple = recacheRespondsTo(entry, name, selfType, true, context);
+            // only cache if it does respond_to? OR there's no custom respond_to_missing? logic
+            if (tuple.respondsTo.isTrue() ||
+                    selfType.searchWithCache(""respond_to_missing?"").method == context.runtime.getRespondToMissingMethod()) {
+                respondToTuple = tuple;
+                return tuple.respondsTo;
+            }
+        }
+        // normal logic if it's not the builtin respond_to? method
+        cache = entry;
+        return method.call(context, self, selfType, methodName, arg);
+    }
+    @Override
+    protected IRubyObject cacheAndCall(IRubyObject caller, RubyClass selfType, ThreadContext context, IRubyObject self, IRubyObject arg0, IRubyObject arg1) {
+        CacheEntry entry = selfType.searchWithCache(methodName);
+        DynamicMethod method = entry.method;
+        if (methodMissing(method, caller)) {
+            return callMethodMissing(context, self, method, arg0, arg1);
+        }
+        // alternate logic to cache the result of respond_to if it's the standard one
+        if (entry.method.equals(context.runtime.getRespondToMethod())) {
+            String name = arg0.asJavaString();
+            RespondToTuple tuple = recacheRespondsTo(entry, name, selfType, !arg1.isTrue(), context);
+            // only cache if it does respond_to? OR there's no custom respond_to_missing? logic
+            if (tuple.respondsTo.isTrue() ||
+                    selfType.searchWithCache(""respond_to_missing?"").method == context.runtime.getRespondToMissingMethod()) {
+                respondToTuple = tuple;
+                return tuple.respondsTo;
+            }
+        }
+        // normal logic if it's not the builtin respond_to? method
+        cache = entry;
+        return method.call(context, self, selfType, methodName, arg0, arg1);
+    }
+    private static RespondToTuple recacheRespondsTo(CacheEntry respondToMethod, String newString, RubyClass klass, boolean checkVisibility, ThreadContext context) {
+        CacheEntry respondToLookupResult = klass.searchWithCache(newString);
+        boolean respondsTo = Helpers.respondsToMethod(respondToLookupResult.method, checkVisibility);
+        return new RespondToTuple(newString, checkVisibility, respondToMethod, respondToLookupResult, context.runtime.newBoolean(respondsTo));
+    }
+}",class,
+"    private static class RespondToTuple {
+        static final RespondToTuple NULL_CACHE = new RespondToTuple("""", true, CacheEntry.NULL_CACHE, CacheEntry.NULL_CACHE);
+        public final String name;
+        public final boolean checkVisibility;
+        public final CacheEntry respondToMethod;
+        public final CacheEntry entry;
+        public final IRubyObject respondsTo;
+        public final boolean respondsToBoolean;
+        public RespondToTuple(String name, boolean checkVisibility, CacheEntry respondToMethod, CacheEntry entry, IRubyObject respondsTo) {
+            this.name = name;
+            this.checkVisibility = checkVisibility;
+            this.respondToMethod = respondToMethod;
+            this.entry = entry;
+            this.respondsTo = respondsTo;
+            this.respondsToBoolean = respondsTo.isTrue();
+        }
+        public RespondToTuple(String name, boolean checkVisibility, CacheEntry respondToMethod, CacheEntry entry) {
+            this.name = name;
+            this.checkVisibility = checkVisibility;
+            this.respondToMethod = respondToMethod;
+            this.entry = entry;
+            this.respondsTo = null;
+            this.respondsToBoolean = false;
+        }
+        public boolean cacheOk(RubyClass klass) {
+            return respondToMethod.typeOk(klass) && entry.typeOk(klass);
+        }
+    }",class,
+"        public RespondToTuple(String name, boolean checkVisibility, CacheEntry respondToMethod, CacheEntry entry, IRubyObject respondsTo) {
+            this.name = name;
+            this.checkVisibility = checkVisibility;
+            this.respondToMethod = respondToMethod;
+            this.entry = entry;
+            this.respondsTo = respondsTo;
+            this.respondsToBoolean = respondsTo.isTrue();
+        }",method,
+"        public RespondToTuple(String name, boolean checkVisibility, CacheEntry respondToMethod, CacheEntry entry) {
+            this.name = name;
+            this.checkVisibility = checkVisibility;
+            this.respondToMethod = respondToMethod;
+            this.entry = entry;
+            this.respondsTo = null;
+            this.respondsToBoolean = false;
+        }",method,
+"        public boolean cacheOk(RubyClass klass) {
+            return respondToMethod.typeOk(klass) && entry.typeOk(klass);
+        }",method,
+"    public RespondToCallSite() {
+        super(""respond_to?"");
+        respondToName = null;
+    }",method,
+"    public RespondToCallSite(String name) {
+        super(""respond_to?"");
+        respondToName = name;
+    }",method,
+"    @Override
+    public IRubyObject call(ThreadContext context, IRubyObject caller, IRubyObject self, IRubyObject name) { 
+        RubyClass klass = self.getMetaClass();
+        RespondToTuple tuple = respondToTuple;
+        if (tuple.cacheOk(klass)) {
+            String strName = name.asJavaString();
+            if (strName.equals(tuple.name) && tuple.checkVisibility) return tuple.respondsTo;
+        }
+        // go through normal call logic, which will hit overridden cacheAndCall
+        return super.call(context, caller, self, name);
+    }",method,
+"    @Override
+    public IRubyObject call(ThreadContext context, IRubyObject caller, IRubyObject self, IRubyObject name, IRubyObject bool) {
+        RubyClass klass = self.getMetaClass();
+        RespondToTuple tuple = respondToTuple;
+        if (tuple.cacheOk(klass)) {
+            String strName = name.asJavaString();
+            if (strName.equals(tuple.name) && !bool.isTrue() == tuple.checkVisibility) return tuple.respondsTo;
+        }
+        // go through normal call logic, which will hit overridden cacheAndCall
+        return super.call(context, caller, self, name, bool);
+    }",method,
+"    public boolean respondsTo(ThreadContext context, IRubyObject caller, IRubyObject self) {
+        RubyClass klass = self.getMetaClass();
+        RespondToTuple tuple = respondToTuple;
+        if (tuple.cacheOk(klass)) {
+            String strName = respondToName;
+            if (strName.equals(tuple.name) && tuple.checkVisibility) return tuple.respondsToBoolean;
+        }
+        // go through normal call logic, which will hit overridden cacheAndCall
+        return super.call(context, caller, self, getRespondToNameSym(context)).isTrue();
+    }",method,
+"    public boolean respondsTo(ThreadContext context, IRubyObject caller, IRubyObject self, boolean includePrivate) {
+        RubyClass klass = self.getMetaClass();
+        RespondToTuple tuple = respondToTuple;
+        if (tuple.cacheOk(klass)) {
+            String strName = respondToName;
+            if (strName.equals(tuple.name) && !includePrivate == tuple.checkVisibility) return tuple.respondsToBoolean;
+        }
+        // go through normal call logic, which will hit overridden cacheAndCall
+        return super.call(context, caller, self, getRespondToNameSym(context), context.runtime.newBoolean(includePrivate)).isTrue();
+    }",method,
+"    private RubySymbol getRespondToNameSym(ThreadContext context) {
+        RubySymbol sym = respondToNameSym;
+        if (sym == null) {
+            respondToNameSym = sym = context.runtime.newSymbol(respondToName);
+        }
+        return sym;
+    }",method,
+"        if (sym == null) {
+            respondToNameSym = sym = context.runtime.newSymbol(respondToName);
+        }",method,
+"    @Override
+    protected IRubyObject cacheAndCall(IRubyObject caller, RubyClass selfType, ThreadContext context, IRubyObject self, IRubyObject arg) {
+        CacheEntry entry = selfType.searchWithCache(methodName);
+        DynamicMethod method = entry.method;
+        if (methodMissing(method, caller)) {
+            return callMethodMissing(context, self, method, arg);
+        }
+        // alternate logic to cache the result of respond_to if it's the standard one
+        if (entry.method.isBuiltin()) {
+            String name = arg.asJavaString();
+            RespondToTuple tuple = recacheRespondsTo(entry, name, selfType, true, context);
+            // only cache if it does respond_to? OR there's no custom respond_to_missing? logic
+            if (tuple.respondsTo.isTrue() ||
+                    selfType.searchWithCache(""respond_to_missing?"").method == context.runtime.getRespondToMissingMethod()) {
+                respondToTuple = tuple;
+                return tuple.respondsTo;
+            }
+        }
+        // normal logic if it's not the builtin respond_to? method
+        cache = entry;
+        return method.call(context, self, selfType, methodName, arg);
+    }",method,
+"    @Override
+    protected IRubyObject cacheAndCall(IRubyObject caller, RubyClass selfType, ThreadContext context, IRubyObject self, IRubyObject arg0, IRubyObject arg1) {
+        CacheEntry entry = selfType.searchWithCache(methodName);
+        DynamicMethod method = entry.method;
+        if (methodMissing(method, caller)) {
+            return callMethodMissing(context, self, method, arg0, arg1);
+        }
+        // alternate logic to cache the result of respond_to if it's the standard one
+        if (entry.method.equals(context.runtime.getRespondToMethod())) {
+            String name = arg0.asJavaString();
+            RespondToTuple tuple = recacheRespondsTo(entry, name, selfType, !arg1.isTrue(), context);
+            // only cache if it does respond_to? OR there's no custom respond_to_missing? logic
+            if (tuple.respondsTo.isTrue() ||
+                    selfType.searchWithCache(""respond_to_missing?"").method == context.runtime.getRespondToMissingMethod()) {
+                respondToTuple = tuple;
+                return tuple.respondsTo;
+            }
+        }
+        // normal logic if it's not the builtin respond_to? method
+        cache = entry;
+        return method.call(context, self, selfType, methodName, arg0, arg1);
+    }",method,
+"    private static RespondToTuple recacheRespondsTo(CacheEntry respondToMethod, String newString, RubyClass klass, boolean checkVisibility, ThreadContext context) {
+        CacheEntry respondToLookupResult = klass.searchWithCache(newString);
+        boolean respondsTo = Helpers.respondsToMethod(respondToLookupResult.method, checkVisibility);
+        return new RespondToTuple(newString, checkVisibility, respondToMethod, respondToLookupResult, context.runtime.newBoolean(respondsTo));
+    }",method,
+"//TODO Try to remove this class and use ASC's equivalent
+public class Graph<VertexWeight,EdgeWeight>
+{
+	public Graph()
+	{
+		vertices = new HashSet<Vertex<VertexWeight,EdgeWeight>>(300);
+		edges = new HashSet<Edge<VertexWeight,EdgeWeight>>(300);
+	}
+	private int counter;
+	private Vertex<VertexWeight,EdgeWeight> root;
+	private Set<Vertex<VertexWeight,EdgeWeight>> vertices;
+	private Set<Edge<VertexWeight,EdgeWeight>> edges;
+	public Vertex<VertexWeight,EdgeWeight> getRoot()
+	{
+		return root;
+	}
+	public Set<Vertex<VertexWeight,EdgeWeight>> getVertices()
+	{
+		return vertices;
+	}
+	public Set<Edge<VertexWeight,EdgeWeight>> getEdges()
+	{
+		return edges;
+	}
+	public void clear()
+	{
+		counter = 0;
+		root = null;
+		vertices.clear();
+		edges.clear();
+	}
+	public void addVertex(Vertex<VertexWeight,EdgeWeight> v)
+	{
+		if (vertices.size() == 0)
+		{
+			root = v;
+		}
+		v.id = counter++;
+		vertices.add(v);
+	}
+	public void removeVertex(Vertex<VertexWeight,EdgeWeight> v)
+	{
+		vertices.remove(v);
+		if (v == root)
+		{
+			Iterator<Vertex<VertexWeight,EdgeWeight>> i = vertices.iterator();
+			root = i.hasNext() ? i.next() : null;
+		}
+        Set<Edge<VertexWeight,EdgeWeight>> s = v.getEmanatingEdges();
+		if (s != null)
+		{
+            for (Edge<VertexWeight, EdgeWeight> e : s)
+			{
+				Vertex<VertexWeight, EdgeWeight> h = e.getHead();
+				h.removeIncidentEdge(e);
+				h.removePredecessor(v);
+				edges.remove(e);
+			}
+		}
+		s = v.getIncidentEdges();
+		if (s != null)
+		{
+            for (Edge<VertexWeight, EdgeWeight> e : s)
+			{
+				Vertex<VertexWeight, EdgeWeight> t = e.getTail();
+				t.removeEmanatingEdge(e);
+				t.removeSuccessor(v);
+				edges.remove(e);
+			}
+		}
+		normalize();
+	}
+	public void addEdge(Edge<VertexWeight,EdgeWeight> e)
+	{
+		edges.add(e);
+	}
+	public void normalize()
+	{
+		counter = 0;
+		for (Vertex<VertexWeight, EdgeWeight> name : vertices)
+        {
+			name.id = counter++;
+		}
+	}
+}",class,
+"	public Graph()
+	{
+		vertices = new HashSet<Vertex<VertexWeight,EdgeWeight>>(300);
+		edges = new HashSet<Edge<VertexWeight,EdgeWeight>>(300);
+	}",method,

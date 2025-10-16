@@ -1,0 +1,1153 @@
+code_snippet,type,score
+"    @SuppressWarnings({ ""unchecked"", ""rawtypes"" })
+    public static <T> Consumer<TestSubscriber<T>> assertFuseable() {
+        return (Consumer)AssertFuseable.INSTANCE;
+    }",method,
+"        AssertFusionConsumer(int mode) {
+            this.mode = mode;
+        }",method,
+"        @Override
+        public void accept(TestSubscriber<T> ts) throws Exception {
+            ts.assertFusionMode(mode);
+        }",method,
+"        TestFusionCheckFunction(int mode, boolean cancelled, long initialRequest) {
+            this.mode = mode;
+            this.cancelled = cancelled;
+            this.initialRequest = initialRequest;
+        }",method,
+"        @Override
+        public TestSubscriber<T> apply(Flowable<T> t) throws Exception {
+            TestSubscriber<T> ts = new TestSubscriber<T>(initialRequest);
+            ts.setInitialFusionMode(mode);
+            if (cancelled) {
+                ts.cancel();
+            }
+            t.subscribe(ts);
+            return ts;
+        }",method,
+"            if (cancelled) {
+                ts.cancel();
+            }",method,
+"        @Override
+        public void accept(TestSubscriber<Object> ts) throws Exception {
+            ts.assertFuseable();
+        }",method,
+"    @SuppressWarnings({ ""unchecked"", ""rawtypes"" })
+    public static <T> Consumer<TestSubscriber<T>> assertNotFuseable() {
+        return (Consumer)AssertNotFuseable.INSTANCE;
+    }",method,
+"        @Override
+        public void accept(TestSubscriber<Object> ts) throws Exception {
+            ts.assertNotFuseable();
+        }",method,
+"    public static <T> Consumer<TestSubscriber<T>> assertFusionMode(final int mode) {
+        return new AssertFusionConsumer<T>(mode);
+    }",method,
+"    public static <T> TestSubscriber<T> newTest(long initialRequest, int mode) {
+        TestSubscriber<T> ts = new TestSubscriber<T>(initialRequest);
+        ts.setInitialFusionMode(mode);
+        return ts;
+    }",method,
+"    public static <T> TestSubscriber<T> newTest(int mode) {
+        TestSubscriber<T> ts = new TestSubscriber<T>();
+        ts.setInitialFusionMode(mode);
+        return ts;
+    }",method,
+"    public static <T> TestSubscriber<T> assertFusion(TestSubscriber<T> ts, int mode) {
+        return ts.assertOf(SubscriberFusion.<T>assertFuseable())
+                .assertOf(SubscriberFusion.<T>assertFusionMode(mode));
+    }",method,
+"public class WeakIdentityHashMap<K,V> {
+    private final HashMap<WeakReference<K>,V> mMap = new HashMap<>();
+    private final ReferenceQueue<Object> mRefQueue = new ReferenceQueue<>();
+    private void cleanUp() {
+        Reference<?> ref;
+        while ((ref = mRefQueue.poll()) != null) {
+            mMap.remove(ref);
+        }
+    }
+    public void put(K key, V value) {
+        cleanUp();
+        mMap.put(new CmpWeakReference<>(key, mRefQueue), value);
+    }
+    public V get(K key) {
+        cleanUp();
+        return mMap.get(new CmpWeakReference<>(key));
+    }
+    public Collection<V> values() {
+        cleanUp();
+        return mMap.values();
+    }
+    public Set<Map.Entry<WeakReference<K>, V>> entrySet() {
+        return mMap.entrySet();
+    }
+    public int size() {
+        cleanUp();
+        return mMap.size();
+    }
+    public boolean isEmpty() {
+        cleanUp();
+        return mMap.isEmpty();
+    }
+    private static class CmpWeakReference<K> extends WeakReference<K> {
+        private final int mHashCode;
+        public CmpWeakReference(K key) {
+            super(key);
+            mHashCode = System.identityHashCode(key);
+        }
+        public CmpWeakReference(K key, ReferenceQueue<Object> refQueue) {
+            super(key, refQueue);
+            mHashCode = System.identityHashCode(key);
+        }
+        @Override
+        public boolean equals(Object o) {
+            if (o == this) {
+                return true;
+            }
+            K k = get();
+            if (k != null && o instanceof CmpWeakReference) {
+                return ((CmpWeakReference) o).get() == k;
+            }
+            return false;
+        }
+        @Override
+        public int hashCode() {
+            return mHashCode;
+        }
+    }
+}",class,
+"    private static class CmpWeakReference<K> extends WeakReference<K> {
+        private final int mHashCode;
+        public CmpWeakReference(K key) {
+            super(key);
+            mHashCode = System.identityHashCode(key);
+        }
+        public CmpWeakReference(K key, ReferenceQueue<Object> refQueue) {
+            super(key, refQueue);
+            mHashCode = System.identityHashCode(key);
+        }
+        @Override
+        public boolean equals(Object o) {
+            if (o == this) {
+                return true;
+            }
+            K k = get();
+            if (k != null && o instanceof CmpWeakReference) {
+                return ((CmpWeakReference) o).get() == k;
+            }
+            return false;
+        }
+        @Override
+        public int hashCode() {
+            return mHashCode;
+        }
+    }",class,
+"    private void cleanUp() {
+        Reference<?> ref;
+        while ((ref = mRefQueue.poll()) != null) {
+            mMap.remove(ref);
+        }
+    }",method,
+"    public void put(K key, V value) {
+        cleanUp();
+        mMap.put(new CmpWeakReference<>(key, mRefQueue), value);
+    }",method,
+"    public V get(K key) {
+        cleanUp();
+        return mMap.get(new CmpWeakReference<>(key));
+    }",method,
+"    public Collection<V> values() {
+        cleanUp();
+        return mMap.values();
+    }",method,
+"    public Set<Map.Entry<WeakReference<K>, V>> entrySet() {
+        return mMap.entrySet();
+    }",method,
+"    public int size() {
+        cleanUp();
+        return mMap.size();
+    }",method,
+"    public boolean isEmpty() {
+        cleanUp();
+        return mMap.isEmpty();
+    }",method,
+"        public CmpWeakReference(K key) {
+            super(key);
+            mHashCode = System.identityHashCode(key);
+        }",method,
+"        public CmpWeakReference(K key, ReferenceQueue<Object> refQueue) {
+            super(key, refQueue);
+            mHashCode = System.identityHashCode(key);
+        }",method,
+"        @Override
+        public boolean equals(Object o) {
+            if (o == this) {
+                return true;
+            }
+            K k = get();
+            if (k != null && o instanceof CmpWeakReference) {
+                return ((CmpWeakReference) o).get() == k;
+            }
+            return false;
+        }",method,
+"            if (o == this) {
+                return true;
+            }",method,
+"            if (k != null && o instanceof CmpWeakReference) {
+                return ((CmpWeakReference) o).get() == k;
+            }",method,
+"        @Override
+        public int hashCode() {
+            return mHashCode;
+        }",method,
+"public class ExtractingResponseErrorHandler extends DefaultResponseErrorHandler {
+	private List<HttpMessageConverter<?>> messageConverters = Collections.emptyList();
+	private final Map<HttpStatus, Class<? extends RestClientException>> statusMapping = new LinkedHashMap<>();
+	private final Map<HttpStatus.Series, Class<? extends RestClientException>> seriesMapping = new LinkedHashMap<>();
+	public ExtractingResponseErrorHandler() {
+	}
+	public ExtractingResponseErrorHandler(List<HttpMessageConverter<?>> messageConverters) {
+		this.messageConverters = messageConverters;
+	}
+	public void setMessageConverters(List<HttpMessageConverter<?>> messageConverters) {
+		this.messageConverters = messageConverters;
+	}
+	public void setStatusMapping(Map<HttpStatus, Class<? extends RestClientException>> statusMapping) {
+		if (!CollectionUtils.isEmpty(statusMapping)) {
+			this.statusMapping.putAll(statusMapping);
+		}
+	}
+	public void setSeriesMapping(Map<HttpStatus.Series, Class<? extends RestClientException>> seriesMapping) {
+		if (!CollectionUtils.isEmpty(seriesMapping)) {
+			this.seriesMapping.putAll(seriesMapping);
+		}
+	}
+	@Override
+	protected boolean hasError(HttpStatus statusCode) {
+		if (this.statusMapping.containsKey(statusCode)) {
+			return this.statusMapping.get(statusCode) != null;
+		}
+		else if (this.seriesMapping.containsKey(statusCode.series())) {
+			return this.seriesMapping.get(statusCode.series()) != null;
+		}
+		else {
+			return super.hasError(statusCode);
+		}
+	}
+	@Override
+	public void handleError(ClientHttpResponse response, HttpStatus statusCode) throws IOException {
+		if (this.statusMapping.containsKey(statusCode)) {
+			extract(this.statusMapping.get(statusCode), response);
+		}
+		else if (this.seriesMapping.containsKey(statusCode.series())) {
+			extract(this.seriesMapping.get(statusCode.series()), response);
+		}
+		else {
+			super.handleError(response, statusCode);
+		}
+	}
+	private void extract(@Nullable Class<? extends RestClientException> exceptionClass,
+			ClientHttpResponse response) throws IOException {
+		if (exceptionClass == null) {
+			return;
+		}
+		HttpMessageConverterExtractor<? extends RestClientException> extractor =
+				new HttpMessageConverterExtractor<>(exceptionClass, this.messageConverters);
+		RestClientException exception = extractor.extractData(response);
+		if (exception != null) {
+			throw exception;
+		}
+	}
+}",class,
+"	public ExtractingResponseErrorHandler() {
+	}",method,
+"	public ExtractingResponseErrorHandler(List<HttpMessageConverter<?>> messageConverters) {
+		this.messageConverters = messageConverters;
+	}",method,
+"	public void setMessageConverters(List<HttpMessageConverter<?>> messageConverters) {
+		this.messageConverters = messageConverters;
+	}",method,
+"	public void setStatusMapping(Map<HttpStatus, Class<? extends RestClientException>> statusMapping) {
+		if (!CollectionUtils.isEmpty(statusMapping)) {
+			this.statusMapping.putAll(statusMapping);
+		}
+	}",method,
+"	public void setSeriesMapping(Map<HttpStatus.Series, Class<? extends RestClientException>> seriesMapping) {
+		if (!CollectionUtils.isEmpty(seriesMapping)) {
+			this.seriesMapping.putAll(seriesMapping);
+		}
+	}",method,
+"	@Override
+	protected boolean hasError(HttpStatus statusCode) {
+		if (this.statusMapping.containsKey(statusCode)) {
+			return this.statusMapping.get(statusCode) != null;
+		}
+		else if (this.seriesMapping.containsKey(statusCode.series())) {
+			return this.seriesMapping.get(statusCode.series()) != null;
+		}
+		else {
+			return super.hasError(statusCode);
+		}
+	}",method,
+"	@Override
+	public void handleError(ClientHttpResponse response, HttpStatus statusCode) throws IOException {
+		if (this.statusMapping.containsKey(statusCode)) {
+			extract(this.statusMapping.get(statusCode), response);
+		}
+		else if (this.seriesMapping.containsKey(statusCode.series())) {
+			extract(this.seriesMapping.get(statusCode.series()), response);
+		}
+		else {
+			super.handleError(response, statusCode);
+		}
+	}",method,
+"	private void extract(@Nullable Class<? extends RestClientException> exceptionClass,
+			ClientHttpResponse response) throws IOException {
+		if (exceptionClass == null) {
+			return;
+		}
+		HttpMessageConverterExtractor<? extends RestClientException> extractor =
+				new HttpMessageConverterExtractor<>(exceptionClass, this.messageConverters);
+		RestClientException exception = extractor.extractData(response);
+		if (exception != null) {
+			throw exception;
+		}
+	}",method,
+"		if (exceptionClass == null) {
+			return;
+		}",method,
+"		if (exception != null) {
+			throw exception;
+		}",method,
+"    @NonNls String text = ""class I {}"";
+    final PsiJavaFile file = (PsiJavaFile)configureByText(StdFileTypes.JAVA, text);
+    assertEmpty(highlightErrors());
+    CommandProcessor.getInstance().executeCommand(
+      getProject(), () -> WriteCommandAction.runWriteCommandAction(null, () -> {
+        try {
+          checkAddImport(file, CommonClassNames.JAVA_UTIL_LIST, CommonClassNames.JAVA_UTIL_LIST);
+          checkAddImport(file, ""java.util.ArrayList"", ""java.util.ArrayList"", CommonClassNames.JAVA_UTIL_LIST);
+          checkAddImport(file, ""java.util.HashMap"", ""java.util.ArrayList"", ""java.util.HashMap"", CommonClassNames.JAVA_UTIL_LIST);
+          checkAddImport(file, ""java.util.SortedMap"", ""java.util.ArrayList"", ""java.util.HashMap"", CommonClassNames.JAVA_UTIL_LIST,
+                         ""java.util.SortedMap"");
+          checkAddImport(file, CommonClassNames.JAVA_UTIL_MAP, ""java.util.ArrayList"", ""java.util.HashMap"",
+                         CommonClassNames.JAVA_UTIL_LIST,
+                         CommonClassNames.JAVA_UTIL_MAP, ""java.util.SortedMap"");
+          checkAddImport(file, ""java.util.AbstractList"", ""java.util.AbstractList"", ""java.util.ArrayList"", ""java.util.HashMap"",
+                         CommonClassNames.JAVA_UTIL_LIST,
+                         CommonClassNames.JAVA_UTIL_MAP, ""java.util.SortedMap"");
+          checkAddImport(file, ""java.util.AbstractList"", ""java.util.AbstractList"", ""java.util.ArrayList"", ""java.util.HashMap"",
+                         CommonClassNames.JAVA_UTIL_LIST,
+                         CommonClassNames.JAVA_UTIL_MAP, ""java.util.SortedMap"");
+          checkAddImport(file, ""java.util.TreeMap"", ""java.util.AbstractList"", ""java.util.ArrayList"", ""java.util.HashMap"",
+                         CommonClassNames.JAVA_UTIL_LIST,
+                         CommonClassNames.JAVA_UTIL_MAP, ""java.util.SortedMap"", ""java.util.TreeMap"");
+          checkAddImport(file, ""java.util.concurrent.atomic.AtomicBoolean"", ""java.util.AbstractList"", ""java.util.ArrayList"",
+                         ""java.util.HashMap"",
+                         CommonClassNames.JAVA_UTIL_LIST,
+                         CommonClassNames.JAVA_UTIL_MAP, ""java.util.SortedMap"", ""java.util.TreeMap"",
+                         ""java.util.concurrent.atomic.AtomicBoolean"");
+          checkAddImport(file, ""java.io.File"", ""java.io.File"", ""java.util.AbstractList"", ""java.util.ArrayList"", ""java.util.HashMap"",
+                         CommonClassNames.JAVA_UTIL_LIST,
+                         CommonClassNames.JAVA_UTIL_MAP, ""java.util.SortedMap"", ""java.util.TreeMap"",
+                         ""java.util.concurrent.atomic.AtomicBoolean"");
+        }
+        catch (Throwable e) {
+          LOG.error(e);
+        }
+      }",class,
+"  @Override
+  protected void setUp() throws Exception {
+    super.setUp();
+    CodeStyleSettings settings = CodeStyleSettingsManager.getSettings(getProject()).clone();
+    settings.getCustomSettings(JavaCodeStyleSettings.class).CLASS_COUNT_TO_USE_IMPORT_ON_DEMAND = 100;
+    CodeStyleSettingsManager.getInstance(getProject()).setTemporarySettings(settings);
+    DaemonCodeAnalyzer.getInstance(getProject()).setUpdateByTimerEnabled(false);
+    enableInspectionTool(new UnusedImportInspection());
+  }",method,
+"  @Override
+  protected void tearDown() throws Exception {
+    try {
+      CodeStyleSettingsManager.getInstance(getProject()).dropTemporarySettings();
+    }
+    finally {
+      super.tearDown();
+    }
+  }",method,
+"  @WrapInCommand
+  public void testImportsInsertedAlphabetically() {
+    @NonNls String text = ""class I {}"";
+    final PsiJavaFile file = (PsiJavaFile)configureByText(StdFileTypes.JAVA, text);
+    assertEmpty(highlightErrors());
+    CommandProcessor.getInstance().executeCommand(
+      getProject(), () -> WriteCommandAction.runWriteCommandAction(null, () -> {
+        try {
+          checkAddImport(file, CommonClassNames.JAVA_UTIL_LIST, CommonClassNames.JAVA_UTIL_LIST);
+          checkAddImport(file, ""java.util.ArrayList"", ""java.util.ArrayList"", CommonClassNames.JAVA_UTIL_LIST);
+          checkAddImport(file, ""java.util.HashMap"", ""java.util.ArrayList"", ""java.util.HashMap"", CommonClassNames.JAVA_UTIL_LIST);
+          checkAddImport(file, ""java.util.SortedMap"", ""java.util.ArrayList"", ""java.util.HashMap"", CommonClassNames.JAVA_UTIL_LIST,
+                         ""java.util.SortedMap"");
+          checkAddImport(file, CommonClassNames.JAVA_UTIL_MAP, ""java.util.ArrayList"", ""java.util.HashMap"",
+                         CommonClassNames.JAVA_UTIL_LIST,
+                         CommonClassNames.JAVA_UTIL_MAP, ""java.util.SortedMap"");
+          checkAddImport(file, ""java.util.AbstractList"", ""java.util.AbstractList"", ""java.util.ArrayList"", ""java.util.HashMap"",
+                         CommonClassNames.JAVA_UTIL_LIST,
+                         CommonClassNames.JAVA_UTIL_MAP, ""java.util.SortedMap"");
+          checkAddImport(file, ""java.util.AbstractList"", ""java.util.AbstractList"", ""java.util.ArrayList"", ""java.util.HashMap"",
+                         CommonClassNames.JAVA_UTIL_LIST,
+                         CommonClassNames.JAVA_UTIL_MAP, ""java.util.SortedMap"");
+          checkAddImport(file, ""java.util.TreeMap"", ""java.util.AbstractList"", ""java.util.ArrayList"", ""java.util.HashMap"",
+                         CommonClassNames.JAVA_UTIL_LIST,
+                         CommonClassNames.JAVA_UTIL_MAP, ""java.util.SortedMap"", ""java.util.TreeMap"");
+          checkAddImport(file, ""java.util.concurrent.atomic.AtomicBoolean"", ""java.util.AbstractList"", ""java.util.ArrayList"",
+                         ""java.util.HashMap"",
+                         CommonClassNames.JAVA_UTIL_LIST,
+                         CommonClassNames.JAVA_UTIL_MAP, ""java.util.SortedMap"", ""java.util.TreeMap"",
+                         ""java.util.concurrent.atomic.AtomicBoolean"");
+          checkAddImport(file, ""java.io.File"", ""java.io.File"", ""java.util.AbstractList"", ""java.util.ArrayList"", ""java.util.HashMap"",
+                         CommonClassNames.JAVA_UTIL_LIST,
+                         CommonClassNames.JAVA_UTIL_MAP, ""java.util.SortedMap"", ""java.util.TreeMap"",
+                         ""java.util.concurrent.atomic.AtomicBoolean"");
+        }
+        catch (Throwable e) {
+          LOG.error(e);
+        }
+      }), """", """");
+  }",method,
+"        catch (Throwable e) {
+          LOG.error(e);
+        }",method,
+"public class FallbackLUTInterpolator implements NativeInterpolatorFactory, TimeInterpolator {
+    // If the duration of an animation is more than 300 frames, we cap the sample size to 300.
+    private static final int MAX_SAMPLE_POINTS = 300;
+    private TimeInterpolator mSourceInterpolator;
+    private final float mLut[];
+    public FallbackLUTInterpolator(TimeInterpolator interpolator, long duration) {
+        mSourceInterpolator = interpolator;
+        mLut = createLUT(interpolator, duration);
+    }
+    private static float[] createLUT(TimeInterpolator interpolator, long duration) {
+        long frameIntervalNanos = Choreographer.getInstance().getFrameIntervalNanos();
+        int animIntervalMs = (int) (frameIntervalNanos / TimeUtils.NANOS_PER_MS);
+        // We need 2 frame values as the minimal.
+        int numAnimFrames = Math.max(2, (int) Math.ceil(((double) duration) / animIntervalMs));
+        numAnimFrames = Math.min(numAnimFrames, MAX_SAMPLE_POINTS);
+        float values[] = new float[numAnimFrames];
+        float lastFrame = numAnimFrames - 1;
+        for (int i = 0; i < numAnimFrames; i++) {
+            float inValue = i / lastFrame;
+            values[i] = interpolator.getInterpolation(inValue);
+        }
+        return values;
+    }
+    @Override
+    public long createNativeInterpolator() {
+        return NativeInterpolatorFactoryHelper.createLutInterpolator(mLut);
+    }
+    public static long createNativeInterpolator(TimeInterpolator interpolator, long duration) {
+        float[] lut = createLUT(interpolator, duration);
+        return NativeInterpolatorFactoryHelper.createLutInterpolator(lut);
+    }
+    @Override
+    public float getInterpolation(float input) {
+        return mSourceInterpolator.getInterpolation(input);
+    }
+}",class,
+"    public FallbackLUTInterpolator(TimeInterpolator interpolator, long duration) {
+        mSourceInterpolator = interpolator;
+        mLut = createLUT(interpolator, duration);
+    }",method,
+"    private static float[] createLUT(TimeInterpolator interpolator, long duration) {
+        long frameIntervalNanos = Choreographer.getInstance().getFrameIntervalNanos();
+        int animIntervalMs = (int) (frameIntervalNanos / TimeUtils.NANOS_PER_MS);
+        // We need 2 frame values as the minimal.
+        int numAnimFrames = Math.max(2, (int) Math.ceil(((double) duration) / animIntervalMs));
+        numAnimFrames = Math.min(numAnimFrames, MAX_SAMPLE_POINTS);
+        float values[] = new float[numAnimFrames];
+        float lastFrame = numAnimFrames - 1;
+        for (int i = 0; i < numAnimFrames; i++) {
+            float inValue = i / lastFrame;
+            values[i] = interpolator.getInterpolation(inValue);
+        }
+        return values;
+    }",method,
+"        for (int i = 0; i < numAnimFrames; i++) {
+            float inValue = i / lastFrame;
+            values[i] = interpolator.getInterpolation(inValue);
+        }",method,
+"    @Override
+    public long createNativeInterpolator() {
+        return NativeInterpolatorFactoryHelper.createLutInterpolator(mLut);
+    }",method,
+"    public static long createNativeInterpolator(TimeInterpolator interpolator, long duration) {
+        float[] lut = createLUT(interpolator, duration);
+        return NativeInterpolatorFactoryHelper.createLutInterpolator(lut);
+    }",method,
+"    @Override
+    public float getInterpolation(float input) {
+        return mSourceInterpolator.getInterpolation(input);
+    }",method,
+"import java.lang.reflect.Method;
+class NewInstance {
+    static Object newInstance (ClassLoader classLoader, String className)
+        throws ClassNotFoundException, IllegalAccessException,
+            InstantiationException
+    {
+        Class driverClass;
+        if (classLoader == null) {
+            driverClass = Class.forName(className);
+        } else {
+            driverClass = classLoader.loadClass(className);
+        }
+        return driverClass.newInstance();
+    }
+    static ClassLoader getClassLoader ()
+    {
+        Method m = null;
+        try {
+            m = Thread.class.getMethod(""getContextClassLoader"");
+        } catch (NoSuchMethodException e) {
+            // Assume that we are running JDK 1.1, use the current ClassLoader
+            return NewInstance.class.getClassLoader();
+        }
+        try {
+            return (ClassLoader) m.invoke(Thread.currentThread());
+        } catch (IllegalAccessException e) {
+            // assert(false)
+            throw new UnknownError(e.getMessage());
+        } catch (InvocationTargetException e) {
+            // assert(e.getTargetException() instanceof SecurityException)
+            throw new UnknownError(e.getMessage());
+        }
+    }
+}",class,
+"    static Object newInstance (ClassLoader classLoader, String className)
+        throws ClassNotFoundException, IllegalAccessException,
+            InstantiationException
+    {
+        Class driverClass;
+        if (classLoader == null) {
+            driverClass = Class.forName(className);
+        } else {
+            driverClass = classLoader.loadClass(className);
+        }
+        return driverClass.newInstance();
+    }",method,
+"        if (classLoader == null) {
+            driverClass = Class.forName(className);
+        }",method,
+"    static ClassLoader getClassLoader ()
+    {
+        Method m = null;
+        try {
+            m = Thread.class.getMethod(""getContextClassLoader"");
+        } catch (NoSuchMethodException e) {
+            // Assume that we are running JDK 1.1, use the current ClassLoader
+            return NewInstance.class.getClassLoader();
+        }
+        try {
+            return (ClassLoader) m.invoke(Thread.currentThread());
+        } catch (IllegalAccessException e) {
+            // assert(false)
+            throw new UnknownError(e.getMessage());
+        } catch (InvocationTargetException e) {
+            // assert(e.getTargetException() instanceof SecurityException)
+            throw new UnknownError(e.getMessage());
+        }
+    }",method,
+"import org.springframework.lang.Nullable;
+class CacheEvaluationContext extends MethodBasedEvaluationContext {
+	private final Set<String> unavailableVariables = new HashSet<>(1);
+	CacheEvaluationContext(Object rootObject, Method method, Object[] arguments,
+			ParameterNameDiscoverer parameterNameDiscoverer) {
+		super(rootObject, method, arguments, parameterNameDiscoverer);
+	}
+	public void addUnavailableVariable(String name) {
+		this.unavailableVariables.add(name);
+	}
+	@Override
+	@Nullable
+	public Object lookupVariable(String name) {
+		if (this.unavailableVariables.contains(name)) {
+			throw new VariableNotAvailableException(name);
+		}
+		return super.lookupVariable(name);
+	}
+}",class,
+"public class CacheEvictOperation extends CacheOperation {
+	private final boolean cacheWide;
+	private final boolean beforeInvocation;
+	public CacheEvictOperation(CacheEvictOperation.Builder b) {
+		super(b);
+		this.cacheWide = b.cacheWide;
+		this.beforeInvocation = b.beforeInvocation;
+	}
+	public boolean isCacheWide() {
+		return this.cacheWide;
+	}
+	public boolean isBeforeInvocation() {
+		return this.beforeInvocation;
+	}
+	public static class Builder extends CacheOperation.Builder {
+		private boolean cacheWide = false;
+		private boolean beforeInvocation = false;
+		public void setCacheWide(boolean cacheWide) {
+			this.cacheWide = cacheWide;
+		}
+		public void setBeforeInvocation(boolean beforeInvocation) {
+			this.beforeInvocation = beforeInvocation;
+		}
+		@Override
+		protected StringBuilder getOperationDescription() {
+			StringBuilder sb = super.getOperationDescription();
+			sb.append("","");
+			sb.append(this.cacheWide);
+			sb.append("","");
+			sb.append(this.beforeInvocation);
+			return sb;
+		}
+		public CacheEvictOperation build() {
+			return new CacheEvictOperation(this);
+		}
+	}
+}",class,
+"	public static class Builder extends CacheOperation.Builder {
+		private boolean cacheWide = false;
+		private boolean beforeInvocation = false;
+		public void setCacheWide(boolean cacheWide) {
+			this.cacheWide = cacheWide;
+		}
+		public void setBeforeInvocation(boolean beforeInvocation) {
+			this.beforeInvocation = beforeInvocation;
+		}
+		@Override
+		protected StringBuilder getOperationDescription() {
+			StringBuilder sb = super.getOperationDescription();
+			sb.append("","");
+			sb.append(this.cacheWide);
+			sb.append("","");
+			sb.append(this.beforeInvocation);
+			return sb;
+		}
+		public CacheEvictOperation build() {
+			return new CacheEvictOperation(this);
+		}
+	}",class,
+"	CacheEvaluationContext(Object rootObject, Method method, Object[] arguments,
+			ParameterNameDiscoverer parameterNameDiscoverer) {
+		super(rootObject, method, arguments, parameterNameDiscoverer);
+	}",method,
+"	public void addUnavailableVariable(String name) {
+		this.unavailableVariables.add(name);
+	}",method,
+"	@Override
+	@Nullable
+	public Object lookupVariable(String name) {
+		if (this.unavailableVariables.contains(name)) {
+			throw new VariableNotAvailableException(name);
+		}
+		return super.lookupVariable(name);
+	}",method,
+"	public CacheEvictOperation(CacheEvictOperation.Builder b) {
+		super(b);
+		this.cacheWide = b.cacheWide;
+		this.beforeInvocation = b.beforeInvocation;
+	}",method,
+"	public boolean isCacheWide() {
+		return this.cacheWide;
+	}",method,
+"	public boolean isBeforeInvocation() {
+		return this.beforeInvocation;
+	}",method,
+"		public void setCacheWide(boolean cacheWide) {
+			this.cacheWide = cacheWide;
+		}",method,
+"		public void setBeforeInvocation(boolean beforeInvocation) {
+			this.beforeInvocation = beforeInvocation;
+		}",method,
+"		@Override
+		protected StringBuilder getOperationDescription() {
+			StringBuilder sb = super.getOperationDescription();
+			sb.append("","");
+			sb.append(this.cacheWide);
+			sb.append("","");
+			sb.append(this.beforeInvocation);
+			return sb;
+		}",method,
+"		public CacheEvictOperation build() {
+			return new CacheEvictOperation(this);
+		}",method,
+"public class OptionsPanelImpl extends JPanel implements OptionsPanel {
+  public static final String SELECTED_COLOR_OPTION_PROPERTY = ""selected.color.option.type"";
+  private final ColorOptionsTree myOptionsTree;
+  private final ColorDescriptionPanel myOptionsPanel;
+  private final ColorAndFontOptions myOptions;
+  private final SchemesPanel mySchemesProvider;
+  private final String myCategoryName;
+  private final PropertiesComponent myProperties;
+  private final EventDispatcher<ColorAndFontSettingsListener> myDispatcher = EventDispatcher.create(ColorAndFontSettingsListener.class);
+  public OptionsPanelImpl(ColorAndFontOptions options,
+                          SchemesPanel schemesProvider,
+                          String categoryName) {
+    this(options, schemesProvider, categoryName, new ColorAndFontDescriptionPanel());
+  }
+  public OptionsPanelImpl(ColorAndFontOptions options,
+                          SchemesPanel schemesProvider,
+                          String categoryName,
+                          ColorDescriptionPanel optionsPanel) {
+    super(new BorderLayout());
+    myOptions = options;
+    mySchemesProvider = schemesProvider;
+    myCategoryName = categoryName;
+    myProperties = PropertiesComponent.getInstance();
+    myOptionsPanel = optionsPanel;
+    myOptionsPanel.addListener(new ColorDescriptionPanel.Listener() {
+      @Override
+      public void onSettingsChanged(ActionEvent e) {
+        myDispatcher.getMulticaster().settingsChanged();
+        myOptions.stateChanged();
+      }
+      @Override
+      public void onHyperLinkClicked(HyperlinkEvent e) {
+        if (e.getEventType() == HyperlinkEvent.EventType.ACTIVATED) {
+          Settings settings = Settings.KEY.getData(DataManager.getInstance().getDataContext(OptionsPanelImpl.this));
+          String pageName = e.getDescription();
+          Element element = e.getSourceElement();
+          String attrName;
+          try {
+            attrName = element.getDocument().getText(element.getStartOffset(), element.getEndOffset() - element.getStartOffset());
+          }
+          catch (BadLocationException e1) {
+            return;
+          }
+          final SearchableConfigurable page = myOptions.findSubConfigurable(pageName);
+          if (page != null && settings != null) {
+            Runnable runnable = page.enableSearch(attrName);
+            ActionCallback callback = settings.select(page);
+            if (runnable != null) callback.doWhenDone(runnable);
+          }
+        }
+      }
+    });
+    myOptions.addListener(new ColorAndFontSettingsListener.Abstract() {
+      @Override
+      public void settingsChanged() {
+        if (!mySchemesProvider.areSchemesLoaded()) return;
+        if (myOptionsTree.getSelectedValue() != null) {
+          // update options & preview after global state change
+          processListValueChanged();
+        }
+      }
+    });
+    myOptionsTree = new ColorOptionsTree(myCategoryName);
+    myOptionsTree.addTreeSelectionListener(new TreeSelectionListener() {
+      @Override
+      public void valueChanged(TreeSelectionEvent e) {
+        if (!mySchemesProvider.areSchemesLoaded()) return;
+        processListValueChanged();
+      }
+    });
+    JScrollPane scrollPane = ScrollPaneFactory.createScrollPane(myOptionsTree);
+    add(scrollPane, BorderLayout.CENTER);
+    add(myOptionsPanel.getPanel(), BorderLayout.EAST);
+  }
+  @Override
+  public void addListener(ColorAndFontSettingsListener listener) {
+    myDispatcher.addListener(listener);
+  }
+  private void processListValueChanged() {
+    Object selectedValue = myOptionsTree.getSelectedValue();
+    EditorSchemeAttributeDescriptor description = selectedValue instanceof EditorSchemeAttributeDescriptor
+                                                  ? (EditorSchemeAttributeDescriptor)selectedValue
+                                                  : null;
+    if (description == null) {
+      if (selectedValue == null) {
+        String preselectedType = myProperties.getValue(SELECTED_COLOR_OPTION_PROPERTY);
+        if (preselectedType != null) {
+          myOptionsTree.selectOptionByType(preselectedType);
+          description = myOptionsTree.getSelectedDescriptor();
+        }
+      }
+    }
+    if (description != null) {
+      myProperties.setValue(SELECTED_COLOR_OPTION_PROPERTY, description.getType());
+      myOptionsPanel.reset(description);
+      myDispatcher.getMulticaster().selectedOptionChanged(description);
+    }
+    else {
+      myOptionsPanel.resetDefault();
+    }
+  }
+  private void fillOptionsList() {
+    myOptionsTree.fillOptions(myOptions);
+  }
+  @Override
+  public JPanel getPanel() {
+    return this;
+  }
+  @Override
+  public void updateOptionsList() {
+    fillOptionsList();
+    processListValueChanged();
+  }
+  @Override
+  public Runnable showOption(final String attributeDisplayName) {
+    return () -> myOptionsTree.selectOptionByName(attributeDisplayName);
+  }
+  @Override
+  public void applyChangesToScheme() {
+    EditorSchemeAttributeDescriptor descriptor = myOptionsTree.getSelectedDescriptor();
+    if (descriptor != null) {
+      myOptionsPanel.apply(descriptor, myOptions.getSelectedScheme());
+    }
+  }
+  @Override
+  public void selectOption(String attributeType) {
+    myOptionsTree.selectOptionByType(attributeType);
+  }
+  @Override
+  public Set<String> processListOptions() {
+    HashSet<String> result = new HashSet<>();
+    EditorSchemeAttributeDescriptor[] descriptions = myOptions.getCurrentDescriptions();
+    for (EditorSchemeAttributeDescriptor description : descriptions) {
+      if (description.getGroup().equals(myCategoryName)) {
+        result.add(description.toString());
+      }
+    }
+    return result;
+  }
+  public interface ColorDescriptionPanel {
+    @NotNull
+    JComponent getPanel();
+    void resetDefault();
+    void reset(@NotNull EditorSchemeAttributeDescriptor description);
+    void apply(@NotNull EditorSchemeAttributeDescriptor descriptor, EditorColorsScheme scheme);
+    void addListener(@NotNull Listener listener);
+    interface Listener extends EventListener {
+      void onSettingsChanged(ActionEvent e);
+      void onHyperLinkClicked(HyperlinkEvent e);
+    }
+  }
+  public void setEmptyText(@NotNull String text, @Nullable ActionListener linkListener) {
+    myOptionsTree.setEmptyText(text, linkListener);
+  }
+}",class,
+"  public OptionsPanelImpl(ColorAndFontOptions options,
+                          SchemesPanel schemesProvider,
+                          String categoryName) {
+    this(options, schemesProvider, categoryName, new ColorAndFontDescriptionPanel());
+  }",method,
+"  public OptionsPanelImpl(ColorAndFontOptions options,
+                          SchemesPanel schemesProvider,
+                          String categoryName,
+                          ColorDescriptionPanel optionsPanel) {
+    super(new BorderLayout());
+    myOptions = options;
+    mySchemesProvider = schemesProvider;
+    myCategoryName = categoryName;
+    myProperties = PropertiesComponent.getInstance();
+    myOptionsPanel = optionsPanel;
+    myOptionsPanel.addListener(new ColorDescriptionPanel.Listener() {
+      @Override
+      public void onSettingsChanged(ActionEvent e) {
+        myDispatcher.getMulticaster().settingsChanged();
+        myOptions.stateChanged();
+      }
+      @Override
+      public void onHyperLinkClicked(HyperlinkEvent e) {
+        if (e.getEventType() == HyperlinkEvent.EventType.ACTIVATED) {
+          Settings settings = Settings.KEY.getData(DataManager.getInstance().getDataContext(OptionsPanelImpl.this));
+          String pageName = e.getDescription();
+          Element element = e.getSourceElement();
+          String attrName;
+          try {
+            attrName = element.getDocument().getText(element.getStartOffset(), element.getEndOffset() - element.getStartOffset());
+          }
+          catch (BadLocationException e1) {
+            return;
+          }
+          final SearchableConfigurable page = myOptions.findSubConfigurable(pageName);
+          if (page != null && settings != null) {
+            Runnable runnable = page.enableSearch(attrName);
+            ActionCallback callback = settings.select(page);
+            if (runnable != null) callback.doWhenDone(runnable);
+          }
+        }
+      }
+    });
+    myOptions.addListener(new ColorAndFontSettingsListener.Abstract() {
+      @Override
+      public void settingsChanged() {
+        if (!mySchemesProvider.areSchemesLoaded()) return;
+        if (myOptionsTree.getSelectedValue() != null) {
+          // update options & preview after global state change
+          processListValueChanged();
+        }
+      }
+    });
+    myOptionsTree = new ColorOptionsTree(myCategoryName);
+    myOptionsTree.addTreeSelectionListener(new TreeSelectionListener() {
+      @Override
+      public void valueChanged(TreeSelectionEvent e) {
+        if (!mySchemesProvider.areSchemesLoaded()) return;
+        processListValueChanged();
+      }
+    });
+    JScrollPane scrollPane = ScrollPaneFactory.createScrollPane(myOptionsTree);
+    add(scrollPane, BorderLayout.CENTER);
+    add(myOptionsPanel.getPanel(), BorderLayout.EAST);
+  }",method,
+"    myOptionsPanel.addListener(new ColorDescriptionPanel.Listener() {
+      @Override
+      public void onSettingsChanged(ActionEvent e) {
+        myDispatcher.getMulticaster().settingsChanged();
+        myOptions.stateChanged();
+      }
+      @Override
+      public void onHyperLinkClicked(HyperlinkEvent e) {
+        if (e.getEventType() == HyperlinkEvent.EventType.ACTIVATED) {
+          Settings settings = Settings.KEY.getData(DataManager.getInstance().getDataContext(OptionsPanelImpl.this));
+          String pageName = e.getDescription();
+          Element element = e.getSourceElement();
+          String attrName;
+          try {
+            attrName = element.getDocument().getText(element.getStartOffset(), element.getEndOffset() - element.getStartOffset());
+          }
+          catch (BadLocationException e1) {
+            return;
+          }
+          final SearchableConfigurable page = myOptions.findSubConfigurable(pageName);
+          if (page != null && settings != null) {
+            Runnable runnable = page.enableSearch(attrName);
+            ActionCallback callback = settings.select(page);
+            if (runnable != null) callback.doWhenDone(runnable);
+          }
+        }
+      }
+    }",method,
+"      @Override
+      public void onSettingsChanged(ActionEvent e) {
+        myDispatcher.getMulticaster().settingsChanged();
+        myOptions.stateChanged();
+      }",method,
+"      @Override
+      public void onHyperLinkClicked(HyperlinkEvent e) {
+        if (e.getEventType() == HyperlinkEvent.EventType.ACTIVATED) {
+          Settings settings = Settings.KEY.getData(DataManager.getInstance().getDataContext(OptionsPanelImpl.this));
+          String pageName = e.getDescription();
+          Element element = e.getSourceElement();
+          String attrName;
+          try {
+            attrName = element.getDocument().getText(element.getStartOffset(), element.getEndOffset() - element.getStartOffset());
+          }
+          catch (BadLocationException e1) {
+            return;
+          }
+          final SearchableConfigurable page = myOptions.findSubConfigurable(pageName);
+          if (page != null && settings != null) {
+            Runnable runnable = page.enableSearch(attrName);
+            ActionCallback callback = settings.select(page);
+            if (runnable != null) callback.doWhenDone(runnable);
+          }
+        }
+      }",method,
+"          catch (BadLocationException e1) {
+            return;
+          }",method,
+"          if (page != null && settings != null) {
+            Runnable runnable = page.enableSearch(attrName);
+            ActionCallback callback = settings.select(page);
+            if (runnable != null) callback.doWhenDone(runnable);
+          }",method,
+"    myOptions.addListener(new ColorAndFontSettingsListener.Abstract() {
+      @Override
+      public void settingsChanged() {
+        if (!mySchemesProvider.areSchemesLoaded()) return;
+        if (myOptionsTree.getSelectedValue() != null) {
+          // update options & preview after global state change
+          processListValueChanged();
+        }
+      }
+    }",method,
+"      @Override
+      public void settingsChanged() {
+        if (!mySchemesProvider.areSchemesLoaded()) return;
+        if (myOptionsTree.getSelectedValue() != null) {
+          // update options & preview after global state change
+          processListValueChanged();
+        }
+      }",method,
+"    myOptionsTree.addTreeSelectionListener(new TreeSelectionListener() {
+      @Override
+      public void valueChanged(TreeSelectionEvent e) {
+        if (!mySchemesProvider.areSchemesLoaded()) return;
+        processListValueChanged();
+      }
+    }",method,
+"      @Override
+      public void valueChanged(TreeSelectionEvent e) {
+        if (!mySchemesProvider.areSchemesLoaded()) return;
+        processListValueChanged();
+      }",method,
+"  @Override
+  public void addListener(ColorAndFontSettingsListener listener) {
+    myDispatcher.addListener(listener);
+  }",method,
+"  private void processListValueChanged() {
+    Object selectedValue = myOptionsTree.getSelectedValue();
+    EditorSchemeAttributeDescriptor description = selectedValue instanceof EditorSchemeAttributeDescriptor
+                                                  ? (EditorSchemeAttributeDescriptor)selectedValue
+                                                  : null;
+    if (description == null) {
+      if (selectedValue == null) {
+        String preselectedType = myProperties.getValue(SELECTED_COLOR_OPTION_PROPERTY);
+        if (preselectedType != null) {
+          myOptionsTree.selectOptionByType(preselectedType);
+          description = myOptionsTree.getSelectedDescriptor();
+        }
+      }
+    }
+    if (description != null) {
+      myProperties.setValue(SELECTED_COLOR_OPTION_PROPERTY, description.getType());
+      myOptionsPanel.reset(description);
+      myDispatcher.getMulticaster().selectedOptionChanged(description);
+    }
+    else {
+      myOptionsPanel.resetDefault();
+    }
+  }",method,
+"    if (description == null) {
+      if (selectedValue == null) {
+        String preselectedType = myProperties.getValue(SELECTED_COLOR_OPTION_PROPERTY);
+        if (preselectedType != null) {
+          myOptionsTree.selectOptionByType(preselectedType);
+          description = myOptionsTree.getSelectedDescriptor();
+        }
+      }
+    }",method,
+"      if (selectedValue == null) {
+        String preselectedType = myProperties.getValue(SELECTED_COLOR_OPTION_PROPERTY);
+        if (preselectedType != null) {
+          myOptionsTree.selectOptionByType(preselectedType);
+          description = myOptionsTree.getSelectedDescriptor();
+        }
+      }",method,
+"        if (preselectedType != null) {
+          myOptionsTree.selectOptionByType(preselectedType);
+          description = myOptionsTree.getSelectedDescriptor();
+        }",method,
+"    if (description != null) {
+      myProperties.setValue(SELECTED_COLOR_OPTION_PROPERTY, description.getType());
+      myOptionsPanel.reset(description);
+      myDispatcher.getMulticaster().selectedOptionChanged(description);
+    }",method,
+"  private void fillOptionsList() {
+    myOptionsTree.fillOptions(myOptions);
+  }",method,
+"  @Override
+  public JPanel getPanel() {
+    return this;
+  }",method,
+"  @Override
+  public void updateOptionsList() {
+    fillOptionsList();
+    processListValueChanged();
+  }",method,
+"  @Override
+  public Runnable showOption(final String attributeDisplayName) {
+    return () -> myOptionsTree.selectOptionByName(attributeDisplayName);
+  }",method,
+"  @Override
+  public void applyChangesToScheme() {
+    EditorSchemeAttributeDescriptor descriptor = myOptionsTree.getSelectedDescriptor();
+    if (descriptor != null) {
+      myOptionsPanel.apply(descriptor, myOptions.getSelectedScheme());
+    }
+  }",method,
+"    if (descriptor != null) {
+      myOptionsPanel.apply(descriptor, myOptions.getSelectedScheme());
+    }",method,
+"  @Override
+  public void selectOption(String attributeType) {
+    myOptionsTree.selectOptionByType(attributeType);
+  }",method,
+"  @Override
+  public Set<String> processListOptions() {
+    HashSet<String> result = new HashSet<>();
+    EditorSchemeAttributeDescriptor[] descriptions = myOptions.getCurrentDescriptions();
+    for (EditorSchemeAttributeDescriptor description : descriptions) {
+      if (description.getGroup().equals(myCategoryName)) {
+        result.add(description.toString());
+      }
+    }
+    return result;
+  }",method,
+"    for (EditorSchemeAttributeDescriptor description : descriptions) {
+      if (description.getGroup().equals(myCategoryName)) {
+        result.add(description.toString());
+      }
+    }",method,
+"  public void setEmptyText(@NotNull String text, @Nullable ActionListener linkListener) {
+    myOptionsTree.setEmptyText(text, linkListener);
+  }",method,
+"public class UpgradeSettingsRequest extends AcknowledgedRequest<UpgradeSettingsRequest> {
+    private Map<String, Tuple<Version, String>> versions;
+    public UpgradeSettingsRequest() {
+    }
+    public UpgradeSettingsRequest(Map<String, Tuple<Version, String>> versions) {
+        this.versions = versions;
+    }
+    @Override
+    public ActionRequestValidationException validate() {
+        ActionRequestValidationException validationException = null;
+        if (versions.isEmpty()) {
+            validationException = addValidationError(""no indices to update"", validationException);
+        }
+        return validationException;
+    }
+    Map<String, Tuple<Version, String>> versions() {
+        return versions;
+    }
+    public UpgradeSettingsRequest versions(Map<String, Tuple<Version, String>> versions) {
+        this.versions = versions;
+        return this;
+    }
+    @Override
+    public void readFrom(StreamInput in) throws IOException {
+        super.readFrom(in);
+        int size = in.readVInt();
+        versions = new HashMap<>();
+        for (int i=0; i<size; i++) {
+            String index = in.readString();
+            Version upgradeVersion = Version.readVersion(in);
+            String oldestLuceneSegment = in.readString();
+            versions.put(index, new Tuple<>(upgradeVersion, oldestLuceneSegment));
+        }
+    }
+    @Override
+    public void writeTo(StreamOutput out) throws IOException {
+        super.writeTo(out);
+        out.writeVInt(versions.size());
+        for(Map.Entry<String, Tuple<Version, String>> entry : versions.entrySet()) {
+            out.writeString(entry.getKey());
+            Version.writeVersion(entry.getValue().v1(), out);
+            out.writeString(entry.getValue().v2());
+        }
+    }
+}",class,
+"    public UpgradeSettingsRequest() {
+    }",method,
+"    public UpgradeSettingsRequest(Map<String, Tuple<Version, String>> versions) {
+        this.versions = versions;
+    }",method,
+"    @Override
+    public ActionRequestValidationException validate() {
+        ActionRequestValidationException validationException = null;
+        if (versions.isEmpty()) {
+            validationException = addValidationError(""no indices to update"", validationException);
+        }
+        return validationException;
+    }",method,
+"    Map<String, Tuple<Version, String>> versions() {
+        return versions;
+    }",method,

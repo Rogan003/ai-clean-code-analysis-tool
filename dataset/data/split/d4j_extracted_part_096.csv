@@ -1,0 +1,2074 @@
+code_snippet,type,score
+"    if (root == null) {
+      throw new IllegalArgumentException(""trying to add non-existing file to classpath: "" + path);
+    }",method,
+"  public void addSourcesToClasspath(@NotNull VirtualFile root) {
+    assert root.isDirectory();
+    ((CoreJavaFileManager)myFileManager).addToClasspath(root);
+    ((CorePackageIndex)myPackageIndex).addToClasspath(root);
+    ((MockFileIndexFacade)myFileIndexFacade).addLibraryRoot(root);
+  }",method,
+"public class BuildTargetSourcePathTest {
+  private BuildTarget target = BuildTargetFactory.newInstance(""//example:target"");
+  @Test
+  public void shouldThrowAnExceptionIfRuleDoesNotHaveAnOutput() {
+    BuildRuleResolver resolver =
+        new SingleThreadedBuildRuleResolver(
+            TargetGraph.EMPTY, new DefaultTargetNodeToBuildRuleTransformer());
+    SourcePathResolver pathResolver =
+        DefaultSourcePathResolver.from(new SourcePathRuleFinder(resolver));
+    FakeBuildRule rule = new FakeBuildRule(target);
+    rule.setOutputFile(null);
+    resolver.addToIndex(rule);
+    DefaultBuildTargetSourcePath path = DefaultBuildTargetSourcePath.of(rule.getBuildTarget());
+    try {
+      pathResolver.getRelativePath(path);
+      fail();
+    } catch (HumanReadableException e) {
+      assertEquals(""No known output for: "" + target.getFullyQualifiedName(), e.getMessage());
+    }
+  }
+  @Test
+  public void mustUseProjectFilesystemToResolvePathToFile() {
+    BuildRuleResolver resolver =
+        new SingleThreadedBuildRuleResolver(
+            TargetGraph.EMPTY, new DefaultTargetNodeToBuildRuleTransformer());
+    SourcePathResolver pathResolver =
+        DefaultSourcePathResolver.from(new SourcePathRuleFinder(resolver));
+    BuildRule rule =
+        new FakeBuildRule(target) {
+          @Override
+          public SourcePath getSourcePathToOutput() {
+            return ExplicitBuildTargetSourcePath.of(getBuildTarget(), Paths.get(""cheese""));
+          }
+        };
+    resolver.addToIndex(rule);
+    DefaultBuildTargetSourcePath path = DefaultBuildTargetSourcePath.of(rule.getBuildTarget());
+    Path resolved = pathResolver.getRelativePath(path);
+    assertEquals(Paths.get(""cheese""), resolved);
+  }
+  @Test
+  public void shouldReturnTheBuildTarget() {
+    BuildTarget target = BuildTargetFactory.newInstance(""//foo/bar:baz"");
+    DefaultBuildTargetSourcePath path = DefaultBuildTargetSourcePath.of(target);
+    assertEquals(target, path.getTarget());
+  }",class,
+"  @Test
+  public void shouldThrowAnExceptionIfRuleDoesNotHaveAnOutput() {
+    BuildRuleResolver resolver =
+        new SingleThreadedBuildRuleResolver(
+            TargetGraph.EMPTY, new DefaultTargetNodeToBuildRuleTransformer());
+    SourcePathResolver pathResolver =
+        DefaultSourcePathResolver.from(new SourcePathRuleFinder(resolver));
+    FakeBuildRule rule = new FakeBuildRule(target);
+    rule.setOutputFile(null);
+    resolver.addToIndex(rule);
+    DefaultBuildTargetSourcePath path = DefaultBuildTargetSourcePath.of(rule.getBuildTarget());
+    try {
+      pathResolver.getRelativePath(path);
+      fail();
+    } catch (HumanReadableException e) {
+      assertEquals(""No known output for: "" + target.getFullyQualifiedName(), e.getMessage());
+    }
+  }
+  @Test
+  public void mustUseProjectFilesystemToResolvePathToFile() {
+    BuildRuleResolver resolver =
+        new SingleThreadedBuildRuleResolver(
+            TargetGraph.EMPTY, new DefaultTargetNodeToBuildRuleTransformer());
+    SourcePathResolver pathResolver =
+        DefaultSourcePathResolver.from(new SourcePathRuleFinder(resolver));
+    BuildRule rule =
+        new FakeBuildRule(target) {
+          @Override
+          public SourcePath getSourcePathToOutput() {
+            return ExplicitBuildTargetSourcePath.of(getBuildTarget(), Paths.get(""cheese""));
+          }
+        };
+    resolver.addToIndex(rule);
+    DefaultBuildTargetSourcePath path = DefaultBuildTargetSourcePath.of(rule.getBuildTarget());
+    Path resolved = pathResolver.getRelativePath(path);
+    assertEquals(Paths.get(""cheese""), resolved);
+  }
+  @Test
+  public void shouldReturnTheBuildTarget() {
+    BuildTarget target = BuildTargetFactory.newInstance(""//foo/bar:baz"");
+    DefaultBuildTargetSourcePath path = DefaultBuildTargetSourcePath.of(target);
+    assertEquals(target, path.getTarget());
+  }
+  @Test
+  public void explicitlySetPath() {
+    SourcePathResolver pathResolver =
+        DefaultSourcePathResolver.from(
+            new SourcePathRuleFinder(
+                new SingleThreadedBuildRuleResolver(
+                    TargetGraph.EMPTY, new DefaultTargetNodeToBuildRuleTransformer())));
+    BuildTarget target = BuildTargetFactory.newInstance(""//foo/bar:baz"");
+    FakeBuildRule rule = new FakeBuildRule(target);
+    Path path = Paths.get(""blah"");
+    ExplicitBuildTargetSourcePath buildTargetSourcePath =
+        ExplicitBuildTargetSourcePath.of(rule.getBuildTarget(), path);
+    assertEquals(target, buildTargetSourcePath.getTarget());
+    assertEquals(path, pathResolver.getRelativePath(buildTargetSourcePath));
+  }
+  @Test
+  public void explicitlySetSourcePathExplicitTarget() {
+    SourcePathResolver pathResolver =
+        DefaultSourcePathResolver.from(
+            new SourcePathRuleFinder(
+                new SingleThreadedBuildRuleResolver(
+                    TargetGraph.EMPTY, new DefaultTargetNodeToBuildRuleTransformer())));
+    FakeBuildRule rule1 = new FakeBuildRule(BuildTargetFactory.newInstance(""//foo/bar:baz""));
+    FakeBuildRule rule2 = new FakeBuildRule(BuildTargetFactory.newInstance(""//foo/bar:waz""));
+    Path path = Paths.get(""blah"");
+    ExplicitBuildTargetSourcePath sourcePath1 =
+        ExplicitBuildTargetSourcePath.of(rule1.getBuildTarget(), path);
+    ForwardingBuildTargetSourcePath sourcePath2 =
+        ForwardingBuildTargetSourcePath.of(rule2.getBuildTarget(), sourcePath1);
+    assertEquals(path, pathResolver.getRelativePath(sourcePath1));
+    assertEquals(path, pathResolver.getRelativePath(sourcePath2));
+  }
+  @Test
+  public void explicitlySetSourcePathImplicitTarget() {
+    BuildRuleResolver resolver =
+        new SingleThreadedBuildRuleResolver(
+            TargetGraph.EMPTY, new DefaultTargetNodeToBuildRuleTransformer());
+    SourcePathResolver pathResolver =
+        DefaultSourcePathResolver.from(new SourcePathRuleFinder(resolver));
+    FakeBuildRule rule1 = new FakeBuildRule(BuildTargetFactory.newInstance(""//foo/bar:baz""));
+    resolver.addToIndex(rule1);
+    Path path = Paths.get(""blah"");
+    rule1.setOutputFile(path.toString());
+    FakeBuildRule rule2 = new FakeBuildRule(BuildTargetFactory.newInstance(""//foo/bar:waz""));
+    resolver.addToIndex(rule2);
+    DefaultBuildTargetSourcePath sourcePath1 =
+        DefaultBuildTargetSourcePath.of(rule1.getBuildTarget());
+    ForwardingBuildTargetSourcePath sourcePath2 =
+        ForwardingBuildTargetSourcePath.of(rule2.getBuildTarget(), sourcePath1);
+    assertEquals(path, pathResolver.getRelativePath(sourcePath1));
+    assertEquals(path, pathResolver.getRelativePath(sourcePath2));
+  }
+  @Test
+  public void explicitlySetSourcePathChainsToPathSourcePath() {
+    BuildRuleResolver resolver =
+        new SingleThreadedBuildRuleResolver(
+            TargetGraph.EMPTY, new DefaultTargetNodeToBuildRuleTransformer());
+    SourcePathResolver pathResolver =
+        DefaultSourcePathResolver.from(new SourcePathRuleFinder(resolver));
+    FakeBuildRule rule1 = new FakeBuildRule(BuildTargetFactory.newInstance(""//foo/bar:rule1""));
+    resolver.addToIndex(rule1);
+    FakeBuildRule rule2 = new FakeBuildRule(BuildTargetFactory.newInstance(""//foo/bar:rule2""));
+    resolver.addToIndex(rule2);
+    FakeBuildRule rule3 = new FakeBuildRule(BuildTargetFactory.newInstance(""//foo/bar:rule3""));
+    resolver.addToIndex(rule3);
+    PathSourcePath sourcePath0 = FakeSourcePath.of(""boom"");
+    ForwardingBuildTargetSourcePath sourcePath1 =
+        ForwardingBuildTargetSourcePath.of(rule1.getBuildTarget(), sourcePath0);
+    ForwardingBuildTargetSourcePath sourcePath2 =
+        ForwardingBuildTargetSourcePath.of(rule2.getBuildTarget(), sourcePath1);
+    assertEquals(
+        pathResolver.getRelativePath(sourcePath0), pathResolver.getRelativePath(sourcePath1));
+    assertEquals(
+        pathResolver.getRelativePath(sourcePath0), pathResolver.getRelativePath(sourcePath2));
+  }",method,
+"  @Test
+  public void mustUseProjectFilesystemToResolvePathToFile() {
+    BuildRuleResolver resolver =
+        new SingleThreadedBuildRuleResolver(
+            TargetGraph.EMPTY, new DefaultTargetNodeToBuildRuleTransformer());
+    SourcePathResolver pathResolver =
+        DefaultSourcePathResolver.from(new SourcePathRuleFinder(resolver));
+    BuildRule rule =
+        new FakeBuildRule(target) {
+          @Override
+          public SourcePath getSourcePathToOutput() {
+            return ExplicitBuildTargetSourcePath.of(getBuildTarget(), Paths.get(""cheese""));
+          }
+        };
+    resolver.addToIndex(rule);
+    DefaultBuildTargetSourcePath path = DefaultBuildTargetSourcePath.of(rule.getBuildTarget());
+    Path resolved = pathResolver.getRelativePath(path);
+    assertEquals(Paths.get(""cheese""), resolved);
+  }
+  @Test
+  public void shouldReturnTheBuildTarget() {
+    BuildTarget target = BuildTargetFactory.newInstance(""//foo/bar:baz"");
+    DefaultBuildTargetSourcePath path = DefaultBuildTargetSourcePath.of(target);
+    assertEquals(target, path.getTarget());
+  }
+  @Test
+  public void explicitlySetPath() {
+    SourcePathResolver pathResolver =
+        DefaultSourcePathResolver.from(
+            new SourcePathRuleFinder(
+                new SingleThreadedBuildRuleResolver(
+                    TargetGraph.EMPTY, new DefaultTargetNodeToBuildRuleTransformer())));
+    BuildTarget target = BuildTargetFactory.newInstance(""//foo/bar:baz"");
+    FakeBuildRule rule = new FakeBuildRule(target);
+    Path path = Paths.get(""blah"");
+    ExplicitBuildTargetSourcePath buildTargetSourcePath =
+        ExplicitBuildTargetSourcePath.of(rule.getBuildTarget(), path);
+    assertEquals(target, buildTargetSourcePath.getTarget());
+    assertEquals(path, pathResolver.getRelativePath(buildTargetSourcePath));
+  }
+  @Test
+  public void explicitlySetSourcePathExplicitTarget() {
+    SourcePathResolver pathResolver =
+        DefaultSourcePathResolver.from(
+            new SourcePathRuleFinder(
+                new SingleThreadedBuildRuleResolver(
+                    TargetGraph.EMPTY, new DefaultTargetNodeToBuildRuleTransformer())));
+    FakeBuildRule rule1 = new FakeBuildRule(BuildTargetFactory.newInstance(""//foo/bar:baz""));
+    FakeBuildRule rule2 = new FakeBuildRule(BuildTargetFactory.newInstance(""//foo/bar:waz""));
+    Path path = Paths.get(""blah"");
+    ExplicitBuildTargetSourcePath sourcePath1 =
+        ExplicitBuildTargetSourcePath.of(rule1.getBuildTarget(), path);
+    ForwardingBuildTargetSourcePath sourcePath2 =
+        ForwardingBuildTargetSourcePath.of(rule2.getBuildTarget(), sourcePath1);
+    assertEquals(path, pathResolver.getRelativePath(sourcePath1));
+    assertEquals(path, pathResolver.getRelativePath(sourcePath2));
+  }
+  @Test
+  public void explicitlySetSourcePathImplicitTarget() {
+    BuildRuleResolver resolver =
+        new SingleThreadedBuildRuleResolver(
+            TargetGraph.EMPTY, new DefaultTargetNodeToBuildRuleTransformer());
+    SourcePathResolver pathResolver =
+        DefaultSourcePathResolver.from(new SourcePathRuleFinder(resolver));
+    FakeBuildRule rule1 = new FakeBuildRule(BuildTargetFactory.newInstance(""//foo/bar:baz""));
+    resolver.addToIndex(rule1);
+    Path path = Paths.get(""blah"");
+    rule1.setOutputFile(path.toString());
+    FakeBuildRule rule2 = new FakeBuildRule(BuildTargetFactory.newInstance(""//foo/bar:waz""));
+    resolver.addToIndex(rule2);
+    DefaultBuildTargetSourcePath sourcePath1 =
+        DefaultBuildTargetSourcePath.of(rule1.getBuildTarget());
+    ForwardingBuildTargetSourcePath sourcePath2 =
+        ForwardingBuildTargetSourcePath.of(rule2.getBuildTarget(), sourcePath1);
+    assertEquals(path, pathResolver.getRelativePath(sourcePath1));
+    assertEquals(path, pathResolver.getRelativePath(sourcePath2));
+  }
+  @Test
+  public void explicitlySetSourcePathChainsToPathSourcePath() {
+    BuildRuleResolver resolver =
+        new SingleThreadedBuildRuleResolver(
+            TargetGraph.EMPTY, new DefaultTargetNodeToBuildRuleTransformer());
+    SourcePathResolver pathResolver =
+        DefaultSourcePathResolver.from(new SourcePathRuleFinder(resolver));
+    FakeBuildRule rule1 = new FakeBuildRule(BuildTargetFactory.newInstance(""//foo/bar:rule1""));
+    resolver.addToIndex(rule1);
+    FakeBuildRule rule2 = new FakeBuildRule(BuildTargetFactory.newInstance(""//foo/bar:rule2""));
+    resolver.addToIndex(rule2);
+    FakeBuildRule rule3 = new FakeBuildRule(BuildTargetFactory.newInstance(""//foo/bar:rule3""));
+    resolver.addToIndex(rule3);
+    PathSourcePath sourcePath0 = FakeSourcePath.of(""boom"");
+    ForwardingBuildTargetSourcePath sourcePath1 =
+        ForwardingBuildTargetSourcePath.of(rule1.getBuildTarget(), sourcePath0);
+    ForwardingBuildTargetSourcePath sourcePath2 =
+        ForwardingBuildTargetSourcePath.of(rule2.getBuildTarget(), sourcePath1);
+    assertEquals(
+        pathResolver.getRelativePath(sourcePath0), pathResolver.getRelativePath(sourcePath1));
+    assertEquals(
+        pathResolver.getRelativePath(sourcePath0), pathResolver.getRelativePath(sourcePath2));
+  }",method,
+"        new FakeBuildRule(target) {
+          @Override
+          public SourcePath getSourcePathToOutput() {
+            return ExplicitBuildTargetSourcePath.of(getBuildTarget(), Paths.get(""cheese""));
+          }
+        };
+    resolver.addToIndex(rule);
+    DefaultBuildTargetSourcePath path = DefaultBuildTargetSourcePath.of(rule.getBuildTarget());
+    Path resolved = pathResolver.getRelativePath(path);
+    assertEquals(Paths.get(""cheese""), resolved);
+  }
+  @Test
+  public void shouldReturnTheBuildTarget() {
+    BuildTarget target = BuildTargetFactory.newInstance(""//foo/bar:baz"");
+    DefaultBuildTargetSourcePath path = DefaultBuildTargetSourcePath.of(target);
+    assertEquals(target, path.getTarget());
+  }
+  @Test
+  public void explicitlySetPath() {
+    SourcePathResolver pathResolver =
+        DefaultSourcePathResolver.from(
+            new SourcePathRuleFinder(
+                new SingleThreadedBuildRuleResolver(
+                    TargetGraph.EMPTY, new DefaultTargetNodeToBuildRuleTransformer())));
+    BuildTarget target = BuildTargetFactory.newInstance(""//foo/bar:baz"");
+    FakeBuildRule rule = new FakeBuildRule(target);
+    Path path = Paths.get(""blah"");
+    ExplicitBuildTargetSourcePath buildTargetSourcePath =
+        ExplicitBuildTargetSourcePath.of(rule.getBuildTarget(), path);
+    assertEquals(target, buildTargetSourcePath.getTarget());
+    assertEquals(path, pathResolver.getRelativePath(buildTargetSourcePath));
+  }
+  @Test
+  public void explicitlySetSourcePathExplicitTarget() {
+    SourcePathResolver pathResolver =
+        DefaultSourcePathResolver.from(
+            new SourcePathRuleFinder(
+                new SingleThreadedBuildRuleResolver(
+                    TargetGraph.EMPTY, new DefaultTargetNodeToBuildRuleTransformer())));
+    FakeBuildRule rule1 = new FakeBuildRule(BuildTargetFactory.newInstance(""//foo/bar:baz""));
+    FakeBuildRule rule2 = new FakeBuildRule(BuildTargetFactory.newInstance(""//foo/bar:waz""));
+    Path path = Paths.get(""blah"");
+    ExplicitBuildTargetSourcePath sourcePath1 =
+        ExplicitBuildTargetSourcePath.of(rule1.getBuildTarget(), path);
+    ForwardingBuildTargetSourcePath sourcePath2 =
+        ForwardingBuildTargetSourcePath.of(rule2.getBuildTarget(), sourcePath1);
+    assertEquals(path, pathResolver.getRelativePath(sourcePath1));
+    assertEquals(path, pathResolver.getRelativePath(sourcePath2));
+  }
+  @Test
+  public void explicitlySetSourcePathImplicitTarget() {
+    BuildRuleResolver resolver =
+        new SingleThreadedBuildRuleResolver(
+            TargetGraph.EMPTY, new DefaultTargetNodeToBuildRuleTransformer());
+    SourcePathResolver pathResolver =
+        DefaultSourcePathResolver.from(new SourcePathRuleFinder(resolver));
+    FakeBuildRule rule1 = new FakeBuildRule(BuildTargetFactory.newInstance(""//foo/bar:baz""));
+    resolver.addToIndex(rule1);
+    Path path = Paths.get(""blah"");
+    rule1.setOutputFile(path.toString());
+    FakeBuildRule rule2 = new FakeBuildRule(BuildTargetFactory.newInstance(""//foo/bar:waz""));
+    resolver.addToIndex(rule2);
+    DefaultBuildTargetSourcePath sourcePath1 =
+        DefaultBuildTargetSourcePath.of(rule1.getBuildTarget());
+    ForwardingBuildTargetSourcePath sourcePath2 =
+        ForwardingBuildTargetSourcePath.of(rule2.getBuildTarget(), sourcePath1);
+    assertEquals(path, pathResolver.getRelativePath(sourcePath1));
+    assertEquals(path, pathResolver.getRelativePath(sourcePath2));
+  }
+  @Test
+  public void explicitlySetSourcePathChainsToPathSourcePath() {
+    BuildRuleResolver resolver =
+        new SingleThreadedBuildRuleResolver(
+            TargetGraph.EMPTY, new DefaultTargetNodeToBuildRuleTransformer());
+    SourcePathResolver pathResolver =
+        DefaultSourcePathResolver.from(new SourcePathRuleFinder(resolver));
+    FakeBuildRule rule1 = new FakeBuildRule(BuildTargetFactory.newInstance(""//foo/bar:rule1""));
+    resolver.addToIndex(rule1);
+    FakeBuildRule rule2 = new FakeBuildRule(BuildTargetFactory.newInstance(""//foo/bar:rule2""));
+    resolver.addToIndex(rule2);
+    FakeBuildRule rule3 = new FakeBuildRule(BuildTargetFactory.newInstance(""//foo/bar:rule3""));
+    resolver.addToIndex(rule3);
+    PathSourcePath sourcePath0 = FakeSourcePath.of(""boom"");
+    ForwardingBuildTargetSourcePath sourcePath1 =
+        ForwardingBuildTargetSourcePath.of(rule1.getBuildTarget(), sourcePath0);
+    ForwardingBuildTargetSourcePath sourcePath2 =
+        ForwardingBuildTargetSourcePath.of(rule2.getBuildTarget(), sourcePath1);
+    assertEquals(
+        pathResolver.getRelativePath(sourcePath0), pathResolver.getRelativePath(sourcePath1));
+    assertEquals(
+        pathResolver.getRelativePath(sourcePath0), pathResolver.getRelativePath(sourcePath2));
+  }",method,
+"          @Override
+          public SourcePath getSourcePathToOutput() {
+            return ExplicitBuildTargetSourcePath.of(getBuildTarget(), Paths.get(""cheese""));
+          }
+        };
+    resolver.addToIndex(rule);
+    DefaultBuildTargetSourcePath path = DefaultBuildTargetSourcePath.of(rule.getBuildTarget());
+    Path resolved = pathResolver.getRelativePath(path);
+    assertEquals(Paths.get(""cheese""), resolved);
+  }
+  @Test
+  public void shouldReturnTheBuildTarget() {
+    BuildTarget target = BuildTargetFactory.newInstance(""//foo/bar:baz"");
+    DefaultBuildTargetSourcePath path = DefaultBuildTargetSourcePath.of(target);
+    assertEquals(target, path.getTarget());
+  }
+  @Test
+  public void explicitlySetPath() {
+    SourcePathResolver pathResolver =
+        DefaultSourcePathResolver.from(
+            new SourcePathRuleFinder(
+                new SingleThreadedBuildRuleResolver(
+                    TargetGraph.EMPTY, new DefaultTargetNodeToBuildRuleTransformer())));
+    BuildTarget target = BuildTargetFactory.newInstance(""//foo/bar:baz"");
+    FakeBuildRule rule = new FakeBuildRule(target);
+    Path path = Paths.get(""blah"");
+    ExplicitBuildTargetSourcePath buildTargetSourcePath =
+        ExplicitBuildTargetSourcePath.of(rule.getBuildTarget(), path);
+    assertEquals(target, buildTargetSourcePath.getTarget());
+    assertEquals(path, pathResolver.getRelativePath(buildTargetSourcePath));
+  }
+  @Test
+  public void explicitlySetSourcePathExplicitTarget() {
+    SourcePathResolver pathResolver =
+        DefaultSourcePathResolver.from(
+            new SourcePathRuleFinder(
+                new SingleThreadedBuildRuleResolver(
+                    TargetGraph.EMPTY, new DefaultTargetNodeToBuildRuleTransformer())));
+    FakeBuildRule rule1 = new FakeBuildRule(BuildTargetFactory.newInstance(""//foo/bar:baz""));
+    FakeBuildRule rule2 = new FakeBuildRule(BuildTargetFactory.newInstance(""//foo/bar:waz""));
+    Path path = Paths.get(""blah"");
+    ExplicitBuildTargetSourcePath sourcePath1 =
+        ExplicitBuildTargetSourcePath.of(rule1.getBuildTarget(), path);
+    ForwardingBuildTargetSourcePath sourcePath2 =
+        ForwardingBuildTargetSourcePath.of(rule2.getBuildTarget(), sourcePath1);
+    assertEquals(path, pathResolver.getRelativePath(sourcePath1));
+    assertEquals(path, pathResolver.getRelativePath(sourcePath2));
+  }
+  @Test
+  public void explicitlySetSourcePathImplicitTarget() {
+    BuildRuleResolver resolver =
+        new SingleThreadedBuildRuleResolver(
+            TargetGraph.EMPTY, new DefaultTargetNodeToBuildRuleTransformer());
+    SourcePathResolver pathResolver =
+        DefaultSourcePathResolver.from(new SourcePathRuleFinder(resolver));
+    FakeBuildRule rule1 = new FakeBuildRule(BuildTargetFactory.newInstance(""//foo/bar:baz""));
+    resolver.addToIndex(rule1);
+    Path path = Paths.get(""blah"");
+    rule1.setOutputFile(path.toString());
+    FakeBuildRule rule2 = new FakeBuildRule(BuildTargetFactory.newInstance(""//foo/bar:waz""));
+    resolver.addToIndex(rule2);
+    DefaultBuildTargetSourcePath sourcePath1 =
+        DefaultBuildTargetSourcePath.of(rule1.getBuildTarget());
+    ForwardingBuildTargetSourcePath sourcePath2 =
+        ForwardingBuildTargetSourcePath.of(rule2.getBuildTarget(), sourcePath1);
+    assertEquals(path, pathResolver.getRelativePath(sourcePath1));
+    assertEquals(path, pathResolver.getRelativePath(sourcePath2));
+  }
+  @Test
+  public void explicitlySetSourcePathChainsToPathSourcePath() {
+    BuildRuleResolver resolver =
+        new SingleThreadedBuildRuleResolver(
+            TargetGraph.EMPTY, new DefaultTargetNodeToBuildRuleTransformer());
+    SourcePathResolver pathResolver =
+        DefaultSourcePathResolver.from(new SourcePathRuleFinder(resolver));
+    FakeBuildRule rule1 = new FakeBuildRule(BuildTargetFactory.newInstance(""//foo/bar:rule1""));
+    resolver.addToIndex(rule1);
+    FakeBuildRule rule2 = new FakeBuildRule(BuildTargetFactory.newInstance(""//foo/bar:rule2""));
+    resolver.addToIndex(rule2);
+    FakeBuildRule rule3 = new FakeBuildRule(BuildTargetFactory.newInstance(""//foo/bar:rule3""));
+    resolver.addToIndex(rule3);
+    PathSourcePath sourcePath0 = FakeSourcePath.of(""boom"");
+    ForwardingBuildTargetSourcePath sourcePath1 =
+        ForwardingBuildTargetSourcePath.of(rule1.getBuildTarget(), sourcePath0);
+    ForwardingBuildTargetSourcePath sourcePath2 =
+        ForwardingBuildTargetSourcePath.of(rule2.getBuildTarget(), sourcePath1);
+    assertEquals(
+        pathResolver.getRelativePath(sourcePath0), pathResolver.getRelativePath(sourcePath1));
+    assertEquals(
+        pathResolver.getRelativePath(sourcePath0), pathResolver.getRelativePath(sourcePath2));
+  }",method,
+"  @Test
+  public void shouldReturnTheBuildTarget() {
+    BuildTarget target = BuildTargetFactory.newInstance(""//foo/bar:baz"");
+    DefaultBuildTargetSourcePath path = DefaultBuildTargetSourcePath.of(target);
+    assertEquals(target, path.getTarget());
+  }
+  @Test
+  public void explicitlySetPath() {
+    SourcePathResolver pathResolver =
+        DefaultSourcePathResolver.from(
+            new SourcePathRuleFinder(
+                new SingleThreadedBuildRuleResolver(
+                    TargetGraph.EMPTY, new DefaultTargetNodeToBuildRuleTransformer())));
+    BuildTarget target = BuildTargetFactory.newInstance(""//foo/bar:baz"");
+    FakeBuildRule rule = new FakeBuildRule(target);
+    Path path = Paths.get(""blah"");
+    ExplicitBuildTargetSourcePath buildTargetSourcePath =
+        ExplicitBuildTargetSourcePath.of(rule.getBuildTarget(), path);
+    assertEquals(target, buildTargetSourcePath.getTarget());
+    assertEquals(path, pathResolver.getRelativePath(buildTargetSourcePath));
+  }
+  @Test
+  public void explicitlySetSourcePathExplicitTarget() {
+    SourcePathResolver pathResolver =
+        DefaultSourcePathResolver.from(
+            new SourcePathRuleFinder(
+                new SingleThreadedBuildRuleResolver(
+                    TargetGraph.EMPTY, new DefaultTargetNodeToBuildRuleTransformer())));
+    FakeBuildRule rule1 = new FakeBuildRule(BuildTargetFactory.newInstance(""//foo/bar:baz""));
+    FakeBuildRule rule2 = new FakeBuildRule(BuildTargetFactory.newInstance(""//foo/bar:waz""));
+    Path path = Paths.get(""blah"");
+    ExplicitBuildTargetSourcePath sourcePath1 =
+        ExplicitBuildTargetSourcePath.of(rule1.getBuildTarget(), path);
+    ForwardingBuildTargetSourcePath sourcePath2 =
+        ForwardingBuildTargetSourcePath.of(rule2.getBuildTarget(), sourcePath1);
+    assertEquals(path, pathResolver.getRelativePath(sourcePath1));
+    assertEquals(path, pathResolver.getRelativePath(sourcePath2));
+  }
+  @Test
+  public void explicitlySetSourcePathImplicitTarget() {
+    BuildRuleResolver resolver =
+        new SingleThreadedBuildRuleResolver(
+            TargetGraph.EMPTY, new DefaultTargetNodeToBuildRuleTransformer());
+    SourcePathResolver pathResolver =
+        DefaultSourcePathResolver.from(new SourcePathRuleFinder(resolver));
+    FakeBuildRule rule1 = new FakeBuildRule(BuildTargetFactory.newInstance(""//foo/bar:baz""));
+    resolver.addToIndex(rule1);
+    Path path = Paths.get(""blah"");
+    rule1.setOutputFile(path.toString());
+    FakeBuildRule rule2 = new FakeBuildRule(BuildTargetFactory.newInstance(""//foo/bar:waz""));
+    resolver.addToIndex(rule2);
+    DefaultBuildTargetSourcePath sourcePath1 =
+        DefaultBuildTargetSourcePath.of(rule1.getBuildTarget());
+    ForwardingBuildTargetSourcePath sourcePath2 =
+        ForwardingBuildTargetSourcePath.of(rule2.getBuildTarget(), sourcePath1);
+    assertEquals(path, pathResolver.getRelativePath(sourcePath1));
+    assertEquals(path, pathResolver.getRelativePath(sourcePath2));
+  }
+  @Test
+  public void explicitlySetSourcePathChainsToPathSourcePath() {
+    BuildRuleResolver resolver =
+        new SingleThreadedBuildRuleResolver(
+            TargetGraph.EMPTY, new DefaultTargetNodeToBuildRuleTransformer());
+    SourcePathResolver pathResolver =
+        DefaultSourcePathResolver.from(new SourcePathRuleFinder(resolver));
+    FakeBuildRule rule1 = new FakeBuildRule(BuildTargetFactory.newInstance(""//foo/bar:rule1""));
+    resolver.addToIndex(rule1);
+    FakeBuildRule rule2 = new FakeBuildRule(BuildTargetFactory.newInstance(""//foo/bar:rule2""));
+    resolver.addToIndex(rule2);
+    FakeBuildRule rule3 = new FakeBuildRule(BuildTargetFactory.newInstance(""//foo/bar:rule3""));
+    resolver.addToIndex(rule3);
+    PathSourcePath sourcePath0 = FakeSourcePath.of(""boom"");
+    ForwardingBuildTargetSourcePath sourcePath1 =
+        ForwardingBuildTargetSourcePath.of(rule1.getBuildTarget(), sourcePath0);
+    ForwardingBuildTargetSourcePath sourcePath2 =
+        ForwardingBuildTargetSourcePath.of(rule2.getBuildTarget(), sourcePath1);
+    assertEquals(
+        pathResolver.getRelativePath(sourcePath0), pathResolver.getRelativePath(sourcePath1));
+    assertEquals(
+        pathResolver.getRelativePath(sourcePath0), pathResolver.getRelativePath(sourcePath2));
+  }",method,
+"  @Test
+  public void explicitlySetPath() {
+    SourcePathResolver pathResolver =
+        DefaultSourcePathResolver.from(
+            new SourcePathRuleFinder(
+                new SingleThreadedBuildRuleResolver(
+                    TargetGraph.EMPTY, new DefaultTargetNodeToBuildRuleTransformer())));
+    BuildTarget target = BuildTargetFactory.newInstance(""//foo/bar:baz"");
+    FakeBuildRule rule = new FakeBuildRule(target);
+    Path path = Paths.get(""blah"");
+    ExplicitBuildTargetSourcePath buildTargetSourcePath =
+        ExplicitBuildTargetSourcePath.of(rule.getBuildTarget(), path);
+    assertEquals(target, buildTargetSourcePath.getTarget());
+    assertEquals(path, pathResolver.getRelativePath(buildTargetSourcePath));
+  }
+  @Test
+  public void explicitlySetSourcePathExplicitTarget() {
+    SourcePathResolver pathResolver =
+        DefaultSourcePathResolver.from(
+            new SourcePathRuleFinder(
+                new SingleThreadedBuildRuleResolver(
+                    TargetGraph.EMPTY, new DefaultTargetNodeToBuildRuleTransformer())));
+    FakeBuildRule rule1 = new FakeBuildRule(BuildTargetFactory.newInstance(""//foo/bar:baz""));
+    FakeBuildRule rule2 = new FakeBuildRule(BuildTargetFactory.newInstance(""//foo/bar:waz""));
+    Path path = Paths.get(""blah"");
+    ExplicitBuildTargetSourcePath sourcePath1 =
+        ExplicitBuildTargetSourcePath.of(rule1.getBuildTarget(), path);
+    ForwardingBuildTargetSourcePath sourcePath2 =
+        ForwardingBuildTargetSourcePath.of(rule2.getBuildTarget(), sourcePath1);
+    assertEquals(path, pathResolver.getRelativePath(sourcePath1));
+    assertEquals(path, pathResolver.getRelativePath(sourcePath2));
+  }
+  @Test
+  public void explicitlySetSourcePathImplicitTarget() {
+    BuildRuleResolver resolver =
+        new SingleThreadedBuildRuleResolver(
+            TargetGraph.EMPTY, new DefaultTargetNodeToBuildRuleTransformer());
+    SourcePathResolver pathResolver =
+        DefaultSourcePathResolver.from(new SourcePathRuleFinder(resolver));
+    FakeBuildRule rule1 = new FakeBuildRule(BuildTargetFactory.newInstance(""//foo/bar:baz""));
+    resolver.addToIndex(rule1);
+    Path path = Paths.get(""blah"");
+    rule1.setOutputFile(path.toString());
+    FakeBuildRule rule2 = new FakeBuildRule(BuildTargetFactory.newInstance(""//foo/bar:waz""));
+    resolver.addToIndex(rule2);
+    DefaultBuildTargetSourcePath sourcePath1 =
+        DefaultBuildTargetSourcePath.of(rule1.getBuildTarget());
+    ForwardingBuildTargetSourcePath sourcePath2 =
+        ForwardingBuildTargetSourcePath.of(rule2.getBuildTarget(), sourcePath1);
+    assertEquals(path, pathResolver.getRelativePath(sourcePath1));
+    assertEquals(path, pathResolver.getRelativePath(sourcePath2));
+  }
+  @Test
+  public void explicitlySetSourcePathChainsToPathSourcePath() {
+    BuildRuleResolver resolver =
+        new SingleThreadedBuildRuleResolver(
+            TargetGraph.EMPTY, new DefaultTargetNodeToBuildRuleTransformer());
+    SourcePathResolver pathResolver =
+        DefaultSourcePathResolver.from(new SourcePathRuleFinder(resolver));
+    FakeBuildRule rule1 = new FakeBuildRule(BuildTargetFactory.newInstance(""//foo/bar:rule1""));
+    resolver.addToIndex(rule1);
+    FakeBuildRule rule2 = new FakeBuildRule(BuildTargetFactory.newInstance(""//foo/bar:rule2""));
+    resolver.addToIndex(rule2);
+    FakeBuildRule rule3 = new FakeBuildRule(BuildTargetFactory.newInstance(""//foo/bar:rule3""));
+    resolver.addToIndex(rule3);
+    PathSourcePath sourcePath0 = FakeSourcePath.of(""boom"");
+    ForwardingBuildTargetSourcePath sourcePath1 =
+        ForwardingBuildTargetSourcePath.of(rule1.getBuildTarget(), sourcePath0);
+    ForwardingBuildTargetSourcePath sourcePath2 =
+        ForwardingBuildTargetSourcePath.of(rule2.getBuildTarget(), sourcePath1);
+    assertEquals(
+        pathResolver.getRelativePath(sourcePath0), pathResolver.getRelativePath(sourcePath1));
+    assertEquals(
+        pathResolver.getRelativePath(sourcePath0), pathResolver.getRelativePath(sourcePath2));
+  }",method,
+"  @Test
+  public void explicitlySetSourcePathExplicitTarget() {
+    SourcePathResolver pathResolver =
+        DefaultSourcePathResolver.from(
+            new SourcePathRuleFinder(
+                new SingleThreadedBuildRuleResolver(
+                    TargetGraph.EMPTY, new DefaultTargetNodeToBuildRuleTransformer())));
+    FakeBuildRule rule1 = new FakeBuildRule(BuildTargetFactory.newInstance(""//foo/bar:baz""));
+    FakeBuildRule rule2 = new FakeBuildRule(BuildTargetFactory.newInstance(""//foo/bar:waz""));
+    Path path = Paths.get(""blah"");
+    ExplicitBuildTargetSourcePath sourcePath1 =
+        ExplicitBuildTargetSourcePath.of(rule1.getBuildTarget(), path);
+    ForwardingBuildTargetSourcePath sourcePath2 =
+        ForwardingBuildTargetSourcePath.of(rule2.getBuildTarget(), sourcePath1);
+    assertEquals(path, pathResolver.getRelativePath(sourcePath1));
+    assertEquals(path, pathResolver.getRelativePath(sourcePath2));
+  }
+  @Test
+  public void explicitlySetSourcePathImplicitTarget() {
+    BuildRuleResolver resolver =
+        new SingleThreadedBuildRuleResolver(
+            TargetGraph.EMPTY, new DefaultTargetNodeToBuildRuleTransformer());
+    SourcePathResolver pathResolver =
+        DefaultSourcePathResolver.from(new SourcePathRuleFinder(resolver));
+    FakeBuildRule rule1 = new FakeBuildRule(BuildTargetFactory.newInstance(""//foo/bar:baz""));
+    resolver.addToIndex(rule1);
+    Path path = Paths.get(""blah"");
+    rule1.setOutputFile(path.toString());
+    FakeBuildRule rule2 = new FakeBuildRule(BuildTargetFactory.newInstance(""//foo/bar:waz""));
+    resolver.addToIndex(rule2);
+    DefaultBuildTargetSourcePath sourcePath1 =
+        DefaultBuildTargetSourcePath.of(rule1.getBuildTarget());
+    ForwardingBuildTargetSourcePath sourcePath2 =
+        ForwardingBuildTargetSourcePath.of(rule2.getBuildTarget(), sourcePath1);
+    assertEquals(path, pathResolver.getRelativePath(sourcePath1));
+    assertEquals(path, pathResolver.getRelativePath(sourcePath2));
+  }
+  @Test
+  public void explicitlySetSourcePathChainsToPathSourcePath() {
+    BuildRuleResolver resolver =
+        new SingleThreadedBuildRuleResolver(
+            TargetGraph.EMPTY, new DefaultTargetNodeToBuildRuleTransformer());
+    SourcePathResolver pathResolver =
+        DefaultSourcePathResolver.from(new SourcePathRuleFinder(resolver));
+    FakeBuildRule rule1 = new FakeBuildRule(BuildTargetFactory.newInstance(""//foo/bar:rule1""));
+    resolver.addToIndex(rule1);
+    FakeBuildRule rule2 = new FakeBuildRule(BuildTargetFactory.newInstance(""//foo/bar:rule2""));
+    resolver.addToIndex(rule2);
+    FakeBuildRule rule3 = new FakeBuildRule(BuildTargetFactory.newInstance(""//foo/bar:rule3""));
+    resolver.addToIndex(rule3);
+    PathSourcePath sourcePath0 = FakeSourcePath.of(""boom"");
+    ForwardingBuildTargetSourcePath sourcePath1 =
+        ForwardingBuildTargetSourcePath.of(rule1.getBuildTarget(), sourcePath0);
+    ForwardingBuildTargetSourcePath sourcePath2 =
+        ForwardingBuildTargetSourcePath.of(rule2.getBuildTarget(), sourcePath1);
+    assertEquals(
+        pathResolver.getRelativePath(sourcePath0), pathResolver.getRelativePath(sourcePath1));
+    assertEquals(
+        pathResolver.getRelativePath(sourcePath0), pathResolver.getRelativePath(sourcePath2));
+  }
+  @Test
+  public void sameBuildTargetsWithDifferentPathsAreDifferent() {
+    BuildTarget target = BuildTargetFactory.newInstance(""//foo/bar:baz"");
+    FakeBuildRule rule = new FakeBuildRule(target);
+    ExplicitBuildTargetSourcePath path1 =
+        ExplicitBuildTargetSourcePath.of(rule.getBuildTarget(), Paths.get(""something""));
+    ExplicitBuildTargetSourcePath path2 =
+        ExplicitBuildTargetSourcePath.of(rule.getBuildTarget(), Paths.get(""something else""));
+    assertNotEquals(path1, path2);
+    assertNotEquals(path1.hashCode(), path2.hashCode());
+  }",method,
+"  @Test
+  public void explicitlySetSourcePathImplicitTarget() {
+    BuildRuleResolver resolver =
+        new SingleThreadedBuildRuleResolver(
+            TargetGraph.EMPTY, new DefaultTargetNodeToBuildRuleTransformer());
+    SourcePathResolver pathResolver =
+        DefaultSourcePathResolver.from(new SourcePathRuleFinder(resolver));
+    FakeBuildRule rule1 = new FakeBuildRule(BuildTargetFactory.newInstance(""//foo/bar:baz""));
+    resolver.addToIndex(rule1);
+    Path path = Paths.get(""blah"");
+    rule1.setOutputFile(path.toString());
+    FakeBuildRule rule2 = new FakeBuildRule(BuildTargetFactory.newInstance(""//foo/bar:waz""));
+    resolver.addToIndex(rule2);
+    DefaultBuildTargetSourcePath sourcePath1 =
+        DefaultBuildTargetSourcePath.of(rule1.getBuildTarget());
+    ForwardingBuildTargetSourcePath sourcePath2 =
+        ForwardingBuildTargetSourcePath.of(rule2.getBuildTarget(), sourcePath1);
+    assertEquals(path, pathResolver.getRelativePath(sourcePath1));
+    assertEquals(path, pathResolver.getRelativePath(sourcePath2));
+  }
+  @Test
+  public void explicitlySetSourcePathChainsToPathSourcePath() {
+    BuildRuleResolver resolver =
+        new SingleThreadedBuildRuleResolver(
+            TargetGraph.EMPTY, new DefaultTargetNodeToBuildRuleTransformer());
+    SourcePathResolver pathResolver =
+        DefaultSourcePathResolver.from(new SourcePathRuleFinder(resolver));
+    FakeBuildRule rule1 = new FakeBuildRule(BuildTargetFactory.newInstance(""//foo/bar:rule1""));
+    resolver.addToIndex(rule1);
+    FakeBuildRule rule2 = new FakeBuildRule(BuildTargetFactory.newInstance(""//foo/bar:rule2""));
+    resolver.addToIndex(rule2);
+    FakeBuildRule rule3 = new FakeBuildRule(BuildTargetFactory.newInstance(""//foo/bar:rule3""));
+    resolver.addToIndex(rule3);
+    PathSourcePath sourcePath0 = FakeSourcePath.of(""boom"");
+    ForwardingBuildTargetSourcePath sourcePath1 =
+        ForwardingBuildTargetSourcePath.of(rule1.getBuildTarget(), sourcePath0);
+    ForwardingBuildTargetSourcePath sourcePath2 =
+        ForwardingBuildTargetSourcePath.of(rule2.getBuildTarget(), sourcePath1);
+    assertEquals(
+        pathResolver.getRelativePath(sourcePath0), pathResolver.getRelativePath(sourcePath1));
+    assertEquals(
+        pathResolver.getRelativePath(sourcePath0), pathResolver.getRelativePath(sourcePath2));
+  }
+  @Test
+  public void sameBuildTargetsWithDifferentPathsAreDifferent() {
+    BuildTarget target = BuildTargetFactory.newInstance(""//foo/bar:baz"");
+    FakeBuildRule rule = new FakeBuildRule(target);
+    ExplicitBuildTargetSourcePath path1 =
+        ExplicitBuildTargetSourcePath.of(rule.getBuildTarget(), Paths.get(""something""));
+    ExplicitBuildTargetSourcePath path2 =
+        ExplicitBuildTargetSourcePath.of(rule.getBuildTarget(), Paths.get(""something else""));
+    assertNotEquals(path1, path2);
+    assertNotEquals(path1.hashCode(), path2.hashCode());
+  }",method,
+"  @Test
+  public void explicitlySetSourcePathChainsToPathSourcePath() {
+    BuildRuleResolver resolver =
+        new SingleThreadedBuildRuleResolver(
+            TargetGraph.EMPTY, new DefaultTargetNodeToBuildRuleTransformer());
+    SourcePathResolver pathResolver =
+        DefaultSourcePathResolver.from(new SourcePathRuleFinder(resolver));
+    FakeBuildRule rule1 = new FakeBuildRule(BuildTargetFactory.newInstance(""//foo/bar:rule1""));
+    resolver.addToIndex(rule1);
+    FakeBuildRule rule2 = new FakeBuildRule(BuildTargetFactory.newInstance(""//foo/bar:rule2""));
+    resolver.addToIndex(rule2);
+    FakeBuildRule rule3 = new FakeBuildRule(BuildTargetFactory.newInstance(""//foo/bar:rule3""));
+    resolver.addToIndex(rule3);
+    PathSourcePath sourcePath0 = FakeSourcePath.of(""boom"");
+    ForwardingBuildTargetSourcePath sourcePath1 =
+        ForwardingBuildTargetSourcePath.of(rule1.getBuildTarget(), sourcePath0);
+    ForwardingBuildTargetSourcePath sourcePath2 =
+        ForwardingBuildTargetSourcePath.of(rule2.getBuildTarget(), sourcePath1);
+    assertEquals(
+        pathResolver.getRelativePath(sourcePath0), pathResolver.getRelativePath(sourcePath1));
+    assertEquals(
+        pathResolver.getRelativePath(sourcePath0), pathResolver.getRelativePath(sourcePath2));
+  }
+  @Test
+  public void sameBuildTargetsWithDifferentPathsAreDifferent() {
+    BuildTarget target = BuildTargetFactory.newInstance(""//foo/bar:baz"");
+    FakeBuildRule rule = new FakeBuildRule(target);
+    ExplicitBuildTargetSourcePath path1 =
+        ExplicitBuildTargetSourcePath.of(rule.getBuildTarget(), Paths.get(""something""));
+    ExplicitBuildTargetSourcePath path2 =
+        ExplicitBuildTargetSourcePath.of(rule.getBuildTarget(), Paths.get(""something else""));
+    assertNotEquals(path1, path2);
+    assertNotEquals(path1.hashCode(), path2.hashCode());
+  }",method,
+"  @Test
+  public void sameBuildTargetsWithDifferentPathsAreDifferent() {
+    BuildTarget target = BuildTargetFactory.newInstance(""//foo/bar:baz"");
+    FakeBuildRule rule = new FakeBuildRule(target);
+    ExplicitBuildTargetSourcePath path1 =
+        ExplicitBuildTargetSourcePath.of(rule.getBuildTarget(), Paths.get(""something""));
+    ExplicitBuildTargetSourcePath path2 =
+        ExplicitBuildTargetSourcePath.of(rule.getBuildTarget(), Paths.get(""something else""));
+    assertNotEquals(path1, path2);
+    assertNotEquals(path1.hashCode(), path2.hashCode());
+  }",method,
+"public class MainActivity extends Activity implements SurfaceHolder.Callback {
+	MediaPlayer mediaPlayer;
+	SurfaceView surfaceView;
+	SurfaceHolder surfaceHolder;
+	boolean pausing = false;
+	AudioManager audioManager;
+	String stringPath = ""/sdcard/samplevideo.3gp"";
+	@Override
+	public void onCreate(Bundle savedInstanceState) {
+		super.onCreate(savedInstanceState);
+		setContentView(R.layout.activity_main);
+		audioManager = (AudioManager) getSystemService(Context.AUDIO_SERVICE);
+		int maxVolume = audioManager
+				.getStreamMaxVolume(AudioManager.STREAM_MUSIC);
+		int curVolume = audioManager.getStreamVolume(AudioManager.STREAM_MUSIC);
+		SeekBar volControl = (SeekBar) findViewById(R.id.volbar);
+		volControl.setMax(maxVolume);
+		volControl.setProgress(curVolume);
+		volControl
+				.setOnSeekBarChangeListener(new SeekBar.OnSeekBarChangeListener() {
+					@Override
+					public void onStopTrackingTouch(SeekBar arg0) {
+						// TODO Auto-generated method stub
+					}
+					@Override
+					public void onStartTrackingTouch(SeekBar arg0) {
+						// TODO Auto-generated method stub
+					}
+					@Override
+					public void onProgressChanged(SeekBar arg0, int arg1,
+							boolean arg2) {
+						// TODO Auto-generated method stub
+						audioManager.setStreamVolume(AudioManager.STREAM_MUSIC,
+								arg1, 0);
+					}
+				});
+		Button buttonPlayVideo = (Button) findViewById(R.id.playvideoplayer);
+		Button buttonPauseVideo = (Button) findViewById(R.id.pausevideoplayer);
+		getWindow().setFormat(PixelFormat.UNKNOWN);
+		surfaceView = (SurfaceView) findViewById(R.id.surfaceview);
+		surfaceHolder = surfaceView.getHolder();
+		surfaceHolder.addCallback(this);
+		surfaceHolder.setFixedSize(176, 144);
+		surfaceHolder.setType(SurfaceHolder.SURFACE_TYPE_PUSH_BUFFERS);
+		mediaPlayer = new MediaPlayer();
+		buttonPlayVideo.setOnClickListener(new Button.OnClickListener() {
+			@Override
+			public void onClick(View v) {
+				// TODO Auto-generated method stub
+				pausing = false;
+				if (mediaPlayer.isPlaying()) {
+					mediaPlayer.reset();
+				}
+				mediaPlayer.setAudioStreamType(AudioManager.STREAM_MUSIC);
+				mediaPlayer.setDisplay(surfaceHolder);
+				try {
+					mediaPlayer.setDataSource(stringPath);
+					mediaPlayer.prepare();
+				} catch (IllegalArgumentException e) {
+					// TODO Auto-generated catch block
+					e.printStackTrace();
+				} catch (IllegalStateException e) {
+					// TODO Auto-generated catch block
+					e.printStackTrace();
+				} catch (IOException e) {
+					// TODO Auto-generated catch block
+					e.printStackTrace();
+				}
+				mediaPlayer.start();
+			}
+		});
+		buttonPauseVideo.setOnClickListener(new Button.OnClickListener() {
+			@Override
+			public void onClick(View v) {
+				// TODO Auto-generated method stub
+				if (pausing) {
+					pausing = false;
+					mediaPlayer.start();
+				} else {
+					pausing = true;
+					mediaPlayer.pause();
+				}
+			}
+		});
+	}
+	@Override
+	public void surfaceChanged(SurfaceHolder holder, int format, int width,
+			int height) {
+		// TODO Auto-generated method stub
+	}
+	@Override
+	public void surfaceCreated(SurfaceHolder holder) {
+		// TODO Auto-generated method stub
+	}
+	@Override
+	public void surfaceDestroyed(SurfaceHolder holder) {
+		// TODO Auto-generated method stub
+	}
+}",class,
+"public final class BuildConfig {
+    public final static boolean DEBUG = true;
+}",class,
+"public final class R {
+    public static final class attr {
+    }
+    public static final class dimen {
+        public static final int activity_horizontal_margin=0x7f040000;
+        public static final int activity_vertical_margin=0x7f040001;
+    }
+    public static final class drawable {
+        public static final int ic_launcher=0x7f020000;
+    }
+    public static final class id {
+        public static final int action_settings=0x7f080004;
+        public static final int bindservice=0x7f080002;
+        public static final int startservice=0x7f080000;
+        public static final int stopservice=0x7f080001;
+        public static final int unbindservice=0x7f080003;
+    }
+    public static final class layout {
+        public static final int activity_main=0x7f030000;
+    }
+    public static final class menu {
+        public static final int main=0x7f070000;
+    }
+    public static final class string {
+        public static final int action_settings=0x7f050001;
+        public static final int app_name=0x7f050000;
+        public static final int hello_world=0x7f050002;
+    }
+    public static final class style {
+        public static final int AppBaseTheme=0x7f060000;
+        public static final int AppTheme=0x7f060001;
+    }
+}",class,
+"    public static final class attr {
+    }",class,
+"    public static final class dimen {
+        public static final int activity_horizontal_margin=0x7f040000;
+        public static final int activity_vertical_margin=0x7f040001;
+    }",class,
+"    public static final class drawable {
+        public static final int ic_launcher=0x7f020000;
+    }",class,
+"    public static final class id {
+        public static final int action_settings=0x7f080004;
+        public static final int bindservice=0x7f080002;
+        public static final int startservice=0x7f080000;
+        public static final int stopservice=0x7f080001;
+        public static final int unbindservice=0x7f080003;
+    }",class,
+"    public static final class layout {
+        public static final int activity_main=0x7f030000;
+    }",class,
+"    public static final class menu {
+        public static final int main=0x7f070000;
+    }",class,
+"    public static final class string {
+        public static final int action_settings=0x7f050001;
+        public static final int app_name=0x7f050000;
+        public static final int hello_world=0x7f050002;
+    }",class,
+"    public static final class style {
+        public static final int AppBaseTheme=0x7f060000;
+        public static final int AppTheme=0x7f060001;
+    }",class,
+"	@Override
+	public void onCreate(Bundle savedInstanceState) {
+		super.onCreate(savedInstanceState);
+		setContentView(R.layout.activity_main);
+		audioManager = (AudioManager) getSystemService(Context.AUDIO_SERVICE);
+		int maxVolume = audioManager
+				.getStreamMaxVolume(AudioManager.STREAM_MUSIC);
+		int curVolume = audioManager.getStreamVolume(AudioManager.STREAM_MUSIC);
+		SeekBar volControl = (SeekBar) findViewById(R.id.volbar);
+		volControl.setMax(maxVolume);
+		volControl.setProgress(curVolume);
+		volControl
+				.setOnSeekBarChangeListener(new SeekBar.OnSeekBarChangeListener() {
+					@Override
+					public void onStopTrackingTouch(SeekBar arg0) {
+						// TODO Auto-generated method stub
+					}
+					@Override
+					public void onStartTrackingTouch(SeekBar arg0) {
+						// TODO Auto-generated method stub
+					}
+					@Override
+					public void onProgressChanged(SeekBar arg0, int arg1,
+							boolean arg2) {
+						// TODO Auto-generated method stub
+						audioManager.setStreamVolume(AudioManager.STREAM_MUSIC,
+								arg1, 0);
+					}
+				});
+		Button buttonPlayVideo = (Button) findViewById(R.id.playvideoplayer);
+		Button buttonPauseVideo = (Button) findViewById(R.id.pausevideoplayer);
+		getWindow().setFormat(PixelFormat.UNKNOWN);
+		surfaceView = (SurfaceView) findViewById(R.id.surfaceview);
+		surfaceHolder = surfaceView.getHolder();
+		surfaceHolder.addCallback(this);
+		surfaceHolder.setFixedSize(176, 144);
+		surfaceHolder.setType(SurfaceHolder.SURFACE_TYPE_PUSH_BUFFERS);
+		mediaPlayer = new MediaPlayer();
+		buttonPlayVideo.setOnClickListener(new Button.OnClickListener() {
+			@Override
+			public void onClick(View v) {
+				// TODO Auto-generated method stub
+				pausing = false;
+				if (mediaPlayer.isPlaying()) {
+					mediaPlayer.reset();
+				}
+				mediaPlayer.setAudioStreamType(AudioManager.STREAM_MUSIC);
+				mediaPlayer.setDisplay(surfaceHolder);
+				try {
+					mediaPlayer.setDataSource(stringPath);
+					mediaPlayer.prepare();
+				} catch (IllegalArgumentException e) {
+					// TODO Auto-generated catch block
+					e.printStackTrace();
+				} catch (IllegalStateException e) {
+					// TODO Auto-generated catch block
+					e.printStackTrace();
+				} catch (IOException e) {
+					// TODO Auto-generated catch block
+					e.printStackTrace();
+				}
+				mediaPlayer.start();
+			}
+		});
+		buttonPauseVideo.setOnClickListener(new Button.OnClickListener() {
+			@Override
+			public void onClick(View v) {
+				// TODO Auto-generated method stub
+				if (pausing) {
+					pausing = false;
+					mediaPlayer.start();
+				} else {
+					pausing = true;
+					mediaPlayer.pause();
+				}
+			}
+		});
+	}",method,
+"		volControl
+				.setOnSeekBarChangeListener(new SeekBar.OnSeekBarChangeListener() {
+					@Override
+					public void onStopTrackingTouch(SeekBar arg0) {
+						// TODO Auto-generated method stub
+					}
+					@Override
+					public void onStartTrackingTouch(SeekBar arg0) {
+						// TODO Auto-generated method stub
+					}
+					@Override
+					public void onProgressChanged(SeekBar arg0, int arg1,
+							boolean arg2) {
+						// TODO Auto-generated method stub
+						audioManager.setStreamVolume(AudioManager.STREAM_MUSIC,
+								arg1, 0);
+					}
+				}",method,
+"					@Override
+					public void onStopTrackingTouch(SeekBar arg0) {
+						// TODO Auto-generated method stub
+					}",method,
+"					@Override
+					public void onStartTrackingTouch(SeekBar arg0) {
+						// TODO Auto-generated method stub
+					}",method,
+"					@Override
+					public void onProgressChanged(SeekBar arg0, int arg1,
+							boolean arg2) {
+						// TODO Auto-generated method stub
+						audioManager.setStreamVolume(AudioManager.STREAM_MUSIC,
+								arg1, 0);
+					}",method,
+"		buttonPlayVideo.setOnClickListener(new Button.OnClickListener() {
+			@Override
+			public void onClick(View v) {
+				// TODO Auto-generated method stub
+				pausing = false;
+				if (mediaPlayer.isPlaying()) {
+					mediaPlayer.reset();
+				}
+				mediaPlayer.setAudioStreamType(AudioManager.STREAM_MUSIC);
+				mediaPlayer.setDisplay(surfaceHolder);
+				try {
+					mediaPlayer.setDataSource(stringPath);
+					mediaPlayer.prepare();
+				} catch (IllegalArgumentException e) {
+					// TODO Auto-generated catch block
+					e.printStackTrace();
+				} catch (IllegalStateException e) {
+					// TODO Auto-generated catch block
+					e.printStackTrace();
+				} catch (IOException e) {
+					// TODO Auto-generated catch block
+					e.printStackTrace();
+				}
+				mediaPlayer.start();
+			}
+		}",method,
+"			@Override
+			public void onClick(View v) {
+				// TODO Auto-generated method stub
+				pausing = false;
+				if (mediaPlayer.isPlaying()) {
+					mediaPlayer.reset();
+				}
+				mediaPlayer.setAudioStreamType(AudioManager.STREAM_MUSIC);
+				mediaPlayer.setDisplay(surfaceHolder);
+				try {
+					mediaPlayer.setDataSource(stringPath);
+					mediaPlayer.prepare();
+				} catch (IllegalArgumentException e) {
+					// TODO Auto-generated catch block
+					e.printStackTrace();
+				} catch (IllegalStateException e) {
+					// TODO Auto-generated catch block
+					e.printStackTrace();
+				} catch (IOException e) {
+					// TODO Auto-generated catch block
+					e.printStackTrace();
+				}
+				mediaPlayer.start();
+			}",method,
+"		buttonPauseVideo.setOnClickListener(new Button.OnClickListener() {
+			@Override
+			public void onClick(View v) {
+				// TODO Auto-generated method stub
+				if (pausing) {
+					pausing = false;
+					mediaPlayer.start();
+				} else {
+					pausing = true;
+					mediaPlayer.pause();
+				}
+			}
+		}",method,
+"			@Override
+			public void onClick(View v) {
+				// TODO Auto-generated method stub
+				if (pausing) {
+					pausing = false;
+					mediaPlayer.start();
+				} else {
+					pausing = true;
+					mediaPlayer.pause();
+				}
+			}",method,
+"				if (pausing) {
+					pausing = false;
+					mediaPlayer.start();
+				}",method,
+"	@Override
+	public void surfaceChanged(SurfaceHolder holder, int format, int width,
+			int height) {
+		// TODO Auto-generated method stub
+	}",method,
+"	@Override
+	public void surfaceCreated(SurfaceHolder holder) {
+		// TODO Auto-generated method stub
+	}",method,
+"	@Override
+	public void surfaceDestroyed(SurfaceHolder holder) {
+		// TODO Auto-generated method stub
+	}",method,
+"public class AntArtifactBuildExtension extends ChunkBuildExtension {
+  @Override
+  public void generateTasksForArtifact(Artifact artifact, boolean preprocessing, ArtifactAntGenerationContext context,
+                                       CompositeGenerator generator) {
+    final ArtifactPropertiesProvider provider;
+    if (preprocessing) {
+      provider = AntArtifactPreProcessingPropertiesProvider.getInstance();
+    }
+    else {
+      provider = AntArtifactPostprocessingPropertiesProvider.getInstance();
+    }
+    final AntArtifactProperties properties = (AntArtifactProperties)artifact.getProperties(provider);
+    if (properties != null && properties.isEnabled()) {
+      final String path = VfsUtil.urlToPath(properties.getFileUrl());
+      String fileName = PathUtil.getFileName(path);
+      String dirPath = PathUtil.getParentPath(path);
+      final String relativePath = GenerationUtils.toRelativePath(dirPath, BuildProperties.getProjectBaseDir(context.getProject()),
+                                                                 BuildProperties.getProjectBaseDirProperty(), context.getGenerationOptions());
+      final Tag ant = new Tag(""ant"", Pair.create(""antfile"", fileName), Pair.create(""target"", properties.getTargetName()),
+                                     Pair.create(""dir"", relativePath));
+      final String outputPath = BuildProperties.propertyRef(context.getArtifactOutputProperty(artifact));
+      ant.add(new Property(JpsAntArtifactExtensionImpl.ARTIFACT_OUTPUT_PATH_PROPERTY, outputPath));
+      for (BuildFileProperty property : properties.getUserProperties()) {
+        ant.add(new Property(property.getPropertyName(), property.getPropertyValue()));
+      }
+      generator.add(ant);
+    }
+  }
+  @NotNull
+  @Override
+  public String[] getTargets(ModuleChunk chunk) {
+    return ArrayUtil.EMPTY_STRING_ARRAY;
+  }
+  @Override
+  public void process(Project project, ModuleChunk chunk, GenerationOptions genOptions, CompositeGenerator generator) {
+  }
+}",class,
+"  @Override
+  public void generateTasksForArtifact(Artifact artifact, boolean preprocessing, ArtifactAntGenerationContext context,
+                                       CompositeGenerator generator) {
+    final ArtifactPropertiesProvider provider;
+    if (preprocessing) {
+      provider = AntArtifactPreProcessingPropertiesProvider.getInstance();
+    }
+    else {
+      provider = AntArtifactPostprocessingPropertiesProvider.getInstance();
+    }
+    final AntArtifactProperties properties = (AntArtifactProperties)artifact.getProperties(provider);
+    if (properties != null && properties.isEnabled()) {
+      final String path = VfsUtil.urlToPath(properties.getFileUrl());
+      String fileName = PathUtil.getFileName(path);
+      String dirPath = PathUtil.getParentPath(path);
+      final String relativePath = GenerationUtils.toRelativePath(dirPath, BuildProperties.getProjectBaseDir(context.getProject()),
+                                                                 BuildProperties.getProjectBaseDirProperty(), context.getGenerationOptions());
+      final Tag ant = new Tag(""ant"", Pair.create(""antfile"", fileName), Pair.create(""target"", properties.getTargetName()),
+                                     Pair.create(""dir"", relativePath));
+      final String outputPath = BuildProperties.propertyRef(context.getArtifactOutputProperty(artifact));
+      ant.add(new Property(JpsAntArtifactExtensionImpl.ARTIFACT_OUTPUT_PATH_PROPERTY, outputPath));
+      for (BuildFileProperty property : properties.getUserProperties()) {
+        ant.add(new Property(property.getPropertyName(), property.getPropertyValue()));
+      }
+      generator.add(ant);
+    }
+  }",method,
+"    if (preprocessing) {
+      provider = AntArtifactPreProcessingPropertiesProvider.getInstance();
+    }",method,
+"  @NotNull
+  @Override
+  public String[] getTargets(ModuleChunk chunk) {
+    return ArrayUtil.EMPTY_STRING_ARRAY;
+  }",method,
+"  @Override
+  public void process(Project project, ModuleChunk chunk, GenerationOptions genOptions, CompositeGenerator generator) {
+  }",method,
+"public abstract class RecyclerViewCursorAdapter<VH extends RecyclerView.ViewHolder> extends
+        RecyclerView.Adapter<VH> {
+    private Cursor mCursor;
+    private int mRowIDColumn;
+    RecyclerViewCursorAdapter(Cursor c) {
+        setHasStableIds(true);
+        swapCursor(c);
+    }
+    protected abstract void onBindViewHolder(VH holder, Cursor cursor);
+    @Override
+    public void onBindViewHolder(VH holder, int position) {
+        if (!isDataValid(mCursor)) {
+            throw new IllegalStateException(""Cannot bind view holder when cursor is in invalid state."");
+        }
+        if (!mCursor.moveToPosition(position)) {
+            throw new IllegalStateException(""Could not move cursor to position "" + position
+                    + "" when trying to bind view holder"");
+        }
+        onBindViewHolder(holder, mCursor);
+    }
+    @Override
+    public int getItemViewType(int position) {
+        if (!mCursor.moveToPosition(position)) {
+            throw new IllegalStateException(""Could not move cursor to position "" + position
+                    + "" when trying to get item view type."");
+        }
+        return getItemViewType(position, mCursor);
+    }
+    protected abstract int getItemViewType(int position, Cursor cursor);
+    @Override
+    public int getItemCount() {
+        if (isDataValid(mCursor)) {
+            return mCursor.getCount();
+        } else {
+            return 0;
+        }
+    }
+    @Override
+    public long getItemId(int position) {
+        if (!isDataValid(mCursor)) {
+            throw new IllegalStateException(""Cannot lookup item id when cursor is in invalid state."");
+        }
+        if (!mCursor.moveToPosition(position)) {
+            throw new IllegalStateException(""Could not move cursor to position "" + position
+                    + "" when trying to get an item id"");
+        }
+        return mCursor.getLong(mRowIDColumn);
+    }
+    public void swapCursor(Cursor newCursor) {
+        if (newCursor == mCursor) {
+            return;
+        }
+        if (newCursor != null) {
+            mCursor = newCursor;
+            mRowIDColumn = mCursor.getColumnIndexOrThrow(MediaStore.Files.FileColumns._ID);
+            // notify the observers about the new cursor
+            notifyDataSetChanged();
+        } else {
+            notifyItemRangeRemoved(0, getItemCount());
+            mCursor = null;
+            mRowIDColumn = -1;
+        }
+    }
+    public Cursor getCursor() {
+        return mCursor;
+    }
+    private boolean isDataValid(Cursor cursor) {
+        return cursor != null && !cursor.isClosed();
+    }
+}",class,
+"    RecyclerViewCursorAdapter(Cursor c) {
+        setHasStableIds(true);
+        swapCursor(c);
+    }",method,
+"    @Override
+    public void onBindViewHolder(VH holder, int position) {
+        if (!isDataValid(mCursor)) {
+            throw new IllegalStateException(""Cannot bind view holder when cursor is in invalid state."");
+        }
+        if (!mCursor.moveToPosition(position)) {
+            throw new IllegalStateException(""Could not move cursor to position "" + position
+                    + "" when trying to bind view holder"");
+        }
+        onBindViewHolder(holder, mCursor);
+    }",method,
+"    @Override
+    public int getItemViewType(int position) {
+        if (!mCursor.moveToPosition(position)) {
+            throw new IllegalStateException(""Could not move cursor to position "" + position
+                    + "" when trying to get item view type."");
+        }
+        return getItemViewType(position, mCursor);
+    }",method,
+"    @Override
+    public int getItemCount() {
+        if (isDataValid(mCursor)) {
+            return mCursor.getCount();
+        } else {
+            return 0;
+        }
+    }",method,
+"    @Override
+    public long getItemId(int position) {
+        if (!isDataValid(mCursor)) {
+            throw new IllegalStateException(""Cannot lookup item id when cursor is in invalid state."");
+        }
+        if (!mCursor.moveToPosition(position)) {
+            throw new IllegalStateException(""Could not move cursor to position "" + position
+                    + "" when trying to get an item id"");
+        }
+        return mCursor.getLong(mRowIDColumn);
+    }",method,
+"    public void swapCursor(Cursor newCursor) {
+        if (newCursor == mCursor) {
+            return;
+        }
+        if (newCursor != null) {
+            mCursor = newCursor;
+            mRowIDColumn = mCursor.getColumnIndexOrThrow(MediaStore.Files.FileColumns._ID);
+            // notify the observers about the new cursor
+            notifyDataSetChanged();
+        } else {
+            notifyItemRangeRemoved(0, getItemCount());
+            mCursor = null;
+            mRowIDColumn = -1;
+        }
+    }",method,
+"        if (newCursor == mCursor) {
+            return;
+        }",method,
+"        if (newCursor != null) {
+            mCursor = newCursor;
+            mRowIDColumn = mCursor.getColumnIndexOrThrow(MediaStore.Files.FileColumns._ID);
+            // notify the observers about the new cursor
+            notifyDataSetChanged();
+        }",method,
+"    public Cursor getCursor() {
+        return mCursor;
+    }",method,
+"    private boolean isDataValid(Cursor cursor) {
+        return cursor != null && !cursor.isClosed();
+    }",method,
+"public final class ShareOatUtil {
+    private static final String TAG = ""Tinker.OatUtil"";
+    private ShareOatUtil() {
+        throw new UnsupportedOperationException();
+    }
+    public static String getOatFileInstructionSet(File oatFile) throws Throwable {
+        ShareElfFile elfFile = null;
+        String result = """";
+        try {
+            elfFile = new ShareElfFile(oatFile);
+            final ShareElfFile.SectionHeader roDataHdr = elfFile.getSectionHeaderByName("".rodata"");
+            if (roDataHdr == null) {
+                throw new IOException(""Unable to find .rodata section."");
+            }
+            final FileChannel channel = elfFile.getChannel();
+            channel.position(roDataHdr.shOffset);
+            final byte[] oatMagicAndVersion = new byte[8];
+            ShareElfFile.readUntilLimit(channel, ByteBuffer.wrap(oatMagicAndVersion), ""Failed to read oat magic and version."");
+            if (oatMagicAndVersion[0] != 'o'
+                    || oatMagicAndVersion[1] != 'a'
+                    || oatMagicAndVersion[2] != 't'
+                    || oatMagicAndVersion[3] != '\n') {
+                throw new IOException(
+                        String.format(""Bad oat magic: %x %x %x %x"",
+                                oatMagicAndVersion[0],
+                                oatMagicAndVersion[1],
+                                oatMagicAndVersion[2],
+                                oatMagicAndVersion[3])
+                );
+            }
+            final int versionOffsetFromOatBegin = 4;
+            final int versionBytes = 3;
+            final String oatVersion = new String(oatMagicAndVersion,
+                    versionOffsetFromOatBegin, versionBytes, Charset.forName(""ASCII""));
+            try {
+                Integer.parseInt(oatVersion);
+            } catch (NumberFormatException e) {
+                throw new IOException(""Bad oat version: "" + oatVersion);
+            }
+            ByteBuffer buffer = ByteBuffer.allocate(128);
+            buffer.order(elfFile.getDataOrder());
+            // TODO This is a risk point, since each oat version may use a different offset.
+            // So far it's ok. Perhaps we should use oatVersionNum to judge the right offset in
+            // the future.
+            final int isaNumOffsetFromOatBegin = 12;
+            channel.position(roDataHdr.shOffset + isaNumOffsetFromOatBegin);
+            buffer.limit(4);
+            ShareElfFile.readUntilLimit(channel, buffer, ""Failed to read isa num."");
+            int isaNum = buffer.getInt();
+            if (isaNum < 0 || isaNum >= InstructionSet.values().length) {
+                throw new IOException(""Bad isa num: "" + isaNum);
+            }
+            switch (InstructionSet.values()[isaNum]) {
+                case kArm:
+                case kThumb2:
+                    result = ""arm"";
+                    break;
+                case kArm64:
+                    result = ""arm64"";
+                    break;
+                case kX86:
+                    result = ""x86"";
+                    break;
+                case kX86_64:
+                    result = ""x86_64"";
+                    break;
+                case kMips:
+                    result = ""mips"";
+                    break;
+                case kMips64:
+                    result = ""mips64"";
+                    break;
+                case kNone:
+                    result = ""none"";
+                    break;
+                default:
+                    throw new IOException(""Should not reach here."");
+            }
+        } finally {
+            if (elfFile != null) {
+                try {
+                    elfFile.close();
+                } catch (Exception ignored) {
+                    // Ignored.
+                }
+            }
+        }
+        return result;
+    }
+    private enum InstructionSet {
+        kNone,
+        kArm,
+        kArm64,
+        kThumb2,
+        kX86,
+        kX86_64,
+        kMips,
+        kMips64
+    }
+}",class,
+"    private ShareOatUtil() {
+        throw new UnsupportedOperationException();
+    }",method,
+"    public static String getOatFileInstructionSet(File oatFile) throws Throwable {
+        ShareElfFile elfFile = null;
+        String result = """";
+        try {
+            elfFile = new ShareElfFile(oatFile);
+            final ShareElfFile.SectionHeader roDataHdr = elfFile.getSectionHeaderByName("".rodata"");
+            if (roDataHdr == null) {
+                throw new IOException(""Unable to find .rodata section."");
+            }
+            final FileChannel channel = elfFile.getChannel();
+            channel.position(roDataHdr.shOffset);
+            final byte[] oatMagicAndVersion = new byte[8];
+            ShareElfFile.readUntilLimit(channel, ByteBuffer.wrap(oatMagicAndVersion), ""Failed to read oat magic and version."");
+            if (oatMagicAndVersion[0] != 'o'
+                    || oatMagicAndVersion[1] != 'a'
+                    || oatMagicAndVersion[2] != 't'
+                    || oatMagicAndVersion[3] != '\n') {
+                throw new IOException(
+                        String.format(""Bad oat magic: %x %x %x %x"",
+                                oatMagicAndVersion[0],
+                                oatMagicAndVersion[1],
+                                oatMagicAndVersion[2],
+                                oatMagicAndVersion[3])
+                );
+            }
+            final int versionOffsetFromOatBegin = 4;
+            final int versionBytes = 3;
+            final String oatVersion = new String(oatMagicAndVersion,
+                    versionOffsetFromOatBegin, versionBytes, Charset.forName(""ASCII""));
+            try {
+                Integer.parseInt(oatVersion);
+            } catch (NumberFormatException e) {
+                throw new IOException(""Bad oat version: "" + oatVersion);
+            }
+            ByteBuffer buffer = ByteBuffer.allocate(128);
+            buffer.order(elfFile.getDataOrder());
+            // TODO This is a risk point, since each oat version may use a different offset.
+            // So far it's ok. Perhaps we should use oatVersionNum to judge the right offset in
+            // the future.
+            final int isaNumOffsetFromOatBegin = 12;
+            channel.position(roDataHdr.shOffset + isaNumOffsetFromOatBegin);
+            buffer.limit(4);
+            ShareElfFile.readUntilLimit(channel, buffer, ""Failed to read isa num."");
+            int isaNum = buffer.getInt();
+            if (isaNum < 0 || isaNum >= InstructionSet.values().length) {
+                throw new IOException(""Bad isa num: "" + isaNum);
+            }
+            switch (InstructionSet.values()[isaNum]) {
+                case kArm:
+                case kThumb2:
+                    result = ""arm"";
+                    break;
+                case kArm64:
+                    result = ""arm64"";
+                    break;
+                case kX86:
+                    result = ""x86"";
+                    break;
+                case kX86_64:
+                    result = ""x86_64"";
+                    break;
+                case kMips:
+                    result = ""mips"";
+                    break;
+                case kMips64:
+                    result = ""mips64"";
+                    break;
+                case kNone:
+                    result = ""none"";
+                    break;
+                default:
+                    throw new IOException(""Should not reach here."");
+            }
+        } finally {
+            if (elfFile != null) {
+                try {
+                    elfFile.close();
+                } catch (Exception ignored) {
+                    // Ignored.
+                }
+            }
+        }
+        return result;
+    }",method,
+"            if (roDataHdr == null) {
+                throw new IOException(""Unable to find .rodata section."");
+            }",method,
+"            if (oatMagicAndVersion[0] != 'o'
+                    || oatMagicAndVersion[1] != 'a'
+                    || oatMagicAndVersion[2] != 't'
+                    || oatMagicAndVersion[3] != '\n') {
+                throw new IOException(
+                        String.format(""Bad oat magic: %x %x %x %x"",
+                                oatMagicAndVersion[0],
+                                oatMagicAndVersion[1],
+                                oatMagicAndVersion[2],
+                                oatMagicAndVersion[3])
+                );
+            }",method,
+"            if (elfFile != null) {
+                try {
+                    elfFile.close();
+                } catch (Exception ignored) {
+                    // Ignored.
+                }
+            }",method,
+"public class DaemonClientInputForwarder implements Stoppable {
+    private static final Logger LOGGER = Logging.getLogger(DaemonClientInputForwarder.class);
+    public static final int DEFAULT_BUFFER_SIZE = 1024;
+    private final InputForwarder forwarder;
+    public DaemonClientInputForwarder(InputStream inputStream, Dispatch<? super InputMessage> dispatch,
+                                      ExecutorFactory executorFactory) {
+        this(inputStream, dispatch, executorFactory, DEFAULT_BUFFER_SIZE);
+    }
+    public DaemonClientInputForwarder(InputStream inputStream, Dispatch<? super InputMessage> dispatch,
+                                      ExecutorFactory executorFactory, int bufferSize) {
+        TextStream handler = new ForwardTextStreamToConnection(dispatch);
+        forwarder = new InputForwarder(inputStream, handler, executorFactory, bufferSize);
+    }
+    public void start() {
+        forwarder.start();
+    }
+    public void stop() {
+        forwarder.stop();
+    }
+    private static class ForwardTextStreamToConnection implements TextStream {
+        private final Dispatch<? super InputMessage> dispatch;
+        public ForwardTextStreamToConnection(Dispatch<? super InputMessage> dispatch) {
+            this.dispatch = dispatch;
+        }
+        public void text(String input) {
+            if (LOGGER.isDebugEnabled()) {
+                LOGGER.debug(""Forwarding input to daemon: '{}'"", input.replace(""\n"", ""\\n""));
+            }
+            dispatch.dispatch(new ForwardInput(input.getBytes()));
+        }
+        public void endOfStream(@Nullable Throwable failure) {
+            CloseInput message = new CloseInput();
+            LOGGER.debug(""Dispatching close input message: {}"", message);
+            dispatch.dispatch(message);
+        }
+    }
+}",class,
+"    private static class ForwardTextStreamToConnection implements TextStream {
+        private final Dispatch<? super InputMessage> dispatch;
+        public ForwardTextStreamToConnection(Dispatch<? super InputMessage> dispatch) {
+            this.dispatch = dispatch;
+        }
+        public void text(String input) {
+            if (LOGGER.isDebugEnabled()) {
+                LOGGER.debug(""Forwarding input to daemon: '{}'"", input.replace(""\n"", ""\\n""));
+            }
+            dispatch.dispatch(new ForwardInput(input.getBytes()));
+        }
+        public void endOfStream(@Nullable Throwable failure) {
+            CloseInput message = new CloseInput();
+            LOGGER.debug(""Dispatching close input message: {}"", message);
+            dispatch.dispatch(message);
+        }
+    }",class,
+"public class DaemonClientInterruptedException extends RuntimeException {
+    public DaemonClientInterruptedException(String message) {
+        super(message);
+    }
+    public DaemonClientInterruptedException(String message, Throwable cause) {
+        super(message, cause);
+    }
+}",class,
+"    public DaemonClientInputForwarder(InputStream inputStream, Dispatch<? super InputMessage> dispatch,
+                                      ExecutorFactory executorFactory) {
+        this(inputStream, dispatch, executorFactory, DEFAULT_BUFFER_SIZE);
+    }",method,
+"    public DaemonClientInputForwarder(InputStream inputStream, Dispatch<? super InputMessage> dispatch,
+                                      ExecutorFactory executorFactory, int bufferSize) {
+        TextStream handler = new ForwardTextStreamToConnection(dispatch);
+        forwarder = new InputForwarder(inputStream, handler, executorFactory, bufferSize);
+    }",method,
+"    public void start() {
+        forwarder.start();
+    }",method,
+"    public void stop() {
+        forwarder.stop();
+    }",method,
+"        public ForwardTextStreamToConnection(Dispatch<? super InputMessage> dispatch) {
+            this.dispatch = dispatch;
+        }",method,
+"        public void text(String input) {
+            if (LOGGER.isDebugEnabled()) {
+                LOGGER.debug(""Forwarding input to daemon: '{}'"", input.replace(""\n"", ""\\n""));
+            }
+            dispatch.dispatch(new ForwardInput(input.getBytes()));
+        }",method,
+"        public void endOfStream(@Nullable Throwable failure) {
+            CloseInput message = new CloseInput();
+            LOGGER.debug(""Dispatching close input message: {}"", message);
+            dispatch.dispatch(message);
+        }",method,
+"    public DaemonClientInterruptedException(String message) {
+        super(message);
+    }",method,
+"    public DaemonClientInterruptedException(String message, Throwable cause) {
+        super(message, cause);
+    }",method,
+"public class BadExceptionDeclaredInspection extends BadExceptionDeclaredInspectionBase {
+  @Override
+  protected InspectionGadgetsFix buildFix(Object... infos) {
+    final PsiElement context = (PsiElement)infos[0];
+    return SuppressForTestsScopeFix.build(this, context);
+  }
+  @Override
+  public JComponent createOptionsPanel() {
+    final JComponent panel = new JPanel(new GridBagLayout());
+    final ListTable table =
+      new ListTable(new ListWrappingTableModel(exceptions, InspectionGadgetsBundle.message(""exception.class.column.name"")));
+    final JPanel tablePanel =
+      UiUtils.createAddRemoveTreeClassChooserPanel(table, InspectionGadgetsBundle.message(""choose.exception.class""), ""java.lang.Throwable"");
+    final GridBagConstraints constraints = new GridBagConstraints();
+    constraints.gridx = 0;
+    constraints.gridy = 0;
+    constraints.weightx = 1.0;
+    constraints.weighty = 1.0;
+    constraints.fill = GridBagConstraints.BOTH;
+    panel.add(tablePanel, constraints);
+    final CheckBox checkBox2 =
+      new CheckBox(InspectionGadgetsBundle.message(""ignore.exceptions.declared.on.library.override.option""), this,
+                   ""ignoreLibraryOverrides"");
+    constraints.weighty = 0.0;
+    constraints.gridy = 1;
+    panel.add(checkBox2, constraints);
+    return panel;
+  }
+}",class,
+"  @Override
+  protected InspectionGadgetsFix buildFix(Object... infos) {
+    final PsiElement context = (PsiElement)infos[0];
+    return SuppressForTestsScopeFix.build(this, context);
+  }",method,
+"  @Override
+  public JComponent createOptionsPanel() {
+    final JComponent panel = new JPanel(new GridBagLayout());
+    final ListTable table =
+      new ListTable(new ListWrappingTableModel(exceptions, InspectionGadgetsBundle.message(""exception.class.column.name"")));
+    final JPanel tablePanel =
+      UiUtils.createAddRemoveTreeClassChooserPanel(table, InspectionGadgetsBundle.message(""choose.exception.class""), ""java.lang.Throwable"");
+    final GridBagConstraints constraints = new GridBagConstraints();
+    constraints.gridx = 0;
+    constraints.gridy = 0;
+    constraints.weightx = 1.0;
+    constraints.weighty = 1.0;
+    constraints.fill = GridBagConstraints.BOTH;
+    panel.add(tablePanel, constraints);
+    final CheckBox checkBox2 =
+      new CheckBox(InspectionGadgetsBundle.message(""ignore.exceptions.declared.on.library.override.option""), this,
+                   ""ignoreLibraryOverrides"");
+    constraints.weighty = 0.0;
+    constraints.gridy = 1;
+    panel.add(checkBox2, constraints);
+    return panel;
+  }",method,
+"public class PythonSdkEditorAdditionalOptionsProvider extends SdkEditorAdditionalOptionsProvider {
+  protected PythonSdkEditorAdditionalOptionsProvider() {
+    super(PythonSdkType.getInstance());
+  }
+  @Nullable
+  @Override
+  public AdditionalDataConfigurable createOptions(@NotNull Project project, @NotNull Sdk sdk) {
+    return new PythonSdkOptionsAdditionalDataConfigurable(project);
+  }
+  private static class PythonSdkOptionsAdditionalDataConfigurable implements AdditionalDataConfigurable {
+    private final Project myProject;
+    private Sdk mySdk;
+    private PythonSdkOptionsAdditionalDataConfigurable(Project project) {
+      myProject = project;
+    }
+    @Override
+    public void setSdk(Sdk sdk) {
+      mySdk = sdk;
+    }
+    @Nullable
+    @Override
+    public JComponent createComponent() {
+      final PackagesNotificationPanel notificationsArea = new PackagesNotificationPanel();
+      final JComponent notificationsComponent = notificationsArea.getComponent();
+      JPanel panel = new JPanel(new BorderLayout());
+      panel.add(notificationsComponent, BorderLayout.SOUTH);
+      PyInstalledPackagesPanel packagesPanel = new PyInstalledPackagesPanel(myProject, notificationsArea);
+      panel.add(packagesPanel, BorderLayout.CENTER);
+      packagesPanel.updatePackages(PyPackageManagers.getInstance().getManagementService(myProject, mySdk));
+      packagesPanel.updateNotifications(mySdk);
+      return panel;
+    }
+    @Override
+    public String getTabName() {
+      return ""Packages"";
+    }
+    @Override
+    public boolean isModified() {
+      return false;
+    }
+    @Override
+    public void apply() throws ConfigurationException {
+    }
+    @Override
+    public void reset() {
+    }
+  }
+}",class,
+"  private static class PythonSdkOptionsAdditionalDataConfigurable implements AdditionalDataConfigurable {
+    private final Project myProject;
+    private Sdk mySdk;
+    private PythonSdkOptionsAdditionalDataConfigurable(Project project) {
+      myProject = project;
+    }
+    @Override
+    public void setSdk(Sdk sdk) {
+      mySdk = sdk;
+    }
+    @Nullable
+    @Override
+    public JComponent createComponent() {
+      final PackagesNotificationPanel notificationsArea = new PackagesNotificationPanel();
+      final JComponent notificationsComponent = notificationsArea.getComponent();
+      JPanel panel = new JPanel(new BorderLayout());
+      panel.add(notificationsComponent, BorderLayout.SOUTH);
+      PyInstalledPackagesPanel packagesPanel = new PyInstalledPackagesPanel(myProject, notificationsArea);
+      panel.add(packagesPanel, BorderLayout.CENTER);
+      packagesPanel.updatePackages(PyPackageManagers.getInstance().getManagementService(myProject, mySdk));
+      packagesPanel.updateNotifications(mySdk);
+      return panel;
+    }
+    @Override
+    public String getTabName() {
+      return ""Packages"";
+    }
+    @Override
+    public boolean isModified() {
+      return false;
+    }
+    @Override
+    public void apply() throws ConfigurationException {
+    }
+    @Override
+    public void reset() {
+    }
+  }",class,
+"  protected PythonSdkEditorAdditionalOptionsProvider() {
+    super(PythonSdkType.getInstance());
+  }",method,
+"  @Nullable
+  @Override
+  public AdditionalDataConfigurable createOptions(@NotNull Project project, @NotNull Sdk sdk) {
+    return new PythonSdkOptionsAdditionalDataConfigurable(project);
+  }",method,
+"    private PythonSdkOptionsAdditionalDataConfigurable(Project project) {
+      myProject = project;
+    }",method,
+"    @Override
+    public void setSdk(Sdk sdk) {
+      mySdk = sdk;
+    }",method,
+"    @Nullable
+    @Override
+    public JComponent createComponent() {
+      final PackagesNotificationPanel notificationsArea = new PackagesNotificationPanel();
+      final JComponent notificationsComponent = notificationsArea.getComponent();
+      JPanel panel = new JPanel(new BorderLayout());
+      panel.add(notificationsComponent, BorderLayout.SOUTH);
+      PyInstalledPackagesPanel packagesPanel = new PyInstalledPackagesPanel(myProject, notificationsArea);
+      panel.add(packagesPanel, BorderLayout.CENTER);
+      packagesPanel.updatePackages(PyPackageManagers.getInstance().getManagementService(myProject, mySdk));
+      packagesPanel.updateNotifications(mySdk);
+      return panel;
+    }",method,
+"    @Override
+    public String getTabName() {
+      return ""Packages"";
+    }",method,
+"    @Override
+    public boolean isModified() {
+      return false;
+    }",method,
+"    @Override
+    public void apply() throws ConfigurationException {
+    }",method,
+"    @Override
+    public void reset() {
+    }",method,
+"import java.util.Set;
+class UiInfoUsageCollector extends UsagesCollector {
+  @NotNull
+  @Override
+  public Set<UsageDescriptor> getUsages() {
+    Set<UsageDescriptor> set = new THashSet<>();
+    add(set, ""Nav Bar visible"", navbar() ? 1 : 0);
+    add(set, ""Nav Bar floating"", navbar() ? 0 : 1);
+    add(set, ""Toolbar visible"", toolbar() ? 1 : 0);
+    add(set, ""Toolbar hidden"", toolbar() ? 0 : 1);
+    add(set, ""Toolbar + NavBar"", !toolbar() && navbar() ? 1 : 0);
+    add(set, ""Toolbar and NavBar hidden"", !toolbar() && !navbar() ? 1 : 0);
+    add(set, ""Status bar visible"", status() ? 1 : 0);
+    add(set, ""Status bar hidden"", status() ? 0 : 1);
+    add(set, ""Tool Window buttons visible"", stripes() ? 1 : 0);
+    add(set, ""Tool Window buttons hidden"", stripes() ? 0 : 1);
+    add(set, ""Recent Files = 15"", recent() == 15 ? 1 : 0);
+    add(set, ""Recent Files (15, 30]"", 15 < recent() && recent() < 31 ? 1 : 0);
+    add(set, ""Recent Files (30, 50]"", 30 < recent() && recent() < 51 ? 1 : 0);
+    add(set, ""Recent Files > 50"", 50 < recent() ? 1 : 0);
+    add(set, ""Block cursor"", EditorSettingsExternalizable.getInstance().isBlockCursor() ? 1 : 0);
+    add(set, ""Line Numbers"", EditorSettingsExternalizable.getInstance().isLineNumbersShown() ? 1 : 0);
+    add(set, ""Gutter Icons"", EditorSettingsExternalizable.getInstance().areGutterIconsShown() ? 1 : 0);
+    add(set, ""Soft Wraps"", EditorSettingsExternalizable.getInstance().isUseSoftWraps() ? 1 : 0);
+    add(set, ""Tabs None"", tabPlace() == 0 ? 1 : 0);
+    add(set, ""Tabs Top"", tabPlace() == SwingConstants.TOP ? 1 : 0);
+    add(set, ""Tabs Bottom"", tabPlace() == SwingConstants.BOTTOM ? 1 : 0);
+    add(set, ""Tabs Left"", tabPlace() == SwingConstants.LEFT ? 1 : 0);
+    add(set, ""Tabs Right"", tabPlace() == SwingConstants.RIGHT ? 1 : 0);
+    add(set, ""Retina"", UIUtil.isRetina() ? 1 : 0);
+    add(set, ""Show tips on startup"", GeneralSettings.getInstance().isShowTipsOnStartup() ? 1 : 0);
+    return set;
+  }
+  @NotNull
+  @Override
+  public GroupDescriptor getGroupId() {
+    return GroupDescriptor.create(""UI Features"");
+  }
+  private static void add(Set<UsageDescriptor> set, String key, int value) {
+    set.add(new UsageDescriptor(key, value));
+  }
+  private static int tabPlace() {
+    return UISettings.getInstance().getEditorTabPlacement();
+  }
+  private static int recent() {
+    return UISettings.getInstance().getRecentFilesLimit();
+  }
+  private static boolean stripes() {
+    return UISettings.getInstance().getHideToolStripes();
+  }
+  private static boolean status() {
+    return UISettings.getInstance().getShowStatusBar();
+  }
+  private static boolean toolbar() {
+    return UISettings.getInstance().getShowMainToolbar();
+  }
+  private static boolean navbar() {
+    return UISettings.getInstance().getShowNavigationBar();
+  }
+}",class,
+"  @NotNull
+  @Override
+  public Set<UsageDescriptor> getUsages() {
+    Set<UsageDescriptor> set = new THashSet<>();
+    add(set, ""Nav Bar visible"", navbar() ? 1 : 0);
+    add(set, ""Nav Bar floating"", navbar() ? 0 : 1);
+    add(set, ""Toolbar visible"", toolbar() ? 1 : 0);
+    add(set, ""Toolbar hidden"", toolbar() ? 0 : 1);
+    add(set, ""Toolbar + NavBar"", !toolbar() && navbar() ? 1 : 0);
+    add(set, ""Toolbar and NavBar hidden"", !toolbar() && !navbar() ? 1 : 0);
+    add(set, ""Status bar visible"", status() ? 1 : 0);
+    add(set, ""Status bar hidden"", status() ? 0 : 1);
+    add(set, ""Tool Window buttons visible"", stripes() ? 1 : 0);
+    add(set, ""Tool Window buttons hidden"", stripes() ? 0 : 1);
+    add(set, ""Recent Files = 15"", recent() == 15 ? 1 : 0);
+    add(set, ""Recent Files (15, 30]"", 15 < recent() && recent() < 31 ? 1 : 0);
+    add(set, ""Recent Files (30, 50]"", 30 < recent() && recent() < 51 ? 1 : 0);
+    add(set, ""Recent Files > 50"", 50 < recent() ? 1 : 0);
+    add(set, ""Block cursor"", EditorSettingsExternalizable.getInstance().isBlockCursor() ? 1 : 0);
+    add(set, ""Line Numbers"", EditorSettingsExternalizable.getInstance().isLineNumbersShown() ? 1 : 0);
+    add(set, ""Gutter Icons"", EditorSettingsExternalizable.getInstance().areGutterIconsShown() ? 1 : 0);
+    add(set, ""Soft Wraps"", EditorSettingsExternalizable.getInstance().isUseSoftWraps() ? 1 : 0);
+    add(set, ""Tabs None"", tabPlace() == 0 ? 1 : 0);
+    add(set, ""Tabs Top"", tabPlace() == SwingConstants.TOP ? 1 : 0);
+    add(set, ""Tabs Bottom"", tabPlace() == SwingConstants.BOTTOM ? 1 : 0);
+    add(set, ""Tabs Left"", tabPlace() == SwingConstants.LEFT ? 1 : 0);
+    add(set, ""Tabs Right"", tabPlace() == SwingConstants.RIGHT ? 1 : 0);
+    add(set, ""Retina"", UIUtil.isRetina() ? 1 : 0);
+    add(set, ""Show tips on startup"", GeneralSettings.getInstance().isShowTipsOnStartup() ? 1 : 0);
+    return set;
+  }",method,
+"  @NotNull
+  @Override
+  public GroupDescriptor getGroupId() {
+    return GroupDescriptor.create(""UI Features"");
+  }",method,
+"  private static void add(Set<UsageDescriptor> set, String key, int value) {
+    set.add(new UsageDescriptor(key, value));
+  }",method,
+"  private static int tabPlace() {
+    return UISettings.getInstance().getEditorTabPlacement();
+  }",method,
+"  private static int recent() {
+    return UISettings.getInstance().getRecentFilesLimit();
+  }",method,
+"  private static boolean stripes() {
+    return UISettings.getInstance().getHideToolStripes();
+  }",method,
+"  private static boolean status() {
+    return UISettings.getInstance().getShowStatusBar();
+  }",method,
+"  private static boolean toolbar() {
+    return UISettings.getInstance().getShowMainToolbar();
+  }",method,
+"  private static boolean navbar() {
+    return UISettings.getInstance().getShowNavigationBar();
+  }",method,
+"public class DrawingCache implements IDrawingCache<DrawingCacheHolder>, Poolable<DrawingCache> {
+    private final DrawingCacheHolder mHolder;
+    private int mSize = 0;
+    private DrawingCache mNextElement;
+    private boolean mIsPooled;
+    private int referenceCount = 0;
+    public DrawingCache() {
+        mHolder = new DrawingCacheHolder();
+    }
+    @Override
+    public void build(int w, int h, int density, boolean checkSizeEquals, int bitsPerPixel) {
+        final DrawingCacheHolder holder = mHolder;
+        holder.buildCache(w, h, density, checkSizeEquals, bitsPerPixel);
+        mSize = mHolder.bitmap.getRowBytes() * mHolder.bitmap.getHeight();
+    }
+    @Override
+    public void erase() {
+        mHolder.erase();
+    }
+    @Override
+    public DrawingCacheHolder get() {
+        final DrawingCacheHolder holder = mHolder;
+        if (holder.bitmap == null) {
+            return null;
+        }
+        return mHolder;
+    }
+    @Override
+    public void destroy() {
+        if (mHolder != null) {
+            mHolder.recycle();
+        }
+        mSize = 0;
+        referenceCount = 0;
+    }
+    @Override
+    public int size() {
+        return mSize;
+    }
+    @Override
+    public void setNextPoolable(DrawingCache element) {
+        mNextElement = element;
+    }
+    @Override
+    public DrawingCache getNextPoolable() {
+        return mNextElement;
+    }
+    @Override
+    public boolean isPooled() {
+        return mIsPooled;
+    }
+    @Override
+    public void setPooled(boolean isPooled) {
+        mIsPooled = isPooled;
+    }
+    @Override
+    public synchronized boolean hasReferences() {
+        return referenceCount > 0;
+    }
+    @Override
+    public synchronized void increaseReference() {
+        referenceCount++;
+    }
+    @Override
+    public synchronized void decreaseReference() {
+        referenceCount--;
+    }
+    @Override
+    public int width() {
+        return mHolder.width;
+    }
+    @Override
+    public int height() {
+        return mHolder.height;
+    }
+}",class,
+"    public DrawingCache() {
+        mHolder = new DrawingCacheHolder();
+    }",method,
+"    @Override
+    public void build(int w, int h, int density, boolean checkSizeEquals, int bitsPerPixel) {
+        final DrawingCacheHolder holder = mHolder;
+        holder.buildCache(w, h, density, checkSizeEquals, bitsPerPixel);
+        mSize = mHolder.bitmap.getRowBytes() * mHolder.bitmap.getHeight();
+    }",method,
+"    @Override
+    public void erase() {
+        mHolder.erase();
+    }",method,
+"    @Override
+    public DrawingCacheHolder get() {
+        final DrawingCacheHolder holder = mHolder;
+        if (holder.bitmap == null) {
+            return null;
+        }
+        return mHolder;
+    }",method,
+"        if (holder.bitmap == null) {
+            return null;
+        }",method,

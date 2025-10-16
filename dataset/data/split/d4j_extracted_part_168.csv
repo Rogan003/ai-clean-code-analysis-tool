@@ -1,0 +1,1574 @@
+code_snippet,type,score
+"    public void setAccountMgr(AccountMgr accountMgr) {
+        this.accountMgr = accountMgr;
+    }",method,
+    public void destroy() {},method,
+"    public void doFilter(ServletRequest request, ServletResponse response,
+                         FilterChain chain) throws IOException, ServletException {
+        String url = null;
+        if (request instanceof HttpServletRequest) {
+            url = ((HttpServletRequest) request).getRequestURL().toString();
+        }
+        String domain = URLUtils.getDomain(url);
+        if (domain != """") {
+            SystemConstant.setDOMAIN_URL(domain);
+        }
+        // all requests count into realtime charts
+        SystemVisitorLog.count();
+        if (URLUtils.shouldLog(url))
+            SystemVisitorLog.count(request.getRemoteAddr());
+        if (SystemConstant.DOMAIN_URL.isEmpty()) {
+            SystemConstant.DOMAIN_URL = request.getServerName();
+            if (request.getServerPort() != 80) {
+                SystemConstant.DOMAIN_URL += "":"" + request.getServerPort();
+            }
+        }
+        HttpSession session = ((HttpServletRequest) request).getSession();
+        Object userAccount = session.getAttribute(ContextManager.KEY_ACCOUNT);
+        Object userName = session.getAttribute(ContextManager.KEY_NAME);
+        boolean logined = userAccount != null;
+        SystemConstant.README_PATH = session.getServletContext().getRealPath(File.separator + ""README.md"");
+        SystemConstant.ROOT = session.getServletContext().getRealPath(File.separator);
+        if (!logined) {
+            SimpleSSOUser user = SimpleUserUtil
+                    .findUser((HttpServletRequest) request);
+            if (user != null) {
+                SystemConstant.user = user;
+                String emailPrefix = user.getEmailPrefix();
+                User rapUser = accountMgr.getUser(emailPrefix);
+                if (rapUser == null) {
+                    // proceed register
+                    User newUser = new User();
+                    newUser.setAccount(emailPrefix);
+                    newUser.setPassword(""RESERVED"");
+                    String name = user.getNickNameCn();
+                    if (name == null || name.isEmpty()) {
+                        name = user.getLastName();
+                    }
+                    newUser.setName(name);
+                    newUser.setEmail(user.getEmailAddr());
+                    newUser.setRealname(user.getLastName());
+                    newUser.setEmpId(user.getEmpId());
+                    getAccountMgr().addUser(newUser);
+                    rapUser = accountMgr.getUser(emailPrefix);
+                    if (rapUser == null) {
+                        try {
+                            throw new Exception(""user register failed!"");
+                        } catch (Exception e) {
+                            e.printStackTrace();
+                        }
+                    }
+                }
+                // proceed login
+                session.setAttribute(ContextManager.KEY_ACCOUNT, rapUser.getAccount());
+                session.setAttribute(ContextManager.KEY_USER_ID, rapUser.getId());
+                session.setAttribute(ContextManager.KEY_NAME, rapUser.getName());
+                session.setAttribute(ContextManager.KEY_EMP_ID, rapUser.getEmpId());
+                Set<Role> roleList = new HashSet<Role>();
+                for (Role role : rapUser.getRoleList()) {
+                    Role copied = new Role();
+                    copied.setId(role.getId());
+                    copied.setName(role.getName());
+                    roleList.add(copied);
+                }
+                session.setAttribute(ContextManager.KEY_ROLE_LIST, roleList);
+            }
+        } else {
+            if (URLUtils.shouldLog(url)) {
+                User logUser = new User();
+                logUser.setAccount((String) userAccount);
+                logUser.setName((String) userName);
+                SystemVisitorLog.count(logUser);
+            }
+        }
+        chain.doFilter(request, response);
+    }",method,
+"        if (request instanceof HttpServletRequest) {
+            url = ((HttpServletRequest) request).getRequestURL().toString();
+        }",method,
+"        if (domain != """") {
+            SystemConstant.setDOMAIN_URL(domain);
+        }",method,
+"        if (!logined) {
+            SimpleSSOUser user = SimpleUserUtil
+                    .findUser((HttpServletRequest) request);
+            if (user != null) {
+                SystemConstant.user = user;
+                String emailPrefix = user.getEmailPrefix();
+                User rapUser = accountMgr.getUser(emailPrefix);
+                if (rapUser == null) {
+                    // proceed register
+                    User newUser = new User();
+                    newUser.setAccount(emailPrefix);
+                    newUser.setPassword(""RESERVED"");
+                    String name = user.getNickNameCn();
+                    if (name == null || name.isEmpty()) {
+                        name = user.getLastName();
+                    }
+                    newUser.setName(name);
+                    newUser.setEmail(user.getEmailAddr());
+                    newUser.setRealname(user.getLastName());
+                    newUser.setEmpId(user.getEmpId());
+                    getAccountMgr().addUser(newUser);
+                    rapUser = accountMgr.getUser(emailPrefix);
+                    if (rapUser == null) {
+                        try {
+                            throw new Exception(""user register failed!"");
+                        } catch (Exception e) {
+                            e.printStackTrace();
+                        }
+                    }
+                }
+                // proceed login
+                session.setAttribute(ContextManager.KEY_ACCOUNT, rapUser.getAccount());
+                session.setAttribute(ContextManager.KEY_USER_ID, rapUser.getId());
+                session.setAttribute(ContextManager.KEY_NAME, rapUser.getName());
+                session.setAttribute(ContextManager.KEY_EMP_ID, rapUser.getEmpId());
+                Set<Role> roleList = new HashSet<Role>();
+                for (Role role : rapUser.getRoleList()) {
+                    Role copied = new Role();
+                    copied.setId(role.getId());
+                    copied.setName(role.getName());
+                    roleList.add(copied);
+                }
+                session.setAttribute(ContextManager.KEY_ROLE_LIST, roleList);
+            }
+        }",method,
+"            if (user != null) {
+                SystemConstant.user = user;
+                String emailPrefix = user.getEmailPrefix();
+                User rapUser = accountMgr.getUser(emailPrefix);
+                if (rapUser == null) {
+                    // proceed register
+                    User newUser = new User();
+                    newUser.setAccount(emailPrefix);
+                    newUser.setPassword(""RESERVED"");
+                    String name = user.getNickNameCn();
+                    if (name == null || name.isEmpty()) {
+                        name = user.getLastName();
+                    }
+                    newUser.setName(name);
+                    newUser.setEmail(user.getEmailAddr());
+                    newUser.setRealname(user.getLastName());
+                    newUser.setEmpId(user.getEmpId());
+                    getAccountMgr().addUser(newUser);
+                    rapUser = accountMgr.getUser(emailPrefix);
+                    if (rapUser == null) {
+                        try {
+                            throw new Exception(""user register failed!"");
+                        } catch (Exception e) {
+                            e.printStackTrace();
+                        }
+                    }
+                }
+                // proceed login
+                session.setAttribute(ContextManager.KEY_ACCOUNT, rapUser.getAccount());
+                session.setAttribute(ContextManager.KEY_USER_ID, rapUser.getId());
+                session.setAttribute(ContextManager.KEY_NAME, rapUser.getName());
+                session.setAttribute(ContextManager.KEY_EMP_ID, rapUser.getEmpId());
+                Set<Role> roleList = new HashSet<Role>();
+                for (Role role : rapUser.getRoleList()) {
+                    Role copied = new Role();
+                    copied.setId(role.getId());
+                    copied.setName(role.getName());
+                    roleList.add(copied);
+                }
+                session.setAttribute(ContextManager.KEY_ROLE_LIST, roleList);
+            }",method,
+"                if (rapUser == null) {
+                    // proceed register
+                    User newUser = new User();
+                    newUser.setAccount(emailPrefix);
+                    newUser.setPassword(""RESERVED"");
+                    String name = user.getNickNameCn();
+                    if (name == null || name.isEmpty()) {
+                        name = user.getLastName();
+                    }
+                    newUser.setName(name);
+                    newUser.setEmail(user.getEmailAddr());
+                    newUser.setRealname(user.getLastName());
+                    newUser.setEmpId(user.getEmpId());
+                    getAccountMgr().addUser(newUser);
+                    rapUser = accountMgr.getUser(emailPrefix);
+                    if (rapUser == null) {
+                        try {
+                            throw new Exception(""user register failed!"");
+                        } catch (Exception e) {
+                            e.printStackTrace();
+                        }
+                    }
+                }",method,
+"                    if (rapUser == null) {
+                        try {
+                            throw new Exception(""user register failed!"");
+                        } catch (Exception e) {
+                            e.printStackTrace();
+                        }
+                    }",method,
+"    public void init(FilterConfig arg0) throws ServletException {
+    }",method,
+"public class InstantTypeHandlerTest extends BaseTypeHandlerTest {
+  private static final TypeHandler<Instant> TYPE_HANDLER = new InstantTypeHandler();
+  private static final Instant INSTANT = Instant.now();
+  private static final Timestamp TIMESTAMP = Timestamp.from(INSTANT);
+  @Override
+  @Test
+  public void shouldSetParameter() throws Exception {
+    TYPE_HANDLER.setParameter(ps, 1, INSTANT, null);
+    verify(ps).setTimestamp(1, TIMESTAMP);
+  }
+  @Override
+  @Test
+  public void shouldGetResultFromResultSetByName() throws Exception {
+    when(rs.getTimestamp(""column"")).thenReturn(TIMESTAMP);
+    assertEquals(INSTANT, TYPE_HANDLER.getResult(rs, ""column""));
+  }
+  @Override
+  @Test
+  public void shouldGetResultNullFromResultSetByName() throws Exception {
+    when(rs.getTimestamp(""column"")).thenReturn(null);
+    when(rs.wasNull()).thenReturn(true);
+    assertNull(TYPE_HANDLER.getResult(rs, ""column""));
+  }
+  @Override
+  @Test
+  public void shouldGetResultFromResultSetByPosition() throws Exception {
+    when(rs.getTimestamp(1)).thenReturn(TIMESTAMP);
+    assertEquals(INSTANT, TYPE_HANDLER.getResult(rs, 1));
+  }
+  @Override
+  @Test
+  public void shouldGetResultNullFromResultSetByPosition() throws Exception {
+    when(rs.getTimestamp(1)).thenReturn(null);
+    when(rs.wasNull()).thenReturn(true);
+    assertNull(TYPE_HANDLER.getResult(rs, 1));
+  }
+  @Override
+  @Test
+  public void shouldGetResultFromCallableStatement() throws Exception {
+    when(cs.getTimestamp(1)).thenReturn(TIMESTAMP);
+    assertEquals(INSTANT, TYPE_HANDLER.getResult(cs, 1));
+  }
+  @Override
+  @Test
+  public void shouldGetResultNullFromCallableStatement() throws Exception {
+    when(cs.getTimestamp(1)).thenReturn(null);
+    when(cs.wasNull()).thenReturn(true);
+    assertNull(TYPE_HANDLER.getResult(cs, 1));
+  }
+}",class,
+"  @Override
+  @Test
+  public void shouldSetParameter() throws Exception {
+    TYPE_HANDLER.setParameter(ps, 1, INSTANT, null);
+    verify(ps).setTimestamp(1, TIMESTAMP);
+  }",method,
+"  @Override
+  @Test
+  public void shouldGetResultFromResultSetByName() throws Exception {
+    when(rs.getTimestamp(""column"")).thenReturn(TIMESTAMP);
+    assertEquals(INSTANT, TYPE_HANDLER.getResult(rs, ""column""));
+  }",method,
+"  @Override
+  @Test
+  public void shouldGetResultNullFromResultSetByName() throws Exception {
+    when(rs.getTimestamp(""column"")).thenReturn(null);
+    when(rs.wasNull()).thenReturn(true);
+    assertNull(TYPE_HANDLER.getResult(rs, ""column""));
+  }",method,
+"  @Override
+  @Test
+  public void shouldGetResultFromResultSetByPosition() throws Exception {
+    when(rs.getTimestamp(1)).thenReturn(TIMESTAMP);
+    assertEquals(INSTANT, TYPE_HANDLER.getResult(rs, 1));
+  }",method,
+"  @Override
+  @Test
+  public void shouldGetResultNullFromResultSetByPosition() throws Exception {
+    when(rs.getTimestamp(1)).thenReturn(null);
+    when(rs.wasNull()).thenReturn(true);
+    assertNull(TYPE_HANDLER.getResult(rs, 1));
+  }",method,
+"  @Override
+  @Test
+  public void shouldGetResultFromCallableStatement() throws Exception {
+    when(cs.getTimestamp(1)).thenReturn(TIMESTAMP);
+    assertEquals(INSTANT, TYPE_HANDLER.getResult(cs, 1));
+  }",method,
+"  @Override
+  @Test
+  public void shouldGetResultNullFromCallableStatement() throws Exception {
+    when(cs.getTimestamp(1)).thenReturn(null);
+    when(cs.wasNull()).thenReturn(true);
+    assertNull(TYPE_HANDLER.getResult(cs, 1));
+  }",method,
+"import java.util.stream.Collectors;
+class HeaderPathNormalizer {
+  private final SourcePathResolver pathResolver;
+  private final ImmutableMap<Path, SourcePath> headers;
+  private final ImmutableMap<Path, SourcePath> normalized;
+  private final ImmutableMap<Path, Path> prefixMap;
+  protected HeaderPathNormalizer(
+      SourcePathResolver pathResolver,
+      ImmutableMap<Path, SourcePath> headers,
+      ImmutableMap<Path, SourcePath> normalized,
+      ImmutableMap<Path, Path> prefixMap) {
+    this.pathResolver = pathResolver;
+    this.headers = headers;
+    this.normalized = normalized;
+    this.prefixMap = prefixMap;
+  }
+  public static HeaderPathNormalizer empty(SourcePathResolver pathResolver) {
+    return new HeaderPathNormalizer(
+        pathResolver, ImmutableMap.of(), ImmutableMap.of(), ImmutableMap.of());
+  }
+  private static <T> Optional<Map.Entry<Path, T>> pathLookup(Path path, Map<Path, T> map) {
+    while (path != null) {
+      T res = map.get(path);
+      if (res != null) {
+        return Optional.of(new AbstractMap.SimpleEntry<>(path, res));
+      }
+      path = path.getParent();
+    }
+    return Optional.empty();
+  }
+  public Optional<Path> getAbsolutePathForUnnormalizedPath(Path unnormalizedPath) {
+    Preconditions.checkArgument(unnormalizedPath.isAbsolute());
+    Optional<Map.Entry<Path, SourcePath>> result = pathLookup(unnormalizedPath, normalized);
+    if (!result.isPresent()) {
+      return Optional.empty();
+    }
+    return Optional.of(
+        pathResolver
+            .getAbsolutePath(result.get().getValue())
+            .resolve(result.get().getKey().relativize(unnormalizedPath)));
+  }
+  public SourcePath getSourcePathForAbsolutePath(Path absolutePath) {
+    Preconditions.checkArgument(absolutePath.isAbsolute());
+    Optional<Map.Entry<Path, SourcePath>> path = pathLookup(absolutePath, headers);
+    Preconditions.checkState(path.isPresent(), ""no headers mapped to %s"", absolutePath);
+    return path.get().getValue();
+  }
+  public ImmutableMap<Path, Path> getPrefixMap() {
+    return prefixMap;
+  }
+  public static class Builder {
+    private final SourcePathResolver pathResolver;
+    private final Map<Path, SourcePath> headers = new LinkedHashMap<>();
+    private final Map<Path, SourcePath> normalized = new LinkedHashMap<>();
+    private final Map<Path, Path> prefixMap = new LinkedHashMap<>();
+    public Builder(SourcePathResolver pathResolver) {
+      this.pathResolver = pathResolver;
+    }
+    private <V> void put(Map<Path, V> map, Path key, V value) {
+      Preconditions.checkArgument(key.isAbsolute());
+      key = MorePaths.normalize(key);
+      // Hack: Using dropInternalCaches here because `toString` is called on caches by
+      // PathShortener, and many Paths are constructed and stored due to HeaderPathNormalizer
+      // containing exported headers of all transitive dependencies of a library. This amounts to
+      // large memory usage. See t15541313. Once that is fixed, this hack can be deleted.
+      V previous = map.put(MorePaths.dropInternalCaches(key), value);
+      Preconditions.checkState(
+          previous == null || previous.equals(value),
+          ""Expected header path to be consistent but key %s mapped to different values: ""
+              + ""(old: %s, new: %s)"",
+          key,
+          previous,
+          value);
+    }
+    public Builder addSymlinkTree(SourcePath root, ImmutableMap<Path, SourcePath> headerMap) {
+      // Add the headers from the symlink tree.
+      Path rootPath = pathResolver.getAbsolutePath(root);
+      for (Map.Entry<Path, SourcePath> entry : headerMap.entrySet()) {
+        addHeader(entry.getValue(), rootPath.resolve(entry.getKey()));
+      }
+      // If the headers behind the symlink tree match their real paths, other than a different
+      // prefix, add a prefix mapping compilation can use to translate paths to their real
+      // locations.
+      //
+      // TODO(agallagher): Ideally we'd also handle cases when headers behind symlink trees don't
+      // match their true layout.
+      Optional<Pair<Path, ImmutableList<Path>>> keys =
+          MorePaths.splitOnCommonPrefix(headerMap.keySet());
+      Optional<Pair<Path, ImmutableList<Path>>> vals =
+          MorePaths.splitOnCommonPrefix(
+              headerMap
+                  .values()
+                  .stream()
+                  .map(pathResolver::getRelativePath)
+                  .collect(Collectors.toList()));
+      if (keys.isPresent()
+          && vals.isPresent()
+          && keys.get().getSecond().equals(vals.get().getSecond())) {
+        Pair<Path, Path> stripped =
+            MorePaths.stripCommonSuffix(
+                pathResolver.getRelativePath(root).resolve(keys.get().getFirst()),
+                vals.get().getFirst());
+        prefixMap.put(stripped.getFirst(), stripped.getSecond());
+      }
+      return this;
+    }
+    public Builder addHeader(SourcePath sourcePath, Path... unnormalizedPaths) {
+      // Map the relative path of the header path to the header, as we serialize the source path
+      // using it's relative path.
+      put(headers, pathResolver.getAbsolutePath(sourcePath), sourcePath);
+      // Add a normalization mapping for the absolute path.
+      // We need it for prefix headers and in some rare cases, regular headers will also end up
+      // with an absolute path in the depfile for a reason we ignore.
+      put(normalized, pathResolver.getAbsolutePath(sourcePath), sourcePath);
+      // Add a normalization mapping for any unnormalized paths passed in.
+      for (Path unnormalizedPath : unnormalizedPaths) {
+        put(normalized, unnormalizedPath, sourcePath);
+      }
+      return this;
+    }
+    public Builder addHeaderDir(SourcePath sourcePath) {
+      return addHeader(sourcePath);
+    }
+    public Builder addPrefixHeader(SourcePath sourcePath) {
+      return addHeader(sourcePath);
+    }
+    public Builder addBridgingHeader(SourcePath sourcePath) {
+      return addHeader(sourcePath);
+    }
+    public HeaderPathNormalizer build() {
+      return new HeaderPathNormalizer(
+          pathResolver,
+          ImmutableMap.copyOf(headers),
+          ImmutableMap.copyOf(normalized),
+          ImmutableMap.copyOf(prefixMap));
+    }
+  }
+}",class,
+"  public static class Builder {
+    private final SourcePathResolver pathResolver;
+    private final Map<Path, SourcePath> headers = new LinkedHashMap<>();
+    private final Map<Path, SourcePath> normalized = new LinkedHashMap<>();
+    private final Map<Path, Path> prefixMap = new LinkedHashMap<>();
+    public Builder(SourcePathResolver pathResolver) {
+      this.pathResolver = pathResolver;
+    }
+    private <V> void put(Map<Path, V> map, Path key, V value) {
+      Preconditions.checkArgument(key.isAbsolute());
+      key = MorePaths.normalize(key);
+      // Hack: Using dropInternalCaches here because `toString` is called on caches by
+      // PathShortener, and many Paths are constructed and stored due to HeaderPathNormalizer
+      // containing exported headers of all transitive dependencies of a library. This amounts to
+      // large memory usage. See t15541313. Once that is fixed, this hack can be deleted.
+      V previous = map.put(MorePaths.dropInternalCaches(key), value);
+      Preconditions.checkState(
+          previous == null || previous.equals(value),
+          ""Expected header path to be consistent but key %s mapped to different values: ""
+              + ""(old: %s, new: %s)"",
+          key,
+          previous,
+          value);
+    }
+    public Builder addSymlinkTree(SourcePath root, ImmutableMap<Path, SourcePath> headerMap) {
+      // Add the headers from the symlink tree.
+      Path rootPath = pathResolver.getAbsolutePath(root);
+      for (Map.Entry<Path, SourcePath> entry : headerMap.entrySet()) {
+        addHeader(entry.getValue(), rootPath.resolve(entry.getKey()));
+      }
+      // If the headers behind the symlink tree match their real paths, other than a different
+      // prefix, add a prefix mapping compilation can use to translate paths to their real
+      // locations.
+      //
+      // TODO(agallagher): Ideally we'd also handle cases when headers behind symlink trees don't
+      // match their true layout.
+      Optional<Pair<Path, ImmutableList<Path>>> keys =
+          MorePaths.splitOnCommonPrefix(headerMap.keySet());
+      Optional<Pair<Path, ImmutableList<Path>>> vals =
+          MorePaths.splitOnCommonPrefix(
+              headerMap
+                  .values()
+                  .stream()
+                  .map(pathResolver::getRelativePath)
+                  .collect(Collectors.toList()));
+      if (keys.isPresent()
+          && vals.isPresent()
+          && keys.get().getSecond().equals(vals.get().getSecond())) {
+        Pair<Path, Path> stripped =
+            MorePaths.stripCommonSuffix(
+                pathResolver.getRelativePath(root).resolve(keys.get().getFirst()),
+                vals.get().getFirst());
+        prefixMap.put(stripped.getFirst(), stripped.getSecond());
+      }
+      return this;
+    }
+    public Builder addHeader(SourcePath sourcePath, Path... unnormalizedPaths) {
+      // Map the relative path of the header path to the header, as we serialize the source path
+      // using it's relative path.
+      put(headers, pathResolver.getAbsolutePath(sourcePath), sourcePath);
+      // Add a normalization mapping for the absolute path.
+      // We need it for prefix headers and in some rare cases, regular headers will also end up
+      // with an absolute path in the depfile for a reason we ignore.
+      put(normalized, pathResolver.getAbsolutePath(sourcePath), sourcePath);
+      // Add a normalization mapping for any unnormalized paths passed in.
+      for (Path unnormalizedPath : unnormalizedPaths) {
+        put(normalized, unnormalizedPath, sourcePath);
+      }
+      return this;
+    }
+    public Builder addHeaderDir(SourcePath sourcePath) {
+      return addHeader(sourcePath);
+    }
+    public Builder addPrefixHeader(SourcePath sourcePath) {
+      return addHeader(sourcePath);
+    }
+    public Builder addBridgingHeader(SourcePath sourcePath) {
+      return addHeader(sourcePath);
+    }
+    public HeaderPathNormalizer build() {
+      return new HeaderPathNormalizer(
+          pathResolver,
+          ImmutableMap.copyOf(headers),
+          ImmutableMap.copyOf(normalized),
+          ImmutableMap.copyOf(prefixMap));
+    }
+  }",class,
+"  protected HeaderPathNormalizer(
+      SourcePathResolver pathResolver,
+      ImmutableMap<Path, SourcePath> headers,
+      ImmutableMap<Path, SourcePath> normalized,
+      ImmutableMap<Path, Path> prefixMap) {
+    this.pathResolver = pathResolver;
+    this.headers = headers;
+    this.normalized = normalized;
+    this.prefixMap = prefixMap;
+  }",method,
+"  public static HeaderPathNormalizer empty(SourcePathResolver pathResolver) {
+    return new HeaderPathNormalizer(
+        pathResolver, ImmutableMap.of(), ImmutableMap.of(), ImmutableMap.of());
+  }",method,
+"  private static <T> Optional<Map.Entry<Path, T>> pathLookup(Path path, Map<Path, T> map) {
+    while (path != null) {
+      T res = map.get(path);
+      if (res != null) {
+        return Optional.of(new AbstractMap.SimpleEntry<>(path, res));
+      }
+      path = path.getParent();
+    }
+    return Optional.empty();
+  }",method,
+"    while (path != null) {
+      T res = map.get(path);
+      if (res != null) {
+        return Optional.of(new AbstractMap.SimpleEntry<>(path, res));
+      }
+      path = path.getParent();
+    }",method,
+"      if (res != null) {
+        return Optional.of(new AbstractMap.SimpleEntry<>(path, res));
+      }",method,
+"  public Optional<Path> getAbsolutePathForUnnormalizedPath(Path unnormalizedPath) {
+    Preconditions.checkArgument(unnormalizedPath.isAbsolute());
+    Optional<Map.Entry<Path, SourcePath>> result = pathLookup(unnormalizedPath, normalized);
+    if (!result.isPresent()) {
+      return Optional.empty();
+    }
+    return Optional.of(
+        pathResolver
+            .getAbsolutePath(result.get().getValue())
+            .resolve(result.get().getKey().relativize(unnormalizedPath)));
+  }",method,
+"  public SourcePath getSourcePathForAbsolutePath(Path absolutePath) {
+    Preconditions.checkArgument(absolutePath.isAbsolute());
+    Optional<Map.Entry<Path, SourcePath>> path = pathLookup(absolutePath, headers);
+    Preconditions.checkState(path.isPresent(), ""no headers mapped to %s"", absolutePath);
+    return path.get().getValue();
+  }",method,
+"  public ImmutableMap<Path, Path> getPrefixMap() {
+    return prefixMap;
+  }",method,
+"    public Builder(SourcePathResolver pathResolver) {
+      this.pathResolver = pathResolver;
+    }",method,
+"    private <V> void put(Map<Path, V> map, Path key, V value) {
+      Preconditions.checkArgument(key.isAbsolute());
+      key = MorePaths.normalize(key);
+      // Hack: Using dropInternalCaches here because `toString` is called on caches by
+      // PathShortener, and many Paths are constructed and stored due to HeaderPathNormalizer
+      // containing exported headers of all transitive dependencies of a library. This amounts to
+      // large memory usage. See t15541313. Once that is fixed, this hack can be deleted.
+      V previous = map.put(MorePaths.dropInternalCaches(key), value);
+      Preconditions.checkState(
+          previous == null || previous.equals(value),
+          ""Expected header path to be consistent but key %s mapped to different values: ""
+              + ""(old: %s, new: %s)"",
+          key,
+          previous,
+          value);
+    }",method,
+"    public Builder addSymlinkTree(SourcePath root, ImmutableMap<Path, SourcePath> headerMap) {
+      // Add the headers from the symlink tree.
+      Path rootPath = pathResolver.getAbsolutePath(root);
+      for (Map.Entry<Path, SourcePath> entry : headerMap.entrySet()) {
+        addHeader(entry.getValue(), rootPath.resolve(entry.getKey()));
+      }
+      // If the headers behind the symlink tree match their real paths, other than a different
+      // prefix, add a prefix mapping compilation can use to translate paths to their real
+      // locations.
+      //
+      // TODO(agallagher): Ideally we'd also handle cases when headers behind symlink trees don't
+      // match their true layout.
+      Optional<Pair<Path, ImmutableList<Path>>> keys =
+          MorePaths.splitOnCommonPrefix(headerMap.keySet());
+      Optional<Pair<Path, ImmutableList<Path>>> vals =
+          MorePaths.splitOnCommonPrefix(
+              headerMap
+                  .values()
+                  .stream()
+                  .map(pathResolver::getRelativePath)
+                  .collect(Collectors.toList()));
+      if (keys.isPresent()
+          && vals.isPresent()
+          && keys.get().getSecond().equals(vals.get().getSecond())) {
+        Pair<Path, Path> stripped =
+            MorePaths.stripCommonSuffix(
+                pathResolver.getRelativePath(root).resolve(keys.get().getFirst()),
+                vals.get().getFirst());
+        prefixMap.put(stripped.getFirst(), stripped.getSecond());
+      }
+      return this;
+    }",method,
+"    public Builder addHeader(SourcePath sourcePath, Path... unnormalizedPaths) {
+      // Map the relative path of the header path to the header, as we serialize the source path
+      // using it's relative path.
+      put(headers, pathResolver.getAbsolutePath(sourcePath), sourcePath);
+      // Add a normalization mapping for the absolute path.
+      // We need it for prefix headers and in some rare cases, regular headers will also end up
+      // with an absolute path in the depfile for a reason we ignore.
+      put(normalized, pathResolver.getAbsolutePath(sourcePath), sourcePath);
+      // Add a normalization mapping for any unnormalized paths passed in.
+      for (Path unnormalizedPath : unnormalizedPaths) {
+        put(normalized, unnormalizedPath, sourcePath);
+      }
+      return this;
+    }",method,
+"      for (Path unnormalizedPath : unnormalizedPaths) {
+        put(normalized, unnormalizedPath, sourcePath);
+      }",method,
+"    public Builder addHeaderDir(SourcePath sourcePath) {
+      return addHeader(sourcePath);
+    }",method,
+"    public Builder addPrefixHeader(SourcePath sourcePath) {
+      return addHeader(sourcePath);
+    }",method,
+"    public Builder addBridgingHeader(SourcePath sourcePath) {
+      return addHeader(sourcePath);
+    }",method,
+"    public HeaderPathNormalizer build() {
+      return new HeaderPathNormalizer(
+          pathResolver,
+          ImmutableMap.copyOf(headers),
+          ImmutableMap.copyOf(normalized),
+          ImmutableMap.copyOf(prefixMap));
+    }",method,
+"public class BKLoader extends LevelLoader {
+	// ===========================================================
+	// Constants
+	// ===========================================================
+	// ===========================================================
+	// Fields
+	// ===========================================================
+	private final HashMap<String, IBKEntityLoader> mEntityLoaders = new HashMap<String, IBKEntityLoader>();
+	// ===========================================================
+	// Constructors
+	// ===========================================================
+	// ===========================================================
+	// Getter & Setter
+	// ===========================================================
+	// ===========================================================
+	// Methods for/from SuperClass/Interfaces
+	// ===========================================================
+	public void registerEntityLoader(final String pEntityName, final IBKEntityLoader pEntityLoader) {
+		this.mEntityLoaders.put(pEntityName, pEntityLoader);
+	}
+	public void registerEntityLoader(final String[] pEntityNames, final IBKEntityLoader pEntityLoader) {
+		final HashMap<String, IBKEntityLoader> entityLoaders = this.mEntityLoaders;
+		for(int i = pEntityNames.length - 1; i >= 0; i--) {
+			entityLoaders.put(pEntityNames[i], pEntityLoader);
+		}
+	}
+	@Override
+	public void loadLevelFromStream(final InputStream pInputStream) throws IOException {
+		try{
+			final SAXParserFactory spf = SAXParserFactory.newInstance();
+			final SAXParser sp = spf.newSAXParser();
+			final XMLReader xr = sp.getXMLReader();
+			this.onBeforeLoadLevel();
+			final BKParser mBKParser = new BKParser(this.mEntityLoaders);
+			xr.setContentHandler(mBKParser);
+			xr.parse(new InputSource(new BufferedInputStream(pInputStream)));
+			this.onAfterLoadLevel();
+		} catch (final SAXException se) {
+			Debug.e(se);
+		} catch (final ParserConfigurationException pe) {
+			Debug.e(pe);
+		} finally {
+			StreamUtils.close(pInputStream);
+		}
+	}
+	// ===========================================================
+	// Methods
+	// ===========================================================
+	// ===========================================================
+	// Inner and Anonymous Classes
+	// ===========================================================
+	public static interface IBKEntityLoader extends IEntityLoader {
+		// ===========================================================
+		// Constants
+		// ===========================================================
+		// ===========================================================
+		// Methods
+		// ===========================================================
+		public void onLoadEntity(final String pEntityName, final Attributes pAttributes, final String mStringBuilder);
+	}
+}",class,
+"	public void registerEntityLoader(final String pEntityName, final IBKEntityLoader pEntityLoader) {
+		this.mEntityLoaders.put(pEntityName, pEntityLoader);
+	}",method,
+"	public void registerEntityLoader(final String[] pEntityNames, final IBKEntityLoader pEntityLoader) {
+		final HashMap<String, IBKEntityLoader> entityLoaders = this.mEntityLoaders;
+		for(int i = pEntityNames.length - 1; i >= 0; i--) {
+			entityLoaders.put(pEntityNames[i], pEntityLoader);
+		}
+	}",method,
+"		for(int i = pEntityNames.length - 1; i >= 0; i--) {
+			entityLoaders.put(pEntityNames[i], pEntityLoader);
+		}",method,
+"	@Override
+	public void loadLevelFromStream(final InputStream pInputStream) throws IOException {
+		try{
+			final SAXParserFactory spf = SAXParserFactory.newInstance();
+			final SAXParser sp = spf.newSAXParser();
+			final XMLReader xr = sp.getXMLReader();
+			this.onBeforeLoadLevel();
+			final BKParser mBKParser = new BKParser(this.mEntityLoaders);
+			xr.setContentHandler(mBKParser);
+			xr.parse(new InputSource(new BufferedInputStream(pInputStream)));
+			this.onAfterLoadLevel();
+		} catch (final SAXException se) {
+			Debug.e(se);
+		} catch (final ParserConfigurationException pe) {
+			Debug.e(pe);
+		} finally {
+			StreamUtils.close(pInputStream);
+		}
+	}",method,
+"public class ModuleServiceManager {
+  private static final Logger LOG = Logger.getInstance(ModuleServiceManager.class);
+  private ModuleServiceManager() {
+  }
+  @Nullable
+  public static <T> T getService(@NotNull Module module, @NotNull Class<T> serviceClass) {
+    //noinspection unchecked
+    T instance = (T)module.getPicoContainer().getComponentInstance(serviceClass.getName());
+    if (instance == null) {
+      instance = module.getComponent(serviceClass);
+      if (instance != null) {
+        Application app = ApplicationManager.getApplication();
+        String message = serviceClass.getName() + "" requested as a service, but it is a component - convert it to a service or change call to module.getComponent()"";
+        if (app.isUnitTestMode()) {
+          LOG.error(message);
+        }
+        else {
+          LOG.warn(message);
+        }
+      }
+    }
+    return instance;
+  }
+}",class,
+"  private ModuleServiceManager() {
+  }",method,
+"  @Nullable
+  public static <T> T getService(@NotNull Module module, @NotNull Class<T> serviceClass) {
+    //noinspection unchecked
+    T instance = (T)module.getPicoContainer().getComponentInstance(serviceClass.getName());
+    if (instance == null) {
+      instance = module.getComponent(serviceClass);
+      if (instance != null) {
+        Application app = ApplicationManager.getApplication();
+        String message = serviceClass.getName() + "" requested as a service, but it is a component - convert it to a service or change call to module.getComponent()"";
+        if (app.isUnitTestMode()) {
+          LOG.error(message);
+        }
+        else {
+          LOG.warn(message);
+        }
+      }
+    }
+    return instance;
+  }",method,
+"    if (instance == null) {
+      instance = module.getComponent(serviceClass);
+      if (instance != null) {
+        Application app = ApplicationManager.getApplication();
+        String message = serviceClass.getName() + "" requested as a service, but it is a component - convert it to a service or change call to module.getComponent()"";
+        if (app.isUnitTestMode()) {
+          LOG.error(message);
+        }
+        else {
+          LOG.warn(message);
+        }
+      }
+    }",method,
+"      if (instance != null) {
+        Application app = ApplicationManager.getApplication();
+        String message = serviceClass.getName() + "" requested as a service, but it is a component - convert it to a service or change call to module.getComponent()"";
+        if (app.isUnitTestMode()) {
+          LOG.error(message);
+        }
+        else {
+          LOG.warn(message);
+        }
+      }",method,
+"public class SplitOutputStream extends OutputStream {
+	private RandomAccessFile raf;
+	private long splitLength;
+	private File zipFile;
+	private File outFile;
+	private int currSplitFileCounter;
+	private long bytesWrittenForThisPart;
+	public SplitOutputStream(String name) throws FileNotFoundException, ZipException {
+		this(Zip4jUtil.isStringNotNullAndNotEmpty(name) ?
+				new File(name) : null);
+	}
+	public SplitOutputStream(File file) throws FileNotFoundException, ZipException {
+		this(file, -1);
+	}
+	public SplitOutputStream(String name, long splitLength) throws FileNotFoundException, ZipException {
+		this(!Zip4jUtil.isStringNotNullAndNotEmpty(name) ?
+				new File(name) : null, splitLength);
+	}
+	public SplitOutputStream(File file, long splitLength) throws FileNotFoundException, ZipException {
+		if (splitLength >= 0 && splitLength < InternalZipConstants.MIN_SPLIT_LENGTH) {
+			throw new ZipException(""split length less than minimum allowed split length of "" + InternalZipConstants.MIN_SPLIT_LENGTH +"" Bytes"");
+		}
+		this.raf = new RandomAccessFile(file, InternalZipConstants.WRITE_MODE);
+		this.splitLength = splitLength;
+		this.outFile = file;
+		this.zipFile = file;
+		this.currSplitFileCounter = 0;
+		this.bytesWrittenForThisPart = 0;
+	}
+	public void write(int b) throws IOException {
+		byte[] buff = new byte[1];
+		buff[0] = (byte) b;
+	    write(buff, 0, 1);
+	}
+	public void write(byte[] b) throws IOException {
+		write(b, 0, b.length);
+	}
+	public void write(byte[] b, int off, int len) throws IOException {
+		if (len <= 0) return;
+		if (splitLength != -1) {
+			if (splitLength < InternalZipConstants.MIN_SPLIT_LENGTH) {
+				throw new IOException(""split length less than minimum allowed split length of "" + InternalZipConstants.MIN_SPLIT_LENGTH +"" Bytes"");
+			}
+			if (bytesWrittenForThisPart >= splitLength) {
+				startNextSplitFile();
+				raf.write(b, off, len);
+				bytesWrittenForThisPart = len;
+			} else if (bytesWrittenForThisPart + len > splitLength) {
+				if (isHeaderData(b)) {
+					startNextSplitFile();
+					raf.write(b, off, len);
+					bytesWrittenForThisPart = len;
+				} else {
+					raf.write(b, off, (int)(splitLength - bytesWrittenForThisPart));
+					startNextSplitFile();
+					raf.write(b, off + (int)(splitLength - bytesWrittenForThisPart), (int)(len - (splitLength - bytesWrittenForThisPart)));
+					bytesWrittenForThisPart = len - (splitLength - bytesWrittenForThisPart);
+				}
+			} else {
+				raf.write(b, off, len);
+				bytesWrittenForThisPart += len;
+			}
+		} else {
+			raf.write(b, off, len);
+			bytesWrittenForThisPart += len;
+		}
+	}
+	private void startNextSplitFile() throws IOException {
+		try {
+			String zipFileWithoutExt = Zip4jUtil.getZipFileNameWithoutExt(outFile.getName());
+			File currSplitFile = null;
+			String zipFileName = zipFile.getAbsolutePath();
+			if (currSplitFileCounter < 9) {
+				currSplitFile = new File(outFile.getParent() + System.getProperty(""file.separator"") + 
+						zipFileWithoutExt + "".z0"" + (currSplitFileCounter + 1));
+			} else {
+				currSplitFile = new File(outFile.getParent() + System.getProperty(""file.separator"") + 
+						zipFileWithoutExt + "".z"" + (currSplitFileCounter + 1));
+			}
+			raf.close();
+			if (currSplitFile.exists()) {
+				throw new IOException(""split file: "" + currSplitFile.getName() + "" already exists in the current directory, cannot rename this file"");
+			}
+			if (!zipFile.renameTo(currSplitFile)) {
+				throw new IOException(""cannot rename newly created split file"");
+			}
+			zipFile = new File(zipFileName);
+			raf = new RandomAccessFile(zipFile, InternalZipConstants.WRITE_MODE);
+			currSplitFileCounter++;
+		} catch (ZipException e) {
+			throw new IOException(e.getMessage());
+		}
+	}
+	private boolean isHeaderData(byte[] buff) {
+		if (buff == null || buff.length < 4) {
+			return false;
+		}
+		int signature = Raw.readIntLittleEndian(buff, 0);
+		long[] allHeaderSignatures = Zip4jUtil.getAllHeaderSignatures();
+		if (allHeaderSignatures != null && allHeaderSignatures.length > 0) {
+			for (int i = 0; i < allHeaderSignatures.length; i++) {
+				//Ignore split signature
+				if (allHeaderSignatures[i] != InternalZipConstants.SPLITSIG && 
+						allHeaderSignatures[i] == signature) {
+					return true;
+				}
+			}
+		}
+		return false;
+	}
+	public boolean checkBuffSizeAndStartNextSplitFile(int bufferSize) throws ZipException {
+		if (bufferSize < 0) {
+			throw new ZipException(""negative buffersize for checkBuffSizeAndStartNextSplitFile"");
+		}
+		if (!isBuffSizeFitForCurrSplitFile(bufferSize)) {
+			try {
+				startNextSplitFile();
+				bytesWrittenForThisPart = 0;
+				return true;
+			} catch (IOException e) {
+				throw new ZipException(e);
+			}
+		}
+		return false;
+	}
+	public boolean isBuffSizeFitForCurrSplitFile(int bufferSize) throws ZipException {
+		if (bufferSize < 0) {
+			throw new ZipException(""negative buffersize for isBuffSizeFitForCurrSplitFile"");
+		}
+		if (splitLength >= InternalZipConstants.MIN_SPLIT_LENGTH) {
+			return (bytesWrittenForThisPart + bufferSize <= splitLength);
+		} else {
+			//Non split zip -- return true
+			return true;
+		}
+	}
+	public void seek(long pos) throws IOException {
+		raf.seek(pos);
+	}
+	public void close() throws IOException {
+		if (raf != null)
+			raf.close();
+	}
+	public void flush() throws IOException {
+	}
+	public long getFilePointer() throws IOException {
+		return raf.getFilePointer();
+	}
+	public boolean isSplitZipFile() {
+		return splitLength!=-1;
+	}
+	public long getSplitLength() {
+		return splitLength;
+	}
+	public int getCurrSplitFileCounter() {
+		return currSplitFileCounter;
+	}
+}",class,
+"	public SplitOutputStream(String name) throws FileNotFoundException, ZipException {
+		this(Zip4jUtil.isStringNotNullAndNotEmpty(name) ?
+				new File(name) : null);
+	}",method,
+"	public SplitOutputStream(File file) throws FileNotFoundException, ZipException {
+		this(file, -1);
+	}",method,
+"	public SplitOutputStream(String name, long splitLength) throws FileNotFoundException, ZipException {
+		this(!Zip4jUtil.isStringNotNullAndNotEmpty(name) ?
+				new File(name) : null, splitLength);
+	}",method,
+"	public SplitOutputStream(File file, long splitLength) throws FileNotFoundException, ZipException {
+		if (splitLength >= 0 && splitLength < InternalZipConstants.MIN_SPLIT_LENGTH) {
+			throw new ZipException(""split length less than minimum allowed split length of "" + InternalZipConstants.MIN_SPLIT_LENGTH +"" Bytes"");
+		}
+		this.raf = new RandomAccessFile(file, InternalZipConstants.WRITE_MODE);
+		this.splitLength = splitLength;
+		this.outFile = file;
+		this.zipFile = file;
+		this.currSplitFileCounter = 0;
+		this.bytesWrittenForThisPart = 0;
+	}",method,
+"		if (splitLength >= 0 && splitLength < InternalZipConstants.MIN_SPLIT_LENGTH) {
+			throw new ZipException(""split length less than minimum allowed split length of "" + InternalZipConstants.MIN_SPLIT_LENGTH +"" Bytes"");
+		}",method,
+"	public void write(int b) throws IOException {
+		byte[] buff = new byte[1];
+		buff[0] = (byte) b;
+	    write(buff, 0, 1);
+	}",method,
+"	public void write(byte[] b) throws IOException {
+		write(b, 0, b.length);
+	}",method,
+"	public void write(byte[] b, int off, int len) throws IOException {
+		if (len <= 0) return;
+		if (splitLength != -1) {
+			if (splitLength < InternalZipConstants.MIN_SPLIT_LENGTH) {
+				throw new IOException(""split length less than minimum allowed split length of "" + InternalZipConstants.MIN_SPLIT_LENGTH +"" Bytes"");
+			}
+			if (bytesWrittenForThisPart >= splitLength) {
+				startNextSplitFile();
+				raf.write(b, off, len);
+				bytesWrittenForThisPart = len;
+			} else if (bytesWrittenForThisPart + len > splitLength) {
+				if (isHeaderData(b)) {
+					startNextSplitFile();
+					raf.write(b, off, len);
+					bytesWrittenForThisPart = len;
+				} else {
+					raf.write(b, off, (int)(splitLength - bytesWrittenForThisPart));
+					startNextSplitFile();
+					raf.write(b, off + (int)(splitLength - bytesWrittenForThisPart), (int)(len - (splitLength - bytesWrittenForThisPart)));
+					bytesWrittenForThisPart = len - (splitLength - bytesWrittenForThisPart);
+				}
+			} else {
+				raf.write(b, off, len);
+				bytesWrittenForThisPart += len;
+			}
+		} else {
+			raf.write(b, off, len);
+			bytesWrittenForThisPart += len;
+		}
+	}",method,
+"		if (splitLength != -1) {
+			if (splitLength < InternalZipConstants.MIN_SPLIT_LENGTH) {
+				throw new IOException(""split length less than minimum allowed split length of "" + InternalZipConstants.MIN_SPLIT_LENGTH +"" Bytes"");
+			}
+			if (bytesWrittenForThisPart >= splitLength) {
+				startNextSplitFile();
+				raf.write(b, off, len);
+				bytesWrittenForThisPart = len;
+			} else if (bytesWrittenForThisPart + len > splitLength) {
+				if (isHeaderData(b)) {
+					startNextSplitFile();
+					raf.write(b, off, len);
+					bytesWrittenForThisPart = len;
+				} else {
+					raf.write(b, off, (int)(splitLength - bytesWrittenForThisPart));
+					startNextSplitFile();
+					raf.write(b, off + (int)(splitLength - bytesWrittenForThisPart), (int)(len - (splitLength - bytesWrittenForThisPart)));
+					bytesWrittenForThisPart = len - (splitLength - bytesWrittenForThisPart);
+				}
+			} else {
+				raf.write(b, off, len);
+				bytesWrittenForThisPart += len;
+			}
+		}",method,
+"			if (splitLength < InternalZipConstants.MIN_SPLIT_LENGTH) {
+				throw new IOException(""split length less than minimum allowed split length of "" + InternalZipConstants.MIN_SPLIT_LENGTH +"" Bytes"");
+			}",method,
+"			if (bytesWrittenForThisPart >= splitLength) {
+				startNextSplitFile();
+				raf.write(b, off, len);
+				bytesWrittenForThisPart = len;
+			}",method,
+"	private void startNextSplitFile() throws IOException {
+		try {
+			String zipFileWithoutExt = Zip4jUtil.getZipFileNameWithoutExt(outFile.getName());
+			File currSplitFile = null;
+			String zipFileName = zipFile.getAbsolutePath();
+			if (currSplitFileCounter < 9) {
+				currSplitFile = new File(outFile.getParent() + System.getProperty(""file.separator"") + 
+						zipFileWithoutExt + "".z0"" + (currSplitFileCounter + 1));
+			} else {
+				currSplitFile = new File(outFile.getParent() + System.getProperty(""file.separator"") + 
+						zipFileWithoutExt + "".z"" + (currSplitFileCounter + 1));
+			}
+			raf.close();
+			if (currSplitFile.exists()) {
+				throw new IOException(""split file: "" + currSplitFile.getName() + "" already exists in the current directory, cannot rename this file"");
+			}
+			if (!zipFile.renameTo(currSplitFile)) {
+				throw new IOException(""cannot rename newly created split file"");
+			}
+			zipFile = new File(zipFileName);
+			raf = new RandomAccessFile(zipFile, InternalZipConstants.WRITE_MODE);
+			currSplitFileCounter++;
+		} catch (ZipException e) {
+			throw new IOException(e.getMessage());
+		}
+	}",method,
+"			if (currSplitFileCounter < 9) {
+				currSplitFile = new File(outFile.getParent() + System.getProperty(""file.separator"") + 
+						zipFileWithoutExt + "".z0"" + (currSplitFileCounter + 1));
+			}",method,
+"	private boolean isHeaderData(byte[] buff) {
+		if (buff == null || buff.length < 4) {
+			return false;
+		}
+		int signature = Raw.readIntLittleEndian(buff, 0);
+		long[] allHeaderSignatures = Zip4jUtil.getAllHeaderSignatures();
+		if (allHeaderSignatures != null && allHeaderSignatures.length > 0) {
+			for (int i = 0; i < allHeaderSignatures.length; i++) {
+				//Ignore split signature
+				if (allHeaderSignatures[i] != InternalZipConstants.SPLITSIG && 
+						allHeaderSignatures[i] == signature) {
+					return true;
+				}
+			}
+		}
+		return false;
+	}",method,
+"		if (buff == null || buff.length < 4) {
+			return false;
+		}",method,
+"		if (allHeaderSignatures != null && allHeaderSignatures.length > 0) {
+			for (int i = 0; i < allHeaderSignatures.length; i++) {
+				//Ignore split signature
+				if (allHeaderSignatures[i] != InternalZipConstants.SPLITSIG && 
+						allHeaderSignatures[i] == signature) {
+					return true;
+				}
+			}
+		}",method,
+"			for (int i = 0; i < allHeaderSignatures.length; i++) {
+				//Ignore split signature
+				if (allHeaderSignatures[i] != InternalZipConstants.SPLITSIG && 
+						allHeaderSignatures[i] == signature) {
+					return true;
+				}
+			}",method,
+"				if (allHeaderSignatures[i] != InternalZipConstants.SPLITSIG && 
+						allHeaderSignatures[i] == signature) {
+					return true;
+				}",method,
+"	public boolean checkBuffSizeAndStartNextSplitFile(int bufferSize) throws ZipException {
+		if (bufferSize < 0) {
+			throw new ZipException(""negative buffersize for checkBuffSizeAndStartNextSplitFile"");
+		}
+		if (!isBuffSizeFitForCurrSplitFile(bufferSize)) {
+			try {
+				startNextSplitFile();
+				bytesWrittenForThisPart = 0;
+				return true;
+			} catch (IOException e) {
+				throw new ZipException(e);
+			}
+		}
+		return false;
+	}",method,
+"		if (bufferSize < 0) {
+			throw new ZipException(""negative buffersize for checkBuffSizeAndStartNextSplitFile"");
+		}",method,
+"	public boolean isBuffSizeFitForCurrSplitFile(int bufferSize) throws ZipException {
+		if (bufferSize < 0) {
+			throw new ZipException(""negative buffersize for isBuffSizeFitForCurrSplitFile"");
+		}
+		if (splitLength >= InternalZipConstants.MIN_SPLIT_LENGTH) {
+			return (bytesWrittenForThisPart + bufferSize <= splitLength);
+		} else {
+			//Non split zip -- return true
+			return true;
+		}
+	}",method,
+"		if (bufferSize < 0) {
+			throw new ZipException(""negative buffersize for isBuffSizeFitForCurrSplitFile"");
+		}",method,
+"		if (splitLength >= InternalZipConstants.MIN_SPLIT_LENGTH) {
+			return (bytesWrittenForThisPart + bufferSize <= splitLength);
+		}",method,
+"	public void seek(long pos) throws IOException {
+		raf.seek(pos);
+	}",method,
+"	public void close() throws IOException {
+		if (raf != null)
+			raf.close();
+	}",method,
+"	public void flush() throws IOException {
+	}",method,
+"	public long getFilePointer() throws IOException {
+		return raf.getFilePointer();
+	}",method,
+"	public boolean isSplitZipFile() {
+		return splitLength!=-1;
+	}",method,
+"	public long getSplitLength() {
+		return splitLength;
+	}",method,
+"	public int getCurrSplitFileCounter() {
+		return currSplitFileCounter;
+	}",method,
+"public abstract class GrClassMemberReferenceVisitor extends GroovyRecursiveElementVisitor {
+  private final PsiClass myClass;
+  public GrClassMemberReferenceVisitor(@NotNull PsiClass aClass) {
+    myClass = aClass;
+  }
+  @Override
+  public void visitReferenceExpression(@NotNull GrReferenceExpression ref) {
+    GrExpression qualifier = ref.getQualifier();
+    if (qualifier != null && !(PsiUtil.isThisOrSuperRef(qualifier))) {
+      qualifier.accept(this);
+      if (!(qualifier instanceof GrReferenceExpression) || !(((GrReferenceExpression) qualifier).resolve() instanceof PsiClass)) {
+        return;
+      }
+    }
+    PsiElement resolved = ref.resolve();
+    if (resolved instanceof GrMember) {
+      PsiClass containingClass = ((GrMember)resolved).getContainingClass();
+      if (isPartOf(myClass, containingClass)) {
+        visitClassMemberReferenceElement((GrMember)resolved, ref);
+      }
+    }
+  }
+  @Override
+  public void visitCodeReferenceElement(@NotNull GrCodeReferenceElement reference) {
+    PsiElement referencedElement = reference.resolve();
+    if (referencedElement instanceof GrTypeDefinition) {
+      final GrTypeDefinition referencedClass = (GrTypeDefinition)referencedElement;
+      if (PsiTreeUtil.isAncestor(myClass, referencedElement, true) ||
+          isPartOf(myClass, referencedClass.getContainingClass())) {
+        visitClassMemberReferenceElement((GrMember)referencedElement, reference);
+      }
+    }
+  }
+  private static boolean isPartOf(@NotNull PsiClass aClass, @Nullable PsiClass containingClass) {
+    if (containingClass == null) return false;
+    return aClass.equals(containingClass) || aClass.isInheritor(containingClass, true);
+  }
+  protected abstract void visitClassMemberReferenceElement(GrMember resolved, GrReferenceElement ref);
+}",class,
+"  public GrClassMemberReferenceVisitor(@NotNull PsiClass aClass) {
+    myClass = aClass;
+  }",method,
+"  @Override
+  public void visitReferenceExpression(@NotNull GrReferenceExpression ref) {
+    GrExpression qualifier = ref.getQualifier();
+    if (qualifier != null && !(PsiUtil.isThisOrSuperRef(qualifier))) {
+      qualifier.accept(this);
+      if (!(qualifier instanceof GrReferenceExpression) || !(((GrReferenceExpression) qualifier).resolve() instanceof PsiClass)) {
+        return;
+      }
+    }
+    PsiElement resolved = ref.resolve();
+    if (resolved instanceof GrMember) {
+      PsiClass containingClass = ((GrMember)resolved).getContainingClass();
+      if (isPartOf(myClass, containingClass)) {
+        visitClassMemberReferenceElement((GrMember)resolved, ref);
+      }
+    }
+  }",method,
+"    if (resolved instanceof GrMember) {
+      PsiClass containingClass = ((GrMember)resolved).getContainingClass();
+      if (isPartOf(myClass, containingClass)) {
+        visitClassMemberReferenceElement((GrMember)resolved, ref);
+      }
+    }",method,
+"  @Override
+  public void visitCodeReferenceElement(@NotNull GrCodeReferenceElement reference) {
+    PsiElement referencedElement = reference.resolve();
+    if (referencedElement instanceof GrTypeDefinition) {
+      final GrTypeDefinition referencedClass = (GrTypeDefinition)referencedElement;
+      if (PsiTreeUtil.isAncestor(myClass, referencedElement, true) ||
+          isPartOf(myClass, referencedClass.getContainingClass())) {
+        visitClassMemberReferenceElement((GrMember)referencedElement, reference);
+      }
+    }
+  }",method,
+"    if (referencedElement instanceof GrTypeDefinition) {
+      final GrTypeDefinition referencedClass = (GrTypeDefinition)referencedElement;
+      if (PsiTreeUtil.isAncestor(myClass, referencedElement, true) ||
+          isPartOf(myClass, referencedClass.getContainingClass())) {
+        visitClassMemberReferenceElement((GrMember)referencedElement, reference);
+      }
+    }",method,
+"  private static boolean isPartOf(@NotNull PsiClass aClass, @Nullable PsiClass containingClass) {
+    if (containingClass == null) return false;
+    return aClass.equals(containingClass) || aClass.isInheritor(containingClass, true);
+  }",method,
+"import java.util.concurrent.ConcurrentMap;
+class ConverterManagerImpl implements ConverterManager {
+  private final ImplementationClassCache myImplementationClassCache = new ImplementationClassCache(DomImplementationClassEP.CONVERTER_EP_NAME);
+  private final ConcurrentMap<Class, Object> myConverterInstances = ConcurrentFactoryMap.createMap(key-> {
+      Class implementation = myImplementationClassCache.get(key);
+      return ConcurrentInstanceMap.calculate(implementation == null ? key : implementation);
+    }
+  );
+  private final Map<Class,Converter> mySimpleConverters = new HashMap<>();
+  ConverterManagerImpl() {
+    mySimpleConverters.put(byte.class, new NumberValueConverter<>(byte.class, false));
+    mySimpleConverters.put(Byte.class, new NumberValueConverter<>(Byte.class, true));
+    mySimpleConverters.put(short.class, new NumberValueConverter<>(short.class, false));
+    mySimpleConverters.put(Short.class, new NumberValueConverter<>(Short.class, true));
+    mySimpleConverters.put(int.class, new NumberValueConverter<>(int.class, false));
+    mySimpleConverters.put(Integer.class, new NumberValueConverter<>(Integer.class, false));
+    mySimpleConverters.put(long.class, new NumberValueConverter<>(long.class, false));
+    mySimpleConverters.put(Long.class, new NumberValueConverter<>(Long.class, true));
+    mySimpleConverters.put(float.class, new NumberValueConverter<>(float.class, false));
+    mySimpleConverters.put(Float.class, new NumberValueConverter<>(Float.class, true));
+    mySimpleConverters.put(double.class, new NumberValueConverter<>(double.class, false));
+    mySimpleConverters.put(Double.class, new NumberValueConverter<>(Double.class, true));
+    mySimpleConverters.put(BigDecimal.class, new NumberValueConverter<>(BigDecimal.class, true));
+    mySimpleConverters.put(BigInteger.class, new NumberValueConverter<>(BigInteger.class, true));
+    mySimpleConverters.put(boolean.class, ResolvingConverter.BOOLEAN_CONVERTER);
+    mySimpleConverters.put(Boolean.class, ResolvingConverter.BOOLEAN_CONVERTER);
+    mySimpleConverters.put(String.class, Converter.EMPTY_CONVERTER);
+    mySimpleConverters.put(Object.class, Converter.EMPTY_CONVERTER);
+    mySimpleConverters.put(PathReference.class, PathReferenceConverter.INSTANCE);
+  }
+  @Override
+  public void addConverter(Class clazz, Converter converter) {
+    mySimpleConverters.put(clazz, converter);
+  }
+  @Override
+  @NotNull
+  public final Converter getConverterInstance(final Class<? extends Converter> converterClass) {
+    Converter converter = getInstance(converterClass);
+    assert converter != null: ""Converter not found for "" + converterClass;
+    return converter;
+  }
+  <T> T getInstance(Class<T> clazz) {
+    return (T)myConverterInstances.get(clazz);
+  }
+  @Override
+  @Nullable
+  public final Converter getConverterByClass(final Class<?> convertingClass) {
+    final Converter converter = mySimpleConverters.get(convertingClass);
+    if (converter != null) {
+      return converter;
+    }
+    if (Enum.class.isAssignableFrom(convertingClass)) {
+      return EnumConverter.createEnumConverter((Class<? extends Enum>)convertingClass);
+    }
+    if (DomElement.class.isAssignableFrom(convertingClass)) {
+      return DomResolveConverter.createConverter((Class<? extends DomElement>)convertingClass);
+    }
+    return null;
+  }
+  @Override
+  public <T extends Converter> void registerConverterImplementation(Class<T> converterInterface, T converterImpl) {
+    myConverterInstances.put(converterInterface, converterImpl);
+  }
+}",class,
+"  ConverterManagerImpl() {
+    mySimpleConverters.put(byte.class, new NumberValueConverter<>(byte.class, false));
+    mySimpleConverters.put(Byte.class, new NumberValueConverter<>(Byte.class, true));
+    mySimpleConverters.put(short.class, new NumberValueConverter<>(short.class, false));
+    mySimpleConverters.put(Short.class, new NumberValueConverter<>(Short.class, true));
+    mySimpleConverters.put(int.class, new NumberValueConverter<>(int.class, false));
+    mySimpleConverters.put(Integer.class, new NumberValueConverter<>(Integer.class, false));
+    mySimpleConverters.put(long.class, new NumberValueConverter<>(long.class, false));
+    mySimpleConverters.put(Long.class, new NumberValueConverter<>(Long.class, true));
+    mySimpleConverters.put(float.class, new NumberValueConverter<>(float.class, false));
+    mySimpleConverters.put(Float.class, new NumberValueConverter<>(Float.class, true));
+    mySimpleConverters.put(double.class, new NumberValueConverter<>(double.class, false));
+    mySimpleConverters.put(Double.class, new NumberValueConverter<>(Double.class, true));
+    mySimpleConverters.put(BigDecimal.class, new NumberValueConverter<>(BigDecimal.class, true));
+    mySimpleConverters.put(BigInteger.class, new NumberValueConverter<>(BigInteger.class, true));
+    mySimpleConverters.put(boolean.class, ResolvingConverter.BOOLEAN_CONVERTER);
+    mySimpleConverters.put(Boolean.class, ResolvingConverter.BOOLEAN_CONVERTER);
+    mySimpleConverters.put(String.class, Converter.EMPTY_CONVERTER);
+    mySimpleConverters.put(Object.class, Converter.EMPTY_CONVERTER);
+    mySimpleConverters.put(PathReference.class, PathReferenceConverter.INSTANCE);
+  }",method,
+"  @Override
+  public void addConverter(Class clazz, Converter converter) {
+    mySimpleConverters.put(clazz, converter);
+  }",method,
+"  @Override
+  @NotNull
+  public final Converter getConverterInstance(final Class<? extends Converter> converterClass) {
+    Converter converter = getInstance(converterClass);
+    assert converter != null: ""Converter not found for "" + converterClass;
+    return converter;
+  }",method,
+"  <T> T getInstance(Class<T> clazz) {
+    return (T)myConverterInstances.get(clazz);
+  }",method,
+"  @Override
+  @Nullable
+  public final Converter getConverterByClass(final Class<?> convertingClass) {
+    final Converter converter = mySimpleConverters.get(convertingClass);
+    if (converter != null) {
+      return converter;
+    }
+    if (Enum.class.isAssignableFrom(convertingClass)) {
+      return EnumConverter.createEnumConverter((Class<? extends Enum>)convertingClass);
+    }
+    if (DomElement.class.isAssignableFrom(convertingClass)) {
+      return DomResolveConverter.createConverter((Class<? extends DomElement>)convertingClass);
+    }
+    return null;
+  }",method,
+"    if (converter != null) {
+      return converter;
+    }",method,
+"  @Override
+  public <T extends Converter> void registerConverterImplementation(Class<T> converterInterface, T converterImpl) {
+    myConverterInstances.put(converterInterface, converterImpl);
+  }",method,
+"public class MulticastGroup extends AbstractGroup {
+    private static final String JOIN = ""join"";
+    private static final String LEAVE = ""leave"";
+    private InetAddress mutilcastAddress;
+    private MulticastSocket mutilcastSocket;
+    public MulticastGroup(URL url) {
+        super(url);
+        if (!isMulticastAddress(url.getHost())) {
+            throw new IllegalArgumentException(""Invalid multicast address "" + url.getHost() + "", scope: 224.0.0.0 - 239.255.255.255"");
+        }
+        try {
+            mutilcastAddress = InetAddress.getByName(url.getHost());
+            mutilcastSocket = new MulticastSocket(url.getPort());
+            mutilcastSocket.setLoopbackMode(false);
+            mutilcastSocket.joinGroup(mutilcastAddress);
+            Thread thread = new Thread(new Runnable() {
+                public void run() {
+                    byte[] buf = new byte[1024];
+                    DatagramPacket recv = new DatagramPacket(buf, buf.length);
+                    while (true) {
+                        try {
+                            mutilcastSocket.receive(recv);
+                            MulticastGroup.this.receive(new String(recv.getData()).trim(), (InetSocketAddress) recv.getSocketAddress());
+                        } catch (Exception e) {
+                            logger.error(e.getMessage(), e);
+                        }
+                    }
+                }
+            }, ""MulticastGroupReceiver"");
+            thread.setDaemon(true);
+            thread.start();
+        } catch (IOException e) {
+            throw new IllegalStateException(e.getMessage(), e);
+        }
+    }
+    private static boolean isMulticastAddress(String ip) {
+        int i = ip.indexOf('.');
+        if (i > 0) {
+            String prefix = ip.substring(0, i);
+            if (StringUtils.isInteger(prefix)) {
+                int p = Integer.parseInt(prefix);
+                return p >= 224 && p <= 239;
+            }
+        }
+        return false;
+    }
+    private void send(String msg) throws RemotingException {
+        DatagramPacket hi = new DatagramPacket(msg.getBytes(), msg.length(), mutilcastAddress, mutilcastSocket.getLocalPort());
+        try {
+            mutilcastSocket.send(hi);
+        } catch (IOException e) {
+            throw new IllegalStateException(e.getMessage(), e);
+        }
+    }
+    private void receive(String msg, InetSocketAddress remoteAddress) throws RemotingException {
+        if (msg.startsWith(JOIN)) {
+            String url = msg.substring(JOIN.length()).trim();
+            connect(URL.valueOf(url));
+        } else if (msg.startsWith(LEAVE)) {
+            String url = msg.substring(LEAVE.length()).trim();
+            disconnect(URL.valueOf(url));
+        }
+    }
+    @Override
+    public Peer join(URL url, ChannelHandler handler) throws RemotingException {
+        Peer peer = super.join(url, handler);
+        send(JOIN + "" "" + url.toFullString());
+        return peer;
+    }
+    @Override
+    public void leave(URL url) throws RemotingException {
+        super.leave(url);
+        send(LEAVE + "" "" + url.toFullString());
+    }
+}",class,
+"    public MulticastGroup(URL url) {
+        super(url);
+        if (!isMulticastAddress(url.getHost())) {
+            throw new IllegalArgumentException(""Invalid multicast address "" + url.getHost() + "", scope: 224.0.0.0 - 239.255.255.255"");
+        }
+        try {
+            mutilcastAddress = InetAddress.getByName(url.getHost());
+            mutilcastSocket = new MulticastSocket(url.getPort());
+            mutilcastSocket.setLoopbackMode(false);
+            mutilcastSocket.joinGroup(mutilcastAddress);
+            Thread thread = new Thread(new Runnable() {
+                public void run() {
+                    byte[] buf = new byte[1024];
+                    DatagramPacket recv = new DatagramPacket(buf, buf.length);
+                    while (true) {
+                        try {
+                            mutilcastSocket.receive(recv);
+                            MulticastGroup.this.receive(new String(recv.getData()).trim(), (InetSocketAddress) recv.getSocketAddress());
+                        } catch (Exception e) {
+                            logger.error(e.getMessage(), e);
+                        }
+                    }
+                }
+            }, ""MulticastGroupReceiver"");
+            thread.setDaemon(true);
+            thread.start();
+        } catch (IOException e) {
+            throw new IllegalStateException(e.getMessage(), e);
+        }
+    }",method,
+"                public void run() {
+                    byte[] buf = new byte[1024];
+                    DatagramPacket recv = new DatagramPacket(buf, buf.length);
+                    while (true) {
+                        try {
+                            mutilcastSocket.receive(recv);
+                            MulticastGroup.this.receive(new String(recv.getData()).trim(), (InetSocketAddress) recv.getSocketAddress());
+                        } catch (Exception e) {
+                            logger.error(e.getMessage(), e);
+                        }
+                    }
+                }",method,
+"                    while (true) {
+                        try {
+                            mutilcastSocket.receive(recv);
+                            MulticastGroup.this.receive(new String(recv.getData()).trim(), (InetSocketAddress) recv.getSocketAddress());
+                        } catch (Exception e) {
+                            logger.error(e.getMessage(), e);
+                        }
+                    }",method,
+"    private static boolean isMulticastAddress(String ip) {
+        int i = ip.indexOf('.');
+        if (i > 0) {
+            String prefix = ip.substring(0, i);
+            if (StringUtils.isInteger(prefix)) {
+                int p = Integer.parseInt(prefix);
+                return p >= 224 && p <= 239;
+            }
+        }
+        return false;
+    }",method,
+"        if (i > 0) {
+            String prefix = ip.substring(0, i);
+            if (StringUtils.isInteger(prefix)) {
+                int p = Integer.parseInt(prefix);
+                return p >= 224 && p <= 239;
+            }
+        }",method,
+"    private void send(String msg) throws RemotingException {
+        DatagramPacket hi = new DatagramPacket(msg.getBytes(), msg.length(), mutilcastAddress, mutilcastSocket.getLocalPort());
+        try {
+            mutilcastSocket.send(hi);
+        } catch (IOException e) {
+            throw new IllegalStateException(e.getMessage(), e);
+        }
+    }",method,
+"    private void receive(String msg, InetSocketAddress remoteAddress) throws RemotingException {
+        if (msg.startsWith(JOIN)) {
+            String url = msg.substring(JOIN.length()).trim();
+            connect(URL.valueOf(url));
+        } else if (msg.startsWith(LEAVE)) {
+            String url = msg.substring(LEAVE.length()).trim();
+            disconnect(URL.valueOf(url));
+        }
+    }",method,

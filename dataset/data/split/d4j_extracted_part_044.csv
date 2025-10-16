@@ -1,0 +1,1539 @@
+code_snippet,type,score
+"public final class ContextPreservingActionListener<R> implements ActionListener<R> {
+    private final ActionListener<R> delegate;
+    private final Supplier<ThreadContext.StoredContext> context;
+    public ContextPreservingActionListener(Supplier<ThreadContext.StoredContext> contextSupplier, ActionListener<R> delegate) {
+        this.delegate = delegate;
+        this.context = contextSupplier;
+    }
+    @Override
+    public void onResponse(R r) {
+        try (ThreadContext.StoredContext ignore = context.get()) {
+            delegate.onResponse(r);
+        }
+    }
+    @Override
+    public void onFailure(Exception e) {
+        try (ThreadContext.StoredContext ignore = context.get()) {
+            delegate.onFailure(e);
+        }
+    }
+    public static <R> ContextPreservingActionListener<R> wrapPreservingContext(ActionListener<R> listener, ThreadContext threadContext) {
+        return new ContextPreservingActionListener<>(threadContext.newRestorableContext(true), listener);
+    }
+}",class,
+"    public ContextPreservingActionListener(Supplier<ThreadContext.StoredContext> contextSupplier, ActionListener<R> delegate) {
+        this.delegate = delegate;
+        this.context = contextSupplier;
+    }",method,
+"    @Override
+    public void onResponse(R r) {
+        try (ThreadContext.StoredContext ignore = context.get()) {
+            delegate.onResponse(r);
+        }
+    }",method,
+"    @Override
+    public void onFailure(Exception e) {
+        try (ThreadContext.StoredContext ignore = context.get()) {
+            delegate.onFailure(e);
+        }
+    }",method,
+"    public static <R> ContextPreservingActionListener<R> wrapPreservingContext(ActionListener<R> listener, ThreadContext threadContext) {
+        return new ContextPreservingActionListener<>(threadContext.newRestorableContext(true), listener);
+    }",method,
+"public class QueueWithMaxIntro {
+  private Deque<Integer> data = new LinkedList<>();
+  public void enqueue(Integer x) { data.add(x); }
+  public Integer dequeue() { return data.removeFirst(); }
+  public Integer max() {
+    if (!data.isEmpty()) {
+      return Collections.max(data);
+    }
+    throw new IllegalStateException(""cannot perform max() on empty queue"");
+  }
+  // @exclude
+  private static void assertDequeue(QueueWithMaxIntro q, Integer t) {
+    Integer dequeue = q.dequeue();
+    assert(t.equals(dequeue));
+  }
+  private static void simpleTest() {
+    QueueWithMaxIntro Q = new QueueWithMaxIntro();
+    Q.enqueue(11);
+    Q.enqueue(2);
+    assert(11 == Q.max());
+    assertDequeue(Q, 11);
+    assert(2 == Q.max());
+    assertDequeue(Q, 2);
+    Q.enqueue(3);
+    assert(3 == Q.max());
+    assertDequeue(Q, 3);
+    Q.enqueue(Integer.MAX_VALUE - 1);
+    Q.enqueue(Integer.MAX_VALUE);
+    Q.enqueue(-2);
+    Q.enqueue(-1);
+    Q.enqueue(-1);
+    Q.enqueue(Integer.MIN_VALUE);
+    assert(Integer.MAX_VALUE == Q.max());
+    assertDequeue(Q, Integer.MAX_VALUE - 1);
+    assert(Integer.MAX_VALUE == Q.max());
+    assertDequeue(Q, Integer.MAX_VALUE);
+    assert(-1 == Q.max());
+    assertDequeue(Q, -2);
+    assert(-1 == Q.max());
+    assertDequeue(Q, -1);
+    assertDequeue(Q, -1);
+    assert(Integer.MIN_VALUE == Q.max());
+    assertDequeue(Q, Integer.MIN_VALUE);
+    try {
+      System.out.println(""Q is empty, max() call should except = "" + Q.max());
+      assert(false);
+    } catch (IllegalStateException e) {
+      System.out.println(e.getMessage());
+    }
+  }
+  public static void main(String[] args) {
+    simpleTest();
+    QueueWithMaxIntro Q = new QueueWithMaxIntro();
+    Q.enqueue(1);
+    Q.enqueue(2);
+    assert(2 == Q.max());
+    assertDequeue(Q, 1);
+    assert(2 == Q.max());
+    assertDequeue(Q, 2);
+    Q.enqueue(3);
+    assert(3 == Q.max());
+    assertDequeue(Q, 3);
+    try {
+      Q.max();
+    } catch (RuntimeException e) {
+      System.out.println(e.getMessage());
+    }
+    try {
+      Q.dequeue();
+    } catch (RuntimeException e) {
+      System.out.println(e.getMessage());
+    }
+  }
+  // @include
+}",class,
+  public void enqueue(Integer x) { data.add(x); },method,
+  public Integer dequeue() { return data.removeFirst(); },method,
+"  public Integer max() {
+    if (!data.isEmpty()) {
+      return Collections.max(data);
+    }
+    throw new IllegalStateException(""cannot perform max() on empty queue"");
+  }",method,
+"  private static void assertDequeue(QueueWithMaxIntro q, Integer t) {
+    Integer dequeue = q.dequeue();
+    assert(t.equals(dequeue));
+  }",method,
+"  private static void simpleTest() {
+    QueueWithMaxIntro Q = new QueueWithMaxIntro();
+    Q.enqueue(11);
+    Q.enqueue(2);
+    assert(11 == Q.max());
+    assertDequeue(Q, 11);
+    assert(2 == Q.max());
+    assertDequeue(Q, 2);
+    Q.enqueue(3);
+    assert(3 == Q.max());
+    assertDequeue(Q, 3);
+    Q.enqueue(Integer.MAX_VALUE - 1);
+    Q.enqueue(Integer.MAX_VALUE);
+    Q.enqueue(-2);
+    Q.enqueue(-1);
+    Q.enqueue(-1);
+    Q.enqueue(Integer.MIN_VALUE);
+    assert(Integer.MAX_VALUE == Q.max());
+    assertDequeue(Q, Integer.MAX_VALUE - 1);
+    assert(Integer.MAX_VALUE == Q.max());
+    assertDequeue(Q, Integer.MAX_VALUE);
+    assert(-1 == Q.max());
+    assertDequeue(Q, -2);
+    assert(-1 == Q.max());
+    assertDequeue(Q, -1);
+    assertDequeue(Q, -1);
+    assert(Integer.MIN_VALUE == Q.max());
+    assertDequeue(Q, Integer.MIN_VALUE);
+    try {
+      System.out.println(""Q is empty, max() call should except = "" + Q.max());
+      assert(false);
+    } catch (IllegalStateException e) {
+      System.out.println(e.getMessage());
+    }
+  }",method,
+"  public static void main(String[] args) {
+    simpleTest();
+    QueueWithMaxIntro Q = new QueueWithMaxIntro();
+    Q.enqueue(1);
+    Q.enqueue(2);
+    assert(2 == Q.max());
+    assertDequeue(Q, 1);
+    assert(2 == Q.max());
+    assertDequeue(Q, 2);
+    Q.enqueue(3);
+    assert(3 == Q.max());
+    assertDequeue(Q, 3);
+    try {
+      Q.max();
+    } catch (RuntimeException e) {
+      System.out.println(e.getMessage());
+    }
+    try {
+      Q.dequeue();
+    } catch (RuntimeException e) {
+      System.out.println(e.getMessage());
+    }
+  }",method,
+"public class MultimapPutAllMultimapTester<K, V>
+    extends AbstractMultimapTester<K, V, Multimap<K, V>> {
+  @MapFeature.Require(absent = SUPPORTS_PUT)
+  public void testPutUnsupported() {
+    try {
+      multimap().putAll(getSubjectGenerator().create(Helpers.mapEntry(k3(), v3())));
+      fail(""Expected UnsupportedOperationException"");
+    } catch (UnsupportedOperationException expected) {
+    }
+  }
+  @MapFeature.Require(SUPPORTS_PUT)
+  public void testPutAllIntoEmpty() {
+    Multimap<K, V> target = getSubjectGenerator().create();
+    assertEquals(!multimap().isEmpty(), target.putAll(multimap()));
+    assertEquals(multimap(), target);
+  }
+  @MapFeature.Require(SUPPORTS_PUT)
+  public void testPutAll() {
+    Multimap<K, V> source =
+        getSubjectGenerator().create(Helpers.mapEntry(k0(), v3()), Helpers.mapEntry(k3(), v3()));
+    assertTrue(multimap().putAll(source));
+    assertTrue(multimap().containsEntry(k0(), v3()));
+    assertTrue(multimap().containsEntry(k3(), v3()));
+  }
+  @MapFeature.Require({SUPPORTS_PUT, ALLOWS_NULL_VALUES})
+  public void testPutAllWithNullValue() {
+    Multimap<K, V> source = getSubjectGenerator().create(Helpers.mapEntry(k0(), null));
+    assertTrue(multimap().putAll(source));
+    assertTrue(multimap().containsEntry(k0(), null));
+  }
+  @MapFeature.Require({SUPPORTS_PUT, ALLOWS_NULL_KEYS})
+  public void testPutAllWithNullKey() {
+    Multimap<K, V> source = getSubjectGenerator().create(Helpers.mapEntry(null, v0()));
+    assertTrue(multimap().putAll(source));
+    assertTrue(multimap().containsEntry(null, v0()));
+  }
+  @MapFeature.Require(value = SUPPORTS_PUT, absent = ALLOWS_NULL_VALUES)
+  public void testPutAllRejectsNullValue() {
+    Multimap<K, V> source = getSubjectGenerator().create(Helpers.mapEntry(k0(), null));
+    try {
+      multimap().putAll(source);
+      fail(""Expected NullPointerException"");
+    } catch (NullPointerException expected) {
+    }
+    expectUnchanged();
+  }
+  @MapFeature.Require(value = SUPPORTS_PUT, absent = ALLOWS_NULL_KEYS)
+  public void testPutAllRejectsNullKey() {
+    Multimap<K, V> source = getSubjectGenerator().create(Helpers.mapEntry(null, v0()));
+    try {
+      multimap().putAll(source);
+      fail(""Expected NullPointerException"");
+    } catch (NullPointerException expected) {
+    }
+    expectUnchanged();
+  }
+  @MapFeature.Require(SUPPORTS_PUT)
+  public void testPutAllPropagatesToGet() {
+    Multimap<K, V> source =
+        getSubjectGenerator().create(Helpers.mapEntry(k0(), v3()), Helpers.mapEntry(k3(), v3()));
+    Collection<V> getCollection = multimap().get(k0());
+    int getCollectionSize = getCollection.size();
+    assertTrue(multimap().putAll(source));
+    assertEquals(getCollectionSize + 1, getCollection.size());
+    assertContains(getCollection, v3());
+  }
+}",class,
+"  @MapFeature.Require(absent = SUPPORTS_PUT)
+  public void testPutUnsupported() {
+    try {
+      multimap().putAll(getSubjectGenerator().create(Helpers.mapEntry(k3(), v3())));
+      fail(""Expected UnsupportedOperationException"");
+    } catch (UnsupportedOperationException expected) {
+    }
+  }",method,
+"  @MapFeature.Require(SUPPORTS_PUT)
+  public void testPutAllIntoEmpty() {
+    Multimap<K, V> target = getSubjectGenerator().create();
+    assertEquals(!multimap().isEmpty(), target.putAll(multimap()));
+    assertEquals(multimap(), target);
+  }",method,
+"  @MapFeature.Require(SUPPORTS_PUT)
+  public void testPutAll() {
+    Multimap<K, V> source =
+        getSubjectGenerator().create(Helpers.mapEntry(k0(), v3()), Helpers.mapEntry(k3(), v3()));
+    assertTrue(multimap().putAll(source));
+    assertTrue(multimap().containsEntry(k0(), v3()));
+    assertTrue(multimap().containsEntry(k3(), v3()));
+  }",method,
+"  @MapFeature.Require({SUPPORTS_PUT, ALLOWS_NULL_VALUES})
+  public void testPutAllWithNullValue() {
+    Multimap<K, V> source = getSubjectGenerator().create(Helpers.mapEntry(k0(), null));
+    assertTrue(multimap().putAll(source));
+    assertTrue(multimap().containsEntry(k0(), null));
+  }",method,
+"  @MapFeature.Require({SUPPORTS_PUT, ALLOWS_NULL_KEYS})
+  public void testPutAllWithNullKey() {
+    Multimap<K, V> source = getSubjectGenerator().create(Helpers.mapEntry(null, v0()));
+    assertTrue(multimap().putAll(source));
+    assertTrue(multimap().containsEntry(null, v0()));
+  }",method,
+"  @MapFeature.Require(value = SUPPORTS_PUT, absent = ALLOWS_NULL_VALUES)
+  public void testPutAllRejectsNullValue() {
+    Multimap<K, V> source = getSubjectGenerator().create(Helpers.mapEntry(k0(), null));
+    try {
+      multimap().putAll(source);
+      fail(""Expected NullPointerException"");
+    } catch (NullPointerException expected) {
+    }
+    expectUnchanged();
+  }",method,
+"  @MapFeature.Require(value = SUPPORTS_PUT, absent = ALLOWS_NULL_KEYS)
+  public void testPutAllRejectsNullKey() {
+    Multimap<K, V> source = getSubjectGenerator().create(Helpers.mapEntry(null, v0()));
+    try {
+      multimap().putAll(source);
+      fail(""Expected NullPointerException"");
+    } catch (NullPointerException expected) {
+    }
+    expectUnchanged();
+  }",method,
+"  @MapFeature.Require(SUPPORTS_PUT)
+  public void testPutAllPropagatesToGet() {
+    Multimap<K, V> source =
+        getSubjectGenerator().create(Helpers.mapEntry(k0(), v3()), Helpers.mapEntry(k3(), v3()));
+    Collection<V> getCollection = multimap().get(k0());
+    int getCollectionSize = getCollection.size();
+    assertTrue(multimap().putAll(source));
+    assertEquals(getCollectionSize + 1, getCollection.size());
+    assertContains(getCollection, v3());
+  }",method,
+"public class PrivateStorageInfo {
+    private static final String TAG = ""PrivateStorageInfo"";
+    public final long freeBytes;
+    public final long totalBytes;
+    public PrivateStorageInfo(long freeBytes, long totalBytes) {
+        this.freeBytes = freeBytes;
+        this.totalBytes = totalBytes;
+    }
+    public static PrivateStorageInfo getPrivateStorageInfo(StorageVolumeProvider sm) {
+        final Context context = AppGlobals.getInitialApplication();
+        final StorageStatsManager stats = context.getSystemService(StorageStatsManager.class);
+        long privateFreeBytes = 0;
+        long privateTotalBytes = 0;
+        for (VolumeInfo info : sm.getVolumes()) {
+            if (info.getType() == VolumeInfo.TYPE_PRIVATE && info.isMountedReadable()) {
+                try {
+                    privateTotalBytes += sm.getTotalBytes(stats, info);
+                    privateFreeBytes += sm.getFreeBytes(stats, info);
+                } catch (IOException e) {
+                    Log.w(TAG, e);
+                }
+            }
+        }
+        return new PrivateStorageInfo(privateFreeBytes, privateTotalBytes);
+    }
+    public static long getTotalSize(VolumeInfo info, long totalInternalStorage) {
+        final Context context = AppGlobals.getInitialApplication();
+        final StorageStatsManager stats = context.getSystemService(StorageStatsManager.class);
+        try {
+            return stats.getTotalBytes(info.getFsUuid());
+        } catch (IOException e) {
+            Log.w(TAG, e);
+            return 0;
+        }
+    }
+}",class,
+"    public PrivateStorageInfo(long freeBytes, long totalBytes) {
+        this.freeBytes = freeBytes;
+        this.totalBytes = totalBytes;
+    }",method,
+"    public static PrivateStorageInfo getPrivateStorageInfo(StorageVolumeProvider sm) {
+        final Context context = AppGlobals.getInitialApplication();
+        final StorageStatsManager stats = context.getSystemService(StorageStatsManager.class);
+        long privateFreeBytes = 0;
+        long privateTotalBytes = 0;
+        for (VolumeInfo info : sm.getVolumes()) {
+            if (info.getType() == VolumeInfo.TYPE_PRIVATE && info.isMountedReadable()) {
+                try {
+                    privateTotalBytes += sm.getTotalBytes(stats, info);
+                    privateFreeBytes += sm.getFreeBytes(stats, info);
+                } catch (IOException e) {
+                    Log.w(TAG, e);
+                }
+            }
+        }
+        return new PrivateStorageInfo(privateFreeBytes, privateTotalBytes);
+    }",method,
+"    public static long getTotalSize(VolumeInfo info, long totalInternalStorage) {
+        final Context context = AppGlobals.getInitialApplication();
+        final StorageStatsManager stats = context.getSystemService(StorageStatsManager.class);
+        try {
+            return stats.getTotalBytes(info.getFsUuid());
+        } catch (IOException e) {
+            Log.w(TAG, e);
+            return 0;
+        }
+    }",method,
+"public class Flow extends FlowMetadata {
+    private FlowMatch match;
+    private FlowMask mask = new FlowMask();
+    private List<FlowAction> actions;
+    public Flow() { }
+    public Flow(FlowMatch match) {
+        this(match, new ArrayList<FlowAction>(0), new FlowStats());
+    }
+    public Flow(FlowMatch match, List<FlowAction> actions) {
+        this(match, actions, new FlowStats());
+    }
+    public Flow(FlowMatch match, List<FlowAction> actions, FlowStats stats) {
+        super(stats);
+        this.match = match;
+        this.actions = actions;
+        mask.calculateFor(match, actions);
+    }
+    @Nullable
+    public FlowMatch getMatch() {
+        return match;
+    }
+    public boolean hasEmptyMatch() {
+        return (match == null || match.getKeys().isEmpty());
+    }
+    public FlowMask getMask() {
+        return mask;
+    }
+    @Nonnull
+    public List<FlowAction> getActions() {
+        return actions;
+    }
+    public void deserialize(ByteBuffer buf) {
+        buf.getInt(); // read datapath index;
+        NetlinkMessage.scanAttributes(buf, this);
+    }
+    public static final Reader<Flow> deserializer = new Reader<Flow>() {
+        public Flow deserializeFrom(ByteBuffer buf) {
+            if (buf == null)
+                return null;
+            return Flow.buildFrom(buf);
+        }
+    };
+    public static Flow buildFrom(ByteBuffer buf) {
+        Flow flow = new Flow();
+        flow.deserialize(buf);
+        return flow;
+    }
+    public void use(ByteBuffer buf, short id) {
+        switch(NetlinkMessage.unnest(id)) {
+            case Attr.Actions:
+                actions = FlowActions.reader.deserializeFrom(buf);
+                break;
+            case Attr.Key:
+                ArrayList<FlowKey> keys = new ArrayList<>();
+                FlowKeys.buildFrom(buf, keys);
+                match = new FlowMatch(keys);
+                break;
+            case Attr.Mask:
+                mask = FlowMask.reader.deserializeFrom(buf);
+                break;
+            default:
+                super.use(buf, id);
+        }
+    }
+    @Override
+    @SuppressWarnings(""unchecked"")
+    public boolean equals(Object o) {
+        if (!super.equals(o)) return false;
+        Flow that = (Flow) o;
+        return Objects.equals(that.match, this.match)
+            && Objects.equals(that.actions, this.actions);
+    }
+    @Override
+    public int hashCode() {
+        int result = super.hashCode();
+        result = 31 * result + Objects.hashCode(match);
+        result = 31 * result + Objects.hashCode(actions);
+        return result;
+    }
+    @Override
+    public String toString() {
+        return ""Flow{"" +
+            ""match="" + match +
+            "", actions="" + actions +
+            "", mask="" + mask +
+            "", metadata="" + super.toString() +
+            ""}"";
+    }
+    public List<String> toPrettyStrings() {
+        List<String> desc = new ArrayList<>();
+        desc.add(""Match: "" + getMatch());
+        desc.add(""Mask:  "" + getMask());
+        if (actions.isEmpty())
+            desc.add(""Actions: []"");
+        else {
+            desc.add(""Actions: "");
+            for (FlowAction act : actions) desc.add(""  "" + act.toString());
+        }
+        if (getStats() != null)
+            desc.add(""Stats: "" + getStats());
+        desc.add(""TCP flags: "" + TCP.Flag.allOfToString(getTcpFlags()));
+        desc.add(""Last used time: "" + getLastUsedMillis());
+        return  desc;
+    }
+}",class,
+    public Flow() { },method,
+"    public Flow(FlowMatch match) {
+        this(match, new ArrayList<FlowAction>(0), new FlowStats());
+    }",method,
+"    public Flow(FlowMatch match, List<FlowAction> actions) {
+        this(match, actions, new FlowStats());
+    }",method,
+"    public Flow(FlowMatch match, List<FlowAction> actions, FlowStats stats) {
+        super(stats);
+        this.match = match;
+        this.actions = actions;
+        mask.calculateFor(match, actions);
+    }",method,
+"    @Nullable
+    public FlowMatch getMatch() {
+        return match;
+    }",method,
+"    public boolean hasEmptyMatch() {
+        return (match == null || match.getKeys().isEmpty());
+    }",method,
+"    public FlowMask getMask() {
+        return mask;
+    }",method,
+"    @Nonnull
+    public List<FlowAction> getActions() {
+        return actions;
+    }",method,
+"    public void deserialize(ByteBuffer buf) {
+        buf.getInt(); // read datapath index;
+        NetlinkMessage.scanAttributes(buf, this);
+    }",method,
+"        public Flow deserializeFrom(ByteBuffer buf) {
+            if (buf == null)
+                return null;
+            return Flow.buildFrom(buf);
+        }",method,
+"    public static Flow buildFrom(ByteBuffer buf) {
+        Flow flow = new Flow();
+        flow.deserialize(buf);
+        return flow;
+    }",method,
+"    public void use(ByteBuffer buf, short id) {
+        switch(NetlinkMessage.unnest(id)) {
+            case Attr.Actions:
+                actions = FlowActions.reader.deserializeFrom(buf);
+                break;
+            case Attr.Key:
+                ArrayList<FlowKey> keys = new ArrayList<>();
+                FlowKeys.buildFrom(buf, keys);
+                match = new FlowMatch(keys);
+                break;
+            case Attr.Mask:
+                mask = FlowMask.reader.deserializeFrom(buf);
+                break;
+            default:
+                super.use(buf, id);
+        }
+    }",method,
+"    @Override
+    @SuppressWarnings(""unchecked"")
+    public boolean equals(Object o) {
+        if (!super.equals(o)) return false;
+        Flow that = (Flow) o;
+        return Objects.equals(that.match, this.match)
+            && Objects.equals(that.actions, this.actions);
+    }",method,
+"    @Override
+    public int hashCode() {
+        int result = super.hashCode();
+        result = 31 * result + Objects.hashCode(match);
+        result = 31 * result + Objects.hashCode(actions);
+        return result;
+    }",method,
+"    @Override
+    public String toString() {
+        return ""Flow{"" +
+            ""match="" + match +
+            "", actions="" + actions +
+            "", mask="" + mask +
+            "", metadata="" + super.toString() +
+            ""}"";
+    }",method,
+"    public List<String> toPrettyStrings() {
+        List<String> desc = new ArrayList<>();
+        desc.add(""Match: "" + getMatch());
+        desc.add(""Mask:  "" + getMask());
+        if (actions.isEmpty())
+            desc.add(""Actions: []"");
+        else {
+            desc.add(""Actions: "");
+            for (FlowAction act : actions) desc.add(""  "" + act.toString());
+        }
+        if (getStats() != null)
+            desc.add(""Stats: "" + getStats());
+        desc.add(""TCP flags: "" + TCP.Flag.allOfToString(getTcpFlags()));
+        desc.add(""Last used time: "" + getLastUsedMillis());
+        return  desc;
+    }",method,
+"public class I18nUtil {
+  private static I18nUtil sharedI18nUtilInstance = null;
+  private static final String SHARED_PREFS_NAME =
+    ""com.facebook.react.modules.i18nmanager.I18nUtil"";
+  private static final String KEY_FOR_PREFS_ALLOWRTL =
+    ""RCTI18nUtil_allowRTL"";
+  private static final String KEY_FOR_PREFS_FORCERTL =
+    ""RCTI18nUtil_forceRTL"";
+  private static final String KEY_FOR_PERFS_MAKE_RTL_FLIP_LEFT_AND_RIGHT_STYLES =
+    ""RCTI18nUtil_makeRTLFlipLeftAndRightStyles"";
+  private I18nUtil() {
+     // Exists only to defeat instantiation.
+  }
+  public static I18nUtil getInstance() {
+    if (sharedI18nUtilInstance == null) {
+      sharedI18nUtilInstance = new I18nUtil();
+    }
+    return sharedI18nUtilInstance;
+  }
+  public boolean isRTL(Context context) {
+    if (isRTLForced(context)) {
+      return true;
+    }
+    return isRTLAllowed(context) &&
+      isDevicePreferredLanguageRTL();
+  }
+  private boolean isRTLAllowed(Context context) {
+    return isPrefSet(context, KEY_FOR_PREFS_ALLOWRTL, true);
+  }
+  public void allowRTL(Context context, boolean allowRTL) {
+    setPref(context, KEY_FOR_PREFS_ALLOWRTL, allowRTL);
+  }
+  public boolean doesRTLFlipLeftAndRightStyles(Context context) {
+    return isPrefSet(context, KEY_FOR_PERFS_MAKE_RTL_FLIP_LEFT_AND_RIGHT_STYLES, true);
+  }
+  public void makeRTLFlipLeftAndRightStyles(Context context, boolean flip) {
+    setPref(context, KEY_FOR_PERFS_MAKE_RTL_FLIP_LEFT_AND_RIGHT_STYLES, flip);
+  }
+  private boolean isRTLForced(Context context) {
+    return isPrefSet(context, KEY_FOR_PREFS_FORCERTL, false);
+  }
+  public void forceRTL(Context context, boolean forceRTL) {
+    setPref(context, KEY_FOR_PREFS_FORCERTL, forceRTL);
+  }
+  // Check if the current device language is RTL
+  private boolean isDevicePreferredLanguageRTL() {
+    final int directionality =
+      TextUtilsCompat.getLayoutDirectionFromLocale(Locale.getDefault());
+    return directionality == ViewCompat.LAYOUT_DIRECTION_RTL;
+   }
+  private boolean isPrefSet(Context context, String key, boolean defaultValue) {
+    SharedPreferences prefs =
+      context.getSharedPreferences(SHARED_PREFS_NAME, Context.MODE_PRIVATE);
+    return prefs.getBoolean(key, defaultValue);
+  }
+  private void setPref(Context context, String key, boolean value) {
+    SharedPreferences.Editor editor =
+      context.getSharedPreferences(SHARED_PREFS_NAME, Context.MODE_PRIVATE).edit();
+    editor.putBoolean(key, value);
+    editor.apply();
+  }
+}",class,
+"  private I18nUtil() {
+     // Exists only to defeat instantiation.
+  }",method,
+"  public static I18nUtil getInstance() {
+    if (sharedI18nUtilInstance == null) {
+      sharedI18nUtilInstance = new I18nUtil();
+    }
+    return sharedI18nUtilInstance;
+  }",method,
+"    if (sharedI18nUtilInstance == null) {
+      sharedI18nUtilInstance = new I18nUtil();
+    }",method,
+"  public boolean isRTL(Context context) {
+    if (isRTLForced(context)) {
+      return true;
+    }
+    return isRTLAllowed(context) &&
+      isDevicePreferredLanguageRTL();
+  }",method,
+"  private boolean isRTLAllowed(Context context) {
+    return isPrefSet(context, KEY_FOR_PREFS_ALLOWRTL, true);
+  }",method,
+"  public void allowRTL(Context context, boolean allowRTL) {
+    setPref(context, KEY_FOR_PREFS_ALLOWRTL, allowRTL);
+  }",method,
+"  public boolean doesRTLFlipLeftAndRightStyles(Context context) {
+    return isPrefSet(context, KEY_FOR_PERFS_MAKE_RTL_FLIP_LEFT_AND_RIGHT_STYLES, true);
+  }",method,
+"  public void makeRTLFlipLeftAndRightStyles(Context context, boolean flip) {
+    setPref(context, KEY_FOR_PERFS_MAKE_RTL_FLIP_LEFT_AND_RIGHT_STYLES, flip);
+  }",method,
+"  private boolean isRTLForced(Context context) {
+    return isPrefSet(context, KEY_FOR_PREFS_FORCERTL, false);
+  }",method,
+"  public void forceRTL(Context context, boolean forceRTL) {
+    setPref(context, KEY_FOR_PREFS_FORCERTL, forceRTL);
+  }",method,
+"  private boolean isDevicePreferredLanguageRTL() {
+    final int directionality =
+      TextUtilsCompat.getLayoutDirectionFromLocale(Locale.getDefault());
+    return directionality == ViewCompat.LAYOUT_DIRECTION_RTL;
+   }",method,
+"  private boolean isPrefSet(Context context, String key, boolean defaultValue) {
+    SharedPreferences prefs =
+      context.getSharedPreferences(SHARED_PREFS_NAME, Context.MODE_PRIVATE);
+    return prefs.getBoolean(key, defaultValue);
+  }",method,
+"  private void setPref(Context context, String key, boolean value) {
+    SharedPreferences.Editor editor =
+      context.getSharedPreferences(SHARED_PREFS_NAME, Context.MODE_PRIVATE).edit();
+    editor.putBoolean(key, value);
+    editor.apply();
+  }",method,
+"public class TestStep { 
+	public static boolean showScripts = false;
+	public TestStep () { 
+	}
+	public boolean execute(WebDriver webDriver, TestCase testCase, TestResult testResult)
+	{
+		this.webDriver = webDriver;
+		this.testCase = testCase;
+		this.testResult = testResult;
+		doStep();
+		// if test failed, don't bother waiting, just bail
+		if (testResult.hasStatus())
+		{
+			if (waitEvent != null)
+			{
+			}
+		}
+		return true;
+	}
+	public String waitTarget;
+	public String waitEvent;
+	public int timeout = 3000;
+	protected TestResult testResult;
+	protected TestCase testCase;
+	protected WebDriver webDriver;
+	protected void doStep()
+	{
+	}
+	public void populateFromAttributes(Attributes attributes) throws Exception
+	{
+		waitTarget = attributes.getValue(""waitTarget"");
+		waitEvent = attributes.getValue(""waitEvent"");
+	}
+	protected void insertTargetScript(StringBuilder sb, String target)
+	{
+		sb.append(""var target = document.getElementsByTagName('body')[0];"");
+		sb.append(""target = target.flexjs_wrapper;"");
+		sb.append(""target = target.initialView;"");
+		if (target == null || target.length() == 0)
+		{
+			return;
+		}
+		String parts[] = target.split(""\\."");
+		int n = parts.length;
+		for (int i = 0; i < n; i++)
+		{
+			sb.append(""target = target['"" + parts[i] + ""'];"");
+		}
+	}
+	public String toString()
+	{
+		return """";
+	}
+}",class,
+"public class APIVersions {
+public static final int kApiVersionSeries_AIR = 0;
+public static final int kApiVersionSeries_FP = 1;
+public static final int kApiVersionSeries_count = 2;
+public static final int kApiVersion_VM_ALLVERSIONS = 0;
+public static final int kApiVersion_AIR_1_0 = 1;
+public static final int kApiVersion_FP_10_0 = 2;
+public static final int kApiVersion_AIR_1_5 = 3;
+public static final int kApiVersion_AIR_1_5_1 = 4;
+public static final int kApiVersion_FP_10_0_32 = 5;
+public static final int kApiVersion_AIR_1_5_2 = 6;
+public static final int kApiVersion_FP_10_1 = 7;
+public static final int kApiVersion_AIR_2_0 = 8;
+public static final int kApiVersion_AIR_2_5 = 9;
+public static final int kApiVersion_FP_10_2 = 10;
+public static final int kApiVersion_AIR_2_6 = 11;
+public static final int kApiVersion_SWF_12 = 12;
+public static final int kApiVersion_AIR_2_7 = 13;
+public static final int kApiVersion_SWF_13 = 14;
+public static final int kApiVersion_AIR_3_0 = 15;
+public static final int kApiVersion_SWF_14 = 16;
+public static final int kApiVersion_AIR_3_1 = 17;
+public static final int kApiVersion_SWF_15 = 18;
+public static final int kApiVersion_AIR_3_2 = 19;
+public static final int kApiVersion_SWF_16 = 20;
+public static final int kApiVersion_AIR_3_3 = 21;
+public static final int kApiVersion_SWF_17 = 22;
+public static final int kApiVersion_AIR_3_4 = 23;
+public static final int kApiVersion_SWF_18 = 24;
+public static final int kApiVersion_AIR_3_5 = 25;
+public static final int kApiVersion_SWF_19 = 26;
+public static final int kApiVersion_AIR_3_6 = 27;
+public static final int kApiVersion_SWF_20 = 28;
+public static final int kApiVersion_AIR_3_7 = 29;
+public static final int kApiVersion_SWF_21 = 30;
+public static final int kApiVersion_AIR_3_8 = 31;
+public static final int kApiVersion_SWF_22 = 32;
+public static final int kApiVersion_AIR_3_9 = 33;
+public static final int kApiVersion_VM_INTERNAL = 34;
+public static final int kApiVersion_count = 35;
+public static final String kApiVersionNames[]= {
+    ""VM_ALLVERSIONS"", 
+    ""AIR_1_0"", 
+    ""FP_10_0"", 
+    ""AIR_1_5"", 
+    ""AIR_1_5_1"", 
+    ""FP_10_0_32"", 
+    ""AIR_1_5_2"", 
+    ""FP_10_1"", 
+    ""AIR_2_0"", 
+    ""AIR_2_5"", 
+    ""FP_10_2"", 
+    ""AIR_2_6"", 
+    ""SWF_12"", 
+    ""AIR_2_7"", 
+    ""SWF_13"", 
+    ""AIR_3_0"", 
+    ""SWF_14"", 
+    ""AIR_3_1"", 
+    ""SWF_15"", 
+    ""AIR_3_2"", 
+    ""SWF_16"", 
+    ""AIR_3_3"", 
+    ""SWF_17"", 
+    ""AIR_3_4"", 
+    ""SWF_18"", 
+    ""AIR_3_5"", 
+    ""SWF_19"", 
+    ""AIR_3_6"", 
+    ""SWF_20"", 
+    ""AIR_3_7"", 
+    ""SWF_21"", 
+    ""AIR_3_8"", 
+	""SWF_22"", 
+	""AIR_3_9"", 
+    ""VM_INTERNAL""
+};
+public static final int kApiVersionSeriesMembership[] = {
+    (1<<kApiVersionSeries_AIR)|(1<<kApiVersionSeries_FP),
+    (1<<kApiVersionSeries_AIR),
+    (1<<kApiVersionSeries_FP),
+    (1<<kApiVersionSeries_AIR),
+    (1<<kApiVersionSeries_AIR),
+    (1<<kApiVersionSeries_FP),
+    (1<<kApiVersionSeries_AIR),
+    (1<<kApiVersionSeries_FP),
+    (1<<kApiVersionSeries_AIR),
+    (1<<kApiVersionSeries_AIR),
+    (1<<kApiVersionSeries_FP),
+    (1<<kApiVersionSeries_AIR),
+    (1<<kApiVersionSeries_FP),
+    (1<<kApiVersionSeries_AIR),
+    (1<<kApiVersionSeries_FP),
+    (1<<kApiVersionSeries_AIR),
+    (1<<kApiVersionSeries_FP),
+    (1<<kApiVersionSeries_AIR),
+    (1<<kApiVersionSeries_FP),
+    (1<<kApiVersionSeries_AIR),
+    (1<<kApiVersionSeries_FP),
+    (1<<kApiVersionSeries_AIR),
+    (1<<kApiVersionSeries_FP),
+    (1<<kApiVersionSeries_AIR),
+    (1<<kApiVersionSeries_FP),
+    (1<<kApiVersionSeries_AIR),
+    (1<<kApiVersionSeries_FP),
+    (1<<kApiVersionSeries_AIR),
+    (1<<kApiVersionSeries_FP),
+    (1<<kApiVersionSeries_AIR),
+    (1<<kApiVersionSeries_FP),
+    (1<<kApiVersionSeries_AIR),
+	(1<<kApiVersionSeries_FP),
+	(1<<kApiVersionSeries_AIR),
+    (1<<kApiVersionSeries_AIR)|(1<<kApiVersionSeries_FP)
+};
+public static final int kApiVersionSeriesTransfer[][] = {
+    { kApiVersion_VM_ALLVERSIONS, kApiVersion_VM_ALLVERSIONS }, // VM_ALLVERSIONS
+    { kApiVersion_AIR_1_0, kApiVersion_VM_INTERNAL }, // AIR_1_0
+    { kApiVersion_AIR_1_5, kApiVersion_FP_10_0 }, // FP_10_0
+    { kApiVersion_AIR_1_5, kApiVersion_VM_INTERNAL }, // AIR_1_5
+    { kApiVersion_AIR_1_5_1, kApiVersion_VM_INTERNAL }, // AIR_1_5_1
+    { kApiVersion_AIR_1_5_2, kApiVersion_FP_10_0_32 }, // FP_10_0_32
+    { kApiVersion_AIR_1_5_2, kApiVersion_VM_INTERNAL }, // AIR_1_5_2
+    { kApiVersion_AIR_2_0, kApiVersion_FP_10_1 }, // FP_10_1
+    { kApiVersion_AIR_2_0, kApiVersion_VM_INTERNAL }, // AIR_2_0
+    { kApiVersion_AIR_2_5, kApiVersion_VM_INTERNAL }, // AIR_2_5
+    { kApiVersion_AIR_2_6, kApiVersion_FP_10_2 }, // FP_10_2
+    { kApiVersion_AIR_2_6, kApiVersion_VM_INTERNAL }, // AIR_2_6
+    { kApiVersion_AIR_2_7, kApiVersion_SWF_12 }, // SWF_12
+    { kApiVersion_AIR_2_7, kApiVersion_VM_INTERNAL }, // AIR_2_7
+    { kApiVersion_AIR_3_0, kApiVersion_SWF_13 }, // SWF_13
+    { kApiVersion_AIR_3_0, kApiVersion_VM_INTERNAL }, // AIR_3_0
+    { kApiVersion_AIR_3_1, kApiVersion_SWF_14 }, // SWF_14
+    { kApiVersion_AIR_3_1, kApiVersion_VM_INTERNAL }, // AIR_3_1
+    { kApiVersion_AIR_3_2, kApiVersion_SWF_15 }, // SWF_15
+    { kApiVersion_AIR_3_2, kApiVersion_VM_INTERNAL }, // AIR_3_2
+    { kApiVersion_AIR_3_3, kApiVersion_SWF_16 }, // SWF_16
+    { kApiVersion_AIR_3_3, kApiVersion_VM_INTERNAL }, // AIR_3_3
+    { kApiVersion_AIR_3_4, kApiVersion_SWF_17 }, // SWF_17
+    { kApiVersion_AIR_3_4, kApiVersion_VM_INTERNAL }, // AIR_3_4
+    { kApiVersion_AIR_3_5, kApiVersion_SWF_18 }, // SWF_18
+    { kApiVersion_AIR_3_5, kApiVersion_VM_INTERNAL }, // AIR_3_5
+    { kApiVersion_AIR_3_6, kApiVersion_SWF_19 }, // SWF_19
+    { kApiVersion_AIR_3_6, kApiVersion_VM_INTERNAL }, // AIR_3_6
+    { kApiVersion_AIR_3_7, kApiVersion_SWF_20 }, // SWF_20
+    { kApiVersion_AIR_3_7, kApiVersion_VM_INTERNAL }, // AIR_3_7
+    { kApiVersion_AIR_3_8, kApiVersion_SWF_21 }, // SWF_21
+    { kApiVersion_AIR_3_8, kApiVersion_VM_INTERNAL }, // AIR_3_8
+	{ kApiVersion_AIR_3_9, kApiVersion_SWF_22 }, // SWF_22
+	{ kApiVersion_AIR_3_9, kApiVersion_VM_INTERNAL }, // AIR_3_9
+    { kApiVersion_VM_INTERNAL, kApiVersion_VM_INTERNAL } // VM_INTERNAL
+};
+public static final int kApiVersionFirst[] = {
+    kApiVersion_AIR_1_0,
+    kApiVersion_FP_10_0
+};
+public static final int kApiVersionLatest[] = {
+    kApiVersion_AIR_3_9,
+    kApiVersion_SWF_22
+};
+}",class,
+"	public TestStep () { 
+	}",method,
+"	public boolean execute(WebDriver webDriver, TestCase testCase, TestResult testResult)
+	{
+		this.webDriver = webDriver;
+		this.testCase = testCase;
+		this.testResult = testResult;
+		doStep();
+		// if test failed, don't bother waiting, just bail
+		if (testResult.hasStatus())
+		{
+			if (waitEvent != null)
+			{
+			}
+		}
+		return true;
+	}",method,
+"			if (waitEvent != null)
+			{
+			}",method,
+"	protected void doStep()
+	{
+	}",method,
+"	public void populateFromAttributes(Attributes attributes) throws Exception
+	{
+		waitTarget = attributes.getValue(""waitTarget"");
+		waitEvent = attributes.getValue(""waitEvent"");
+	}",method,
+"	protected void insertTargetScript(StringBuilder sb, String target)
+	{
+		sb.append(""var target = document.getElementsByTagName('body')[0];"");
+		sb.append(""target = target.flexjs_wrapper;"");
+		sb.append(""target = target.initialView;"");
+		if (target == null || target.length() == 0)
+		{
+			return;
+		}
+		String parts[] = target.split(""\\."");
+		int n = parts.length;
+		for (int i = 0; i < n; i++)
+		{
+			sb.append(""target = target['"" + parts[i] + ""'];"");
+		}
+	}",method,
+"		for (int i = 0; i < n; i++)
+		{
+			sb.append(""target = target['"" + parts[i] + ""'];"");
+		}",method,
+"	public String toString()
+	{
+		return """";
+	}",method,
+"public class HttpQueryStatsClient
+        implements QueryStatsClient
+{
+    private final HttpClient httpClient;
+    private final ObjectMapper objectMapper;
+    private final URI baseUri;
+    public HttpQueryStatsClient(HttpClient httpClient, ObjectMapper objectMapper, URI baseUri)
+    {
+        this.httpClient = httpClient;
+        this.objectMapper = objectMapper;
+        this.baseUri = baseUri;
+    }
+    @Override
+    public Optional<QueryStats> getQueryStats(String queryId)
+    {
+        URI uri = uriBuilderFrom(baseUri).appendPath(""/v1/query"").appendPath(queryId).build();
+        Request request = prepareGet().setUri(uri).build();
+        return httpClient.execute(request, new GetQueryStatsResponseHandler());
+    }
+    private final class GetQueryStatsResponseHandler
+            implements ResponseHandler<Optional<QueryStats>, RuntimeException>
+    {
+        @Override
+        public Optional<QueryStats> handleException(Request request, Exception exception)
+        {
+            throw propagate(request, exception);
+        }
+        @Override
+        public Optional<QueryStats> handle(Request request, Response response)
+        {
+            if (response.getStatusCode() == HttpStatus.GONE.code()) {
+                return Optional.empty();
+            }
+            else if (response.getStatusCode() != HttpStatus.OK.code()) {
+                throw new RuntimeException(""unexpected error code "" + response.getStatusCode() + ""; reason="" + response.getStatusMessage());
+            }
+            try {
+                JsonNode rootNode = objectMapper.readTree(response.getInputStream());
+                JsonNode queryStatsNode = rootNode.get(""queryStats"");
+                if (queryStatsNode == null) {
+                    return Optional.empty();
+                }
+                QueryStats queryStats = objectMapper.treeToValue(queryStatsNode, QueryStats.class);
+                return Optional.of(queryStats);
+            }
+            catch (IOException e) {
+                throw Throwables.propagate(e);
+            }
+        }
+    }
+}",class,
+"    private final class GetQueryStatsResponseHandler
+            implements ResponseHandler<Optional<QueryStats>, RuntimeException>
+    {
+        @Override
+        public Optional<QueryStats> handleException(Request request, Exception exception)
+        {
+            throw propagate(request, exception);
+        }
+        @Override
+        public Optional<QueryStats> handle(Request request, Response response)
+        {
+            if (response.getStatusCode() == HttpStatus.GONE.code()) {
+                return Optional.empty();
+            }
+            else if (response.getStatusCode() != HttpStatus.OK.code()) {
+                throw new RuntimeException(""unexpected error code "" + response.getStatusCode() + ""; reason="" + response.getStatusMessage());
+            }
+            try {
+                JsonNode rootNode = objectMapper.readTree(response.getInputStream());
+                JsonNode queryStatsNode = rootNode.get(""queryStats"");
+                if (queryStatsNode == null) {
+                    return Optional.empty();
+                }
+                QueryStats queryStats = objectMapper.treeToValue(queryStatsNode, QueryStats.class);
+                return Optional.of(queryStats);
+            }
+            catch (IOException e) {
+                throw Throwables.propagate(e);
+            }
+        }
+    }",class,
+"    public HttpQueryStatsClient(HttpClient httpClient, ObjectMapper objectMapper, URI baseUri)
+    {
+        this.httpClient = httpClient;
+        this.objectMapper = objectMapper;
+        this.baseUri = baseUri;
+    }",method,
+"    @Override
+    public Optional<QueryStats> getQueryStats(String queryId)
+    {
+        URI uri = uriBuilderFrom(baseUri).appendPath(""/v1/query"").appendPath(queryId).build();
+        Request request = prepareGet().setUri(uri).build();
+        return httpClient.execute(request, new GetQueryStatsResponseHandler());
+    }",method,
+"        @Override
+        public Optional<QueryStats> handleException(Request request, Exception exception)
+        {
+            throw propagate(request, exception);
+        }",method,
+"        @Override
+        public Optional<QueryStats> handle(Request request, Response response)
+        {
+            if (response.getStatusCode() == HttpStatus.GONE.code()) {
+                return Optional.empty();
+            }
+            else if (response.getStatusCode() != HttpStatus.OK.code()) {
+                throw new RuntimeException(""unexpected error code "" + response.getStatusCode() + ""; reason="" + response.getStatusMessage());
+            }
+            try {
+                JsonNode rootNode = objectMapper.readTree(response.getInputStream());
+                JsonNode queryStatsNode = rootNode.get(""queryStats"");
+                if (queryStatsNode == null) {
+                    return Optional.empty();
+                }
+                QueryStats queryStats = objectMapper.treeToValue(queryStatsNode, QueryStats.class);
+                return Optional.of(queryStats);
+            }
+            catch (IOException e) {
+                throw Throwables.propagate(e);
+            }
+        }",method,
+"                if (queryStatsNode == null) {
+                    return Optional.empty();
+                }",method,
+"            catch (IOException e) {
+                throw Throwables.propagate(e);
+            }",method,
+"    class ImmutableViolationException extends GradleException {
+        public ImmutableViolationException() {
+            super(""ReportContainer objects are immutable"");
+        }
+    }",class,
+"        public ImmutableViolationException() {
+            super(""ReportContainer objects are immutable"");
+        }",method,
+"public class AndroidInstrumentationApk extends AndroidBinary {
+  private AndroidBinary apkUnderTest;
+  AndroidInstrumentationApk(
+      BuildTarget buildTarget,
+      ProjectFilesystem projectFilesystem,
+      BuildRuleParams buildRuleParams,
+      SourcePathRuleFinder ruleFinder,
+      AndroidBinary apkUnderTest,
+      ImmutableSortedSet<JavaLibrary> rulesToExcludeFromDex,
+      AndroidGraphEnhancementResult enhancementResult,
+      DexFilesInfo dexFilesInfo,
+      NativeFilesInfo nativeFilesInfo,
+      ResourceFilesInfo resourceFilesInfo,
+      Optional<ExopackageInfo> exopackageInfo) {
+    super(
+        buildTarget,
+        projectFilesystem,
+        buildRuleParams,
+        ruleFinder,
+        apkUnderTest.getProguardJvmArgs(),
+        apkUnderTest.getKeystore(),
+        // Do not split the test apk even if the tested apk is split
+        DexSplitMode.NO_SPLIT,
+        apkUnderTest.getBuildTargetsToExcludeFromDex(),
+        apkUnderTest.getSdkProguardConfig(),
+        apkUnderTest.getOptimizationPasses(),
+        apkUnderTest.getProguardConfig(),
+        apkUnderTest.getSkipProguard(),
+        Optional.empty(), // RedexOptions
+        apkUnderTest.getResourceCompressionMode(),
+        apkUnderTest.getCpuFilters(),
+        apkUnderTest.getResourceFilter(),
+        EnumSet.noneOf(ExopackageMode.class),
+        rulesToExcludeFromDex,
+        enhancementResult,
+        Optional.empty(),
+        false,
+        false,
+        apkUnderTest.getManifestEntries(),
+        apkUnderTest.getJavaRuntimeLauncher(),
+        true,
+        Optional.empty(),
+        dexFilesInfo,
+        nativeFilesInfo,
+        resourceFilesInfo,
+        ImmutableSortedSet.copyOf(enhancementResult.getAPKModuleGraph().getAPKModules()),
+        exopackageInfo);
+    this.apkUnderTest = apkUnderTest;
+  }
+  @Override
+  public Stream<BuildTarget> getInstallHelpers() {
+    return Stream.of();
+  }
+  public AndroidBinary getApkUnderTest() {
+    return apkUnderTest;
+  }
+}",class,
+"  AndroidInstrumentationApk(
+      BuildTarget buildTarget,
+      ProjectFilesystem projectFilesystem,
+      BuildRuleParams buildRuleParams,
+      SourcePathRuleFinder ruleFinder,
+      AndroidBinary apkUnderTest,
+      ImmutableSortedSet<JavaLibrary> rulesToExcludeFromDex,
+      AndroidGraphEnhancementResult enhancementResult,
+      DexFilesInfo dexFilesInfo,
+      NativeFilesInfo nativeFilesInfo,
+      ResourceFilesInfo resourceFilesInfo,
+      Optional<ExopackageInfo> exopackageInfo) {
+    super(
+        buildTarget,
+        projectFilesystem,
+        buildRuleParams,
+        ruleFinder,
+        apkUnderTest.getProguardJvmArgs(),
+        apkUnderTest.getKeystore(),
+        // Do not split the test apk even if the tested apk is split
+        DexSplitMode.NO_SPLIT,
+        apkUnderTest.getBuildTargetsToExcludeFromDex(),
+        apkUnderTest.getSdkProguardConfig(),
+        apkUnderTest.getOptimizationPasses(),
+        apkUnderTest.getProguardConfig(),
+        apkUnderTest.getSkipProguard(),
+        Optional.empty(), // RedexOptions
+        apkUnderTest.getResourceCompressionMode(),
+        apkUnderTest.getCpuFilters(),
+        apkUnderTest.getResourceFilter(),
+        EnumSet.noneOf(ExopackageMode.class),
+        rulesToExcludeFromDex,
+        enhancementResult,
+        Optional.empty(),
+        false,
+        false,
+        apkUnderTest.getManifestEntries(),
+        apkUnderTest.getJavaRuntimeLauncher(),
+        true,
+        Optional.empty(),
+        dexFilesInfo,
+        nativeFilesInfo,
+        resourceFilesInfo,
+        ImmutableSortedSet.copyOf(enhancementResult.getAPKModuleGraph().getAPKModules()),
+        exopackageInfo);
+    this.apkUnderTest = apkUnderTest;
+  }",method,
+"  @Override
+  public Stream<BuildTarget> getInstallHelpers() {
+    return Stream.of();
+  }",method,
+"  public AndroidBinary getApkUnderTest() {
+    return apkUnderTest;
+  }",method,
+"public class WhenByEnumsMapping {
+    public static final String MAPPING_ARRAY_FIELD_PREFIX = ""$EnumSwitchMapping$"";
+    public static final String MAPPINGS_CLASS_NAME_POSTFIX = ""$WhenMappings"";
+    private final Map<EnumValue, Integer> map = new LinkedHashMap<>();
+    private final ClassDescriptor enumClassDescriptor;
+    private final String outerClassInternalNameForExpression;
+    private final String mappingsClassInternalName;
+    private final int fieldNumber;
+    public WhenByEnumsMapping(
+            @NotNull ClassDescriptor enumClassDescriptor,
+            @NotNull String outerClassInternalNameForExpression,
+            int fieldNumber
+    ) {
+        this.enumClassDescriptor = enumClassDescriptor;
+        this.outerClassInternalNameForExpression = outerClassInternalNameForExpression;
+        this.mappingsClassInternalName = outerClassInternalNameForExpression + MAPPINGS_CLASS_NAME_POSTFIX;
+        this.fieldNumber = fieldNumber;
+    }
+    public int getIndexByEntry(@NotNull EnumValue value) {
+        Integer result = map.get(value);
+        assert result != null : ""entry "" + value + "" has no mapping"";
+        return result;
+    }
+    public void putFirstTime(@NotNull EnumValue value, int index) {
+        if (!map.containsKey(value)) {
+            map.put(value, index);
+        }
+    }
+    public int size() {
+        return map.size();
+    }
+    @NotNull
+    public String getFieldName() {
+        return MAPPING_ARRAY_FIELD_PREFIX + fieldNumber;
+    }
+    @NotNull
+    public ClassDescriptor getEnumClassDescriptor() {
+        return enumClassDescriptor;
+    }
+    @NotNull
+    public String getOuterClassInternalNameForExpression() {
+        return outerClassInternalNameForExpression;
+    }
+    @NotNull
+    public String getMappingsClassInternalName() {
+        return mappingsClassInternalName;
+    }
+    @NotNull
+    public Iterable<Map.Entry<EnumValue, Integer>> enumValuesToIntMapping() {
+        return map.entrySet();
+    }
+}",class,
+"    public WhenByEnumsMapping(
+            @NotNull ClassDescriptor enumClassDescriptor,
+            @NotNull String outerClassInternalNameForExpression,
+            int fieldNumber
+    ) {
+        this.enumClassDescriptor = enumClassDescriptor;
+        this.outerClassInternalNameForExpression = outerClassInternalNameForExpression;
+        this.mappingsClassInternalName = outerClassInternalNameForExpression + MAPPINGS_CLASS_NAME_POSTFIX;
+        this.fieldNumber = fieldNumber;
+    }",method,
+"    public int getIndexByEntry(@NotNull EnumValue value) {
+        Integer result = map.get(value);
+        assert result != null : ""entry "" + value + "" has no mapping"";
+        return result;
+    }",method,
+"    public void putFirstTime(@NotNull EnumValue value, int index) {
+        if (!map.containsKey(value)) {
+            map.put(value, index);
+        }
+    }",method,
+"    public int size() {
+        return map.size();
+    }",method,
+"    @NotNull
+    public String getFieldName() {
+        return MAPPING_ARRAY_FIELD_PREFIX + fieldNumber;
+    }",method,
+"    @NotNull
+    public ClassDescriptor getEnumClassDescriptor() {
+        return enumClassDescriptor;
+    }",method,
+"    @NotNull
+    public String getOuterClassInternalNameForExpression() {
+        return outerClassInternalNameForExpression;
+    }",method,
+"    @NotNull
+    public String getMappingsClassInternalName() {
+        return mappingsClassInternalName;
+    }",method,
+"    @NotNull
+    public Iterable<Map.Entry<EnumValue, Integer>> enumValuesToIntMapping() {
+        return map.entrySet();
+    }",method,
+"    ExitCode(int code) {
+        this.code = code;
+    }",method,
+"    public int getCode() {
+        return code;
+    }",method,
+"public class DBSeerExceptionHandler
+{
+	public static void showDialog(String msg)
+	{
+		JOptionPane.showMessageDialog(DBSeerGUI.mainFrame, msg, ""Message"",
+				JOptionPane.INFORMATION_MESSAGE);
+	}
+	public static void handleException(Exception e)
+	{
+		try
+		{
+			if (e instanceof MatlabInvocationException)
+			{
+				if (!DBSeerGUI.isProxyRenewing)
+				{
+					String errorMsg = addLineBreaksToMessage(e.getMessage() + "":\n"" + getLastMatLabError(), 120);
+					JOptionPane.showMessageDialog(DBSeerGUI.mainFrame, errorMsg, ""MATLAB Error"",
+							JOptionPane.ERROR_MESSAGE);
+				}
+			}
+			else if (e instanceof OctaveEvalException)
+			{
+				String errorMsg = addLineBreaksToMessage(e.getMessage() + "":\n"" + getLastOctaveError(), 120);
+				JOptionPane.showMessageDialog(DBSeerGUI.mainFrame, errorMsg, ""Octave Error"",
+						JOptionPane.ERROR_MESSAGE);
+			}
+			else
+			{
+				if (e instanceof NullPointerException)
+				{
+					JOptionPane.showMessageDialog(DBSeerGUI.mainFrame, ""NullPointerException: consult the stack trace for debugging."",
+							""Error"",
+							JOptionPane.ERROR_MESSAGE);
+					e.printStackTrace();
+				}
+				else if (e instanceof UnresolvedAddressException)
+				{
+					JOptionPane.showMessageDialog(DBSeerGUI.mainFrame, ""IP Address cannot be resolved."",
+							""Error"",
+							JOptionPane.ERROR_MESSAGE);
+				}
+				else
+				{
+					JOptionPane.showMessageDialog(DBSeerGUI.mainFrame, e.getMessage(), ""Error"",
+							JOptionPane.ERROR_MESSAGE);
+				}
+			}
+		}
+		catch (Exception e1)
+		{
+			e1.printStackTrace();
+		}
+	}
+	public static void handleException(Exception e, String title)
+	{
+		try
+		{
+			if (e instanceof MatlabInvocationException)
+			{
+				if (!DBSeerGUI.isProxyRenewing)
+				{
+					String errorMsg = addLineBreaksToMessage(e.getMessage() + "":\n"" + getLastMatLabError(), 120);
+					JOptionPane.showMessageDialog(DBSeerGUI.mainFrame, errorMsg, ""MATLAB Error"",
+							JOptionPane.ERROR_MESSAGE);
+				}
+			}
+			else if (e instanceof OctaveEvalException)
+			{
+				String errorMsg = addLineBreaksToMessage(e.getMessage() + "":\n"" + getLastOctaveError(), 120);
+				JOptionPane.showMessageDialog(DBSeerGUI.mainFrame, errorMsg, ""Octave Error"",
+						JOptionPane.ERROR_MESSAGE);
+			}
+			else
+			{
+				JOptionPane.showMessageDialog(DBSeerGUI.mainFrame, e.getMessage(), title,
+						JOptionPane.ERROR_MESSAGE);
+//				e.printStackTrace();
+			}
+		}
+		catch (Exception e1)
+		{
+			e1.printStackTrace();
+		}
+	}
+	public static String getLastMatLabError() throws Exception
+	{
+		StatisticalPackageRunner runner = DBSeerGUI.runner;
+		String errorMessage = """";
+		runner.eval(""dbseer_lasterror = lasterror;"");
+		errorMessage = runner.getVariableString(""dbseer_lasterror.message"");
+		return errorMessage;
+	}
+	public static String getLastOctaveError() throws Exception
+	{
+		StatisticalPackageRunner runner = DBSeerGUI.runner;
+		OctaveEngine engine = OctaveRunner.getInstance().getEngine();
+		String errorMessage = """";
+		runner.eval(""dbseer_lasterror = lasterror"");
+		runner.eval(""dbseer_lasterror_message = dbseer_lasterror.message"");
+		runner.eval(""dbseer_lasterror_file = dbseer_lasterror.stack.file"");
+		runner.eval(""dbseer_lasterror_line = dbseer_lasterror.stack.line"");
+		errorMessage = ((OctaveString)engine.get(""dbseer_lasterror_message"")).getString();
+		OctaveString errorFile = (OctaveString) engine.get(""dbseer_lasterror_file"");
+		OctaveDouble errorLine = (OctaveDouble) engine.get(""dbseer_lasterror_line"");
+		if (errorFile != null)
+		{
+			errorMessage += "" in "" + errorFile.getString();
+		}
+		if (errorLine != null)
+		{
+			errorMessage += "" at "" + String.format(""%.0f"", errorLine.get(1));
+		}
+		return errorMessage;
+	}
+	private static String addLineBreaksToMessage(String input, int maxLineLength)
+	{
+		StringTokenizer tok = new StringTokenizer(input, "" "");
+		StringBuilder output = new StringBuilder(input.length());
+		int lineLen = 0;
+		while (tok.hasMoreTokens()) {
+			String word = tok.nextToken();
+			if (lineLen + word.length() > maxLineLength) {
+				output.append(""\n"");
+				lineLen = 0;
+			}
+			output.append(word);
+			output.append("" "");
+			lineLen += word.length() + 1;
+		}
+		return output.toString();
+	}
+}",class,
+"	public static void showDialog(String msg)
+	{
+		JOptionPane.showMessageDialog(DBSeerGUI.mainFrame, msg, ""Message"",
+				JOptionPane.INFORMATION_MESSAGE);
+	}",method,
+"	public static void handleException(Exception e)
+	{
+		try
+		{
+			if (e instanceof MatlabInvocationException)
+			{
+				if (!DBSeerGUI.isProxyRenewing)
+				{
+					String errorMsg = addLineBreaksToMessage(e.getMessage() + "":\n"" + getLastMatLabError(), 120);
+					JOptionPane.showMessageDialog(DBSeerGUI.mainFrame, errorMsg, ""MATLAB Error"",
+							JOptionPane.ERROR_MESSAGE);
+				}
+			}
+			else if (e instanceof OctaveEvalException)
+			{
+				String errorMsg = addLineBreaksToMessage(e.getMessage() + "":\n"" + getLastOctaveError(), 120);
+				JOptionPane.showMessageDialog(DBSeerGUI.mainFrame, errorMsg, ""Octave Error"",
+						JOptionPane.ERROR_MESSAGE);
+			}
+			else
+			{
+				if (e instanceof NullPointerException)
+				{
+					JOptionPane.showMessageDialog(DBSeerGUI.mainFrame, ""NullPointerException: consult the stack trace for debugging."",
+							""Error"",
+							JOptionPane.ERROR_MESSAGE);
+					e.printStackTrace();
+				}
+				else if (e instanceof UnresolvedAddressException)
+				{
+					JOptionPane.showMessageDialog(DBSeerGUI.mainFrame, ""IP Address cannot be resolved."",
+							""Error"",
+							JOptionPane.ERROR_MESSAGE);
+				}
+				else
+				{
+					JOptionPane.showMessageDialog(DBSeerGUI.mainFrame, e.getMessage(), ""Error"",
+							JOptionPane.ERROR_MESSAGE);
+				}
+			}
+		}
+		catch (Exception e1)
+		{
+			e1.printStackTrace();
+		}
+	}",method,
+"			if (e instanceof MatlabInvocationException)
+			{
+				if (!DBSeerGUI.isProxyRenewing)
+				{
+					String errorMsg = addLineBreaksToMessage(e.getMessage() + "":\n"" + getLastMatLabError(), 120);
+					JOptionPane.showMessageDialog(DBSeerGUI.mainFrame, errorMsg, ""MATLAB Error"",
+							JOptionPane.ERROR_MESSAGE);
+				}
+			}",method,
+"				if (!DBSeerGUI.isProxyRenewing)
+				{
+					String errorMsg = addLineBreaksToMessage(e.getMessage() + "":\n"" + getLastMatLabError(), 120);
+					JOptionPane.showMessageDialog(DBSeerGUI.mainFrame, errorMsg, ""MATLAB Error"",
+							JOptionPane.ERROR_MESSAGE);
+				}",method,
+"			else if (e instanceof OctaveEvalException)
+			{
+				String errorMsg = addLineBreaksToMessage(e.getMessage() + "":\n"" + getLastOctaveError(), 120);
+				JOptionPane.showMessageDialog(DBSeerGUI.mainFrame, errorMsg, ""Octave Error"",
+						JOptionPane.ERROR_MESSAGE);
+			}",method,
+"				if (e instanceof NullPointerException)
+				{
+					JOptionPane.showMessageDialog(DBSeerGUI.mainFrame, ""NullPointerException: consult the stack trace for debugging."",
+							""Error"",
+							JOptionPane.ERROR_MESSAGE);
+					e.printStackTrace();
+				}",method,
+"				else if (e instanceof UnresolvedAddressException)
+				{
+					JOptionPane.showMessageDialog(DBSeerGUI.mainFrame, ""IP Address cannot be resolved."",
+							""Error"",
+							JOptionPane.ERROR_MESSAGE);
+				}",method,
+"		catch (Exception e1)
+		{
+			e1.printStackTrace();
+		}",method,

@@ -63,6 +63,30 @@ The system combines three components that contribute to the final score (not nec
 
 The outputs of these components will be combined into a final assessment.
 
+### Heuristics used for classes
+- Name: 3+ && <11, <20, 21+ || 2-
+- Property names length: 3+ && <10, <18, 19+ || 2-
+- Property names chars: no special chars, 1 special char, 2+ special chars
+- Number of public methods (excluding getters and setters): <5, <7, 8+
+- Number of variables: <7, <10, 11+
+- All methods average score: <1.5, <2.3, 2.31+
+- Total amount of comment chars: <150, <300, 301+
+- Simplified check of class cohesion (how many methods use how many variables)
+- Class name, var names in camelCase: yes, some, no
+
+### Heuristics used for methods
+- Name: 3+ && <11, <20, 21+ || 2-
+- Parameter/local var names length: 3+ && <8, <13, 14+ || 2-
+- Parameter/local var names chars: no special chars, 1 special char, 2+ special chars
+- Length: <10, <30, 31+
+- Number of parameters: <2, <4, 5+
+- Total amount of comment chars: <50, <100, 101+
+- Deepest indentation level: <3, <4, 5+
+- Longest line: <80, <110, 111+
+- Cyclomatic complexity: <O(n^2), <O(n^3), O(n^3)+
+- Number of return statements: <2, <3, 4+
+- Method name, parameter names, local var names in camelCase: yes, some, no
+
 ---
 
 ## 7) Evaluation
@@ -93,6 +117,13 @@ This document captures the initial project proposal and design intent. The exact
 
 ---
 
+## Major flaws
+
+- When talking about variable or class or method names, we can't see if these names are meaningful or not.
+- We can't see if some method or class do one or multiple things.
+- We don't look at coupling with other classes. Only the specific class and its methods.
+- We don't catch code duplication necessarily through heuristics.
+
 ## Potential Next Steps (Suggestions)
 
 - Finalize dataset sources and labeling strategy.
@@ -100,7 +131,7 @@ This document captures the initial project proposal and design intent. The exact
 - Define and validate heuristic rules grounded in Clean Code principles.
 - Engineer numeric features for KNN and prototype the CNN tokenization pipeline.
 - Establish evaluation metrics and baselines; create error analysis tooling.
-- Explore augmentation with LLM-based signals as an optional fourth component.
+- Explore augmentation with LLM-based signals as an important fourth component.
 
 ---
 

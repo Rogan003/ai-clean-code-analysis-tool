@@ -1,0 +1,1471 @@
+code_snippet,type,score
+"    while (true) {
+      if (rline.length() < 6) {
+        break;
+      }
+      Relocation reloc = new Relocation();
+      _relocs.add(reloc);
+      rline = rline.substring(6);
+      reloc._mode = getByte(rline);
+      rline = rline.substring(3);
+      reloc._offset = getByte(rline) - 2;
+      rline = rline.substring(3);
+      reloc._symbol = getWord(rline);
+    }",method,
+"  private int getWord(String line) {
+    Matcher m = WORD.matcher(line);
+    if (!m.find()) {
+      return -1;
+    }
+    String hexstr = m.group(2) + m.group(1);
+    return Integer.parseInt(hexstr, 16);
+  }",method,
+"  private short getByte(String line) {
+    Matcher m = BYTE.matcher(line);
+    if (!m.find()) {
+      return -1;
+    }
+    String hexstr = m.group(1);
+    return Short.parseShort(hexstr, 16);
+  }",method,
+"  public void fill(Objfile object, byte[] image) {
+    int address = _address + _area.getOffset();
+    for (Relocation reloc : _relocs) {
+      int target = 0;
+      byte mode = 0;  // Ext/Int MSB/LSB Byte/Word 
+      RelocationInformation info = new RelocationInformation();
+      if ((reloc._mode & 2) > 0) {
+        // external
+        Symbol symbol = object.getSymbol(reloc._symbol);
+        target = symbol.calcOffset();
+        System.out.printf(""%s %04X=>%04X\n"", symbol, symbol.getOffset(), target);
+        if (symbol.isAbsolute()) {
+          mode |= 0x80;
+        }
+      } else {
+        // internal
+        Area area = object.getArea(reloc._symbol);
+        int offset = area.getOffset();
+        short source = (short) ((_bytes.get(reloc._offset + 1) << 8) + _bytes.get(reloc._offset)); 
+        target = (short) (source + offset);
+        // TODO: save relocation information
+        System.out.printf(""%s:%04X=>%04X\n"", area, source,  target);
+      }
+      info.setAddress(address);
+      if ((reloc._mode & 1) > 0) {
+        // byte mode
+        if ((reloc._mode & 128) > 0) {
+          // MSB
+          mode |= 0x60;
+          _bytes.set(reloc._offset, (short) (target >> 8));
+          _bytes.set(reloc._offset + 1, (short) -1);
+        } else {
+          // LSB
+          mode |= 0x20;
+          _bytes.set(reloc._offset, (short) -1);
+          _bytes.set(reloc._offset, (short) (target & 0xff));
+        }
+        address++;
+      } else {
+        // word mode
+        _bytes.set(reloc._offset, (short) (target & 0xff));
+        _bytes.set(reloc._offset + 1, (short) (target >> 8));
+        address += 2;
+      }
+      info.setMode(mode);
+      info.setData(target);
+      object.getLinker().addRelocation(info);
+    }
+    address = _address + _area.getOffset();
+    for (int data : _bytes) {
+      if (data >= 0) {
+        image[address++] = (byte) data;
+      }
+    }
+  }",method,
+"    for (Relocation reloc : _relocs) {
+      int target = 0;
+      byte mode = 0;  // Ext/Int MSB/LSB Byte/Word 
+      RelocationInformation info = new RelocationInformation();
+      if ((reloc._mode & 2) > 0) {
+        // external
+        Symbol symbol = object.getSymbol(reloc._symbol);
+        target = symbol.calcOffset();
+        System.out.printf(""%s %04X=>%04X\n"", symbol, symbol.getOffset(), target);
+        if (symbol.isAbsolute()) {
+          mode |= 0x80;
+        }
+      } else {
+        // internal
+        Area area = object.getArea(reloc._symbol);
+        int offset = area.getOffset();
+        short source = (short) ((_bytes.get(reloc._offset + 1) << 8) + _bytes.get(reloc._offset)); 
+        target = (short) (source + offset);
+        // TODO: save relocation information
+        System.out.printf(""%s:%04X=>%04X\n"", area, source,  target);
+      }
+      info.setAddress(address);
+      if ((reloc._mode & 1) > 0) {
+        // byte mode
+        if ((reloc._mode & 128) > 0) {
+          // MSB
+          mode |= 0x60;
+          _bytes.set(reloc._offset, (short) (target >> 8));
+          _bytes.set(reloc._offset + 1, (short) -1);
+        } else {
+          // LSB
+          mode |= 0x20;
+          _bytes.set(reloc._offset, (short) -1);
+          _bytes.set(reloc._offset, (short) (target & 0xff));
+        }
+        address++;
+      } else {
+        // word mode
+        _bytes.set(reloc._offset, (short) (target & 0xff));
+        _bytes.set(reloc._offset + 1, (short) (target >> 8));
+        address += 2;
+      }
+      info.setMode(mode);
+      info.setData(target);
+      object.getLinker().addRelocation(info);
+    }",method,
+"    for (int data : _bytes) {
+      if (data >= 0) {
+        image[address++] = (byte) data;
+      }
+    }",method,
+"      if (data >= 0) {
+        image[address++] = (byte) data;
+      }",method,
+"public final class LeastRecentlyUsedCacheEvictor implements CacheEvictor, Comparator<CacheSpan> {
+  private final long maxBytes;
+  private final TreeSet<CacheSpan> leastRecentlyUsed;
+  private long currentSize;
+  public LeastRecentlyUsedCacheEvictor(long maxBytes) {
+    this.maxBytes = maxBytes;
+    this.leastRecentlyUsed = new TreeSet<>(this);
+  }
+  @Override
+  public void onCacheInitialized() {
+    // Do nothing.
+  }
+  @Override
+  public void onStartFile(Cache cache, String key, long position, long maxLength) {
+    evictCache(cache, maxLength);
+  }
+  @Override
+  public void onSpanAdded(Cache cache, CacheSpan span) {
+    leastRecentlyUsed.add(span);
+    currentSize += span.length;
+    evictCache(cache, 0);
+  }
+  @Override
+  public void onSpanRemoved(Cache cache, CacheSpan span) {
+    leastRecentlyUsed.remove(span);
+    currentSize -= span.length;
+  }
+  @Override
+  public void onSpanTouched(Cache cache, CacheSpan oldSpan, CacheSpan newSpan) {
+    onSpanRemoved(cache, oldSpan);
+    onSpanAdded(cache, newSpan);
+  }
+  @Override
+  public int compare(CacheSpan lhs, CacheSpan rhs) {
+    long lastAccessTimestampDelta = lhs.lastAccessTimestamp - rhs.lastAccessTimestamp;
+    if (lastAccessTimestampDelta == 0) {
+      // Use the standard compareTo method as a tie-break.
+      return lhs.compareTo(rhs);
+    }
+    return lhs.lastAccessTimestamp < rhs.lastAccessTimestamp ? -1 : 1;
+  }
+  private void evictCache(Cache cache, long requiredSpace) {
+    while (currentSize + requiredSpace > maxBytes && !leastRecentlyUsed.isEmpty()) {
+      try {
+        cache.removeSpan(leastRecentlyUsed.first());
+      } catch (CacheException e) {
+        // do nothing.
+      }
+    }
+  }
+}",class,
+"public final class NoOpCacheEvictor implements CacheEvictor {
+  @Override
+  public void onCacheInitialized() {
+    // Do nothing.
+  }
+  @Override
+  public void onStartFile(Cache cache, String key, long position, long maxLength) {
+    // Do nothing.
+  }
+  @Override
+  public void onSpanAdded(Cache cache, CacheSpan span) {
+    // Do nothing.
+  }
+  @Override
+  public void onSpanRemoved(Cache cache, CacheSpan span) {
+    // Do nothing.
+  }
+  @Override
+  public void onSpanTouched(Cache cache, CacheSpan oldSpan, CacheSpan newSpan) {
+    // Do nothing.
+  }
+}",class,
+"  public LeastRecentlyUsedCacheEvictor(long maxBytes) {
+    this.maxBytes = maxBytes;
+    this.leastRecentlyUsed = new TreeSet<>(this);
+  }",method,
+"  @Override
+  public void onCacheInitialized() {
+    // Do nothing.
+  }",method,
+"  @Override
+  public void onStartFile(Cache cache, String key, long position, long maxLength) {
+    evictCache(cache, maxLength);
+  }",method,
+"  @Override
+  public void onSpanAdded(Cache cache, CacheSpan span) {
+    leastRecentlyUsed.add(span);
+    currentSize += span.length;
+    evictCache(cache, 0);
+  }",method,
+"  @Override
+  public void onSpanRemoved(Cache cache, CacheSpan span) {
+    leastRecentlyUsed.remove(span);
+    currentSize -= span.length;
+  }",method,
+"  @Override
+  public void onSpanTouched(Cache cache, CacheSpan oldSpan, CacheSpan newSpan) {
+    onSpanRemoved(cache, oldSpan);
+    onSpanAdded(cache, newSpan);
+  }",method,
+"  @Override
+  public int compare(CacheSpan lhs, CacheSpan rhs) {
+    long lastAccessTimestampDelta = lhs.lastAccessTimestamp - rhs.lastAccessTimestamp;
+    if (lastAccessTimestampDelta == 0) {
+      // Use the standard compareTo method as a tie-break.
+      return lhs.compareTo(rhs);
+    }
+    return lhs.lastAccessTimestamp < rhs.lastAccessTimestamp ? -1 : 1;
+  }",method,
+"    if (lastAccessTimestampDelta == 0) {
+      // Use the standard compareTo method as a tie-break.
+      return lhs.compareTo(rhs);
+    }",method,
+"  private void evictCache(Cache cache, long requiredSpace) {
+    while (currentSize + requiredSpace > maxBytes && !leastRecentlyUsed.isEmpty()) {
+      try {
+        cache.removeSpan(leastRecentlyUsed.first());
+      } catch (CacheException e) {
+        // do nothing.
+      }
+    }
+  }",method,
+"  @Override
+  public void onCacheInitialized() {
+    // Do nothing.
+  }",method,
+"  @Override
+  public void onStartFile(Cache cache, String key, long position, long maxLength) {
+    // Do nothing.
+  }",method,
+"  @Override
+  public void onSpanAdded(Cache cache, CacheSpan span) {
+    // Do nothing.
+  }",method,
+"  @Override
+  public void onSpanRemoved(Cache cache, CacheSpan span) {
+    // Do nothing.
+  }",method,
+"  @Override
+  public void onSpanTouched(Cache cache, CacheSpan oldSpan, CacheSpan newSpan) {
+    // Do nothing.
+  }",method,
+"public class TestExpressionRewriteRuleSet
+        extends BaseRuleTest
+{
+    private ExpressionRewriteRuleSet zeroRewriter = new ExpressionRewriteRuleSet(
+            (expression, context) -> new LongLiteral(""0""));
+    private static final FunctionCall nowCall = new FunctionCall(QualifiedName.of(""now""), ImmutableList.of());
+    private ExpressionRewriteRuleSet functionCallRewriter = new ExpressionRewriteRuleSet((expression, context) -> nowCall);
+    private ExpressionRewriteRuleSet applyRewriter = new ExpressionRewriteRuleSet(
+            (expression, context) -> new InPredicate(
+                    new LongLiteral(""0""),
+                    new InListExpression(ImmutableList.of(
+                            new LongLiteral(""1""),
+                            new LongLiteral(""2"")))));
+    @Test
+    public void testProjectionExpressionRewrite()
+    {
+        tester().assertThat(zeroRewriter.projectExpressionRewrite())
+                .on(p -> p.project(
+                        Assignments.of(p.symbol(""y""), PlanBuilder.expression(""x IS NOT NULL"")),
+                        p.values(p.symbol(""x""))))
+                .matches(
+                        project(ImmutableMap.of(""y"", expression(""0"")), values(""x"")));
+    }
+    @Test
+    public void testProjectionExpressionNotRewritten()
+    {
+        tester().assertThat(zeroRewriter.projectExpressionRewrite())
+                .on(p -> p.project(
+                        Assignments.of(p.symbol(""y""), PlanBuilder.expression(""0"")),
+                        p.values(p.symbol(""x""))))
+                .doesNotFire();
+    }
+    @Test
+    public void testAggregationExpressionRewrite()
+            throws Exception
+    {
+        tester().assertThat(functionCallRewriter.aggregationExpressionRewrite())
+                .on(p -> p.aggregation(a -> a
+                        .globalGrouping()
+                        .addAggregation(
+                                p.symbol(""count_1"", BigintType.BIGINT),
+                                new FunctionCall(QualifiedName.of(""count""), ImmutableList.of()),
+                                ImmutableList.of(BigintType.BIGINT))
+                        .source(
+                                p.values())))
+                .matches(
+                        PlanMatchPattern.aggregation(
+                                ImmutableMap.of(""count_1"", functionCall(""now"", ImmutableList.of())),
+                                values()));
+    }
+    @Test
+    public void testAggregationExpressionNotRewritten()
+            throws Exception
+    {
+        tester().assertThat(functionCallRewriter.aggregationExpressionRewrite())
+                .on(p -> p.aggregation(a -> a
+                        .globalGrouping()
+                        .addAggregation(
+                                p.symbol(""count_1"", DateType.DATE),
+                                nowCall,
+                                ImmutableList.of())
+                        .source(
+                                p.values())))
+                .doesNotFire();
+    }
+    @Test
+    public void testFilterExpressionRewrite()
+    {
+        tester().assertThat(zeroRewriter.filterExpressionRewrite())
+                .on(p -> p.filter(new LongLiteral(""1""), p.values()))
+                .matches(
+                        filter(""0"", values()));
+    }
+    @Test
+    public void testFilterExpressionNotRewritten()
+    {
+        tester().assertThat(zeroRewriter.filterExpressionRewrite())
+                .on(p -> p.filter(new LongLiteral(""0""), p.values()))
+                .doesNotFire();
+    }
+    @Test
+    public void testValueExpressionRewrite()
+    {
+        tester().assertThat(zeroRewriter.valuesExpressionRewrite())
+                .on(p -> p.values(
+                        ImmutableList.<Symbol>of(p.symbol(""a"")),
+                        ImmutableList.of((ImmutableList.of(PlanBuilder.expression(""1""))))))
+                .matches(
+                        values(ImmutableList.of(""a""), ImmutableList.of(ImmutableList.of(new LongLiteral(""0"")))));
+    }
+    @Test
+    public void testValueExpressionNotRewritten()
+    {
+        tester().assertThat(zeroRewriter.valuesExpressionRewrite())
+                .on(p -> p.values(
+                        ImmutableList.<Symbol>of(p.symbol(""a"")),
+                        ImmutableList.of((ImmutableList.of(PlanBuilder.expression(""0""))))))
+                .doesNotFire();
+    }
+    @Test
+    public void testApplyExpressionRewrite()
+    {
+        tester().assertThat(applyRewriter.applyExpressionRewrite())
+                .on(p -> p.apply(
+                        Assignments.of(
+                                p.symbol(""a"", BigintType.BIGINT),
+                                new InPredicate(
+                                        new LongLiteral(""1""),
+                                        new InListExpression(ImmutableList.of(
+                                                new LongLiteral(""1""),
+                                                new LongLiteral(""2""))))),
+                        ImmutableList.of(),
+                        p.values(),
+                        p.values()))
+                .matches(
+                        apply(
+                                ImmutableList.of(),
+                                ImmutableMap.of(""a"", expression(""0 IN (1, 2)"")),
+                                values(),
+                                values()));
+    }
+    @Test
+    public void testApplyExpressionNotRewritten()
+    {
+        tester().assertThat(applyRewriter.applyExpressionRewrite())
+                .on(p -> p.apply(
+                        Assignments.of(
+                                p.symbol(""a"", BigintType.BIGINT),
+                                new InPredicate(
+                                        new LongLiteral(""0""),
+                                        new InListExpression(ImmutableList.of(
+                                                new LongLiteral(""1""),
+                                                new LongLiteral(""2""))))),
+                        ImmutableList.of(),
+                        p.values(),
+                        p.values()))
+                .doesNotFire();
+    }
+}",class,
+"    @Test
+    public void testProjectionExpressionRewrite()
+    {
+        tester().assertThat(zeroRewriter.projectExpressionRewrite())
+                .on(p -> p.project(
+                        Assignments.of(p.symbol(""y""), PlanBuilder.expression(""x IS NOT NULL"")),
+                        p.values(p.symbol(""x""))))
+                .matches(
+                        project(ImmutableMap.of(""y"", expression(""0"")), values(""x"")));
+    }",method,
+"    @Test
+    public void testProjectionExpressionNotRewritten()
+    {
+        tester().assertThat(zeroRewriter.projectExpressionRewrite())
+                .on(p -> p.project(
+                        Assignments.of(p.symbol(""y""), PlanBuilder.expression(""0"")),
+                        p.values(p.symbol(""x""))))
+                .doesNotFire();
+    }",method,
+"    @Test
+    public void testAggregationExpressionRewrite()
+            throws Exception
+    {
+        tester().assertThat(functionCallRewriter.aggregationExpressionRewrite())
+                .on(p -> p.aggregation(a -> a
+                        .globalGrouping()
+                        .addAggregation(
+                                p.symbol(""count_1"", BigintType.BIGINT),
+                                new FunctionCall(QualifiedName.of(""count""), ImmutableList.of()),
+                                ImmutableList.of(BigintType.BIGINT))
+                        .source(
+                                p.values())))
+                .matches(
+                        PlanMatchPattern.aggregation(
+                                ImmutableMap.of(""count_1"", functionCall(""now"", ImmutableList.of())),
+                                values()));
+    }",method,
+"    @Test
+    public void testAggregationExpressionNotRewritten()
+            throws Exception
+    {
+        tester().assertThat(functionCallRewriter.aggregationExpressionRewrite())
+                .on(p -> p.aggregation(a -> a
+                        .globalGrouping()
+                        .addAggregation(
+                                p.symbol(""count_1"", DateType.DATE),
+                                nowCall,
+                                ImmutableList.of())
+                        .source(
+                                p.values())))
+                .doesNotFire();
+    }",method,
+"    @Test
+    public void testFilterExpressionRewrite()
+    {
+        tester().assertThat(zeroRewriter.filterExpressionRewrite())
+                .on(p -> p.filter(new LongLiteral(""1""), p.values()))
+                .matches(
+                        filter(""0"", values()));
+    }",method,
+"    @Test
+    public void testFilterExpressionNotRewritten()
+    {
+        tester().assertThat(zeroRewriter.filterExpressionRewrite())
+                .on(p -> p.filter(new LongLiteral(""0""), p.values()))
+                .doesNotFire();
+    }",method,
+"    @Test
+    public void testValueExpressionRewrite()
+    {
+        tester().assertThat(zeroRewriter.valuesExpressionRewrite())
+                .on(p -> p.values(
+                        ImmutableList.<Symbol>of(p.symbol(""a"")),
+                        ImmutableList.of((ImmutableList.of(PlanBuilder.expression(""1""))))))
+                .matches(
+                        values(ImmutableList.of(""a""), ImmutableList.of(ImmutableList.of(new LongLiteral(""0"")))));
+    }",method,
+"    @Test
+    public void testValueExpressionNotRewritten()
+    {
+        tester().assertThat(zeroRewriter.valuesExpressionRewrite())
+                .on(p -> p.values(
+                        ImmutableList.<Symbol>of(p.symbol(""a"")),
+                        ImmutableList.of((ImmutableList.of(PlanBuilder.expression(""0""))))))
+                .doesNotFire();
+    }",method,
+"    @Test
+    public void testApplyExpressionRewrite()
+    {
+        tester().assertThat(applyRewriter.applyExpressionRewrite())
+                .on(p -> p.apply(
+                        Assignments.of(
+                                p.symbol(""a"", BigintType.BIGINT),
+                                new InPredicate(
+                                        new LongLiteral(""1""),
+                                        new InListExpression(ImmutableList.of(
+                                                new LongLiteral(""1""),
+                                                new LongLiteral(""2""))))),
+                        ImmutableList.of(),
+                        p.values(),
+                        p.values()))
+                .matches(
+                        apply(
+                                ImmutableList.of(),
+                                ImmutableMap.of(""a"", expression(""0 IN (1, 2)"")),
+                                values(),
+                                values()));
+    }",method,
+"    @Test
+    public void testApplyExpressionNotRewritten()
+    {
+        tester().assertThat(applyRewriter.applyExpressionRewrite())
+                .on(p -> p.apply(
+                        Assignments.of(
+                                p.symbol(""a"", BigintType.BIGINT),
+                                new InPredicate(
+                                        new LongLiteral(""0""),
+                                        new InListExpression(ImmutableList.of(
+                                                new LongLiteral(""1""),
+                                                new LongLiteral(""2""))))),
+                        ImmutableList.of(),
+                        p.values(),
+                        p.values()))
+                .doesNotFire();
+    }",method,
+"public final class MimeMappings
+{
+	public static final String MXML = ""text/mxml"";
+	public static final String AS = ""text/as"";
+	public static final String FXG = ""text/fxg"";
+	public static final String ABC = ""application/x-actionscript-bytecode"";
+	public static final String CSS = ""text/css"";
+	public static final String PROPERTIES = ""text/properties"";
+	public static final String JPEG = ""image/jpeg"";
+	public static final String JPG = ""image/jpg"";
+	public static final String PNG = ""image/png"";
+	public static final String GIF = ""image/gif"";
+	public static final String SVG = ""image/svg"";
+	public static final String SVG_XML = ""image/svg-xml"";
+	public static final String MP3 = ""audio/mpeg"";
+	public static final String FLASH = ""application/x-shockwave-flash"";
+	public static final String XML = ""text/xml"";
+	public static final String TTF = ""application/x-font-truetype"";
+	public static final String TTC = ""application/x-font-truetype-collection"";
+	public static final String OTF = ""application/x-font-opentype"";
+    public static final String FONT = ""application/x-font"";
+	public static final String DFONT = ""application/x-dfont"";
+    public static final String PBJ = ""application/x-pbj"";
+	public static final String TIFF = ""image/tiff"";
+	public static final String SKIN = ""skin"";
+    public MimeMappings()
+    {
+    	mimeMappings = new HashMap<String, Object>();
+    	set(MXML, "".mxml"");
+    	set(AS, "".as"");
+    	set(FXG, "".fxg"");
+    	set(ABC, "".abc"");
+    	set(CSS, "".css"");
+    	set(PROPERTIES, "".properties"");
+    	set(JPEG, new String[] { "".jpg"", "".jpeg"" });
+    	set(JPG, new String[] { "".jpg"", "".jpeg"" });
+    	set(PNG, "".png"");
+    	set(GIF, "".gif"");
+    	set(SVG, new String[] { "".svg"", "".svgz"" });
+    	set(MP3, "".mp3"");
+    	set(FLASH, "".swf"");
+    	set(XML, "".xml"");
+    	set(TTF, "".ttf"");
+    	set(TTC, "".ttc"");
+    	set(OTF, "".otf"");
+    	set(DFONT, "".dfont"");
+        set(PBJ, "".pbj"");
+    	set(TIFF, new String[] { "".tiff"", "".tif"" });
+    }
+    private Map<String, Object> mimeMappings;
+    public void set(String mimeType, String[] extensions)
+    {
+    	mimeMappings.put(mimeType, extensions);
+    }
+    public void set(String mimeType, String extension)
+    {
+    	mimeMappings.put(mimeType, extension);
+    }
+    public void add(String mimeType, String[] extensions)
+    {
+    	if (extensions == null)
+    	{
+    		return;
+    	}
+    	Object value = mimeMappings.get(mimeType);
+    	String[] a = null;
+    	if (value instanceof String[])
+    	{
+    		String[] old = (String[]) value;
+    		a = new String[old.length + extensions.length];
+    		System.arraycopy(old, 0, a, 0, old.length);
+    		System.arraycopy(extensions, 0, a, a.length, extensions.length);
+    	}
+    	else if (value instanceof String)
+    	{
+    		a = new String[1 + extensions.length];
+    		a[0] = (String) value;
+    		System.arraycopy(extensions, 0, a, 1, extensions.length);    		
+    	}
+    	else
+    	{
+    		a = new String[extensions.length];
+    		System.arraycopy(extensions, 0, a, 0, extensions.length);
+    	}
+    	mimeMappings.put(mimeType, a);
+    }
+    public void add(String mimeType, String extension)
+    {
+    	if (extension == null)
+    	{
+    		return;
+    	}
+    	Object value = mimeMappings.get(mimeType);
+    	String[] a = null;
+    	if (value instanceof String[])
+    	{
+    		String[] old = (String[]) value;
+    		a = new String[old.length + 1];
+    		System.arraycopy(old, 0, a, 0, old.length);
+    		a[a.length - 1] = extension;
+        	mimeMappings.put(mimeType, a);
+    	}
+    	else if (value instanceof String)
+    	{
+    		a = new String[2];
+    		a[0] = (String) value;
+    		a[1] = extension;    		
+        	mimeMappings.put(mimeType, a);
+    	}
+    	else
+    	{
+    		mimeMappings.put(mimeType, extension);
+    	}
+    }
+    public void remove(String mimeType)
+    {
+    	mimeMappings.remove(mimeType);
+    }
+    public String findMimeType(String name)
+    {
+    	for (Iterator<String> i = mimeMappings.keySet().iterator(); i.hasNext();)
+    	{
+    		String mimeType = i.next();
+    		Object value = mimeMappings.get(mimeType);
+    		if (value instanceof String[])
+    		{
+    			String[] extensions = (String[]) value;
+    			for (int j = 0, size = extensions.length; j < size; j++)
+    			{
+    				int nlen = name.length();
+    				int elen = extensions[j].length();
+    				if (nlen > elen && name.regionMatches(true, nlen - elen, extensions[j], 0, elen))
+    				{
+    					return mimeType;
+    				}
+    			}
+    		}
+    		else if (value instanceof String)
+    		{
+				int nlen = name.length();
+				int elen = ((String) value).length();
+				if (nlen > elen && name.regionMatches(true, nlen - elen, (String) value, 0, elen))
+				{
+					return mimeType;
+				}
+    		}
+    	}
+    	return null;
+    }
+	public String findExtension(String mimeType)
+	{
+		Object value = mimeMappings.get(mimeType);
+		if (value instanceof String[])
+		{
+			// C: should really return a list of extensions...
+			return ((String[]) value)[0];
+		}
+		else if (value instanceof String)
+		{
+			return (String) value;
+		}
+		else
+		{
+			return null;
+		}
+	}
+	// By default, the static methods use ThreacLocal. if the ThreadLocal isn't available,
+	// the methods will use the static version...
+	private static MimeMappings statics = new MimeMappings();
+    public static String getMimeType(String name)
+    {
+    	MimeMappings mappings = ThreadLocalToolkit.getMimeMappings();
+    	if (mappings == null)
+    	{
+        	synchronized(statics)
+        	{
+        		return statics.findMimeType(name);
+        	}
+    	}
+    	else
+    	{    		
+    		return mappings.findMimeType(name);
+    	}
+    }
+	public static String getExtension(String mimeType)
+	{		
+    	MimeMappings mappings = ThreadLocalToolkit.getMimeMappings();
+    	if (mappings == null)
+    	{
+        	synchronized(statics)
+        	{
+        		return statics.findExtension(mimeType);
+        	}
+    	}
+    	else
+    	{
+    		return mappings.findExtension(mimeType);
+    	}
+	}
+}",class,
+"    public MimeMappings()
+    {
+    	mimeMappings = new HashMap<String, Object>();
+    	set(MXML, "".mxml"");
+    	set(AS, "".as"");
+    	set(FXG, "".fxg"");
+    	set(ABC, "".abc"");
+    	set(CSS, "".css"");
+    	set(PROPERTIES, "".properties"");
+    	set(JPEG, new String[] { "".jpg"", "".jpeg"" });
+    	set(JPG, new String[] { "".jpg"", "".jpeg"" });
+    	set(PNG, "".png"");
+    	set(GIF, "".gif"");
+    	set(SVG, new String[] { "".svg"", "".svgz"" });
+    	set(MP3, "".mp3"");
+    	set(FLASH, "".swf"");
+    	set(XML, "".xml"");
+    	set(TTF, "".ttf"");
+    	set(TTC, "".ttc"");
+    	set(OTF, "".otf"");
+    	set(DFONT, "".dfont"");
+        set(PBJ, "".pbj"");
+    	set(TIFF, new String[] { "".tiff"", "".tif"" });
+    }",method,
+"    public void set(String mimeType, String[] extensions)
+    {
+    	mimeMappings.put(mimeType, extensions);
+    }",method,
+"    public void set(String mimeType, String extension)
+    {
+    	mimeMappings.put(mimeType, extension);
+    }",method,
+"    public void add(String mimeType, String[] extensions)
+    {
+    	if (extensions == null)
+    	{
+    		return;
+    	}
+    	Object value = mimeMappings.get(mimeType);
+    	String[] a = null;
+    	if (value instanceof String[])
+    	{
+    		String[] old = (String[]) value;
+    		a = new String[old.length + extensions.length];
+    		System.arraycopy(old, 0, a, 0, old.length);
+    		System.arraycopy(extensions, 0, a, a.length, extensions.length);
+    	}
+    	else if (value instanceof String)
+    	{
+    		a = new String[1 + extensions.length];
+    		a[0] = (String) value;
+    		System.arraycopy(extensions, 0, a, 1, extensions.length);    		
+    	}
+    	else
+    	{
+    		a = new String[extensions.length];
+    		System.arraycopy(extensions, 0, a, 0, extensions.length);
+    	}
+    	mimeMappings.put(mimeType, a);
+    }",method,
+"    	if (extensions == null)
+    	{
+    		return;
+    	}",method,
+"    	if (value instanceof String[])
+    	{
+    		String[] old = (String[]) value;
+    		a = new String[old.length + extensions.length];
+    		System.arraycopy(old, 0, a, 0, old.length);
+    		System.arraycopy(extensions, 0, a, a.length, extensions.length);
+    	}",method,
+"    	else if (value instanceof String)
+    	{
+    		a = new String[1 + extensions.length];
+    		a[0] = (String) value;
+    		System.arraycopy(extensions, 0, a, 1, extensions.length);    		
+    	}",method,
+"    public void add(String mimeType, String extension)
+    {
+    	if (extension == null)
+    	{
+    		return;
+    	}
+    	Object value = mimeMappings.get(mimeType);
+    	String[] a = null;
+    	if (value instanceof String[])
+    	{
+    		String[] old = (String[]) value;
+    		a = new String[old.length + 1];
+    		System.arraycopy(old, 0, a, 0, old.length);
+    		a[a.length - 1] = extension;
+        	mimeMappings.put(mimeType, a);
+    	}
+    	else if (value instanceof String)
+    	{
+    		a = new String[2];
+    		a[0] = (String) value;
+    		a[1] = extension;    		
+        	mimeMappings.put(mimeType, a);
+    	}
+    	else
+    	{
+    		mimeMappings.put(mimeType, extension);
+    	}
+    }",method,
+"    	if (extension == null)
+    	{
+    		return;
+    	}",method,
+"    	if (value instanceof String[])
+    	{
+    		String[] old = (String[]) value;
+    		a = new String[old.length + 1];
+    		System.arraycopy(old, 0, a, 0, old.length);
+    		a[a.length - 1] = extension;
+        	mimeMappings.put(mimeType, a);
+    	}",method,
+"    	else if (value instanceof String)
+    	{
+    		a = new String[2];
+    		a[0] = (String) value;
+    		a[1] = extension;    		
+        	mimeMappings.put(mimeType, a);
+    	}",method,
+"    public void remove(String mimeType)
+    {
+    	mimeMappings.remove(mimeType);
+    }",method,
+"    public String findMimeType(String name)
+    {
+    	for (Iterator<String> i = mimeMappings.keySet().iterator(); i.hasNext();)
+    	{
+    		String mimeType = i.next();
+    		Object value = mimeMappings.get(mimeType);
+    		if (value instanceof String[])
+    		{
+    			String[] extensions = (String[]) value;
+    			for (int j = 0, size = extensions.length; j < size; j++)
+    			{
+    				int nlen = name.length();
+    				int elen = extensions[j].length();
+    				if (nlen > elen && name.regionMatches(true, nlen - elen, extensions[j], 0, elen))
+    				{
+    					return mimeType;
+    				}
+    			}
+    		}
+    		else if (value instanceof String)
+    		{
+				int nlen = name.length();
+				int elen = ((String) value).length();
+				if (nlen > elen && name.regionMatches(true, nlen - elen, (String) value, 0, elen))
+				{
+					return mimeType;
+				}
+    		}
+    	}
+    	return null;
+    }",method,
+"    		if (value instanceof String[])
+    		{
+    			String[] extensions = (String[]) value;
+    			for (int j = 0, size = extensions.length; j < size; j++)
+    			{
+    				int nlen = name.length();
+    				int elen = extensions[j].length();
+    				if (nlen > elen && name.regionMatches(true, nlen - elen, extensions[j], 0, elen))
+    				{
+    					return mimeType;
+    				}
+    			}
+    		}",method,
+"    			for (int j = 0, size = extensions.length; j < size; j++)
+    			{
+    				int nlen = name.length();
+    				int elen = extensions[j].length();
+    				if (nlen > elen && name.regionMatches(true, nlen - elen, extensions[j], 0, elen))
+    				{
+    					return mimeType;
+    				}
+    			}",method,
+"    		else if (value instanceof String)
+    		{
+				int nlen = name.length();
+				int elen = ((String) value).length();
+				if (nlen > elen && name.regionMatches(true, nlen - elen, (String) value, 0, elen))
+				{
+					return mimeType;
+				}
+    		}",method,
+"	public String findExtension(String mimeType)
+	{
+		Object value = mimeMappings.get(mimeType);
+		if (value instanceof String[])
+		{
+			// C: should really return a list of extensions...
+			return ((String[]) value)[0];
+		}
+		else if (value instanceof String)
+		{
+			return (String) value;
+		}
+		else
+		{
+			return null;
+		}
+	}",method,
+"		if (value instanceof String[])
+		{
+			// C: should really return a list of extensions...
+			return ((String[]) value)[0];
+		}",method,
+"		else if (value instanceof String)
+		{
+			return (String) value;
+		}",method,
+"    public static String getMimeType(String name)
+    {
+    	MimeMappings mappings = ThreadLocalToolkit.getMimeMappings();
+    	if (mappings == null)
+    	{
+        	synchronized(statics)
+        	{
+        		return statics.findMimeType(name);
+        	}
+    	}
+    	else
+    	{    		
+    		return mappings.findMimeType(name);
+    	}
+    }",method,
+"    	if (mappings == null)
+    	{
+        	synchronized(statics)
+        	{
+        		return statics.findMimeType(name);
+        	}
+    	}",method,
+"        	synchronized(statics)
+        	{
+        		return statics.findMimeType(name);
+        	}",method,
+"	public static String getExtension(String mimeType)
+	{		
+    	MimeMappings mappings = ThreadLocalToolkit.getMimeMappings();
+    	if (mappings == null)
+    	{
+        	synchronized(statics)
+        	{
+        		return statics.findExtension(mimeType);
+        	}
+    	}
+    	else
+    	{
+    		return mappings.findExtension(mimeType);
+    	}
+	}",method,
+"    	if (mappings == null)
+    	{
+        	synchronized(statics)
+        	{
+        		return statics.findExtension(mimeType);
+        	}
+    	}",method,
+"        	synchronized(statics)
+        	{
+        		return statics.findExtension(mimeType);
+        	}",method,
+" final class AudioTagPayloadReader extends TagPayloadReader {
+  private static final int AUDIO_FORMAT_MP3 = 2;
+  private static final int AUDIO_FORMAT_ALAW = 7;
+  private static final int AUDIO_FORMAT_ULAW = 8;
+  private static final int AUDIO_FORMAT_AAC = 10;
+  private static final int AAC_PACKET_TYPE_SEQUENCE_HEADER = 0;
+  private static final int AAC_PACKET_TYPE_AAC_RAW = 1;
+  private static final int[] AUDIO_SAMPLING_RATE_TABLE = new int[] {5512, 11025, 22050, 44100};
+  // State variables
+  private boolean hasParsedAudioDataHeader;
+  private boolean hasOutputFormat;
+  private int audioFormat;
+  public AudioTagPayloadReader(TrackOutput output) {
+    super(output);
+  }
+  @Override
+  public void seek() {
+    // Do nothing.
+  }
+  @Override
+  protected boolean parseHeader(ParsableByteArray data) throws UnsupportedFormatException {
+    if (!hasParsedAudioDataHeader) {
+      int header = data.readUnsignedByte();
+      audioFormat = (header >> 4) & 0x0F;
+      if (audioFormat == AUDIO_FORMAT_MP3) {
+        int sampleRateIndex = (header >> 2) & 0x03;
+        int sampleRate = AUDIO_SAMPLING_RATE_TABLE[sampleRateIndex];
+        Format format = Format.createAudioSampleFormat(null, MimeTypes.AUDIO_MPEG, null,
+            Format.NO_VALUE, Format.NO_VALUE, 1, sampleRate, null, null, 0, null);
+        output.format(format);
+        hasOutputFormat = true;
+      } else if (audioFormat == AUDIO_FORMAT_ALAW || audioFormat == AUDIO_FORMAT_ULAW) {
+        String type = audioFormat == AUDIO_FORMAT_ALAW ? MimeTypes.AUDIO_ALAW
+            : MimeTypes.AUDIO_ULAW;
+        int pcmEncoding = (header & 0x01) == 1 ? C.ENCODING_PCM_16BIT : C.ENCODING_PCM_8BIT;
+        Format format = Format.createAudioSampleFormat(null, type, null, Format.NO_VALUE,
+            Format.NO_VALUE, 1, 8000, pcmEncoding, null, null, 0, null);
+        output.format(format);
+        hasOutputFormat = true;
+      } else if (audioFormat != AUDIO_FORMAT_AAC) {
+        throw new UnsupportedFormatException(""Audio format not supported: "" + audioFormat);
+      }
+      hasParsedAudioDataHeader = true;
+    } else {
+      // Skip header if it was parsed previously.
+      data.skipBytes(1);
+    }
+    return true;
+  }
+  @Override
+  protected void parsePayload(ParsableByteArray data, long timeUs) {
+    if (audioFormat == AUDIO_FORMAT_MP3) {
+      int sampleSize = data.bytesLeft();
+      output.sampleData(data, sampleSize);
+      output.sampleMetadata(timeUs, C.BUFFER_FLAG_KEY_FRAME, sampleSize, 0, null);
+    } else {
+      int packetType = data.readUnsignedByte();
+      if (packetType == AAC_PACKET_TYPE_SEQUENCE_HEADER && !hasOutputFormat) {
+        // Parse the sequence header.
+        byte[] audioSpecificConfig = new byte[data.bytesLeft()];
+        data.readBytes(audioSpecificConfig, 0, audioSpecificConfig.length);
+        Pair<Integer, Integer> audioParams = CodecSpecificDataUtil.parseAacAudioSpecificConfig(
+            audioSpecificConfig);
+        Format format = Format.createAudioSampleFormat(null, MimeTypes.AUDIO_AAC, null,
+            Format.NO_VALUE, Format.NO_VALUE, audioParams.second, audioParams.first,
+            Collections.singletonList(audioSpecificConfig), null, 0, null);
+        output.format(format);
+        hasOutputFormat = true;
+      } else if (audioFormat != AUDIO_FORMAT_AAC || packetType == AAC_PACKET_TYPE_AAC_RAW) {
+        int sampleSize = data.bytesLeft();
+        output.sampleData(data, sampleSize);
+        output.sampleMetadata(timeUs, C.BUFFER_FLAG_KEY_FRAME, sampleSize, 0, null);
+      }
+    }
+  }
+}",class,
+"  public AudioTagPayloadReader(TrackOutput output) {
+    super(output);
+  }",method,
+"  @Override
+  public void seek() {
+    // Do nothing.
+  }",method,
+"  @Override
+  protected boolean parseHeader(ParsableByteArray data) throws UnsupportedFormatException {
+    if (!hasParsedAudioDataHeader) {
+      int header = data.readUnsignedByte();
+      audioFormat = (header >> 4) & 0x0F;
+      if (audioFormat == AUDIO_FORMAT_MP3) {
+        int sampleRateIndex = (header >> 2) & 0x03;
+        int sampleRate = AUDIO_SAMPLING_RATE_TABLE[sampleRateIndex];
+        Format format = Format.createAudioSampleFormat(null, MimeTypes.AUDIO_MPEG, null,
+            Format.NO_VALUE, Format.NO_VALUE, 1, sampleRate, null, null, 0, null);
+        output.format(format);
+        hasOutputFormat = true;
+      } else if (audioFormat == AUDIO_FORMAT_ALAW || audioFormat == AUDIO_FORMAT_ULAW) {
+        String type = audioFormat == AUDIO_FORMAT_ALAW ? MimeTypes.AUDIO_ALAW
+            : MimeTypes.AUDIO_ULAW;
+        int pcmEncoding = (header & 0x01) == 1 ? C.ENCODING_PCM_16BIT : C.ENCODING_PCM_8BIT;
+        Format format = Format.createAudioSampleFormat(null, type, null, Format.NO_VALUE,
+            Format.NO_VALUE, 1, 8000, pcmEncoding, null, null, 0, null);
+        output.format(format);
+        hasOutputFormat = true;
+      } else if (audioFormat != AUDIO_FORMAT_AAC) {
+        throw new UnsupportedFormatException(""Audio format not supported: "" + audioFormat);
+      }
+      hasParsedAudioDataHeader = true;
+    } else {
+      // Skip header if it was parsed previously.
+      data.skipBytes(1);
+    }
+    return true;
+  }",method,
+"    if (!hasParsedAudioDataHeader) {
+      int header = data.readUnsignedByte();
+      audioFormat = (header >> 4) & 0x0F;
+      if (audioFormat == AUDIO_FORMAT_MP3) {
+        int sampleRateIndex = (header >> 2) & 0x03;
+        int sampleRate = AUDIO_SAMPLING_RATE_TABLE[sampleRateIndex];
+        Format format = Format.createAudioSampleFormat(null, MimeTypes.AUDIO_MPEG, null,
+            Format.NO_VALUE, Format.NO_VALUE, 1, sampleRate, null, null, 0, null);
+        output.format(format);
+        hasOutputFormat = true;
+      } else if (audioFormat == AUDIO_FORMAT_ALAW || audioFormat == AUDIO_FORMAT_ULAW) {
+        String type = audioFormat == AUDIO_FORMAT_ALAW ? MimeTypes.AUDIO_ALAW
+            : MimeTypes.AUDIO_ULAW;
+        int pcmEncoding = (header & 0x01) == 1 ? C.ENCODING_PCM_16BIT : C.ENCODING_PCM_8BIT;
+        Format format = Format.createAudioSampleFormat(null, type, null, Format.NO_VALUE,
+            Format.NO_VALUE, 1, 8000, pcmEncoding, null, null, 0, null);
+        output.format(format);
+        hasOutputFormat = true;
+      } else if (audioFormat != AUDIO_FORMAT_AAC) {
+        throw new UnsupportedFormatException(""Audio format not supported: "" + audioFormat);
+      }
+      hasParsedAudioDataHeader = true;
+    }",method,
+"      if (audioFormat == AUDIO_FORMAT_MP3) {
+        int sampleRateIndex = (header >> 2) & 0x03;
+        int sampleRate = AUDIO_SAMPLING_RATE_TABLE[sampleRateIndex];
+        Format format = Format.createAudioSampleFormat(null, MimeTypes.AUDIO_MPEG, null,
+            Format.NO_VALUE, Format.NO_VALUE, 1, sampleRate, null, null, 0, null);
+        output.format(format);
+        hasOutputFormat = true;
+      }",method,
+"  @Override
+  protected void parsePayload(ParsableByteArray data, long timeUs) {
+    if (audioFormat == AUDIO_FORMAT_MP3) {
+      int sampleSize = data.bytesLeft();
+      output.sampleData(data, sampleSize);
+      output.sampleMetadata(timeUs, C.BUFFER_FLAG_KEY_FRAME, sampleSize, 0, null);
+    } else {
+      int packetType = data.readUnsignedByte();
+      if (packetType == AAC_PACKET_TYPE_SEQUENCE_HEADER && !hasOutputFormat) {
+        // Parse the sequence header.
+        byte[] audioSpecificConfig = new byte[data.bytesLeft()];
+        data.readBytes(audioSpecificConfig, 0, audioSpecificConfig.length);
+        Pair<Integer, Integer> audioParams = CodecSpecificDataUtil.parseAacAudioSpecificConfig(
+            audioSpecificConfig);
+        Format format = Format.createAudioSampleFormat(null, MimeTypes.AUDIO_AAC, null,
+            Format.NO_VALUE, Format.NO_VALUE, audioParams.second, audioParams.first,
+            Collections.singletonList(audioSpecificConfig), null, 0, null);
+        output.format(format);
+        hasOutputFormat = true;
+      } else if (audioFormat != AUDIO_FORMAT_AAC || packetType == AAC_PACKET_TYPE_AAC_RAW) {
+        int sampleSize = data.bytesLeft();
+        output.sampleData(data, sampleSize);
+        output.sampleMetadata(timeUs, C.BUFFER_FLAG_KEY_FRAME, sampleSize, 0, null);
+      }
+    }
+  }",method,
+"    if (audioFormat == AUDIO_FORMAT_MP3) {
+      int sampleSize = data.bytesLeft();
+      output.sampleData(data, sampleSize);
+      output.sampleMetadata(timeUs, C.BUFFER_FLAG_KEY_FRAME, sampleSize, 0, null);
+    }",method,
+"      if (packetType == AAC_PACKET_TYPE_SEQUENCE_HEADER && !hasOutputFormat) {
+        // Parse the sequence header.
+        byte[] audioSpecificConfig = new byte[data.bytesLeft()];
+        data.readBytes(audioSpecificConfig, 0, audioSpecificConfig.length);
+        Pair<Integer, Integer> audioParams = CodecSpecificDataUtil.parseAacAudioSpecificConfig(
+            audioSpecificConfig);
+        Format format = Format.createAudioSampleFormat(null, MimeTypes.AUDIO_AAC, null,
+            Format.NO_VALUE, Format.NO_VALUE, audioParams.second, audioParams.first,
+            Collections.singletonList(audioSpecificConfig), null, 0, null);
+        output.format(format);
+        hasOutputFormat = true;
+      }",method,
+"import java.util.List;
+class Test {
+    public static Java8Class field = new Java8Class();
+    public static Java8Class staticFun() {
+        return new Java8Class();
+    }
+    public int memberFun() {return 1;}
+    public static String testOverloads() {
+        return ""1"";
+    }
+    public static String testOverloads(int i) {
+        return ""2"";
+    }
+}",class,
+"}
+class Java8Class {
+    private Java8Class field = new Java8Class();
+    public void testStaticFunction() {
+        Function0 staticFunFromSameClass = Java8Class::staticFun;
+        staticFunFromSameClass.invoke();
+        Function0 staticFunFromAnotherClass = Test::staticFun;
+        staticFunFromAnotherClass.invoke();
+    }
+    public void testMemberFunctionThroughClass() {
+        Function1<Java8Class, Integer> memberFunFromClass = Java8Class::memberFun;
+        memberFunFromClass.invoke(new Java8Class());
+    }
+    public void testMemberFunctionThroughObject() {
+        Java8Class obj = new Java8Class();
+        Function0 memberFunFromSameClass = obj::memberFun;
+        memberFunFromSameClass.invoke();
+        Test anotherObj = new Test();
+        Function0 memFunFromAnotherClass = anotherObj::memberFun;
+        memFunFromAnotherClass.invoke();
+        Function0 memberFunThroughObj1 = field::memberFun;
+        memberFunThroughObj1.invoke();
+        Function0 memberFunThroughObj2 = Test.field::memberFun;
+        memberFunThroughObj2.invoke();
+        Function0 memberFunThroughObj3 = Test.staticFun()::memberFun;
+        memberFunThroughObj3.invoke();
+    }
+    public void testConstructor() {
+        Function0 constructorSameClass = Java8Class::new;
+        constructorSameClass.invoke();
+        Function0 qualifiedConstructorSameClass = test.Java8Class::new;
+        qualifiedConstructorSameClass.invoke();
+        Function0 constructorAnotherClass = Test::new;
+        constructorAnotherClass.invoke();
+        Function0 qualifiedConstructorAnotherClass = test.Test::new;
+        qualifiedConstructorAnotherClass.invoke();
+    }
+    public void testLibraryFunctions() {
+        Function1<String, Integer> memberFunFromClass = String::length;
+        memberFunFromClass.invoke(""str"");
+    }
+    public void testOverloads() {
+        Function0<String> constructorWithoutParams = Test::testOverloads;
+        constructorWithoutParams.invoke();
+        Function1<Integer, String> constructorWithParam = Test::testOverloads;
+        constructorWithParam.invoke(2);
+    }
+    public void testGenericFunctions() {
+        Function0<List<String>> emptyList = Collections::emptyList;
+        emptyList.invoke();
+    }
+    public static int staticFun() { return 1; }
+    public int memberFun() { return 1; }
+    public Java8Class() {}
+}",class,
+"    public static Java8Class staticFun() {
+        return new Java8Class();
+    }",method,
+    public int memberFun() {return 1;},method,
+"    public static String testOverloads() {
+        return ""1"";
+    }",method,
+"    public static String testOverloads(int i) {
+        return ""2"";
+    }",method,
+"    public void testStaticFunction() {
+        Function0 staticFunFromSameClass = Java8Class::staticFun;
+        staticFunFromSameClass.invoke();
+        Function0 staticFunFromAnotherClass = Test::staticFun;
+        staticFunFromAnotherClass.invoke();
+    }",method,
+"    public void testMemberFunctionThroughClass() {
+        Function1<Java8Class, Integer> memberFunFromClass = Java8Class::memberFun;
+        memberFunFromClass.invoke(new Java8Class());
+    }",method,
+"    public void testMemberFunctionThroughObject() {
+        Java8Class obj = new Java8Class();
+        Function0 memberFunFromSameClass = obj::memberFun;
+        memberFunFromSameClass.invoke();
+        Test anotherObj = new Test();
+        Function0 memFunFromAnotherClass = anotherObj::memberFun;
+        memFunFromAnotherClass.invoke();
+        Function0 memberFunThroughObj1 = field::memberFun;
+        memberFunThroughObj1.invoke();
+        Function0 memberFunThroughObj2 = Test.field::memberFun;
+        memberFunThroughObj2.invoke();
+        Function0 memberFunThroughObj3 = Test.staticFun()::memberFun;
+        memberFunThroughObj3.invoke();
+    }",method,
+"    public void testConstructor() {
+        Function0 constructorSameClass = Java8Class::new;
+        constructorSameClass.invoke();
+        Function0 qualifiedConstructorSameClass = test.Java8Class::new;
+        qualifiedConstructorSameClass.invoke();
+        Function0 constructorAnotherClass = Test::new;
+        constructorAnotherClass.invoke();
+        Function0 qualifiedConstructorAnotherClass = test.Test::new;
+        qualifiedConstructorAnotherClass.invoke();
+    }",method,
+"    public void testLibraryFunctions() {
+        Function1<String, Integer> memberFunFromClass = String::length;
+        memberFunFromClass.invoke(""str"");
+    }",method,
+"    public void testOverloads() {
+        Function0<String> constructorWithoutParams = Test::testOverloads;
+        constructorWithoutParams.invoke();
+        Function1<Integer, String> constructorWithParam = Test::testOverloads;
+        constructorWithParam.invoke(2);
+    }",method,
+"    public void testGenericFunctions() {
+        Function0<List<String>> emptyList = Collections::emptyList;
+        emptyList.invoke();
+    }",method,
+    public static int staticFun() { return 1; },method,
+    public int memberFun() { return 1; },method,
+    public Java8Class() {},method,
+"public class MovePackageTest extends MultiFileTestCase {
+  @Override
+  protected String getTestDataPath() {
+    return JavaTestUtil.getJavaTestDataPath();
+  }
+  public void testMoveSingle() {
+    doTest(new String[]{""pack1""}, ""target"");
+  }
+  public void testQualifiedRef() {
+    doTest(new String[]{""package1.test""}, ""package2"");
+  }
+  public void testInsidePackage() {
+    doTest(new String[]{""a""}, ""a.b"");
+  }
+  public void testPackageAndReferencedClass() {
+    Project project = myPsiManager.getProject();
+    JavaPsiFacade facade = JavaPsiFacade.getInstance(project);
+    doTest((rootDir, rootAfter) -> performAction(new PsiElement[]{facade.findPackage(""a""), facade.findClass(""B"", GlobalSearchScope.allScope(project))}, ""b""));
+  }
+  @NotNull
+  @Override
+  protected String getTestRoot() {
+    return ""/refactoring/movePackage/"";
+  }
+  private void doTest(final String[] packageNames, final String newPackageName) {
+    doTest((rootDir, rootAfter) -> this.performAction(packageNames, newPackageName));
+  }
+  private void performAction(String[] packageNames, String newPackageName) {
+    final PsiPackage[] packages = new PsiPackage[packageNames.length];
+    for (int i = 0; i < packages.length; i++) {
+      String packageName = packageNames[i];
+      packages[i] = JavaPsiFacade.getInstance(myPsiManager.getProject()).findPackage(packageName);
+      assertNotNull(""Package "" + packageName + "" not found"", packages[i]);
+    }
+    performAction(packages, newPackageName);
+  }
+  private void performAction(PsiElement[] packagesAndClasses, String newPackageName) {
+    PsiPackage newParentPackage = JavaPsiFacade.getInstance(myPsiManager.getProject()).findPackage(newPackageName);
+    assertNotNull(newParentPackage);
+    final PsiDirectory[] dirs = newParentPackage.getDirectories();
+    assertEquals(dirs.length, 1);
+    new MoveClassesOrPackagesProcessor(myProject, packagesAndClasses,
+                                       new SingleSourceRootMoveDestination(PackageWrapper.create(newParentPackage), dirs[0]),
+                                       true, false, null).run();
+    FileDocumentManager.getInstance().saveAllDocuments();
+  }
+}",class,
+"  @Override
+  protected String getTestDataPath() {
+    return JavaTestUtil.getJavaTestDataPath();
+  }",method,
+"  public void testMoveSingle() {
+    doTest(new String[]{""pack1""}, ""target"");
+  }",method,
+"  public void testQualifiedRef() {
+    doTest(new String[]{""package1.test""}, ""package2"");
+  }",method,
+"  public void testInsidePackage() {
+    doTest(new String[]{""a""}, ""a.b"");
+  }",method,
+"  public void testPackageAndReferencedClass() {
+    Project project = myPsiManager.getProject();
+    JavaPsiFacade facade = JavaPsiFacade.getInstance(project);
+    doTest((rootDir, rootAfter) -> performAction(new PsiElement[]{facade.findPackage(""a""), facade.findClass(""B"", GlobalSearchScope.allScope(project))}, ""b""));
+  }",method,
+"  @NotNull
+  @Override
+  protected String getTestRoot() {
+    return ""/refactoring/movePackage/"";
+  }",method,
+"  private void doTest(final String[] packageNames, final String newPackageName) {
+    doTest((rootDir, rootAfter) -> this.performAction(packageNames, newPackageName));
+  }",method,
+"  private void performAction(String[] packageNames, String newPackageName) {
+    final PsiPackage[] packages = new PsiPackage[packageNames.length];
+    for (int i = 0; i < packages.length; i++) {
+      String packageName = packageNames[i];
+      packages[i] = JavaPsiFacade.getInstance(myPsiManager.getProject()).findPackage(packageName);
+      assertNotNull(""Package "" + packageName + "" not found"", packages[i]);
+    }
+    performAction(packages, newPackageName);
+  }",method,
+"    for (int i = 0; i < packages.length; i++) {
+      String packageName = packageNames[i];
+      packages[i] = JavaPsiFacade.getInstance(myPsiManager.getProject()).findPackage(packageName);
+      assertNotNull(""Package "" + packageName + "" not found"", packages[i]);
+    }",method,
+"  private void performAction(PsiElement[] packagesAndClasses, String newPackageName) {
+    PsiPackage newParentPackage = JavaPsiFacade.getInstance(myPsiManager.getProject()).findPackage(newPackageName);
+    assertNotNull(newParentPackage);
+    final PsiDirectory[] dirs = newParentPackage.getDirectories();
+    assertEquals(dirs.length, 1);
+    new MoveClassesOrPackagesProcessor(myProject, packagesAndClasses,
+                                       new SingleSourceRootMoveDestination(PackageWrapper.create(newParentPackage), dirs[0]),
+                                       true, false, null).run();
+    FileDocumentManager.getInstance().saveAllDocuments();
+  }",method,
+"public class DHParameterSpec implements AlgorithmParameterSpec {
+    // The prime modulus
+    private BigInteger p;
+    // The base generator
+    private BigInteger g;
+    // The size in bits of the random exponent (private value) (optional)
+    private int l;
+    public DHParameterSpec(BigInteger p, BigInteger g) {
+        this.p = p;
+        this.g = g;
+        this.l = 0;
+    }
+    public DHParameterSpec(BigInteger p, BigInteger g, int l) {
+        this.p = p;
+        this.g = g;
+        this.l = l;
+    }
+    public BigInteger getP() {
+        return this.p;
+    }
+    public BigInteger getG() {
+        return this.g;
+    }
+    public int getL() {
+        return this.l;
+    }
+}",class,
+"    public DHParameterSpec(BigInteger p, BigInteger g) {
+        this.p = p;
+        this.g = g;
+        this.l = 0;
+    }",method,
+"    public DHParameterSpec(BigInteger p, BigInteger g, int l) {
+        this.p = p;
+        this.g = g;
+        this.l = l;
+    }",method,
+"    public BigInteger getP() {
+        return this.p;
+    }",method,
+"    public BigInteger getG() {
+        return this.g;
+    }",method,

@@ -1,0 +1,1339 @@
+code_snippet,type,score
+"                public DaemonRegistryContent update(DaemonRegistryContent oldValue) {
+                    if (oldValue == null) {
+                        return oldValue;
+                    }
+                    oldValue.removeInfo(address);
+                    return oldValue;
+                }",method,
+"                    if (oldValue == null) {
+                        return oldValue;
+                    }",method,
+"    public void markState(final Address address, final State state) {
+        lock.lock();
+        LOGGER.debug(""Marking busy by address: {}"", address);
+        try {
+            cache.update(new PersistentStateCache.UpdateAction<DaemonRegistryContent>() {
+                public DaemonRegistryContent update(DaemonRegistryContent oldValue) {
+                    DaemonInfo daemonInfo = oldValue != null ? oldValue.getInfo(address) : null;
+                    if (daemonInfo != null) {
+                        daemonInfo.setState(state);
+                    }
+                    // Else, has been removed by something else - ignore
+                    return oldValue;
+                }});
+        } finally {
+            lock.unlock();
+        }
+    }",method,
+"            cache.update(new PersistentStateCache.UpdateAction<DaemonRegistryContent>() {
+                public DaemonRegistryContent update(DaemonRegistryContent oldValue) {
+                    DaemonInfo daemonInfo = oldValue != null ? oldValue.getInfo(address) : null;
+                    if (daemonInfo != null) {
+                        daemonInfo.setState(state);
+                    }
+                    // Else, has been removed by something else - ignore
+                    return oldValue;
+                }}",method,
+"                public DaemonRegistryContent update(DaemonRegistryContent oldValue) {
+                    DaemonInfo daemonInfo = oldValue != null ? oldValue.getInfo(address) : null;
+                    if (daemonInfo != null) {
+                        daemonInfo.setState(state);
+                    }
+                    // Else, has been removed by something else - ignore
+                    return oldValue;
+                }",method,
+"                    if (daemonInfo != null) {
+                        daemonInfo.setState(state);
+                    }",method,
+"    @Override
+    public void storeStopEvent(final DaemonStopEvent stopEvent) {
+        lock.lock();
+        LOGGER.debug(""Storing daemon stop event with timestamp {}"", stopEvent.getTimestamp().getTime());
+        try {
+            cache.update(new PersistentStateCache.UpdateAction<DaemonRegistryContent>() {
+                public DaemonRegistryContent update(DaemonRegistryContent content) {
+                    if (content == null) { // registry doesn't exist yet
+                        content = new DaemonRegistryContent();
+                    }
+                    content.addStopEvent(stopEvent);
+                    return content;
+                }
+            });
+        } finally {
+            lock.unlock();
+        }
+    }",method,
+"            cache.update(new PersistentStateCache.UpdateAction<DaemonRegistryContent>() {
+                public DaemonRegistryContent update(DaemonRegistryContent content) {
+                    if (content == null) { // registry doesn't exist yet
+                        content = new DaemonRegistryContent();
+                    }
+                    content.addStopEvent(stopEvent);
+                    return content;
+                }
+            }",method,
+"                public DaemonRegistryContent update(DaemonRegistryContent content) {
+                    if (content == null) { // registry doesn't exist yet
+                        content = new DaemonRegistryContent();
+                    }
+                    content.addStopEvent(stopEvent);
+                    return content;
+                }",method,
+"                    if (content == null) { // registry doesn't exist yet
+                        content = new DaemonRegistryContent();
+                    }",method,
+"    @Override
+    public List<DaemonStopEvent> getStopEvents() {
+        lock.lock();
+        LOGGER.debug(""Getting daemon stop events"");
+        try {
+            DaemonRegistryContent content = cache.get();
+            if (content == null) { // no daemon process has started yet
+                return new LinkedList<DaemonStopEvent>();
+            }
+            return content.getStopEvents();
+        } finally {
+            lock.unlock();
+        }
+    }",method,
+"            if (content == null) { // no daemon process has started yet
+                return new LinkedList<DaemonStopEvent>();
+            }",method,
+"    @Override
+    public void removeStopEvents(final Collection<DaemonStopEvent> events) {
+        lock.lock();
+        LOGGER.info(""Removing {} daemon stop events from registry"", events.size());
+        try {
+            cache.update(new PersistentStateCache.UpdateAction<DaemonRegistryContent>() {
+                public DaemonRegistryContent update(DaemonRegistryContent content) {
+                    if (content != null) { // no daemon process has started yet
+                        content.removeStopEvents(events);
+                    }
+                    return content;
+                }
+            });
+        } finally {
+            lock.unlock();
+        }
+    }",method,
+"            cache.update(new PersistentStateCache.UpdateAction<DaemonRegistryContent>() {
+                public DaemonRegistryContent update(DaemonRegistryContent content) {
+                    if (content != null) { // no daemon process has started yet
+                        content.removeStopEvents(events);
+                    }
+                    return content;
+                }
+            }",method,
+"                public DaemonRegistryContent update(DaemonRegistryContent content) {
+                    if (content != null) { // no daemon process has started yet
+                        content.removeStopEvents(events);
+                    }
+                    return content;
+                }",method,
+"                    if (content != null) { // no daemon process has started yet
+                        content.removeStopEvents(events);
+                    }",method,
+"    public void store(final DaemonInfo info) {
+        final Address address = info.getAddress();
+        final DaemonContext daemonContext = info.getContext();
+        final byte[] token = info.getToken();
+        final State state = info.getState();
+        lock.lock();
+        LOGGER.debug(""Storing daemon address: {}, context: {}"", address, daemonContext);
+        try {
+            cache.update(new PersistentStateCache.UpdateAction<DaemonRegistryContent>() {
+                public DaemonRegistryContent update(DaemonRegistryContent oldValue) {
+                    if (oldValue == null) {
+                        //it means the registry didn't exist yet
+                        oldValue = new DaemonRegistryContent();
+                    }
+                    DaemonInfo daemonInfo = new DaemonInfo(address, daemonContext, token, state);
+                    oldValue.setStatus(address, daemonInfo);
+                    return oldValue;
+                }
+            });
+        } finally {
+            lock.unlock();
+        }
+    }",method,
+"            cache.update(new PersistentStateCache.UpdateAction<DaemonRegistryContent>() {
+                public DaemonRegistryContent update(DaemonRegistryContent oldValue) {
+                    if (oldValue == null) {
+                        //it means the registry didn't exist yet
+                        oldValue = new DaemonRegistryContent();
+                    }
+                    DaemonInfo daemonInfo = new DaemonInfo(address, daemonContext, token, state);
+                    oldValue.setStatus(address, daemonInfo);
+                    return oldValue;
+                }
+            }",method,
+"                public DaemonRegistryContent update(DaemonRegistryContent oldValue) {
+                    if (oldValue == null) {
+                        //it means the registry didn't exist yet
+                        oldValue = new DaemonRegistryContent();
+                    }
+                    DaemonInfo daemonInfo = new DaemonInfo(address, daemonContext, token, state);
+                    oldValue.setStatus(address, daemonInfo);
+                    return oldValue;
+                }",method,
+"                    if (oldValue == null) {
+                        //it means the registry didn't exist yet
+                        oldValue = new DaemonRegistryContent();
+                    }",method,
+"    public String toString() {
+        return String.format(""PersistentDaemonRegistry[file=%s]"", registryFile);
+    }",method,
+"    public BadlyFormedRequestException(String message) {
+        super(message);
+    }",method,
+"public class HTMLSuiteResultUnitTest {
+  @Test
+    public void testBasic() {
+        String input = ""\r\n"" +
+        ""\r\n"" +
+        ""<table border=\""1\"" cellpadding=\""1\"" cellspacing=\""1\"">\r\n"" +
+        ""        <tbody>\r\n"" +
+        ""            <tr class=\""title status_passed\""><td><b>Test Suite</b></td></tr>\r\n"" +
+        ""            <tr class=\""status_passed\""><td><a href=\""./TestQuickOpen.html\"">TestQuickOpen</a></td></tr>\r\n"" +
+        ""            <tr class=\""status_passed\""><td><a href=\""./TestQuickOpen.html\"">TestQuickOpen</a></td></tr>\r\n"" +
+        ""            <tr class=\""status_passed\""><td><a href=\""./TestQuickOpen.html\"">TestQuickOpen</a></td></tr>\r\n"" +
+        ""            <tr class=\""status_passed\""><td><a href=\""./TestQuickOpen.html\"">TestQuickOpen</a></td></tr>\r\n"" +
+        ""        </tbody>\r\n"" +
+        ""    </table>\r\n"" +
+        ""\r\n"" +
+        """";
+        HTMLSuiteResult hsr = new HTMLSuiteResult(input);
+        // System.out.println(hsr.getUpdatedSuite());
+        String expected = ""\r\n"" +
+        ""\r\n"" +
+        ""<table border=\""1\"" cellpadding=\""1\"" cellspacing=\""1\"">\r\n"" +
+        ""        <tbody>\r\n"" +
+        ""            <tr class=\""title status_passed\""><td><b>Test Suite</b></td></tr>\r\n"" +
+        ""            <tr class=\""status_passed\""><td><a href=\""#testresult0\"">TestQuickOpen</a></td></tr>\r\n"" +
+        ""            <tr class=\""status_passed\""><td><a href=\""#testresult1\"">TestQuickOpen</a></td></tr>\r\n"" +
+        ""            <tr class=\""status_passed\""><td><a href=\""#testresult2\"">TestQuickOpen</a></td></tr>\r\n"" +
+        ""            <tr class=\""status_passed\""><td><a href=\""#testresult3\"">TestQuickOpen</a></td></tr>\r\n"" +
+        ""        </tbody>\r\n"" +
+        ""    </table>\r\n"" +
+        ""\r\n"" +
+        """";
+        assertEquals(expected, hsr.getUpdatedSuite());
+    }
+}",class,
+"  @Test
+    public void testBasic() {
+        String input = ""\r\n"" +
+        ""\r\n"" +
+        ""<table border=\""1\"" cellpadding=\""1\"" cellspacing=\""1\"">\r\n"" +
+        ""        <tbody>\r\n"" +
+        ""            <tr class=\""title status_passed\""><td><b>Test Suite</b></td></tr>\r\n"" +
+        ""            <tr class=\""status_passed\""><td><a href=\""./TestQuickOpen.html\"">TestQuickOpen</a></td></tr>\r\n"" +
+        ""            <tr class=\""status_passed\""><td><a href=\""./TestQuickOpen.html\"">TestQuickOpen</a></td></tr>\r\n"" +
+        ""            <tr class=\""status_passed\""><td><a href=\""./TestQuickOpen.html\"">TestQuickOpen</a></td></tr>\r\n"" +
+        ""            <tr class=\""status_passed\""><td><a href=\""./TestQuickOpen.html\"">TestQuickOpen</a></td></tr>\r\n"" +
+        ""        </tbody>\r\n"" +
+        ""    </table>\r\n"" +
+        ""\r\n"" +
+        """";
+        HTMLSuiteResult hsr = new HTMLSuiteResult(input);
+        // System.out.println(hsr.getUpdatedSuite());
+        String expected = ""\r\n"" +
+        ""\r\n"" +
+        ""<table border=\""1\"" cellpadding=\""1\"" cellspacing=\""1\"">\r\n"" +
+        ""        <tbody>\r\n"" +
+        ""            <tr class=\""title status_passed\""><td><b>Test Suite</b></td></tr>\r\n"" +
+        ""            <tr class=\""status_passed\""><td><a href=\""#testresult0\"">TestQuickOpen</a></td></tr>\r\n"" +
+        ""            <tr class=\""status_passed\""><td><a href=\""#testresult1\"">TestQuickOpen</a></td></tr>\r\n"" +
+        ""            <tr class=\""status_passed\""><td><a href=\""#testresult2\"">TestQuickOpen</a></td></tr>\r\n"" +
+        ""            <tr class=\""status_passed\""><td><a href=\""#testresult3\"">TestQuickOpen</a></td></tr>\r\n"" +
+        ""        </tbody>\r\n"" +
+        ""    </table>\r\n"" +
+        ""\r\n"" +
+        """";
+        assertEquals(expected, hsr.getUpdatedSuite());
+    }",method,
+"public abstract class HashCastNode extends RubyNode {
+    @Child private CallDispatchHeadNode toHashNode = CallDispatchHeadNode.createReturnMissing();
+    protected abstract RubyNode getChild();
+    @Specialization
+    public DynamicObject cast(boolean value) {
+        return nil();
+    }
+    @Specialization
+    public DynamicObject cast(int value) {
+        return nil();
+    }
+    @Specialization
+    public DynamicObject cast(long value) {
+        return nil();
+    }
+    @Specialization
+    public DynamicObject cast(double value) {
+        return nil();
+    }
+    @Specialization(guards = ""isNil(nil)"")
+    public DynamicObject castNil(DynamicObject nil) {
+        return nil();
+    }
+    @Specialization(guards = ""isRubyBignum(value)"")
+    public DynamicObject castBignum(DynamicObject value) {
+        return nil();
+    }
+    @Specialization(guards = ""isRubyHash(hash)"")
+    public DynamicObject castHash(DynamicObject hash) {
+        return hash;
+    }
+    @Specialization(guards = {""!isNil(object)"", ""!isRubyBignum(object)"", ""!isRubyHash(object)""})
+    public Object cast(VirtualFrame frame, DynamicObject object,
+            @Cached(""create()"") BranchProfile errorProfile) {
+        final Object result = toHashNode.call(frame, object, ""to_hash"");
+        if (result == DispatchNode.MISSING) {
+            return nil();
+        }
+        if (!RubyGuards.isRubyHash(result)) {
+            errorProfile.enter();
+            throw new RaiseException(coreExceptions().typeErrorCantConvertTo(object, ""Hash"", ""to_hash"", result, this));
+        }
+        return result;
+    }
+    @Override
+    public void executeVoid(VirtualFrame frame) {
+        getChild().executeVoid(frame);
+    }
+}",class,
+"    @Specialization
+    public DynamicObject cast(boolean value) {
+        return nil();
+    }",method,
+"    @Specialization
+    public DynamicObject cast(int value) {
+        return nil();
+    }",method,
+"    @Specialization
+    public DynamicObject cast(long value) {
+        return nil();
+    }",method,
+"    @Specialization
+    public DynamicObject cast(double value) {
+        return nil();
+    }",method,
+"    @Specialization(guards = ""isNil(nil)"")
+    public DynamicObject castNil(DynamicObject nil) {
+        return nil();
+    }",method,
+"    @Specialization(guards = ""isRubyBignum(value)"")
+    public DynamicObject castBignum(DynamicObject value) {
+        return nil();
+    }",method,
+"    @Specialization(guards = ""isRubyHash(hash)"")
+    public DynamicObject castHash(DynamicObject hash) {
+        return hash;
+    }",method,
+"        if (result == DispatchNode.MISSING) {
+            return nil();
+        }",method,
+"    @Override
+    public void executeVoid(VirtualFrame frame) {
+        getChild().executeVoid(frame);
+    }",method,
+"    TileServiceManager(TileServices tileServices, Handler handler, ComponentName component,
+            Tile tile) {
+        this(tileServices, handler, new TileLifecycleManager(handler,
+                tileServices.getContext(), tileServices, tile, new Intent().setComponent(component),
+                new UserHandle(ActivityManager.getCurrentUser())));
+    }",method,
+"    @VisibleForTesting
+    TileServiceManager(TileServices tileServices, Handler handler,
+            TileLifecycleManager tileLifecycleManager) {
+        mServices = tileServices;
+        mHandler = handler;
+        mStateManager = tileLifecycleManager;
+        IntentFilter filter = new IntentFilter();
+        filter.addAction(Intent.ACTION_PACKAGE_REMOVED);
+        filter.addDataScheme(""package"");
+        Context context = mServices.getContext();
+        context.registerReceiverAsUser(mUninstallReceiver,
+                new UserHandle(ActivityManager.getCurrentUser()), filter, null, mHandler);
+        ComponentName component = tileLifecycleManager.getComponent();
+        if (!TileLifecycleManager.isTileAdded(context, component)) {
+            TileLifecycleManager.setTileAdded(context, component, true);
+            mStateManager.onTileAdded();
+            mStateManager.flushMessagesAndUnbind();
+        }
+    }",method,
+"    public void setTileChangeListener(TileChangeListener changeListener) {
+        mStateManager.setTileChangeListener(changeListener);
+    }",method,
+"    public boolean isActiveTile() {
+        return mStateManager.isActiveTile();
+    }",method,
+"    public void setShowingDialog(boolean dialog) {
+        mShowingDialog = dialog;
+    }",method,
+"    public IQSTileService getTileService() {
+        return mStateManager;
+    }",method,
+"    public IBinder getToken() {
+        return mStateManager.getToken();
+    }",method,
+"    public void setBindRequested(boolean bindRequested) {
+        if (mBindRequested == bindRequested) return;
+        mBindRequested = bindRequested;
+        if (mBindAllowed && mBindRequested && !mBound) {
+            mHandler.removeCallbacks(mUnbind);
+            bindService();
+        } else {
+            mServices.recalculateBindAllowance();
+        }
+        if (mBound && !mBindRequested) {
+            mHandler.postDelayed(mUnbind, UNBIND_DELAY);
+        }
+    }",method,
+"        if (mBindAllowed && mBindRequested && !mBound) {
+            mHandler.removeCallbacks(mUnbind);
+            bindService();
+        }",method,
+"        if (mBound && !mBindRequested) {
+            mHandler.postDelayed(mUnbind, UNBIND_DELAY);
+        }",method,
+"    public void setLastUpdate(long lastUpdate) {
+        mLastUpdate = lastUpdate;
+        if (mBound && isActiveTile()) {
+            mStateManager.onStopListening();
+            setBindRequested(false);
+        }
+        mServices.recalculateBindAllowance();
+    }",method,
+"    public void handleDestroy() {
+        setBindAllowed(false);
+        mServices.getContext().unregisterReceiver(mUninstallReceiver);
+        mStateManager.handleDestroy();
+    }",method,
+"    public void setBindAllowed(boolean allowed) {
+        if (mBindAllowed == allowed) return;
+        mBindAllowed = allowed;
+        if (!mBindAllowed && mBound) {
+            unbindService();
+        } else if (mBindAllowed && mBindRequested && !mBound) {
+            bindService();
+        }
+    }",method,
+"        if (!mBindAllowed && mBound) {
+            unbindService();
+        }",method,
+"    public boolean hasPendingBind() {
+        return mPendingBind;
+    }",method,
+"    public void clearPendingBind() {
+        mPendingBind = false;
+    }",method,
+"    private void bindService() {
+        if (mBound) {
+            Log.e(TAG, ""Service already bound"");
+            return;
+        }
+        mPendingBind = true;
+        mBound = true;
+        mJustBound = true;
+        mHandler.postDelayed(mJustBoundOver, MIN_BIND_TIME);
+        mStateManager.setBindService(true);
+    }",method,
+"        if (mBound) {
+            Log.e(TAG, ""Service already bound"");
+            return;
+        }",method,
+"    private void unbindService() {
+        if (!mBound) {
+            Log.e(TAG, ""Service not bound"");
+            return;
+        }
+        mBound = false;
+        mJustBound = false;
+        mStateManager.setBindService(false);
+    }",method,
+"        if (!mBound) {
+            Log.e(TAG, ""Service not bound"");
+            return;
+        }",method,
+"public class DeleteQueryThreadLocalTest extends TestEntityTestBase {
+    private DeleteQuery<TestEntity> queryFromOtherThread;
+    public void testGetForCurrentThread_SameInstance() {
+        DeleteQuery<TestEntity> query = dao.queryBuilder().buildDelete();
+        assertSame(query, query.forCurrentThread());
+    }
+    public void testGetForCurrentThread_ParametersAreReset() {
+        insert(3);
+        int value = getSimpleInteger(1);
+        DeleteQuery<TestEntity> query = dao.queryBuilder().where(Properties.SimpleInteger.eq(value)).buildDelete();
+        query.setParameter(0, value + 100);
+        query.executeDeleteWithoutDetachingEntities();
+        assertEquals(3, dao.count());
+        query = query.forCurrentThread();
+        query.executeDeleteWithoutDetachingEntities();
+        assertEquals(2, dao.count());
+    }
+    public void testGetForCurrentThread_TwoThreads() throws InterruptedException {
+        insert(3);
+        createQueryFromOtherThread();
+        DeleteQuery<TestEntity> query = queryFromOtherThread.forCurrentThread();
+        assertNotSame(queryFromOtherThread, query);
+        query.setParameter(0, getSimpleInteger(2));
+        query.executeDeleteWithoutDetachingEntities();
+        assertEquals(2, dao.count());
+    }
+    public void testThrowOutsideOwnerThread() throws InterruptedException {
+        createQueryFromOtherThread();
+        try {
+            queryFromOtherThread.executeDeleteWithoutDetachingEntities();
+            fail(""Did not throw"");
+        } catch (DaoException expected) {
+        }
+        try {
+            queryFromOtherThread.setParameter(0, 42);
+            fail(""Did not throw"");
+        } catch (DaoException expected) {
+        }
+    }
+    private void createQueryFromOtherThread() throws InterruptedException {
+        Thread thread = new Thread() {
+            @Override
+            public void run() {
+                QueryBuilder<TestEntity> builder = dao.queryBuilder();
+                builder.where(Properties.SimpleInteger.eq(getSimpleInteger(1)));
+                queryFromOtherThread = builder.buildDelete();
+            }
+        };
+        thread.start();
+        thread.join();
+        assertNotNull(queryFromOtherThread);
+    }
+}",class,
+"    public void testGetForCurrentThread_SameInstance() {
+        DeleteQuery<TestEntity> query = dao.queryBuilder().buildDelete();
+        assertSame(query, query.forCurrentThread());
+    }",method,
+"    public void testGetForCurrentThread_ParametersAreReset() {
+        insert(3);
+        int value = getSimpleInteger(1);
+        DeleteQuery<TestEntity> query = dao.queryBuilder().where(Properties.SimpleInteger.eq(value)).buildDelete();
+        query.setParameter(0, value + 100);
+        query.executeDeleteWithoutDetachingEntities();
+        assertEquals(3, dao.count());
+        query = query.forCurrentThread();
+        query.executeDeleteWithoutDetachingEntities();
+        assertEquals(2, dao.count());
+    }",method,
+"    public void testGetForCurrentThread_TwoThreads() throws InterruptedException {
+        insert(3);
+        createQueryFromOtherThread();
+        DeleteQuery<TestEntity> query = queryFromOtherThread.forCurrentThread();
+        assertNotSame(queryFromOtherThread, query);
+        query.setParameter(0, getSimpleInteger(2));
+        query.executeDeleteWithoutDetachingEntities();
+        assertEquals(2, dao.count());
+    }",method,
+"    public void testThrowOutsideOwnerThread() throws InterruptedException {
+        createQueryFromOtherThread();
+        try {
+            queryFromOtherThread.executeDeleteWithoutDetachingEntities();
+            fail(""Did not throw"");
+        } catch (DaoException expected) {
+        }
+        try {
+            queryFromOtherThread.setParameter(0, 42);
+            fail(""Did not throw"");
+        } catch (DaoException expected) {
+        }
+    }",method,
+"    private void createQueryFromOtherThread() throws InterruptedException {
+        Thread thread = new Thread() {
+            @Override
+            public void run() {
+                QueryBuilder<TestEntity> builder = dao.queryBuilder();
+                builder.where(Properties.SimpleInteger.eq(getSimpleInteger(1)));
+                queryFromOtherThread = builder.buildDelete();
+            }
+        };
+        thread.start();
+        thread.join();
+        assertNotNull(queryFromOtherThread);
+    }",method,
+"            @Override
+            public void run() {
+                QueryBuilder<TestEntity> builder = dao.queryBuilder();
+                builder.where(Properties.SimpleInteger.eq(getSimpleInteger(1)));
+                queryFromOtherThread = builder.buildDelete();
+            }",method,
+"  protected MavenProjectBuilder getBuilder() {
+    return (MavenProjectBuilder)super.getBuilder();
+  }",method,
+"  public void createUIComponents() {
+    myMarkStateDescriptor = new MavenProfileKindMarkStateDescriptor();
+    profileChooser = new MultiStateElementsChooser<>(true, myMarkStateDescriptor);
+  }",method,
+"  public JComponent getComponent() {
+    return panel;
+  }",method,
+"  public void updateStep() {
+    List<String> allProfiles = getBuilder().getProfiles();
+    List<String> activatedProfiles = getBuilder().getActivatedProfiles();
+    MavenExplicitProfiles selectedProfiles = getBuilder().getSelectedProfiles();
+    List<String> enabledProfiles = new ArrayList<>(selectedProfiles.getEnabledProfiles());
+    List<String> disabledProfiles = new ArrayList<>(selectedProfiles.getDisabledProfiles());
+    enabledProfiles.retainAll(allProfiles); // mark only existing profiles
+    disabledProfiles.retainAll(allProfiles); // mark only existing profiles
+    myMarkStateDescriptor.setActivatedProfiles(activatedProfiles);
+    profileChooser.setElements(allProfiles, null);
+    profileChooser.markElements(enabledProfiles, MavenProfileKind.EXPLICIT);
+    profileChooser.markElements(disabledProfiles, MavenProfileKind.NONE);
+  }",method,
+"  public boolean validate() throws ConfigurationException {
+    Collection<String> activatedProfiles = myMarkStateDescriptor.getActivatedProfiles();
+    MavenExplicitProfiles newSelectedProfiles = MavenExplicitProfiles.NONE.clone();
+    for (Map.Entry<String, MavenProfileKind> entry : profileChooser.getElementMarkStates().entrySet()) {
+      String profile = entry.getKey();
+      MavenProfileKind profileKind = entry.getValue();
+      switch (profileKind) {
+        case NONE:
+          if (activatedProfiles.contains(profile)) {
+            newSelectedProfiles.getDisabledProfiles().add(profile);
+          }
+          break;
+        case EXPLICIT:
+          newSelectedProfiles.getEnabledProfiles().add(profile);
+          break;
+        case IMPLICIT:
+          break;
+      }
+    }
+    return getBuilder().setSelectedProfiles(newSelectedProfiles);
+  }",method,
+"      switch (profileKind) {
+        case NONE:
+          if (activatedProfiles.contains(profile)) {
+            newSelectedProfiles.getDisabledProfiles().add(profile);
+          }
+          break;
+        case EXPLICIT:
+          newSelectedProfiles.getEnabledProfiles().add(profile);
+          break;
+        case IMPLICIT:
+          break;
+      }",method,
+"  public void updateDataModel() {
+  }",method,
+"public class MainMenuActivity extends BaseGameActivity implements IOnMenuItemClickListener {
+	// ===========================================================
+	// Constants
+	// ===========================================================
+	private static final int CAMERA_WIDTH = 480;
+	private static final int CAMERA_HEIGHT = 320;
+	protected static final int MENU_ABOUT = 0;
+	protected static final int MENU_QUIT = MENU_ABOUT + 1;
+	protected static final int MENU_PLAY = 100;
+	protected static final int MENU_SCORES = MENU_PLAY + 1;
+	protected static final int MENU_OPTIONS = MENU_SCORES + 1;
+	protected static final int MENU_HELP = MENU_OPTIONS + 1;
+	// ===========================================================
+	// Fields
+	// ===========================================================
+	protected Camera mCamera;
+	protected Scene mMainScene;
+	protected Handler mHandler;
+	private Texture mMenuBackTexture;
+	private TextureRegion mMenuBackTextureRegion;
+	protected MenuScene mStaticMenuScene, mPopUpMenuScene;
+	private Texture mPopUpTexture;
+	private Texture mFontTexture;
+	private Font mFont;
+	protected TextureRegion mPopUpAboutTextureRegion;
+	protected TextureRegion mPopUpQuitTextureRegion;
+	protected TextureRegion mMenuPlayTextureRegion;
+	protected TextureRegion mMenuScoresTextureRegion;
+	protected TextureRegion mMenuOptionsTextureRegion;
+	protected TextureRegion mMenuHelpTextureRegion;
+	private boolean popupDisplayed;
+	// ===========================================================
+	// Constructors
+	// ===========================================================
+	// ===========================================================
+	// Getter & Setter
+	// ===========================================================
+	// ===========================================================
+	// Methods for/from SuperClass/Interfaces
+	// ===========================================================
+	@Override
+	public Engine onLoadEngine() {
+		mHandler = new Handler();
+		this.mCamera = new Camera(0, 0, CAMERA_WIDTH, CAMERA_HEIGHT);
+		return new Engine(new EngineOptions(true, ScreenOrientation.LANDSCAPE, new RatioResolutionPolicy(CAMERA_WIDTH, CAMERA_HEIGHT), this.mCamera));
+	}
+	@Override
+	public void onLoadResources() {
+		this.mFontTexture = new Texture(256, 256, TextureOptions.BILINEAR_PREMULTIPLYALPHA);
+		FontFactory.setAssetBasePath(""font/"");
+		this.mFont = FontFactory.createFromAsset(this.mFontTexture, this, ""Flubber.ttf"", 32, true, Color.WHITE);
+		this.mEngine.getTextureManager().loadTexture(this.mFontTexture);
+		this.mEngine.getFontManager().loadFont(this.mFont);
+		this.mMenuBackTexture = new Texture(512, 512, TextureOptions.BILINEAR_PREMULTIPLYALPHA);
+		this.mMenuBackTextureRegion = TextureRegionFactory.createFromAsset(this.mMenuBackTexture, this, ""gfx/MainMenu/MainMenuBk.png"", 0, 0);
+		this.mEngine.getTextureManager().loadTexture(this.mMenuBackTexture);
+		this.mPopUpTexture = new Texture(512, 512, TextureOptions.BILINEAR_PREMULTIPLYALPHA);
+		this.mPopUpAboutTextureRegion = TextureRegionFactory.createFromAsset(this.mPopUpTexture, this, ""gfx/MainMenu/About_button.png"", 0, 0);
+		this.mPopUpQuitTextureRegion = TextureRegionFactory.createFromAsset(this.mPopUpTexture, this, ""gfx/MainMenu/Quit_button.png"", 0, 50);
+		this.mEngine.getTextureManager().loadTexture(this.mPopUpTexture);
+		popupDisplayed = false;
+		}
+	@Override
+	public Scene onLoadScene() {
+		this.mEngine.registerUpdateHandler(new FPSLogger());
+		this.createStaticMenuScene();
+		this.createPopUpMenuScene();
+		final int centerX = (CAMERA_WIDTH - this.mMenuBackTextureRegion.getWidth()) / 2;
+		final int centerY = (CAMERA_HEIGHT - this.mMenuBackTextureRegion.getHeight()) / 2;
+		this.mMainScene = new Scene(1);
+		final Sprite menuBack = new Sprite(centerX, centerY, this.mMenuBackTextureRegion);
+		mMainScene.getLastChild().attachChild(menuBack);
+		mMainScene.setChildScene(mStaticMenuScene);
+		return this.mMainScene;
+	}
+	@Override
+	public void onLoadComplete() {
+	}
+	@Override
+	public void onResumeGame() {
+		super.onResumeGame();
+		mMainScene.registerEntityModifier(new ScaleAtModifier(0.5f, 0.0f, 1.0f, CAMERA_WIDTH/2, CAMERA_HEIGHT/2));
+		mStaticMenuScene.registerEntityModifier(new ScaleAtModifier(0.5f, 0.0f, 1.0f, CAMERA_WIDTH/2, CAMERA_HEIGHT/2));
+	}
+	@Override
+	public boolean onKeyDown(final int pKeyCode, final KeyEvent pEvent) {
+		if(pKeyCode == KeyEvent.KEYCODE_MENU && pEvent.getAction() == KeyEvent.ACTION_DOWN) {
+			if(popupDisplayed) {
+				this.mPopUpMenuScene.back();
+				mMainScene.setChildScene(mStaticMenuScene);
+				popupDisplayed = false;
+			} else {
+				this.mMainScene.setChildScene(this.mPopUpMenuScene, false, true, true);
+				popupDisplayed = true;
+			}
+			return true;
+		} else {
+			return super.onKeyDown(pKeyCode, pEvent);
+		}
+	}
+	@Override
+	public boolean onMenuItemClicked(final MenuScene pMenuScene, final IMenuItem pMenuItem, final float pMenuItemLocalX, final float pMenuItemLocalY) {
+		switch(pMenuItem.getID()) {
+			case MENU_ABOUT:
+				Toast.makeText(MainMenuActivity.this, ""About selected"", Toast.LENGTH_SHORT).show();
+				return true;
+			case MENU_QUIT:
+				this.finish();
+				return true;
+			case MENU_PLAY:
+				mMainScene.registerEntityModifier(new ScaleModifier(1.0f, 1.0f, 0.0f));
+				mStaticMenuScene.registerEntityModifier(new ScaleModifier(1.0f, 1.0f, 0.0f));
+				mHandler.postDelayed(mLaunchLevel1Task,1000);
+				return true;
+			case MENU_SCORES:
+				Toast.makeText(MainMenuActivity.this, ""Scores selected"", Toast.LENGTH_SHORT).show();
+				return true;
+			case MENU_OPTIONS:
+				mMainScene.registerEntityModifier(new ScaleModifier(1.0f, 1.0f, 0.0f));
+				mStaticMenuScene.registerEntityModifier(new ScaleModifier(1.0f, 1.0f, 0.0f));
+				mHandler.postDelayed(mLaunchOptionsTask, 1000);
+				return true;
+			case MENU_HELP:
+				Toast.makeText(MainMenuActivity.this, ""Help selected"", Toast.LENGTH_SHORT).show();
+				return true;
+			default:
+				return false;
+		}
+	}
+	// ===========================================================
+	// Methods
+	// ===========================================================
+	protected void createStaticMenuScene() {
+		this.mStaticMenuScene = new MenuScene(this.mCamera);
+		final IMenuItem playMenuItem = new ColorMenuItemDecorator( new TextMenuItem(MENU_PLAY, mFont, ""Play Game""), 0.5f, 0.5f, 0.5f, 1.0f, 0.0f, 0.0f);
+		playMenuItem.setBlendFunction(GL10.GL_SRC_ALPHA, GL10.GL_ONE_MINUS_SRC_ALPHA);
+		this.mStaticMenuScene.addMenuItem(playMenuItem);
+		final IMenuItem scoresMenuItem = new ColorMenuItemDecorator( new TextMenuItem(MENU_SCORES, mFont, ""Scores""), 0.5f, 0.5f, 0.5f, 1.0f, 0.0f, 0.0f);
+		scoresMenuItem.setBlendFunction(GL10.GL_SRC_ALPHA, GL10.GL_ONE_MINUS_SRC_ALPHA);
+		this.mStaticMenuScene.addMenuItem(scoresMenuItem);
+		final IMenuItem optionsMenuItem = new ColorMenuItemDecorator( new TextMenuItem(MENU_OPTIONS, mFont, ""Options""), 0.5f, 0.5f, 0.5f, 1.0f, 0.0f, 0.0f);
+		optionsMenuItem.setBlendFunction(GL10.GL_SRC_ALPHA, GL10.GL_ONE_MINUS_SRC_ALPHA);
+		this.mStaticMenuScene.addMenuItem(optionsMenuItem);
+		final IMenuItem helpMenuItem = new ColorMenuItemDecorator( new TextMenuItem(MENU_HELP, mFont, ""Help""), 0.5f, 0.5f, 0.5f, 1.0f, 0.0f, 0.0f);
+		helpMenuItem.setBlendFunction(GL10.GL_SRC_ALPHA, GL10.GL_ONE_MINUS_SRC_ALPHA);
+		this.mStaticMenuScene.addMenuItem(helpMenuItem);
+		this.mStaticMenuScene.buildAnimations();
+		this.mStaticMenuScene.setBackgroundEnabled(false);
+		this.mStaticMenuScene.setOnMenuItemClickListener(this);
+	}
+	protected void createPopUpMenuScene() {
+		this.mPopUpMenuScene = new MenuScene(this.mCamera);
+		final SpriteMenuItem aboutMenuItem = new SpriteMenuItem(MENU_ABOUT, this.mPopUpAboutTextureRegion);
+		aboutMenuItem.setBlendFunction(GL10.GL_SRC_ALPHA, GL10.GL_ONE_MINUS_SRC_ALPHA);
+		this.mPopUpMenuScene.addMenuItem(aboutMenuItem);
+		final SpriteMenuItem quitMenuItem = new SpriteMenuItem(MENU_QUIT, this.mPopUpQuitTextureRegion);
+		quitMenuItem.setBlendFunction(GL10.GL_SRC_ALPHA, GL10.GL_ONE_MINUS_SRC_ALPHA);
+		this.mPopUpMenuScene.addMenuItem(quitMenuItem);
+		this.mPopUpMenuScene.setMenuAnimator(new SlideMenuAnimator());
+		this.mPopUpMenuScene.buildAnimations();
+		this.mPopUpMenuScene.setBackgroundEnabled(false);
+		this.mPopUpMenuScene.setOnMenuItemClickListener(this);
+	}
+    private Runnable mLaunchLevel1Task = new Runnable() {
+        public void run() {
+    		Intent myIntent = new Intent(MainMenuActivity.this, Level1Activity.class);
+    		MainMenuActivity.this.startActivity(myIntent);
+        }
+     };
+     private Runnable mLaunchOptionsTask = new Runnable() {
+         public void run() {
+     		Intent myIntent = new Intent(MainMenuActivity.this, OptionsActivity.class);
+     		MainMenuActivity.this.startActivity(myIntent);
+         }
+      };
+	// ===========================================================
+	// Inner and Anonymous Classes
+	// ===========================================================
+}",class,
+"	@Override
+	public Engine onLoadEngine() {
+		mHandler = new Handler();
+		this.mCamera = new Camera(0, 0, CAMERA_WIDTH, CAMERA_HEIGHT);
+		return new Engine(new EngineOptions(true, ScreenOrientation.LANDSCAPE, new RatioResolutionPolicy(CAMERA_WIDTH, CAMERA_HEIGHT), this.mCamera));
+	}",method,
+"	@Override
+	public void onLoadResources() {
+		this.mFontTexture = new Texture(256, 256, TextureOptions.BILINEAR_PREMULTIPLYALPHA);
+		FontFactory.setAssetBasePath(""font/"");
+		this.mFont = FontFactory.createFromAsset(this.mFontTexture, this, ""Flubber.ttf"", 32, true, Color.WHITE);
+		this.mEngine.getTextureManager().loadTexture(this.mFontTexture);
+		this.mEngine.getFontManager().loadFont(this.mFont);
+		this.mMenuBackTexture = new Texture(512, 512, TextureOptions.BILINEAR_PREMULTIPLYALPHA);
+		this.mMenuBackTextureRegion = TextureRegionFactory.createFromAsset(this.mMenuBackTexture, this, ""gfx/MainMenu/MainMenuBk.png"", 0, 0);
+		this.mEngine.getTextureManager().loadTexture(this.mMenuBackTexture);
+		this.mPopUpTexture = new Texture(512, 512, TextureOptions.BILINEAR_PREMULTIPLYALPHA);
+		this.mPopUpAboutTextureRegion = TextureRegionFactory.createFromAsset(this.mPopUpTexture, this, ""gfx/MainMenu/About_button.png"", 0, 0);
+		this.mPopUpQuitTextureRegion = TextureRegionFactory.createFromAsset(this.mPopUpTexture, this, ""gfx/MainMenu/Quit_button.png"", 0, 50);
+		this.mEngine.getTextureManager().loadTexture(this.mPopUpTexture);
+		popupDisplayed = false;
+		}",method,
+"	@Override
+	public Scene onLoadScene() {
+		this.mEngine.registerUpdateHandler(new FPSLogger());
+		this.createStaticMenuScene();
+		this.createPopUpMenuScene();
+		final int centerX = (CAMERA_WIDTH - this.mMenuBackTextureRegion.getWidth()) / 2;
+		final int centerY = (CAMERA_HEIGHT - this.mMenuBackTextureRegion.getHeight()) / 2;
+		this.mMainScene = new Scene(1);
+		final Sprite menuBack = new Sprite(centerX, centerY, this.mMenuBackTextureRegion);
+		mMainScene.getLastChild().attachChild(menuBack);
+		mMainScene.setChildScene(mStaticMenuScene);
+		return this.mMainScene;
+	}",method,
+"	@Override
+	public void onLoadComplete() {
+	}",method,
+"	@Override
+	public void onResumeGame() {
+		super.onResumeGame();
+		mMainScene.registerEntityModifier(new ScaleAtModifier(0.5f, 0.0f, 1.0f, CAMERA_WIDTH/2, CAMERA_HEIGHT/2));
+		mStaticMenuScene.registerEntityModifier(new ScaleAtModifier(0.5f, 0.0f, 1.0f, CAMERA_WIDTH/2, CAMERA_HEIGHT/2));
+	}",method,
+"	@Override
+	public boolean onKeyDown(final int pKeyCode, final KeyEvent pEvent) {
+		if(pKeyCode == KeyEvent.KEYCODE_MENU && pEvent.getAction() == KeyEvent.ACTION_DOWN) {
+			if(popupDisplayed) {
+				this.mPopUpMenuScene.back();
+				mMainScene.setChildScene(mStaticMenuScene);
+				popupDisplayed = false;
+			} else {
+				this.mMainScene.setChildScene(this.mPopUpMenuScene, false, true, true);
+				popupDisplayed = true;
+			}
+			return true;
+		} else {
+			return super.onKeyDown(pKeyCode, pEvent);
+		}
+	}",method,
+"			if(popupDisplayed) {
+				this.mPopUpMenuScene.back();
+				mMainScene.setChildScene(mStaticMenuScene);
+				popupDisplayed = false;
+			}",method,
+"	@Override
+	public boolean onMenuItemClicked(final MenuScene pMenuScene, final IMenuItem pMenuItem, final float pMenuItemLocalX, final float pMenuItemLocalY) {
+		switch(pMenuItem.getID()) {
+			case MENU_ABOUT:
+				Toast.makeText(MainMenuActivity.this, ""About selected"", Toast.LENGTH_SHORT).show();
+				return true;
+			case MENU_QUIT:
+				this.finish();
+				return true;
+			case MENU_PLAY:
+				mMainScene.registerEntityModifier(new ScaleModifier(1.0f, 1.0f, 0.0f));
+				mStaticMenuScene.registerEntityModifier(new ScaleModifier(1.0f, 1.0f, 0.0f));
+				mHandler.postDelayed(mLaunchLevel1Task,1000);
+				return true;
+			case MENU_SCORES:
+				Toast.makeText(MainMenuActivity.this, ""Scores selected"", Toast.LENGTH_SHORT).show();
+				return true;
+			case MENU_OPTIONS:
+				mMainScene.registerEntityModifier(new ScaleModifier(1.0f, 1.0f, 0.0f));
+				mStaticMenuScene.registerEntityModifier(new ScaleModifier(1.0f, 1.0f, 0.0f));
+				mHandler.postDelayed(mLaunchOptionsTask, 1000);
+				return true;
+			case MENU_HELP:
+				Toast.makeText(MainMenuActivity.this, ""Help selected"", Toast.LENGTH_SHORT).show();
+				return true;
+			default:
+				return false;
+		}
+	}",method,
+"	protected void createStaticMenuScene() {
+		this.mStaticMenuScene = new MenuScene(this.mCamera);
+		final IMenuItem playMenuItem = new ColorMenuItemDecorator( new TextMenuItem(MENU_PLAY, mFont, ""Play Game""), 0.5f, 0.5f, 0.5f, 1.0f, 0.0f, 0.0f);
+		playMenuItem.setBlendFunction(GL10.GL_SRC_ALPHA, GL10.GL_ONE_MINUS_SRC_ALPHA);
+		this.mStaticMenuScene.addMenuItem(playMenuItem);
+		final IMenuItem scoresMenuItem = new ColorMenuItemDecorator( new TextMenuItem(MENU_SCORES, mFont, ""Scores""), 0.5f, 0.5f, 0.5f, 1.0f, 0.0f, 0.0f);
+		scoresMenuItem.setBlendFunction(GL10.GL_SRC_ALPHA, GL10.GL_ONE_MINUS_SRC_ALPHA);
+		this.mStaticMenuScene.addMenuItem(scoresMenuItem);
+		final IMenuItem optionsMenuItem = new ColorMenuItemDecorator( new TextMenuItem(MENU_OPTIONS, mFont, ""Options""), 0.5f, 0.5f, 0.5f, 1.0f, 0.0f, 0.0f);
+		optionsMenuItem.setBlendFunction(GL10.GL_SRC_ALPHA, GL10.GL_ONE_MINUS_SRC_ALPHA);
+		this.mStaticMenuScene.addMenuItem(optionsMenuItem);
+		final IMenuItem helpMenuItem = new ColorMenuItemDecorator( new TextMenuItem(MENU_HELP, mFont, ""Help""), 0.5f, 0.5f, 0.5f, 1.0f, 0.0f, 0.0f);
+		helpMenuItem.setBlendFunction(GL10.GL_SRC_ALPHA, GL10.GL_ONE_MINUS_SRC_ALPHA);
+		this.mStaticMenuScene.addMenuItem(helpMenuItem);
+		this.mStaticMenuScene.buildAnimations();
+		this.mStaticMenuScene.setBackgroundEnabled(false);
+		this.mStaticMenuScene.setOnMenuItemClickListener(this);
+	}",method,
+"	protected void createPopUpMenuScene() {
+		this.mPopUpMenuScene = new MenuScene(this.mCamera);
+		final SpriteMenuItem aboutMenuItem = new SpriteMenuItem(MENU_ABOUT, this.mPopUpAboutTextureRegion);
+		aboutMenuItem.setBlendFunction(GL10.GL_SRC_ALPHA, GL10.GL_ONE_MINUS_SRC_ALPHA);
+		this.mPopUpMenuScene.addMenuItem(aboutMenuItem);
+		final SpriteMenuItem quitMenuItem = new SpriteMenuItem(MENU_QUIT, this.mPopUpQuitTextureRegion);
+		quitMenuItem.setBlendFunction(GL10.GL_SRC_ALPHA, GL10.GL_ONE_MINUS_SRC_ALPHA);
+		this.mPopUpMenuScene.addMenuItem(quitMenuItem);
+		this.mPopUpMenuScene.setMenuAnimator(new SlideMenuAnimator());
+		this.mPopUpMenuScene.buildAnimations();
+		this.mPopUpMenuScene.setBackgroundEnabled(false);
+		this.mPopUpMenuScene.setOnMenuItemClickListener(this);
+	}",method,
+"        public void run() {
+    		Intent myIntent = new Intent(MainMenuActivity.this, Level1Activity.class);
+    		MainMenuActivity.this.startActivity(myIntent);
+        }",method,
+"         public void run() {
+     		Intent myIntent = new Intent(MainMenuActivity.this, OptionsActivity.class);
+     		MainMenuActivity.this.startActivity(myIntent);
+         }",method,
+"public class NodeTimeOutTest {
+  private Hub hub;
+  private SelfRegisteringRemote node;
+  private Wait<Object> wait = new FluentWait<Object>("""").withTimeout(8, SECONDS);
+  @Before
+  public void setup() throws Exception {
+    hub = GridTestHelper.getHub();
+    // register a selenium 1
+    node = GridTestHelper.getRemoteWithoutCapabilities(hub.getUrl(), GridRole.NODE);
+    node.addBrowser(GridTestHelper.getSelenium1FirefoxCapability(), 1);
+    node.addBrowser(GridTestHelper.getDefaultBrowserCapability(), 1);
+    node.setTimeout(1, 100);
+    node.setRemoteServer(new SeleniumServer(node.getConfiguration()));
+    node.startRemoteServer();
+    node.sendRegistrationRequest();
+    RegistryTestHelper.waitForNode(hub.getRegistry(), 1);
+  }
+  @Test
+  @Ignore(""Not passing from the command line"")
+  public void webDriverTimesOut() throws InterruptedException, MalformedURLException {
+    String url = hub.getConsoleURL().toString();
+    DesiredCapabilities caps = GridTestHelper.getDefaultBrowserCapability();
+    WebDriver driver = new RemoteWebDriver(hub.getWebDriverHubRequestURL(), caps);
+    driver.get(url);
+    assertEquals(driver.getTitle(), ""Grid Console"");
+    wait.until(new Function<Object, Integer>() {
+      @Override
+      public Integer apply(Object input) {
+        Integer i = hub.getRegistry().getActiveSessions().size();
+        if (i != 0) {
+          return null;
+        }
+        return i;
+      }
+    });
+    assertEquals(hub.getRegistry().getActiveSessions().size(), 0);
+  }
+  @After
+  public void teardown() throws Exception {
+    node.stopRemoteServer();
+    hub.stop();
+  }
+}",class,
+"  @Before
+  public void setup() throws Exception {
+    hub = GridTestHelper.getHub();
+    // register a selenium 1
+    node = GridTestHelper.getRemoteWithoutCapabilities(hub.getUrl(), GridRole.NODE);
+    node.addBrowser(GridTestHelper.getSelenium1FirefoxCapability(), 1);
+    node.addBrowser(GridTestHelper.getDefaultBrowserCapability(), 1);
+    node.setTimeout(1, 100);
+    node.setRemoteServer(new SeleniumServer(node.getConfiguration()));
+    node.startRemoteServer();
+    node.sendRegistrationRequest();
+    RegistryTestHelper.waitForNode(hub.getRegistry(), 1);
+  }",method,
+"  @Test
+  @Ignore(""Not passing from the command line"")
+  public void webDriverTimesOut() throws InterruptedException, MalformedURLException {
+    String url = hub.getConsoleURL().toString();
+    DesiredCapabilities caps = GridTestHelper.getDefaultBrowserCapability();
+    WebDriver driver = new RemoteWebDriver(hub.getWebDriverHubRequestURL(), caps);
+    driver.get(url);
+    assertEquals(driver.getTitle(), ""Grid Console"");
+    wait.until(new Function<Object, Integer>() {
+      @Override
+      public Integer apply(Object input) {
+        Integer i = hub.getRegistry().getActiveSessions().size();
+        if (i != 0) {
+          return null;
+        }
+        return i;
+      }
+    });
+    assertEquals(hub.getRegistry().getActiveSessions().size(), 0);
+  }",method,
+"    wait.until(new Function<Object, Integer>() {
+      @Override
+      public Integer apply(Object input) {
+        Integer i = hub.getRegistry().getActiveSessions().size();
+        if (i != 0) {
+          return null;
+        }
+        return i;
+      }
+    }",method,
+"      @Override
+      public Integer apply(Object input) {
+        Integer i = hub.getRegistry().getActiveSessions().size();
+        if (i != 0) {
+          return null;
+        }
+        return i;
+      }",method,
+"        if (i != 0) {
+          return null;
+        }",method,
+"  @After
+  public void teardown() throws Exception {
+    node.stopRemoteServer();
+    hub.stop();
+  }",method,
+"public class ScreenshotException extends WebDriverException {
+  private final String screenshot;
+  public ScreenshotException(String screenGrab) {
+    super(""Screen shot has been taken"");
+    this.screenshot = screenGrab;
+  }
+  public ScreenshotException(String screenGrab, Throwable cause) {
+    super(""Screen shot has been taken"", cause);
+    this.screenshot = screenGrab;
+  }
+  public String getBase64EncodedScreenshot() {
+    return screenshot;
+  }
+}",class,
+"public class SessionId {
+  private final String opaqueKey;
+  public SessionId(String opaqueKey) {
+    this.opaqueKey = opaqueKey;
+  }
+  @Override
+  public String toString() {
+    return opaqueKey;
+  }
+  @Override
+  public int hashCode() {
+    return opaqueKey.hashCode();
+  }
+  @Override
+  public boolean equals(Object obj) {
+    if (obj instanceof SessionId) {
+      return opaqueKey.equals(((SessionId) obj).opaqueKey);
+    }
+    return false;
+  }
+}",class,
+"  public ScreenshotException(String screenGrab) {
+    super(""Screen shot has been taken"");
+    this.screenshot = screenGrab;
+  }",method,
+"  public ScreenshotException(String screenGrab, Throwable cause) {
+    super(""Screen shot has been taken"", cause);
+    this.screenshot = screenGrab;
+  }",method,
+"  public String getBase64EncodedScreenshot() {
+    return screenshot;
+  }",method,
+"  public SessionId(String opaqueKey) {
+    this.opaqueKey = opaqueKey;
+  }",method,
+"  @Override
+  public String toString() {
+    return opaqueKey;
+  }",method,
+"  @Override
+  public int hashCode() {
+    return opaqueKey.hashCode();
+  }",method,
+"  @Override
+  public boolean equals(Object obj) {
+    if (obj instanceof SessionId) {
+      return opaqueKey.equals(((SessionId) obj).opaqueKey);
+    }
+    return false;
+  }",method,
+"    if (obj instanceof SessionId) {
+      return opaqueKey.equals(((SessionId) obj).opaqueKey);
+    }",method,
+"public class StringBlock {
+    public static StringBlock read(IntReader reader) throws IOException {
+        ReadUtil.readCheckType(reader,CHUNK_TYPE);
+        int chunkSize=reader.readInt();
+        int stringCount=reader.readInt();
+        int styleOffsetCount=reader.readInt();
+        int flags = reader.readInt();
+        int stringsOffset=reader.readInt();
+        int stylesOffset=reader.readInt();
+        StringBlock block=new StringBlock();
+        block.m_stringOffsets=reader.readIntArray(stringCount);
+        if (styleOffsetCount!=0) {
+            block.m_styleOffsets=reader.readIntArray(styleOffsetCount);
+        }
+        {
+            int size=((stylesOffset==0)?chunkSize:stylesOffset)-stringsOffset;
+            if ((size%4)!=0) {
+                throw new IOException(""String data size is not multiple of 4 (""+size+"")."");
+            }
+            block.m_stringPool =reader.readByteArray(size);
+        }
+        if (stylesOffset!=0) {
+            int size=(chunkSize-stylesOffset);
+            if ((size%4)!=0) {
+                throw new IOException(""Style data size is not multiple of 4 (""+size+"")."");
+            }
+            block.m_styles=reader.readIntArray(size/4);
+        }
+        // Set field flag to determine if stored in UTF-8 (or false for UTF-16).
+        block.m_isUtf8 = (flags & UTF8_FLAG) == UTF8_FLAG;
+        block.m_strings =new String[block.getCount()];
+        for (int i=0;i!=block.getCount();++i) {
+            block.m_strings[i]=block.stringAt(i);
+        }
+        return block;
+    }
+    public int getCount() {
+        return m_stringOffsets!=null?
+                m_stringOffsets.length:
+                0;
+    }
+    public String getRaw(int index) {
+        if (m_strings == null || index < 0 || index > m_strings.length - 1) {
+            return null;
+        }
+        return m_strings[index];
+    }
+    public CharSequence get(int index) {
+        return Cast.toCharSequence(getRaw(index));
+    }
+    public String getHTML(int index) {
+        String raw=getRaw(index);
+        if (raw==null) {
+            return raw;
+        }
+        int[] style=getStyle(index);
+        if (style==null) {
+            return raw;
+        }
+        StringBuilder html=new StringBuilder(raw.length()+32);
+        int offset=0;
+        while (true) {
+            int i=-1;
+            for (int j=0;j!=style.length;j+=3) {
+                if (style[j+1]==-1) {
+                    continue;
+                }
+                if (i==-1 || style[i+1]>style[j+1]) {
+                    i=j;
+                }
+            }
+            int start=((i!=-1)?style[i+1]:raw.length());
+            for (int j=0;j!=style.length;j+=3) {
+                int end=style[j+2];
+                if (end==-1 || end>=start) {
+                    continue;
+                }
+                if (offset<=end) {
+                    html.append(raw,offset,end+1);
+                    offset=end+1;
+                }
+                style[j+2]=-1;
+                html.append('<');
+                html.append('/');
+                html.append(getRaw(style[j]));
+                html.append('>');
+            }
+            if (offset<start) {
+                html.append(raw,offset,start);
+                offset=start;
+            }
+            if (i==-1) {
+                break;
+            }
+            html.append('<');
+            html.append(getRaw(style[i]));
+            html.append('>');
+            style[i+1]=-1;
+        }
+        return html.toString();
+    }
+    public int find(String string) {
+        if (m_strings == null) {
+            return -1;
+        }
+        for (int i = 0; i < m_strings.length - 1; i++) {
+            if (m_strings[i].equals(string)) {
+                return i;
+            }
+        }
+        return -1;
+    }
+    ///////////////////////////////////////////// implementation
+    private StringBlock() {
+    }
+    private int[] getStyle(int index) {
+        if (m_styleOffsets==null || m_styles==null ||
+                index>=m_styleOffsets.length)
+        {
+            return null;
+        }
+        int offset=m_styleOffsets[index]/4;
+        int style[];
+        {
+            int count=0;
+            for (int i=offset;i<m_styles.length;++i) {
+                if (m_styles[i]==-1) {
+                    break;
+                }
+                count+=1;
+            }
+            if (count==0 || (count%3)!=0) {
+                return null;
+            }
+            style=new int[count];
+        }
+        for (int i=offset,j=0;i<m_styles.length;) {
+            if (m_styles[i]==-1) {
+                break;
+            }
+            style[j++]=m_styles[i++];
+        }
+        return style;
+    }
+    private int decodeLengthUtf8(ByteBuffer buffer) {
+        int length = buffer.get();
+        if ((length & 0x8000) != 0) {
+            length = ((length & 0x7FFF) << 16) | buffer.get();
+        } else {
+            // Advance past the 2nd useless duplicate length byte.
+            buffer.get();
+        }
+        return length;
+    }
+    private int decodeLength(ByteBuffer byteBuffer) {
+        return m_isUtf8 ? decodeLengthUtf8(byteBuffer) : decodeLengthUtf16(byteBuffer);
+    }
+    private static int decodeLengthUtf16(ByteBuffer buffer) {
+        int length = buffer.get();
+        if ((length & 0x80) != 0) {
+            length = ((length & 0x7F) << 8) | buffer.get();
+        }
+        return length;
+    }
+    private String stringAt(int index) {
+        // Determine the offset from the start of the string pool.
+        int offset = m_stringOffsets[index];
+        // For convenience, wrap the string pool in ByteBuffer
+        // so that it will handle advancing the buffer index.
+        ByteBuffer buffer =
+                ByteBuffer.wrap(m_stringPool, offset, m_stringPool.length - offset)
+                        .order(ByteOrder.BIG_ENDIAN);
+        // Now get the decoded string length.
+        int length = decodeLength(buffer);
+        StringBuilder stringBuilder = new StringBuilder();
+        for (int i = 0; i < length; i++) {
+            if (m_isUtf8) {
+                stringBuilder.append((char) buffer.get());
+            } else {
+                int byte1 = buffer.get();
+                int byte2 = buffer.get();
+                stringBuilder.append((char) (byte2 | byte1));
+            }
+        }
+        return stringBuilder.toString();
+    }
+    private boolean m_isUtf8;
+    private byte[] m_stringPool;
+    private String[] m_strings;
+    private int[] m_stringOffsets;
+    private int[] m_styleOffsets;
+    private int[] m_styles;
+    private static final int CHUNK_TYPE=0x001C0001;
+    private static final int UTF8_FLAG = 1 << 8;
+}",class,
+"    public static StringBlock read(IntReader reader) throws IOException {
+        ReadUtil.readCheckType(reader,CHUNK_TYPE);
+        int chunkSize=reader.readInt();
+        int stringCount=reader.readInt();
+        int styleOffsetCount=reader.readInt();
+        int flags = reader.readInt();
+        int stringsOffset=reader.readInt();
+        int stylesOffset=reader.readInt();
+        StringBlock block=new StringBlock();
+        block.m_stringOffsets=reader.readIntArray(stringCount);
+        if (styleOffsetCount!=0) {
+            block.m_styleOffsets=reader.readIntArray(styleOffsetCount);
+        }
+        {
+            int size=((stylesOffset==0)?chunkSize:stylesOffset)-stringsOffset;
+            if ((size%4)!=0) {
+                throw new IOException(""String data size is not multiple of 4 (""+size+"")."");
+            }
+            block.m_stringPool =reader.readByteArray(size);
+        }
+        if (stylesOffset!=0) {
+            int size=(chunkSize-stylesOffset);
+            if ((size%4)!=0) {
+                throw new IOException(""Style data size is not multiple of 4 (""+size+"")."");
+            }
+            block.m_styles=reader.readIntArray(size/4);
+        }
+        // Set field flag to determine if stored in UTF-8 (or false for UTF-16).
+        block.m_isUtf8 = (flags & UTF8_FLAG) == UTF8_FLAG;
+        block.m_strings =new String[block.getCount()];
+        for (int i=0;i!=block.getCount();++i) {
+            block.m_strings[i]=block.stringAt(i);
+        }
+        return block;
+    }",method,
+"        if (styleOffsetCount!=0) {
+            block.m_styleOffsets=reader.readIntArray(styleOffsetCount);
+        }",method,

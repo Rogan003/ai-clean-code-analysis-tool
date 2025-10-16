@@ -1,0 +1,1371 @@
+code_snippet,type,score
+"    public void testRandomUniqueNormalUsageAlwayMoreThanOne() {
+        assertThat(randomUnique(() -> randomAlphaOfLengthBetween(1, 20), 10), hasSize(greaterThan(0)));
+    }",method,
+"public class SelectionReverter extends Reverter {
+  private final SelectionCalculator myCalculator;
+  private final Revision myLeftRevision;
+  private final Entry myRightEntry;
+  private final int myFromLine;
+  private final int myToLine;
+  public SelectionReverter(Project p,
+                           LocalHistoryFacade vcs,
+                           IdeaGateway gw,
+                           SelectionCalculator c,
+                           Revision leftRevision,
+                           Entry rightEntry,
+                           int fromLine,
+                           int toLine) {
+    super(p, vcs, gw);
+    myCalculator = c;
+    myLeftRevision = leftRevision;
+    myRightEntry = rightEntry;
+    myFromLine = fromLine;
+    myToLine = toLine;
+  }
+  @Override
+  protected Revision getTargetRevision() {
+    return myLeftRevision;
+  }
+  @Override
+  protected List<VirtualFile> getFilesToClearROStatus() throws IOException {
+    VirtualFile file = myGateway.findVirtualFile(myRightEntry.getPath());
+    return Collections.singletonList(file);
+  }
+  protected void doRevert() throws IOException, FilesTooBigForDiffException {
+    Block b = myCalculator.getSelectionFor(myLeftRevision, new Progress() {
+      public void processed(int percentage) {
+        // should be already processed.
+      }
+    });
+    Document d = myGateway.getDocument(myRightEntry.getPath());
+    int from = d.getLineStartOffset(myFromLine);
+    int to = d.getLineEndOffset(myToLine);
+    d.replaceString(from, to, b.getBlockContent());
+  }
+}",class,
+"  public SelectionReverter(Project p,
+                           LocalHistoryFacade vcs,
+                           IdeaGateway gw,
+                           SelectionCalculator c,
+                           Revision leftRevision,
+                           Entry rightEntry,
+                           int fromLine,
+                           int toLine) {
+    super(p, vcs, gw);
+    myCalculator = c;
+    myLeftRevision = leftRevision;
+    myRightEntry = rightEntry;
+    myFromLine = fromLine;
+    myToLine = toLine;
+  }",method,
+"  @Override
+  protected Revision getTargetRevision() {
+    return myLeftRevision;
+  }",method,
+"  @Override
+  protected List<VirtualFile> getFilesToClearROStatus() throws IOException {
+    VirtualFile file = myGateway.findVirtualFile(myRightEntry.getPath());
+    return Collections.singletonList(file);
+  }",method,
+"  protected void doRevert() throws IOException, FilesTooBigForDiffException {
+    Block b = myCalculator.getSelectionFor(myLeftRevision, new Progress() {
+      public void processed(int percentage) {
+        // should be already processed.
+      }
+    });
+    Document d = myGateway.getDocument(myRightEntry.getPath());
+    int from = d.getLineStartOffset(myFromLine);
+    int to = d.getLineEndOffset(myToLine);
+    d.replaceString(from, to, b.getBlockContent());
+  }",method,
+"      public void processed(int percentage) {
+        // should be already processed.
+      }",method,
+"public class AddClassToExtendsFix extends GroovyFix {
+  private final GrTypeDefinition myPsiClass;
+  private final String myInterfaceName;
+  public AddClassToExtendsFix(GrTypeDefinition psiClass, String interfaceName) {
+    myPsiClass = psiClass;
+    myInterfaceName = interfaceName;
+  }
+  @Override
+  protected void doFix(@NotNull Project project, @NotNull ProblemDescriptor descriptor) throws IncorrectOperationException {
+    GrReferenceList list;
+    final GroovyPsiElementFactory factory = GroovyPsiElementFactory.getInstance(project);
+    final PsiClass comparable =
+      JavaPsiFacade.getInstance(project).findClass(CommonClassNames.JAVA_LANG_COMPARABLE, myPsiClass.getResolveScope());
+    PsiSubstitutor substitutor = PsiSubstitutor.EMPTY;
+    boolean addTypeParam = false;
+    if (comparable != null) {
+      final PsiTypeParameter[] typeParameters = comparable.getTypeParameters();
+      if (typeParameters.length == 1) {
+        final PsiElementFactory elementFactory = JavaPsiFacade.getElementFactory(project);
+        final PsiTypeParameter[] classParams = myPsiClass.getTypeParameters();
+        PsiSubstitutor innerSubstitutor = PsiSubstitutor.EMPTY;
+        for (PsiTypeParameter classParam : classParams) {
+          innerSubstitutor = innerSubstitutor.put(classParam, elementFactory.createType(classParam));
+        }
+        substitutor = substitutor.put(typeParameters[0], elementFactory.createType(myPsiClass, innerSubstitutor));
+        addTypeParam = true;
+      }
+    }
+    if (!InheritanceUtil.isInheritor(myPsiClass, CommonClassNames.JAVA_LANG_COMPARABLE)) {
+      if (myPsiClass.isInterface()) {
+        list = myPsiClass.getExtendsClause();
+        if (list == null) {
+          list = factory.createExtendsClause();
+          PsiElement anchor = myPsiClass.getImplementsClause();
+          if (anchor == null) {
+            anchor = myPsiClass.getBody();
+          }
+          if (anchor == null) return;
+          list = (GrReferenceList)myPsiClass.addBefore(list, anchor);
+          myPsiClass.getNode().addLeaf(TokenType.WHITE_SPACE, "" "", anchor.getNode());
+          myPsiClass.getNode().addLeaf(TokenType.WHITE_SPACE, "" "", list.getNode());
+        }
+      }
+      else {
+        list = myPsiClass.getImplementsClause();
+        if (list == null) {
+          list = factory.createImplementsClause();
+          PsiElement anchor = myPsiClass.getBody();
+          if (anchor == null) return;
+          list = (GrReferenceList)myPsiClass.addBefore(list, anchor);
+          myPsiClass.getNode().addLeaf(TokenType.WHITE_SPACE, "" "", list.getNode());
+          myPsiClass.getNode().addLeaf(TokenType.WHITE_SPACE, "" "", anchor.getNode());
+        }
+      }
+      final GrCodeReferenceElement _ref =
+        factory.createReferenceElementFromText(myInterfaceName + (addTypeParam ? ""<"" + AddMethodFix.generateTypeText(myPsiClass) + "">"" : """"));
+      final GrCodeReferenceElement ref = (GrCodeReferenceElement)list.add(_ref);
+      JavaCodeStyleManager.getInstance(project).shortenClassReferences(ref);
+    }
+    if (comparable != null && !myPsiClass.isInterface()) {
+      final PsiMethod baseMethod = comparable.getMethods()[0];
+      OverrideImplementUtil.overrideOrImplement(myPsiClass, baseMethod);
+    }
+  }
+  @NotNull
+  @Override
+  public String getName() {
+    return GroovyInspectionBundle.message(""implement.class"", myInterfaceName);
+  }
+  @Nls
+  @NotNull
+  @Override
+  public String getFamilyName() {
+    return ""Implement"";
+  }
+}",class,
+"  public AddClassToExtendsFix(GrTypeDefinition psiClass, String interfaceName) {
+    myPsiClass = psiClass;
+    myInterfaceName = interfaceName;
+  }",method,
+"  @Override
+  protected void doFix(@NotNull Project project, @NotNull ProblemDescriptor descriptor) throws IncorrectOperationException {
+    GrReferenceList list;
+    final GroovyPsiElementFactory factory = GroovyPsiElementFactory.getInstance(project);
+    final PsiClass comparable =
+      JavaPsiFacade.getInstance(project).findClass(CommonClassNames.JAVA_LANG_COMPARABLE, myPsiClass.getResolveScope());
+    PsiSubstitutor substitutor = PsiSubstitutor.EMPTY;
+    boolean addTypeParam = false;
+    if (comparable != null) {
+      final PsiTypeParameter[] typeParameters = comparable.getTypeParameters();
+      if (typeParameters.length == 1) {
+        final PsiElementFactory elementFactory = JavaPsiFacade.getElementFactory(project);
+        final PsiTypeParameter[] classParams = myPsiClass.getTypeParameters();
+        PsiSubstitutor innerSubstitutor = PsiSubstitutor.EMPTY;
+        for (PsiTypeParameter classParam : classParams) {
+          innerSubstitutor = innerSubstitutor.put(classParam, elementFactory.createType(classParam));
+        }
+        substitutor = substitutor.put(typeParameters[0], elementFactory.createType(myPsiClass, innerSubstitutor));
+        addTypeParam = true;
+      }
+    }
+    if (!InheritanceUtil.isInheritor(myPsiClass, CommonClassNames.JAVA_LANG_COMPARABLE)) {
+      if (myPsiClass.isInterface()) {
+        list = myPsiClass.getExtendsClause();
+        if (list == null) {
+          list = factory.createExtendsClause();
+          PsiElement anchor = myPsiClass.getImplementsClause();
+          if (anchor == null) {
+            anchor = myPsiClass.getBody();
+          }
+          if (anchor == null) return;
+          list = (GrReferenceList)myPsiClass.addBefore(list, anchor);
+          myPsiClass.getNode().addLeaf(TokenType.WHITE_SPACE, "" "", anchor.getNode());
+          myPsiClass.getNode().addLeaf(TokenType.WHITE_SPACE, "" "", list.getNode());
+        }
+      }
+      else {
+        list = myPsiClass.getImplementsClause();
+        if (list == null) {
+          list = factory.createImplementsClause();
+          PsiElement anchor = myPsiClass.getBody();
+          if (anchor == null) return;
+          list = (GrReferenceList)myPsiClass.addBefore(list, anchor);
+          myPsiClass.getNode().addLeaf(TokenType.WHITE_SPACE, "" "", list.getNode());
+          myPsiClass.getNode().addLeaf(TokenType.WHITE_SPACE, "" "", anchor.getNode());
+        }
+      }
+      final GrCodeReferenceElement _ref =
+        factory.createReferenceElementFromText(myInterfaceName + (addTypeParam ? ""<"" + AddMethodFix.generateTypeText(myPsiClass) + "">"" : """"));
+      final GrCodeReferenceElement ref = (GrCodeReferenceElement)list.add(_ref);
+      JavaCodeStyleManager.getInstance(project).shortenClassReferences(ref);
+    }
+    if (comparable != null && !myPsiClass.isInterface()) {
+      final PsiMethod baseMethod = comparable.getMethods()[0];
+      OverrideImplementUtil.overrideOrImplement(myPsiClass, baseMethod);
+    }
+  }",method,
+"    if (comparable != null) {
+      final PsiTypeParameter[] typeParameters = comparable.getTypeParameters();
+      if (typeParameters.length == 1) {
+        final PsiElementFactory elementFactory = JavaPsiFacade.getElementFactory(project);
+        final PsiTypeParameter[] classParams = myPsiClass.getTypeParameters();
+        PsiSubstitutor innerSubstitutor = PsiSubstitutor.EMPTY;
+        for (PsiTypeParameter classParam : classParams) {
+          innerSubstitutor = innerSubstitutor.put(classParam, elementFactory.createType(classParam));
+        }
+        substitutor = substitutor.put(typeParameters[0], elementFactory.createType(myPsiClass, innerSubstitutor));
+        addTypeParam = true;
+      }
+    }",method,
+"      if (typeParameters.length == 1) {
+        final PsiElementFactory elementFactory = JavaPsiFacade.getElementFactory(project);
+        final PsiTypeParameter[] classParams = myPsiClass.getTypeParameters();
+        PsiSubstitutor innerSubstitutor = PsiSubstitutor.EMPTY;
+        for (PsiTypeParameter classParam : classParams) {
+          innerSubstitutor = innerSubstitutor.put(classParam, elementFactory.createType(classParam));
+        }
+        substitutor = substitutor.put(typeParameters[0], elementFactory.createType(myPsiClass, innerSubstitutor));
+        addTypeParam = true;
+      }",method,
+"        for (PsiTypeParameter classParam : classParams) {
+          innerSubstitutor = innerSubstitutor.put(classParam, elementFactory.createType(classParam));
+        }",method,
+"        if (list == null) {
+          list = factory.createExtendsClause();
+          PsiElement anchor = myPsiClass.getImplementsClause();
+          if (anchor == null) {
+            anchor = myPsiClass.getBody();
+          }
+          if (anchor == null) return;
+          list = (GrReferenceList)myPsiClass.addBefore(list, anchor);
+          myPsiClass.getNode().addLeaf(TokenType.WHITE_SPACE, "" "", anchor.getNode());
+          myPsiClass.getNode().addLeaf(TokenType.WHITE_SPACE, "" "", list.getNode());
+        }",method,
+"          if (anchor == null) {
+            anchor = myPsiClass.getBody();
+          }",method,
+"        if (list == null) {
+          list = factory.createImplementsClause();
+          PsiElement anchor = myPsiClass.getBody();
+          if (anchor == null) return;
+          list = (GrReferenceList)myPsiClass.addBefore(list, anchor);
+          myPsiClass.getNode().addLeaf(TokenType.WHITE_SPACE, "" "", list.getNode());
+          myPsiClass.getNode().addLeaf(TokenType.WHITE_SPACE, "" "", anchor.getNode());
+        }",method,
+"  @NotNull
+  @Override
+  public String getName() {
+    return GroovyInspectionBundle.message(""implement.class"", myInterfaceName);
+  }",method,
+"  @Nls
+  @NotNull
+  @Override
+  public String getFamilyName() {
+    return ""Implement"";
+  }",method,
+"public class Main {
+    public static void main(String[] args) throws IOException {
+        String inJar = null;
+        String outJar = null;
+        String legacyTargets = null;
+        String legacyPreMethods = null;
+        String legacyPostMethods = null;
+        for (int i = 0; i < args.length; i++) {
+            if (""-i"".equals(args[i].trim())) {
+                i++;
+                inJar = args[i].trim();
+            } else if (""-o"".equals(args[i].trim())) {
+                i++;
+                outJar = args[i].trim();
+            } else if (""--targets"".equals(args[i].trim())) {
+                i++;
+                legacyTargets = args[i].trim();
+            } else if (""--pre"".equals(args[i].trim())) {
+                i++;
+                legacyPreMethods = args[i].trim();
+            } else if (""--post"".equals(args[i].trim())) {
+                i++;
+                legacyPostMethods = args[i].trim();
+            }
+        }
+        // TODO(acleung): Better help message than asserts.
+        assert inJar != null;
+        assert outJar != null;
+        assert legacyTargets == null || (legacyPreMethods != null && legacyPostMethods != null);
+        ZipFile zipSrc = new ZipFile(inJar);
+        ZipOutputStream zos = new ZipOutputStream(new FileOutputStream(outJar));
+        List<LockTarget> targets = null;
+        if (legacyTargets != null) {
+            targets = Utils.getTargetsFromLegacyJackConfig(legacyTargets, legacyPreMethods,
+                    legacyPostMethods);
+        } else {
+            targets = Collections.emptyList();
+        }
+        Enumeration<? extends ZipEntry> srcEntries = zipSrc.entries();
+        while (srcEntries.hasMoreElements()) {
+            ZipEntry entry = srcEntries.nextElement();
+            ZipEntry newEntry = new ZipEntry(entry.getName());
+            zos.putNextEntry(newEntry);
+            BufferedInputStream bis = new BufferedInputStream(zipSrc.getInputStream(entry));
+            if (entry.getName().endsWith("".class"")) {
+                convert(bis, zos, targets);
+            } else {
+                while (bis.available() > 0) {
+                    zos.write(bis.read());
+                }
+                zos.closeEntry();
+                bis.close();
+            }
+        }
+        zos.finish();
+        zos.close();
+        zipSrc.close();
+    }
+    private static void convert(InputStream in, OutputStream out, List<LockTarget> targets)
+            throws IOException {
+        ClassReader cr = new ClassReader(in);
+        ClassWriter cw = new ClassWriter(0);
+        LockFindingClassVisitor cv = new LockFindingClassVisitor(targets, cw);
+        cr.accept(cv, 0);
+        byte[] data = cw.toByteArray();
+        out.write(data);
+    }
+}",class,
+"    public static void main(String[] args) throws IOException {
+        String inJar = null;
+        String outJar = null;
+        String legacyTargets = null;
+        String legacyPreMethods = null;
+        String legacyPostMethods = null;
+        for (int i = 0; i < args.length; i++) {
+            if (""-i"".equals(args[i].trim())) {
+                i++;
+                inJar = args[i].trim();
+            } else if (""-o"".equals(args[i].trim())) {
+                i++;
+                outJar = args[i].trim();
+            } else if (""--targets"".equals(args[i].trim())) {
+                i++;
+                legacyTargets = args[i].trim();
+            } else if (""--pre"".equals(args[i].trim())) {
+                i++;
+                legacyPreMethods = args[i].trim();
+            } else if (""--post"".equals(args[i].trim())) {
+                i++;
+                legacyPostMethods = args[i].trim();
+            }
+        }
+        // TODO(acleung): Better help message than asserts.
+        assert inJar != null;
+        assert outJar != null;
+        assert legacyTargets == null || (legacyPreMethods != null && legacyPostMethods != null);
+        ZipFile zipSrc = new ZipFile(inJar);
+        ZipOutputStream zos = new ZipOutputStream(new FileOutputStream(outJar));
+        List<LockTarget> targets = null;
+        if (legacyTargets != null) {
+            targets = Utils.getTargetsFromLegacyJackConfig(legacyTargets, legacyPreMethods,
+                    legacyPostMethods);
+        } else {
+            targets = Collections.emptyList();
+        }
+        Enumeration<? extends ZipEntry> srcEntries = zipSrc.entries();
+        while (srcEntries.hasMoreElements()) {
+            ZipEntry entry = srcEntries.nextElement();
+            ZipEntry newEntry = new ZipEntry(entry.getName());
+            zos.putNextEntry(newEntry);
+            BufferedInputStream bis = new BufferedInputStream(zipSrc.getInputStream(entry));
+            if (entry.getName().endsWith("".class"")) {
+                convert(bis, zos, targets);
+            } else {
+                while (bis.available() > 0) {
+                    zos.write(bis.read());
+                }
+                zos.closeEntry();
+                bis.close();
+            }
+        }
+        zos.finish();
+        zos.close();
+        zipSrc.close();
+    }",method,
+"        for (int i = 0; i < args.length; i++) {
+            if (""-i"".equals(args[i].trim())) {
+                i++;
+                inJar = args[i].trim();
+            } else if (""-o"".equals(args[i].trim())) {
+                i++;
+                outJar = args[i].trim();
+            } else if (""--targets"".equals(args[i].trim())) {
+                i++;
+                legacyTargets = args[i].trim();
+            } else if (""--pre"".equals(args[i].trim())) {
+                i++;
+                legacyPreMethods = args[i].trim();
+            } else if (""--post"".equals(args[i].trim())) {
+                i++;
+                legacyPostMethods = args[i].trim();
+            }
+        }",method,
+"        if (legacyTargets != null) {
+            targets = Utils.getTargetsFromLegacyJackConfig(legacyTargets, legacyPreMethods,
+                    legacyPostMethods);
+        }",method,
+"    private static void convert(InputStream in, OutputStream out, List<LockTarget> targets)
+            throws IOException {
+        ClassReader cr = new ClassReader(in);
+        ClassWriter cw = new ClassWriter(0);
+        LockFindingClassVisitor cv = new LockFindingClassVisitor(targets, cw);
+        cr.accept(cv, 0);
+        byte[] data = cw.toByteArray();
+        out.write(data);
+    }",method,
+"public class GitPushTarget implements PushTarget {
+  private static final Logger LOG = Logger.getInstance(GitPushTarget.class);
+  @NotNull private final GitRemoteBranch myRemoteBranch;
+  private final boolean myIsNewBranchCreated;
+  private final boolean myPushingToSpecialRef;
+  public GitPushTarget(@NotNull GitRemoteBranch remoteBranch, boolean isNewBranchCreated) {
+    this(remoteBranch, isNewBranchCreated, false);
+  }
+  public GitPushTarget(@NotNull GitRemoteBranch remoteBranch, boolean isNewBranchCreated, boolean isPushingToSpecialRef) {
+    myRemoteBranch = remoteBranch;
+    myIsNewBranchCreated = isNewBranchCreated;
+    myPushingToSpecialRef = isPushingToSpecialRef;
+  }
+  @NotNull
+  public GitRemoteBranch getBranch() {
+    return myRemoteBranch;
+  }
+  @Override
+  public boolean hasSomethingToPush() {
+    return isNewBranchCreated();
+  }
+  @NotNull
+  @Override
+  public String getPresentation() {
+    return myPushingToSpecialRef ? myRemoteBranch.getFullName() : myRemoteBranch.getNameForRemoteOperations();
+  }
+  public boolean isNewBranchCreated() {
+    return myIsNewBranchCreated;
+  }
+  @TestOnly
+  boolean isSpecialRef() {
+    return myPushingToSpecialRef;
+  }
+  @NotNull
+  public static GitPushTarget parse(@NotNull GitRepository repository, @Nullable String remoteName, @NotNull String branchName) throws
+                                                                                                                        ParseException {
+    if (remoteName == null) {
+      throw new ParseException(""No remotes defined"", -1);
+    }
+    if (!GitRefNameValidator.getInstance().checkInput(branchName)) {
+      throw new ParseException(""Invalid destination branch name: "" + branchName, -1);
+    }
+    GitRemote remote = findRemote(repository.getRemotes(), remoteName);
+    if (remote == null) {
+      LOG.error(""Remote ["" + remoteName + ""] is not found among "" + repository.getRemotes());
+      throw new ParseException(""Invalid remote: "" + remoteName, -1);
+    }
+    GitRemoteBranch existingRemoteBranch = findRemoteBranch(repository, remote, branchName);
+    if (existingRemoteBranch != null) {
+      return new GitPushTarget(existingRemoteBranch, false);
+    }
+    GitRemoteBranch rb = new GitStandardRemoteBranch(remote, branchName);
+    return new GitPushTarget(rb, true);
+  }
+  @Nullable
+  private static GitRemote findRemote(@NotNull Collection<GitRemote> remotes, @NotNull final String candidate) {
+    return ContainerUtil.find(remotes, remote -> remote.getName().equals(candidate));
+  }
+  @Nullable
+  public static GitPushTarget getFromPushSpec(@NotNull GitRepository repository, @NotNull GitLocalBranch sourceBranch) {
+    final GitRemote remote = getRemoteToPush(repository, GitBranchUtil.getTrackInfoForBranch(repository, sourceBranch));
+    if (remote == null) return null;
+    List<String> specs = remote.getPushRefSpecs();
+    if (specs.isEmpty()) return null;
+    String targetRef = GitPushSpecParser.getTargetRef(repository, sourceBranch.getName(), specs);
+    if (targetRef == null) return null;
+    String remotePrefix = REFS_REMOTES_PREFIX + remote.getName() + ""/"";
+    if (targetRef.startsWith(remotePrefix)) {
+      targetRef = targetRef.substring(remotePrefix.length());
+      GitRemoteBranch remoteBranch = GitUtil.findOrCreateRemoteBranch(repository, remote, targetRef);
+      boolean existingBranch = repository.getBranches().getRemoteBranches().contains(remoteBranch);
+      return new GitPushTarget(remoteBranch, !existingBranch, false);
+    }
+    else {
+      GitRemoteBranch remoteBranch = new GitSpecialRefRemoteBranch(targetRef, remote);
+      return new GitPushTarget(remoteBranch, true, true);
+    }
+  }
+  @Nullable
+  private static GitRemote getRemoteToPush(@NotNull GitRepository repository, @Nullable GitBranchTrackInfo trackInfo) {
+    if (trackInfo != null) {
+      return trackInfo.getRemote();
+    }
+    return GitUtil.findOrigin(repository.getRemotes());
+  }
+  @Override
+  public boolean equals(Object o) {
+    if (this == o) return true;
+    if (!(o instanceof GitPushTarget)) return false;
+    GitPushTarget target = (GitPushTarget)o;
+    if (myIsNewBranchCreated != target.myIsNewBranchCreated) return false;
+    if (!myRemoteBranch.equals(target.myRemoteBranch)) return false;
+    return true;
+  }
+  @Override
+  public int hashCode() {
+    int result = myRemoteBranch.hashCode();
+    result = 31 * result + (myIsNewBranchCreated ? 1 : 0);
+    return result;
+  }
+  @Override
+  public String toString() {
+    return myRemoteBranch.getNameForLocalOperations();
+  }
+}",class,
+"  public GitPushTarget(@NotNull GitRemoteBranch remoteBranch, boolean isNewBranchCreated) {
+    this(remoteBranch, isNewBranchCreated, false);
+  }",method,
+"  public GitPushTarget(@NotNull GitRemoteBranch remoteBranch, boolean isNewBranchCreated, boolean isPushingToSpecialRef) {
+    myRemoteBranch = remoteBranch;
+    myIsNewBranchCreated = isNewBranchCreated;
+    myPushingToSpecialRef = isPushingToSpecialRef;
+  }",method,
+"  @NotNull
+  public GitRemoteBranch getBranch() {
+    return myRemoteBranch;
+  }",method,
+"  @Override
+  public boolean hasSomethingToPush() {
+    return isNewBranchCreated();
+  }",method,
+"  @NotNull
+  @Override
+  public String getPresentation() {
+    return myPushingToSpecialRef ? myRemoteBranch.getFullName() : myRemoteBranch.getNameForRemoteOperations();
+  }",method,
+"  public boolean isNewBranchCreated() {
+    return myIsNewBranchCreated;
+  }",method,
+"  @TestOnly
+  boolean isSpecialRef() {
+    return myPushingToSpecialRef;
+  }",method,
+"  @NotNull
+  public static GitPushTarget parse(@NotNull GitRepository repository, @Nullable String remoteName, @NotNull String branchName) throws
+                                                                                                                        ParseException {
+    if (remoteName == null) {
+      throw new ParseException(""No remotes defined"", -1);
+    }
+    if (!GitRefNameValidator.getInstance().checkInput(branchName)) {
+      throw new ParseException(""Invalid destination branch name: "" + branchName, -1);
+    }
+    GitRemote remote = findRemote(repository.getRemotes(), remoteName);
+    if (remote == null) {
+      LOG.error(""Remote ["" + remoteName + ""] is not found among "" + repository.getRemotes());
+      throw new ParseException(""Invalid remote: "" + remoteName, -1);
+    }
+    GitRemoteBranch existingRemoteBranch = findRemoteBranch(repository, remote, branchName);
+    if (existingRemoteBranch != null) {
+      return new GitPushTarget(existingRemoteBranch, false);
+    }
+    GitRemoteBranch rb = new GitStandardRemoteBranch(remote, branchName);
+    return new GitPushTarget(rb, true);
+  }",method,
+"    if (remoteName == null) {
+      throw new ParseException(""No remotes defined"", -1);
+    }",method,
+"    if (remote == null) {
+      LOG.error(""Remote ["" + remoteName + ""] is not found among "" + repository.getRemotes());
+      throw new ParseException(""Invalid remote: "" + remoteName, -1);
+    }",method,
+"    if (existingRemoteBranch != null) {
+      return new GitPushTarget(existingRemoteBranch, false);
+    }",method,
+"  @Nullable
+  private static GitRemote findRemote(@NotNull Collection<GitRemote> remotes, @NotNull final String candidate) {
+    return ContainerUtil.find(remotes, remote -> remote.getName().equals(candidate));
+  }",method,
+"  @Nullable
+  public static GitPushTarget getFromPushSpec(@NotNull GitRepository repository, @NotNull GitLocalBranch sourceBranch) {
+    final GitRemote remote = getRemoteToPush(repository, GitBranchUtil.getTrackInfoForBranch(repository, sourceBranch));
+    if (remote == null) return null;
+    List<String> specs = remote.getPushRefSpecs();
+    if (specs.isEmpty()) return null;
+    String targetRef = GitPushSpecParser.getTargetRef(repository, sourceBranch.getName(), specs);
+    if (targetRef == null) return null;
+    String remotePrefix = REFS_REMOTES_PREFIX + remote.getName() + ""/"";
+    if (targetRef.startsWith(remotePrefix)) {
+      targetRef = targetRef.substring(remotePrefix.length());
+      GitRemoteBranch remoteBranch = GitUtil.findOrCreateRemoteBranch(repository, remote, targetRef);
+      boolean existingBranch = repository.getBranches().getRemoteBranches().contains(remoteBranch);
+      return new GitPushTarget(remoteBranch, !existingBranch, false);
+    }
+    else {
+      GitRemoteBranch remoteBranch = new GitSpecialRefRemoteBranch(targetRef, remote);
+      return new GitPushTarget(remoteBranch, true, true);
+    }
+  }",method,
+"  @Nullable
+  private static GitRemote getRemoteToPush(@NotNull GitRepository repository, @Nullable GitBranchTrackInfo trackInfo) {
+    if (trackInfo != null) {
+      return trackInfo.getRemote();
+    }
+    return GitUtil.findOrigin(repository.getRemotes());
+  }",method,
+"    if (trackInfo != null) {
+      return trackInfo.getRemote();
+    }",method,
+"  @Override
+  public boolean equals(Object o) {
+    if (this == o) return true;
+    if (!(o instanceof GitPushTarget)) return false;
+    GitPushTarget target = (GitPushTarget)o;
+    if (myIsNewBranchCreated != target.myIsNewBranchCreated) return false;
+    if (!myRemoteBranch.equals(target.myRemoteBranch)) return false;
+    return true;
+  }",method,
+"  @Override
+  public int hashCode() {
+    int result = myRemoteBranch.hashCode();
+    result = 31 * result + (myIsNewBranchCreated ? 1 : 0);
+    return result;
+  }",method,
+"  @Override
+  public String toString() {
+    return myRemoteBranch.getNameForLocalOperations();
+  }",method,
+"        public void startMedia(SACMediaList media) {
+            throwUnsupportedEx();
+        }",method,
+"        public void endMedia(SACMediaList media) {
+            throwUnsupportedEx();
+        }",method,
+"        public void startPage(String name, String pseudo_page) {
+            throwUnsupportedEx();
+        }",method,
+"        public void endPage(String name, String pseudo_page) {
+            throwUnsupportedEx();
+        }",method,
+"        public void startFontFace() {
+            throwUnsupportedEx();
+        }",method,
+"        public void endFontFace() {
+            throwUnsupportedEx();
+        }",method,
+"        public void startSelector(SelectorList selectors) {
+            throwUnsupportedEx();
+        }",method,
+"        public void endSelector(SelectorList selectors) {
+            throwUnsupportedEx();
+        }",method,
+"importStyle(String       uri,
+                                SACMediaList media,
+                                String       defaultNamespaceURI) {
+            throwUnsupportedEx();
+        }",method,
+"final class CommandTestTools {
+  @NotNull
+  static final String TEST_PATH = PythonTestUtil.getTestDataPath() + ""/commandLine/"";
+  private CommandTestTools() {
+  }
+  @TestOnly
+  @NotNull
+  static List<Command> createCommands() {
+    //command positional_argument --available-option=available_argument
+    final Command command = EasyMock.createMock(Command.class);
+    EasyMock.expect(command.getName()).andReturn(""command"").anyTimes();
+    EasyMock.expect(command.getHelp(true)).andReturn(new Help(""some_text"")).anyTimes();
+    EasyMock.expect(command.getHelp(false)).andReturn(new Help(""some_text"")).anyTimes();
+    final List<Option> options = new ArrayList<>();
+    final Pair<List<String>, Boolean> argument = Pair.create(Collections.singletonList(""available_argument""), true);
+    options.add(new Option(Pair.create(1, new Argument(new Help(""option argument""), argument)), new Help(""""),
+                                       Collections.emptyList(),
+                                       Collections.singletonList(""--available-option"")));
+    options.add(new Option(null, new Help(""""),
+                           Collections.emptyList(),
+                           Collections.singletonList(""--option-no-argument"")));
+    EasyMock.expect(command.getOptions()).andReturn(options).anyTimes();
+    final ArgumentsInfo argumentInfo = new KnownArgumentsInfo(Collections.singletonList(
+      new Argument(new Help(""positional_argument""),
+                   Pair.create(Collections.singletonList(""positional_argument""), true))), 1, 1);
+    EasyMock.expect(command.getArgumentsInfo()).andReturn(argumentInfo)
+      .anyTimes();
+    EasyMock.replay(command);
+    return Collections.singletonList(command);
+  }
+  static void initFileType() {
+    ApplicationManager.getApplication().runWriteAction(() -> FileTypeManager.getInstance().associateExtension(CommandLineFileType.INSTANCE, CommandLineFileType.EXTENSION));
+  }
+  @NotNull
+  static CommandLineFile createFileByText(@NotNull final CodeInsightTestFixture testFixture, @NotNull final String text) {
+    final CommandLineFile file =
+      (CommandLineFile)testFixture.configureByText(CommandLineFileType.INSTANCE, text);
+    file.setCommands(createCommands());
+    return file;
+  }
+}",class,
+"  private CommandTestTools() {
+  }",method,
+"  @TestOnly
+  @NotNull
+  static List<Command> createCommands() {
+    //command positional_argument --available-option=available_argument
+    final Command command = EasyMock.createMock(Command.class);
+    EasyMock.expect(command.getName()).andReturn(""command"").anyTimes();
+    EasyMock.expect(command.getHelp(true)).andReturn(new Help(""some_text"")).anyTimes();
+    EasyMock.expect(command.getHelp(false)).andReturn(new Help(""some_text"")).anyTimes();
+    final List<Option> options = new ArrayList<>();
+    final Pair<List<String>, Boolean> argument = Pair.create(Collections.singletonList(""available_argument""), true);
+    options.add(new Option(Pair.create(1, new Argument(new Help(""option argument""), argument)), new Help(""""),
+                                       Collections.emptyList(),
+                                       Collections.singletonList(""--available-option"")));
+    options.add(new Option(null, new Help(""""),
+                           Collections.emptyList(),
+                           Collections.singletonList(""--option-no-argument"")));
+    EasyMock.expect(command.getOptions()).andReturn(options).anyTimes();
+    final ArgumentsInfo argumentInfo = new KnownArgumentsInfo(Collections.singletonList(
+      new Argument(new Help(""positional_argument""),
+                   Pair.create(Collections.singletonList(""positional_argument""), true))), 1, 1);
+    EasyMock.expect(command.getArgumentsInfo()).andReturn(argumentInfo)
+      .anyTimes();
+    EasyMock.replay(command);
+    return Collections.singletonList(command);
+  }",method,
+"  static void initFileType() {
+    ApplicationManager.getApplication().runWriteAction(() -> FileTypeManager.getInstance().associateExtension(CommandLineFileType.INSTANCE, CommandLineFileType.EXTENSION));
+  }",method,
+"  @NotNull
+  static CommandLineFile createFileByText(@NotNull final CodeInsightTestFixture testFixture, @NotNull final String text) {
+    final CommandLineFile file =
+      (CommandLineFile)testFixture.configureByText(CommandLineFileType.INSTANCE, text);
+    file.setCommands(createCommands());
+    return file;
+  }",method,
+"public class BatteryPreference extends DropDownPreference implements TunerService.Tunable {
+    private static final String PERCENT = ""percent"";
+    private static final String DEFAULT = ""default"";
+    private static final String DISABLED = ""disabled"";
+    private final String mBattery;
+    private boolean mBatteryEnabled;
+    private boolean mHasPercentage;
+    private ArraySet<String> mBlacklist;
+    private boolean mHasSetValue;
+    public BatteryPreference(Context context, AttributeSet attrs) {
+        super(context, attrs);
+        mBattery = context.getString(com.android.internal.R.string.status_bar_battery);
+        setEntryValues(new CharSequence[] {PERCENT, DEFAULT, DISABLED });
+    }
+    @Override
+    public void onAttached() {
+        super.onAttached();
+        mHasPercentage = Settings.System.getInt(getContext().getContentResolver(),
+                SHOW_BATTERY_PERCENT, 0) != 0;
+        Dependency.get(TunerService.class).addTunable(this, StatusBarIconController.ICON_BLACKLIST);
+    }
+    @Override
+    public void onDetached() {
+        Dependency.get(TunerService.class).removeTunable(this);
+        super.onDetached();
+    }
+    @Override
+    public void onTuningChanged(String key, String newValue) {
+        if (StatusBarIconController.ICON_BLACKLIST.equals(key)) {
+            mBlacklist = StatusBarIconController.getIconBlacklist(newValue);
+            mBatteryEnabled = !mBlacklist.contains(mBattery);
+        }
+        if (!mHasSetValue) {
+            // Because of the complicated tri-state it can end up looping and setting state back to
+            // what the user didn't choose.  To avoid this, just set the state once and rely on the
+            // preference to handle updates.
+            mHasSetValue = true;
+            if (mBatteryEnabled && mHasPercentage) {
+                setValue(PERCENT);
+            } else if (mBatteryEnabled) {
+                setValue(DEFAULT);
+            } else {
+                setValue(DISABLED);
+            }
+        }
+    }
+    @Override
+    protected boolean persistString(String value) {
+        final boolean v = PERCENT.equals(value);
+        MetricsLogger.action(getContext(), MetricsEvent.TUNER_BATTERY_PERCENTAGE, v);
+        Settings.System.putInt(getContext().getContentResolver(), SHOW_BATTERY_PERCENT, v ? 1 : 0);
+        if (DISABLED.equals(value)) {
+            mBlacklist.add(mBattery);
+        } else {
+            mBlacklist.remove(mBattery);
+        }
+        Dependency.get(TunerService.class).setValue(StatusBarIconController.ICON_BLACKLIST,
+                TextUtils.join("","", mBlacklist));
+        return true;
+    }
+}",class,
+"    public BatteryPreference(Context context, AttributeSet attrs) {
+        super(context, attrs);
+        mBattery = context.getString(com.android.internal.R.string.status_bar_battery);
+        setEntryValues(new CharSequence[] {PERCENT, DEFAULT, DISABLED });
+    }",method,
+"    @Override
+    public void onAttached() {
+        super.onAttached();
+        mHasPercentage = Settings.System.getInt(getContext().getContentResolver(),
+                SHOW_BATTERY_PERCENT, 0) != 0;
+        Dependency.get(TunerService.class).addTunable(this, StatusBarIconController.ICON_BLACKLIST);
+    }",method,
+"    @Override
+    public void onDetached() {
+        Dependency.get(TunerService.class).removeTunable(this);
+        super.onDetached();
+    }",method,
+"    @Override
+    public void onTuningChanged(String key, String newValue) {
+        if (StatusBarIconController.ICON_BLACKLIST.equals(key)) {
+            mBlacklist = StatusBarIconController.getIconBlacklist(newValue);
+            mBatteryEnabled = !mBlacklist.contains(mBattery);
+        }
+        if (!mHasSetValue) {
+            // Because of the complicated tri-state it can end up looping and setting state back to
+            // what the user didn't choose.  To avoid this, just set the state once and rely on the
+            // preference to handle updates.
+            mHasSetValue = true;
+            if (mBatteryEnabled && mHasPercentage) {
+                setValue(PERCENT);
+            } else if (mBatteryEnabled) {
+                setValue(DEFAULT);
+            } else {
+                setValue(DISABLED);
+            }
+        }
+    }",method,
+"        if (!mHasSetValue) {
+            // Because of the complicated tri-state it can end up looping and setting state back to
+            // what the user didn't choose.  To avoid this, just set the state once and rely on the
+            // preference to handle updates.
+            mHasSetValue = true;
+            if (mBatteryEnabled && mHasPercentage) {
+                setValue(PERCENT);
+            } else if (mBatteryEnabled) {
+                setValue(DEFAULT);
+            } else {
+                setValue(DISABLED);
+            }
+        }",method,
+"            if (mBatteryEnabled && mHasPercentage) {
+                setValue(PERCENT);
+            }",method,
+"    @Override
+    protected boolean persistString(String value) {
+        final boolean v = PERCENT.equals(value);
+        MetricsLogger.action(getContext(), MetricsEvent.TUNER_BATTERY_PERCENTAGE, v);
+        Settings.System.putInt(getContext().getContentResolver(), SHOW_BATTERY_PERCENT, v ? 1 : 0);
+        if (DISABLED.equals(value)) {
+            mBlacklist.add(mBattery);
+        } else {
+            mBlacklist.remove(mBattery);
+        }
+        Dependency.get(TunerService.class).setValue(StatusBarIconController.ICON_BLACKLIST,
+                TextUtils.join("","", mBlacklist));
+        return true;
+    }",method,
+"public class GeoToolsFilterQuery extends SimpleQuery<SimpleFeature, SimpleFeature> {
+    // create an ""identity"" attribute that just returns the SF (currently not used)
+    private final static Attribute<SimpleFeature, SimpleFeature> selfAttribute = new SelfAttribute<>(SimpleFeature.class);
+    private final Filter filter;
+    public GeoToolsFilterQuery(Filter filter) {
+        super(selfAttribute);
+        this.filter = filter;
+    }
+    @Override
+    protected boolean matchesSimpleAttribute(SimpleAttribute<SimpleFeature, SimpleFeature> attribute, SimpleFeature object, QueryOptions queryOptions) {
+        return filter.evaluate(object);
+    }
+    @Override
+    protected boolean matchesNonSimpleAttribute(Attribute<SimpleFeature, SimpleFeature> attribute, SimpleFeature object, QueryOptions queryOptions) {
+        return filter.evaluate(object);
+    }
+    //NB: This is IDEA's auto-generated equals.
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (o == null || getClass() != o.getClass()) return false;
+        GeoToolsFilterQuery that = (GeoToolsFilterQuery) o;
+        return filter != null ? filter.equals(that.filter) : that.filter == null;
+    }
+    @Override
+    protected int calcHashCode() {
+        return filter.hashCode();
+    }
+}",class,
+"    public GeoToolsFilterQuery(Filter filter) {
+        super(selfAttribute);
+        this.filter = filter;
+    }",method,
+"    @Override
+    protected boolean matchesSimpleAttribute(SimpleAttribute<SimpleFeature, SimpleFeature> attribute, SimpleFeature object, QueryOptions queryOptions) {
+        return filter.evaluate(object);
+    }",method,
+"    @Override
+    protected boolean matchesNonSimpleAttribute(Attribute<SimpleFeature, SimpleFeature> attribute, SimpleFeature object, QueryOptions queryOptions) {
+        return filter.evaluate(object);
+    }",method,
+"    @Override
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (o == null || getClass() != o.getClass()) return false;
+        GeoToolsFilterQuery that = (GeoToolsFilterQuery) o;
+        return filter != null ? filter.equals(that.filter) : that.filter == null;
+    }",method,
+"    @Override
+    protected int calcHashCode() {
+        return filter.hashCode();
+    }",method,
+"public final class Aspect implements DependencyFilter.AttributeInfoProvider {
+  public static final String INJECTING_RULE_KIND_PARAMETER_KEY = ""$injecting_rule_kind"";
+  private static final Map<NativeAspectClass, Map<AspectParameters, AspectDefinition>>
+      definitionCache = new ConcurrentHashMap<>();
+  private final AspectDescriptor aspectDescriptor;
+  private final AspectDefinition aspectDefinition;
+  private Aspect(
+      AspectClass aspectClass,
+      AspectDefinition aspectDefinition,
+      AspectParameters parameters) {
+    this.aspectDescriptor = new AspectDescriptor(
+        Preconditions.checkNotNull(aspectClass),
+        Preconditions.checkNotNull(parameters));
+    this.aspectDefinition = Preconditions.checkNotNull(aspectDefinition);
+  }
+  public static Aspect forNative(
+      NativeAspectClass nativeAspectClass, AspectParameters parameters) {
+    AspectDefinition definition =
+        definitionCache
+            .computeIfAbsent(nativeAspectClass, key -> new ConcurrentHashMap<>())
+            .computeIfAbsent(parameters, nativeAspectClass::getDefinition);
+    return new Aspect(nativeAspectClass, definition, parameters);
+  }
+  public static Aspect forNative(NativeAspectClass nativeAspectClass) {
+    return forNative(nativeAspectClass, AspectParameters.EMPTY);
+  }
+  public static Aspect forSkylark(
+      SkylarkAspectClass skylarkAspectClass,
+      AspectDefinition aspectDefinition,
+      AspectParameters parameters) {
+    return new Aspect(skylarkAspectClass, aspectDefinition, parameters);
+  }
+  public AspectClass getAspectClass() {
+    return aspectDescriptor.getAspectClass();
+  }
+  public AspectParameters getParameters() {
+    return aspectDescriptor.getParameters();
+  }
+  public AspectDescriptor getDescriptor() {
+    return aspectDescriptor;
+  }
+  @Override
+  public String toString() {
+    return String.format(""Aspect %s"", aspectDescriptor.toString());
+  }
+  public AspectDefinition getDefinition() {
+    return aspectDefinition;
+  }
+  @Override
+  public boolean isAttributeValueExplicitlySpecified(Attribute attribute) {
+    // All aspect attributes are implicit.
+    return false;
+  }
+}",class,
+"  private Aspect(
+      AspectClass aspectClass,
+      AspectDefinition aspectDefinition,
+      AspectParameters parameters) {
+    this.aspectDescriptor = new AspectDescriptor(
+        Preconditions.checkNotNull(aspectClass),
+        Preconditions.checkNotNull(parameters));
+    this.aspectDefinition = Preconditions.checkNotNull(aspectDefinition);
+  }",method,
+"  public static Aspect forNative(
+      NativeAspectClass nativeAspectClass, AspectParameters parameters) {
+    AspectDefinition definition =
+        definitionCache
+            .computeIfAbsent(nativeAspectClass, key -> new ConcurrentHashMap<>())
+            .computeIfAbsent(parameters, nativeAspectClass::getDefinition);
+    return new Aspect(nativeAspectClass, definition, parameters);
+  }",method,
+"  public static Aspect forNative(NativeAspectClass nativeAspectClass) {
+    return forNative(nativeAspectClass, AspectParameters.EMPTY);
+  }",method,
+"  public static Aspect forSkylark(
+      SkylarkAspectClass skylarkAspectClass,
+      AspectDefinition aspectDefinition,
+      AspectParameters parameters) {
+    return new Aspect(skylarkAspectClass, aspectDefinition, parameters);
+  }",method,
+"  public AspectClass getAspectClass() {
+    return aspectDescriptor.getAspectClass();
+  }",method,
+"  public AspectParameters getParameters() {
+    return aspectDescriptor.getParameters();
+  }",method,
+"  public AspectDescriptor getDescriptor() {
+    return aspectDescriptor;
+  }",method,
+"  @Override
+  public String toString() {
+    return String.format(""Aspect %s"", aspectDescriptor.toString());
+  }",method,
+"  public AspectDefinition getDefinition() {
+    return aspectDefinition;
+  }",method,
+"  @Override
+  public boolean isAttributeValueExplicitlySpecified(Attribute attribute) {
+    // All aspect attributes are implicit.
+    return false;
+  }",method,
+"  default String getKey() {
+    return getName();
+  }",method,
+"public final class DomainUtils
+{
+    private DomainUtils()
+    {
+    }
+    public static <T> Map<Symbol, T> columnHandleToSymbol(Map<ColumnHandle, T> columnMap, Map<Symbol, ColumnHandle> assignments)
+    {
+        Map<ColumnHandle, Symbol> inverseAssignments = ImmutableBiMap.copyOf(assignments).inverse();
+        Preconditions.checkArgument(inverseAssignments.keySet().containsAll(columnMap.keySet()), ""assignments does not contain all required column handles"");
+        ImmutableMap.Builder<Symbol, T> builder = ImmutableMap.builder();
+        for (Map.Entry<ColumnHandle, T> entry : columnMap.entrySet()) {
+            builder.put(inverseAssignments.get(entry.getKey()), entry.getValue());
+        }
+        return builder.build();
+    }
+    public static Domain simplifyDomain(Domain domain)
+    {
+        ValueSet values = domain.getValues();
+        ValueSet simplifiedValueSet = values.getValuesProcessor().<Optional<ValueSet>>transform(
+                ranges -> {
+                    if (ranges.getOrderedRanges().size() <= 32) {
+                        return Optional.empty();
+                    }
+                    return Optional.of(ValueSet.ofRanges(ranges.getSpan()));
+                },
+                discreteValues -> {
+                    if (discreteValues.getValues().size() <= 32) {
+                        return Optional.empty();
+                    }
+                    return Optional.of(ValueSet.all(domain.getType()));
+                },
+                allOrNone -> Optional.empty())
+                .orElse(values);
+        return Domain.create(simplifiedValueSet, domain.isNullAllowed());
+    }
+}",class,
+"    private DomainUtils()
+    {
+    }",method,
+"    public static <T> Map<Symbol, T> columnHandleToSymbol(Map<ColumnHandle, T> columnMap, Map<Symbol, ColumnHandle> assignments)
+    {
+        Map<ColumnHandle, Symbol> inverseAssignments = ImmutableBiMap.copyOf(assignments).inverse();
+        Preconditions.checkArgument(inverseAssignments.keySet().containsAll(columnMap.keySet()), ""assignments does not contain all required column handles"");
+        ImmutableMap.Builder<Symbol, T> builder = ImmutableMap.builder();
+        for (Map.Entry<ColumnHandle, T> entry : columnMap.entrySet()) {
+            builder.put(inverseAssignments.get(entry.getKey()), entry.getValue());
+        }
+        return builder.build();
+    }",method,
+"    public static Domain simplifyDomain(Domain domain)
+    {
+        ValueSet values = domain.getValues();
+        ValueSet simplifiedValueSet = values.getValuesProcessor().<Optional<ValueSet>>transform(
+                ranges -> {
+                    if (ranges.getOrderedRanges().size() <= 32) {
+                        return Optional.empty();
+                    }
+                    return Optional.of(ValueSet.ofRanges(ranges.getSpan()));
+                },
+                discreteValues -> {
+                    if (discreteValues.getValues().size() <= 32) {
+                        return Optional.empty();
+                    }
+                    return Optional.of(ValueSet.all(domain.getType()));
+                },
+                allOrNone -> Optional.empty())
+                .orElse(values);
+        return Domain.create(simplifiedValueSet, domain.isNullAllowed());
+    }",method,
+"public class MustacheViewRendererTest extends JerseyTest {
+    static {
+        BootstrapLogging.bootstrap();
+    }
+    @Path(""/test/"")
+    @Produces(MediaType.TEXT_HTML)
+    public static class ExampleResource {
+        @GET
+        @Path(""/absolute"")
+        public AbsoluteView showAbsolute() {
+            return new AbsoluteView(""yay"");
+        }
+        @GET
+        @Path(""/relative"")
+        public RelativeView showRelative() {
+            return new RelativeView();
+        }
+        @GET
+        @Path(""/bad"")
+        public BadView showBad() {
+            return new BadView();
+        }
+        @GET
+        @Path(""/error"")
+        public ErrorView showError() {
+            return new ErrorView();
+        }
+    }
+    @Override
+    protected Application configure() {
+        forceSet(TestProperties.CONTAINER_PORT, ""0"");
+        ResourceConfig config = new ResourceConfig();
+        final ViewRenderer renderer = new MustacheViewRenderer();
+        config.register(new ViewMessageBodyWriter(new MetricRegistry(), ImmutableList.of(renderer)));
+        config.register(new ViewRenderExceptionMapper());
+        config.register(new ExampleResource());
+        return config;
+    }
+    @Test
+    public void rendersViewsWithAbsoluteTemplatePaths() throws Exception {
+        final String response = target(""/test/absolute"").request().get(String.class);
+        assertThat(response).isEqualTo(""Woop woop. yay\n"");
+    }
+    @Test
+    public void rendersViewsWithRelativeTemplatePaths() throws Exception {
+        final String response = target(""/test/relative"").request().get(String.class);
+        assertThat(response).isEqualTo(""Ok.\n"");
+    }
+    @Test
+    public void returnsA500ForViewsWithBadTemplatePaths() throws Exception {
+        try {
+            target(""/test/bad"").request().get(String.class);
+            failBecauseExceptionWasNotThrown(WebApplicationException.class);
+        } catch (WebApplicationException e) {
+            assertThat(e.getResponse().getStatus())
+                    .isEqualTo(500);
+            assertThat(e.getResponse().readEntity(String.class))
+                    .isEqualTo(ViewRenderExceptionMapper.TEMPLATE_ERROR_MSG);
+        }
+    }
+    @Test
+    public void returnsA500ForViewsThatCantCompile() throws Exception {
+        try {
+            target(""/test/error"").request().get(String.class);
+            failBecauseExceptionWasNotThrown(WebApplicationException.class);
+        } catch (WebApplicationException e) {
+            assertThat(e.getResponse().getStatus())
+                    .isEqualTo(500);
+            assertThat(e.getResponse().readEntity(String.class))
+                .isEqualTo(ViewRenderExceptionMapper.TEMPLATE_ERROR_MSG);
+        }
+    }
+    @Test
+    public void cacheByDefault() {
+        MustacheViewRenderer mustacheViewRenderer = new MustacheViewRenderer();
+        mustacheViewRenderer.configure(ImmutableMap.of());
+        assertThat(mustacheViewRenderer.isUseCache()).isTrue();
+    }
+    @Test
+    public void canDisableCache() {
+        MustacheViewRenderer mustacheViewRenderer = new MustacheViewRenderer();
+        mustacheViewRenderer.configure(ImmutableMap.of(""cache"", ""false""));
+        assertThat(mustacheViewRenderer.isUseCache()).isFalse();
+    }
+}",class,
+"    public static class ExampleResource {
+        @GET
+        @Path(""/absolute"")
+        public AbsoluteView showAbsolute() {
+            return new AbsoluteView(""yay"");
+        }
+        @GET
+        @Path(""/relative"")
+        public RelativeView showRelative() {
+            return new RelativeView();
+        }
+        @GET
+        @Path(""/bad"")
+        public BadView showBad() {
+            return new BadView();
+        }
+        @GET
+        @Path(""/error"")
+        public ErrorView showError() {
+            return new ErrorView();
+        }
+    }",class,
+"        @GET
+        @Path(""/absolute"")
+        public AbsoluteView showAbsolute() {
+            return new AbsoluteView(""yay"");
+        }",method,
+"        @GET
+        @Path(""/relative"")
+        public RelativeView showRelative() {
+            return new RelativeView();
+        }",method,
+"        @GET
+        @Path(""/bad"")
+        public BadView showBad() {
+            return new BadView();
+        }",method,
+"        @GET
+        @Path(""/error"")
+        public ErrorView showError() {
+            return new ErrorView();
+        }",method,
+"    @Override
+    protected Application configure() {
+        forceSet(TestProperties.CONTAINER_PORT, ""0"");
+        ResourceConfig config = new ResourceConfig();
+        final ViewRenderer renderer = new MustacheViewRenderer();
+        config.register(new ViewMessageBodyWriter(new MetricRegistry(), ImmutableList.of(renderer)));
+        config.register(new ViewRenderExceptionMapper());
+        config.register(new ExampleResource());
+        return config;
+    }",method,
+"    @Test
+    public void rendersViewsWithAbsoluteTemplatePaths() throws Exception {
+        final String response = target(""/test/absolute"").request().get(String.class);
+        assertThat(response).isEqualTo(""Woop woop. yay\n"");
+    }",method,
+"    @Test
+    public void rendersViewsWithRelativeTemplatePaths() throws Exception {
+        final String response = target(""/test/relative"").request().get(String.class);
+        assertThat(response).isEqualTo(""Ok.\n"");
+    }",method,
+"    @Test
+    public void returnsA500ForViewsWithBadTemplatePaths() throws Exception {
+        try {
+            target(""/test/bad"").request().get(String.class);
+            failBecauseExceptionWasNotThrown(WebApplicationException.class);
+        } catch (WebApplicationException e) {
+            assertThat(e.getResponse().getStatus())
+                    .isEqualTo(500);
+            assertThat(e.getResponse().readEntity(String.class))
+                    .isEqualTo(ViewRenderExceptionMapper.TEMPLATE_ERROR_MSG);
+        }
+    }",method,
+"    @Test
+    public void returnsA500ForViewsThatCantCompile() throws Exception {
+        try {
+            target(""/test/error"").request().get(String.class);
+            failBecauseExceptionWasNotThrown(WebApplicationException.class);
+        } catch (WebApplicationException e) {
+            assertThat(e.getResponse().getStatus())
+                    .isEqualTo(500);
+            assertThat(e.getResponse().readEntity(String.class))
+                .isEqualTo(ViewRenderExceptionMapper.TEMPLATE_ERROR_MSG);
+        }
+    }",method,
+"    @Test
+    public void cacheByDefault() {
+        MustacheViewRenderer mustacheViewRenderer = new MustacheViewRenderer();
+        mustacheViewRenderer.configure(ImmutableMap.of());
+        assertThat(mustacheViewRenderer.isUseCache()).isTrue();
+    }",method,
+"    @Test
+    public void canDisableCache() {
+        MustacheViewRenderer mustacheViewRenderer = new MustacheViewRenderer();
+        mustacheViewRenderer.configure(ImmutableMap.of(""cache"", ""false""));
+        assertThat(mustacheViewRenderer.isUseCache()).isFalse();
+    }",method,
+"public class Payload extends DataStructureImpl {
+    //private final static Log _log = new Log(Payload.class);
+    private byte[] _encryptedData;
+    private byte[] _unencryptedData;
+    public Payload() {
+    }
+    public byte[] getUnencryptedData() {
+        return _unencryptedData;
+    }
+    public void setUnencryptedData(byte[] data) {
+        _unencryptedData = data;
+    }
+    public byte[] getEncryptedData() {
+        return _encryptedData;
+    }
+    public void setEncryptedData(byte[] data) {
+        _encryptedData = data;
+    }
+    public int getSize() {
+        if (_unencryptedData != null)
+            return _unencryptedData.length;
+        else if (_encryptedData != null)
+            return _encryptedData.length;
+        else
+            return 0;
+    }
+    public void readBytes(InputStream in) throws DataFormatException, IOException {
+        int size = (int) DataHelper.readLong(in, 4);
+        if (size < 0) throw new DataFormatException(""payload size out of range ("" + size + "")"");
+        _encryptedData = new byte[size];
+        int read = read(in, _encryptedData);
+        if (read != size) throw new DataFormatException(""Incorrect number of bytes read in the payload structure"");
+        //if (_log.shouldLog(Log.DEBUG))
+        //    _log.debug(""read payload: "" + read + "" bytes"");
+    }
+    public void writeBytes(OutputStream out) throws DataFormatException, IOException {
+        if (_encryptedData == null) throw new DataFormatException(""Not yet encrypted.  Please set the encrypted data"");
+        DataHelper.writeLong(out, 4, _encryptedData.length);
+        out.write(_encryptedData);
+        //if (_log.shouldLog(Log.DEBUG))
+        //    _log.debug(""wrote payload: "" + _encryptedData.length);
+    }
+    public int writeBytes(byte target[], int offset) {
+        if (_encryptedData == null) throw new IllegalStateException(""Not yet encrypted.  Please set the encrypted data"");
+        DataHelper.toLong(target, offset, 4, _encryptedData.length);
+        offset += 4;
+        System.arraycopy(_encryptedData, 0, target, offset, _encryptedData.length);
+        return 4 + _encryptedData.length;
+    }
+    @Override
+    public boolean equals(Object object) {
+        if (object == this) return true;
+        if ((object == null) || !(object instanceof Payload)) return false;
+        Payload p = (Payload) object;
+        return DataHelper.eq(_unencryptedData, p.getUnencryptedData())
+               && DataHelper.eq(_encryptedData, p.getEncryptedData());
+    }
+    @Override
+    public int hashCode() {
+        return DataHelper.hashCode(_encryptedData != null ? _encryptedData : _unencryptedData);
+    }
+    @Override
+    public String toString() {
+        StringBuilder buf = new StringBuilder(32);
+        buf.append(""[Payload: "");
+        if (_encryptedData != null)
+            buf.append(_encryptedData.length).append("" bytes"");
+        else
+            buf.append(""null"");
+        buf.append(""]"");
+        return buf.toString();
+    }
+}",class,
+"    public Payload() {
+    }",method,

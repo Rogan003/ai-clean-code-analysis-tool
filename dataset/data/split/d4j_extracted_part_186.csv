@@ -1,0 +1,1287 @@
+code_snippet,type,score
+"    public ShowAbove() {
+      super(true, true);
+    }",method,
+"    public ShowBelow() {
+      super(true, false);
+    }",method,
+"    public HideBoth() {
+      super(false, false);
+    }",method,
+"  private ToggleBreadcrumbsSettingsAction(boolean show, boolean above) {
+    this.show = show;
+    this.above = above;
+  }",method,
+"  @Override
+  boolean isSelected(Editor editor) {
+    boolean selected = super.isSelected(editor);
+    if (!show && !selected) return true;
+    if (!show || !selected) return false;
+    EditorSettingsExternalizable settings = EditorSettingsExternalizable.getInstance();
+    return above == settings.isBreadcrumbsAbove();
+  }",method,
+"  @Override
+  boolean setSelected(Boolean selected, Editor editor) {
+    boolean modified = super.setSelected(null, editor);
+    EditorSettingsExternalizable settings = EditorSettingsExternalizable.getInstance();
+    if (settings.setBreadcrumbsShown(show)) modified = true;
+    if (show) {
+      if (settings.setBreadcrumbsAbove(above)) modified = true;
+      String languageID = findLanguageID(editor);
+      if (languageID != null && settings.setBreadcrumbsShownFor(languageID, true)) modified = true;
+    }
+    return modified;
+  }",method,
+"    if (show) {
+      if (settings.setBreadcrumbsAbove(above)) modified = true;
+      String languageID = findLanguageID(editor);
+      if (languageID != null && settings.setBreadcrumbsShownFor(languageID, true)) modified = true;
+    }",method,
+"public abstract class JavaHelper {
+  private JavaHelper() {}
+  public static TransitiveInfoCollection launcherForTarget(JavaSemantics semantics,
+      RuleContext ruleContext) {
+    String launcher = filterLauncherForTarget(ruleContext);
+    return (launcher == null) ? null : ruleContext.getPrerequisite(launcher, Mode.TARGET);
+  }
+  public static Artifact launcherArtifactForTarget(JavaSemantics semantics,
+      RuleContext ruleContext) {
+    String launcher = filterLauncherForTarget(ruleContext);
+    return (launcher == null) ? null : ruleContext.getPrerequisiteArtifact(launcher, Mode.TARGET);
+  }
+  private static String filterLauncherForTarget(RuleContext ruleContext) {
+    // create_executable=0 disables the launcher
+    if (ruleContext.getRule().isAttrDefined(""create_executable"", Type.BOOLEAN)
+        && !ruleContext.attributes().get(""create_executable"", Type.BOOLEAN)) {
+      return null;
+    }
+    // BUILD rule ""launcher"" attribute
+    if (ruleContext.getRule().isAttrDefined(""launcher"", BuildType.LABEL)
+        && ruleContext.attributes().get(""launcher"", BuildType.LABEL) != null) {
+      if (isJdkLauncher(ruleContext, ruleContext.attributes().get(""launcher"", BuildType.LABEL))) {
+        return null;
+      }
+      return ""launcher"";
+    }
+    // Blaze flag --java_launcher
+    JavaConfiguration javaConfig = ruleContext.getFragment(JavaConfiguration.class);
+    if (ruleContext.getRule().isAttrDefined("":java_launcher"", BuildType.LABEL)
+        && javaConfig.getJavaLauncherLabel() != null
+        && !isJdkLauncher(ruleContext, javaConfig.getJavaLauncherLabel())) {
+      return "":java_launcher"";
+    }
+    return null;
+  }
+  public static List<String> tokenizeJavaOptions(Iterable<String> inOpts) {
+    // Ideally, this would be in the options parser. Unfortunately,
+    // the options parser can't handle a converter that expands
+    // from a value X into a List<X> and allow-multiple at the
+    // same time.
+    List<String> result = new ArrayList<>();
+    for (String current : inOpts) {
+      try {
+        ShellUtils.tokenize(result, current);
+      } catch (ShellUtils.TokenizationException ex) {
+        // Tokenization failed; this likely means that the user
+        // did not want tokenization to happen on his argument.
+        // (Any tokenization where we should produce an error
+        // has already been done by the shell that invoked
+        // blaze). Therefore, pass the argument through to
+        // the tool, so that we can see the original error.
+        result.add(current);
+      }
+    }
+    return result;
+  }
+  public static PathFragment getJavaResourcePath(
+      JavaSemantics semantics, RuleContext ruleContext, Artifact resource) {
+    PathFragment rootRelativePath = resource.getRootRelativePath();
+    if (!resource.getOwner().getWorkspaceRoot().isEmpty()) {
+      PathFragment workspace = PathFragment.create(resource.getOwner().getWorkspaceRoot());
+      rootRelativePath = rootRelativePath.relativeTo(workspace);
+    }
+    if (!ruleContext.attributes().has(""resource_strip_prefix"", Type.STRING)
+        || !ruleContext.attributes().isAttributeValueExplicitlySpecified(""resource_strip_prefix"")) {
+      return semantics.getDefaultJavaResourcePath(rootRelativePath);
+    }
+    PathFragment prefix =
+        PathFragment.create(ruleContext.attributes().get(""resource_strip_prefix"", Type.STRING));
+    if (!rootRelativePath.startsWith(prefix)) {
+      ruleContext.attributeError(""resource_strip_prefix"", String.format(
+          ""Resource file '%s' is not under the specified prefix to strip"", rootRelativePath));
+      return rootRelativePath;
+    }
+    return rootRelativePath.relativeTo(prefix);
+  }
+  public static NestedSet<Artifact> getHostJavabaseInputs(RuleContext ruleContext) {
+    return getHostJavabaseInputs(ruleContext, """");
+  }
+  public static NestedSet<Artifact> getHostJavabaseInputs(
+      RuleContext ruleContext, String implicitAttributesSuffix) {
+    return AnalysisUtils.getMiddlemanFor(
+        ruleContext, "":host_jdk"" + implicitAttributesSuffix, Mode.HOST);
+  }
+  public static JavaRuntimeInfo getJavaRuntime(RuleContext ruleContext) {
+    if (!ruleContext.attributes().has("":jvm"", BuildType.LABEL)) {
+      return null;
+    }
+    TransitiveInfoCollection jvm = ruleContext.getPrerequisite("":jvm"", Mode.TARGET);
+    return jvm == null ? null :  jvm.get(JavaRuntimeInfo.PROVIDER);
+  }
+  public static JavaRuntimeInfo getHostJavaRuntime(RuleContext ruleContext) {
+    if (!ruleContext.attributes().has("":host_jdk"", BuildType.LABEL)) {
+      return null;
+    }
+    TransitiveInfoCollection jvm = ruleContext.getPrerequisite("":host_jdk"", Mode.HOST);
+    return jvm == null ? null :  jvm.get(JavaRuntimeInfo.PROVIDER);
+  }
+  public static boolean isJdkLauncher(RuleContext ruleContext, Label label) {
+    return ruleContext.attributes().get(""$no_launcher"", NODEP_LABEL_LIST).contains(label);
+  }
+}",class,
+"public class JavaImplicitAttributes {
+  public static final String JDK_LABEL = ""//tools/jdk:jdk"";
+}",class,
+  private JavaHelper() {},method,
+"  public static TransitiveInfoCollection launcherForTarget(JavaSemantics semantics,
+      RuleContext ruleContext) {
+    String launcher = filterLauncherForTarget(ruleContext);
+    return (launcher == null) ? null : ruleContext.getPrerequisite(launcher, Mode.TARGET);
+  }",method,
+"  public static Artifact launcherArtifactForTarget(JavaSemantics semantics,
+      RuleContext ruleContext) {
+    String launcher = filterLauncherForTarget(ruleContext);
+    return (launcher == null) ? null : ruleContext.getPrerequisiteArtifact(launcher, Mode.TARGET);
+  }",method,
+"  private static String filterLauncherForTarget(RuleContext ruleContext) {
+    // create_executable=0 disables the launcher
+    if (ruleContext.getRule().isAttrDefined(""create_executable"", Type.BOOLEAN)
+        && !ruleContext.attributes().get(""create_executable"", Type.BOOLEAN)) {
+      return null;
+    }
+    // BUILD rule ""launcher"" attribute
+    if (ruleContext.getRule().isAttrDefined(""launcher"", BuildType.LABEL)
+        && ruleContext.attributes().get(""launcher"", BuildType.LABEL) != null) {
+      if (isJdkLauncher(ruleContext, ruleContext.attributes().get(""launcher"", BuildType.LABEL))) {
+        return null;
+      }
+      return ""launcher"";
+    }
+    // Blaze flag --java_launcher
+    JavaConfiguration javaConfig = ruleContext.getFragment(JavaConfiguration.class);
+    if (ruleContext.getRule().isAttrDefined("":java_launcher"", BuildType.LABEL)
+        && javaConfig.getJavaLauncherLabel() != null
+        && !isJdkLauncher(ruleContext, javaConfig.getJavaLauncherLabel())) {
+      return "":java_launcher"";
+    }
+    return null;
+  }",method,
+"  public static List<String> tokenizeJavaOptions(Iterable<String> inOpts) {
+    // Ideally, this would be in the options parser. Unfortunately,
+    // the options parser can't handle a converter that expands
+    // from a value X into a List<X> and allow-multiple at the
+    // same time.
+    List<String> result = new ArrayList<>();
+    for (String current : inOpts) {
+      try {
+        ShellUtils.tokenize(result, current);
+      } catch (ShellUtils.TokenizationException ex) {
+        // Tokenization failed; this likely means that the user
+        // did not want tokenization to happen on his argument.
+        // (Any tokenization where we should produce an error
+        // has already been done by the shell that invoked
+        // blaze). Therefore, pass the argument through to
+        // the tool, so that we can see the original error.
+        result.add(current);
+      }
+    }
+    return result;
+  }",method,
+"    for (String current : inOpts) {
+      try {
+        ShellUtils.tokenize(result, current);
+      } catch (ShellUtils.TokenizationException ex) {
+        // Tokenization failed; this likely means that the user
+        // did not want tokenization to happen on his argument.
+        // (Any tokenization where we should produce an error
+        // has already been done by the shell that invoked
+        // blaze). Therefore, pass the argument through to
+        // the tool, so that we can see the original error.
+        result.add(current);
+      }
+    }",method,
+"  public static PathFragment getJavaResourcePath(
+      JavaSemantics semantics, RuleContext ruleContext, Artifact resource) {
+    PathFragment rootRelativePath = resource.getRootRelativePath();
+    if (!resource.getOwner().getWorkspaceRoot().isEmpty()) {
+      PathFragment workspace = PathFragment.create(resource.getOwner().getWorkspaceRoot());
+      rootRelativePath = rootRelativePath.relativeTo(workspace);
+    }
+    if (!ruleContext.attributes().has(""resource_strip_prefix"", Type.STRING)
+        || !ruleContext.attributes().isAttributeValueExplicitlySpecified(""resource_strip_prefix"")) {
+      return semantics.getDefaultJavaResourcePath(rootRelativePath);
+    }
+    PathFragment prefix =
+        PathFragment.create(ruleContext.attributes().get(""resource_strip_prefix"", Type.STRING));
+    if (!rootRelativePath.startsWith(prefix)) {
+      ruleContext.attributeError(""resource_strip_prefix"", String.format(
+          ""Resource file '%s' is not under the specified prefix to strip"", rootRelativePath));
+      return rootRelativePath;
+    }
+    return rootRelativePath.relativeTo(prefix);
+  }",method,
+"  public static NestedSet<Artifact> getHostJavabaseInputs(RuleContext ruleContext) {
+    return getHostJavabaseInputs(ruleContext, """");
+  }",method,
+"  public static NestedSet<Artifact> getHostJavabaseInputs(
+      RuleContext ruleContext, String implicitAttributesSuffix) {
+    return AnalysisUtils.getMiddlemanFor(
+        ruleContext, "":host_jdk"" + implicitAttributesSuffix, Mode.HOST);
+  }",method,
+"  public static JavaRuntimeInfo getJavaRuntime(RuleContext ruleContext) {
+    if (!ruleContext.attributes().has("":jvm"", BuildType.LABEL)) {
+      return null;
+    }
+    TransitiveInfoCollection jvm = ruleContext.getPrerequisite("":jvm"", Mode.TARGET);
+    return jvm == null ? null :  jvm.get(JavaRuntimeInfo.PROVIDER);
+  }",method,
+"  public static JavaRuntimeInfo getHostJavaRuntime(RuleContext ruleContext) {
+    if (!ruleContext.attributes().has("":host_jdk"", BuildType.LABEL)) {
+      return null;
+    }
+    TransitiveInfoCollection jvm = ruleContext.getPrerequisite("":host_jdk"", Mode.HOST);
+    return jvm == null ? null :  jvm.get(JavaRuntimeInfo.PROVIDER);
+  }",method,
+"  public static boolean isJdkLauncher(RuleContext ruleContext, Label label) {
+    return ruleContext.attributes().get(""$no_launcher"", NODEP_LABEL_LIST).contains(label);
+  }",method,
+"public class StartActivity extends BaseGameActivity {
+	// ===========================================================
+	// Constants
+	// ===========================================================
+	private static final int CAMERA_WIDTH = 480;
+	private static final int CAMERA_HEIGHT = 320;
+	// ===========================================================
+	// Fields
+	// ===========================================================
+	private Camera mCamera;
+	private Texture mTexture, mBatTexture;
+	private TextureRegion mSplashTextureRegion;
+	private TiledTextureRegion mBatTextureRegion;
+	private Handler mHandler;
+	// ===========================================================
+	// Constructors
+	// ===========================================================
+	// ===========================================================
+	// Getter & Setter
+	// ===========================================================
+	// ===========================================================
+	// Methods for/from SuperClass/Interfaces
+	// ===========================================================
+	@Override
+	public Engine onLoadEngine() {
+		mHandler = new Handler();
+		this.mCamera = new Camera(0, 0, CAMERA_WIDTH, CAMERA_HEIGHT);
+		return new Engine(new EngineOptions(true, ScreenOrientation.LANDSCAPE, new RatioResolutionPolicy(CAMERA_WIDTH, CAMERA_HEIGHT), this.mCamera));
+	}
+	@Override
+	public void onLoadResources() {
+		TextureRegionFactory.setAssetBasePath(""gfx/Splash/"");
+		this.mTexture = new Texture(512, 1024, TextureOptions.BILINEAR_PREMULTIPLYALPHA);
+		this.mSplashTextureRegion = TextureRegionFactory.createFromAsset(this.mTexture, this, ""Splashscreen.png"", 0, 0);
+		this.mBatTexture = new Texture(256, 256, TextureOptions.DEFAULT);
+		this.mBatTextureRegion = TextureRegionFactory.createTiledFromAsset(this.mBatTexture, this, ""bat_tiled.png"", 0, 0, 2, 2);
+		//this.mBatTextureRegion = TextureRegionFactory.createTiledFromAsset(this.mTexture, this, ""bat_tiled.png"", 0, 513, 2, 2);
+		this.mEngine.getTextureManager().loadTexture(this.mTexture);
+		this.mEngine.getTextureManager().loadTexture(this.mBatTexture);
+	}
+	@Override
+	public Scene onLoadScene() {
+		this.mEngine.registerUpdateHandler(new FPSLogger());
+		final Scene scene = new Scene(1);
+		final int centerX = (CAMERA_WIDTH - this.mSplashTextureRegion.getWidth()) / 2;
+		final int centerY = (CAMERA_HEIGHT - this.mSplashTextureRegion.getHeight()) / 2;
+		final Sprite splash = new Sprite(centerX, centerY, this.mSplashTextureRegion);
+		scene.getLastChild().attachChild(splash);
+		final AnimatedSprite bat = new AnimatedSprite(350, 100, this.mBatTextureRegion);
+		bat.animate(100);
+		scene.getLastChild().attachChild(bat);
+		return scene;
+	}
+	@Override
+	public void onLoadComplete() {
+		mHandler.postDelayed(mLaunchTask,5000);
+	}
+    private Runnable mLaunchTask = new Runnable() {
+        public void run() {
+    		Intent myIntent = new Intent(StartActivity.this, MainMenuActivity.class);
+    		StartActivity.this.startActivity(myIntent);
+    		StartActivity.this.finish();
+        }
+     };
+	// ===========================================================
+	// Methods
+	// ===========================================================
+	// ===========================================================
+	// Inner and Anonymous Classes
+	// ===========================================================
+}",class,
+"	@Override
+	public Engine onLoadEngine() {
+		mHandler = new Handler();
+		this.mCamera = new Camera(0, 0, CAMERA_WIDTH, CAMERA_HEIGHT);
+		return new Engine(new EngineOptions(true, ScreenOrientation.LANDSCAPE, new RatioResolutionPolicy(CAMERA_WIDTH, CAMERA_HEIGHT), this.mCamera));
+	}",method,
+"	@Override
+	public void onLoadResources() {
+		TextureRegionFactory.setAssetBasePath(""gfx/Splash/"");
+		this.mTexture = new Texture(512, 1024, TextureOptions.BILINEAR_PREMULTIPLYALPHA);
+		this.mSplashTextureRegion = TextureRegionFactory.createFromAsset(this.mTexture, this, ""Splashscreen.png"", 0, 0);
+		this.mBatTexture = new Texture(256, 256, TextureOptions.DEFAULT);
+		this.mBatTextureRegion = TextureRegionFactory.createTiledFromAsset(this.mBatTexture, this, ""bat_tiled.png"", 0, 0, 2, 2);
+		//this.mBatTextureRegion = TextureRegionFactory.createTiledFromAsset(this.mTexture, this, ""bat_tiled.png"", 0, 513, 2, 2);
+		this.mEngine.getTextureManager().loadTexture(this.mTexture);
+		this.mEngine.getTextureManager().loadTexture(this.mBatTexture);
+	}",method,
+"	@Override
+	public Scene onLoadScene() {
+		this.mEngine.registerUpdateHandler(new FPSLogger());
+		final Scene scene = new Scene(1);
+		final int centerX = (CAMERA_WIDTH - this.mSplashTextureRegion.getWidth()) / 2;
+		final int centerY = (CAMERA_HEIGHT - this.mSplashTextureRegion.getHeight()) / 2;
+		final Sprite splash = new Sprite(centerX, centerY, this.mSplashTextureRegion);
+		scene.getLastChild().attachChild(splash);
+		final AnimatedSprite bat = new AnimatedSprite(350, 100, this.mBatTextureRegion);
+		bat.animate(100);
+		scene.getLastChild().attachChild(bat);
+		return scene;
+	}",method,
+"	@Override
+	public void onLoadComplete() {
+		mHandler.postDelayed(mLaunchTask,5000);
+	}",method,
+"        public void run() {
+    		Intent myIntent = new Intent(StartActivity.this, MainMenuActivity.class);
+    		StartActivity.this.startActivity(myIntent);
+    		StartActivity.this.finish();
+        }",method,
+"public class BuildCompoundStringInstr extends NOperandResultBaseInstr {
+    final private Encoding encoding;
+    final private boolean frozen;
+    final private boolean debug;
+    final private String file;
+    final private int line;
+    public BuildCompoundStringInstr(Variable result, Operand[] pieces, Encoding encoding, boolean frozen, boolean debug, String file, int line) {
+        super(Operation.BUILD_COMPOUND_STRING, result, pieces);
+        this.encoding = encoding;
+        this.frozen = frozen;
+        this.debug = debug;
+        this.file = file;
+        this.line = line;
+    }
+    public Operand[] getPieces() {
+       return getOperands();
+    }
+    public Encoding getEncoding() {
+        return encoding;
+    }
+    @Override
+    public Instr clone(CloneInfo ii) {
+        return new BuildCompoundStringInstr(ii.getRenamedVariable(result), cloneOperands(ii), encoding, frozen, debug, file, line);
+    }
+    public boolean isSameEncodingAndCodeRange(RubyString str, StringLiteral newStr) {
+        return newStr.getByteList().getEncoding() == encoding && newStr.getCodeRange() == str.getCodeRange();
+    }
+    @Override
+    public void encode(IRWriterEncoder e) {
+        super.encode(e);
+        e.encode(getPieces());
+        e.encode(encoding);
+        e.encode(frozen);
+        e.encode(file);
+        e.encode(line);
+    }
+    public static BuildCompoundStringInstr decode(IRReaderDecoder d) {
+        boolean debuggingFrozenStringLiteral = d.getCurrentScope().getManager().getInstanceConfig().isDebuggingFrozenStringLiteral();
+        return new BuildCompoundStringInstr(d.decodeVariable(), d.decodeOperandArray(), d.decodeEncoding(), d.decodeBoolean(), debuggingFrozenStringLiteral, d.decodeString(), d.decodeInt());
+    }
+    @Override
+    public Object interpret(ThreadContext context, StaticScope currScope, DynamicScope currDynScope, IRubyObject self, Object[] temp) {
+        ByteList bytes = new ByteList();
+        bytes.setEncoding(encoding);
+        RubyString str = RubyString.newStringShared(context.runtime, bytes, StringSupport.CR_7BIT);
+        for (Operand p : getOperands()) {
+            if ((p instanceof StringLiteral) && (isSameEncodingAndCodeRange(str, (StringLiteral)p))) {
+                str.getByteList().append(((StringLiteral)p).getByteList());
+                str.setCodeRange(((StringLiteral)p).getCodeRange());
+            } else {
+                IRubyObject pval = (IRubyObject)p.retrieve(context, self, currScope, currDynScope, temp);
+                str.append19(pval);
+            }
+        }
+        if (frozen) {
+            if (debug) {
+                return IRRuntimeHelpers.freezeLiteralString(str, context, file, line);
+            }
+            return IRRuntimeHelpers.freezeLiteralString(str);
+        }
+        return str;
+    }
+    @Override
+    public void visit(IRVisitor visitor) {
+        visitor.BuildCompoundStringInstr(this);
+    }
+    public boolean isFrozen() {
+        return frozen;
+    }
+    public String getFile() {
+        return file;
+    }
+    public int getLine() {
+        return line;
+    }
+}",class,
+"    public BuildCompoundStringInstr(Variable result, Operand[] pieces, Encoding encoding, boolean frozen, boolean debug, String file, int line) {
+        super(Operation.BUILD_COMPOUND_STRING, result, pieces);
+        this.encoding = encoding;
+        this.frozen = frozen;
+        this.debug = debug;
+        this.file = file;
+        this.line = line;
+    }",method,
+"    public Operand[] getPieces() {
+       return getOperands();
+    }",method,
+"    public Encoding getEncoding() {
+        return encoding;
+    }",method,
+"    @Override
+    public Instr clone(CloneInfo ii) {
+        return new BuildCompoundStringInstr(ii.getRenamedVariable(result), cloneOperands(ii), encoding, frozen, debug, file, line);
+    }",method,
+"    public boolean isSameEncodingAndCodeRange(RubyString str, StringLiteral newStr) {
+        return newStr.getByteList().getEncoding() == encoding && newStr.getCodeRange() == str.getCodeRange();
+    }",method,
+"    @Override
+    public void encode(IRWriterEncoder e) {
+        super.encode(e);
+        e.encode(getPieces());
+        e.encode(encoding);
+        e.encode(frozen);
+        e.encode(file);
+        e.encode(line);
+    }",method,
+"    public static BuildCompoundStringInstr decode(IRReaderDecoder d) {
+        boolean debuggingFrozenStringLiteral = d.getCurrentScope().getManager().getInstanceConfig().isDebuggingFrozenStringLiteral();
+        return new BuildCompoundStringInstr(d.decodeVariable(), d.decodeOperandArray(), d.decodeEncoding(), d.decodeBoolean(), debuggingFrozenStringLiteral, d.decodeString(), d.decodeInt());
+    }",method,
+"    @Override
+    public Object interpret(ThreadContext context, StaticScope currScope, DynamicScope currDynScope, IRubyObject self, Object[] temp) {
+        ByteList bytes = new ByteList();
+        bytes.setEncoding(encoding);
+        RubyString str = RubyString.newStringShared(context.runtime, bytes, StringSupport.CR_7BIT);
+        for (Operand p : getOperands()) {
+            if ((p instanceof StringLiteral) && (isSameEncodingAndCodeRange(str, (StringLiteral)p))) {
+                str.getByteList().append(((StringLiteral)p).getByteList());
+                str.setCodeRange(((StringLiteral)p).getCodeRange());
+            } else {
+                IRubyObject pval = (IRubyObject)p.retrieve(context, self, currScope, currDynScope, temp);
+                str.append19(pval);
+            }
+        }
+        if (frozen) {
+            if (debug) {
+                return IRRuntimeHelpers.freezeLiteralString(str, context, file, line);
+            }
+            return IRRuntimeHelpers.freezeLiteralString(str);
+        }
+        return str;
+    }",method,
+"        if (frozen) {
+            if (debug) {
+                return IRRuntimeHelpers.freezeLiteralString(str, context, file, line);
+            }
+            return IRRuntimeHelpers.freezeLiteralString(str);
+        }",method,
+"            if (debug) {
+                return IRRuntimeHelpers.freezeLiteralString(str, context, file, line);
+            }",method,
+"    @Override
+    public void visit(IRVisitor visitor) {
+        visitor.BuildCompoundStringInstr(this);
+    }",method,
+"    public boolean isFrozen() {
+        return frozen;
+    }",method,
+"    public String getFile() {
+        return file;
+    }",method,
+"    public int getLine() {
+        return line;
+    }",method,
+"public abstract class ExtractField<R extends ConnectRecord<R>> implements Transformation<R> {
+    public static final String OVERVIEW_DOC =
+            ""Extract the specified field from a Struct when schema present, or a Map in the case of schemaless data. ""
+                    + ""Any null values are passed through unmodified.""
+                    + ""<p/>Use the concrete transformation type designed for the record key (<code>"" + Key.class.getName() + ""</code>) ""
+                    + ""or value (<code>"" + Value.class.getName() + ""</code>)."";
+    private static final String FIELD_CONFIG = ""field"";
+    public static final ConfigDef CONFIG_DEF = new ConfigDef()
+            .define(FIELD_CONFIG, ConfigDef.Type.STRING, ConfigDef.NO_DEFAULT_VALUE, ConfigDef.Importance.MEDIUM, ""Field name to extract."");
+    private static final String PURPOSE = ""field extraction"";
+    private String fieldName;
+    @Override
+    public void configure(Map<String, ?> props) {
+        final SimpleConfig config = new SimpleConfig(CONFIG_DEF, props);
+        fieldName = config.getString(FIELD_CONFIG);
+    }
+    @Override
+    public R apply(R record) {
+        final Schema schema = operatingSchema(record);
+        if (schema == null) {
+            final Map<String, Object> value = requireMapOrNull(operatingValue(record), PURPOSE);
+            return newRecord(record, null, value == null ? null : value.get(fieldName));
+        } else {
+            final Struct value = requireStructOrNull(operatingValue(record), PURPOSE);
+            return newRecord(record, schema.field(fieldName).schema(), value == null ? null : value.get(fieldName));
+        }
+    }
+    @Override
+    public void close() {
+    }
+    @Override
+    public ConfigDef config() {
+        return CONFIG_DEF;
+    }
+    protected abstract Schema operatingSchema(R record);
+    protected abstract Object operatingValue(R record);
+    protected abstract R newRecord(R record, Schema updatedSchema, Object updatedValue);
+    public static class Key<R extends ConnectRecord<R>> extends ExtractField<R> {
+        @Override
+        protected Schema operatingSchema(R record) {
+            return record.keySchema();
+        }
+        @Override
+        protected Object operatingValue(R record) {
+            return record.key();
+        }
+        @Override
+        protected R newRecord(R record, Schema updatedSchema, Object updatedValue) {
+            return record.newRecord(record.topic(), record.kafkaPartition(), updatedSchema, updatedValue, record.valueSchema(), record.value(), record.timestamp());
+        }
+    }
+    public static class Value<R extends ConnectRecord<R>> extends ExtractField<R> {
+        @Override
+        protected Schema operatingSchema(R record) {
+            return record.valueSchema();
+        }
+        @Override
+        protected Object operatingValue(R record) {
+            return record.value();
+        }
+        @Override
+        protected R newRecord(R record, Schema updatedSchema, Object updatedValue) {
+            return record.newRecord(record.topic(), record.kafkaPartition(), record.keySchema(), record.key(), updatedSchema, updatedValue, record.timestamp());
+        }
+    }
+}",class,
+"    public static class Key<R extends ConnectRecord<R>> extends ExtractField<R> {
+        @Override
+        protected Schema operatingSchema(R record) {
+            return record.keySchema();
+        }
+        @Override
+        protected Object operatingValue(R record) {
+            return record.key();
+        }
+        @Override
+        protected R newRecord(R record, Schema updatedSchema, Object updatedValue) {
+            return record.newRecord(record.topic(), record.kafkaPartition(), updatedSchema, updatedValue, record.valueSchema(), record.value(), record.timestamp());
+        }
+    }",class,
+"    public static class Value<R extends ConnectRecord<R>> extends ExtractField<R> {
+        @Override
+        protected Schema operatingSchema(R record) {
+            return record.valueSchema();
+        }
+        @Override
+        protected Object operatingValue(R record) {
+            return record.value();
+        }
+        @Override
+        protected R newRecord(R record, Schema updatedSchema, Object updatedValue) {
+            return record.newRecord(record.topic(), record.kafkaPartition(), record.keySchema(), record.key(), updatedSchema, updatedValue, record.timestamp());
+        }
+    }",class,
+"    @Override
+    public void configure(Map<String, ?> props) {
+        final SimpleConfig config = new SimpleConfig(CONFIG_DEF, props);
+        fieldName = config.getString(FIELD_CONFIG);
+    }",method,
+"    @Override
+    public R apply(R record) {
+        final Schema schema = operatingSchema(record);
+        if (schema == null) {
+            final Map<String, Object> value = requireMapOrNull(operatingValue(record), PURPOSE);
+            return newRecord(record, null, value == null ? null : value.get(fieldName));
+        } else {
+            final Struct value = requireStructOrNull(operatingValue(record), PURPOSE);
+            return newRecord(record, schema.field(fieldName).schema(), value == null ? null : value.get(fieldName));
+        }
+    }",method,
+"        if (schema == null) {
+            final Map<String, Object> value = requireMapOrNull(operatingValue(record), PURPOSE);
+            return newRecord(record, null, value == null ? null : value.get(fieldName));
+        }",method,
+"    @Override
+    public void close() {
+    }",method,
+"    @Override
+    public ConfigDef config() {
+        return CONFIG_DEF;
+    }",method,
+"        @Override
+        protected Schema operatingSchema(R record) {
+            return record.keySchema();
+        }",method,
+"        @Override
+        protected Object operatingValue(R record) {
+            return record.key();
+        }",method,
+"        @Override
+        protected R newRecord(R record, Schema updatedSchema, Object updatedValue) {
+            return record.newRecord(record.topic(), record.kafkaPartition(), updatedSchema, updatedValue, record.valueSchema(), record.value(), record.timestamp());
+        }",method,
+"        @Override
+        protected Schema operatingSchema(R record) {
+            return record.valueSchema();
+        }",method,
+"        @Override
+        protected Object operatingValue(R record) {
+            return record.value();
+        }",method,
+"        @Override
+        protected R newRecord(R record, Schema updatedSchema, Object updatedValue) {
+            return record.newRecord(record.topic(), record.kafkaPartition(), record.keySchema(), record.key(), updatedSchema, updatedValue, record.timestamp());
+        }",method,
+"public class ModuleGroupItem extends PackagingSourceItem {
+  private final String myGroupName;
+  private final List<String> myPath;
+  public ModuleGroupItem(@NotNull List<String> path) {
+    super(false);
+    myGroupName = path.get(path.size() - 1);
+    myPath = path;
+  }
+  public boolean equals(Object obj) {
+    return obj instanceof ModuleGroupItem && myPath.equals(((ModuleGroupItem)obj).myPath);
+  }
+  public int hashCode() {
+    return myPath.hashCode();
+  }
+  @Override
+  public SourceItemPresentation createPresentation(@NotNull ArtifactEditorContext context) {
+    return new ModuleGroupSourceItemPresentation(myGroupName);
+  }
+  @NotNull
+  @Override
+  public List<? extends PackagingElement<?>> createElements(@NotNull ArtifactEditorContext context) {
+    return Collections.emptyList();
+  }
+  public List<String> getPath() {
+    return myPath;
+  }
+  private static class ModuleGroupSourceItemPresentation extends SourceItemPresentation {
+    private final String myGroupName;
+    public ModuleGroupSourceItemPresentation(String groupName) {
+      myGroupName = groupName;
+    }
+    @Override
+    public String getPresentableName() {
+      return myGroupName;
+    }
+    @Override
+    public void render(@NotNull PresentationData presentationData, SimpleTextAttributes mainAttributes,
+                       SimpleTextAttributes commentAttributes) {
+      presentationData.setIcon(PlatformIcons.CLOSED_MODULE_GROUP_ICON);
+      presentationData.addText(myGroupName, mainAttributes);
+    }
+    @Override
+    public int getWeight() {
+      return SourceItemWeights.MODULE_GROUP_WEIGHT;
+    }
+  }
+}",class,
+"  private static class ModuleGroupSourceItemPresentation extends SourceItemPresentation {
+    private final String myGroupName;
+    public ModuleGroupSourceItemPresentation(String groupName) {
+      myGroupName = groupName;
+    }
+    @Override
+    public String getPresentableName() {
+      return myGroupName;
+    }
+    @Override
+    public void render(@NotNull PresentationData presentationData, SimpleTextAttributes mainAttributes,
+                       SimpleTextAttributes commentAttributes) {
+      presentationData.setIcon(PlatformIcons.CLOSED_MODULE_GROUP_ICON);
+      presentationData.addText(myGroupName, mainAttributes);
+    }
+    @Override
+    public int getWeight() {
+      return SourceItemWeights.MODULE_GROUP_WEIGHT;
+    }
+  }",class,
+"  public ModuleGroupItem(@NotNull List<String> path) {
+    super(false);
+    myGroupName = path.get(path.size() - 1);
+    myPath = path;
+  }",method,
+"  public boolean equals(Object obj) {
+    return obj instanceof ModuleGroupItem && myPath.equals(((ModuleGroupItem)obj).myPath);
+  }",method,
+"  public int hashCode() {
+    return myPath.hashCode();
+  }",method,
+"  @Override
+  public SourceItemPresentation createPresentation(@NotNull ArtifactEditorContext context) {
+    return new ModuleGroupSourceItemPresentation(myGroupName);
+  }",method,
+"  @NotNull
+  @Override
+  public List<? extends PackagingElement<?>> createElements(@NotNull ArtifactEditorContext context) {
+    return Collections.emptyList();
+  }",method,
+"  public List<String> getPath() {
+    return myPath;
+  }",method,
+"    public ModuleGroupSourceItemPresentation(String groupName) {
+      myGroupName = groupName;
+    }",method,
+"    @Override
+    public String getPresentableName() {
+      return myGroupName;
+    }",method,
+"    @Override
+    public void render(@NotNull PresentationData presentationData, SimpleTextAttributes mainAttributes,
+                       SimpleTextAttributes commentAttributes) {
+      presentationData.setIcon(PlatformIcons.CLOSED_MODULE_GROUP_ICON);
+      presentationData.addText(myGroupName, mainAttributes);
+    }",method,
+"    @Override
+    public int getWeight() {
+      return SourceItemWeights.MODULE_GROUP_WEIGHT;
+    }",method,
+"public class ViewMessageBodyWriterTest {
+    @Rule
+    public final MockitoRule mockitoRule = MockitoJUnit.rule();
+    @Mock
+    public ContainerRequest headers;
+    @Mock
+    public MetricRegistry metricRegistry;
+    @Mock
+    public View view;
+    @Mock
+    public OutputStream stream;
+    @Mock
+    public Timer timer;
+    @Mock
+    public Timer.Context timerContext;
+    @Test
+    public void writeToShouldUseValidRenderer() throws IOException {
+        final ViewRenderer renderable = mock(ViewRenderer.class);
+        final ViewRenderer nonRenderable = mock(ViewRenderer.class);
+        final Locale locale = new Locale(""en-US"");
+        when(metricRegistry.timer(anyString())).thenReturn(timer);
+        when(timer.time()).thenReturn(timerContext);
+        when(renderable.isRenderable(view)).thenReturn(true);
+        when(nonRenderable.isRenderable(view)).thenReturn(false);
+        final ViewMessageBodyWriter writer = spy(new ViewMessageBodyWriter(metricRegistry, Arrays.asList(nonRenderable, renderable)));
+        doReturn(locale).when(writer).detectLocale(any());
+        writer.writeTo(view, null, null, null, null, null, stream);
+        verify(nonRenderable).isRenderable(view);
+        verifyNoMoreInteractions(nonRenderable);
+        verify(renderable).isRenderable(view);
+        verify(renderable).render(view, locale, stream);
+        verify(timerContext).stop();
+    }
+    @Test
+    public void writeToShouldThrowWhenNoValidRendererFound() {
+        final ViewMessageBodyWriter writer = new ViewMessageBodyWriter(metricRegistry, Collections.emptyList());
+        when(metricRegistry.timer(anyString())).thenReturn(timer);
+        when(timer.time()).thenReturn(timerContext);
+        assertThatExceptionOfType(WebApplicationException.class).isThrownBy(() -> {
+            writer.writeTo(view, null, null, null, null, null, stream);
+        }).withCauseExactlyInstanceOf(ViewRenderException.class);
+        verify(timerContext).stop();
+    }
+    @Test
+    public void writeToShouldHandleViewRenderingExceptions() throws IOException {
+        final ViewRenderer renderer = mock(ViewRenderer.class);
+        final Locale locale = new Locale(""en-US"");
+        final ViewRenderException exception = new ViewRenderException(""oops"");
+        when(metricRegistry.timer(anyString())).thenReturn(timer);
+        when(timer.time()).thenReturn(timerContext);
+        when(renderer.isRenderable(view)).thenReturn(true);
+        doThrow(exception).when(renderer).render(view, locale, stream);
+        final ViewMessageBodyWriter writer = spy(new ViewMessageBodyWriter(metricRegistry, Collections.singletonList(renderer)));
+        doReturn(locale).when(writer).detectLocale(any());
+        assertThatExceptionOfType(WebApplicationException.class).isThrownBy(() -> {
+            writer.writeTo(view, null, null, null, null, null, stream);
+        }).withCause(exception);
+        verify(timerContext).stop();
+    }
+    @Test
+    public void detectLocaleShouldHandleBadlyFormedHeader() {
+        when(headers.getAcceptableLanguages()).thenThrow(HeaderValueException.class);
+        final ViewMessageBodyWriter writer = new ViewMessageBodyWriter(metricRegistry, Collections.emptyList());
+        assertThatExceptionOfType(WebApplicationException.class).isThrownBy(() -> {
+            writer.detectLocale(headers);
+        });
+    }
+    @Test
+    public void detectLocaleShouldReturnDefaultLocaleWhenHeaderNotSpecified() {
+        // We call the real methods to make sure that 'getAcceptableLanguages' returns a locale with a wildcard
+        // (which is their default value). This also validates that 'detectLocale' skips wildcard languages.
+        when(headers.getAcceptableLanguages()).thenCallRealMethod();
+        when(headers.getQualifiedAcceptableLanguages()).thenCallRealMethod();
+        when(headers.getHeaderString(HttpHeaders.ACCEPT_LANGUAGE)).thenReturn(null);
+        final ViewMessageBodyWriter writer = new ViewMessageBodyWriter(metricRegistry, Collections.emptyList());
+        final Locale result = writer.detectLocale(headers);
+        assertThat(result).isSameAs(Locale.getDefault());
+    }
+    @Test
+    public void detectLocaleShouldReturnCorrectLocale() {
+        final Locale fakeLocale = new Locale(""en-US"");
+        when(headers.getAcceptableLanguages()).thenReturn(Collections.singletonList(fakeLocale));
+        final ViewMessageBodyWriter writer = new ViewMessageBodyWriter(metricRegistry, Collections.emptyList());
+        final Locale result = writer.detectLocale(headers);
+        assertThat(result).isSameAs(fakeLocale);
+    }
+}",class,
+"    @Test
+    public void writeToShouldUseValidRenderer() throws IOException {
+        final ViewRenderer renderable = mock(ViewRenderer.class);
+        final ViewRenderer nonRenderable = mock(ViewRenderer.class);
+        final Locale locale = new Locale(""en-US"");
+        when(metricRegistry.timer(anyString())).thenReturn(timer);
+        when(timer.time()).thenReturn(timerContext);
+        when(renderable.isRenderable(view)).thenReturn(true);
+        when(nonRenderable.isRenderable(view)).thenReturn(false);
+        final ViewMessageBodyWriter writer = spy(new ViewMessageBodyWriter(metricRegistry, Arrays.asList(nonRenderable, renderable)));
+        doReturn(locale).when(writer).detectLocale(any());
+        writer.writeTo(view, null, null, null, null, null, stream);
+        verify(nonRenderable).isRenderable(view);
+        verifyNoMoreInteractions(nonRenderable);
+        verify(renderable).isRenderable(view);
+        verify(renderable).render(view, locale, stream);
+        verify(timerContext).stop();
+    }",method,
+"    @Test
+    public void writeToShouldThrowWhenNoValidRendererFound() {
+        final ViewMessageBodyWriter writer = new ViewMessageBodyWriter(metricRegistry, Collections.emptyList());
+        when(metricRegistry.timer(anyString())).thenReturn(timer);
+        when(timer.time()).thenReturn(timerContext);
+        assertThatExceptionOfType(WebApplicationException.class).isThrownBy(() -> {
+            writer.writeTo(view, null, null, null, null, null, stream);
+        }).withCauseExactlyInstanceOf(ViewRenderException.class);
+        verify(timerContext).stop();
+    }",method,
+"    @Test
+    public void writeToShouldHandleViewRenderingExceptions() throws IOException {
+        final ViewRenderer renderer = mock(ViewRenderer.class);
+        final Locale locale = new Locale(""en-US"");
+        final ViewRenderException exception = new ViewRenderException(""oops"");
+        when(metricRegistry.timer(anyString())).thenReturn(timer);
+        when(timer.time()).thenReturn(timerContext);
+        when(renderer.isRenderable(view)).thenReturn(true);
+        doThrow(exception).when(renderer).render(view, locale, stream);
+        final ViewMessageBodyWriter writer = spy(new ViewMessageBodyWriter(metricRegistry, Collections.singletonList(renderer)));
+        doReturn(locale).when(writer).detectLocale(any());
+        assertThatExceptionOfType(WebApplicationException.class).isThrownBy(() -> {
+            writer.writeTo(view, null, null, null, null, null, stream);
+        }).withCause(exception);
+        verify(timerContext).stop();
+    }",method,
+"    @Test
+    public void detectLocaleShouldHandleBadlyFormedHeader() {
+        when(headers.getAcceptableLanguages()).thenThrow(HeaderValueException.class);
+        final ViewMessageBodyWriter writer = new ViewMessageBodyWriter(metricRegistry, Collections.emptyList());
+        assertThatExceptionOfType(WebApplicationException.class).isThrownBy(() -> {
+            writer.detectLocale(headers);
+        });
+    }",method,
+"    @Test
+    public void detectLocaleShouldReturnDefaultLocaleWhenHeaderNotSpecified() {
+        // We call the real methods to make sure that 'getAcceptableLanguages' returns a locale with a wildcard
+        // (which is their default value). This also validates that 'detectLocale' skips wildcard languages.
+        when(headers.getAcceptableLanguages()).thenCallRealMethod();
+        when(headers.getQualifiedAcceptableLanguages()).thenCallRealMethod();
+        when(headers.getHeaderString(HttpHeaders.ACCEPT_LANGUAGE)).thenReturn(null);
+        final ViewMessageBodyWriter writer = new ViewMessageBodyWriter(metricRegistry, Collections.emptyList());
+        final Locale result = writer.detectLocale(headers);
+        assertThat(result).isSameAs(Locale.getDefault());
+    }",method,
+"    @Test
+    public void detectLocaleShouldReturnCorrectLocale() {
+        final Locale fakeLocale = new Locale(""en-US"");
+        when(headers.getAcceptableLanguages()).thenReturn(Collections.singletonList(fakeLocale));
+        final ViewMessageBodyWriter writer = new ViewMessageBodyWriter(metricRegistry, Collections.emptyList());
+        final Locale result = writer.detectLocale(headers);
+        assertThat(result).isSameAs(fakeLocale);
+    }",method,
+"public class AbstractListeningExecutorServiceTest extends TestCase {
+  public void testSubmit() throws Exception {
+    TestListeningExecutorService e = new TestListeningExecutorService();
+    TestRunnable runnable = new TestRunnable();
+    ListenableFuture<?> runnableFuture = e.submit(runnable);
+    assertThat(runnableFuture).isInstanceOf(TrustedListenableFutureTask.class);
+    assertTrue(runnableFuture.isDone());
+    assertTrue(runnable.run);
+    ListenableFuture<String> callableFuture = e.submit(new TestCallable());
+    assertThat(callableFuture).isInstanceOf(TrustedListenableFutureTask.class);
+    assertTrue(callableFuture.isDone());
+    assertEquals(""foo"", callableFuture.get());
+    TestRunnable runnable2 = new TestRunnable();
+    ListenableFuture<Integer> runnableFuture2 = e.submit(runnable2, 3);
+    assertThat(runnableFuture2).isInstanceOf(TrustedListenableFutureTask.class);
+    assertTrue(runnableFuture2.isDone());
+    assertTrue(runnable2.run);
+    assertEquals((Integer) 3, runnableFuture2.get());
+  }
+  private static class TestRunnable implements Runnable {
+    boolean run = false;
+    @Override
+    public void run() {
+      run = true;
+    }
+  }
+  private static class TestCallable implements Callable<String> {
+    @Override
+    public String call() {
+      return ""foo"";
+    }
+  }
+  private static class TestListeningExecutorService extends AbstractListeningExecutorService {
+    @Override
+    public void execute(Runnable runnable) {
+      assertThat(runnable).isInstanceOf(TrustedListenableFutureTask.class);
+      runnable.run();
+    }
+    @Override
+    public void shutdown() {
+    }
+    @Override
+    public List<Runnable> shutdownNow() {
+      return ImmutableList.of();
+    }
+    @Override
+    public boolean isShutdown() {
+      return false;
+    }
+    @Override
+    public boolean isTerminated() {
+      return false;
+    }
+    @Override
+    public boolean awaitTermination(long timeout, TimeUnit unit) {
+      return false;
+    }
+  }
+}",class,
+"  private static class TestRunnable implements Runnable {
+    boolean run = false;
+    @Override
+    public void run() {
+      run = true;
+    }
+  }",class,
+"  private static class TestCallable implements Callable<String> {
+    @Override
+    public String call() {
+      return ""foo"";
+    }
+  }",class,
+"  private static class TestListeningExecutorService extends AbstractListeningExecutorService {
+    @Override
+    public void execute(Runnable runnable) {
+      assertThat(runnable).isInstanceOf(TrustedListenableFutureTask.class);
+      runnable.run();
+    }
+    @Override
+    public void shutdown() {
+    }
+    @Override
+    public List<Runnable> shutdownNow() {
+      return ImmutableList.of();
+    }
+    @Override
+    public boolean isShutdown() {
+      return false;
+    }
+    @Override
+    public boolean isTerminated() {
+      return false;
+    }
+    @Override
+    public boolean awaitTermination(long timeout, TimeUnit unit) {
+      return false;
+    }
+  }",class,
+"  public void testSubmit() throws Exception {
+    TestListeningExecutorService e = new TestListeningExecutorService();
+    TestRunnable runnable = new TestRunnable();
+    ListenableFuture<?> runnableFuture = e.submit(runnable);
+    assertThat(runnableFuture).isInstanceOf(TrustedListenableFutureTask.class);
+    assertTrue(runnableFuture.isDone());
+    assertTrue(runnable.run);
+    ListenableFuture<String> callableFuture = e.submit(new TestCallable());
+    assertThat(callableFuture).isInstanceOf(TrustedListenableFutureTask.class);
+    assertTrue(callableFuture.isDone());
+    assertEquals(""foo"", callableFuture.get());
+    TestRunnable runnable2 = new TestRunnable();
+    ListenableFuture<Integer> runnableFuture2 = e.submit(runnable2, 3);
+    assertThat(runnableFuture2).isInstanceOf(TrustedListenableFutureTask.class);
+    assertTrue(runnableFuture2.isDone());
+    assertTrue(runnable2.run);
+    assertEquals((Integer) 3, runnableFuture2.get());
+  }",method,
+"    @Override
+    public void run() {
+      run = true;
+    }",method,
+"    @Override
+    public String call() {
+      return ""foo"";
+    }",method,
+"    @Override
+    public void execute(Runnable runnable) {
+      assertThat(runnable).isInstanceOf(TrustedListenableFutureTask.class);
+      runnable.run();
+    }",method,
+"    @Override
+    public void shutdown() {
+    }",method,
+"    @Override
+    public List<Runnable> shutdownNow() {
+      return ImmutableList.of();
+    }",method,
+"    @Override
+    public boolean isShutdown() {
+      return false;
+    }",method,
+"    @Override
+    public boolean isTerminated() {
+      return false;
+    }",method,
+"    @Override
+    public boolean awaitTermination(long timeout, TimeUnit unit) {
+      return false;
+    }",method,
+"public class BeanValidationPostProcessor implements BeanPostProcessor, InitializingBean {
+	@Nullable
+	private Validator validator;
+	private boolean afterInitialization = false;
+	public void setValidator(Validator validator) {
+		this.validator = validator;
+	}
+	public void setValidatorFactory(ValidatorFactory validatorFactory) {
+		this.validator = validatorFactory.getValidator();
+	}
+	public void setAfterInitialization(boolean afterInitialization) {
+		this.afterInitialization = afterInitialization;
+	}
+	@Override
+	public void afterPropertiesSet() {
+		if (this.validator == null) {
+			this.validator = Validation.buildDefaultValidatorFactory().getValidator();
+		}
+	}
+	@Override
+	public Object postProcessBeforeInitialization(Object bean, String beanName) throws BeansException {
+		if (!this.afterInitialization) {
+			doValidate(bean);
+		}
+		return bean;
+	}
+	@Override
+	public Object postProcessAfterInitialization(Object bean, String beanName) throws BeansException {
+		if (this.afterInitialization) {
+			doValidate(bean);
+		}
+		return bean;
+	}
+	protected void doValidate(Object bean) {
+		Assert.state(this.validator != null, ""No Validator set"");
+		Set<ConstraintViolation<Object>> result = this.validator.validate(bean);
+		if (!result.isEmpty()) {
+			StringBuilder sb = new StringBuilder(""Bean state is invalid: "");
+			for (Iterator<ConstraintViolation<Object>> it = result.iterator(); it.hasNext();) {
+				ConstraintViolation<Object> violation = it.next();
+				sb.append(violation.getPropertyPath()).append("" - "").append(violation.getMessage());
+				if (it.hasNext()) {
+					sb.append(""; "");
+				}
+			}
+			throw new BeanInitializationException(sb.toString());
+		}
+	}
+}",class,
+"	public void setValidator(Validator validator) {
+		this.validator = validator;
+	}",method,
+"	public void setValidatorFactory(ValidatorFactory validatorFactory) {
+		this.validator = validatorFactory.getValidator();
+	}",method,
+"	public void setAfterInitialization(boolean afterInitialization) {
+		this.afterInitialization = afterInitialization;
+	}",method,
+"	@Override
+	public void afterPropertiesSet() {
+		if (this.validator == null) {
+			this.validator = Validation.buildDefaultValidatorFactory().getValidator();
+		}
+	}",method,
+"		if (this.validator == null) {
+			this.validator = Validation.buildDefaultValidatorFactory().getValidator();
+		}",method,
+"	@Override
+	public Object postProcessBeforeInitialization(Object bean, String beanName) throws BeansException {
+		if (!this.afterInitialization) {
+			doValidate(bean);
+		}
+		return bean;
+	}",method,
+"		if (!this.afterInitialization) {
+			doValidate(bean);
+		}",method,
+"	@Override
+	public Object postProcessAfterInitialization(Object bean, String beanName) throws BeansException {
+		if (this.afterInitialization) {
+			doValidate(bean);
+		}
+		return bean;
+	}",method,
+"		if (this.afterInitialization) {
+			doValidate(bean);
+		}",method,
+"	protected void doValidate(Object bean) {
+		Assert.state(this.validator != null, ""No Validator set"");
+		Set<ConstraintViolation<Object>> result = this.validator.validate(bean);
+		if (!result.isEmpty()) {
+			StringBuilder sb = new StringBuilder(""Bean state is invalid: "");
+			for (Iterator<ConstraintViolation<Object>> it = result.iterator(); it.hasNext();) {
+				ConstraintViolation<Object> violation = it.next();
+				sb.append(violation.getPropertyPath()).append("" - "").append(violation.getMessage());
+				if (it.hasNext()) {
+					sb.append(""; "");
+				}
+			}
+			throw new BeanInitializationException(sb.toString());
+		}
+	}",method,
+"public class RegExpHighlighter extends SyntaxHighlighterBase {
+  private static final Map<IElementType, TextAttributesKey> ourMap = new HashMap<>();
+  static final TextAttributesKey CHARACTER = createTextAttributesKey(""REGEXP.CHARACTER"", DefaultLanguageHighlighterColors.STRING);
+  static final TextAttributesKey DOT = createTextAttributesKey(""REGEXP.DOT"", DefaultLanguageHighlighterColors.DOT);
+  static final TextAttributesKey META = createTextAttributesKey(""REGEXP.META"", DefaultLanguageHighlighterColors.KEYWORD);
+  static final TextAttributesKey INVALID_CHARACTER_ESCAPE = createTextAttributesKey(""REGEXP.INVALID_STRING_ESCAPE"", DefaultLanguageHighlighterColors.INVALID_STRING_ESCAPE);
+  static final TextAttributesKey BAD_CHARACTER = createTextAttributesKey(""REGEXP.BAD_CHARACTER"", HighlighterColors.BAD_CHARACTER);
+  static final TextAttributesKey REDUNDANT_ESCAPE = createTextAttributesKey(""REGEXP.REDUNDANT_ESCAPE"", DefaultLanguageHighlighterColors.VALID_STRING_ESCAPE);
+  static final TextAttributesKey PARENTHS = createTextAttributesKey(""REGEXP.PARENTHS"", DefaultLanguageHighlighterColors.PARENTHESES);
+  static final TextAttributesKey BRACES = createTextAttributesKey(""REGEXP.BRACES"", DefaultLanguageHighlighterColors.BRACES);
+  static final TextAttributesKey BRACKETS = createTextAttributesKey(""REGEXP.BRACKETS"", DefaultLanguageHighlighterColors.BRACKETS);
+  static final TextAttributesKey COMMA = createTextAttributesKey(""REGEXP.COMMA"", DefaultLanguageHighlighterColors.COMMA);
+  static final TextAttributesKey ESC_CHARACTER = createTextAttributesKey(""REGEXP.ESC_CHARACTER"", DefaultLanguageHighlighterColors.VALID_STRING_ESCAPE);
+  static final TextAttributesKey CHAR_CLASS = createTextAttributesKey(""REGEXP.CHAR_CLASS"", DefaultLanguageHighlighterColors.MARKUP_ENTITY);
+  static final TextAttributesKey QUOTE_CHARACTER = createTextAttributesKey(""REGEXP.QUOTE_CHARACTER"", DefaultLanguageHighlighterColors.VALID_STRING_ESCAPE);
+  static final TextAttributesKey COMMENT = createTextAttributesKey(""REGEXP.COMMENT"", DefaultLanguageHighlighterColors.LINE_COMMENT);
+  static final TextAttributesKey QUANTIFIER = createTextAttributesKey(""REGEXP.QUANTIFIER"", DefaultLanguageHighlighterColors.NUMBER);
+  static final TextAttributesKey OPTIONS = createTextAttributesKey(""REGEXP.OPTIONS"", DefaultLanguageHighlighterColors.PREDEFINED_SYMBOL);
+  static final TextAttributesKey NAME = createTextAttributesKey(""REGEXP.NAME"", DefaultLanguageHighlighterColors.IDENTIFIER);
+  private final Project myProject;
+  private final ParserDefinition myParserDefinition;
+  public RegExpHighlighter(Project project, ParserDefinition parserDefinition) {
+    myProject = project;
+    myParserDefinition = parserDefinition;
+  }
+  static {
+    ourMap.put(RegExpTT.CHARACTER, CHARACTER);
+    ourMap.put(RegExpTT.COLON, CHARACTER);
+    ourMap.put(RegExpTT.DOT, DOT);
+    ourMap.put(RegExpTT.NAME, NAME);
+    ourMap.put(RegExpTT.BACKREF, NAME);
+    ourMap.put(RegExpTT.UNION, META);
+    ourMap.put(RegExpTT.CARET, META);
+    ourMap.put(RegExpTT.DOLLAR, META);
+    ourMap.put(RegExpTT.ANDAND, META);
+    ourMap.put(RegExpTT.MINUS, META);
+    ourMap.put(StringEscapesTokenTypes.INVALID_CHARACTER_ESCAPE_TOKEN, INVALID_CHARACTER_ESCAPE);
+    ourMap.put(StringEscapesTokenTypes.INVALID_UNICODE_ESCAPE_TOKEN, INVALID_CHARACTER_ESCAPE);
+    ourMap.put(RegExpTT.BAD_CHARACTER, BAD_CHARACTER);
+    ourMap.put(RegExpTT.BAD_HEX_VALUE, INVALID_CHARACTER_ESCAPE);
+    ourMap.put(RegExpTT.BAD_OCT_VALUE, INVALID_CHARACTER_ESCAPE);
+    ourMap.put(RegExpTT.ESC_CHARACTER, ESC_CHARACTER);
+    ourMap.put(RegExpTT.UNICODE_CHAR, ESC_CHARACTER);
+    ourMap.put(RegExpTT.HEX_CHAR, ESC_CHARACTER);
+    ourMap.put(RegExpTT.OCT_CHAR, ESC_CHARACTER);
+    ourMap.put(RegExpTT.CTRL_CHARACTER, ESC_CHARACTER);
+    ourMap.put(RegExpTT.PROPERTY, CHAR_CLASS);
+    ourMap.put(RegExpTT.CHAR_CLASS, CHAR_CLASS);
+    ourMap.put(RegExpTT.BOUNDARY, CHAR_CLASS);
+    ourMap.put(RegExpTT.CTRL, CHAR_CLASS);
+    ourMap.put(RegExpTT.ESC_CTRL_CHARACTER, CHAR_CLASS);
+    ourMap.put(RegExpTT.NAMED_CHARACTER, CHAR_CLASS);
+    ourMap.put(RegExpTT.CATEGORY_SHORT_HAND, CHAR_CLASS);
+    ourMap.put(RegExpTT.RUBY_NAMED_GROUP_REF, CHAR_CLASS);
+    ourMap.put(RegExpTT.RUBY_NAMED_GROUP_CALL, CHAR_CLASS);
+    ourMap.put(RegExpTT.RUBY_QUOTED_NAMED_GROUP_REF, CHAR_CLASS);
+    ourMap.put(RegExpTT.RUBY_QUOTED_NAMED_GROUP_CALL, CHAR_CLASS);
+    ourMap.put(RegExpTT.REDUNDANT_ESCAPE, REDUNDANT_ESCAPE);
+    ourMap.put(RegExpTT.QUOTE_BEGIN, QUOTE_CHARACTER);
+    ourMap.put(RegExpTT.QUOTE_END, QUOTE_CHARACTER);
+    ourMap.put(RegExpTT.NON_CAPT_GROUP, PARENTHS);
+    ourMap.put(RegExpTT.ATOMIC_GROUP, PARENTHS);
+    ourMap.put(RegExpTT.POS_LOOKBEHIND, PARENTHS);
+    ourMap.put(RegExpTT.NEG_LOOKBEHIND, PARENTHS);
+    ourMap.put(RegExpTT.POS_LOOKAHEAD, PARENTHS);
+    ourMap.put(RegExpTT.NEG_LOOKAHEAD, PARENTHS);
+    ourMap.put(RegExpTT.SET_OPTIONS, PARENTHS);
+    ourMap.put(RegExpTT.PYTHON_NAMED_GROUP, PARENTHS);
+    ourMap.put(RegExpTT.PYTHON_NAMED_GROUP_REF, PARENTHS);
+    ourMap.put(RegExpTT.PYTHON_COND_REF, PARENTHS);
+    ourMap.put(RegExpTT.RUBY_NAMED_GROUP, PARENTHS);
+    ourMap.put(RegExpTT.RUBY_QUOTED_NAMED_GROUP, PARENTHS);
+    ourMap.put(RegExpTT.GROUP_BEGIN, PARENTHS);
+    ourMap.put(RegExpTT.GROUP_END, PARENTHS);
+    ourMap.put(RegExpTT.GT, PARENTHS);
+    ourMap.put(RegExpTT.QUOTE, PARENTHS);
+    ourMap.put(RegExpTT.LBRACE, BRACES);
+    ourMap.put(RegExpTT.RBRACE, BRACES);
+    ourMap.put(RegExpTT.CLASS_BEGIN, BRACKETS);
+    ourMap.put(RegExpTT.CLASS_END, BRACKETS);
+    ourMap.put(RegExpTT.BRACKET_EXPRESSION_BEGIN, BRACKETS);
+    ourMap.put(RegExpTT.BRACKET_EXPRESSION_END, BRACKETS);
+    ourMap.put(RegExpTT.COMMA, COMMA);
+    ourMap.put(RegExpTT.NUMBER, QUANTIFIER);
+    ourMap.put(RegExpTT.STAR, QUANTIFIER);
+    ourMap.put(RegExpTT.PLUS, QUANTIFIER);
+    ourMap.put(RegExpTT.QUEST, QUANTIFIER);
+    ourMap.put(RegExpTT.COMMENT, COMMENT);
+    ourMap.put(RegExpTT.OPTIONS_ON, OPTIONS);
+    ourMap.put(RegExpTT.OPTIONS_OFF, OPTIONS);
+  }
+  @Override
+  @NotNull
+  public Lexer getHighlightingLexer() {
+    return myParserDefinition.createLexer(myProject);
+  }
+  @Override
+  @NotNull
+  public TextAttributesKey[] getTokenHighlights(IElementType tokenType) {
+    return pack(ourMap.get(tokenType));
+  }
+}",class,
+"  public RegExpHighlighter(Project project, ParserDefinition parserDefinition) {
+    myProject = project;
+    myParserDefinition = parserDefinition;
+  }",method,

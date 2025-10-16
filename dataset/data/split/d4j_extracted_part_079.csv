@@ -1,0 +1,1041 @@
+code_snippet,type,score
+"  public static <E> HashSet<E> newHashSet(E... elements) {
+    HashSet<E> set = newHashSetWithCapacity(elements.length);
+    Collections.addAll(set, elements);
+    return set;
+  }",method,
+"  public static <E> HashSet<E> newHashSetWithCapacity(int capacity) {
+    return new HashSet<E>(capacity);
+  }",method,
+"  public static <E> HashSet<E> newHashSet(Iterable<? extends E> elements) {
+    return (elements instanceof Collection)
+        ? new HashSet<E>((Collection<E>) elements)
+        : newHashSet(elements.iterator());
+  }",method,
+"  public static <E> HashSet<E> newHashSet(Iterator<? extends E> elements) {
+    HashSet<E> set = newHashSet();
+    while (elements.hasNext()) {
+      set.add(elements.next());
+    }
+    return set;
+  }",method,
+"  public static <E> Set<E> newIdentityHashSet() {
+    return Sets.newSetFromMap(new IdentityHashMap<E, Boolean>());
+  }",method,
+"  public static <E> Set<E> newSetFromMap(Map<E, Boolean> map) {
+    return Collections.newSetFromMap(map);
+  }",method,
+"  public static <E> CopyOnWriteArraySet<E> newCopyOnWriteArraySet() {
+    return new CopyOnWriteArraySet<E>();
+  }",method,
+"  public static <E> LinkedHashSet<E> newLinkedHashSet() {
+    return new LinkedHashSet<E>();
+  }",method,
+"public class GenericElementNS extends AbstractElementNS {
+    protected String nodeName;
+    protected boolean readonly;
+    protected GenericElementNS() {
+    }
+    public GenericElementNS(String nsURI, String name,
+                            AbstractDocument owner) {
+        super(nsURI, name, owner);
+        nodeName = name;
+    }
+    public void setNodeName(String v) {
+        nodeName = v;
+    }
+    public String getNodeName() {
+        return nodeName;
+    }
+    // ExtendedNode ///////////////////////////////////////////////////
+    public boolean isReadonly() {
+        return readonly;
+    }
+    public void setReadonly(boolean v) {
+        readonly = v;
+    }
+    protected Node export(Node n, AbstractDocument d) {
+        GenericElementNS ge = (GenericElementNS)super.export(n, d);
+        ge.nodeName = nodeName;
+        return n;
+    }
+    protected Node deepExport(Node n, AbstractDocument d) {
+        GenericElementNS ge = (GenericElementNS)super.deepExport(n, d);
+        ge.nodeName = nodeName;
+        return n;
+    }
+    protected Node copyInto(Node n) {
+        GenericElementNS ge = (GenericElementNS)super.copyInto(n);
+        ge.nodeName = nodeName;
+        return n;
+    }
+    protected Node deepCopyInto(Node n) {
+        GenericElementNS ge = (GenericElementNS)super.deepCopyInto(n);
+        ge.nodeName = nodeName;
+        return n;
+    }
+    protected Node newNode() {
+        return new GenericElementNS();
+    }
+}",class,
+"    protected GenericElementNS() {
+    }",method,
+"    public GenericElementNS(String nsURI, String name,
+                            AbstractDocument owner) {
+        super(nsURI, name, owner);
+        nodeName = name;
+    }",method,
+"    public void setNodeName(String v) {
+        nodeName = v;
+    }",method,
+"    public String getNodeName() {
+        return nodeName;
+    }",method,
+"    public boolean isReadonly() {
+        return readonly;
+    }",method,
+"    public void setReadonly(boolean v) {
+        readonly = v;
+    }",method,
+"    protected Node export(Node n, AbstractDocument d) {
+        GenericElementNS ge = (GenericElementNS)super.export(n, d);
+        ge.nodeName = nodeName;
+        return n;
+    }",method,
+"    protected Node deepExport(Node n, AbstractDocument d) {
+        GenericElementNS ge = (GenericElementNS)super.deepExport(n, d);
+        ge.nodeName = nodeName;
+        return n;
+    }",method,
+"    protected Node copyInto(Node n) {
+        GenericElementNS ge = (GenericElementNS)super.copyInto(n);
+        ge.nodeName = nodeName;
+        return n;
+    }",method,
+"    protected Node deepCopyInto(Node n) {
+        GenericElementNS ge = (GenericElementNS)super.deepCopyInto(n);
+        ge.nodeName = nodeName;
+        return n;
+    }",method,
+"    protected Node newNode() {
+        return new GenericElementNS();
+    }",method,
+"public class IOInputStream extends InputStream {
+    private final IRubyObject io;
+    private final InputStream in;
+    private final RubyFixnum numOne;
+    private static final CallSite readAdapter = MethodIndex.getFunctionalCallSite(""read"");
+    private static final CallSite closeAdapter = MethodIndex.getFunctionalCallSite(""close"");
+    public IOInputStream(IRubyObject io) {
+        if (!io.respondsTo(""read"")) {
+            throw new IllegalArgumentException(""Object: "" + io + "" is not a legal argument to this wrapper, cause it doesn't respond to \""read\""."");
+        }
+        this.io = io;
+        this.in = ((io instanceof RubyIO) && !((RubyIO)io).isClosed() && ((RubyIO)io).isBuiltin(""read""))
+                ? ((RubyIO)io).getInStream() : null;
+        this.numOne = RubyFixnum.one(io.getRuntime());
+    }
+    @Override
+    public void close() throws IOException {
+        if (in != null) {
+            in.close();
+        } else if (io.respondsTo(""close"")) {
+            closeAdapter.call(io.getRuntime().getCurrentContext(), io, io);
+        }
+    }
+    // Note: this method produces meaningful results
+    // only for RubyIO objects. For everything else returns 0.
+    @Override
+    public int available() throws IOException {
+        if (in != null) {
+            return in.available();
+        } else {
+            return 0;
+        }
+    }
+    public int read() throws IOException {
+        if (in != null) {
+            return in.read();
+        }
+        IRubyObject readValue = readAdapter.call(io.getRuntime().getCurrentContext(), io, io, numOne);
+        int returnValue = -1;
+        if (!readValue.isNil()) {
+            returnValue = readValue.convertToString().getByteList().get(0) & 0xff;
+        }
+        return returnValue;
+    }
+    @Override
+    public int read(byte[] b) throws IOException {
+        return read(b, 0, b.length);
+    }
+    @Override
+    public int read(byte[] b, int off, int len) throws IOException {
+        if (in != null) {
+            return in.read(b, off, len);
+        }
+        final Ruby runtime = io.getRuntime();
+        IRubyObject readValue = readAdapter.call(runtime.getCurrentContext(), io, io, runtime.newFixnum(len));
+        int returnValue = -1;
+        if (!readValue.isNil()) {
+            ByteList str = readValue.convertToString().getByteList();
+            System.arraycopy(str.getUnsafeBytes(), str.getBegin(), b, off, str.getRealSize());
+            returnValue = str.getRealSize();
+        }
+        return returnValue;
+     }
+}",class,
+"    public IOInputStream(IRubyObject io) {
+        if (!io.respondsTo(""read"")) {
+            throw new IllegalArgumentException(""Object: "" + io + "" is not a legal argument to this wrapper, cause it doesn't respond to \""read\""."");
+        }
+        this.io = io;
+        this.in = ((io instanceof RubyIO) && !((RubyIO)io).isClosed() && ((RubyIO)io).isBuiltin(""read""))
+                ? ((RubyIO)io).getInStream() : null;
+        this.numOne = RubyFixnum.one(io.getRuntime());
+    }",method,
+"    @Override
+    public void close() throws IOException {
+        if (in != null) {
+            in.close();
+        } else if (io.respondsTo(""close"")) {
+            closeAdapter.call(io.getRuntime().getCurrentContext(), io, io);
+        }
+    }",method,
+"        if (in != null) {
+            in.close();
+        }",method,
+"    @Override
+    public int available() throws IOException {
+        if (in != null) {
+            return in.available();
+        } else {
+            return 0;
+        }
+    }",method,
+"        if (in != null) {
+            return in.available();
+        }",method,
+"    public int read() throws IOException {
+        if (in != null) {
+            return in.read();
+        }
+        IRubyObject readValue = readAdapter.call(io.getRuntime().getCurrentContext(), io, io, numOne);
+        int returnValue = -1;
+        if (!readValue.isNil()) {
+            returnValue = readValue.convertToString().getByteList().get(0) & 0xff;
+        }
+        return returnValue;
+    }",method,
+"        if (in != null) {
+            return in.read();
+        }",method,
+"    @Override
+    public int read(byte[] b) throws IOException {
+        return read(b, 0, b.length);
+    }",method,
+"    @Override
+    public int read(byte[] b, int off, int len) throws IOException {
+        if (in != null) {
+            return in.read(b, off, len);
+        }
+        final Ruby runtime = io.getRuntime();
+        IRubyObject readValue = readAdapter.call(runtime.getCurrentContext(), io, io, runtime.newFixnum(len));
+        int returnValue = -1;
+        if (!readValue.isNil()) {
+            ByteList str = readValue.convertToString().getByteList();
+            System.arraycopy(str.getUnsafeBytes(), str.getBegin(), b, off, str.getRealSize());
+            returnValue = str.getRealSize();
+        }
+        return returnValue;
+     }",method,
+"        if (in != null) {
+            return in.read(b, off, len);
+        }",method,
+"public class SQLCommentStatement extends SQLStatementImpl {
+    public static enum Type {
+        TABLE, COLUMN
+    }
+    private SQLExprTableSource on;
+    private Type               type;
+    private SQLExpr            comment;
+    public SQLExpr getComment() {
+        return comment;
+    }
+    public void setComment(SQLExpr comment) {
+        this.comment = comment;
+    }
+    public Type getType() {
+        return type;
+    }
+    public void setType(Type type) {
+        this.type = type;
+    }
+    public SQLExprTableSource getOn() {
+        return on;
+    }
+    public void setOn(SQLExprTableSource on) {
+        if (on != null) {
+            on.setParent(this);
+        }
+        this.on = on;
+    }
+    public void setOn(SQLName on) {
+        this.setOn(new SQLExprTableSource(on));
+    }
+    @Override
+    protected void accept0(SQLASTVisitor visitor) {
+        if (visitor.visit(this)) {
+            acceptChild(visitor, on);
+            acceptChild(visitor, comment);
+        }
+        visitor.endVisit(this);
+    }
+    @Override
+    public List<SQLObject> getChildren() {
+        List<SQLObject> children = new ArrayList<SQLObject>();
+        if (on != null) {
+            children.add(on);
+        }
+        if (comment != null) {
+            children.add(comment);
+        }
+        return children;
+    }
+}",class,
+"    public SQLExpr getComment() {
+        return comment;
+    }",method,
+"    public void setComment(SQLExpr comment) {
+        this.comment = comment;
+    }",method,
+"    public Type getType() {
+        return type;
+    }",method,
+"    public void setType(Type type) {
+        this.type = type;
+    }",method,
+"    public SQLExprTableSource getOn() {
+        return on;
+    }",method,
+"    public void setOn(SQLExprTableSource on) {
+        if (on != null) {
+            on.setParent(this);
+        }
+        this.on = on;
+    }",method,
+"        if (on != null) {
+            on.setParent(this);
+        }",method,
+"    public void setOn(SQLName on) {
+        this.setOn(new SQLExprTableSource(on));
+    }",method,
+"    @Override
+    protected void accept0(SQLASTVisitor visitor) {
+        if (visitor.visit(this)) {
+            acceptChild(visitor, on);
+            acceptChild(visitor, comment);
+        }
+        visitor.endVisit(this);
+    }",method,
+"    @Override
+    public List<SQLObject> getChildren() {
+        List<SQLObject> children = new ArrayList<SQLObject>();
+        if (on != null) {
+            children.add(on);
+        }
+        if (comment != null) {
+            children.add(comment);
+        }
+        return children;
+    }",method,
+"        if (on != null) {
+            children.add(on);
+        }",method,
+"        if (comment != null) {
+            children.add(comment);
+        }",method,
+"public class JavaCreatePropertyFix extends CreatePropertyFix {
+  private static final Logger LOG = Logger.getInstance(JavaCreatePropertyFix.class);
+  public JavaCreatePropertyFix() {}
+  public JavaCreatePropertyFix(PsiElement element, String key, final List<PropertiesFile> propertiesFiles) {
+    super(element, key, propertiesFiles);
+  }
+  @Override
+  protected Couple<String> doAction(Project project, PsiElement psiElement, I18nizeQuickFixModel model) {
+    final Couple<String> result = super.doAction(project, psiElement, model);
+    if (result != null && psiElement instanceof PsiLiteralExpression) {
+      final String key = result.first;
+      final StringBuilder buffer = new StringBuilder();
+      buffer.append('""');
+      StringUtil.escapeStringCharacters(key.length(), key, buffer);
+      buffer.append('""');
+      try {
+        WriteAction.run(() -> {
+          final PsiExpression newKeyLiteral = JavaPsiFacade.getElementFactory(project).createExpressionFromText(buffer.toString(), null);
+          psiElement.replace(newKeyLiteral);
+        });
+      }
+      catch (IncorrectOperationException e) {
+        LOG.error(e);
+      }
+    }
+    return result;
+  }
+  @Nullable
+  protected Couple<String> invokeAction(@NotNull final Project project,
+                                        @NotNull PsiFile file,
+                                        @NotNull PsiElement psiElement,
+                                        @Nullable final String suggestedKey,
+                                        @Nullable String suggestedValue,
+                                        @Nullable final List<PropertiesFile> propertiesFiles) {
+    final PsiLiteralExpression literalExpression = psiElement instanceof PsiLiteralExpression ? (PsiLiteralExpression)psiElement : null;
+    final String propertyValue = suggestedValue == null ? """" : suggestedValue;
+    final I18nizeQuickFixDialog dialog = new JavaI18nizeQuickFixDialog(
+      project,
+      file,
+      literalExpression,
+      propertyValue,
+      createDefaultCustomization(suggestedKey, propertiesFiles),
+      false,
+      false
+    );
+    return doAction(project, psiElement, dialog);
+  }
+}",class,
+  public JavaCreatePropertyFix() {},method,
+"  public JavaCreatePropertyFix(PsiElement element, String key, final List<PropertiesFile> propertiesFiles) {
+    super(element, key, propertiesFiles);
+  }",method,
+"  @Override
+  protected Couple<String> doAction(Project project, PsiElement psiElement, I18nizeQuickFixModel model) {
+    final Couple<String> result = super.doAction(project, psiElement, model);
+    if (result != null && psiElement instanceof PsiLiteralExpression) {
+      final String key = result.first;
+      final StringBuilder buffer = new StringBuilder();
+      buffer.append('""');
+      StringUtil.escapeStringCharacters(key.length(), key, buffer);
+      buffer.append('""');
+      try {
+        WriteAction.run(() -> {
+          final PsiExpression newKeyLiteral = JavaPsiFacade.getElementFactory(project).createExpressionFromText(buffer.toString(), null);
+          psiElement.replace(newKeyLiteral);
+        });
+      }
+      catch (IncorrectOperationException e) {
+        LOG.error(e);
+      }
+    }
+    return result;
+  }",method,
+"    if (result != null && psiElement instanceof PsiLiteralExpression) {
+      final String key = result.first;
+      final StringBuilder buffer = new StringBuilder();
+      buffer.append('""');
+      StringUtil.escapeStringCharacters(key.length(), key, buffer);
+      buffer.append('""');
+      try {
+        WriteAction.run(() -> {
+          final PsiExpression newKeyLiteral = JavaPsiFacade.getElementFactory(project).createExpressionFromText(buffer.toString(), null);
+          psiElement.replace(newKeyLiteral);
+        });
+      }
+      catch (IncorrectOperationException e) {
+        LOG.error(e);
+      }
+    }",method,
+"      catch (IncorrectOperationException e) {
+        LOG.error(e);
+      }",method,
+"  @Nullable
+  protected Couple<String> invokeAction(@NotNull final Project project,
+                                        @NotNull PsiFile file,
+                                        @NotNull PsiElement psiElement,
+                                        @Nullable final String suggestedKey,
+                                        @Nullable String suggestedValue,
+                                        @Nullable final List<PropertiesFile> propertiesFiles) {
+    final PsiLiteralExpression literalExpression = psiElement instanceof PsiLiteralExpression ? (PsiLiteralExpression)psiElement : null;
+    final String propertyValue = suggestedValue == null ? """" : suggestedValue;
+    final I18nizeQuickFixDialog dialog = new JavaI18nizeQuickFixDialog(
+      project,
+      file,
+      literalExpression,
+      propertyValue,
+      createDefaultCustomization(suggestedKey, propertiesFiles),
+      false,
+      false
+    );
+    return doAction(project, psiElement, dialog);
+  }",method,
+"public final class MqttPublishVariableHeader {
+    private final String topicName;
+    private final int packetId;
+    public MqttPublishVariableHeader(String topicName, int packetId) {
+        this.topicName = topicName;
+        this.packetId = packetId;
+    }
+    public String topicName() {
+        return topicName;
+    }
+    @Deprecated
+    public int messageId() {
+        return packetId;
+    }
+    public int packetId() {
+        return packetId;
+    }
+    @Override
+    public String toString() {
+        return new StringBuilder(StringUtil.simpleClassName(this))
+            .append('[')
+            .append(""topicName="").append(topicName)
+            .append("", packetId="").append(packetId)
+            .append(']')
+            .toString();
+    }
+}",class,
+"public final class MqttSubAckMessage extends MqttMessage {
+    public MqttSubAckMessage(
+            MqttFixedHeader mqttFixedHeader,
+            MqttMessageIdVariableHeader variableHeader,
+            MqttSubAckPayload payload) {
+        super(mqttFixedHeader, variableHeader, payload);
+    }
+    @Override
+    public MqttMessageIdVariableHeader variableHeader() {
+        return (MqttMessageIdVariableHeader) super.variableHeader();
+    }
+    @Override
+    public MqttSubAckPayload payload() {
+        return (MqttSubAckPayload) super.payload();
+    }
+}",class,
+"    public MqttPublishVariableHeader(String topicName, int packetId) {
+        this.topicName = topicName;
+        this.packetId = packetId;
+    }",method,
+"    public String topicName() {
+        return topicName;
+    }",method,
+"    @Deprecated
+    public int messageId() {
+        return packetId;
+    }",method,
+"    public int packetId() {
+        return packetId;
+    }",method,
+"    @Override
+    public String toString() {
+        return new StringBuilder(StringUtil.simpleClassName(this))
+            .append('[')
+            .append(""topicName="").append(topicName)
+            .append("", packetId="").append(packetId)
+            .append(']')
+            .toString();
+    }",method,
+"    MqttQoS(int value) {
+        this.value = value;
+    }",method,
+"    public int value() {
+        return value;
+    }",method,
+"    public static MqttQoS valueOf(int value) {
+        for (MqttQoS q: values()) {
+            if (q.value == value) {
+                return q;
+            }
+        }
+        throw new IllegalArgumentException(""invalid QoS: "" + value);
+    }",method,
+"            if (q.value == value) {
+                return q;
+            }",method,
+"    public MqttSubAckMessage(
+            MqttFixedHeader mqttFixedHeader,
+            MqttMessageIdVariableHeader variableHeader,
+            MqttSubAckPayload payload) {
+        super(mqttFixedHeader, variableHeader, payload);
+    }",method,
+"    @Override
+    public MqttMessageIdVariableHeader variableHeader() {
+        return (MqttMessageIdVariableHeader) super.variableHeader();
+    }",method,
+"    @Override
+    public MqttSubAckPayload payload() {
+        return (MqttSubAckPayload) super.payload();
+    }",method,
+"public class MainActivity extends Activity {
+  @Override
+  protected void onCreate(Bundle savedInstanceState) {
+    super.onCreate(savedInstanceState);
+    setContentView(R.layout.main_activity);
+    // Demonstrate that it is removed from the release build...
+    if (!isStethoPresent()) {
+      Toast.makeText(
+          this,
+          getString(R.string.stetho_missing, BuildConfig.BUILD_TYPE),
+          Toast.LENGTH_LONG)
+          .show();
+    }
+    findViewById(R.id.settings_btn).setOnClickListener(mMainButtonClicked);
+    findViewById(R.id.apod_btn).setOnClickListener(mMainButtonClicked);
+    findViewById(R.id.irc_btn).setOnClickListener(mMainButtonClicked);
+  }
+  private static boolean isStethoPresent() {
+    try {
+      Class.forName(""com.facebook.stetho.Stetho"");
+      return true;
+    } catch (ClassNotFoundException e) {
+      return false;
+    }
+  }
+  @Override
+  protected void onResume() {
+    super.onResume();
+    getPrefs().registerOnSharedPreferenceChangeListener(mToastingPrefListener);
+  }
+  @Override
+  protected void onPause() {
+    super.onPause();
+    getPrefs().unregisterOnSharedPreferenceChangeListener(mToastingPrefListener);
+  }
+  private SharedPreferences getPrefs() {
+    return PreferenceManager.getDefaultSharedPreferences(this );
+  }
+  private final View.OnClickListener mMainButtonClicked = new View.OnClickListener() {
+    @Override
+    public void onClick(View v) {
+      int id = v.getId();
+      if (id == R.id.settings_btn) {
+        SettingsActivity.show(MainActivity.this);
+      } else if (id == R.id.apod_btn) {
+        APODActivity.show(MainActivity.this);
+      } else if (id == R.id.irc_btn) {
+        IRCConnectActivity.show(MainActivity.this);
+      }
+    }
+  };
+  private final SharedPreferences.OnSharedPreferenceChangeListener mToastingPrefListener =
+      new SharedPreferences.OnSharedPreferenceChangeListener() {
+    @Override
+    public void onSharedPreferenceChanged(SharedPreferences sharedPreferences, String key) {
+      Object value = sharedPreferences.getAll().get(key);
+      Toast.makeText(
+          MainActivity.this,
+          getString(R.string.pref_change_message, key, value),
+          Toast.LENGTH_SHORT).show();
+    }
+  };
+}",class,
+"  @Override
+  protected void onCreate(Bundle savedInstanceState) {
+    super.onCreate(savedInstanceState);
+    setContentView(R.layout.main_activity);
+    // Demonstrate that it is removed from the release build...
+    if (!isStethoPresent()) {
+      Toast.makeText(
+          this,
+          getString(R.string.stetho_missing, BuildConfig.BUILD_TYPE),
+          Toast.LENGTH_LONG)
+          .show();
+    }
+    findViewById(R.id.settings_btn).setOnClickListener(mMainButtonClicked);
+    findViewById(R.id.apod_btn).setOnClickListener(mMainButtonClicked);
+    findViewById(R.id.irc_btn).setOnClickListener(mMainButtonClicked);
+  }",method,
+"  private static boolean isStethoPresent() {
+    try {
+      Class.forName(""com.facebook.stetho.Stetho"");
+      return true;
+    } catch (ClassNotFoundException e) {
+      return false;
+    }
+  }",method,
+"  @Override
+  protected void onResume() {
+    super.onResume();
+    getPrefs().registerOnSharedPreferenceChangeListener(mToastingPrefListener);
+  }",method,
+"  @Override
+  protected void onPause() {
+    super.onPause();
+    getPrefs().unregisterOnSharedPreferenceChangeListener(mToastingPrefListener);
+  }",method,
+"  private SharedPreferences getPrefs() {
+    return PreferenceManager.getDefaultSharedPreferences(this );
+  }",method,
+"    @Override
+    public void onClick(View v) {
+      int id = v.getId();
+      if (id == R.id.settings_btn) {
+        SettingsActivity.show(MainActivity.this);
+      } else if (id == R.id.apod_btn) {
+        APODActivity.show(MainActivity.this);
+      } else if (id == R.id.irc_btn) {
+        IRCConnectActivity.show(MainActivity.this);
+      }
+    }",method,
+"      if (id == R.id.settings_btn) {
+        SettingsActivity.show(MainActivity.this);
+      }",method,
+"      new SharedPreferences.OnSharedPreferenceChangeListener() {
+    @Override
+    public void onSharedPreferenceChanged(SharedPreferences sharedPreferences, String key) {
+      Object value = sharedPreferences.getAll().get(key);
+      Toast.makeText(
+          MainActivity.this,
+          getString(R.string.pref_change_message, key, value),
+          Toast.LENGTH_SHORT).show();
+    }
+  }",method,
+"    @Override
+    public void onSharedPreferenceChanged(SharedPreferences sharedPreferences, String key) {
+      Object value = sharedPreferences.getAll().get(key);
+      Toast.makeText(
+          MainActivity.this,
+          getString(R.string.pref_change_message, key, value),
+          Toast.LENGTH_SHORT).show();
+    }",method,
+"public class BuildTargetRegistryImpl implements BuildTargetRegistry {
+  private final List<BuildTarget<?>> myAllTargets;
+  private Map<BuildTargetType<?>, List<? extends BuildTarget<?>>> myTargets;
+  private Map<JpsModule, List<ModuleBasedTarget>> myModuleBasedTargets;
+  public BuildTargetRegistryImpl(JpsModel model) {
+    myTargets = new THashMap<>();
+    myModuleBasedTargets = new THashMap<>();
+    List<List<? extends BuildTarget<?>>> targetsByType = new ArrayList<>();
+    for (BuildTargetType<?> type : TargetTypeRegistry.getInstance().getTargetTypes()) {
+      List<? extends BuildTarget<?>> targets = type.computeAllTargets(model);
+      myTargets.put(type, targets);
+      targetsByType.add(targets);
+      for (BuildTarget<?> target : targets) {
+        if (target instanceof ModuleBasedTarget) {
+          final ModuleBasedTarget t = (ModuleBasedTarget)target;
+          final JpsModule module = t.getModule();
+          List<ModuleBasedTarget> list = myModuleBasedTargets.get(module);
+          if (list == null) {
+            list = new ArrayList<>();
+            myModuleBasedTargets.put(module, list);
+          }
+          list.add(t);
+        }
+      }
+    }
+    myAllTargets = Collections.unmodifiableList(ContainerUtil.concat(targetsByType));
+  }
+  @NotNull
+  @Override
+  public Collection<ModuleBasedTarget<?>> getModuleBasedTargets(@NotNull JpsModule module, @NotNull BuildTargetRegistry.ModuleTargetSelector selector) {
+    final List<ModuleBasedTarget> targets = myModuleBasedTargets.get(module);
+    if (targets == null || targets.isEmpty()) {
+      return Collections.emptyList();
+    }
+    final List<ModuleBasedTarget<?>> result = new SmartList<>();
+    for (ModuleBasedTarget target : targets) {
+      switch (selector) {
+        case ALL:
+          result.add(target);
+          break;
+        case PRODUCTION:
+          if (!target.isTests()) {
+            result.add(target);
+          }
+          break;
+        case TEST:
+          if (target.isTests()) {
+            result.add(target);
+          }
+      }
+    }
+    return result;
+  }
+  @Override
+  @NotNull
+  public <T extends BuildTarget<?>> List<T> getAllTargets(@NotNull BuildTargetType<T> type) {
+    //noinspection unchecked
+    return (List<T>)myTargets.get(type);
+  }
+  @NotNull
+  @Override
+  public List<BuildTarget<?>> getAllTargets() {
+    return myAllTargets;
+  }
+}",class,
+"  public BuildTargetRegistryImpl(JpsModel model) {
+    myTargets = new THashMap<>();
+    myModuleBasedTargets = new THashMap<>();
+    List<List<? extends BuildTarget<?>>> targetsByType = new ArrayList<>();
+    for (BuildTargetType<?> type : TargetTypeRegistry.getInstance().getTargetTypes()) {
+      List<? extends BuildTarget<?>> targets = type.computeAllTargets(model);
+      myTargets.put(type, targets);
+      targetsByType.add(targets);
+      for (BuildTarget<?> target : targets) {
+        if (target instanceof ModuleBasedTarget) {
+          final ModuleBasedTarget t = (ModuleBasedTarget)target;
+          final JpsModule module = t.getModule();
+          List<ModuleBasedTarget> list = myModuleBasedTargets.get(module);
+          if (list == null) {
+            list = new ArrayList<>();
+            myModuleBasedTargets.put(module, list);
+          }
+          list.add(t);
+        }
+      }
+    }
+    myAllTargets = Collections.unmodifiableList(ContainerUtil.concat(targetsByType));
+  }",method,
+"      for (BuildTarget<?> target : targets) {
+        if (target instanceof ModuleBasedTarget) {
+          final ModuleBasedTarget t = (ModuleBasedTarget)target;
+          final JpsModule module = t.getModule();
+          List<ModuleBasedTarget> list = myModuleBasedTargets.get(module);
+          if (list == null) {
+            list = new ArrayList<>();
+            myModuleBasedTargets.put(module, list);
+          }
+          list.add(t);
+        }
+      }",method,
+"        if (target instanceof ModuleBasedTarget) {
+          final ModuleBasedTarget t = (ModuleBasedTarget)target;
+          final JpsModule module = t.getModule();
+          List<ModuleBasedTarget> list = myModuleBasedTargets.get(module);
+          if (list == null) {
+            list = new ArrayList<>();
+            myModuleBasedTargets.put(module, list);
+          }
+          list.add(t);
+        }",method,
+"          if (list == null) {
+            list = new ArrayList<>();
+            myModuleBasedTargets.put(module, list);
+          }",method,
+"  @NotNull
+  @Override
+  public Collection<ModuleBasedTarget<?>> getModuleBasedTargets(@NotNull JpsModule module, @NotNull BuildTargetRegistry.ModuleTargetSelector selector) {
+    final List<ModuleBasedTarget> targets = myModuleBasedTargets.get(module);
+    if (targets == null || targets.isEmpty()) {
+      return Collections.emptyList();
+    }
+    final List<ModuleBasedTarget<?>> result = new SmartList<>();
+    for (ModuleBasedTarget target : targets) {
+      switch (selector) {
+        case ALL:
+          result.add(target);
+          break;
+        case PRODUCTION:
+          if (!target.isTests()) {
+            result.add(target);
+          }
+          break;
+        case TEST:
+          if (target.isTests()) {
+            result.add(target);
+          }
+      }
+    }
+    return result;
+  }",method,
+"    for (ModuleBasedTarget target : targets) {
+      switch (selector) {
+        case ALL:
+          result.add(target);
+          break;
+        case PRODUCTION:
+          if (!target.isTests()) {
+            result.add(target);
+          }
+          break;
+        case TEST:
+          if (target.isTests()) {
+            result.add(target);
+          }
+      }
+    }",method,
+"      switch (selector) {
+        case ALL:
+          result.add(target);
+          break;
+        case PRODUCTION:
+          if (!target.isTests()) {
+            result.add(target);
+          }
+          break;
+        case TEST:
+          if (target.isTests()) {
+            result.add(target);
+          }
+      }",method,
+"  @Override
+  @NotNull
+  public <T extends BuildTarget<?>> List<T> getAllTargets(@NotNull BuildTargetType<T> type) {
+    //noinspection unchecked
+    return (List<T>)myTargets.get(type);
+  }",method,
+"  @NotNull
+  @Override
+  public List<BuildTarget<?>> getAllTargets() {
+    return myAllTargets;
+  }",method,
+"public class MyBean {
+  private String name = ""fred"";
+  private int count;
+  private List<String> children = Lists.newArrayList();
+  private static final long LONG_VALUE = 214748364700L;
+  public enum Membership {
+    PENDING,
+    ACTIVE,
+    EXPIRED
+  }
+  private Membership membership = Membership.PENDING;
+  public MyBean() {
+  }
+  public MyBean(String name) {
+    this.name = name;
+  }
+  public String getName() {
+    return name;
+  }
+  public void setName(String name) {
+    this.name = name;
+  }
+  public int getCount() {
+    return count;
+  }
+  public void setCount(int count) {
+    this.count = count;
+  }
+  public Membership getMembershipStatus() {
+    return membership;
+  }
+  public void setMembershipStatus(Membership membership) {
+    this.membership = membership;
+  }
+  public List<String> getChildren() {
+    return Arrays.asList(""Bob"", ""Sue"");
+  }
+  public String sayHello(String name) {
+    return ""Hello "" + name;
+  }
+  public String sayHelloToEveryone(String[] args) {
+    return ""Hello "" + Joiner.on("", "").join(args);
+  }
+  public String sayHello(int count) {
+    StringBuilder sb = new StringBuilder();
+    for(int i=0;i!=count;++i) {
+      sb.append(""Hello"");
+    }
+    return sb.toString();
+  }
+  // should be mapped as method, not property
+  // because there is no getter
+  public void setLocked(boolean locked) {
+  }
+  public DoubleVector compute() {
+    return new DoubleArrayVector(1,2,3);
+  }
+  public List<MyChildBean> getChildBeans() {
+    return Arrays.asList(new MyChildBean(), new MyChildBean());
+  }
+  public int intVarArg(String dummy, int... toSum) {
+    int sum = 0;
+    for(int x : toSum) {
+      sum += x;
+    }
+    return sum;
+  }
+  public static class MyChildBean {
+    public int getCount() {
+      return 42;
+    } 
+  }
+  public void methodWithContext(@Current Context context, String name) {
+    java.lang.System.out.println(context);
+  }
+  public void overloadedWithVarArgs(String label, String... sources) {
+  }
+  public void overloadedWithVarArgs(String label, Collection<String> sources) {
+  }
+  public void overloadedWithVarArgs(Object mapping) {
+  }
+  public static double sum(double... values) {
+    double sum = 0;
+    for(int i=0;i!=values.length;++i) {
+      sum += values[i];
+    }
+    return sum;
+  }
+  public static float sum32(float x, float y) {
+    return x + y;
+  }
+  public static float sumArray32(float[] values) {
+    float sum = 0;
+    for (int i = 0; i < values.length; i++) {
+      sum += values[i];
+    }
+    return sum;
+  }
+  public static long sumArrayLong(long[] values) {
+    long sum = 0;
+    for (int i = 0; i < values.length; i++) {
+      sum += values[i];
+    }
+    return sum;
+  }
+  public static long calculateLong() {
+    return LONG_VALUE;
+  }
+  public static void useLongValue(long value) {
+    if(value != LONG_VALUE) {
+      throw new AssertionError(""long has been mangled by R"");
+    }
+  }
+}",class,
+"  public static class MyChildBean {
+    public int getCount() {
+      return 42;
+    } 
+  }",class,
+"  public MyBean() {
+  }",method,
+"  public MyBean(String name) {
+    this.name = name;
+  }",method,
+"  public String getName() {
+    return name;
+  }",method,
+"  public void setName(String name) {
+    this.name = name;
+  }",method,
+"  public int getCount() {
+    return count;
+  }",method,
+"  public void setCount(int count) {
+    this.count = count;
+  }",method,
+"  public Membership getMembershipStatus() {
+    return membership;
+  }",method,
+"  public void setMembershipStatus(Membership membership) {
+    this.membership = membership;
+  }",method,
+"  public List<String> getChildren() {
+    return Arrays.asList(""Bob"", ""Sue"");
+  }",method,
+"  public String sayHello(String name) {
+    return ""Hello "" + name;
+  }",method,
+"  public String sayHelloToEveryone(String[] args) {
+    return ""Hello "" + Joiner.on("", "").join(args);
+  }",method,
+"  public String sayHello(int count) {
+    StringBuilder sb = new StringBuilder();
+    for(int i=0;i!=count;++i) {
+      sb.append(""Hello"");
+    }
+    return sb.toString();
+  }",method,
+"    for(int i=0;i!=count;++i) {
+      sb.append(""Hello"");
+    }",method,
+"  public void setLocked(boolean locked) {
+  }",method,

@@ -1,0 +1,1590 @@
+code_snippet,type,score
+"    @Test
+    public void canRemoveProject() {
+        String path = childChildMock.getPath();
+        assertThat(projectRegistry.removeProject(path), sameInstance((ProjectInternal) childChildMock));
+        assertThat(projectRegistry.getProject(path), nullValue());
+        assertThat(projectRegistry.getProject(childChildMock.getProjectDir()), nullValue());
+        assertTrue(projectRegistry.getAllProjects(path).isEmpty());
+        assertTrue(projectRegistry.getSubProjects(path).isEmpty());
+        assertFalse(projectRegistry.getAllProjects().contains(childChildMock));
+        assertFalse(projectRegistry.getAllProjects("":"").contains(childChildMock));
+        assertFalse(projectRegistry.getSubProjects("":"").contains(childChildMock));
+    }",method,
+"public class LibraryUtil {
+  private LibraryUtil() {
+    super();
+  }
+  public static boolean classIsInLibrary(@NotNull PsiClass aClass) {
+    return aClass instanceof PsiCompiledElement;
+  }
+  public static boolean callOnLibraryMethod(
+      @NotNull GrMethodCallExpression expression) {
+    final PsiMethod method = expression.resolveMethod();
+    return method != null && method instanceof PsiCompiledElement;
+  }
+  public static boolean isOverrideOfLibraryMethod(PsiMethod method) {
+    final PsiMethod[] superMethods = method.findSuperMethods();
+    for (PsiMethod superMethod : superMethods) {
+      final PsiClass containingClass =
+          superMethod.getContainingClass();
+      if (containingClass != null &&
+          classIsInLibrary(containingClass)) {
+        return true;
+      }
+      if (isOverrideOfLibraryMethod(superMethod)) {
+        return true;
+      }
+    }
+    return false;
+  }
+  public static boolean isOverrideOfLibraryMethodParameter(
+      PsiVariable variable) {
+    if (variable instanceof PsiParameter) {
+      final PsiParameter parameter = (PsiParameter) variable;
+      final PsiElement scope = parameter.getDeclarationScope();
+      if (scope instanceof PsiMethod) {
+        final PsiMethod method = (PsiMethod) scope;
+        if (isOverrideOfLibraryMethod(method)) {
+          return true;
+        }
+      }
+    }
+    return false;
+  }
+}",class,
+"  private LibraryUtil() {
+    super();
+  }",method,
+"  public static boolean classIsInLibrary(@NotNull PsiClass aClass) {
+    return aClass instanceof PsiCompiledElement;
+  }",method,
+"  public static boolean callOnLibraryMethod(
+      @NotNull GrMethodCallExpression expression) {
+    final PsiMethod method = expression.resolveMethod();
+    return method != null && method instanceof PsiCompiledElement;
+  }",method,
+"  public static boolean isOverrideOfLibraryMethod(PsiMethod method) {
+    final PsiMethod[] superMethods = method.findSuperMethods();
+    for (PsiMethod superMethod : superMethods) {
+      final PsiClass containingClass =
+          superMethod.getContainingClass();
+      if (containingClass != null &&
+          classIsInLibrary(containingClass)) {
+        return true;
+      }
+      if (isOverrideOfLibraryMethod(superMethod)) {
+        return true;
+      }
+    }
+    return false;
+  }",method,
+"    for (PsiMethod superMethod : superMethods) {
+      final PsiClass containingClass =
+          superMethod.getContainingClass();
+      if (containingClass != null &&
+          classIsInLibrary(containingClass)) {
+        return true;
+      }
+      if (isOverrideOfLibraryMethod(superMethod)) {
+        return true;
+      }
+    }",method,
+"  public static boolean isOverrideOfLibraryMethodParameter(
+      PsiVariable variable) {
+    if (variable instanceof PsiParameter) {
+      final PsiParameter parameter = (PsiParameter) variable;
+      final PsiElement scope = parameter.getDeclarationScope();
+      if (scope instanceof PsiMethod) {
+        final PsiMethod method = (PsiMethod) scope;
+        if (isOverrideOfLibraryMethod(method)) {
+          return true;
+        }
+      }
+    }
+    return false;
+  }",method,
+"    if (variable instanceof PsiParameter) {
+      final PsiParameter parameter = (PsiParameter) variable;
+      final PsiElement scope = parameter.getDeclarationScope();
+      if (scope instanceof PsiMethod) {
+        final PsiMethod method = (PsiMethod) scope;
+        if (isOverrideOfLibraryMethod(method)) {
+          return true;
+        }
+      }
+    }",method,
+"      if (scope instanceof PsiMethod) {
+        final PsiMethod method = (PsiMethod) scope;
+        if (isOverrideOfLibraryMethod(method)) {
+          return true;
+        }
+      }",method,
+"public class SystemFileProcessor extends ProjectTemplateFileProcessor {
+  private static final String[] COMPONENT_NAMES = new String[] {
+    FileEditorManager.class.getName(),
+    ""org.jetbrains.idea.maven.project.MavenWorkspaceSettingsComponent""
+  };
+  @Nullable
+  @Override
+  protected String encodeFileText(String content, VirtualFile file, Project project) throws IOException {
+    final String fileName = file.getName();
+    if (file.getParent().getName().equals(Project.DIRECTORY_STORE_FOLDER) && fileName.equals(""workspace.xml"")) {
+      List<Object> componentList = new ArrayList<>();
+      for (String componentName : COMPONENT_NAMES) {
+        Object component = project.getComponent(componentName);
+        if (component == null) {
+          try {
+            Class<?> aClass = Class.forName(componentName);
+            component = project.getComponent(aClass);
+            if(component == null) {
+              component = ServiceManager.getService(project, aClass);
+            }
+          }
+          catch (ClassNotFoundException ignore) {
+          }
+        }
+        ContainerUtil.addIfNotNull(componentList, component);
+      }
+      if (!componentList.isEmpty()) {
+        final Element root = new Element(""project"");
+        for (final Object component : componentList) {
+          final Element element = new Element(""component"");
+          element.setAttribute(""name"", ComponentManagerImpl.getComponentName(component));
+          root.addContent(element);
+          ApplicationManager.getApplication().invokeAndWait(() -> {
+            if (component instanceof JDOMExternalizable) {
+              try {
+                ((JDOMExternalizable)component).writeExternal(element);
+              }
+              catch (WriteExternalException ignore) {
+                LOG.error(ignore);
+              }
+            }
+            else if (component instanceof PersistentStateComponent) {
+              Object state = WriteAction.compute(() -> ((PersistentStateComponent)component).getState());
+              if(state == null){
+                return;
+              }
+              Element element1 = state instanceof Element ? (Element)state : XmlSerializer.serialize(state);
+              element.addContent(element1.cloneContent());
+              element.setAttribute(""name"", StoreUtil.getStateSpec((PersistentStateComponent)component).name());
+            }
+          }, ModalityState.defaultModalityState());
+        }
+        PathMacroManager.getInstance(project).collapsePaths(root);
+        return JDOMUtil.writeElement(root);
+      }
+    }
+    return null;
+  }
+  private static final Logger LOG = Logger.getInstance(SystemFileProcessor.class);
+}",class,
+"  @Nullable
+  @Override
+  protected String encodeFileText(String content, VirtualFile file, Project project) throws IOException {
+    final String fileName = file.getName();
+    if (file.getParent().getName().equals(Project.DIRECTORY_STORE_FOLDER) && fileName.equals(""workspace.xml"")) {
+      List<Object> componentList = new ArrayList<>();
+      for (String componentName : COMPONENT_NAMES) {
+        Object component = project.getComponent(componentName);
+        if (component == null) {
+          try {
+            Class<?> aClass = Class.forName(componentName);
+            component = project.getComponent(aClass);
+            if(component == null) {
+              component = ServiceManager.getService(project, aClass);
+            }
+          }
+          catch (ClassNotFoundException ignore) {
+          }
+        }
+        ContainerUtil.addIfNotNull(componentList, component);
+      }
+      if (!componentList.isEmpty()) {
+        final Element root = new Element(""project"");
+        for (final Object component : componentList) {
+          final Element element = new Element(""component"");
+          element.setAttribute(""name"", ComponentManagerImpl.getComponentName(component));
+          root.addContent(element);
+          ApplicationManager.getApplication().invokeAndWait(() -> {
+            if (component instanceof JDOMExternalizable) {
+              try {
+                ((JDOMExternalizable)component).writeExternal(element);
+              }
+              catch (WriteExternalException ignore) {
+                LOG.error(ignore);
+              }
+            }
+            else if (component instanceof PersistentStateComponent) {
+              Object state = WriteAction.compute(() -> ((PersistentStateComponent)component).getState());
+              if(state == null){
+                return;
+              }
+              Element element1 = state instanceof Element ? (Element)state : XmlSerializer.serialize(state);
+              element.addContent(element1.cloneContent());
+              element.setAttribute(""name"", StoreUtil.getStateSpec((PersistentStateComponent)component).name());
+            }
+          }, ModalityState.defaultModalityState());
+        }
+        PathMacroManager.getInstance(project).collapsePaths(root);
+        return JDOMUtil.writeElement(root);
+      }
+    }
+    return null;
+  }",method,
+"      for (String componentName : COMPONENT_NAMES) {
+        Object component = project.getComponent(componentName);
+        if (component == null) {
+          try {
+            Class<?> aClass = Class.forName(componentName);
+            component = project.getComponent(aClass);
+            if(component == null) {
+              component = ServiceManager.getService(project, aClass);
+            }
+          }
+          catch (ClassNotFoundException ignore) {
+          }
+        }
+        ContainerUtil.addIfNotNull(componentList, component);
+      }",method,
+"        if (component == null) {
+          try {
+            Class<?> aClass = Class.forName(componentName);
+            component = project.getComponent(aClass);
+            if(component == null) {
+              component = ServiceManager.getService(project, aClass);
+            }
+          }
+          catch (ClassNotFoundException ignore) {
+          }
+        }",method,
+"            if(component == null) {
+              component = ServiceManager.getService(project, aClass);
+            }",method,
+"          catch (ClassNotFoundException ignore) {
+          }",method,
+"        for (final Object component : componentList) {
+          final Element element = new Element(""component"");
+          element.setAttribute(""name"", ComponentManagerImpl.getComponentName(component));
+          root.addContent(element);
+          ApplicationManager.getApplication().invokeAndWait(() -> {
+            if (component instanceof JDOMExternalizable) {
+              try {
+                ((JDOMExternalizable)component).writeExternal(element);
+              }
+              catch (WriteExternalException ignore) {
+                LOG.error(ignore);
+              }
+            }
+            else if (component instanceof PersistentStateComponent) {
+              Object state = WriteAction.compute(() -> ((PersistentStateComponent)component).getState());
+              if(state == null){
+                return;
+              }
+              Element element1 = state instanceof Element ? (Element)state : XmlSerializer.serialize(state);
+              element.addContent(element1.cloneContent());
+              element.setAttribute(""name"", StoreUtil.getStateSpec((PersistentStateComponent)component).name());
+            }
+          }, ModalityState.defaultModalityState());
+        }",method,
+"            if (component instanceof JDOMExternalizable) {
+              try {
+                ((JDOMExternalizable)component).writeExternal(element);
+              }
+              catch (WriteExternalException ignore) {
+                LOG.error(ignore);
+              }
+            }",method,
+"              catch (WriteExternalException ignore) {
+                LOG.error(ignore);
+              }",method,
+"            else if (component instanceof PersistentStateComponent) {
+              Object state = WriteAction.compute(() -> ((PersistentStateComponent)component).getState());
+              if(state == null){
+                return;
+              }
+              Element element1 = state instanceof Element ? (Element)state : XmlSerializer.serialize(state);
+              element.addContent(element1.cloneContent());
+              element.setAttribute(""name"", StoreUtil.getStateSpec((PersistentStateComponent)component).name());
+            }",method,
+"              if(state == null){
+                return;
+              }",method,
+"public class SliceDirectStreamReader
+        implements StreamReader
+{
+    private static final int ONE_GIGABYTE = toIntExact(new DataSize(1, GIGABYTE).toBytes());
+    private final StreamDescriptor streamDescriptor;
+    private int readOffset;
+    private int nextBatchSize;
+    @Nonnull
+    private InputStreamSource<BooleanInputStream> presentStreamSource = missingStreamSource(BooleanInputStream.class);
+    @Nullable
+    private BooleanInputStream presentStream;
+    @Nonnull
+    private InputStreamSource<LongInputStream> lengthStreamSource = missingStreamSource(LongInputStream.class);
+    @Nullable
+    private LongInputStream lengthStream;
+    private int[] lengthVector = new int[0];
+    @Nonnull
+    private InputStreamSource<ByteArrayInputStream> dataByteSource = missingStreamSource(ByteArrayInputStream.class);
+    @Nullable
+    private ByteArrayInputStream dataStream;
+    private boolean rowGroupOpen;
+    public SliceDirectStreamReader(StreamDescriptor streamDescriptor)
+    {
+        this.streamDescriptor = requireNonNull(streamDescriptor, ""stream is null"");
+    }
+    @Override
+    public void prepareNextRead(int batchSize)
+    {
+        readOffset += nextBatchSize;
+        nextBatchSize = batchSize;
+    }
+    @Override
+    public Block readBlock(Type type)
+            throws IOException
+    {
+        if (!rowGroupOpen) {
+            openRowGroup();
+        }
+        if (readOffset > 0) {
+            if (presentStream != null) {
+                // skip ahead the present bit reader, but count the set bits
+                // and use this as the skip size for the length reader
+                readOffset = presentStream.countBitsSet(readOffset);
+            }
+            if (readOffset > 0) {
+                if (lengthStream == null) {
+                    throw new OrcCorruptionException(streamDescriptor.getOrcDataSourceId(), ""Value is not null but length stream is not present"");
+                }
+                long dataSkipSize = lengthStream.sum(readOffset);
+                if (dataSkipSize > 0) {
+                    if (dataStream == null) {
+                        throw new OrcCorruptionException(streamDescriptor.getOrcDataSourceId(), ""Value is not null but data stream is not present"");
+                    }
+                    dataStream.skip(dataSkipSize);
+                }
+            }
+        }
+        // create new isNullVector and offsetVector for VariableWidthBlock
+        boolean[] isNullVector = new boolean[nextBatchSize];
+        int[] offsetVector = new int[nextBatchSize + 1];
+        // lengthVector is reused across calls
+        if (lengthVector.length < nextBatchSize) {
+            lengthVector = new int[nextBatchSize];
+        }
+        if (presentStream == null) {
+            if (lengthStream == null) {
+                throw new OrcCorruptionException(streamDescriptor.getOrcDataSourceId(), ""Value is not null but length stream is not present"");
+            }
+            Arrays.fill(isNullVector, false);
+            lengthStream.nextIntVector(nextBatchSize, lengthVector);
+        }
+        else {
+            int nullValues = presentStream.getUnsetBits(nextBatchSize, isNullVector);
+            if (nullValues != nextBatchSize) {
+                if (lengthStream == null) {
+                    throw new OrcCorruptionException(streamDescriptor.getOrcDataSourceId(), ""Value is not null but length stream is not present"");
+                }
+                lengthStream.nextIntVector(nextBatchSize, lengthVector, isNullVector);
+            }
+        }
+        long totalLength = 0;
+        for (int i = 0; i < nextBatchSize; i++) {
+            if (!isNullVector[i]) {
+                totalLength += lengthVector[i];
+            }
+        }
+        int currentBatchSize = nextBatchSize;
+        readOffset = 0;
+        nextBatchSize = 0;
+        if (totalLength == 0) {
+            return new VariableWidthBlock(currentBatchSize, EMPTY_SLICE, offsetVector, isNullVector);
+        }
+        if (totalLength > ONE_GIGABYTE) {
+            throw new PrestoException(GENERIC_INTERNAL_ERROR,
+                    format(""Values in column \""%s\"" are too large to process for Presto. %s column values are larger than 1GB [%s]"", streamDescriptor.getFieldName(), nextBatchSize, streamDescriptor.getOrcDataSourceId()));
+        }
+        if (dataStream == null) {
+            throw new OrcCorruptionException(streamDescriptor.getOrcDataSourceId(), ""Value is not null but data stream is not present"");
+        }
+        // allocate enough space to read
+        byte[] data = new byte[toIntExact(totalLength)];
+        Slice slice = Slices.wrappedBuffer(data);
+        // truncate string and update offsets
+        offsetVector[0] = 0;
+        for (int i = 0; i < currentBatchSize; i++) {
+            if (isNullVector[i]) {
+                offsetVector[i + 1] = offsetVector[i];
+                continue;
+            }
+            int offset = offsetVector[i];
+            int length = lengthVector[i];
+            // read data without truncation
+            dataStream.next(data, offset, offset + length);
+            // calculate truncated length
+            int truncatedLength = length;
+            if (isVarcharType(type)) {
+                VarcharType varcharType = (VarcharType) type;
+                int codePointCount = varcharType.isUnbounded() ? length : varcharType.getLengthSafe();
+                truncatedLength = byteCount(slice, offset, length, codePointCount);
+            }
+            else if (isCharType(type)) {
+                // truncate the characters and then remove the trailing white spaces
+                truncatedLength = byteCountWithoutTrailingSpace(slice, offset, length, ((CharType) type).getLength());
+            }
+            // adjust offsets with truncated length
+            verify(truncatedLength >= 0);
+            offsetVector[i + 1] = offsetVector[i] + truncatedLength;
+        }
+        // this can lead to over-retention but unlikely to happen given truncation rarely happens
+        return new VariableWidthBlock(currentBatchSize, slice, offsetVector, isNullVector);
+    }
+    private void openRowGroup()
+            throws IOException
+    {
+        presentStream = presentStreamSource.openStream();
+        lengthStream = lengthStreamSource.openStream();
+        dataStream = dataByteSource.openStream();
+        rowGroupOpen = true;
+    }
+    @Override
+    public void startStripe(InputStreamSources dictionaryStreamSources, List<ColumnEncoding> encoding)
+            throws IOException
+    {
+        presentStreamSource = missingStreamSource(BooleanInputStream.class);
+        lengthStreamSource = missingStreamSource(LongInputStream.class);
+        dataByteSource = missingStreamSource(ByteArrayInputStream.class);
+        readOffset = 0;
+        nextBatchSize = 0;
+        presentStream = null;
+        lengthStream = null;
+        dataStream = null;
+        rowGroupOpen = false;
+    }
+    @Override
+    public void startRowGroup(InputStreamSources dataStreamSources)
+            throws IOException
+    {
+        presentStreamSource = dataStreamSources.getInputStreamSource(streamDescriptor, PRESENT, BooleanInputStream.class);
+        lengthStreamSource = dataStreamSources.getInputStreamSource(streamDescriptor, LENGTH, LongInputStream.class);
+        dataByteSource = dataStreamSources.getInputStreamSource(streamDescriptor, DATA, ByteArrayInputStream.class);
+        readOffset = 0;
+        nextBatchSize = 0;
+        presentStream = null;
+        lengthStream = null;
+        dataStream = null;
+        rowGroupOpen = false;
+    }
+    @Override
+    public String toString()
+    {
+        return toStringHelper(this)
+                .addValue(streamDescriptor)
+                .toString();
+    }
+}",class,
+"    public SliceDirectStreamReader(StreamDescriptor streamDescriptor)
+    {
+        this.streamDescriptor = requireNonNull(streamDescriptor, ""stream is null"");
+    }",method,
+"    @Override
+    public void prepareNextRead(int batchSize)
+    {
+        readOffset += nextBatchSize;
+        nextBatchSize = batchSize;
+    }",method,
+"    @Override
+    public Block readBlock(Type type)
+            throws IOException
+    {
+        if (!rowGroupOpen) {
+            openRowGroup();
+        }
+        if (readOffset > 0) {
+            if (presentStream != null) {
+                // skip ahead the present bit reader, but count the set bits
+                // and use this as the skip size for the length reader
+                readOffset = presentStream.countBitsSet(readOffset);
+            }
+            if (readOffset > 0) {
+                if (lengthStream == null) {
+                    throw new OrcCorruptionException(streamDescriptor.getOrcDataSourceId(), ""Value is not null but length stream is not present"");
+                }
+                long dataSkipSize = lengthStream.sum(readOffset);
+                if (dataSkipSize > 0) {
+                    if (dataStream == null) {
+                        throw new OrcCorruptionException(streamDescriptor.getOrcDataSourceId(), ""Value is not null but data stream is not present"");
+                    }
+                    dataStream.skip(dataSkipSize);
+                }
+            }
+        }
+        // create new isNullVector and offsetVector for VariableWidthBlock
+        boolean[] isNullVector = new boolean[nextBatchSize];
+        int[] offsetVector = new int[nextBatchSize + 1];
+        // lengthVector is reused across calls
+        if (lengthVector.length < nextBatchSize) {
+            lengthVector = new int[nextBatchSize];
+        }
+        if (presentStream == null) {
+            if (lengthStream == null) {
+                throw new OrcCorruptionException(streamDescriptor.getOrcDataSourceId(), ""Value is not null but length stream is not present"");
+            }
+            Arrays.fill(isNullVector, false);
+            lengthStream.nextIntVector(nextBatchSize, lengthVector);
+        }
+        else {
+            int nullValues = presentStream.getUnsetBits(nextBatchSize, isNullVector);
+            if (nullValues != nextBatchSize) {
+                if (lengthStream == null) {
+                    throw new OrcCorruptionException(streamDescriptor.getOrcDataSourceId(), ""Value is not null but length stream is not present"");
+                }
+                lengthStream.nextIntVector(nextBatchSize, lengthVector, isNullVector);
+            }
+        }
+        long totalLength = 0;
+        for (int i = 0; i < nextBatchSize; i++) {
+            if (!isNullVector[i]) {
+                totalLength += lengthVector[i];
+            }
+        }
+        int currentBatchSize = nextBatchSize;
+        readOffset = 0;
+        nextBatchSize = 0;
+        if (totalLength == 0) {
+            return new VariableWidthBlock(currentBatchSize, EMPTY_SLICE, offsetVector, isNullVector);
+        }
+        if (totalLength > ONE_GIGABYTE) {
+            throw new PrestoException(GENERIC_INTERNAL_ERROR,
+                    format(""Values in column \""%s\"" are too large to process for Presto. %s column values are larger than 1GB [%s]"", streamDescriptor.getFieldName(), nextBatchSize, streamDescriptor.getOrcDataSourceId()));
+        }
+        if (dataStream == null) {
+            throw new OrcCorruptionException(streamDescriptor.getOrcDataSourceId(), ""Value is not null but data stream is not present"");
+        }
+        // allocate enough space to read
+        byte[] data = new byte[toIntExact(totalLength)];
+        Slice slice = Slices.wrappedBuffer(data);
+        // truncate string and update offsets
+        offsetVector[0] = 0;
+        for (int i = 0; i < currentBatchSize; i++) {
+            if (isNullVector[i]) {
+                offsetVector[i + 1] = offsetVector[i];
+                continue;
+            }
+            int offset = offsetVector[i];
+            int length = lengthVector[i];
+            // read data without truncation
+            dataStream.next(data, offset, offset + length);
+            // calculate truncated length
+            int truncatedLength = length;
+            if (isVarcharType(type)) {
+                VarcharType varcharType = (VarcharType) type;
+                int codePointCount = varcharType.isUnbounded() ? length : varcharType.getLengthSafe();
+                truncatedLength = byteCount(slice, offset, length, codePointCount);
+            }
+            else if (isCharType(type)) {
+                // truncate the characters and then remove the trailing white spaces
+                truncatedLength = byteCountWithoutTrailingSpace(slice, offset, length, ((CharType) type).getLength());
+            }
+            // adjust offsets with truncated length
+            verify(truncatedLength >= 0);
+            offsetVector[i + 1] = offsetVector[i] + truncatedLength;
+        }
+        // this can lead to over-retention but unlikely to happen given truncation rarely happens
+        return new VariableWidthBlock(currentBatchSize, slice, offsetVector, isNullVector);
+    }",method,
+"        if (!rowGroupOpen) {
+            openRowGroup();
+        }",method,
+"        if (readOffset > 0) {
+            if (presentStream != null) {
+                // skip ahead the present bit reader, but count the set bits
+                // and use this as the skip size for the length reader
+                readOffset = presentStream.countBitsSet(readOffset);
+            }
+            if (readOffset > 0) {
+                if (lengthStream == null) {
+                    throw new OrcCorruptionException(streamDescriptor.getOrcDataSourceId(), ""Value is not null but length stream is not present"");
+                }
+                long dataSkipSize = lengthStream.sum(readOffset);
+                if (dataSkipSize > 0) {
+                    if (dataStream == null) {
+                        throw new OrcCorruptionException(streamDescriptor.getOrcDataSourceId(), ""Value is not null but data stream is not present"");
+                    }
+                    dataStream.skip(dataSkipSize);
+                }
+            }
+        }",method,
+"            if (presentStream != null) {
+                // skip ahead the present bit reader, but count the set bits
+                // and use this as the skip size for the length reader
+                readOffset = presentStream.countBitsSet(readOffset);
+            }",method,
+"            if (readOffset > 0) {
+                if (lengthStream == null) {
+                    throw new OrcCorruptionException(streamDescriptor.getOrcDataSourceId(), ""Value is not null but length stream is not present"");
+                }
+                long dataSkipSize = lengthStream.sum(readOffset);
+                if (dataSkipSize > 0) {
+                    if (dataStream == null) {
+                        throw new OrcCorruptionException(streamDescriptor.getOrcDataSourceId(), ""Value is not null but data stream is not present"");
+                    }
+                    dataStream.skip(dataSkipSize);
+                }
+            }",method,
+"                if (lengthStream == null) {
+                    throw new OrcCorruptionException(streamDescriptor.getOrcDataSourceId(), ""Value is not null but length stream is not present"");
+                }",method,
+"                if (dataSkipSize > 0) {
+                    if (dataStream == null) {
+                        throw new OrcCorruptionException(streamDescriptor.getOrcDataSourceId(), ""Value is not null but data stream is not present"");
+                    }
+                    dataStream.skip(dataSkipSize);
+                }",method,
+"                    if (dataStream == null) {
+                        throw new OrcCorruptionException(streamDescriptor.getOrcDataSourceId(), ""Value is not null but data stream is not present"");
+                    }",method,
+"        if (lengthVector.length < nextBatchSize) {
+            lengthVector = new int[nextBatchSize];
+        }",method,
+"        if (presentStream == null) {
+            if (lengthStream == null) {
+                throw new OrcCorruptionException(streamDescriptor.getOrcDataSourceId(), ""Value is not null but length stream is not present"");
+            }
+            Arrays.fill(isNullVector, false);
+            lengthStream.nextIntVector(nextBatchSize, lengthVector);
+        }",method,
+"            if (lengthStream == null) {
+                throw new OrcCorruptionException(streamDescriptor.getOrcDataSourceId(), ""Value is not null but length stream is not present"");
+            }",method,
+"            if (nullValues != nextBatchSize) {
+                if (lengthStream == null) {
+                    throw new OrcCorruptionException(streamDescriptor.getOrcDataSourceId(), ""Value is not null but length stream is not present"");
+                }
+                lengthStream.nextIntVector(nextBatchSize, lengthVector, isNullVector);
+            }",method,
+"                if (lengthStream == null) {
+                    throw new OrcCorruptionException(streamDescriptor.getOrcDataSourceId(), ""Value is not null but length stream is not present"");
+                }",method,
+"        for (int i = 0; i < nextBatchSize; i++) {
+            if (!isNullVector[i]) {
+                totalLength += lengthVector[i];
+            }
+        }",method,
+"            if (!isNullVector[i]) {
+                totalLength += lengthVector[i];
+            }",method,
+"        if (totalLength == 0) {
+            return new VariableWidthBlock(currentBatchSize, EMPTY_SLICE, offsetVector, isNullVector);
+        }",method,
+"        if (totalLength > ONE_GIGABYTE) {
+            throw new PrestoException(GENERIC_INTERNAL_ERROR,
+                    format(""Values in column \""%s\"" are too large to process for Presto. %s column values are larger than 1GB [%s]"", streamDescriptor.getFieldName(), nextBatchSize, streamDescriptor.getOrcDataSourceId()));
+        }",method,
+"        if (dataStream == null) {
+            throw new OrcCorruptionException(streamDescriptor.getOrcDataSourceId(), ""Value is not null but data stream is not present"");
+        }",method,
+"        for (int i = 0; i < currentBatchSize; i++) {
+            if (isNullVector[i]) {
+                offsetVector[i + 1] = offsetVector[i];
+                continue;
+            }
+            int offset = offsetVector[i];
+            int length = lengthVector[i];
+            // read data without truncation
+            dataStream.next(data, offset, offset + length);
+            // calculate truncated length
+            int truncatedLength = length;
+            if (isVarcharType(type)) {
+                VarcharType varcharType = (VarcharType) type;
+                int codePointCount = varcharType.isUnbounded() ? length : varcharType.getLengthSafe();
+                truncatedLength = byteCount(slice, offset, length, codePointCount);
+            }
+            else if (isCharType(type)) {
+                // truncate the characters and then remove the trailing white spaces
+                truncatedLength = byteCountWithoutTrailingSpace(slice, offset, length, ((CharType) type).getLength());
+            }
+            // adjust offsets with truncated length
+            verify(truncatedLength >= 0);
+            offsetVector[i + 1] = offsetVector[i] + truncatedLength;
+        }",method,
+"            if (isNullVector[i]) {
+                offsetVector[i + 1] = offsetVector[i];
+                continue;
+            }",method,
+"    private void openRowGroup()
+            throws IOException
+    {
+        presentStream = presentStreamSource.openStream();
+        lengthStream = lengthStreamSource.openStream();
+        dataStream = dataByteSource.openStream();
+        rowGroupOpen = true;
+    }",method,
+"    @Override
+    public void startStripe(InputStreamSources dictionaryStreamSources, List<ColumnEncoding> encoding)
+            throws IOException
+    {
+        presentStreamSource = missingStreamSource(BooleanInputStream.class);
+        lengthStreamSource = missingStreamSource(LongInputStream.class);
+        dataByteSource = missingStreamSource(ByteArrayInputStream.class);
+        readOffset = 0;
+        nextBatchSize = 0;
+        presentStream = null;
+        lengthStream = null;
+        dataStream = null;
+        rowGroupOpen = false;
+    }",method,
+"    @Override
+    public void startRowGroup(InputStreamSources dataStreamSources)
+            throws IOException
+    {
+        presentStreamSource = dataStreamSources.getInputStreamSource(streamDescriptor, PRESENT, BooleanInputStream.class);
+        lengthStreamSource = dataStreamSources.getInputStreamSource(streamDescriptor, LENGTH, LongInputStream.class);
+        dataByteSource = dataStreamSources.getInputStreamSource(streamDescriptor, DATA, ByteArrayInputStream.class);
+        readOffset = 0;
+        nextBatchSize = 0;
+        presentStream = null;
+        lengthStream = null;
+        dataStream = null;
+        rowGroupOpen = false;
+    }",method,
+"    @Override
+    public String toString()
+    {
+        return toStringHelper(this)
+                .addValue(streamDescriptor)
+                .toString();
+    }",method,
+"public class SampleUndertowWebSocketsApplication extends SpringBootServletInitializer
+		implements WebSocketConfigurer {
+	@Override
+	public void registerWebSocketHandlers(WebSocketHandlerRegistry registry) {
+		registry.addHandler(echoWebSocketHandler(), ""/echo"").setAllowedOrigins(""*"")
+				.withSockJS();
+		registry.addHandler(snakeWebSocketHandler(), ""/snake"").setAllowedOrigins(""*"")
+				.withSockJS();
+	}
+	@Override
+	protected SpringApplicationBuilder configure(SpringApplicationBuilder application) {
+		return application.sources(SampleUndertowWebSocketsApplication.class);
+	}
+	@Bean
+	public EchoService echoService() {
+		return new DefaultEchoService(""Did you say \""%s\""?"");
+	}
+	@Bean
+	public GreetingService greetingService() {
+		return new SimpleGreetingService();
+	}
+	@Bean
+	public WebSocketHandler echoWebSocketHandler() {
+		return new EchoWebSocketHandler(echoService());
+	}
+	@Bean
+	public WebSocketHandler snakeWebSocketHandler() {
+		return new PerConnectionWebSocketHandler(SnakeWebSocketHandler.class);
+	}
+	@Bean
+	public ReverseWebSocketEndpoint reverseWebSocketEndpoint() {
+		return new ReverseWebSocketEndpoint();
+	}
+	@Bean
+	public ServerEndpointExporter serverEndpointExporter() {
+		return new ServerEndpointExporter();
+	}
+	public static void main(String[] args) {
+		SpringApplication.run(SampleUndertowWebSocketsApplication.class, args);
+	}
+}",class,
+"	@Override
+	public void registerWebSocketHandlers(WebSocketHandlerRegistry registry) {
+		registry.addHandler(echoWebSocketHandler(), ""/echo"").setAllowedOrigins(""*"")
+				.withSockJS();
+		registry.addHandler(snakeWebSocketHandler(), ""/snake"").setAllowedOrigins(""*"")
+				.withSockJS();
+	}",method,
+"	@Override
+	protected SpringApplicationBuilder configure(SpringApplicationBuilder application) {
+		return application.sources(SampleUndertowWebSocketsApplication.class);
+	}",method,
+"	@Bean
+	public EchoService echoService() {
+		return new DefaultEchoService(""Did you say \""%s\""?"");
+	}",method,
+"	@Bean
+	public GreetingService greetingService() {
+		return new SimpleGreetingService();
+	}",method,
+"	@Bean
+	public WebSocketHandler echoWebSocketHandler() {
+		return new EchoWebSocketHandler(echoService());
+	}",method,
+"	@Bean
+	public WebSocketHandler snakeWebSocketHandler() {
+		return new PerConnectionWebSocketHandler(SnakeWebSocketHandler.class);
+	}",method,
+"	@Bean
+	public ReverseWebSocketEndpoint reverseWebSocketEndpoint() {
+		return new ReverseWebSocketEndpoint();
+	}",method,
+"	@Bean
+	public ServerEndpointExporter serverEndpointExporter() {
+		return new ServerEndpointExporter();
+	}",method,
+"	public static void main(String[] args) {
+		SpringApplication.run(SampleUndertowWebSocketsApplication.class, args);
+	}",method,
+"public class GradleBuildTest {    
+  @Parameters(name=""TestBuild{0}"")
+  public static Collection<String> data() {
+      LinkedHashSet<String> projects = new LinkedHashSet<String>(); 
+      try {
+	  Repository repository = new FileRepositoryBuilder()
+	      .readEnvironment() // scan environment GIT_* variables
+	      .findGitDir() // scan up the file system tree
+	      .build();
+	  RevCommit head = new Git(repository)
+	      .log().call()
+	      .iterator().next();
+	  TreeWalk treeWalk = new TreeWalk(repository);
+	  treeWalk.addTree(head.getTree());
+	  for (RevCommit p : head.getParents()) {
+	      treeWalk.addTree(p.getTree());
+	  }
+	  treeWalk.setRecursive(false);
+	  treeWalk.setFilter(TreeFilter.ANY_DIFF);
+	  while (treeWalk.next()) {
+	      File f = new File(""../"" + treeWalk.getPathString());
+	      if (isProject(f)) {
+		  System.err.println(""project changed: "" + f.getName());
+		  projects.add(f.getName());
+	      }
+	  }
+      } catch (java.io.IOException e) {
+	  System.err.println(""error opening git repository: "" + e);
+      } catch (GitAPIException e) {
+	  System.err.println(""error reading git repository log: "" + e);
+      }
+      for (File p : new File("".."").listFiles(new FileFilter() {
+	      public boolean accept(File f) { return isProject(f); }
+	  })) {
+	  projects.add(p.getName());
+      }
+      return projects;
+  }
+  private static boolean isProject(File f) {
+      return f.isDirectory() && Arrays.asList(f.list()).containsAll(Arrays.asList(""build.gradle"", ""app""));
+  }
+  private File gradleProject;
+  public GradleBuildTest(String projectDirectory) {
+      this.gradleProject = new File(""../"" + projectDirectory);
+  }
+  @Test
+  public void test() {
+      GradleConnector connector = GradleConnector.newConnector();
+      connector.forProjectDirectory(gradleProject);
+      ProjectConnection connection = connector.connect();
+      BuildLauncher launcher = connection.newBuild();
+      launcher.setStandardOutput(System.out);
+      launcher.setStandardError(System.err);      
+      try {
+	  launcher.forTasks(""app:lint"");
+	  launcher.run();
+	  launcher.forTasks(""assembleDebug"");
+	  launcher.run();
+	  launcher.forTasks(""assembleRelease"");
+	  launcher.run();	  
+      } catch (BuildException e) {
+	  fail(String.format(""BUILD FAILED: %s"", e));
+      } finally {
+	  connection.close();
+      }
+  }
+}",class,
+"  @Parameters(name=""TestBuild{0}"")
+  public static Collection<String> data() {
+      LinkedHashSet<String> projects = new LinkedHashSet<String>(); 
+      try {
+	  Repository repository = new FileRepositoryBuilder()
+	      .readEnvironment() // scan environment GIT_* variables
+	      .findGitDir() // scan up the file system tree
+	      .build();
+	  RevCommit head = new Git(repository)
+	      .log().call()
+	      .iterator().next();
+	  TreeWalk treeWalk = new TreeWalk(repository);
+	  treeWalk.addTree(head.getTree());
+	  for (RevCommit p : head.getParents()) {
+	      treeWalk.addTree(p.getTree());
+	  }
+	  treeWalk.setRecursive(false);
+	  treeWalk.setFilter(TreeFilter.ANY_DIFF);
+	  while (treeWalk.next()) {
+	      File f = new File(""../"" + treeWalk.getPathString());
+	      if (isProject(f)) {
+		  System.err.println(""project changed: "" + f.getName());
+		  projects.add(f.getName());
+	      }
+	  }
+      } catch (java.io.IOException e) {
+	  System.err.println(""error opening git repository: "" + e);
+      } catch (GitAPIException e) {
+	  System.err.println(""error reading git repository log: "" + e);
+      }
+      for (File p : new File("".."").listFiles(new FileFilter() {
+	      public boolean accept(File f) { return isProject(f); }
+	  })) {
+	  projects.add(p.getName());
+      }
+      return projects;
+  }",method,
+	      public boolean accept(File f) { return isProject(f); },method,
+"  private static boolean isProject(File f) {
+      return f.isDirectory() && Arrays.asList(f.list()).containsAll(Arrays.asList(""build.gradle"", ""app""));
+  }",method,
+"  public GradleBuildTest(String projectDirectory) {
+      this.gradleProject = new File(""../"" + projectDirectory);
+  }",method,
+"  @Test
+  public void test() {
+      GradleConnector connector = GradleConnector.newConnector();
+      connector.forProjectDirectory(gradleProject);
+      ProjectConnection connection = connector.connect();
+      BuildLauncher launcher = connection.newBuild();
+      launcher.setStandardOutput(System.out);
+      launcher.setStandardError(System.err);      
+      try {
+	  launcher.forTasks(""app:lint"");
+	  launcher.run();
+	  launcher.forTasks(""assembleDebug"");
+	  launcher.run();
+	  launcher.forTasks(""assembleRelease"");
+	  launcher.run();	  
+      } catch (BuildException e) {
+	  fail(String.format(""BUILD FAILED: %s"", e));
+      } finally {
+	  connection.close();
+      }
+  }",method,
+"public class JUnit4AndTestNgConditionRunner extends DefaultConditionRunner {
+  public JUnit4AndTestNgConditionRunner(Monitor monitor, Selenium selenium, int initialDelay,
+      int interval, int timeout) {
+    super(monitor, selenium, initialDelay, interval, timeout);
+  }
+  public JUnit4AndTestNgConditionRunner(Monitor monitor, Selenium selenium, int interval,
+      int timeout) {
+    super(monitor, selenium, interval, timeout);
+  }
+  public JUnit4AndTestNgConditionRunner(Selenium selenium, int initialDelay, int interval,
+      int timeout) {
+    super(selenium, initialDelay, interval, timeout);
+  }
+  public JUnit4AndTestNgConditionRunner(Selenium selenium, int interval, int timeout) {
+    super(selenium, interval, timeout);
+  }
+  public JUnit4AndTestNgConditionRunner(Selenium selenium) {
+    super(selenium);
+  }
+  @Override
+  public void throwAssertionException(String message) {
+    // same as Junit4's and TestNG's fail(..) methods.
+    throw new AssertionError(message);
+  }
+  @Override
+  public void throwAssertionException(String message, Throwable cause) {
+    // same as Junit4's and TestNG's fail(..) methods.
+    throw new AssertionError(message + ""; cause: "" + cause.getMessage());
+  }
+}",class,
+"  public JUnit4AndTestNgConditionRunner(Monitor monitor, Selenium selenium, int initialDelay,
+      int interval, int timeout) {
+    super(monitor, selenium, initialDelay, interval, timeout);
+  }",method,
+"  public JUnit4AndTestNgConditionRunner(Monitor monitor, Selenium selenium, int interval,
+      int timeout) {
+    super(monitor, selenium, interval, timeout);
+  }",method,
+"  public JUnit4AndTestNgConditionRunner(Selenium selenium, int initialDelay, int interval,
+      int timeout) {
+    super(selenium, initialDelay, interval, timeout);
+  }",method,
+"  public JUnit4AndTestNgConditionRunner(Selenium selenium, int interval, int timeout) {
+    super(selenium, interval, timeout);
+  }",method,
+"  public JUnit4AndTestNgConditionRunner(Selenium selenium) {
+    super(selenium);
+  }",method,
+"  @Override
+  public void throwAssertionException(String message) {
+    // same as Junit4's and TestNG's fail(..) methods.
+    throw new AssertionError(message);
+  }",method,
+"  @Override
+  public void throwAssertionException(String message, Throwable cause) {
+    // same as Junit4's and TestNG's fail(..) methods.
+    throw new AssertionError(message + ""; cause: "" + cause.getMessage());
+  }",method,
+"public class ESBLED extends LED implements PortListener {
+  private static Logger logger = Logger.getLogger(ESBLED.class);
+  private ESBMote mote;
+  private boolean redOn = false;
+  private boolean greenOn = false;
+  private boolean yellowOn = false;
+  private static final Color DARK_GREEN = new Color(0, 100, 0);
+  private static final Color DARK_YELLOW = new Color(100, 100, 0);
+  private static final Color DARK_RED = new Color(100, 0, 0);
+  private static final Color GREEN = new Color(0, 255, 0);
+  private static final Color YELLOW = new Color(255, 255, 0);
+  private static final Color RED = new Color(255, 0, 0);
+  public ESBLED(Mote mote) {
+    this.mote = (ESBMote) mote;
+    IOUnit unit = this.mote.getCPU().getIOUnit(""Port 2"");
+    if (unit instanceof IOPort) {
+      ((IOPort) unit).addPortListener(this);
+    }
+  }
+  public boolean isAnyOn() {
+    return redOn || greenOn || yellowOn;
+  }
+  public boolean isGreenOn() {
+    return greenOn;
+  }
+  public boolean isYellowOn()  {
+    return yellowOn;
+  }
+  public boolean isRedOn() {
+    return redOn;
+  }
+  public JPanel getInterfaceVisualizer() {
+    final JPanel panel = new JPanel() {
+      public void paintComponent(Graphics g) {
+        super.paintComponent(g);
+        int x = 20;
+        int y = 25;
+        int d = 25;
+        if (isGreenOn()) {
+          g.setColor(GREEN);
+          g.fillOval(x, y, d, d);
+          g.setColor(Color.BLACK);
+          g.drawOval(x, y, d, d);
+        } else {
+          g.setColor(DARK_GREEN);
+          g.fillOval(x + 5, y + 5, d-10, d-10);
+        }
+        x += 40;
+        if (isRedOn()) {
+          g.setColor(RED);
+          g.fillOval(x, y, d, d);
+          g.setColor(Color.BLACK);
+          g.drawOval(x, y, d, d);
+        } else {
+          g.setColor(DARK_RED);
+          g.fillOval(x + 5, y + 5, d-10, d-10);
+        }
+        x += 40;
+        if (isYellowOn()) {
+          g.setColor(YELLOW);
+          g.fillOval(x, y, d, d);
+          g.setColor(Color.BLACK);
+          g.drawOval(x, y, d, d);
+        } else {
+          g.setColor(DARK_YELLOW);
+          g.fillOval(x + 5, y + 5, d-10, d-10);
+        }
+      }
+    };
+    Observer observer;
+    this.addObserver(observer = new Observer() {
+      public void update(Observable obs, Object obj) {
+        panel.repaint();
+      }
+    });
+    // Saving observer reference for releaseInterfaceVisualizer
+    panel.putClientProperty(""intf_obs"", observer);
+    panel.setMinimumSize(new Dimension(140, 60));
+    panel.setPreferredSize(new Dimension(140, 60));
+    return panel;
+  }
+  public void releaseInterfaceVisualizer(JPanel panel) {
+    Observer observer = (Observer) panel.getClientProperty(""intf_obs"");
+    if (observer == null) {
+      logger.fatal(""Error when releasing panel, observer is null"");
+      return;
+    }
+    this.deleteObserver(observer);
+  }
+  public Collection<Element> getConfigXML() {
+    return null;
+  }
+  public void setConfigXML(Collection<Element> configXML, boolean visAvailable) {
+  }
+  public void portWrite(IOPort source, int data) {
+    redOn = (data & ESBNode.RED_LED) == 0;
+    greenOn = (data & ESBNode.GREEN_LED) == 0;
+    yellowOn = (data & ESBNode.YELLOW_LED) == 0;
+    setChanged();
+    notifyObservers();
+  }
+}",class,
+"  public ESBLED(Mote mote) {
+    this.mote = (ESBMote) mote;
+    IOUnit unit = this.mote.getCPU().getIOUnit(""Port 2"");
+    if (unit instanceof IOPort) {
+      ((IOPort) unit).addPortListener(this);
+    }
+  }",method,
+"    if (unit instanceof IOPort) {
+      ((IOPort) unit).addPortListener(this);
+    }",method,
+"  public boolean isAnyOn() {
+    return redOn || greenOn || yellowOn;
+  }",method,
+"  public boolean isGreenOn() {
+    return greenOn;
+  }",method,
+"  public boolean isYellowOn()  {
+    return yellowOn;
+  }",method,
+"  public boolean isRedOn() {
+    return redOn;
+  }",method,
+"  public JPanel getInterfaceVisualizer() {
+    final JPanel panel = new JPanel() {
+      public void paintComponent(Graphics g) {
+        super.paintComponent(g);
+        int x = 20;
+        int y = 25;
+        int d = 25;
+        if (isGreenOn()) {
+          g.setColor(GREEN);
+          g.fillOval(x, y, d, d);
+          g.setColor(Color.BLACK);
+          g.drawOval(x, y, d, d);
+        } else {
+          g.setColor(DARK_GREEN);
+          g.fillOval(x + 5, y + 5, d-10, d-10);
+        }
+        x += 40;
+        if (isRedOn()) {
+          g.setColor(RED);
+          g.fillOval(x, y, d, d);
+          g.setColor(Color.BLACK);
+          g.drawOval(x, y, d, d);
+        } else {
+          g.setColor(DARK_RED);
+          g.fillOval(x + 5, y + 5, d-10, d-10);
+        }
+        x += 40;
+        if (isYellowOn()) {
+          g.setColor(YELLOW);
+          g.fillOval(x, y, d, d);
+          g.setColor(Color.BLACK);
+          g.drawOval(x, y, d, d);
+        } else {
+          g.setColor(DARK_YELLOW);
+          g.fillOval(x + 5, y + 5, d-10, d-10);
+        }
+      }
+    };
+    Observer observer;
+    this.addObserver(observer = new Observer() {
+      public void update(Observable obs, Object obj) {
+        panel.repaint();
+      }
+    });
+    // Saving observer reference for releaseInterfaceVisualizer
+    panel.putClientProperty(""intf_obs"", observer);
+    panel.setMinimumSize(new Dimension(140, 60));
+    panel.setPreferredSize(new Dimension(140, 60));
+    return panel;
+  }",method,
+"      public void paintComponent(Graphics g) {
+        super.paintComponent(g);
+        int x = 20;
+        int y = 25;
+        int d = 25;
+        if (isGreenOn()) {
+          g.setColor(GREEN);
+          g.fillOval(x, y, d, d);
+          g.setColor(Color.BLACK);
+          g.drawOval(x, y, d, d);
+        } else {
+          g.setColor(DARK_GREEN);
+          g.fillOval(x + 5, y + 5, d-10, d-10);
+        }
+        x += 40;
+        if (isRedOn()) {
+          g.setColor(RED);
+          g.fillOval(x, y, d, d);
+          g.setColor(Color.BLACK);
+          g.drawOval(x, y, d, d);
+        } else {
+          g.setColor(DARK_RED);
+          g.fillOval(x + 5, y + 5, d-10, d-10);
+        }
+        x += 40;
+        if (isYellowOn()) {
+          g.setColor(YELLOW);
+          g.fillOval(x, y, d, d);
+          g.setColor(Color.BLACK);
+          g.drawOval(x, y, d, d);
+        } else {
+          g.setColor(DARK_YELLOW);
+          g.fillOval(x + 5, y + 5, d-10, d-10);
+        }
+      }",method,
+"    this.addObserver(observer = new Observer() {
+      public void update(Observable obs, Object obj) {
+        panel.repaint();
+      }
+    }",method,
+"      public void update(Observable obs, Object obj) {
+        panel.repaint();
+      }",method,
+"  public void releaseInterfaceVisualizer(JPanel panel) {
+    Observer observer = (Observer) panel.getClientProperty(""intf_obs"");
+    if (observer == null) {
+      logger.fatal(""Error when releasing panel, observer is null"");
+      return;
+    }
+    this.deleteObserver(observer);
+  }",method,
+"    if (observer == null) {
+      logger.fatal(""Error when releasing panel, observer is null"");
+      return;
+    }",method,
+"  public Collection<Element> getConfigXML() {
+    return null;
+  }",method,
+"  public void setConfigXML(Collection<Element> configXML, boolean visAvailable) {
+  }",method,
+"  public void portWrite(IOPort source, int data) {
+    redOn = (data & ESBNode.RED_LED) == 0;
+    greenOn = (data & ESBNode.GREEN_LED) == 0;
+    yellowOn = (data & ESBNode.YELLOW_LED) == 0;
+    setChanged();
+    notifyObservers();
+  }",method,
+"public class CharArrayCodec implements ObjectDeserializer {
+    @SuppressWarnings(""unchecked"")
+    public <T> T deserialze(DefaultJSONParser parser, Type clazz, Object fieldName) {
+        return (T) deserialze(parser);
+    }
+    @SuppressWarnings(""unchecked"")
+    public static <T> T deserialze(DefaultJSONParser parser) {
+        final JSONLexer lexer = parser.lexer;
+        if (lexer.token() == JSONToken.LITERAL_STRING) {
+            String val = lexer.stringVal();
+            lexer.nextToken(JSONToken.COMMA);
+            return (T) val.toCharArray();
+        }
+        if (lexer.token() == JSONToken.LITERAL_INT) {
+            Number val = lexer.integerValue();
+            lexer.nextToken(JSONToken.COMMA);
+            return (T) val.toString().toCharArray();
+        }
+        Object value = parser.parse();
+        if (value instanceof  String) {
+            return (T) ((String) value).toCharArray();
+        }
+        if (value instanceof Collection) {
+            Collection<?> collection = (Collection) value;
+            boolean accept = true;
+            for (Object item : collection) {
+                if (item instanceof String) {
+                    int itemLength = ((String) item).length();
+                    if (itemLength != 1) {
+                        accept = false;
+                        break;
+                    }
+                }
+            }
+            if (!accept) {
+                throw new JSONException(""can not cast to char[]"");
+            }
+            char[] chars = new char[collection.size()];
+            int pos = 0;
+            for (Object item : collection) {
+                chars[pos++] = ((String) item).charAt(0);
+            }
+            return (T) chars;
+        }
+        return value == null //
+            ? null //
+            : (T) JSON.toJSONString(value).toCharArray();
+    }
+    public int getFastMatchToken() {
+        return JSONToken.LITERAL_STRING;
+    }
+}",class,
+"    @SuppressWarnings(""unchecked"")
+    public <T> T deserialze(DefaultJSONParser parser, Type clazz, Object fieldName) {
+        return (T) deserialze(parser);
+    }",method,
+"    @SuppressWarnings(""unchecked"")
+    public static <T> T deserialze(DefaultJSONParser parser) {
+        final JSONLexer lexer = parser.lexer;
+        if (lexer.token() == JSONToken.LITERAL_STRING) {
+            String val = lexer.stringVal();
+            lexer.nextToken(JSONToken.COMMA);
+            return (T) val.toCharArray();
+        }
+        if (lexer.token() == JSONToken.LITERAL_INT) {
+            Number val = lexer.integerValue();
+            lexer.nextToken(JSONToken.COMMA);
+            return (T) val.toString().toCharArray();
+        }
+        Object value = parser.parse();
+        if (value instanceof  String) {
+            return (T) ((String) value).toCharArray();
+        }
+        if (value instanceof Collection) {
+            Collection<?> collection = (Collection) value;
+            boolean accept = true;
+            for (Object item : collection) {
+                if (item instanceof String) {
+                    int itemLength = ((String) item).length();
+                    if (itemLength != 1) {
+                        accept = false;
+                        break;
+                    }
+                }
+            }
+            if (!accept) {
+                throw new JSONException(""can not cast to char[]"");
+            }
+            char[] chars = new char[collection.size()];
+            int pos = 0;
+            for (Object item : collection) {
+                chars[pos++] = ((String) item).charAt(0);
+            }
+            return (T) chars;
+        }
+        return value == null //
+            ? null //
+            : (T) JSON.toJSONString(value).toCharArray();
+    }",method,
+"        if (value instanceof  String) {
+            return (T) ((String) value).toCharArray();
+        }",method,
+"        if (value instanceof Collection) {
+            Collection<?> collection = (Collection) value;
+            boolean accept = true;
+            for (Object item : collection) {
+                if (item instanceof String) {
+                    int itemLength = ((String) item).length();
+                    if (itemLength != 1) {
+                        accept = false;
+                        break;
+                    }
+                }
+            }
+            if (!accept) {
+                throw new JSONException(""can not cast to char[]"");
+            }
+            char[] chars = new char[collection.size()];
+            int pos = 0;
+            for (Object item : collection) {
+                chars[pos++] = ((String) item).charAt(0);
+            }
+            return (T) chars;
+        }",method,
+"            for (Object item : collection) {
+                if (item instanceof String) {
+                    int itemLength = ((String) item).length();
+                    if (itemLength != 1) {
+                        accept = false;
+                        break;
+                    }
+                }
+            }",method,
+"                if (item instanceof String) {
+                    int itemLength = ((String) item).length();
+                    if (itemLength != 1) {
+                        accept = false;
+                        break;
+                    }
+                }",method,
+"                    if (itemLength != 1) {
+                        accept = false;
+                        break;
+                    }",method,
+"            if (!accept) {
+                throw new JSONException(""can not cast to char[]"");
+            }",method,
+"            for (Object item : collection) {
+                chars[pos++] = ((String) item).charAt(0);
+            }",method,
+"    public int getFastMatchToken() {
+        return JSONToken.LITERAL_STRING;
+    }",method,
+"public final class MetadataUtil
+{
+    private MetadataUtil() {}
+    public static void checkTableName(String catalogName, Optional<String> schemaName, Optional<String> tableName)
+    {
+        checkCatalogName(catalogName);
+        schemaName.ifPresent(name -> checkLowerCase(name, ""schemaName""));
+        tableName.ifPresent(name -> checkLowerCase(name, ""tableName""));
+        checkArgument(schemaName.isPresent() || !tableName.isPresent(), ""tableName specified but schemaName is missing"");
+    }
+    public static String checkCatalogName(String catalogName)
+    {
+        return checkLowerCase(catalogName, ""catalogName"");
+    }
+    public static String checkSchemaName(String schemaName)
+    {
+        return checkLowerCase(schemaName, ""schemaName"");
+    }
+    public static String checkTableName(String tableName)
+    {
+        return checkLowerCase(tableName, ""tableName"");
+    }
+    public static void checkObjectName(String catalogName, String schemaName, String objectName)
+    {
+        checkLowerCase(catalogName, ""catalogName"");
+        checkLowerCase(schemaName, ""schemaName"");
+        checkLowerCase(objectName, ""objectName"");
+    }
+    public static String checkLowerCase(String value, String name)
+    {
+        if (value == null) {
+            throw new NullPointerException(format(""%s is null"", name));
+        }
+        checkArgument(value.equals(value.toLowerCase(ENGLISH)), ""%s is not lowercase: %s"", name, value);
+        return value;
+    }
+    public static ColumnMetadata findColumnMetadata(ConnectorTableMetadata tableMetadata, String columnName)
+    {
+        for (ColumnMetadata columnMetadata : tableMetadata.getColumns()) {
+            if (columnName.equals(columnMetadata.getName())) {
+                return columnMetadata;
+            }
+        }
+        return null;
+    }
+    public static CatalogSchemaName createCatalogSchemaName(Session session, Node node, Optional<QualifiedName> schema)
+    {
+        String catalogName = session.getCatalog().orElse(null);
+        String schemaName = session.getSchema().orElse(null);
+        if (schema.isPresent()) {
+            List<String> parts = schema.get().getParts();
+            if (parts.size() > 2) {
+                throw new SemanticException(INVALID_SCHEMA_NAME, node, ""Too many parts in schema name: %s"", schema.get());
+            }
+            if (parts.size() == 2) {
+                catalogName = parts.get(0);
+            }
+            schemaName = schema.get().getSuffix();
+        }
+        if (catalogName == null) {
+            throw new SemanticException(CATALOG_NOT_SPECIFIED, node, ""Catalog must be specified when session catalog is not set"");
+        }
+        if (schemaName == null) {
+            throw new SemanticException(SCHEMA_NOT_SPECIFIED, node, ""Schema must be specified when session schema is not set"");
+        }
+        return new CatalogSchemaName(catalogName, schemaName);
+    }
+    public static QualifiedObjectName createQualifiedObjectName(Session session, Node node, QualifiedName name)
+    {
+        requireNonNull(session, ""session is null"");
+        requireNonNull(name, ""name is null"");
+        if (name.getParts().size() > 3) {
+            throw new PrestoException(SYNTAX_ERROR, format(""Too many dots in table name: %s"", name));
+        }
+        List<String> parts = Lists.reverse(name.getParts());
+        String objectName = parts.get(0);
+        String schemaName = (parts.size() > 1) ? parts.get(1) : session.getSchema().orElseThrow(() ->
+                new SemanticException(SCHEMA_NOT_SPECIFIED, node, ""Schema must be specified when session schema is not set""));
+        String catalogName = (parts.size() > 2) ? parts.get(2) : session.getCatalog().orElseThrow(() ->
+                new SemanticException(CATALOG_NOT_SPECIFIED, node, ""Catalog must be specified when session catalog is not set""));
+        return new QualifiedObjectName(catalogName, schemaName, objectName);
+    }
+    public static QualifiedName createQualifiedName(QualifiedObjectName name)
+    {
+        return QualifiedName.of(name.getCatalogName(), name.getSchemaName(), name.getObjectName());
+    }
+    public static boolean tableExists(Metadata metadata, Session session, String table)
+    {
+        if (!session.getCatalog().isPresent() || !session.getSchema().isPresent()) {
+            return false;
+        }
+        QualifiedObjectName name = new QualifiedObjectName(session.getCatalog().get(), session.getSchema().get(), table);
+        return metadata.getTableHandle(session, name).isPresent();
+    }
+    public static class SchemaMetadataBuilder
+    {
+        public static SchemaMetadataBuilder schemaMetadataBuilder()
+        {
+            return new SchemaMetadataBuilder();
+        }
+        private final ImmutableMap.Builder<SchemaTableName, ConnectorTableMetadata> tables = ImmutableMap.builder();
+        public SchemaMetadataBuilder table(ConnectorTableMetadata tableMetadata)
+        {
+            tables.put(tableMetadata.getTable(), tableMetadata);
+            return this;
+        }
+        public ImmutableMap<SchemaTableName, ConnectorTableMetadata> build()
+        {
+            return tables.build();
+        }
+    }
+    public static class TableMetadataBuilder
+    {
+        public static TableMetadataBuilder tableMetadataBuilder(String schemaName, String tableName)
+        {
+            return new TableMetadataBuilder(new SchemaTableName(schemaName, tableName));
+        }
+        public static TableMetadataBuilder tableMetadataBuilder(SchemaTableName tableName)
+        {
+            return new TableMetadataBuilder(tableName);
+        }
+        private final SchemaTableName tableName;
+        private final ImmutableList.Builder<ColumnMetadata> columns = ImmutableList.builder();
+        private final ImmutableMap.Builder<String, Object> properties = ImmutableMap.builder();
+        private final Optional<String> comment;
+        private TableMetadataBuilder(SchemaTableName tableName)
+        {
+            this(tableName, Optional.empty());
+        }
+        private TableMetadataBuilder(SchemaTableName tableName, Optional<String> comment)
+        {
+            this.tableName = tableName;
+            this.comment = comment;
+        }
+        public TableMetadataBuilder column(String columnName, Type type)
+        {
+            columns.add(new ColumnMetadata(columnName, type));
+            return this;
+        }
+        public TableMetadataBuilder property(String name, Object value)
+        {
+            properties.put(name, value);
+            return this;
+        }
+        public ConnectorTableMetadata build()
+        {
+            return new ConnectorTableMetadata(tableName, columns.build(), properties.build(), comment);
+        }
+    }
+}",class,
+"    public static class SchemaMetadataBuilder
+    {
+        public static SchemaMetadataBuilder schemaMetadataBuilder()
+        {
+            return new SchemaMetadataBuilder();
+        }
+        private final ImmutableMap.Builder<SchemaTableName, ConnectorTableMetadata> tables = ImmutableMap.builder();
+        public SchemaMetadataBuilder table(ConnectorTableMetadata tableMetadata)
+        {
+            tables.put(tableMetadata.getTable(), tableMetadata);
+            return this;
+        }
+        public ImmutableMap<SchemaTableName, ConnectorTableMetadata> build()
+        {
+            return tables.build();
+        }
+    }",class,

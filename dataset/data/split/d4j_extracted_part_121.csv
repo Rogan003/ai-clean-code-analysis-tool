@@ -1,0 +1,1322 @@
+code_snippet,type,score
+"    void setCollateScriptParams(Map<String, Object> collateScriptParams) {
+        this.collateScriptParams = new HashMap<>(collateScriptParams);
+    }",method,
+"    void setCollatePrune(boolean prune) {
+        this.prune = prune;
+    }",method,
+"    boolean collatePrune() {
+        return prune;
+    }",method,
+"public class ImageRequester {
+    private static volatile ImageRequester instance;
+    private final RequestQueue requestQueue;
+    private final ImageLoader imageLoader;
+    private final int maxByteSize;
+    private ImageRequester(Context context) {
+        this.requestQueue = Volley.newRequestQueue(context.getApplicationContext());
+        this.requestQueue.start();
+        this.maxByteSize = calculateMaxByteSize(context);
+        this.imageLoader =
+                new ImageLoader(
+                        requestQueue,
+                        new ImageLoader.ImageCache() {
+                            private final LruCache<String, Bitmap> lruCache =
+                                    new LruCache<String, Bitmap>(maxByteSize) {
+                                        @Override
+                                        protected int sizeOf(String url, Bitmap bitmap) {
+                                            return bitmap.getByteCount();
+                                        }
+                                    };
+                            @Override
+                            public synchronized Bitmap getBitmap(String url) {
+                                return lruCache.get(url);
+                            }
+                            @Override
+                            public synchronized void putBitmap(String url, Bitmap bitmap) {
+                                lruCache.put(url, bitmap);
+                            }
+                        });
+    }
+    private static int calculateMaxByteSize(Context context) {
+        DisplayMetrics displayMetrics = context.getResources().getDisplayMetrics();
+        final int screenBytes = displayMetrics.widthPixels * displayMetrics.heightPixels * 4;
+        return screenBytes * 3;
+    }
+    public static ImageRequester getInstance(Context context) {
+        ImageRequester result = instance;
+        if (result == null) {
+            synchronized (ImageRequester.class) {
+                result = instance;
+                if (result == null) {
+                    result = instance = new ImageRequester(context);
+                }
+            }
+        }
+        return result;
+    }
+    public void setImageFromUrl(NetworkImageView networkImageView, String url) {
+        networkImageView.setImageUrl(url, imageLoader);
+    }
+}",class,
+"    private ImageRequester(Context context) {
+        this.requestQueue = Volley.newRequestQueue(context.getApplicationContext());
+        this.requestQueue.start();
+        this.maxByteSize = calculateMaxByteSize(context);
+        this.imageLoader =
+                new ImageLoader(
+                        requestQueue,
+                        new ImageLoader.ImageCache() {
+                            private final LruCache<String, Bitmap> lruCache =
+                                    new LruCache<String, Bitmap>(maxByteSize) {
+                                        @Override
+                                        protected int sizeOf(String url, Bitmap bitmap) {
+                                            return bitmap.getByteCount();
+                                        }
+                                    };
+                            @Override
+                            public synchronized Bitmap getBitmap(String url) {
+                                return lruCache.get(url);
+                            }
+                            @Override
+                            public synchronized void putBitmap(String url, Bitmap bitmap) {
+                                lruCache.put(url, bitmap);
+                            }
+                        });
+    }",method,
+"                new ImageLoader(
+                        requestQueue,
+                        new ImageLoader.ImageCache() {
+                            private final LruCache<String, Bitmap> lruCache =
+                                    new LruCache<String, Bitmap>(maxByteSize) {
+                                        @Override
+                                        protected int sizeOf(String url, Bitmap bitmap) {
+                                            return bitmap.getByteCount();
+                                        }
+                                    };
+                            @Override
+                            public synchronized Bitmap getBitmap(String url) {
+                                return lruCache.get(url);
+                            }
+                            @Override
+                            public synchronized void putBitmap(String url, Bitmap bitmap) {
+                                lruCache.put(url, bitmap);
+                            }
+                        }",method,
+"                                        @Override
+                                        protected int sizeOf(String url, Bitmap bitmap) {
+                                            return bitmap.getByteCount();
+                                        }",method,
+"                            @Override
+                            public synchronized Bitmap getBitmap(String url) {
+                                return lruCache.get(url);
+                            }",method,
+"                            @Override
+                            public synchronized void putBitmap(String url, Bitmap bitmap) {
+                                lruCache.put(url, bitmap);
+                            }",method,
+"    private static int calculateMaxByteSize(Context context) {
+        DisplayMetrics displayMetrics = context.getResources().getDisplayMetrics();
+        final int screenBytes = displayMetrics.widthPixels * displayMetrics.heightPixels * 4;
+        return screenBytes * 3;
+    }",method,
+"    public static ImageRequester getInstance(Context context) {
+        ImageRequester result = instance;
+        if (result == null) {
+            synchronized (ImageRequester.class) {
+                result = instance;
+                if (result == null) {
+                    result = instance = new ImageRequester(context);
+                }
+            }
+        }
+        return result;
+    }",method,
+"        if (result == null) {
+            synchronized (ImageRequester.class) {
+                result = instance;
+                if (result == null) {
+                    result = instance = new ImageRequester(context);
+                }
+            }
+        }",method,
+"            synchronized (ImageRequester.class) {
+                result = instance;
+                if (result == null) {
+                    result = instance = new ImageRequester(context);
+                }
+            }",method,
+"                if (result == null) {
+                    result = instance = new ImageRequester(context);
+                }",method,
+"    public void setImageFromUrl(NetworkImageView networkImageView, String url) {
+        networkImageView.setImageUrl(url, imageLoader);
+    }",method,
+"public class GitInfoContributorTests {
+	@SuppressWarnings(""unchecked"")
+	@Test
+	public void coerceDate() {
+		Properties properties = new Properties();
+		properties.put(""branch"", ""master"");
+		properties.put(""commit.time"", ""2016-03-04T14:36:33+0100"");
+		GitInfoContributor contributor = new GitInfoContributor(
+				new GitProperties(properties));
+		Map<String, Object> content = contributor.generateContent();
+		assertThat(content.get(""commit"")).isInstanceOf(Map.class);
+		Map<String, Object> commit = (Map<String, Object>) content.get(""commit"");
+		Object commitTime = commit.get(""time"");
+		assertThat(commitTime).isInstanceOf(Date.class);
+		assertThat(((Date) commitTime).getTime()).isEqualTo(1457098593000L);
+	}
+	@SuppressWarnings(""unchecked"")
+	@Test
+	public void shortenCommitId() {
+		Properties properties = new Properties();
+		properties.put(""branch"", ""master"");
+		properties.put(""commit.id"", ""8e29a0b0d423d2665c6ee5171947c101a5c15681"");
+		GitInfoContributor contributor = new GitInfoContributor(
+				new GitProperties(properties));
+		Map<String, Object> content = contributor.generateContent();
+		assertThat(content.get(""commit"")).isInstanceOf(Map.class);
+		Map<String, Object> commit = (Map<String, Object>) content.get(""commit"");
+		assertThat(commit.get(""id"")).isEqualTo(""8e29a0b"");
+	}
+}",class,
+"	@SuppressWarnings(""unchecked"")
+	@Test
+	public void coerceDate() {
+		Properties properties = new Properties();
+		properties.put(""branch"", ""master"");
+		properties.put(""commit.time"", ""2016-03-04T14:36:33+0100"");
+		GitInfoContributor contributor = new GitInfoContributor(
+				new GitProperties(properties));
+		Map<String, Object> content = contributor.generateContent();
+		assertThat(content.get(""commit"")).isInstanceOf(Map.class);
+		Map<String, Object> commit = (Map<String, Object>) content.get(""commit"");
+		Object commitTime = commit.get(""time"");
+		assertThat(commitTime).isInstanceOf(Date.class);
+		assertThat(((Date) commitTime).getTime()).isEqualTo(1457098593000L);
+	}",method,
+"	@SuppressWarnings(""unchecked"")
+	@Test
+	public void shortenCommitId() {
+		Properties properties = new Properties();
+		properties.put(""branch"", ""master"");
+		properties.put(""commit.id"", ""8e29a0b0d423d2665c6ee5171947c101a5c15681"");
+		GitInfoContributor contributor = new GitInfoContributor(
+				new GitProperties(properties));
+		Map<String, Object> content = contributor.generateContent();
+		assertThat(content.get(""commit"")).isInstanceOf(Map.class);
+		Map<String, Object> commit = (Map<String, Object>) content.get(""commit"");
+		assertThat(commit.get(""id"")).isEqualTo(""8e29a0b"");
+	}",method,
+"public class ScopePanel extends JPanel implements Disposable{
+    @SuppressWarnings({ ""FieldCanBeLocal"", ""UnusedDeclaration"" })
+    private JPanel myRoot;
+    private JRadioButton myWholeProjectScope;
+    private JRadioButton myModuleScope;
+    private ModulesComboBox myModuleSelection;
+    private JRadioButton myDirectoryScope;
+    private TextFieldWithBrowseButton myDirectory;
+    private JCheckBox myRecursive;
+    private JRadioButton myCustomScope;
+    private ComboboxWithBrowseButton myCustomScopeSelection;
+    private final Project myProject;
+    public ScopePanel(@NotNull Project project) {
+        myProject = project;
+    }
+    public void initComponent(@Nullable Module currentModule, final SearchScope scope) {
+        final ItemListener stateListener = new ItemListener() {
+            public void itemStateChanged(ItemEvent e) {
+                myModuleSelection.setEnabled(myModuleScope.isSelected());
+                myDirectory.setEnabled(myDirectoryScope.isSelected());
+                myRecursive.setEnabled(myDirectoryScope.isSelected());
+                myCustomScopeSelection.setEnabled(myCustomScope.isSelected());
+                if (e.getStateChange() == ItemEvent.SELECTED) {
+                    firePropertyChange(""scope"", null, getSelectedScope());
+                }
+            }
+        };
+        final ItemListener scopeListener = new ItemListener() {
+            public void itemStateChanged(ItemEvent e) {
+                if (e.getStateChange() == ItemEvent.SELECTED) {
+                    firePropertyChange(""scope"", null, getSelectedScope());
+                }
+            }
+        };
+        myWholeProjectScope.addItemListener(stateListener);
+        myWholeProjectScope.setSelected(scope.getScopeType() == SearchScope.ScopeType.PROJECT);
+        myModuleScope.addItemListener(stateListener);
+        myModuleScope.setSelected(scope.getScopeType() == SearchScope.ScopeType.MODULE);
+        myDirectoryScope.addItemListener(stateListener);
+        myDirectoryScope.setSelected(scope.getScopeType() == SearchScope.ScopeType.DIRECTORY);
+        myCustomScope.addItemListener(stateListener);
+        myCustomScope.setSelected(scope.getScopeType() == SearchScope.ScopeType.CUSTOM);
+        myModuleSelection.fillModules(myProject);
+        Module m;
+        if (scope.getModuleName() != null) {
+            if ((m = ModuleManager.getInstance(myProject).findModuleByName(scope.getModuleName())) == null) {
+                m = currentModule;
+            }
+        } else {
+            m = currentModule;
+        }
+        if (m != null) {
+            myModuleSelection.setSelectedModule(m);
+        }
+        myModuleSelection.addItemListener(scopeListener);
+        ((ScopeChooserCombo)myCustomScopeSelection).init(myProject, true, true, scope.getScopeName());
+        myCustomScopeSelection.getComboBox().addItemListener(scopeListener);
+        myDirectory.getTextField().getDocument().addDocumentListener(new DocumentAdapter() {
+            protected void textChanged(DocumentEvent e) {
+                firePropertyChange(""scope"", null, getSelectedScope());
+            }
+        });
+        myDirectory.setText(scope.getPath());
+        myDirectory.addBrowseFolderListener(""Select Path"", ""Select Path"", myProject, FileChooserDescriptorFactory.createSingleFolderDescriptor());
+        myRecursive.setSelected(scope.isRecursive());
+    }
+    @SuppressWarnings({""unchecked"", ""UseOfObsoleteCollectionType""})
+    private static ComboBoxModel createModel(Object[] elements) {
+        return new DefaultComboBoxModel(new Vector(Arrays.asList(elements)));
+    }
+    private void createUIComponents() {
+        myRoot = this;
+        myCustomScopeSelection = new ScopeChooserCombo();
+    }
+    @Nullable
+    private String getDirectoryName() {
+        final String s = myDirectory.getText();
+        return s != null && s.length() > 0 ? s : null;
+    }
+    @Nullable
+    private String getModuleName() {
+        final Module module = myModuleSelection.getSelectedModule();
+        return module != null ? module.getName() : null;
+    }
+    @NotNull
+    private SearchScope.ScopeType getScopeType() {
+        if (myWholeProjectScope.isSelected()) return SearchScope.ScopeType.PROJECT;
+        if (myModuleScope.isSelected()) return SearchScope.ScopeType.MODULE;
+        if (myDirectoryScope.isSelected()) return SearchScope.ScopeType.DIRECTORY;
+        if (myCustomScope.isSelected()) return SearchScope.ScopeType.CUSTOM;
+        assert false : ""Unknown Scope"";
+        return null;
+    }
+    public SearchScope getSearchScope() {
+        final SearchScope scope = getSelectedScope();
+        scope.setCustomScope(((ScopeChooserCombo)myCustomScopeSelection).getSelectedScope());
+        return scope;
+    }
+    SearchScope getSelectedScope() {
+        return new SearchScope(getScopeType(),
+                getDirectoryName(), myRecursive.isSelected(),
+                getModuleName(),
+                ((ScopeChooserCombo)myCustomScopeSelection).getSelectedScopeName());
+    }
+  public void dispose() {
+    Disposer.dispose(myCustomScopeSelection);
+  }
+}",class,
+"    public ScopePanel(@NotNull Project project) {
+        myProject = project;
+    }",method,
+"    public void initComponent(@Nullable Module currentModule, final SearchScope scope) {
+        final ItemListener stateListener = new ItemListener() {
+            public void itemStateChanged(ItemEvent e) {
+                myModuleSelection.setEnabled(myModuleScope.isSelected());
+                myDirectory.setEnabled(myDirectoryScope.isSelected());
+                myRecursive.setEnabled(myDirectoryScope.isSelected());
+                myCustomScopeSelection.setEnabled(myCustomScope.isSelected());
+                if (e.getStateChange() == ItemEvent.SELECTED) {
+                    firePropertyChange(""scope"", null, getSelectedScope());
+                }
+            }
+        };
+        final ItemListener scopeListener = new ItemListener() {
+            public void itemStateChanged(ItemEvent e) {
+                if (e.getStateChange() == ItemEvent.SELECTED) {
+                    firePropertyChange(""scope"", null, getSelectedScope());
+                }
+            }
+        };
+        myWholeProjectScope.addItemListener(stateListener);
+        myWholeProjectScope.setSelected(scope.getScopeType() == SearchScope.ScopeType.PROJECT);
+        myModuleScope.addItemListener(stateListener);
+        myModuleScope.setSelected(scope.getScopeType() == SearchScope.ScopeType.MODULE);
+        myDirectoryScope.addItemListener(stateListener);
+        myDirectoryScope.setSelected(scope.getScopeType() == SearchScope.ScopeType.DIRECTORY);
+        myCustomScope.addItemListener(stateListener);
+        myCustomScope.setSelected(scope.getScopeType() == SearchScope.ScopeType.CUSTOM);
+        myModuleSelection.fillModules(myProject);
+        Module m;
+        if (scope.getModuleName() != null) {
+            if ((m = ModuleManager.getInstance(myProject).findModuleByName(scope.getModuleName())) == null) {
+                m = currentModule;
+            }
+        } else {
+            m = currentModule;
+        }
+        if (m != null) {
+            myModuleSelection.setSelectedModule(m);
+        }
+        myModuleSelection.addItemListener(scopeListener);
+        ((ScopeChooserCombo)myCustomScopeSelection).init(myProject, true, true, scope.getScopeName());
+        myCustomScopeSelection.getComboBox().addItemListener(scopeListener);
+        myDirectory.getTextField().getDocument().addDocumentListener(new DocumentAdapter() {
+            protected void textChanged(DocumentEvent e) {
+                firePropertyChange(""scope"", null, getSelectedScope());
+            }
+        });
+        myDirectory.setText(scope.getPath());
+        myDirectory.addBrowseFolderListener(""Select Path"", ""Select Path"", myProject, FileChooserDescriptorFactory.createSingleFolderDescriptor());
+        myRecursive.setSelected(scope.isRecursive());
+    }",method,
+"            public void itemStateChanged(ItemEvent e) {
+                myModuleSelection.setEnabled(myModuleScope.isSelected());
+                myDirectory.setEnabled(myDirectoryScope.isSelected());
+                myRecursive.setEnabled(myDirectoryScope.isSelected());
+                myCustomScopeSelection.setEnabled(myCustomScope.isSelected());
+                if (e.getStateChange() == ItemEvent.SELECTED) {
+                    firePropertyChange(""scope"", null, getSelectedScope());
+                }
+            }",method,
+"            public void itemStateChanged(ItemEvent e) {
+                if (e.getStateChange() == ItemEvent.SELECTED) {
+                    firePropertyChange(""scope"", null, getSelectedScope());
+                }
+            }",method,
+"        if (m != null) {
+            myModuleSelection.setSelectedModule(m);
+        }",method,
+"            protected void textChanged(DocumentEvent e) {
+                firePropertyChange(""scope"", null, getSelectedScope());
+            }",method,
+"    @SuppressWarnings({""unchecked"", ""UseOfObsoleteCollectionType""})
+    private static ComboBoxModel createModel(Object[] elements) {
+        return new DefaultComboBoxModel(new Vector(Arrays.asList(elements)));
+    }",method,
+"    private void createUIComponents() {
+        myRoot = this;
+        myCustomScopeSelection = new ScopeChooserCombo();
+    }",method,
+"    @Nullable
+    private String getDirectoryName() {
+        final String s = myDirectory.getText();
+        return s != null && s.length() > 0 ? s : null;
+    }",method,
+"    @Nullable
+    private String getModuleName() {
+        final Module module = myModuleSelection.getSelectedModule();
+        return module != null ? module.getName() : null;
+    }",method,
+"    @NotNull
+    private SearchScope.ScopeType getScopeType() {
+        if (myWholeProjectScope.isSelected()) return SearchScope.ScopeType.PROJECT;
+        if (myModuleScope.isSelected()) return SearchScope.ScopeType.MODULE;
+        if (myDirectoryScope.isSelected()) return SearchScope.ScopeType.DIRECTORY;
+        if (myCustomScope.isSelected()) return SearchScope.ScopeType.CUSTOM;
+        assert false : ""Unknown Scope"";
+        return null;
+    }",method,
+"    public SearchScope getSearchScope() {
+        final SearchScope scope = getSelectedScope();
+        scope.setCustomScope(((ScopeChooserCombo)myCustomScopeSelection).getSelectedScope());
+        return scope;
+    }",method,
+"    SearchScope getSelectedScope() {
+        return new SearchScope(getScopeType(),
+                getDirectoryName(), myRecursive.isSelected(),
+                getModuleName(),
+                ((ScopeChooserCombo)myCustomScopeSelection).getSelectedScopeName());
+    }",method,
+"  public void dispose() {
+    Disposer.dispose(myCustomScopeSelection);
+  }",method,
+"public class TestExpandableRV extends AppCompatActivity {
+    private static String[] sampledatagroup1 = {
+            ""peter"", ""http://google"",
+            ""billy"", ""http://google"",
+            ""lisa"", ""http://google"",
+            ""visa"", ""http://google""
+    };
+    private static String[] sampledatagroup2 = {
+            ""mother"", ""http://google"",
+            ""father"", ""http://google"",
+            ""son"", ""http://google"",
+            ""holy spirit"", ""http://google"",
+            ""god the son"", ""http://google""
+    };
+    private static String[] sampledatagroup3 = {
+            ""SONY"", ""http://google"",
+            ""LG"", ""http://google"",
+            ""SAMSUNG"", ""http://google"",
+            ""XIAOMI"", ""http://google"",
+            ""HTC"", ""http://google""
+    };
+    private UltimateRecyclerView ultimateRecyclerView;
+    private ExpCustomAdapter simpleRecyclerViewAdapter = null;
+    private LinearLayoutManager linearLayoutManager;
+    private int moreNum = 2;
+    private ActionMode actionMode;
+    private Toolbar toolbar;
+    boolean isDrag = true;
+    private boolean admob_test_mode = false;
+    private void enableSwipe() {
+    }
+    private void addExpandableFeatures() {
+        ultimateRecyclerView.getItemAnimator().setAddDuration(100);
+        ultimateRecyclerView.getItemAnimator().setRemoveDuration(100);
+        ultimateRecyclerView.getItemAnimator().setMoveDuration(200);
+        ultimateRecyclerView.getItemAnimator().setChangeDuration(100);
+    }
+    @Override
+    protected void onCreate(Bundle savedInstanceState) {
+        super.onCreate(savedInstanceState);
+        setContentView(R.layout.activity_loadmore);
+        toolbar = (Toolbar) findViewById(R.id.tool_bar);
+        setSupportActionBar(toolbar);
+        getSupportActionBar().setDisplayShowTitleEnabled(false);
+        ultimateRecyclerView = (UltimateRecyclerView) findViewById(R.id.ultimate_recycler_view);
+        ultimateRecyclerView.setHasFixedSize(false);
+        simpleRecyclerViewAdapter = new ExpCustomAdapter(this);
+        simpleRecyclerViewAdapter.addAll(ExpCustomAdapter.getPreCodeMenu(sampledatagroup1, sampledatagroup2, sampledatagroup3), 0);
+        linearLayoutManager = new LinearLayoutManager(this);
+        ultimateRecyclerView.setLayoutManager(linearLayoutManager);
+        ultimateRecyclerView.setAdapter(simpleRecyclerViewAdapter);
+        ultimateRecyclerView.setRecylerViewBackgroundColor(Color.parseColor(""#ffffff""));
+        addExpandableFeatures();
+    }
+    private void toggleSelection(int position) {
+        simpleRecyclerViewAdapter.toggleSelection(position);
+        actionMode.setTitle(""Selected "" + ""1"");
+    }
+    public int getScreenHeight() {
+        return findViewById(android.R.id.content).getHeight();
+    }
+    //
+    @Override
+    public boolean onCreateOptionsMenu(Menu menu) {
+        // Inflate the menu; this adds items to the action bar if it is present.
+        getMenuInflater().inflate(R.menu.menu_main, menu);
+        return true;
+    }
+    @Override
+    public boolean onOptionsItemSelected(MenuItem item) {
+        FastBinding.startactivity(this, item.getItemId());
+        return super.onOptionsItemSelected(item);
+    }
+}",class,
+"    private void enableSwipe() {
+    }",method,
+"    private void addExpandableFeatures() {
+        ultimateRecyclerView.getItemAnimator().setAddDuration(100);
+        ultimateRecyclerView.getItemAnimator().setRemoveDuration(100);
+        ultimateRecyclerView.getItemAnimator().setMoveDuration(200);
+        ultimateRecyclerView.getItemAnimator().setChangeDuration(100);
+    }",method,
+"    @Override
+    protected void onCreate(Bundle savedInstanceState) {
+        super.onCreate(savedInstanceState);
+        setContentView(R.layout.activity_loadmore);
+        toolbar = (Toolbar) findViewById(R.id.tool_bar);
+        setSupportActionBar(toolbar);
+        getSupportActionBar().setDisplayShowTitleEnabled(false);
+        ultimateRecyclerView = (UltimateRecyclerView) findViewById(R.id.ultimate_recycler_view);
+        ultimateRecyclerView.setHasFixedSize(false);
+        simpleRecyclerViewAdapter = new ExpCustomAdapter(this);
+        simpleRecyclerViewAdapter.addAll(ExpCustomAdapter.getPreCodeMenu(sampledatagroup1, sampledatagroup2, sampledatagroup3), 0);
+        linearLayoutManager = new LinearLayoutManager(this);
+        ultimateRecyclerView.setLayoutManager(linearLayoutManager);
+        ultimateRecyclerView.setAdapter(simpleRecyclerViewAdapter);
+        ultimateRecyclerView.setRecylerViewBackgroundColor(Color.parseColor(""#ffffff""));
+        addExpandableFeatures();
+    }",method,
+"    private void toggleSelection(int position) {
+        simpleRecyclerViewAdapter.toggleSelection(position);
+        actionMode.setTitle(""Selected "" + ""1"");
+    }",method,
+"    public int getScreenHeight() {
+        return findViewById(android.R.id.content).getHeight();
+    }",method,
+"    @Override
+    public boolean onCreateOptionsMenu(Menu menu) {
+        // Inflate the menu; this adds items to the action bar if it is present.
+        getMenuInflater().inflate(R.menu.menu_main, menu);
+        return true;
+    }",method,
+"    @Override
+    public boolean onOptionsItemSelected(MenuItem item) {
+        FastBinding.startactivity(this, item.getItemId());
+        return super.onOptionsItemSelected(item);
+    }",method,
+"public final class ScreenUtils {
+	public static TextureRegion getFrameBufferTexture () {
+		final int w = Gdx.graphics.getBackBufferWidth();
+		final int h = Gdx.graphics.getBackBufferHeight();
+		return getFrameBufferTexture(0, 0, w, h);
+	}
+	public static TextureRegion getFrameBufferTexture (int x, int y, int w, int h) {
+		final int potW = MathUtils.nextPowerOfTwo(w);
+		final int potH = MathUtils.nextPowerOfTwo(h);
+		final Pixmap pixmap = getFrameBufferPixmap(x, y, w, h);
+		final Pixmap potPixmap = new Pixmap(potW, potH, Format.RGBA8888);
+		potPixmap.drawPixmap(pixmap, 0, 0);
+		Texture texture = new Texture(potPixmap);
+		TextureRegion textureRegion = new TextureRegion(texture, 0, h, w, -h);
+		potPixmap.dispose();
+		pixmap.dispose();
+		return textureRegion;
+	}
+	public static Pixmap getFrameBufferPixmap (int x, int y, int w, int h) {
+		Gdx.gl.glPixelStorei(GL20.GL_PACK_ALIGNMENT, 1);
+		final Pixmap pixmap = new Pixmap(w, h, Format.RGBA8888);
+		ByteBuffer pixels = BufferUtils.newByteBuffer(h * w * 4);
+		Gdx.gl.glReadPixels(x, y, w, h, GL20.GL_RGBA, GL20.GL_UNSIGNED_BYTE, pixels);
+		putPixelsBack(pixmap, pixels);
+		return pixmap;
+	}
+	public static void putPixelsBack (Pixmap pixmap, ByteBuffer pixels) {
+		if (pixmap.getWidth() == 0 || pixmap.getHeight() == 0) return;
+		putPixelsBack(((HasArrayBufferView)pixels).getTypedArray(), pixmap.getWidth(), pixmap.getHeight(), pixmap.getContext());
+	}
+	private native static void putPixelsBack (ArrayBufferView pixels, int width, int height, Context2d ctx);
+	public static byte[] getFrameBufferPixels (boolean flipY) {
+		final int w = Gdx.graphics.getBackBufferWidth();
+		final int h = Gdx.graphics.getBackBufferHeight();
+		return getFrameBufferPixels(0, 0, w, h, flipY);
+	}
+	public static byte[] getFrameBufferPixels (int x, int y, int w, int h, boolean flipY) {
+		Gdx.gl.glPixelStorei(GL20.GL_PACK_ALIGNMENT, 1);
+		final ByteBuffer pixels = BufferUtils.newByteBuffer(w * h * 4);
+		Gdx.gl.glReadPixels(x, y, w, h, GL20.GL_RGBA, GL20.GL_UNSIGNED_BYTE, pixels);
+		final int numBytes = w * h * 4;
+		byte[] lines = new byte[numBytes];
+		if (flipY) {
+			final int numBytesPerLine = w * 4;
+			for (int i = 0; i < h; i++) {
+				pixels.position((h - i - 1) * numBytesPerLine);
+				pixels.get(lines, i * numBytesPerLine, numBytesPerLine);
+			}
+		} else {
+			pixels.clear();
+			pixels.get(lines);
+		}
+		return lines;
+	}
+}",class,
+"public class SerializationException extends RuntimeException {
+	private StringBuffer trace;
+	public SerializationException () {
+		super();
+	}
+	public SerializationException (String message, Throwable cause) {
+		super(message, cause);
+	}
+	public SerializationException (String message) {
+		super(message);
+	}
+	public SerializationException (Throwable cause) {
+		super("""", cause);
+	}
+	public boolean causedBy (Class type) {
+		return causedBy(this, type);
+	}
+	private boolean causedBy (Throwable ex, Class type) {
+		Throwable cause = ex.getCause();
+		if (cause == null || cause == ex) return false;
+		return false;
+	}
+	public String getMessage () {
+		if (trace == null) return super.getMessage();
+		StringBuffer buffer = new StringBuffer(512);
+		buffer.append(super.getMessage());
+		if (buffer.length() > 0) buffer.append('\n');
+		buffer.append(""Serialization trace:"");
+		buffer.append(trace);
+		return buffer.toString();
+	}
+	public void addTrace (String info) {
+		if (info == null) throw new IllegalArgumentException(""info cannot be null."");
+		if (trace == null) trace = new StringBuffer(512);
+		trace.append('\n');
+		trace.append(info);
+	}
+}",class,
+"	public static TextureRegion getFrameBufferTexture () {
+		final int w = Gdx.graphics.getBackBufferWidth();
+		final int h = Gdx.graphics.getBackBufferHeight();
+		return getFrameBufferTexture(0, 0, w, h);
+	}",method,
+"	public static TextureRegion getFrameBufferTexture (int x, int y, int w, int h) {
+		final int potW = MathUtils.nextPowerOfTwo(w);
+		final int potH = MathUtils.nextPowerOfTwo(h);
+		final Pixmap pixmap = getFrameBufferPixmap(x, y, w, h);
+		final Pixmap potPixmap = new Pixmap(potW, potH, Format.RGBA8888);
+		potPixmap.drawPixmap(pixmap, 0, 0);
+		Texture texture = new Texture(potPixmap);
+		TextureRegion textureRegion = new TextureRegion(texture, 0, h, w, -h);
+		potPixmap.dispose();
+		pixmap.dispose();
+		return textureRegion;
+	}",method,
+"	public static Pixmap getFrameBufferPixmap (int x, int y, int w, int h) {
+		Gdx.gl.glPixelStorei(GL20.GL_PACK_ALIGNMENT, 1);
+		final Pixmap pixmap = new Pixmap(w, h, Format.RGBA8888);
+		ByteBuffer pixels = BufferUtils.newByteBuffer(h * w * 4);
+		Gdx.gl.glReadPixels(x, y, w, h, GL20.GL_RGBA, GL20.GL_UNSIGNED_BYTE, pixels);
+		putPixelsBack(pixmap, pixels);
+		return pixmap;
+	}",method,
+"	public static void putPixelsBack (Pixmap pixmap, ByteBuffer pixels) {
+		if (pixmap.getWidth() == 0 || pixmap.getHeight() == 0) return;
+		putPixelsBack(((HasArrayBufferView)pixels).getTypedArray(), pixmap.getWidth(), pixmap.getHeight(), pixmap.getContext());
+	}",method,
+"	public static byte[] getFrameBufferPixels (boolean flipY) {
+		final int w = Gdx.graphics.getBackBufferWidth();
+		final int h = Gdx.graphics.getBackBufferHeight();
+		return getFrameBufferPixels(0, 0, w, h, flipY);
+	}",method,
+"	public static byte[] getFrameBufferPixels (int x, int y, int w, int h, boolean flipY) {
+		Gdx.gl.glPixelStorei(GL20.GL_PACK_ALIGNMENT, 1);
+		final ByteBuffer pixels = BufferUtils.newByteBuffer(w * h * 4);
+		Gdx.gl.glReadPixels(x, y, w, h, GL20.GL_RGBA, GL20.GL_UNSIGNED_BYTE, pixels);
+		final int numBytes = w * h * 4;
+		byte[] lines = new byte[numBytes];
+		if (flipY) {
+			final int numBytesPerLine = w * 4;
+			for (int i = 0; i < h; i++) {
+				pixels.position((h - i - 1) * numBytesPerLine);
+				pixels.get(lines, i * numBytesPerLine, numBytesPerLine);
+			}
+		} else {
+			pixels.clear();
+			pixels.get(lines);
+		}
+		return lines;
+	}",method,
+"		if (flipY) {
+			final int numBytesPerLine = w * 4;
+			for (int i = 0; i < h; i++) {
+				pixels.position((h - i - 1) * numBytesPerLine);
+				pixels.get(lines, i * numBytesPerLine, numBytesPerLine);
+			}
+		}",method,
+"			for (int i = 0; i < h; i++) {
+				pixels.position((h - i - 1) * numBytesPerLine);
+				pixels.get(lines, i * numBytesPerLine, numBytesPerLine);
+			}",method,
+"	public SerializationException () {
+		super();
+	}",method,
+"	public SerializationException (String message, Throwable cause) {
+		super(message, cause);
+	}",method,
+"	public SerializationException (String message) {
+		super(message);
+	}",method,
+"	public SerializationException (Throwable cause) {
+		super("""", cause);
+	}",method,
+"	public boolean causedBy (Class type) {
+		return causedBy(this, type);
+	}",method,
+"	private boolean causedBy (Throwable ex, Class type) {
+		Throwable cause = ex.getCause();
+		if (cause == null || cause == ex) return false;
+		return false;
+	}",method,
+"	public String getMessage () {
+		if (trace == null) return super.getMessage();
+		StringBuffer buffer = new StringBuffer(512);
+		buffer.append(super.getMessage());
+		if (buffer.length() > 0) buffer.append('\n');
+		buffer.append(""Serialization trace:"");
+		buffer.append(trace);
+		return buffer.toString();
+	}",method,
+"	public void addTrace (String info) {
+		if (info == null) throw new IllegalArgumentException(""info cannot be null."");
+		if (trace == null) trace = new StringBuffer(512);
+		trace.append('\n');
+		trace.append(info);
+	}",method,
+"public class AbstractMessageAnalyzerTest extends ComponentTestCase {
+	@Test
+	public void testTimeOut() throws InterruptedException {
+		int queueSize = 1000;
+		MessageQueue queue = new DefaultMessageQueue(queueSize);
+		long time = System.currentTimeMillis();
+		long start = time - time % (3600 * 1000L);
+		MockAnalyzer analyzer = new MockAnalyzer();
+		analyzer.initialize(start, 1000, 1000);
+		Assert.assertEquals(true, analyzer.isActive());
+		Assert.assertEquals(true, analyzer.isTimeout());
+		int count = 2000;
+		for (int i = 0; i < count; i++) {
+			queue.offer(new DefaultMessageTree());
+		}
+		analyzer.analyze(queue);
+		Assert.assertEquals(Math.min(queueSize, count), analyzer.m_count);
+		Assert.assertEquals(true, analyzer.isActive());
+		Assert.assertEquals(true, analyzer.isTimeout());
+		Thread.sleep(2000);
+		Assert.assertEquals(true, analyzer.isTimeout());
+		Assert.assertEquals(1000, analyzer.getExtraTime());
+		Assert.assertEquals(start, analyzer.getStartTime());
+	}
+	@Test
+	public void testNotTimeOut() throws InterruptedException {
+		MessageQueue queue = new DefaultMessageQueue(1000);
+		long time = System.currentTimeMillis();
+		long start = time - time % (3600 * 1000L);
+		MockAnalyzer analyzer = new MockAnalyzer();
+		analyzer.initialize(start, 60 * 60 * 1000, 1000);
+		Assert.assertEquals(true, analyzer.isActive());
+		Assert.assertEquals(false, analyzer.isTimeout());
+		int count = 1000;
+		for (int i = 0; i < count; i++) {
+			queue.offer(new DefaultMessageTree());
+		}
+		Threads.forGroup().start(new ShutDown(analyzer));
+		analyzer.analyze(queue);
+		Assert.assertEquals(count, analyzer.m_count);
+		Assert.assertEquals(false, analyzer.isTimeout());
+		Thread.sleep(2000);
+		Assert.assertEquals(false, analyzer.isTimeout());
+	}
+	public static class ShutDown implements Runnable {
+		private MockAnalyzer m_analyzer;
+		public ShutDown(MockAnalyzer analyzer) {
+			m_analyzer = analyzer;
+		}
+		@Override
+		public void run() {
+			try {
+				Thread.sleep(1000);
+			} catch (InterruptedException e) {
+			}
+			m_analyzer.shutdown();
+			Assert.assertEquals(true, m_analyzer.isActive());
+		}
+	}
+	public static class MockAnalyzer extends AbstractMessageAnalyzer<Object> {
+		public int m_count;
+		@Override
+		public void doCheckpoint(boolean atEnd) {
+		}
+		@Override
+		public Object getReport(String domain) {
+			return null;
+		}
+		@Override
+		protected void process(MessageTree tree) {
+			m_count++;
+			throw new RuntimeException(""this is for test, Please ignore it"");
+		}
+		@Override
+      protected void loadReports() {
+      }
+		@Override
+      public ReportManager<?> getReportManager() {
+	      // TODO Auto-generated method stub
+	      return null;
+      }
+	}
+}",class,
+"	public static class ShutDown implements Runnable {
+		private MockAnalyzer m_analyzer;
+		public ShutDown(MockAnalyzer analyzer) {
+			m_analyzer = analyzer;
+		}
+		@Override
+		public void run() {
+			try {
+				Thread.sleep(1000);
+			} catch (InterruptedException e) {
+			}
+			m_analyzer.shutdown();
+			Assert.assertEquals(true, m_analyzer.isActive());
+		}
+	}",class,
+"	public static class MockAnalyzer extends AbstractMessageAnalyzer<Object> {
+		public int m_count;
+		@Override
+		public void doCheckpoint(boolean atEnd) {
+		}
+		@Override
+		public Object getReport(String domain) {
+			return null;
+		}
+		@Override
+		protected void process(MessageTree tree) {
+			m_count++;
+			throw new RuntimeException(""this is for test, Please ignore it"");
+		}
+		@Override
+      protected void loadReports() {
+      }
+		@Override
+      public ReportManager<?> getReportManager() {
+	      // TODO Auto-generated method stub
+	      return null;
+      }
+	}",class,
+"	@Test
+	public void testTimeOut() throws InterruptedException {
+		int queueSize = 1000;
+		MessageQueue queue = new DefaultMessageQueue(queueSize);
+		long time = System.currentTimeMillis();
+		long start = time - time % (3600 * 1000L);
+		MockAnalyzer analyzer = new MockAnalyzer();
+		analyzer.initialize(start, 1000, 1000);
+		Assert.assertEquals(true, analyzer.isActive());
+		Assert.assertEquals(true, analyzer.isTimeout());
+		int count = 2000;
+		for (int i = 0; i < count; i++) {
+			queue.offer(new DefaultMessageTree());
+		}
+		analyzer.analyze(queue);
+		Assert.assertEquals(Math.min(queueSize, count), analyzer.m_count);
+		Assert.assertEquals(true, analyzer.isActive());
+		Assert.assertEquals(true, analyzer.isTimeout());
+		Thread.sleep(2000);
+		Assert.assertEquals(true, analyzer.isTimeout());
+		Assert.assertEquals(1000, analyzer.getExtraTime());
+		Assert.assertEquals(start, analyzer.getStartTime());
+	}",method,
+"		for (int i = 0; i < count; i++) {
+			queue.offer(new DefaultMessageTree());
+		}",method,
+"	@Test
+	public void testNotTimeOut() throws InterruptedException {
+		MessageQueue queue = new DefaultMessageQueue(1000);
+		long time = System.currentTimeMillis();
+		long start = time - time % (3600 * 1000L);
+		MockAnalyzer analyzer = new MockAnalyzer();
+		analyzer.initialize(start, 60 * 60 * 1000, 1000);
+		Assert.assertEquals(true, analyzer.isActive());
+		Assert.assertEquals(false, analyzer.isTimeout());
+		int count = 1000;
+		for (int i = 0; i < count; i++) {
+			queue.offer(new DefaultMessageTree());
+		}
+		Threads.forGroup().start(new ShutDown(analyzer));
+		analyzer.analyze(queue);
+		Assert.assertEquals(count, analyzer.m_count);
+		Assert.assertEquals(false, analyzer.isTimeout());
+		Thread.sleep(2000);
+		Assert.assertEquals(false, analyzer.isTimeout());
+	}",method,
+"		for (int i = 0; i < count; i++) {
+			queue.offer(new DefaultMessageTree());
+		}",method,
+"		public ShutDown(MockAnalyzer analyzer) {
+			m_analyzer = analyzer;
+		}",method,
+"		@Override
+		public void run() {
+			try {
+				Thread.sleep(1000);
+			} catch (InterruptedException e) {
+			}
+			m_analyzer.shutdown();
+			Assert.assertEquals(true, m_analyzer.isActive());
+		}",method,
+"		@Override
+		public void doCheckpoint(boolean atEnd) {
+		}",method,
+"		@Override
+		public Object getReport(String domain) {
+			return null;
+		}",method,
+"		@Override
+		protected void process(MessageTree tree) {
+			m_count++;
+			throw new RuntimeException(""this is for test, Please ignore it"");
+		}",method,
+"		@Override
+      protected void loadReports() {
+      }",method,
+"		@Override
+      public ReportManager<?> getReportManager() {
+	      // TODO Auto-generated method stub
+	      return null;
+      }",method,
+"public class JpsPathUtil {
+  public static boolean isUnder(Set<File> ancestors, File file) {
+    if (ancestors.isEmpty()) {
+      return false; // optimization
+    }
+    File current = file;
+    while (current != null) {
+      if (ancestors.contains(current)) {
+        return true;
+      }
+      current = FileUtilRt.getParentFile(current);
+    }
+    return false;
+  }
+  public static File urlToFile(String url) {
+    return new File(urlToOsPath(url));
+  }
+  @NotNull
+  public static String urlToOsPath(@NotNull String url) {
+    return FileUtilRt.toSystemDependentName(urlToPath(url));
+  }
+  @Contract(""null -> null; !null -> !null"")
+  public static String urlToPath(@Nullable String url) {
+    if (url == null) {
+      return null;
+    }
+    if (url.startsWith(""file://"")) {
+      return url.substring(""file://"".length());
+    }
+    else if (url.startsWith(""jar://"")) {
+      url = url.substring(""jar://"".length());
+      if (url.endsWith(""!/"")) {
+        url = url.substring(0, url.length() - ""!/"".length());
+      }
+    }",class,
+"  public static boolean isUnder(Set<File> ancestors, File file) {
+    if (ancestors.isEmpty()) {
+      return false; // optimization
+    }
+    File current = file;
+    while (current != null) {
+      if (ancestors.contains(current)) {
+        return true;
+      }
+      current = FileUtilRt.getParentFile(current);
+    }
+    return false;
+  }",method,
+"    while (current != null) {
+      if (ancestors.contains(current)) {
+        return true;
+      }
+      current = FileUtilRt.getParentFile(current);
+    }",method,
+"  public static File urlToFile(String url) {
+    return new File(urlToOsPath(url));
+  }",method,
+"  @NotNull
+  public static String urlToOsPath(@NotNull String url) {
+    return FileUtilRt.toSystemDependentName(urlToPath(url));
+  }",method,
+"  @Contract(""null -> null; !null -> !null"")
+  public static String urlToPath(@Nullable String url) {
+    if (url == null) {
+      return null;
+    }
+    if (url.startsWith(""file://"")) {
+      return url.substring(""file://"".length());
+    }",method,
+"    if (url == null) {
+      return null;
+    }",method,
+"  @NotNull
+  public static String fixURLforIDEA(@NotNull String url) {
+    int idx = url.indexOf("":/"");
+    if (idx >= 0 && idx + 2 < url.length() && url.charAt(idx + 2) != '/') {
+      String prefix = url.substring(0, idx);
+      String suffix = url.substring(idx + 2);
+      if (SystemInfoRt.isWindows) {
+        url = prefix + ""://"" + suffix;
+      }
+      else {
+        url = prefix + "":///"" + suffix;
+      }
+    }
+    return url;
+  }",method,
+"      if (SystemInfoRt.isWindows) {
+        url = prefix + ""://"" + suffix;
+      }
+      else {
+        url = prefix + "":///"" + suffix;
+      }",method,
+"  public static String pathToUrl(String path) {
+    return ""file://"" + path;
+  }
+  public static String getLibraryRootUrl(File file) {
+    String path = FileUtilRt.toSystemIndependentName(file.getAbsolutePath());
+    return file.isDirectory() ? ""file://"" + path : ""jar://"" + path + ""!/"";
+  }",method,
+"  public static String getLibraryRootUrl(File file) {
+    String path = FileUtilRt.toSystemIndependentName(file.getAbsolutePath());
+    return file.isDirectory() ? ""file://"" + path : ""jar://"" + path + ""!/"";
+  }
+  public static boolean isJrtUrl(@NotNull String url) {
+    return url.startsWith(""jrt://"");
+  }",method,
+"  public static boolean isJrtUrl(@NotNull String url) {
+    return url.startsWith(""jrt://"");
+  }",method,
+"public class PubSubServer extends Verticle {
+  public void start() {
+    vertx.createNetServer().connectHandler(new Handler<NetSocket>() {
+      public void handle(final NetSocket socket) {
+        socket.dataHandler(RecordParser.newDelimited(""\n"", new Handler<Buffer>() {
+          public void handle(Buffer frame) {
+            String line = frame.toString().trim();
+            System.out.println(""Line is "" + line);
+            String[] parts = line.split(""\\,"");
+            if (line.startsWith(""subscribe"")) {
+              System.out.println(""Topic is "" + parts[1]);
+              Set<String> set = vertx.sharedData().getSet(parts[1]);
+              set.add(socket.writeHandlerID());
+            } else if (line.startsWith(""unsubscribe"")) {
+              vertx.sharedData().getSet(parts[1]).remove(socket.writeHandlerID());
+            } else if (line.startsWith(""publish"")) {
+              System.out.println(""Publish to topic is "" + parts[1]);
+              Set<String> actorIDs = vertx.sharedData().getSet(parts[1]);
+              for (String actorID : actorIDs) {
+                System.out.println(""Sending to verticle"");
+                vertx.eventBus().publish(actorID, new Buffer(parts[2]));
+              }
+            }
+          }
+        }));
+      }
+    }).listen(1234);
+  }
+}",class,
+"public class Quux {
+  public int wibble() {
+    return 23;
+  }
+}",class,
+"  public void start() {
+    vertx.createNetServer().connectHandler(new Handler<NetSocket>() {
+      public void handle(final NetSocket socket) {
+        socket.dataHandler(RecordParser.newDelimited(""\n"", new Handler<Buffer>() {
+          public void handle(Buffer frame) {
+            String line = frame.toString().trim();
+            System.out.println(""Line is "" + line);
+            String[] parts = line.split(""\\,"");
+            if (line.startsWith(""subscribe"")) {
+              System.out.println(""Topic is "" + parts[1]);
+              Set<String> set = vertx.sharedData().getSet(parts[1]);
+              set.add(socket.writeHandlerID());
+            } else if (line.startsWith(""unsubscribe"")) {
+              vertx.sharedData().getSet(parts[1]).remove(socket.writeHandlerID());
+            } else if (line.startsWith(""publish"")) {
+              System.out.println(""Publish to topic is "" + parts[1]);
+              Set<String> actorIDs = vertx.sharedData().getSet(parts[1]);
+              for (String actorID : actorIDs) {
+                System.out.println(""Sending to verticle"");
+                vertx.eventBus().publish(actorID, new Buffer(parts[2]));
+              }
+            }
+          }
+        }));
+      }
+    }).listen(1234);
+  }",method,
+"      public void handle(final NetSocket socket) {
+        socket.dataHandler(RecordParser.newDelimited(""\n"", new Handler<Buffer>() {
+          public void handle(Buffer frame) {
+            String line = frame.toString().trim();
+            System.out.println(""Line is "" + line);
+            String[] parts = line.split(""\\,"");
+            if (line.startsWith(""subscribe"")) {
+              System.out.println(""Topic is "" + parts[1]);
+              Set<String> set = vertx.sharedData().getSet(parts[1]);
+              set.add(socket.writeHandlerID());
+            } else if (line.startsWith(""unsubscribe"")) {
+              vertx.sharedData().getSet(parts[1]).remove(socket.writeHandlerID());
+            } else if (line.startsWith(""publish"")) {
+              System.out.println(""Publish to topic is "" + parts[1]);
+              Set<String> actorIDs = vertx.sharedData().getSet(parts[1]);
+              for (String actorID : actorIDs) {
+                System.out.println(""Sending to verticle"");
+                vertx.eventBus().publish(actorID, new Buffer(parts[2]));
+              }
+            }
+          }
+        }));
+      }",method,
+"        socket.dataHandler(RecordParser.newDelimited(""\n"", new Handler<Buffer>() {
+          public void handle(Buffer frame) {
+            String line = frame.toString().trim();
+            System.out.println(""Line is "" + line);
+            String[] parts = line.split(""\\,"");
+            if (line.startsWith(""subscribe"")) {
+              System.out.println(""Topic is "" + parts[1]);
+              Set<String> set = vertx.sharedData().getSet(parts[1]);
+              set.add(socket.writeHandlerID());
+            } else if (line.startsWith(""unsubscribe"")) {
+              vertx.sharedData().getSet(parts[1]).remove(socket.writeHandlerID());
+            } else if (line.startsWith(""publish"")) {
+              System.out.println(""Publish to topic is "" + parts[1]);
+              Set<String> actorIDs = vertx.sharedData().getSet(parts[1]);
+              for (String actorID : actorIDs) {
+                System.out.println(""Sending to verticle"");
+                vertx.eventBus().publish(actorID, new Buffer(parts[2]));
+              }
+            }
+          }
+        }",method,
+"          public void handle(Buffer frame) {
+            String line = frame.toString().trim();
+            System.out.println(""Line is "" + line);
+            String[] parts = line.split(""\\,"");
+            if (line.startsWith(""subscribe"")) {
+              System.out.println(""Topic is "" + parts[1]);
+              Set<String> set = vertx.sharedData().getSet(parts[1]);
+              set.add(socket.writeHandlerID());
+            } else if (line.startsWith(""unsubscribe"")) {
+              vertx.sharedData().getSet(parts[1]).remove(socket.writeHandlerID());
+            } else if (line.startsWith(""publish"")) {
+              System.out.println(""Publish to topic is "" + parts[1]);
+              Set<String> actorIDs = vertx.sharedData().getSet(parts[1]);
+              for (String actorID : actorIDs) {
+                System.out.println(""Sending to verticle"");
+                vertx.eventBus().publish(actorID, new Buffer(parts[2]));
+              }
+            }
+          }",method,
+"              for (String actorID : actorIDs) {
+                System.out.println(""Sending to verticle"");
+                vertx.eventBus().publish(actorID, new Buffer(parts[2]));
+              }",method,
+"  public int wibble() {
+    return 23;
+  }",method,
+"public class ScaleFilter extends ResizeFilter {
+    private float mScale = 1.0f;
+    public ScaleFilter(MffContext context, String name) {
+        super(context, name);
+    }
+    @Override
+    public Signature getSignature() {
+        FrameType imageIn = FrameType.image2D(FrameType.ELEMENT_RGBA8888, FrameType.READ_GPU);
+        FrameType imageOut = FrameType.image2D(FrameType.ELEMENT_RGBA8888, FrameType.WRITE_GPU);
+        return new Signature()
+            .addInputPort(""image"", Signature.PORT_REQUIRED, imageIn)
+            .addInputPort(""scale"", Signature.PORT_OPTIONAL, FrameType.single(float.class))
+            .addInputPort(""useMipmaps"", Signature.PORT_OPTIONAL, FrameType.single(boolean.class))
+            .addOutputPort(""image"", Signature.PORT_REQUIRED, imageOut)
+            .disallowOtherPorts();
+    }
+    @Override
+    public void onInputPortOpen(InputPort port) {
+        if (port.getName().equals(""scale"")) {
+            port.bindToFieldNamed(""mScale"");
+            port.setAutoPullEnabled(true);
+        } else if (port.getName().equals(""useMipmaps"")) {
+            port.bindToFieldNamed(""mUseMipmaps"");
+            port.setAutoPullEnabled(true);
+        }
+    }
+    @Override
+    protected int getOutputWidth(int inWidth, int inHeight) {
+        return (int)(inWidth * mScale);
+    }
+    @Override
+    protected int getOutputHeight(int inWidth, int inHeight) {
+        return (int)(inHeight * mScale);
+    }
+}",class,
+"    public ScaleFilter(MffContext context, String name) {
+        super(context, name);
+    }",method,
+"    @Override
+    public Signature getSignature() {
+        FrameType imageIn = FrameType.image2D(FrameType.ELEMENT_RGBA8888, FrameType.READ_GPU);
+        FrameType imageOut = FrameType.image2D(FrameType.ELEMENT_RGBA8888, FrameType.WRITE_GPU);
+        return new Signature()
+            .addInputPort(""image"", Signature.PORT_REQUIRED, imageIn)
+            .addInputPort(""scale"", Signature.PORT_OPTIONAL, FrameType.single(float.class))
+            .addInputPort(""useMipmaps"", Signature.PORT_OPTIONAL, FrameType.single(boolean.class))
+            .addOutputPort(""image"", Signature.PORT_REQUIRED, imageOut)
+            .disallowOtherPorts();
+    }",method,
+"    @Override
+    public void onInputPortOpen(InputPort port) {
+        if (port.getName().equals(""scale"")) {
+            port.bindToFieldNamed(""mScale"");
+            port.setAutoPullEnabled(true);
+        } else if (port.getName().equals(""useMipmaps"")) {
+            port.bindToFieldNamed(""mUseMipmaps"");
+            port.setAutoPullEnabled(true);
+        }
+    }",method,
+"    @Override
+    protected int getOutputWidth(int inWidth, int inHeight) {
+        return (int)(inWidth * mScale);
+    }",method,
+"    @Override
+    protected int getOutputHeight(int inWidth, int inHeight) {
+        return (int)(inHeight * mScale);
+    }",method,
+"public class DispatchQueue extends Thread {
+    private volatile Handler handler = null;
+    private CountDownLatch syncLatch = new CountDownLatch(1);
+    public DispatchQueue(final String threadName) {
+        setName(threadName);
+        start();
+    }
+    public void sendMessage(Message msg, int delay) {
+        try {
+            syncLatch.await();
+            if (delay <= 0) {
+                handler.sendMessage(msg);
+            } else {
+                handler.sendMessageDelayed(msg, delay);
+            }
+        } catch (Exception e) {
+            FileLog.e(e);
+        }
+    }
+    public void cancelRunnable(Runnable runnable) {
+        try {
+            syncLatch.await();
+            handler.removeCallbacks(runnable);
+        } catch (Exception e) {
+            FileLog.e(e);
+        }
+    }
+    public void postRunnable(Runnable runnable) {
+        postRunnable(runnable, 0);
+    }
+    public void postRunnable(Runnable runnable, long delay) {
+        try {
+            syncLatch.await();
+            if (delay <= 0) {
+                handler.post(runnable);
+            } else {
+                handler.postDelayed(runnable, delay);
+            }
+        } catch (Exception e) {
+            FileLog.e(e);
+        }
+    }
+    public void cleanupQueue() {
+        try {
+            syncLatch.await();
+            handler.removeCallbacksAndMessages(null);
+        } catch (Exception e) {
+            FileLog.e(e);
+        }
+    }
+    public void handleMessage(Message inputMessage) {
+    }
+    @Override
+    public void run() {
+        Looper.prepare();
+        handler = new Handler() {
+            @Override
+            public void handleMessage(Message msg) {
+                DispatchQueue.this.handleMessage(msg);
+            }
+        };
+        syncLatch.countDown();
+        Looper.loop();
+    }
+}",class,
+"    public DispatchQueue(final String threadName) {
+        setName(threadName);
+        start();
+    }",method,

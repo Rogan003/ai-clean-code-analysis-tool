@@ -1,0 +1,1324 @@
+code_snippet,type,score
+"public class SpecifyTypeInDocstringIntention extends TypeIntention {
+  private String myText = PyBundle.message(""INTN.specify.type"");
+  @NotNull
+  public String getText() {
+    return myText;
+  }
+  @NotNull
+  public String getFamilyName() {
+    return PyBundle.message(""INTN.specify.type"");
+  }
+  @Override
+  public void doInvoke(@NotNull Project project, Editor editor, PsiFile file) throws IncorrectOperationException {
+    final PsiElement elementAt = PyUtil.findNonWhitespaceAtOffset(file, editor.getCaretModel().getOffset());
+    final PyExpression problemElement = getProblemElement(elementAt);
+    final PsiReference reference = problemElement == null ? null : problemElement.getReference();
+    final PsiElement resolved = reference != null ? reference.resolve() : null;
+    final PyNamedParameter parameter = getParameter(problemElement, resolved);
+    if (parameter != null) {
+      final PyFunction parentFunction = PsiTreeUtil.getParentOfType(parameter, PyFunction.class);
+      if (parentFunction != null) {
+        generateDocstring(parameter, parentFunction);
+      }
+    }
+    else {
+      StreamEx
+        .of(getMultiCallable(elementAt))
+        .select(PyFunction.class)
+        .forEach(function -> generateDocstring(null, function));
+    }
+  }
+  @Override
+  public boolean startInWriteAction() {
+    return false;
+  }
+  @Nullable
+  @Override
+  public PsiElement getElementToMakeWritable(@NotNull PsiFile currentFile) {
+    return currentFile;
+  }
+  private static void generateDocstring(@Nullable PyNamedParameter param, @NotNull PyFunction pyFunction) {
+    if (!DocStringUtil.ensureNotPlainDocstringFormat(pyFunction)) {
+      return;
+    }
+    final PyDocstringGenerator docstringGenerator = PyDocstringGenerator.forDocStringOwner(pyFunction);
+    String type = PyNames.OBJECT;
+    if (param != null) {
+      final String paramName = StringUtil.notNullize(param.getName());
+      final PySignature signature = PySignatureCacheManager.getInstance(pyFunction.getProject()).findSignature(pyFunction);
+      if (signature != null) {
+        type = ObjectUtils.chooseNotNull(signature.getArgTypeQualifiedName(paramName), type);
+      }
+      docstringGenerator.withParamTypedByName(param, type);
+    }
+    else {
+      final PySignature signature = PySignatureCacheManager.getInstance(pyFunction.getProject()).findSignature(pyFunction);
+      if (signature != null) {
+        type = ObjectUtils.chooseNotNull(signature.getReturnTypeQualifiedName(), type);
+      }
+      docstringGenerator.withReturnValue(type);
+    }
+    WriteAction.run(() -> {
+      docstringGenerator.addFirstEmptyLine().buildAndInsert();
+      docstringGenerator.startTemplate();
+    });
+  }
+  @Override
+  protected void updateText(boolean isReturn) {
+    myText = PyBundle.message(isReturn ? ""INTN.specify.return.type"" : ""INTN.specify.type"");
+  }
+  @Override
+  protected boolean isParamTypeDefined(@NotNull PyParameter parameter) {
+    final PyFunction pyFunction = PsiTreeUtil.getParentOfType(parameter, PyFunction.class);
+    if (pyFunction != null) {
+      final StructuredDocString structuredDocString = pyFunction.getStructuredDocString();
+      if (structuredDocString == null) {
+        return false;
+      }
+      final Substring typeSub = structuredDocString.getParamTypeSubstring(StringUtil.notNullize(parameter.getName()));
+      return typeSub != null && !typeSub.isEmpty();
+    }
+    return false;
+  }
+  @Override
+  protected boolean isReturnTypeDefined(@NotNull PyFunction function) {
+    final StructuredDocString structuredDocString = function.getStructuredDocString();
+    return structuredDocString != null && structuredDocString.getReturnType() != null;
+  }
+}",class,
+"  @NotNull
+  public String getText() {
+    return myText;
+  }",method,
+"  @NotNull
+  public String getFamilyName() {
+    return PyBundle.message(""INTN.specify.type"");
+  }",method,
+"  @Override
+  public void doInvoke(@NotNull Project project, Editor editor, PsiFile file) throws IncorrectOperationException {
+    final PsiElement elementAt = PyUtil.findNonWhitespaceAtOffset(file, editor.getCaretModel().getOffset());
+    final PyExpression problemElement = getProblemElement(elementAt);
+    final PsiReference reference = problemElement == null ? null : problemElement.getReference();
+    final PsiElement resolved = reference != null ? reference.resolve() : null;
+    final PyNamedParameter parameter = getParameter(problemElement, resolved);
+    if (parameter != null) {
+      final PyFunction parentFunction = PsiTreeUtil.getParentOfType(parameter, PyFunction.class);
+      if (parentFunction != null) {
+        generateDocstring(parameter, parentFunction);
+      }
+    }
+    else {
+      StreamEx
+        .of(getMultiCallable(elementAt))
+        .select(PyFunction.class)
+        .forEach(function -> generateDocstring(null, function));
+    }
+  }",method,
+"    if (parameter != null) {
+      final PyFunction parentFunction = PsiTreeUtil.getParentOfType(parameter, PyFunction.class);
+      if (parentFunction != null) {
+        generateDocstring(parameter, parentFunction);
+      }
+    }",method,
+"      if (parentFunction != null) {
+        generateDocstring(parameter, parentFunction);
+      }",method,
+"  @Override
+  public boolean startInWriteAction() {
+    return false;
+  }",method,
+"  @Nullable
+  @Override
+  public PsiElement getElementToMakeWritable(@NotNull PsiFile currentFile) {
+    return currentFile;
+  }",method,
+"  private static void generateDocstring(@Nullable PyNamedParameter param, @NotNull PyFunction pyFunction) {
+    if (!DocStringUtil.ensureNotPlainDocstringFormat(pyFunction)) {
+      return;
+    }
+    final PyDocstringGenerator docstringGenerator = PyDocstringGenerator.forDocStringOwner(pyFunction);
+    String type = PyNames.OBJECT;
+    if (param != null) {
+      final String paramName = StringUtil.notNullize(param.getName());
+      final PySignature signature = PySignatureCacheManager.getInstance(pyFunction.getProject()).findSignature(pyFunction);
+      if (signature != null) {
+        type = ObjectUtils.chooseNotNull(signature.getArgTypeQualifiedName(paramName), type);
+      }
+      docstringGenerator.withParamTypedByName(param, type);
+    }
+    else {
+      final PySignature signature = PySignatureCacheManager.getInstance(pyFunction.getProject()).findSignature(pyFunction);
+      if (signature != null) {
+        type = ObjectUtils.chooseNotNull(signature.getReturnTypeQualifiedName(), type);
+      }
+      docstringGenerator.withReturnValue(type);
+    }
+    WriteAction.run(() -> {
+      docstringGenerator.addFirstEmptyLine().buildAndInsert();
+      docstringGenerator.startTemplate();
+    });
+  }",method,
+"    if (param != null) {
+      final String paramName = StringUtil.notNullize(param.getName());
+      final PySignature signature = PySignatureCacheManager.getInstance(pyFunction.getProject()).findSignature(pyFunction);
+      if (signature != null) {
+        type = ObjectUtils.chooseNotNull(signature.getArgTypeQualifiedName(paramName), type);
+      }
+      docstringGenerator.withParamTypedByName(param, type);
+    }",method,
+"      if (signature != null) {
+        type = ObjectUtils.chooseNotNull(signature.getArgTypeQualifiedName(paramName), type);
+      }",method,
+"      if (signature != null) {
+        type = ObjectUtils.chooseNotNull(signature.getReturnTypeQualifiedName(), type);
+      }",method,
+"  @Override
+  protected void updateText(boolean isReturn) {
+    myText = PyBundle.message(isReturn ? ""INTN.specify.return.type"" : ""INTN.specify.type"");
+  }",method,
+"  @Override
+  protected boolean isParamTypeDefined(@NotNull PyParameter parameter) {
+    final PyFunction pyFunction = PsiTreeUtil.getParentOfType(parameter, PyFunction.class);
+    if (pyFunction != null) {
+      final StructuredDocString structuredDocString = pyFunction.getStructuredDocString();
+      if (structuredDocString == null) {
+        return false;
+      }
+      final Substring typeSub = structuredDocString.getParamTypeSubstring(StringUtil.notNullize(parameter.getName()));
+      return typeSub != null && !typeSub.isEmpty();
+    }
+    return false;
+  }",method,
+"    if (pyFunction != null) {
+      final StructuredDocString structuredDocString = pyFunction.getStructuredDocString();
+      if (structuredDocString == null) {
+        return false;
+      }
+      final Substring typeSub = structuredDocString.getParamTypeSubstring(StringUtil.notNullize(parameter.getName()));
+      return typeSub != null && !typeSub.isEmpty();
+    }",method,
+"      if (structuredDocString == null) {
+        return false;
+      }",method,
+"  @Override
+  protected boolean isReturnTypeDefined(@NotNull PyFunction function) {
+    final StructuredDocString structuredDocString = function.getStructuredDocString();
+    return structuredDocString != null && structuredDocString.getReturnType() != null;
+  }",method,
+"public class TransactionalState {
+    CuratorFramework _curator;
+    public static TransactionalState newUserState(Map conf, String id) {
+        return new TransactionalState(conf, id, ""user"");
+    }
+    public static TransactionalState newCoordinatorState(Map conf, String id) {
+        return new TransactionalState(conf, id, ""coordinator"");        
+    }
+    protected TransactionalState(Map conf, String id, String subroot) {
+        try {
+            conf = new HashMap(conf);
+            String rootDir = conf.get(Config.TRANSACTIONAL_ZOOKEEPER_ROOT) + ""/"" + id + ""/"" + subroot;
+            List<String> servers = (List<String>) getWithBackup(conf, Config.TRANSACTIONAL_ZOOKEEPER_SERVERS, Config.STORM_ZOOKEEPER_SERVERS);
+            Object port = getWithBackup(conf, Config.TRANSACTIONAL_ZOOKEEPER_PORT, Config.STORM_ZOOKEEPER_PORT);
+            CuratorFramework initter = Utils.newCuratorStarted(conf, servers, port);
+            try {
+                initter.create().creatingParentsIfNeeded().forPath(rootDir);
+            } catch(KeeperException.NodeExistsException e)  {
+            }
+            initter.close();
+            _curator = Utils.newCuratorStarted(conf, servers, port, rootDir);
+        } catch (Exception e) {
+           throw new RuntimeException(e);
+        }
+    }
+    public void setData(String path, Object obj) {
+        path = ""/"" + path;
+        byte[] ser;
+        try {
+            ser = JSONValue.toJSONString(obj).getBytes(""UTF-8"");
+        } catch (UnsupportedEncodingException e) {
+            throw new RuntimeException(e);
+        }
+        try {
+            if(_curator.checkExists().forPath(path)!=null) {
+                _curator.setData().forPath(path, ser);
+            } else {
+                _curator.create()
+                        .creatingParentsIfNeeded()
+                        .withMode(CreateMode.PERSISTENT)
+                        .forPath(path, ser);
+            }
+        } catch(Exception e) {
+            throw new RuntimeException(e);
+        }        
+    }
+    public void delete(String path) {
+        path = ""/"" + path;
+        try {
+            _curator.delete().forPath(path);
+        } catch (Exception e) {
+            throw new RuntimeException(e);
+        }
+    }
+    public List<String> list(String path) {
+        path = ""/"" + path;
+        try {
+            if(_curator.checkExists().forPath(path)==null) {
+                return new ArrayList<String>();
+            } else {
+                return _curator.getChildren().forPath(path);
+            }
+        } catch(Exception e) {
+            throw new RuntimeException(e);
+        }   
+    }
+    public void mkdir(String path) {
+        setData(path, 7);
+    }
+    public Object getData(String path) {
+        path = ""/"" + path;
+        try {
+            if(_curator.checkExists().forPath(path)!=null) {
+                return JSONValue.parse(new String(_curator.getData().forPath(path), ""UTF-8""));
+            } else {
+                return null;
+            }
+        } catch(Exception e) {
+            throw new RuntimeException(e);
+        }
+    }
+    public void close() {
+        _curator.close();
+    }
+    private Object getWithBackup(Map amap, Object primary, Object backup) {
+        Object ret = amap.get(primary);
+        if(ret==null) return amap.get(backup);
+        return ret;
+    }
+}",class,
+"    public static TransactionalState newUserState(Map conf, String id) {
+        return new TransactionalState(conf, id, ""user"");
+    }",method,
+"    public static TransactionalState newCoordinatorState(Map conf, String id) {
+        return new TransactionalState(conf, id, ""coordinator"");        
+    }",method,
+"    protected TransactionalState(Map conf, String id, String subroot) {
+        try {
+            conf = new HashMap(conf);
+            String rootDir = conf.get(Config.TRANSACTIONAL_ZOOKEEPER_ROOT) + ""/"" + id + ""/"" + subroot;
+            List<String> servers = (List<String>) getWithBackup(conf, Config.TRANSACTIONAL_ZOOKEEPER_SERVERS, Config.STORM_ZOOKEEPER_SERVERS);
+            Object port = getWithBackup(conf, Config.TRANSACTIONAL_ZOOKEEPER_PORT, Config.STORM_ZOOKEEPER_PORT);
+            CuratorFramework initter = Utils.newCuratorStarted(conf, servers, port);
+            try {
+                initter.create().creatingParentsIfNeeded().forPath(rootDir);
+            } catch(KeeperException.NodeExistsException e)  {
+            }
+            initter.close();
+            _curator = Utils.newCuratorStarted(conf, servers, port, rootDir);
+        } catch (Exception e) {
+           throw new RuntimeException(e);
+        }
+    }",method,
+"    public void setData(String path, Object obj) {
+        path = ""/"" + path;
+        byte[] ser;
+        try {
+            ser = JSONValue.toJSONString(obj).getBytes(""UTF-8"");
+        } catch (UnsupportedEncodingException e) {
+            throw new RuntimeException(e);
+        }
+        try {
+            if(_curator.checkExists().forPath(path)!=null) {
+                _curator.setData().forPath(path, ser);
+            } else {
+                _curator.create()
+                        .creatingParentsIfNeeded()
+                        .withMode(CreateMode.PERSISTENT)
+                        .forPath(path, ser);
+            }
+        } catch(Exception e) {
+            throw new RuntimeException(e);
+        }        
+    }",method,
+"    public void delete(String path) {
+        path = ""/"" + path;
+        try {
+            _curator.delete().forPath(path);
+        } catch (Exception e) {
+            throw new RuntimeException(e);
+        }
+    }",method,
+"    public List<String> list(String path) {
+        path = ""/"" + path;
+        try {
+            if(_curator.checkExists().forPath(path)==null) {
+                return new ArrayList<String>();
+            } else {
+                return _curator.getChildren().forPath(path);
+            }
+        } catch(Exception e) {
+            throw new RuntimeException(e);
+        }   
+    }",method,
+"    public void mkdir(String path) {
+        setData(path, 7);
+    }",method,
+"    public Object getData(String path) {
+        path = ""/"" + path;
+        try {
+            if(_curator.checkExists().forPath(path)!=null) {
+                return JSONValue.parse(new String(_curator.getData().forPath(path), ""UTF-8""));
+            } else {
+                return null;
+            }
+        } catch(Exception e) {
+            throw new RuntimeException(e);
+        }
+    }",method,
+"    public void close() {
+        _curator.close();
+    }",method,
+"    private Object getWithBackup(Map amap, Object primary, Object backup) {
+        Object ret = amap.get(primary);
+        if(ret==null) return amap.get(backup);
+        return ret;
+    }",method,
+"public class ClassRewriter implements DataEntryReader
+{
+    private final ClassPool       classPool;
+    private final DataEntryWriter dataEntryWriter;
+    public ClassRewriter(ClassPool       classPool,
+                         DataEntryWriter dataEntryWriter)
+    {
+        this.classPool       = classPool;
+        this.dataEntryWriter = dataEntryWriter;
+    }
+    // Implementations for DataEntryReader.
+    public void read(DataEntry dataEntry) throws IOException
+    {
+        String inputName = dataEntry.getName();
+        String className = inputName.substring(0, inputName.length() - ClassConstants.CLASS_FILE_EXTENSION.length());
+        // Find the modified class corrsponding to the input entry.
+        ProgramClass programClass = (ProgramClass)classPool.getClass(className);
+        if (programClass != null)
+        {
+            // Rename the data entry if necessary.
+            String newClassName = programClass.getName();
+            if (!className.equals(newClassName))
+            {
+                dataEntry = new RenamedDataEntry(dataEntry, newClassName + ClassConstants.CLASS_FILE_EXTENSION);
+            }
+            // Get the output entry corresponding to this input entry.
+            OutputStream outputStream = dataEntryWriter.getOutputStream(dataEntry);
+            if (outputStream != null)
+            {
+                // Write the class to the output entry.
+                DataOutputStream classOutputStream = new DataOutputStream(outputStream);
+                new ProgramClassWriter(classOutputStream).visitProgramClass(programClass);
+                classOutputStream.flush();
+            }
+        }
+    }
+}",class,
+"        // Find the modified class corrsponding to the input entry.
+        ProgramClass programClass = (ProgramClass)classPool.getClass(className);
+        if (programClass != null)
+        {
+            // Rename the data entry if necessary.
+            String newClassName = programClass.getName();
+            if (!className.equals(newClassName))
+            {
+                dataEntry = new RenamedDataEntry(dataEntry, newClassName + ClassConstants.CLASS_FILE_EXTENSION);
+            }
+            // Get the output entry corresponding to this input entry.
+            OutputStream outputStream = dataEntryWriter.getOutputStream(dataEntry);
+            if (outputStream != null)
+            {
+                // Write the class to the output entry.
+                DataOutputStream classOutputStream = new DataOutputStream(outputStream);
+                new ProgramClassWriter(classOutputStream).visitProgramClass(programClass);
+                classOutputStream.flush();
+            }
+        }",class,
+"    public ClassRewriter(ClassPool       classPool,
+                         DataEntryWriter dataEntryWriter)
+    {
+        this.classPool       = classPool;
+        this.dataEntryWriter = dataEntryWriter;
+    }",method,
+"    public void read(DataEntry dataEntry) throws IOException
+    {
+        String inputName = dataEntry.getName();
+        String className = inputName.substring(0, inputName.length() - ClassConstants.CLASS_FILE_EXTENSION.length());
+        // Find the modified class corrsponding to the input entry.
+        ProgramClass programClass = (ProgramClass)classPool.getClass(className);
+        if (programClass != null)
+        {
+            // Rename the data entry if necessary.
+            String newClassName = programClass.getName();
+            if (!className.equals(newClassName))
+            {
+                dataEntry = new RenamedDataEntry(dataEntry, newClassName + ClassConstants.CLASS_FILE_EXTENSION);
+            }
+            // Get the output entry corresponding to this input entry.
+            OutputStream outputStream = dataEntryWriter.getOutputStream(dataEntry);
+            if (outputStream != null)
+            {
+                // Write the class to the output entry.
+                DataOutputStream classOutputStream = new DataOutputStream(outputStream);
+                new ProgramClassWriter(classOutputStream).visitProgramClass(programClass);
+                classOutputStream.flush();
+            }
+        }
+    }",method,
+"        if (programClass != null)
+        {
+            // Rename the data entry if necessary.
+            String newClassName = programClass.getName();
+            if (!className.equals(newClassName))
+            {
+                dataEntry = new RenamedDataEntry(dataEntry, newClassName + ClassConstants.CLASS_FILE_EXTENSION);
+            }
+            // Get the output entry corresponding to this input entry.
+            OutputStream outputStream = dataEntryWriter.getOutputStream(dataEntry);
+            if (outputStream != null)
+            {
+                // Write the class to the output entry.
+                DataOutputStream classOutputStream = new DataOutputStream(outputStream);
+                new ProgramClassWriter(classOutputStream).visitProgramClass(programClass);
+                classOutputStream.flush();
+            }
+        }",method,
+"            if (outputStream != null)
+            {
+                // Write the class to the output entry.
+                DataOutputStream classOutputStream = new DataOutputStream(outputStream);
+                new ProgramClassWriter(classOutputStream).visitProgramClass(programClass);
+                classOutputStream.flush();
+            }",method,
+"public abstract class AbstractSlsbInvokerInterceptor extends JndiObjectLocator
+		implements MethodInterceptor {
+	private boolean lookupHomeOnStartup = true;
+	private boolean cacheHome = true;
+	private boolean exposeAccessContext = false;
+	@Nullable
+	private Object cachedHome;
+	@Nullable
+	private Method createMethod;
+	private final Object homeMonitor = new Object();
+	public void setLookupHomeOnStartup(boolean lookupHomeOnStartup) {
+		this.lookupHomeOnStartup = lookupHomeOnStartup;
+	}
+	public void setCacheHome(boolean cacheHome) {
+		this.cacheHome = cacheHome;
+	}
+	public void setExposeAccessContext(boolean exposeAccessContext) {
+		this.exposeAccessContext = exposeAccessContext;
+	}
+	@Override
+	public void afterPropertiesSet() throws NamingException {
+		super.afterPropertiesSet();
+		if (this.lookupHomeOnStartup) {
+			// look up EJB home and create method
+			refreshHome();
+		}
+	}
+	protected void refreshHome() throws NamingException {
+		synchronized (this.homeMonitor) {
+			Object home = lookup();
+			if (this.cacheHome) {
+				this.cachedHome = home;
+				this.createMethod = getCreateMethod(home);
+			}
+		}
+	}
+	@Nullable
+	protected Method getCreateMethod(Object home) throws EjbAccessException {
+		try {
+			// Cache the EJB create() method that must be declared on the home interface.
+			return home.getClass().getMethod(""create"", (Class[]) null);
+		}
+		catch (NoSuchMethodException ex) {
+			throw new EjbAccessException(""EJB home ["" + home + ""] has no no-arg create() method"");
+		}
+	}
+	protected Object getHome() throws NamingException {
+		if (!this.cacheHome || (this.lookupHomeOnStartup && !isHomeRefreshable())) {
+			return (this.cachedHome != null ? this.cachedHome : lookup());
+		}
+		else {
+			synchronized (this.homeMonitor) {
+				if (this.cachedHome == null) {
+					this.cachedHome = lookup();
+					this.createMethod = getCreateMethod(this.cachedHome);
+				}
+				return this.cachedHome;
+			}
+		}
+	}
+	protected boolean isHomeRefreshable() {
+		return false;
+	}
+	@Override
+	@Nullable
+	public Object invoke(MethodInvocation invocation) throws Throwable {
+		Context ctx = (this.exposeAccessContext ? getJndiTemplate().getContext() : null);
+		try {
+			return invokeInContext(invocation);
+		}
+		finally {
+			getJndiTemplate().releaseContext(ctx);
+		}
+	}
+	@Nullable
+	protected abstract Object invokeInContext(MethodInvocation invocation) throws Throwable;
+	protected Object create() throws NamingException, InvocationTargetException {
+		try {
+			Object home = getHome();
+			Method createMethodToUse = this.createMethod;
+			if (createMethodToUse == null) {
+				createMethodToUse = getCreateMethod(home);
+			}
+			if (createMethodToUse == null) {
+				return home;
+			}
+			// Invoke create() method on EJB home object.
+			return createMethodToUse.invoke(home, (Object[]) null);
+		}
+		catch (IllegalAccessException ex) {
+			throw new EjbAccessException(""Could not access EJB home create() method"", ex);
+		}
+	}
+}",class,
+"	public void setLookupHomeOnStartup(boolean lookupHomeOnStartup) {
+		this.lookupHomeOnStartup = lookupHomeOnStartup;
+	}",method,
+"	public void setCacheHome(boolean cacheHome) {
+		this.cacheHome = cacheHome;
+	}",method,
+"	public void setExposeAccessContext(boolean exposeAccessContext) {
+		this.exposeAccessContext = exposeAccessContext;
+	}",method,
+"	@Override
+	public void afterPropertiesSet() throws NamingException {
+		super.afterPropertiesSet();
+		if (this.lookupHomeOnStartup) {
+			// look up EJB home and create method
+			refreshHome();
+		}
+	}",method,
+"		if (this.lookupHomeOnStartup) {
+			// look up EJB home and create method
+			refreshHome();
+		}",method,
+"	protected void refreshHome() throws NamingException {
+		synchronized (this.homeMonitor) {
+			Object home = lookup();
+			if (this.cacheHome) {
+				this.cachedHome = home;
+				this.createMethod = getCreateMethod(home);
+			}
+		}
+	}",method,
+"		synchronized (this.homeMonitor) {
+			Object home = lookup();
+			if (this.cacheHome) {
+				this.cachedHome = home;
+				this.createMethod = getCreateMethod(home);
+			}
+		}",method,
+"			if (this.cacheHome) {
+				this.cachedHome = home;
+				this.createMethod = getCreateMethod(home);
+			}",method,
+"	@Nullable
+	protected Method getCreateMethod(Object home) throws EjbAccessException {
+		try {
+			// Cache the EJB create() method that must be declared on the home interface.
+			return home.getClass().getMethod(""create"", (Class[]) null);
+		}
+		catch (NoSuchMethodException ex) {
+			throw new EjbAccessException(""EJB home ["" + home + ""] has no no-arg create() method"");
+		}
+	}",method,
+"		catch (NoSuchMethodException ex) {
+			throw new EjbAccessException(""EJB home ["" + home + ""] has no no-arg create() method"");
+		}",method,
+"	protected Object getHome() throws NamingException {
+		if (!this.cacheHome || (this.lookupHomeOnStartup && !isHomeRefreshable())) {
+			return (this.cachedHome != null ? this.cachedHome : lookup());
+		}
+		else {
+			synchronized (this.homeMonitor) {
+				if (this.cachedHome == null) {
+					this.cachedHome = lookup();
+					this.createMethod = getCreateMethod(this.cachedHome);
+				}
+				return this.cachedHome;
+			}
+		}
+	}",method,
+"			synchronized (this.homeMonitor) {
+				if (this.cachedHome == null) {
+					this.cachedHome = lookup();
+					this.createMethod = getCreateMethod(this.cachedHome);
+				}
+				return this.cachedHome;
+			}",method,
+"				if (this.cachedHome == null) {
+					this.cachedHome = lookup();
+					this.createMethod = getCreateMethod(this.cachedHome);
+				}",method,
+"	protected boolean isHomeRefreshable() {
+		return false;
+	}",method,
+"	@Override
+	@Nullable
+	public Object invoke(MethodInvocation invocation) throws Throwable {
+		Context ctx = (this.exposeAccessContext ? getJndiTemplate().getContext() : null);
+		try {
+			return invokeInContext(invocation);
+		}
+		finally {
+			getJndiTemplate().releaseContext(ctx);
+		}
+	}",method,
+"	protected Object create() throws NamingException, InvocationTargetException {
+		try {
+			Object home = getHome();
+			Method createMethodToUse = this.createMethod;
+			if (createMethodToUse == null) {
+				createMethodToUse = getCreateMethod(home);
+			}
+			if (createMethodToUse == null) {
+				return home;
+			}
+			// Invoke create() method on EJB home object.
+			return createMethodToUse.invoke(home, (Object[]) null);
+		}
+		catch (IllegalAccessException ex) {
+			throw new EjbAccessException(""Could not access EJB home create() method"", ex);
+		}
+	}",method,
+"			if (createMethodToUse == null) {
+				createMethodToUse = getCreateMethod(home);
+			}",method,
+"			if (createMethodToUse == null) {
+				return home;
+			}",method,
+"		catch (IllegalAccessException ex) {
+			throw new EjbAccessException(""Could not access EJB home create() method"", ex);
+		}",method,
+"public class Ssdp implements Runnable {
+  public static final String TAG = ""Ssdp"";
+  public static final String SSDP_ADDRESS = ""239.255.255.250"";
+  public static final int SSDP_PORT = 1900;
+  public static final String SSDP_HOST = SSDP_ADDRESS + "":"" + SSDP_PORT;
+  public static final String MAX_AGE = ""max-age=1800"";
+  public static final int TTL = 128;
+  public static final int MX = 3;
+  public static final String ALIVE = ""ssdp:alive"";
+  public static final String BYEBYE = ""ssdp:byebye"";
+  public static final String UPDATE = ""ssdp:update"";
+  public static final String DISCOVER = ""\""ssdp:discover\"""";
+  public static final String TYPE_M_SEARCH = ""M-SEARCH"";
+  public static final String TYPE_NOTIFY = ""NOTIFY"";
+  public static final String TYPE_200_OK = ""200 OK"";
+  private SsdpCallback mSsdpCallback;
+  private SocketAddress mMulticastGroup;
+  private DatagramSocket mDatagramSocket;
+  private Thread mThread;
+  public Ssdp(SsdpCallback ssdpCallback) throws IOException {
+    mSsdpCallback = ssdpCallback;
+    mMulticastGroup = new InetSocketAddress(SSDP_ADDRESS, SSDP_PORT);
+  }
+  public synchronized boolean start(Integer timeout) throws IOException {
+    if (mThread == null) {
+      // create a DatagramSocket without binding to any address
+      mDatagramSocket = new DatagramSocket(null);
+      mDatagramSocket.setReuseAddress(true);
+      // bind to any free port
+      mDatagramSocket.bind(null);
+      if (timeout != null && timeout > 0) {
+        mDatagramSocket.setSoTimeout(timeout);
+      }
+      mThread = new Thread(this);
+      mThread.start();
+      return true;
+    }
+    return false;
+  }
+  public synchronized boolean stop() throws IOException {
+    if (mThread != null) {
+      mThread.interrupt();
+      mDatagramSocket.close();
+      mThread = null;
+      mDatagramSocket = null;
+      return true;
+    }
+    return false;
+  }
+  public synchronized void search(SsdpMessage msg) throws IOException {
+    if (mDatagramSocket != null) {
+      byte bytes[] = msg.toString().getBytes(StandardCharsets.UTF_8);
+      DatagramPacket dp = new DatagramPacket(bytes, bytes.length, mMulticastGroup);
+      mDatagramSocket.send(dp);
+    }
+  }
+  public SsdpMessage search(String text) throws IOException {
+    SsdpMessage msg = new SsdpMessage(SsdpMessage.TYPE_SEARCH);
+    msg.getHeaders().put(""ST"", text);
+    msg.getHeaders().put(""HOST"", SSDP_HOST);
+    msg.getHeaders().put(""MAN"", DISCOVER);
+    msg.getHeaders().put(""MX"" , MX + """");
+    search(msg);
+    return msg;
+  }
+  @Override
+  public void run() {
+    Thread currentThread = Thread.currentThread();
+    byte[] buf = new byte[1024];
+    Log.d(TAG, ""SSDP scan started"");
+    while (!currentThread.isInterrupted() && mDatagramSocket != null) {
+      try {
+        DatagramPacket dp = new DatagramPacket(buf, buf.length);
+        mDatagramSocket.receive(dp);
+        String txt = new String(dp.getData(), StandardCharsets.UTF_8);
+        SsdpMessage msg = new SsdpMessage(txt);
+        mSsdpCallback.onSsdpMessageReceived(msg);
+      } catch (SocketTimeoutException e) {
+        Log.d(TAG, e.getMessage());
+        break;
+      } catch (IOException e) {
+        Log.e(TAG, e.getMessage());
+      }
+    }
+    // cleanup if needed
+    synchronized (this) {
+      if (mThread == currentThread) {
+        mThread = null;
+        if (mDatagramSocket != null) {
+          mDatagramSocket.close();
+          mDatagramSocket = null;
+        }
+      }
+    }
+    Log.d(TAG, ""SSDP scan terminated"");
+  }
+  public interface SsdpCallback {
+    public void onSsdpMessageReceived(SsdpMessage ssdpMessage);
+  }
+}",class,
+"  public Ssdp(SsdpCallback ssdpCallback) throws IOException {
+    mSsdpCallback = ssdpCallback;
+    mMulticastGroup = new InetSocketAddress(SSDP_ADDRESS, SSDP_PORT);
+  }",method,
+"  public synchronized boolean start(Integer timeout) throws IOException {
+    if (mThread == null) {
+      // create a DatagramSocket without binding to any address
+      mDatagramSocket = new DatagramSocket(null);
+      mDatagramSocket.setReuseAddress(true);
+      // bind to any free port
+      mDatagramSocket.bind(null);
+      if (timeout != null && timeout > 0) {
+        mDatagramSocket.setSoTimeout(timeout);
+      }
+      mThread = new Thread(this);
+      mThread.start();
+      return true;
+    }
+    return false;
+  }",method,
+"    if (mThread == null) {
+      // create a DatagramSocket without binding to any address
+      mDatagramSocket = new DatagramSocket(null);
+      mDatagramSocket.setReuseAddress(true);
+      // bind to any free port
+      mDatagramSocket.bind(null);
+      if (timeout != null && timeout > 0) {
+        mDatagramSocket.setSoTimeout(timeout);
+      }
+      mThread = new Thread(this);
+      mThread.start();
+      return true;
+    }",method,
+"      if (timeout != null && timeout > 0) {
+        mDatagramSocket.setSoTimeout(timeout);
+      }",method,
+"  public synchronized boolean stop() throws IOException {
+    if (mThread != null) {
+      mThread.interrupt();
+      mDatagramSocket.close();
+      mThread = null;
+      mDatagramSocket = null;
+      return true;
+    }
+    return false;
+  }",method,
+"    if (mThread != null) {
+      mThread.interrupt();
+      mDatagramSocket.close();
+      mThread = null;
+      mDatagramSocket = null;
+      return true;
+    }",method,
+"  public synchronized void search(SsdpMessage msg) throws IOException {
+    if (mDatagramSocket != null) {
+      byte bytes[] = msg.toString().getBytes(StandardCharsets.UTF_8);
+      DatagramPacket dp = new DatagramPacket(bytes, bytes.length, mMulticastGroup);
+      mDatagramSocket.send(dp);
+    }
+  }",method,
+"    if (mDatagramSocket != null) {
+      byte bytes[] = msg.toString().getBytes(StandardCharsets.UTF_8);
+      DatagramPacket dp = new DatagramPacket(bytes, bytes.length, mMulticastGroup);
+      mDatagramSocket.send(dp);
+    }",method,
+"  public SsdpMessage search(String text) throws IOException {
+    SsdpMessage msg = new SsdpMessage(SsdpMessage.TYPE_SEARCH);
+    msg.getHeaders().put(""ST"", text);
+    msg.getHeaders().put(""HOST"", SSDP_HOST);
+    msg.getHeaders().put(""MAN"", DISCOVER);
+    msg.getHeaders().put(""MX"" , MX + """");
+    search(msg);
+    return msg;
+  }",method,
+"  @Override
+  public void run() {
+    Thread currentThread = Thread.currentThread();
+    byte[] buf = new byte[1024];
+    Log.d(TAG, ""SSDP scan started"");
+    while (!currentThread.isInterrupted() && mDatagramSocket != null) {
+      try {
+        DatagramPacket dp = new DatagramPacket(buf, buf.length);
+        mDatagramSocket.receive(dp);
+        String txt = new String(dp.getData(), StandardCharsets.UTF_8);
+        SsdpMessage msg = new SsdpMessage(txt);
+        mSsdpCallback.onSsdpMessageReceived(msg);
+      } catch (SocketTimeoutException e) {
+        Log.d(TAG, e.getMessage());
+        break;
+      } catch (IOException e) {
+        Log.e(TAG, e.getMessage());
+      }
+    }
+    // cleanup if needed
+    synchronized (this) {
+      if (mThread == currentThread) {
+        mThread = null;
+        if (mDatagramSocket != null) {
+          mDatagramSocket.close();
+          mDatagramSocket = null;
+        }
+      }
+    }
+    Log.d(TAG, ""SSDP scan terminated"");
+  }",method,
+"    synchronized (this) {
+      if (mThread == currentThread) {
+        mThread = null;
+        if (mDatagramSocket != null) {
+          mDatagramSocket.close();
+          mDatagramSocket = null;
+        }
+      }
+    }",method,
+"      if (mThread == currentThread) {
+        mThread = null;
+        if (mDatagramSocket != null) {
+          mDatagramSocket.close();
+          mDatagramSocket = null;
+        }
+      }",method,
+"        if (mDatagramSocket != null) {
+          mDatagramSocket.close();
+          mDatagramSocket = null;
+        }",method,
+"public class SQLMethodInvokeExpr extends SQLExprImpl implements SQLReplaceable, Serializable {
+    private static final long   serialVersionUID = 1L;
+    private String              name;
+    private SQLExpr             owner;
+    private final List<SQLExpr> parameters       = new ArrayList<SQLExpr>();
+    private SQLExpr             from;
+    private SQLExpr             using;
+    private SQLExpr             _for;
+    private String              trimOption;
+    private long                nameHashCode64;
+    public SQLMethodInvokeExpr(){
+    }
+    public SQLMethodInvokeExpr(String methodName){
+        this.name = methodName;
+    }
+    public SQLMethodInvokeExpr(String methodName, long nameHashCode64){
+        this.name = methodName;
+        this.nameHashCode64 = nameHashCode64;
+    }
+    public SQLMethodInvokeExpr(String methodName, SQLExpr owner){
+        this.name = methodName;
+        setOwner(owner);
+    }
+    public SQLMethodInvokeExpr(String methodName, SQLExpr owner, SQLExpr... params){
+        this.name = methodName;
+        setOwner(owner);
+        for (SQLExpr param : params) {
+            this.addParameter(param);
+        }
+    }
+    public long methodNameHashCode64() {
+        if (nameHashCode64 == 0
+                && name != null) {
+            nameHashCode64 = FnvHash.hashCode64(name);
+        }
+        return nameHashCode64;
+    }
+    public String getMethodName() {
+        return this.name;
+    }
+    public void setMethodName(String methodName) {
+        this.name = methodName;
+        this.nameHashCode64 = 0L;
+    }
+    public SQLExpr getOwner() {
+        return this.owner;
+    }
+    public void setOwner(SQLExpr owner) {
+        if (owner != null) {
+            owner.setParent(this);
+        }
+        this.owner = owner;
+    }
+    public SQLExpr getFrom() {
+        return from;
+    }
+    public void setFrom(SQLExpr from) {
+        this.from = from;
+    }
+    public List<SQLExpr> getParameters() {
+        return this.parameters;
+    }
+    public void addParameter(SQLExpr param) {
+        if (param != null) {
+            param.setParent(this);
+        }
+        this.parameters.add(param);
+    }
+    public void output(StringBuffer buf) {
+        if (this.owner != null) {
+            this.owner.output(buf);
+            buf.append(""."");
+        }
+        buf.append(this.name);
+        buf.append(""("");
+        for (int i = 0, size = this.parameters.size(); i < size; ++i) {
+            if (i != 0) {
+                buf.append("", "");
+            }
+            this.parameters.get(i).output(buf);
+        }
+        buf.append("")"");
+    }
+    @Override
+    protected void accept0(SQLASTVisitor visitor) {
+        if (visitor.visit(this)) {
+            acceptChild(visitor, this.owner);
+            acceptChild(visitor, this.parameters);
+        }
+        visitor.endVisit(this);
+    }
+    public List getChildren() {
+        if (this.owner == null) {
+            return this.parameters;
+        }
+        List<SQLObject> children = new ArrayList<SQLObject>();
+        children.add(owner);
+        children.addAll(this.parameters);
+        return children;
+    }
+    protected void accept0(OracleASTVisitor visitor) {
+        if (visitor.visit(this)) {
+            acceptChild(visitor, this.owner);
+            acceptChild(visitor, this.parameters);
+        }
+        visitor.endVisit(this);
+    }
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (o == null || getClass() != o.getClass()) return false;
+        SQLMethodInvokeExpr that = (SQLMethodInvokeExpr) o;
+        if (name != null ? !name.equals(that.name) : that.name != null) return false;
+        if (owner != null ? !owner.equals(that.owner) : that.owner != null) return false;
+        if (parameters != null ? !parameters.equals(that.parameters) : that.parameters != null) return false;
+        return from != null ? from.equals(that.from) : that.from == null;
+    }
+    @Override
+    public int hashCode() {
+        int result = name != null ? name.hashCode() : 0;
+        result = 31 * result + (owner != null ? owner.hashCode() : 0);
+        result = 31 * result + (parameters != null ? parameters.hashCode() : 0);
+        result = 31 * result + (from != null ? from.hashCode() : 0);
+        return result;
+    }
+    public SQLMethodInvokeExpr clone() {
+        SQLMethodInvokeExpr x = new SQLMethodInvokeExpr();
+        x.name = name;
+        if (owner != null) {
+            x.setOwner(owner.clone());
+        }
+        for (SQLExpr param : parameters) {
+            x.addParameter(param.clone());
+        }
+        if (from != null) {
+            x.setFrom(from.clone());
+        }
+        if (using != null) {
+            x.setUsing(using.clone());
+        }
+        return x;
+    }
+    @Override
+    public boolean replace(SQLExpr expr, SQLExpr target) {
+        if (target == null) {
+            return false;
+        }
+        for (int i = 0; i < parameters.size(); ++i) {
+            if (parameters.get(i) == expr) {
+                parameters.set(i, target);
+                target.setParent(this);
+                return true;
+            }
+        }
+        return false;
+    }
+    public boolean match(String owner, String function) {
+        if (function == null) {
+            return false;
+        }
+        if (!SQLUtils.nameEquals(function, name)) {
+            return false;
+        }
+        if (owner == null && this.owner == null) {
+            return true;
+        }
+        if (owner == null || this.owner == null) {
+            return false;
+        }
+        if (this.owner instanceof SQLIdentifierExpr) {
+            return SQLUtils.nameEquals(((SQLIdentifierExpr) this.owner).name, owner);
+        }
+        return false;
+    }
+    public SQLDataType computeDataType() {
+        if (SQLUtils.nameEquals(""to_date"", name)
+                || SQLUtils.nameEquals(""add_months"", name)) {
+            return SQLDateExpr.DEFAULT_DATA_TYPE;
+        }
+        if (parameters.size() == 1) {
+            if (SQLUtils.nameEquals(""trunc"", name)) {
+                return parameters.get(0).computeDataType();
+            }
+        } else if (parameters.size() == 2) {
+            SQLExpr param0 = parameters.get(0);
+            SQLExpr param1 = parameters.get(1);
+            if (SQLUtils.nameEquals(""nvl"", name) || SQLUtils.nameEquals(""ifnull"", name)) {
+                SQLDataType dataType = param0.computeDataType();
+                if (dataType != null) {
+                    return dataType;
+                }
+                return param1.computeDataType();
+            }
+        }
+        return null;
+    }
+    public SQLExpr getUsing() {
+        return using;
+    }
+    public void setUsing(SQLExpr using) {
+        if (using != null) {
+            using.setParent(this);
+        }
+        this.using = using;
+    }
+    public SQLExpr getFor() {
+        return _for;
+    }
+    public void setFor(SQLExpr x) {
+        if (x != null) {
+            x.setParent(this);
+        }
+        this._for = x;
+    }
+    public String getTrimOption() {
+        return trimOption;
+    }
+    public void setTrimOption(String trimOption) {
+        this.trimOption = trimOption;
+    }
+}",class,
+"    public SQLMethodInvokeExpr(){
+    }",method,
+"    public SQLMethodInvokeExpr(String methodName){
+        this.name = methodName;
+    }",method,
+"    public SQLMethodInvokeExpr(String methodName, long nameHashCode64){
+        this.name = methodName;
+        this.nameHashCode64 = nameHashCode64;
+    }",method,
+"    public SQLMethodInvokeExpr(String methodName, SQLExpr owner){
+        this.name = methodName;
+        setOwner(owner);
+    }",method,
+"    public SQLMethodInvokeExpr(String methodName, SQLExpr owner, SQLExpr... params){
+        this.name = methodName;
+        setOwner(owner);
+        for (SQLExpr param : params) {
+            this.addParameter(param);
+        }
+    }",method,
+"        for (SQLExpr param : params) {
+            this.addParameter(param);
+        }",method,
+"    public long methodNameHashCode64() {
+        if (nameHashCode64 == 0
+                && name != null) {
+            nameHashCode64 = FnvHash.hashCode64(name);
+        }
+        return nameHashCode64;
+    }",method,
+"        if (nameHashCode64 == 0
+                && name != null) {
+            nameHashCode64 = FnvHash.hashCode64(name);
+        }",method,
+"    public String getMethodName() {
+        return this.name;
+    }",method,
+"    public void setMethodName(String methodName) {
+        this.name = methodName;
+        this.nameHashCode64 = 0L;
+    }",method,
+"    public SQLExpr getOwner() {
+        return this.owner;
+    }",method,
+"    public void setOwner(SQLExpr owner) {
+        if (owner != null) {
+            owner.setParent(this);
+        }
+        this.owner = owner;
+    }",method,
+"        if (owner != null) {
+            owner.setParent(this);
+        }",method,
+"    public SQLExpr getFrom() {
+        return from;
+    }",method,
+"    public void setFrom(SQLExpr from) {
+        this.from = from;
+    }",method,
+"    public List<SQLExpr> getParameters() {
+        return this.parameters;
+    }",method,
+"    public void addParameter(SQLExpr param) {
+        if (param != null) {
+            param.setParent(this);
+        }
+        this.parameters.add(param);
+    }",method,
+"        if (param != null) {
+            param.setParent(this);
+        }",method,
+"    public void output(StringBuffer buf) {
+        if (this.owner != null) {
+            this.owner.output(buf);
+            buf.append(""."");
+        }
+        buf.append(this.name);
+        buf.append(""("");
+        for (int i = 0, size = this.parameters.size(); i < size; ++i) {
+            if (i != 0) {
+                buf.append("", "");
+            }
+            this.parameters.get(i).output(buf);
+        }
+        buf.append("")"");
+    }",method,
+"        if (this.owner != null) {
+            this.owner.output(buf);
+            buf.append(""."");
+        }",method,
+"            if (i != 0) {
+                buf.append("", "");
+            }",method,
+"    @Override
+    protected void accept0(SQLASTVisitor visitor) {
+        if (visitor.visit(this)) {
+            acceptChild(visitor, this.owner);
+            acceptChild(visitor, this.parameters);
+        }
+        visitor.endVisit(this);
+    }",method,
+"    public List getChildren() {
+        if (this.owner == null) {
+            return this.parameters;
+        }
+        List<SQLObject> children = new ArrayList<SQLObject>();
+        children.add(owner);
+        children.addAll(this.parameters);
+        return children;
+    }",method,
+"        if (this.owner == null) {
+            return this.parameters;
+        }",method,
+"    protected void accept0(OracleASTVisitor visitor) {
+        if (visitor.visit(this)) {
+            acceptChild(visitor, this.owner);
+            acceptChild(visitor, this.parameters);
+        }
+        visitor.endVisit(this);
+    }",method,
+"    @Override
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (o == null || getClass() != o.getClass()) return false;
+        SQLMethodInvokeExpr that = (SQLMethodInvokeExpr) o;
+        if (name != null ? !name.equals(that.name) : that.name != null) return false;
+        if (owner != null ? !owner.equals(that.owner) : that.owner != null) return false;
+        if (parameters != null ? !parameters.equals(that.parameters) : that.parameters != null) return false;
+        return from != null ? from.equals(that.from) : that.from == null;
+    }",method,
+"    @Override
+    public int hashCode() {
+        int result = name != null ? name.hashCode() : 0;
+        result = 31 * result + (owner != null ? owner.hashCode() : 0);
+        result = 31 * result + (parameters != null ? parameters.hashCode() : 0);
+        result = 31 * result + (from != null ? from.hashCode() : 0);
+        return result;
+    }",method,
+"    public SQLMethodInvokeExpr clone() {
+        SQLMethodInvokeExpr x = new SQLMethodInvokeExpr();
+        x.name = name;
+        if (owner != null) {
+            x.setOwner(owner.clone());
+        }
+        for (SQLExpr param : parameters) {
+            x.addParameter(param.clone());
+        }
+        if (from != null) {
+            x.setFrom(from.clone());
+        }
+        if (using != null) {
+            x.setUsing(using.clone());
+        }
+        return x;
+    }",method,
+"        if (owner != null) {
+            x.setOwner(owner.clone());
+        }",method,
+"        for (SQLExpr param : parameters) {
+            x.addParameter(param.clone());
+        }",method,
+"        if (from != null) {
+            x.setFrom(from.clone());
+        }",method,
+"        if (using != null) {
+            x.setUsing(using.clone());
+        }",method,

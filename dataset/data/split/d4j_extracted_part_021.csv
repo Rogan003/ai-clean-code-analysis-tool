@@ -1,0 +1,1485 @@
+code_snippet,type,score
+"    public static class SizeMatcher extends TypeSafeMatcher<Translog.Snapshot> {
+        private final int size;
+        public SizeMatcher(int size) {
+            this.size = size;
+        }
+        @Override
+        public boolean matchesSafely(Translog.Snapshot snapshot) {
+            int count = 0;
+            try {
+                while (snapshot.next() != null) {
+                    count++;
+                }
+            } catch (IOException ex) {
+                throw new ElasticsearchException(""failed to advance snapshot"", ex);
+            }
+            return size == count;
+        }
+        @Override
+        public void describeTo(Description description) {
+            description.appendText(""a snapshot with size "").appendValue(size);
+        }
+    }",class,
+"    public static class EqualMatcher extends TypeSafeMatcher<Translog.Snapshot> {
+        private final Translog.Operation[] expectedOps;
+        String failureMsg = null;
+        public EqualMatcher(Translog.Operation[] expectedOps) {
+            this.expectedOps = expectedOps;
+        }
+        @Override
+        protected boolean matchesSafely(Translog.Snapshot snapshot) {
+            try {
+                Translog.Operation op;
+                int i;
+                for (i = 0, op = snapshot.next(); op != null && i < expectedOps.length; i++, op = snapshot.next()) {
+                    if (expectedOps[i].equals(op) == false) {
+                        failureMsg = ""position ["" + i + ""] expected ["" + expectedOps[i] + ""] but found ["" + op + ""]"";
+                        return false;
+                    }
+                }
+                if (i < expectedOps.length) {
+                    failureMsg = ""expected ["" + expectedOps.length + ""] ops but only found ["" + i + ""]"";
+                    return false;
+                }
+                if (op != null) {
+                    int count = 1; // to account for the op we already read
+                    while (snapshot.next() != null) {
+                        count++;
+                    }
+                    failureMsg = ""expected ["" + expectedOps.length + ""] ops but got ["" + (expectedOps.length + count) + ""]"";
+                    return false;
+                }
+                return true;
+            } catch (IOException ex) {
+                throw new ElasticsearchException(""failed to read snapshot content"", ex);
+            }
+        }
+        @Override
+        public void describeTo(Description description) {
+            description.appendText(failureMsg);
+        }
+    }",class,
+"    private SnapshotMatchers() {
+    }",method,
+"    public static Matcher<Translog.Snapshot> size(int size) {
+        return new SizeMatcher(size);
+    }",method,
+"    public static Matcher<Translog.Snapshot> equalsTo(Translog.Operation... ops) {
+        return new EqualMatcher(ops);
+    }",method,
+"    public static Matcher<Translog.Snapshot> equalsTo(ArrayList<Translog.Operation> ops) {
+        return new EqualMatcher(ops.toArray(new Translog.Operation[ops.size()]));
+    }",method,
+"        public SizeMatcher(int size) {
+            this.size = size;
+        }",method,
+"        @Override
+        public boolean matchesSafely(Translog.Snapshot snapshot) {
+            int count = 0;
+            try {
+                while (snapshot.next() != null) {
+                    count++;
+                }
+            } catch (IOException ex) {
+                throw new ElasticsearchException(""failed to advance snapshot"", ex);
+            }
+            return size == count;
+        }",method,
+"        @Override
+        public void describeTo(Description description) {
+            description.appendText(""a snapshot with size "").appendValue(size);
+        }",method,
+"        public EqualMatcher(Translog.Operation[] expectedOps) {
+            this.expectedOps = expectedOps;
+        }",method,
+"        @Override
+        protected boolean matchesSafely(Translog.Snapshot snapshot) {
+            try {
+                Translog.Operation op;
+                int i;
+                for (i = 0, op = snapshot.next(); op != null && i < expectedOps.length; i++, op = snapshot.next()) {
+                    if (expectedOps[i].equals(op) == false) {
+                        failureMsg = ""position ["" + i + ""] expected ["" + expectedOps[i] + ""] but found ["" + op + ""]"";
+                        return false;
+                    }
+                }
+                if (i < expectedOps.length) {
+                    failureMsg = ""expected ["" + expectedOps.length + ""] ops but only found ["" + i + ""]"";
+                    return false;
+                }
+                if (op != null) {
+                    int count = 1; // to account for the op we already read
+                    while (snapshot.next() != null) {
+                        count++;
+                    }
+                    failureMsg = ""expected ["" + expectedOps.length + ""] ops but got ["" + (expectedOps.length + count) + ""]"";
+                    return false;
+                }
+                return true;
+            } catch (IOException ex) {
+                throw new ElasticsearchException(""failed to read snapshot content"", ex);
+            }
+        }",method,
+"                if (i < expectedOps.length) {
+                    failureMsg = ""expected ["" + expectedOps.length + ""] ops but only found ["" + i + ""]"";
+                    return false;
+                }",method,
+"                if (op != null) {
+                    int count = 1; // to account for the op we already read
+                    while (snapshot.next() != null) {
+                        count++;
+                    }
+                    failureMsg = ""expected ["" + expectedOps.length + ""] ops but got ["" + (expectedOps.length + count) + ""]"";
+                    return false;
+                }",method,
+"        @Override
+        public void describeTo(Description description) {
+            description.appendText(failureMsg);
+        }",method,
+"import org.jetbrains.annotations.NotNull;
+class GraphNodesVisibility {
+  @NotNull private final LinearGraph myLinearGraph;
+  @NotNull private UnsignedBitSet myNodeVisibilityById;
+  GraphNodesVisibility(@NotNull LinearGraph linearGraph, @NotNull UnsignedBitSet nodeVisibilityById) {
+    myLinearGraph = linearGraph;
+    myNodeVisibilityById = nodeVisibilityById;
+  }
+  @NotNull
+  UnsignedBitSet getNodeVisibilityById() {
+    return myNodeVisibilityById;
+  }
+  void setNodeVisibilityById(@NotNull UnsignedBitSet nodeVisibilityById) {
+    myNodeVisibilityById = nodeVisibilityById;
+  }
+  boolean isVisible(int nodeIndex) {
+    return myNodeVisibilityById.get(nodeId(nodeIndex));
+  }
+  void show(int nodeIndex) {
+    myNodeVisibilityById.set(nodeId(nodeIndex), true);
+  }
+  void hide(int nodeIndex) {
+    myNodeVisibilityById.set(nodeId(nodeIndex), false);
+  }
+  Flags asFlags() {
+    return new Flags() {
+      @Override
+      public int size() {
+        return myLinearGraph.nodesCount();
+      }
+      @Override
+      public boolean get(int index) {
+        return myNodeVisibilityById.get(nodeId(index));
+      }
+      @Override
+      public void set(int index, boolean value) {
+        myNodeVisibilityById.set(nodeId(index), value);
+      }
+      @Override
+      public void setAll(boolean value) {
+        for (int index = 0; index < size(); index++) set(index, value);
+      }
+    };
+  }
+  private int nodeId(int nodeIndex) {
+    return myLinearGraph.getNodeId(nodeIndex);
+  }
+}",class,
+"  @NotNull private final LinearGraph myLinearGraph;
+  @NotNull private UnsignedBitSet myNodeVisibilityById;
+  GraphNodesVisibility(@NotNull LinearGraph linearGraph, @NotNull UnsignedBitSet nodeVisibilityById) {
+    myLinearGraph = linearGraph;
+    myNodeVisibilityById = nodeVisibilityById;
+  }",method,
+"  @NotNull
+  UnsignedBitSet getNodeVisibilityById() {
+    return myNodeVisibilityById;
+  }",method,
+"  void setNodeVisibilityById(@NotNull UnsignedBitSet nodeVisibilityById) {
+    myNodeVisibilityById = nodeVisibilityById;
+  }",method,
+"  boolean isVisible(int nodeIndex) {
+    return myNodeVisibilityById.get(nodeId(nodeIndex));
+  }",method,
+"  void show(int nodeIndex) {
+    myNodeVisibilityById.set(nodeId(nodeIndex), true);
+  }",method,
+"  void hide(int nodeIndex) {
+    myNodeVisibilityById.set(nodeId(nodeIndex), false);
+  }",method,
+"  Flags asFlags() {
+    return new Flags() {
+      @Override
+      public int size() {
+        return myLinearGraph.nodesCount();
+      }
+      @Override
+      public boolean get(int index) {
+        return myNodeVisibilityById.get(nodeId(index));
+      }
+      @Override
+      public void set(int index, boolean value) {
+        myNodeVisibilityById.set(nodeId(index), value);
+      }
+      @Override
+      public void setAll(boolean value) {
+        for (int index = 0; index < size(); index++) set(index, value);
+      }
+    };
+  }",method,
+"    return new Flags() {
+      @Override
+      public int size() {
+        return myLinearGraph.nodesCount();
+      }
+      @Override
+      public boolean get(int index) {
+        return myNodeVisibilityById.get(nodeId(index));
+      }
+      @Override
+      public void set(int index, boolean value) {
+        myNodeVisibilityById.set(nodeId(index), value);
+      }
+      @Override
+      public void setAll(boolean value) {
+        for (int index = 0; index < size(); index++) set(index, value);
+      }
+    }",method,
+"      @Override
+      public int size() {
+        return myLinearGraph.nodesCount();
+      }",method,
+"      @Override
+      public boolean get(int index) {
+        return myNodeVisibilityById.get(nodeId(index));
+      }",method,
+"      @Override
+      public void set(int index, boolean value) {
+        myNodeVisibilityById.set(nodeId(index), value);
+      }",method,
+"      @Override
+      public void setAll(boolean value) {
+        for (int index = 0; index < size(); index++) set(index, value);
+      }",method,
+"  private int nodeId(int nodeIndex) {
+    return myLinearGraph.getNodeId(nodeIndex);
+  }",method,
+"public final class FunctionQueueProcessor implements Runnable
+{
+    private final FunctionStep functionStep;
+    private final BlockingQueue<long[]> stepOneQueue;
+    private final BlockingQueue<Long> stepTwoQueue;
+    private final BlockingQueue<Long> stepThreeQueue;
+    private final long count;
+    private volatile boolean running;
+    private long stepThreeCounter;
+    private long sequence;
+    private CountDownLatch latch;
+    public FunctionQueueProcessor(
+        final FunctionStep functionStep,
+        final BlockingQueue<long[]> stepOneQueue,
+        final BlockingQueue<Long> stepTwoQueue,
+        final BlockingQueue<Long> stepThreeQueue,
+        final long count)
+    {
+        this.functionStep = functionStep;
+        this.stepOneQueue = stepOneQueue;
+        this.stepTwoQueue = stepTwoQueue;
+        this.stepThreeQueue = stepThreeQueue;
+        this.count = count;
+    }
+    public long getStepThreeCounter()
+    {
+        return stepThreeCounter;
+    }
+    public void reset(final CountDownLatch latch)
+    {
+        stepThreeCounter = 0L;
+        sequence = 0L;
+        this.latch = latch;
+    }
+    public void halt()
+    {
+        running = false;
+    }
+    @Override
+    public void run()
+    {
+        running = true;
+        while (true)
+        {
+            try
+            {
+                switch (functionStep)
+                {
+                    case ONE:
+                    {
+                        long[] values = stepOneQueue.take();
+                        stepTwoQueue.put(Long.valueOf(values[0] + values[1]));
+                        break;
+                    }
+                    case TWO:
+                    {
+                        Long value = stepTwoQueue.take();
+                        stepThreeQueue.put(Long.valueOf(value.longValue() + 3));
+                        break;
+                    }
+                    case THREE:
+                    {
+                        Long value = stepThreeQueue.take();
+                        long testValue = value.longValue();
+                        if ((testValue & 4L) == 4L)
+                        {
+                            ++stepThreeCounter;
+                        }
+                        break;
+                    }
+                }
+                if (null != latch && sequence++ == count)
+                {
+                    latch.countDown();
+                }
+            }
+            catch (InterruptedException ex)
+            {
+                if (!running)
+                {
+                    break;
+                }
+            }
+        }
+    }
+}",class,
+"    public FunctionQueueProcessor(
+        final FunctionStep functionStep,
+        final BlockingQueue<long[]> stepOneQueue,
+        final BlockingQueue<Long> stepTwoQueue,
+        final BlockingQueue<Long> stepThreeQueue,
+        final long count)
+    {
+        this.functionStep = functionStep;
+        this.stepOneQueue = stepOneQueue;
+        this.stepTwoQueue = stepTwoQueue;
+        this.stepThreeQueue = stepThreeQueue;
+        this.count = count;
+    }",method,
+"    public long getStepThreeCounter()
+    {
+        return stepThreeCounter;
+    }",method,
+"    public void reset(final CountDownLatch latch)
+    {
+        stepThreeCounter = 0L;
+        sequence = 0L;
+        this.latch = latch;
+    }",method,
+"    public void halt()
+    {
+        running = false;
+    }",method,
+"    @Override
+    public void run()
+    {
+        running = true;
+        while (true)
+        {
+            try
+            {
+                switch (functionStep)
+                {
+                    case ONE:
+                    {
+                        long[] values = stepOneQueue.take();
+                        stepTwoQueue.put(Long.valueOf(values[0] + values[1]));
+                        break;
+                    }
+                    case TWO:
+                    {
+                        Long value = stepTwoQueue.take();
+                        stepThreeQueue.put(Long.valueOf(value.longValue() + 3));
+                        break;
+                    }
+                    case THREE:
+                    {
+                        Long value = stepThreeQueue.take();
+                        long testValue = value.longValue();
+                        if ((testValue & 4L) == 4L)
+                        {
+                            ++stepThreeCounter;
+                        }
+                        break;
+                    }
+                }
+                if (null != latch && sequence++ == count)
+                {
+                    latch.countDown();
+                }
+            }
+            catch (InterruptedException ex)
+            {
+                if (!running)
+                {
+                    break;
+                }
+            }
+        }
+    }",method,
+"        while (true)
+        {
+            try
+            {
+                switch (functionStep)
+                {
+                    case ONE:
+                    {
+                        long[] values = stepOneQueue.take();
+                        stepTwoQueue.put(Long.valueOf(values[0] + values[1]));
+                        break;
+                    }
+                    case TWO:
+                    {
+                        Long value = stepTwoQueue.take();
+                        stepThreeQueue.put(Long.valueOf(value.longValue() + 3));
+                        break;
+                    }
+                    case THREE:
+                    {
+                        Long value = stepThreeQueue.take();
+                        long testValue = value.longValue();
+                        if ((testValue & 4L) == 4L)
+                        {
+                            ++stepThreeCounter;
+                        }
+                        break;
+                    }
+                }
+                if (null != latch && sequence++ == count)
+                {
+                    latch.countDown();
+                }
+            }
+            catch (InterruptedException ex)
+            {
+                if (!running)
+                {
+                    break;
+                }
+            }
+        }",method,
+"                switch (functionStep)
+                {
+                    case ONE:
+                    {
+                        long[] values = stepOneQueue.take();
+                        stepTwoQueue.put(Long.valueOf(values[0] + values[1]));
+                        break;
+                    }
+                    case TWO:
+                    {
+                        Long value = stepTwoQueue.take();
+                        stepThreeQueue.put(Long.valueOf(value.longValue() + 3));
+                        break;
+                    }
+                    case THREE:
+                    {
+                        Long value = stepThreeQueue.take();
+                        long testValue = value.longValue();
+                        if ((testValue & 4L) == 4L)
+                        {
+                            ++stepThreeCounter;
+                        }
+                        break;
+                    }
+                }",method,
+"                if (null != latch && sequence++ == count)
+                {
+                    latch.countDown();
+                }",method,
+"            catch (InterruptedException ex)
+            {
+                if (!running)
+                {
+                    break;
+                }
+            }",method,
+"                if (!running)
+                {
+                    break;
+                }",method,
+"public class DirectoryAsPackageRenameHandler extends DirectoryAsPackageRenameHandlerBase<PsiPackage> {
+  @Override
+  protected VirtualFile[] occursInPackagePrefixes(PsiPackage aPackage) {
+    return aPackage.occursInPackagePrefixes();
+  }
+  @Override
+  protected boolean isIdentifier(String name, Project project) {
+    return PsiNameHelper.getInstance(project).isIdentifier(name);
+  }
+  @Override
+  protected String getQualifiedName(PsiPackage aPackage) {
+    return aPackage.getQualifiedName();
+  }
+  @Override
+  protected PsiPackage getPackage(PsiDirectory psiDirectory) {
+    return JavaDirectoryService.getInstance().getPackage(psiDirectory);
+  }
+  @Override
+  protected BaseRefactoringProcessor createProcessor(final String newQName,
+                                                     Project project,
+                                                     final PsiDirectory[] dirsToRename,
+                                                     boolean searchInComments, boolean searchInNonJavaFiles) {
+    return new MoveDirectoryWithClassesProcessor(project, dirsToRename, null, searchInComments, searchInNonJavaFiles, false, null) {
+      @Override
+      public TargetDirectoryWrapper getTargetDirectory(final PsiDirectory dir) {
+        return new TargetDirectoryWrapper(dir.getParentDirectory(), StringUtil.getShortName(newQName));
+      }
+      @Override
+      protected String getTargetName() {
+        return newQName;
+      }
+      @Override
+      protected String getCommandName() {
+        return RefactoringBundle.message(dirsToRename.length == 1 ? ""rename.directory.command.name"" : ""rename.directories.command.name"");
+      }
+    };
+  }
+}",class,
+"  @Override
+  protected VirtualFile[] occursInPackagePrefixes(PsiPackage aPackage) {
+    return aPackage.occursInPackagePrefixes();
+  }",method,
+"  @Override
+  protected boolean isIdentifier(String name, Project project) {
+    return PsiNameHelper.getInstance(project).isIdentifier(name);
+  }",method,
+"  @Override
+  protected String getQualifiedName(PsiPackage aPackage) {
+    return aPackage.getQualifiedName();
+  }",method,
+"  @Override
+  protected PsiPackage getPackage(PsiDirectory psiDirectory) {
+    return JavaDirectoryService.getInstance().getPackage(psiDirectory);
+  }",method,
+"  @Override
+  protected BaseRefactoringProcessor createProcessor(final String newQName,
+                                                     Project project,
+                                                     final PsiDirectory[] dirsToRename,
+                                                     boolean searchInComments, boolean searchInNonJavaFiles) {
+    return new MoveDirectoryWithClassesProcessor(project, dirsToRename, null, searchInComments, searchInNonJavaFiles, false, null) {
+      @Override
+      public TargetDirectoryWrapper getTargetDirectory(final PsiDirectory dir) {
+        return new TargetDirectoryWrapper(dir.getParentDirectory(), StringUtil.getShortName(newQName));
+      }
+      @Override
+      protected String getTargetName() {
+        return newQName;
+      }
+      @Override
+      protected String getCommandName() {
+        return RefactoringBundle.message(dirsToRename.length == 1 ? ""rename.directory.command.name"" : ""rename.directories.command.name"");
+      }
+    };
+  }",method,
+"    return new MoveDirectoryWithClassesProcessor(project, dirsToRename, null, searchInComments, searchInNonJavaFiles, false, null) {
+      @Override
+      public TargetDirectoryWrapper getTargetDirectory(final PsiDirectory dir) {
+        return new TargetDirectoryWrapper(dir.getParentDirectory(), StringUtil.getShortName(newQName));
+      }
+      @Override
+      protected String getTargetName() {
+        return newQName;
+      }
+      @Override
+      protected String getCommandName() {
+        return RefactoringBundle.message(dirsToRename.length == 1 ? ""rename.directory.command.name"" : ""rename.directories.command.name"");
+      }
+    }",method,
+"      @Override
+      public TargetDirectoryWrapper getTargetDirectory(final PsiDirectory dir) {
+        return new TargetDirectoryWrapper(dir.getParentDirectory(), StringUtil.getShortName(newQName));
+      }",method,
+"      @Override
+      protected String getTargetName() {
+        return newQName;
+      }",method,
+"      @Override
+      protected String getCommandName() {
+        return RefactoringBundle.message(dirsToRename.length == 1 ? ""rename.directory.command.name"" : ""rename.directories.command.name"");
+      }",method,
+"public abstract class LibrariesIndex {
+  public abstract List<ContributedLibrary> getLibraries();
+  public List<ContributedLibrary> find(final String name) {
+    return getLibraries().stream().filter(new LibraryWithNamePredicate(name)).collect(Collectors.toList());
+  }
+  public ContributedLibrary find(String name, String version) {
+    if (name == null || version == null) {
+      return null;
+    }
+    for (ContributedLibrary lib : find(name)) {
+      if (version.equals(lib.getParsedVersion())) {
+        return lib;
+      }
+    }
+    return null;
+  }
+  @Override
+  public String toString() {
+    StringBuilder sb = new StringBuilder();
+    for (ContributedLibrary library : getLibraries()) {
+      sb.append(library.toString());
+    }
+    return sb.toString();
+  }
+  public List<String> getCategories() {
+    List<String> categories = new LinkedList<>();
+    for (ContributedLibrary lib : getLibraries()) {
+      if (lib.getCategory() != null && !categories.contains(lib.getCategory())) {
+        categories.add(lib.getCategory());
+      }
+    }
+    Collections.sort(categories);
+    return categories;
+  }
+  public List<String> getTypes() {
+    Collection<String> typesAccumulator = new HashSet<>();
+    for (ContributedLibrary lib : getLibraries()) {
+      if (lib.getTypes() != null) {
+        typesAccumulator.addAll(lib.getTypes());
+      }
+    }
+    List<String> types = new LinkedList<>(typesAccumulator);
+    Collections.sort(types);
+    return types;
+  }
+  public ContributedLibrary getInstalled(String name) {
+    List<ContributedLibrary> installedReleases = find(name).stream().filter(new InstalledPredicate()).collect(Collectors.toList());
+    Collections.sort(installedReleases, new DownloadableContributionBuiltInAtTheBottomComparator());
+    if (installedReleases.isEmpty()) {
+      return null;
+    }
+    return installedReleases.get(0);
+  }
+}",class,
+"  public List<ContributedLibrary> find(final String name) {
+    return getLibraries().stream().filter(new LibraryWithNamePredicate(name)).collect(Collectors.toList());
+  }",method,
+"  public ContributedLibrary find(String name, String version) {
+    if (name == null || version == null) {
+      return null;
+    }
+    for (ContributedLibrary lib : find(name)) {
+      if (version.equals(lib.getParsedVersion())) {
+        return lib;
+      }
+    }
+    return null;
+  }",method,
+"    if (name == null || version == null) {
+      return null;
+    }",method,
+"  @Override
+  public String toString() {
+    StringBuilder sb = new StringBuilder();
+    for (ContributedLibrary library : getLibraries()) {
+      sb.append(library.toString());
+    }
+    return sb.toString();
+  }",method,
+"  public List<String> getCategories() {
+    List<String> categories = new LinkedList<>();
+    for (ContributedLibrary lib : getLibraries()) {
+      if (lib.getCategory() != null && !categories.contains(lib.getCategory())) {
+        categories.add(lib.getCategory());
+      }
+    }
+    Collections.sort(categories);
+    return categories;
+  }",method,
+"  public List<String> getTypes() {
+    Collection<String> typesAccumulator = new HashSet<>();
+    for (ContributedLibrary lib : getLibraries()) {
+      if (lib.getTypes() != null) {
+        typesAccumulator.addAll(lib.getTypes());
+      }
+    }
+    List<String> types = new LinkedList<>(typesAccumulator);
+    Collections.sort(types);
+    return types;
+  }",method,
+"  public ContributedLibrary getInstalled(String name) {
+    List<ContributedLibrary> installedReleases = find(name).stream().filter(new InstalledPredicate()).collect(Collectors.toList());
+    Collections.sort(installedReleases, new DownloadableContributionBuiltInAtTheBottomComparator());
+    if (installedReleases.isEmpty()) {
+      return null;
+    }
+    return installedReleases.get(0);
+  }",method,
+"public class HighlightInfoComposite extends HighlightInfo {
+  @NonNls private static final String LINE_BREAK = ""<hr size=1 noshade>"";
+  public HighlightInfoComposite(@NotNull List<HighlightInfo> infos) {
+    super(null, null, infos.get(0).type, infos.get(0).startOffset, infos.get(0).endOffset, createCompositeDescription(infos),
+          createCompositeTooltip(infos), infos.get(0).type.getSeverity(null), false, null, false, 0, infos.get(0).getProblemGroup(), infos.get(0).getGutterIconRenderer());
+    setHighlighter(infos.get(0).getHighlighter());
+    setGroup(infos.get(0).getGroup());
+    List EMPTY = ContainerUtil.emptyList();
+    List<Pair<IntentionActionDescriptor, RangeMarker>> markers = EMPTY;
+    List<Pair<IntentionActionDescriptor, TextRange>> ranges = EMPTY;
+    for (HighlightInfo info : infos) {
+      if (info.quickFixActionMarkers != null) {
+        if (markers == EMPTY) markers = new ArrayList<>();
+        markers.addAll(info.quickFixActionMarkers);
+      }
+      if (info.quickFixActionRanges != null) {
+        if (ranges == EMPTY) ranges = new ArrayList<>();
+        ranges.addAll(info.quickFixActionRanges);
+      }
+    }
+    quickFixActionMarkers = ContainerUtil.createLockFreeCopyOnWriteList(markers);
+    quickFixActionRanges = ContainerUtil.createLockFreeCopyOnWriteList(ranges);
+  }
+  @Nullable
+  private static String createCompositeDescription(List<HighlightInfo> infos) {
+    StringBuilder description = new StringBuilder();
+    boolean isNull = true;
+    for (HighlightInfo info : infos) {
+      String itemDescription = info.getDescription();
+      if (itemDescription != null) {
+        itemDescription = itemDescription.trim();
+        description.append(itemDescription);
+        if (!itemDescription.endsWith(""."")) {
+          description.append('.');
+        }
+        description.append(' ');
+        isNull = false;
+      }
+    }
+    return isNull ? null : description.toString();
+  }
+  @Nullable
+  private static String createCompositeTooltip(@NotNull List<HighlightInfo> infos) {
+    StringBuilder result = new StringBuilder();
+    for (HighlightInfo info : infos) {
+      String toolTip = info.getToolTip();
+      if (toolTip != null) {
+        if (result.length() != 0) {
+          result.append(LINE_BREAK);
+        }
+        toolTip = XmlStringUtil.stripHtml(toolTip);
+        result.append(toolTip);
+      }
+    }
+    if (result.length() == 0) {
+      return null;
+    }
+    return XmlStringUtil.wrapInHtml(result);
+  }
+}",class,
+"  @NonNls private static final String LINE_BREAK = ""<hr size=1 noshade>"";
+  public HighlightInfoComposite(@NotNull List<HighlightInfo> infos) {
+    super(null, null, infos.get(0).type, infos.get(0).startOffset, infos.get(0).endOffset, createCompositeDescription(infos),
+          createCompositeTooltip(infos), infos.get(0).type.getSeverity(null), false, null, false, 0, infos.get(0).getProblemGroup(), infos.get(0).getGutterIconRenderer());
+    setHighlighter(infos.get(0).getHighlighter());
+    setGroup(infos.get(0).getGroup());
+    List EMPTY = ContainerUtil.emptyList();
+    List<Pair<IntentionActionDescriptor, RangeMarker>> markers = EMPTY;
+    List<Pair<IntentionActionDescriptor, TextRange>> ranges = EMPTY;
+    for (HighlightInfo info : infos) {
+      if (info.quickFixActionMarkers != null) {
+        if (markers == EMPTY) markers = new ArrayList<>();
+        markers.addAll(info.quickFixActionMarkers);
+      }
+      if (info.quickFixActionRanges != null) {
+        if (ranges == EMPTY) ranges = new ArrayList<>();
+        ranges.addAll(info.quickFixActionRanges);
+      }
+    }
+    quickFixActionMarkers = ContainerUtil.createLockFreeCopyOnWriteList(markers);
+    quickFixActionRanges = ContainerUtil.createLockFreeCopyOnWriteList(ranges);
+  }",method,
+"    for (HighlightInfo info : infos) {
+      if (info.quickFixActionMarkers != null) {
+        if (markers == EMPTY) markers = new ArrayList<>();
+        markers.addAll(info.quickFixActionMarkers);
+      }
+      if (info.quickFixActionRanges != null) {
+        if (ranges == EMPTY) ranges = new ArrayList<>();
+        ranges.addAll(info.quickFixActionRanges);
+      }
+    }",method,
+"      if (info.quickFixActionMarkers != null) {
+        if (markers == EMPTY) markers = new ArrayList<>();
+        markers.addAll(info.quickFixActionMarkers);
+      }",method,
+"      if (info.quickFixActionRanges != null) {
+        if (ranges == EMPTY) ranges = new ArrayList<>();
+        ranges.addAll(info.quickFixActionRanges);
+      }",method,
+"  @Nullable
+  private static String createCompositeDescription(List<HighlightInfo> infos) {
+    StringBuilder description = new StringBuilder();
+    boolean isNull = true;
+    for (HighlightInfo info : infos) {
+      String itemDescription = info.getDescription();
+      if (itemDescription != null) {
+        itemDescription = itemDescription.trim();
+        description.append(itemDescription);
+        if (!itemDescription.endsWith(""."")) {
+          description.append('.');
+        }
+        description.append(' ');
+        isNull = false;
+      }
+    }
+    return isNull ? null : description.toString();
+  }",method,
+"    for (HighlightInfo info : infos) {
+      String itemDescription = info.getDescription();
+      if (itemDescription != null) {
+        itemDescription = itemDescription.trim();
+        description.append(itemDescription);
+        if (!itemDescription.endsWith(""."")) {
+          description.append('.');
+        }
+        description.append(' ');
+        isNull = false;
+      }
+    }",method,
+"      if (itemDescription != null) {
+        itemDescription = itemDescription.trim();
+        description.append(itemDescription);
+        if (!itemDescription.endsWith(""."")) {
+          description.append('.');
+        }
+        description.append(' ');
+        isNull = false;
+      }",method,
+"  @Nullable
+  private static String createCompositeTooltip(@NotNull List<HighlightInfo> infos) {
+    StringBuilder result = new StringBuilder();
+    for (HighlightInfo info : infos) {
+      String toolTip = info.getToolTip();
+      if (toolTip != null) {
+        if (result.length() != 0) {
+          result.append(LINE_BREAK);
+        }
+        toolTip = XmlStringUtil.stripHtml(toolTip);
+        result.append(toolTip);
+      }
+    }
+    if (result.length() == 0) {
+      return null;
+    }
+    return XmlStringUtil.wrapInHtml(result);
+  }",method,
+"    for (HighlightInfo info : infos) {
+      String toolTip = info.getToolTip();
+      if (toolTip != null) {
+        if (result.length() != 0) {
+          result.append(LINE_BREAK);
+        }
+        toolTip = XmlStringUtil.stripHtml(toolTip);
+        result.append(toolTip);
+      }
+    }",method,
+"      if (toolTip != null) {
+        if (result.length() != 0) {
+          result.append(LINE_BREAK);
+        }
+        toolTip = XmlStringUtil.stripHtml(toolTip);
+        result.append(toolTip);
+      }",method,
+"public class InhouseProvider extends ContentProvider {
+    private static final String FILENAME = ""sensitive.txt"";
+    // 自社のSignature Permission
+    private static final String MY_PERMISSION = ""org.jssec.android.file.inhouseprovider.MY_PERMISSION"";
+    // 自社の証明書のハッシュ値
+    private static String sMyCertHash = null;
+    private static String myCertHash(Context context) {
+        if (sMyCertHash == null) {
+            if (Utils.isDebuggable(context)) {
+                // debug.keystoreの""androiddebugkey""の証明書ハッシュ値
+                sMyCertHash = ""0EFB7236 328348A9 89718BAD DF57F544 D5CCB4AE B9DB34BC 1E29DD26 F77C8255"";
+            } else {
+                // keystoreの""my company key""の証明書ハッシュ値
+                sMyCertHash = ""D397D343 A5CBC10F 4EDDEB7C A10062DE 5690984F 1FB9E88B D7B3A7C2 42E142CA"";
+            }
+        }
+        return sMyCertHash;
+    }
+    @Override
+    public boolean onCreate() {
+        File dir = getContext().getFilesDir();
+        FileOutputStream fos = null;
+        try {
+            fos = new FileOutputStream(new File(dir, FILENAME));
+            // ★ポイント1★ 利用元アプリは自社アプリであるから、センシティブな情報を保存してよい
+            fos.write(new String(""センシティブな情報"").getBytes());
+        } catch (IOException e) {
+        } finally {
+            try {
+                fos.close();
+            } catch (IOException e) {
+            }
+        }
+        return true;
+    }
+    @Override
+    public ParcelFileDescriptor openFile(Uri uri, String mode)
+            throws FileNotFoundException {
+        // 独自定義Signature Permissionが自社アプリにより定義されていることを確認する
+        if (!SigPerm
+                .test(getContext(), MY_PERMISSION, myCertHash(getContext()))) {
+            throw new SecurityException(
+                    ""独自定義Signature Permissionが自社アプリにより定義されていない。"");
+        }
+        File dir = getContext().getFilesDir();
+        File file = new File(dir, FILENAME);
+        // サンプルのため読み取り専用を常に返す
+        int modeBits = ParcelFileDescriptor.MODE_READ_ONLY;
+        return ParcelFileDescriptor.open(file, modeBits);
+    }
+    @Override
+    public String getType(Uri uri) {
+        return """";
+    }
+    @Override
+    public Cursor query(Uri uri, String[] projection, String selection,
+            String[] selectionArgs, String sortOrder) {
+        return null;
+    }
+    @Override
+    public Uri insert(Uri uri, ContentValues values) {
+        return null;
+    }
+    @Override
+    public int update(Uri uri, ContentValues values, String selection,
+            String[] selectionArgs) {
+        return 0;
+    }
+    @Override
+    public int delete(Uri uri, String selection, String[] selectionArgs) {
+        return 0;
+    }
+}",class,
+"    private static String myCertHash(Context context) {
+        if (sMyCertHash == null) {
+            if (Utils.isDebuggable(context)) {
+                // debug.keystoreの""androiddebugkey""の証明書ハッシュ値
+                sMyCertHash = ""0EFB7236 328348A9 89718BAD DF57F544 D5CCB4AE B9DB34BC 1E29DD26 F77C8255"";
+            } else {
+                // keystoreの""my company key""の証明書ハッシュ値
+                sMyCertHash = ""D397D343 A5CBC10F 4EDDEB7C A10062DE 5690984F 1FB9E88B D7B3A7C2 42E142CA"";
+            }
+        }
+        return sMyCertHash;
+    }",method,
+"        if (sMyCertHash == null) {
+            if (Utils.isDebuggable(context)) {
+                // debug.keystoreの""androiddebugkey""の証明書ハッシュ値
+                sMyCertHash = ""0EFB7236 328348A9 89718BAD DF57F544 D5CCB4AE B9DB34BC 1E29DD26 F77C8255"";
+            } else {
+                // keystoreの""my company key""の証明書ハッシュ値
+                sMyCertHash = ""D397D343 A5CBC10F 4EDDEB7C A10062DE 5690984F 1FB9E88B D7B3A7C2 42E142CA"";
+            }
+        }",method,
+"    @Override
+    public boolean onCreate() {
+        File dir = getContext().getFilesDir();
+        FileOutputStream fos = null;
+        try {
+            fos = new FileOutputStream(new File(dir, FILENAME));
+            // ★ポイント1★ 利用元アプリは自社アプリであるから、センシティブな情報を保存してよい
+            fos.write(new String(""センシティブな情報"").getBytes());
+        } catch (IOException e) {
+        } finally {
+            try {
+                fos.close();
+            } catch (IOException e) {
+            }
+        }
+        return true;
+    }",method,
+"    @Override
+    public ParcelFileDescriptor openFile(Uri uri, String mode)
+            throws FileNotFoundException {
+        // 独自定義Signature Permissionが自社アプリにより定義されていることを確認する
+        if (!SigPerm
+                .test(getContext(), MY_PERMISSION, myCertHash(getContext()))) {
+            throw new SecurityException(
+                    ""独自定義Signature Permissionが自社アプリにより定義されていない。"");
+        }
+        File dir = getContext().getFilesDir();
+        File file = new File(dir, FILENAME);
+        // サンプルのため読み取り専用を常に返す
+        int modeBits = ParcelFileDescriptor.MODE_READ_ONLY;
+        return ParcelFileDescriptor.open(file, modeBits);
+    }",method,
+"    @Override
+    public String getType(Uri uri) {
+        return """";
+    }",method,
+"    @Override
+    public Cursor query(Uri uri, String[] projection, String selection,
+            String[] selectionArgs, String sortOrder) {
+        return null;
+    }",method,
+"    @Override
+    public Uri insert(Uri uri, ContentValues values) {
+        return null;
+    }",method,
+"    @Override
+    public int update(Uri uri, ContentValues values, String selection,
+            String[] selectionArgs) {
+        return 0;
+    }",method,
+"    @Override
+    public int delete(Uri uri, String selection, String[] selectionArgs) {
+        return 0;
+    }",method,
+"public class PGSelectTest10 extends PGTest {
+    public void test_0() throws Exception {
+        String sql = ""SELECT nextval('passport_id_seq'::regclass) as id"";
+        PGSQLStatementParser parser = new PGSQLStatementParser(sql);
+        List<SQLStatement> statementList = parser.parseStatementList();
+        SQLStatement statemen = statementList.get(0);
+//        print(statementList);
+        Assert.assertEquals(1, statementList.size());
+        PGSchemaStatVisitor visitor = new PGSchemaStatVisitor();
+        statemen.accept(visitor);
+//        System.out.println(""Tables : "" + visitor.getTables());
+//        System.out.println(""fields : "" + visitor.getColumns());
+//        System.out.println(""coditions : "" + visitor.getConditions());
+        Assert.assertEquals(0, visitor.getColumns().size());
+        Assert.assertEquals(0, visitor.getTables().size());
+    }
+}",class,
+"    public void test_0() throws Exception {
+        String sql = ""SELECT nextval('passport_id_seq'::regclass) as id"";
+        PGSQLStatementParser parser = new PGSQLStatementParser(sql);
+        List<SQLStatement> statementList = parser.parseStatementList();
+        SQLStatement statemen = statementList.get(0);
+//        print(statementList);
+        Assert.assertEquals(1, statementList.size());
+        PGSchemaStatVisitor visitor = new PGSchemaStatVisitor();
+        statemen.accept(visitor);
+//        System.out.println(""Tables : "" + visitor.getTables());
+//        System.out.println(""fields : "" + visitor.getColumns());
+//        System.out.println(""coditions : "" + visitor.getConditions());
+        Assert.assertEquals(0, visitor.getColumns().size());
+        Assert.assertEquals(0, visitor.getTables().size());
+    }",method,
+"abstract class AbstractCapabilities implements Capabilities {
+  private final Map<String, Object> caps = new TreeMap<>();
+  @Override
+  public Platform getPlatform() {
+    return Stream.of(""platform"", ""platformName"")
+        .map(this::getCapability)
+        .filter(Objects::nonNull)
+        .map(cap -> {
+          if (cap instanceof Platform) {
+            return (Platform) cap;
+          }
+          try {
+            return Platform.fromString((String.valueOf(cap)));
+          } catch (WebDriverException e) {
+            return null;
+          }
+        })
+        .filter(Objects::nonNull)
+        .findFirst()
+        .orElse(null);
+  }
+  @Override
+  public Object getCapability(String capabilityName) {
+    return caps.get(capabilityName);
+  }
+  protected void setCapability(String key, Object value) {
+    Objects.requireNonNull(key, ""Cannot set a capability without a name"");
+    if (value == null) {
+      caps.remove(key);
+      return;
+    }
+    if (""loggingPrefs"".equals(key) && value instanceof Map) {
+      LoggingPreferences prefs = new LoggingPreferences();
+      @SuppressWarnings(""unchecked"") Map<String, String> prefsMap = (Map<String, String>) value;
+      for (String logType : prefsMap.keySet()) {
+        prefs.enable(logType, LogLevelMapping.toLevel(prefsMap.get(logType)));
+      }
+      caps.put(key, prefs);
+      return;
+    }
+    if (""platform"".equals(key) && value instanceof String) {
+      try {
+        caps.put(key, Platform.fromString((String) value));
+      } catch (WebDriverException e) {
+        caps.put(key, value);
+      }
+      return;
+    }
+    if (""unexpectedAlertBehaviour"".equals(key)) {
+      caps.put(""unexpectedAlertBehaviour"", value);
+      caps.put(""unhandledPromptBehavior"", value);
+      return;
+    }
+    caps.put(key, value);
+  }
+  @Override
+  public Map<String, ?> asMap() {
+    return Collections.unmodifiableMap(caps);
+  }
+  protected int amendHashCode() {
+    return 0;
+  }
+  @Override
+  public int hashCode() {
+    return Objects.hash(amendHashCode(), caps);
+  }
+  @Override
+  public boolean equals(Object o) {
+    if (this == o) {
+      return true;
+    }
+    if (!(o instanceof Capabilities)) {
+      return false;
+    }
+    Capabilities that = (Capabilities) o;
+    return asMap().equals(that.asMap());
+  }
+  @Override
+  public String toString() {
+    Map<Object, String> seen = new IdentityHashMap<>();
+    return ""Capabilities "" + abbreviate(seen, caps);
+  }
+  private String abbreviate(Map<Object, String> seen, Object stringify) {
+    if (stringify == null) {
+      return ""null"";
+    }
+    StringBuilder value = new StringBuilder();
+    if (stringify.getClass().isArray()) {
+      value.append(""["");
+      value.append(
+          Stream.of((Object[]) stringify)
+              .map(item -> abbreviate(seen, item))
+              .collect(Collectors.joining("", "")));
+      value.append(""]"");
+    } else if (stringify instanceof Collection) {
+      value.append(""["");
+      value.append(
+          ((Collection<?>) stringify).stream()
+              .map(item -> abbreviate(seen, item))
+              .collect(Collectors.joining("", "")));
+      value.append(""]"");
+    } else if (stringify instanceof Map) {
+      value.append(""{"");
+      value.append(
+          ((Map<?, ?>) stringify).entrySet().stream()
+              .sorted(Comparator.comparing(entry -> String.valueOf(entry.getKey())))
+              .map(entry -> String.valueOf(entry.getKey()) + "": "" + abbreviate(seen, entry.getValue()))
+              .collect(Collectors.joining("", "")));
+      value.append(""}"");
+    } else {
+      String s = String.valueOf(stringify);
+      if (s.length() > 30) {
+        value.append(s.substring(0, 27)).append(""..."");
+      } else {
+        value.append(s);
+      }
+    }
+    seen.put(stringify, value.toString());
+    return value.toString();
+  }
+}",class,
+"  @Override
+  public Platform getPlatform() {
+    return Stream.of(""platform"", ""platformName"")
+        .map(this::getCapability)
+        .filter(Objects::nonNull)
+        .map(cap -> {
+          if (cap instanceof Platform) {
+            return (Platform) cap;
+          }
+          try {
+            return Platform.fromString((String.valueOf(cap)));
+          } catch (WebDriverException e) {
+            return null;
+          }
+        })
+        .filter(Objects::nonNull)
+        .findFirst()
+        .orElse(null);
+  }",method,
+"        .map(cap -> {
+          if (cap instanceof Platform) {
+            return (Platform) cap;
+          }",method,
+"  @Override
+  public Object getCapability(String capabilityName) {
+    return caps.get(capabilityName);
+  }",method,
+"  protected void setCapability(String key, Object value) {
+    Objects.requireNonNull(key, ""Cannot set a capability without a name"");
+    if (value == null) {
+      caps.remove(key);
+      return;
+    }
+    if (""loggingPrefs"".equals(key) && value instanceof Map) {
+      LoggingPreferences prefs = new LoggingPreferences();
+      @SuppressWarnings(""unchecked"") Map<String, String> prefsMap = (Map<String, String>) value;
+      for (String logType : prefsMap.keySet()) {
+        prefs.enable(logType, LogLevelMapping.toLevel(prefsMap.get(logType)));
+      }
+      caps.put(key, prefs);
+      return;
+    }
+    if (""platform"".equals(key) && value instanceof String) {
+      try {
+        caps.put(key, Platform.fromString((String) value));
+      } catch (WebDriverException e) {
+        caps.put(key, value);
+      }
+      return;
+    }
+    if (""unexpectedAlertBehaviour"".equals(key)) {
+      caps.put(""unexpectedAlertBehaviour"", value);
+      caps.put(""unhandledPromptBehavior"", value);
+      return;
+    }
+    caps.put(key, value);
+  }",method,
+"    if (value == null) {
+      caps.remove(key);
+      return;
+    }",method,
+"  @Override
+  public Map<String, ?> asMap() {
+    return Collections.unmodifiableMap(caps);
+  }",method,
+"  protected int amendHashCode() {
+    return 0;
+  }",method,
+"  @Override
+  public int hashCode() {
+    return Objects.hash(amendHashCode(), caps);
+  }",method,
+"  @Override
+  public boolean equals(Object o) {
+    if (this == o) {
+      return true;
+    }
+    if (!(o instanceof Capabilities)) {
+      return false;
+    }
+    Capabilities that = (Capabilities) o;
+    return asMap().equals(that.asMap());
+  }",method,
+"    if (this == o) {
+      return true;
+    }",method,
+"  @Override
+  public String toString() {
+    Map<Object, String> seen = new IdentityHashMap<>();
+    return ""Capabilities "" + abbreviate(seen, caps);
+  }",method,
+"  private String abbreviate(Map<Object, String> seen, Object stringify) {
+    if (stringify == null) {
+      return ""null"";
+    }
+    StringBuilder value = new StringBuilder();
+    if (stringify.getClass().isArray()) {
+      value.append(""["");
+      value.append(
+          Stream.of((Object[]) stringify)
+              .map(item -> abbreviate(seen, item))
+              .collect(Collectors.joining("", "")));
+      value.append(""]"");
+    } else if (stringify instanceof Collection) {
+      value.append(""["");
+      value.append(
+          ((Collection<?>) stringify).stream()
+              .map(item -> abbreviate(seen, item))
+              .collect(Collectors.joining("", "")));
+      value.append(""]"");
+    } else if (stringify instanceof Map) {
+      value.append(""{"");
+      value.append(
+          ((Map<?, ?>) stringify).entrySet().stream()
+              .sorted(Comparator.comparing(entry -> String.valueOf(entry.getKey())))
+              .map(entry -> String.valueOf(entry.getKey()) + "": "" + abbreviate(seen, entry.getValue()))
+              .collect(Collectors.joining("", "")));
+      value.append(""}"");
+    } else {
+      String s = String.valueOf(stringify);
+      if (s.length() > 30) {
+        value.append(s.substring(0, 27)).append(""..."");
+      } else {
+        value.append(s);
+      }
+    }
+    seen.put(stringify, value.toString());
+    return value.toString();
+  }",method,
+"    if (stringify == null) {
+      return ""null"";
+    }",method,
+"          if (cap instanceof Platform) {
+            return (Platform) cap;
+          }",method,
+"public class ListOfEditTexts extends Activity {
+    private int mLinesPerEditText = 12;
+    private ListView mListView;
+    private LinearLayout mLinearLayout;
+    public ListView getListView() {
+        return mListView;
+    }
+    @Override
+    protected void onCreate(Bundle icicle) {
+        super.onCreate(icicle);
+        // create linear layout
+        mLinearLayout = new LinearLayout(this);
+        mLinearLayout.setOrientation(LinearLayout.VERTICAL);
+        mLinearLayout.setLayoutParams(new ViewGroup.LayoutParams(
+                ViewGroup.LayoutParams.MATCH_PARENT,
+                ViewGroup.LayoutParams.MATCH_PARENT));
+        // add a button above
+        Button buttonAbove = new Button(this);
+        buttonAbove.setLayoutParams(
+                new LinearLayout.LayoutParams(
+                        ViewGroup.LayoutParams.MATCH_PARENT,
+                        ViewGroup.LayoutParams.WRAP_CONTENT));
+        buttonAbove.setText(""button above list"");
+        mLinearLayout.addView(buttonAbove);
+        // add a list view to it
+        mListView = new ListView(this);
+        mListView.setLayoutParams(new ViewGroup.LayoutParams(
+                ViewGroup.LayoutParams.MATCH_PARENT,
+                ViewGroup.LayoutParams.MATCH_PARENT));
+        mListView.setDrawSelectorOnTop(false);
+        mListView.setItemsCanFocus(true);
+        mListView.setLayoutParams((new LinearLayout.LayoutParams(
+                ViewGroup.LayoutParams.MATCH_PARENT,
+                0,
+                1f)));
+        List<String> bodies = Lists.newArrayList(
+                getBody(""zero hello, my name is android""),
+                getBody(""one i'm a paranoid android""),
+                getBody(""two i robot.  huh huh.""),
+                getBody(""three not the g-phone!""));
+        mListView.setAdapter(new MyAdapter(this, bodies));
+        mLinearLayout.addView(mListView);
+        // add button below
+        Button buttonBelow = new Button(this);
+        buttonBelow.setLayoutParams(
+                new LinearLayout.LayoutParams(
+                        ViewGroup.LayoutParams.MATCH_PARENT,
+                        ViewGroup.LayoutParams.WRAP_CONTENT));
+        buttonBelow.setText(""button below list"");
+        mLinearLayout.addView(buttonBelow);
+        setContentView(mLinearLayout);
+    }
+    String getBody(String line) {
+        StringBuilder sb = new StringBuilder((line.length() + 5) * mLinesPerEditText);
+        for (int i = 0; i < mLinesPerEditText; i++) {
+            sb.append(i + 1).append(' ').append(line);
+            if (i < mLinesPerEditText - 1) {
+                sb.append('\n'); // all but last line
+            }
+        }
+        return sb.toString();
+    }
+    private static class MyAdapter extends ArrayAdapter<String> {
+        public MyAdapter(Context context, List<String> bodies) {
+            super(context, 0, bodies);
+        }
+        @Override
+        public View getView(int position, View convertView, ViewGroup parent) {
+            String body = getItem(position);
+            if (convertView != null) {
+                ((EditText) convertView).setText(body);
+                return convertView;                
+            }
+            EditText editText = new EditText(getContext());
+            editText.setText(body);
+            return editText;
+        }
+    }
+}",class,
+"    private static class MyAdapter extends ArrayAdapter<String> {
+        public MyAdapter(Context context, List<String> bodies) {
+            super(context, 0, bodies);
+        }
+        @Override
+        public View getView(int position, View convertView, ViewGroup parent) {
+            String body = getItem(position);
+            if (convertView != null) {
+                ((EditText) convertView).setText(body);
+                return convertView;                
+            }
+            EditText editText = new EditText(getContext());
+            editText.setText(body);
+            return editText;
+        }
+    }",class,
+"    public ListView getListView() {
+        return mListView;
+    }",method,
+"    @Override
+    protected void onCreate(Bundle icicle) {
+        super.onCreate(icicle);
+        // create linear layout
+        mLinearLayout = new LinearLayout(this);
+        mLinearLayout.setOrientation(LinearLayout.VERTICAL);
+        mLinearLayout.setLayoutParams(new ViewGroup.LayoutParams(
+                ViewGroup.LayoutParams.MATCH_PARENT,
+                ViewGroup.LayoutParams.MATCH_PARENT));
+        // add a button above
+        Button buttonAbove = new Button(this);
+        buttonAbove.setLayoutParams(
+                new LinearLayout.LayoutParams(
+                        ViewGroup.LayoutParams.MATCH_PARENT,
+                        ViewGroup.LayoutParams.WRAP_CONTENT));
+        buttonAbove.setText(""button above list"");
+        mLinearLayout.addView(buttonAbove);
+        // add a list view to it
+        mListView = new ListView(this);
+        mListView.setLayoutParams(new ViewGroup.LayoutParams(
+                ViewGroup.LayoutParams.MATCH_PARENT,
+                ViewGroup.LayoutParams.MATCH_PARENT));
+        mListView.setDrawSelectorOnTop(false);
+        mListView.setItemsCanFocus(true);
+        mListView.setLayoutParams((new LinearLayout.LayoutParams(
+                ViewGroup.LayoutParams.MATCH_PARENT,
+                0,
+                1f)));
+        List<String> bodies = Lists.newArrayList(
+                getBody(""zero hello, my name is android""),
+                getBody(""one i'm a paranoid android""),
+                getBody(""two i robot.  huh huh.""),
+                getBody(""three not the g-phone!""));
+        mListView.setAdapter(new MyAdapter(this, bodies));
+        mLinearLayout.addView(mListView);
+        // add button below
+        Button buttonBelow = new Button(this);
+        buttonBelow.setLayoutParams(
+                new LinearLayout.LayoutParams(
+                        ViewGroup.LayoutParams.MATCH_PARENT,
+                        ViewGroup.LayoutParams.WRAP_CONTENT));
+        buttonBelow.setText(""button below list"");
+        mLinearLayout.addView(buttonBelow);
+        setContentView(mLinearLayout);
+    }",method,
+"    String getBody(String line) {
+        StringBuilder sb = new StringBuilder((line.length() + 5) * mLinesPerEditText);
+        for (int i = 0; i < mLinesPerEditText; i++) {
+            sb.append(i + 1).append(' ').append(line);
+            if (i < mLinesPerEditText - 1) {
+                sb.append('\n'); // all but last line
+            }
+        }
+        return sb.toString();
+    }",method,
+"        for (int i = 0; i < mLinesPerEditText; i++) {
+            sb.append(i + 1).append(' ').append(line);
+            if (i < mLinesPerEditText - 1) {
+                sb.append('\n'); // all but last line
+            }
+        }",method,

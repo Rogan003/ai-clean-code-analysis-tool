@@ -1,0 +1,1317 @@
+code_snippet,type,score
+"public class AccessibilityUtils {
+    public static final char ENABLED_ACCESSIBILITY_SERVICES_SEPARATOR = ':';
+    final static TextUtils.SimpleStringSplitter sStringColonSplitter =
+            new TextUtils.SimpleStringSplitter(ENABLED_ACCESSIBILITY_SERVICES_SEPARATOR);
+    public static Set<ComponentName> getEnabledServicesFromSettings(Context context) {
+        return getEnabledServicesFromSettings(context, UserHandle.myUserId());
+    }
+    public static Set<ComponentName> getEnabledServicesFromSettings(Context context, int userId) {
+        final String enabledServicesSetting = Settings.Secure.getStringForUser(
+                context.getContentResolver(), Settings.Secure.ENABLED_ACCESSIBILITY_SERVICES,
+                userId);
+        if (enabledServicesSetting == null) {
+            return Collections.emptySet();
+        }
+        final Set<ComponentName> enabledServices = new HashSet<>();
+        final TextUtils.SimpleStringSplitter colonSplitter = sStringColonSplitter;
+        colonSplitter.setString(enabledServicesSetting);
+        while (colonSplitter.hasNext()) {
+            final String componentNameString = colonSplitter.next();
+            final ComponentName enabledService = ComponentName.unflattenFromString(
+                    componentNameString);
+            if (enabledService != null) {
+                enabledServices.add(enabledService);
+            }
+        }
+        return enabledServices;
+    }
+    public static CharSequence getTextForLocale(Context context, Locale locale, int resId) {
+        final Resources res = context.getResources();
+        final Configuration config = new Configuration(res.getConfiguration());
+        config.setLocale(locale);
+        final Context langContext = context.createConfigurationContext(config);
+        return langContext.getText(resId);
+    }
+    public static void setAccessibilityServiceState(Context context, ComponentName toggledService,
+            boolean enabled) {
+        setAccessibilityServiceState(context, toggledService, enabled, UserHandle.myUserId());
+    }
+    public static void setAccessibilityServiceState(Context context, ComponentName toggledService,
+            boolean enabled, int userId) {
+        // Parse the enabled services.
+        Set<ComponentName> enabledServices = AccessibilityUtils.getEnabledServicesFromSettings(
+                context, userId);
+        if (enabledServices.isEmpty()) {
+            enabledServices = new ArraySet<>(1);
+        }
+        // Determine enabled services and accessibility state.
+        boolean accessibilityEnabled = false;
+        if (enabled) {
+            enabledServices.add(toggledService);
+            // Enabling at least one service enables accessibility.
+            accessibilityEnabled = true;
+        } else {
+            enabledServices.remove(toggledService);
+            // Check how many enabled and installed services are present.
+            Set<ComponentName> installedServices = getInstalledServices(context);
+            for (ComponentName enabledService : enabledServices) {
+                if (installedServices.contains(enabledService)) {
+                    // Disabling the last service disables accessibility.
+                    accessibilityEnabled = true;
+                    break;
+                }
+            }
+        }
+        // Update the enabled services setting.
+        StringBuilder enabledServicesBuilder = new StringBuilder();
+        // Keep the enabled services even if they are not installed since we
+        // have no way to know whether the application restore process has
+        // completed. In general the system should be responsible for the
+        // clean up not settings.
+        for (ComponentName enabledService : enabledServices) {
+            enabledServicesBuilder.append(enabledService.flattenToString());
+            enabledServicesBuilder.append(
+                    AccessibilityUtils.ENABLED_ACCESSIBILITY_SERVICES_SEPARATOR);
+        }
+        final int enabledServicesBuilderLength = enabledServicesBuilder.length();
+        if (enabledServicesBuilderLength > 0) {
+            enabledServicesBuilder.deleteCharAt(enabledServicesBuilderLength - 1);
+        }
+        Settings.Secure.putStringForUser(context.getContentResolver(),
+                Settings.Secure.ENABLED_ACCESSIBILITY_SERVICES,
+                enabledServicesBuilder.toString(), userId);
+    }
+    public static String getShortcutTargetServiceComponentNameString(
+            Context context, int userId) {
+        final String currentShortcutServiceId = Settings.Secure.getStringForUser(
+                context.getContentResolver(), Settings.Secure.ACCESSIBILITY_SHORTCUT_TARGET_SERVICE,
+                userId);
+        if (currentShortcutServiceId != null) {
+            return currentShortcutServiceId;
+        }
+        return context.getString(R.string.config_defaultAccessibilityService);
+    }
+    public static boolean isShortcutEnabled(Context context, int userId) {
+        return Settings.Secure.getIntForUser(context.getContentResolver(),
+                Settings.Secure.ACCESSIBILITY_SHORTCUT_ENABLED, 1, userId) == 1;
+    }
+    private static Set<ComponentName> getInstalledServices(Context context) {
+        final Set<ComponentName> installedServices = new HashSet<>();
+        installedServices.clear();
+        final List<AccessibilityServiceInfo> installedServiceInfos =
+                AccessibilityManager.getInstance(context)
+                        .getInstalledAccessibilityServiceList();
+        if (installedServiceInfos == null) {
+            return installedServices;
+        }
+        for (final AccessibilityServiceInfo info : installedServiceInfos) {
+            final ResolveInfo resolveInfo = info.getResolveInfo();
+            final ComponentName installedService = new ComponentName(
+                    resolveInfo.serviceInfo.packageName,
+                    resolveInfo.serviceInfo.name);
+            installedServices.add(installedService);
+        }
+        return installedServices;
+    }
+}",class,
+"    public static Set<ComponentName> getEnabledServicesFromSettings(Context context) {
+        return getEnabledServicesFromSettings(context, UserHandle.myUserId());
+    }",method,
+"    public static Set<ComponentName> getEnabledServicesFromSettings(Context context, int userId) {
+        final String enabledServicesSetting = Settings.Secure.getStringForUser(
+                context.getContentResolver(), Settings.Secure.ENABLED_ACCESSIBILITY_SERVICES,
+                userId);
+        if (enabledServicesSetting == null) {
+            return Collections.emptySet();
+        }
+        final Set<ComponentName> enabledServices = new HashSet<>();
+        final TextUtils.SimpleStringSplitter colonSplitter = sStringColonSplitter;
+        colonSplitter.setString(enabledServicesSetting);
+        while (colonSplitter.hasNext()) {
+            final String componentNameString = colonSplitter.next();
+            final ComponentName enabledService = ComponentName.unflattenFromString(
+                    componentNameString);
+            if (enabledService != null) {
+                enabledServices.add(enabledService);
+            }
+        }
+        return enabledServices;
+    }",method,
+"        if (enabledServicesSetting == null) {
+            return Collections.emptySet();
+        }",method,
+"            if (enabledService != null) {
+                enabledServices.add(enabledService);
+            }",method,
+"    public static CharSequence getTextForLocale(Context context, Locale locale, int resId) {
+        final Resources res = context.getResources();
+        final Configuration config = new Configuration(res.getConfiguration());
+        config.setLocale(locale);
+        final Context langContext = context.createConfigurationContext(config);
+        return langContext.getText(resId);
+    }",method,
+"    public static void setAccessibilityServiceState(Context context, ComponentName toggledService,
+            boolean enabled) {
+        setAccessibilityServiceState(context, toggledService, enabled, UserHandle.myUserId());
+    }",method,
+"    public static void setAccessibilityServiceState(Context context, ComponentName toggledService,
+            boolean enabled, int userId) {
+        // Parse the enabled services.
+        Set<ComponentName> enabledServices = AccessibilityUtils.getEnabledServicesFromSettings(
+                context, userId);
+        if (enabledServices.isEmpty()) {
+            enabledServices = new ArraySet<>(1);
+        }
+        // Determine enabled services and accessibility state.
+        boolean accessibilityEnabled = false;
+        if (enabled) {
+            enabledServices.add(toggledService);
+            // Enabling at least one service enables accessibility.
+            accessibilityEnabled = true;
+        } else {
+            enabledServices.remove(toggledService);
+            // Check how many enabled and installed services are present.
+            Set<ComponentName> installedServices = getInstalledServices(context);
+            for (ComponentName enabledService : enabledServices) {
+                if (installedServices.contains(enabledService)) {
+                    // Disabling the last service disables accessibility.
+                    accessibilityEnabled = true;
+                    break;
+                }
+            }
+        }
+        // Update the enabled services setting.
+        StringBuilder enabledServicesBuilder = new StringBuilder();
+        // Keep the enabled services even if they are not installed since we
+        // have no way to know whether the application restore process has
+        // completed. In general the system should be responsible for the
+        // clean up not settings.
+        for (ComponentName enabledService : enabledServices) {
+            enabledServicesBuilder.append(enabledService.flattenToString());
+            enabledServicesBuilder.append(
+                    AccessibilityUtils.ENABLED_ACCESSIBILITY_SERVICES_SEPARATOR);
+        }
+        final int enabledServicesBuilderLength = enabledServicesBuilder.length();
+        if (enabledServicesBuilderLength > 0) {
+            enabledServicesBuilder.deleteCharAt(enabledServicesBuilderLength - 1);
+        }
+        Settings.Secure.putStringForUser(context.getContentResolver(),
+                Settings.Secure.ENABLED_ACCESSIBILITY_SERVICES,
+                enabledServicesBuilder.toString(), userId);
+    }",method,
+"        if (enabled) {
+            enabledServices.add(toggledService);
+            // Enabling at least one service enables accessibility.
+            accessibilityEnabled = true;
+        }",method,
+"            for (ComponentName enabledService : enabledServices) {
+                if (installedServices.contains(enabledService)) {
+                    // Disabling the last service disables accessibility.
+                    accessibilityEnabled = true;
+                    break;
+                }
+            }",method,
+"        for (ComponentName enabledService : enabledServices) {
+            enabledServicesBuilder.append(enabledService.flattenToString());
+            enabledServicesBuilder.append(
+                    AccessibilityUtils.ENABLED_ACCESSIBILITY_SERVICES_SEPARATOR);
+        }",method,
+"        if (enabledServicesBuilderLength > 0) {
+            enabledServicesBuilder.deleteCharAt(enabledServicesBuilderLength - 1);
+        }",method,
+"    public static String getShortcutTargetServiceComponentNameString(
+            Context context, int userId) {
+        final String currentShortcutServiceId = Settings.Secure.getStringForUser(
+                context.getContentResolver(), Settings.Secure.ACCESSIBILITY_SHORTCUT_TARGET_SERVICE,
+                userId);
+        if (currentShortcutServiceId != null) {
+            return currentShortcutServiceId;
+        }
+        return context.getString(R.string.config_defaultAccessibilityService);
+    }",method,
+"        if (currentShortcutServiceId != null) {
+            return currentShortcutServiceId;
+        }",method,
+"    public static boolean isShortcutEnabled(Context context, int userId) {
+        return Settings.Secure.getIntForUser(context.getContentResolver(),
+                Settings.Secure.ACCESSIBILITY_SHORTCUT_ENABLED, 1, userId) == 1;
+    }",method,
+"    private static Set<ComponentName> getInstalledServices(Context context) {
+        final Set<ComponentName> installedServices = new HashSet<>();
+        installedServices.clear();
+        final List<AccessibilityServiceInfo> installedServiceInfos =
+                AccessibilityManager.getInstance(context)
+                        .getInstalledAccessibilityServiceList();
+        if (installedServiceInfos == null) {
+            return installedServices;
+        }
+        for (final AccessibilityServiceInfo info : installedServiceInfos) {
+            final ResolveInfo resolveInfo = info.getResolveInfo();
+            final ComponentName installedService = new ComponentName(
+                    resolveInfo.serviceInfo.packageName,
+                    resolveInfo.serviceInfo.name);
+            installedServices.add(installedService);
+        }
+        return installedServices;
+    }",method,
+"        if (installedServiceInfos == null) {
+            return installedServices;
+        }",method,
+"        for (final AccessibilityServiceInfo info : installedServiceInfos) {
+            final ResolveInfo resolveInfo = info.getResolveInfo();
+            final ComponentName installedService = new ComponentName(
+                    resolveInfo.serviceInfo.packageName,
+                    resolveInfo.serviceInfo.name);
+            installedServices.add(installedService);
+        }",method,
+"public final class RemovalNotification<K, V> extends SimpleImmutableEntry<K, V> {
+  private final RemovalCause cause;
+  public static <K, V> RemovalNotification<K, V> create(
+      @Nullable K key, @Nullable V value, RemovalCause cause) {
+    return new RemovalNotification(key, value, cause);
+  }
+  private RemovalNotification(@Nullable K key, @Nullable V value, RemovalCause cause) {
+    super(key, value);
+    this.cause = checkNotNull(cause);
+  }
+  public RemovalCause getCause() {
+    return cause;
+  }
+  public boolean wasEvicted() {
+    return cause.wasEvicted();
+  }
+  private static final long serialVersionUID = 0;
+}",class,
+"  public static <K, V> RemovalNotification<K, V> create(
+      @Nullable K key, @Nullable V value, RemovalCause cause) {
+    return new RemovalNotification(key, value, cause);
+  }",method,
+"  private RemovalNotification(@Nullable K key, @Nullable V value, RemovalCause cause) {
+    super(key, value);
+    this.cause = checkNotNull(cause);
+  }",method,
+"  public RemovalCause getCause() {
+    return cause;
+  }",method,
+"  public boolean wasEvicted() {
+    return cause.wasEvicted();
+  }",method,
+"public class CustomContainerActivity extends AppCompatActivity {
+    //save our header or result
+    private Drawer result = null;
+    @Override
+    protected void onCreate(Bundle savedInstanceState) {
+        super.onCreate(savedInstanceState);
+        setContentView(R.layout.activity_sample_custom_container_dark_toolbar);
+        // Handle Toolbar
+        Toolbar toolbar = (Toolbar) findViewById(R.id.toolbar);
+        setSupportActionBar(toolbar);
+        getSupportActionBar().setTitle(R.string.drawer_item_custom_container_drawer);
+        //Create the drawer
+        result = new DrawerBuilder(this)
+                //this layout have to contain child layouts
+                .withRootView(R.id.drawer_container)
+                .withToolbar(toolbar)
+                .withDisplayBelowStatusBar(false)
+                .withActionBarDrawerToggleAnimated(true)
+                .addDrawerItems(
+                        new PrimaryDrawerItem().withName(R.string.drawer_item_home).withIcon(FontAwesome.Icon.faw_home),
+                        new PrimaryDrawerItem().withName(R.string.drawer_item_free_play).withIcon(FontAwesome.Icon.faw_gamepad),
+                        new PrimaryDrawerItem().withName(R.string.drawer_item_custom).withIcon(FontAwesome.Icon.faw_eye),
+                        new SectionDrawerItem().withName(R.string.drawer_item_section_header),
+                        new SecondaryDrawerItem().withName(R.string.drawer_item_settings).withIcon(FontAwesome.Icon.faw_cog),
+                        new SecondaryDrawerItem().withName(R.string.drawer_item_help).withIcon(FontAwesome.Icon.faw_question).withEnabled(false),
+                        new SecondaryDrawerItem().withName(R.string.drawer_item_open_source).withIcon(FontAwesome.Icon.faw_github),
+                        new SecondaryDrawerItem().withName(R.string.drawer_item_contact).withIcon(FontAwesome.Icon.faw_bullhorn)
+                )
+                .withSavedInstance(savedInstanceState)
+                .build();
+    }
+    @Override
+    protected void onSaveInstanceState(Bundle outState) {
+        //add the values which need to be saved from the drawer to the bundle
+        outState = result.saveInstanceState(outState);
+        super.onSaveInstanceState(outState);
+    }
+    @Override
+    public void onBackPressed() {
+        //handle the back press :D close the drawer first and if the drawer is closed close the activity
+        if (result != null && result.isDrawerOpen()) {
+            result.closeDrawer();
+        } else {
+            super.onBackPressed();
+        }
+    }
+}",class,
+"    @Override
+    protected void onCreate(Bundle savedInstanceState) {
+        super.onCreate(savedInstanceState);
+        setContentView(R.layout.activity_sample_custom_container_dark_toolbar);
+        // Handle Toolbar
+        Toolbar toolbar = (Toolbar) findViewById(R.id.toolbar);
+        setSupportActionBar(toolbar);
+        getSupportActionBar().setTitle(R.string.drawer_item_custom_container_drawer);
+        //Create the drawer
+        result = new DrawerBuilder(this)
+                //this layout have to contain child layouts
+                .withRootView(R.id.drawer_container)
+                .withToolbar(toolbar)
+                .withDisplayBelowStatusBar(false)
+                .withActionBarDrawerToggleAnimated(true)
+                .addDrawerItems(
+                        new PrimaryDrawerItem().withName(R.string.drawer_item_home).withIcon(FontAwesome.Icon.faw_home),
+                        new PrimaryDrawerItem().withName(R.string.drawer_item_free_play).withIcon(FontAwesome.Icon.faw_gamepad),
+                        new PrimaryDrawerItem().withName(R.string.drawer_item_custom).withIcon(FontAwesome.Icon.faw_eye),
+                        new SectionDrawerItem().withName(R.string.drawer_item_section_header),
+                        new SecondaryDrawerItem().withName(R.string.drawer_item_settings).withIcon(FontAwesome.Icon.faw_cog),
+                        new SecondaryDrawerItem().withName(R.string.drawer_item_help).withIcon(FontAwesome.Icon.faw_question).withEnabled(false),
+                        new SecondaryDrawerItem().withName(R.string.drawer_item_open_source).withIcon(FontAwesome.Icon.faw_github),
+                        new SecondaryDrawerItem().withName(R.string.drawer_item_contact).withIcon(FontAwesome.Icon.faw_bullhorn)
+                )
+                .withSavedInstance(savedInstanceState)
+                .build();
+    }",method,
+"    @Override
+    protected void onSaveInstanceState(Bundle outState) {
+        //add the values which need to be saved from the drawer to the bundle
+        outState = result.saveInstanceState(outState);
+        super.onSaveInstanceState(outState);
+    }",method,
+"    @Override
+    public void onBackPressed() {
+        //handle the back press :D close the drawer first and if the drawer is closed close the activity
+        if (result != null && result.isDrawerOpen()) {
+            result.closeDrawer();
+        } else {
+            super.onBackPressed();
+        }
+    }",method,
+"public class GradleExecutionWorkspace implements Serializable {
+  private static final long serialVersionUID = 1L;
+  @NotNull
+  private final List<GradleBuildParticipant> myBuildParticipants = ContainerUtil.newArrayList();
+  private Map<String, Pair<DataNode<ModuleData>, IdeaModule>> myModuleMap;
+  public void addBuildParticipant(GradleBuildParticipant participant) {
+    myBuildParticipants.add(participant);
+  }
+  @NotNull
+  public List<GradleBuildParticipant> getBuildParticipants() {
+    return Collections.unmodifiableList(myBuildParticipants);
+  }
+  @Nullable
+  public ModuleData findModuleDataByArtifacts(Collection<File> artifacts) {
+    ModuleData result = null;
+    for (GradleBuildParticipant buildParticipant : myBuildParticipants) {
+      result = buildParticipant.findModuleDataByArtifacts(artifacts);
+      if (result != null) break;
+    }
+    return result;
+  }
+  public ModuleData findModuleDataByName(String moduleName) {
+    ModuleData result = null;
+    Pair<DataNode<ModuleData>, IdeaModule> modulePair = myModuleMap.get(moduleName);
+    if(modulePair == null) {
+      modulePair = myModuleMap.get("":"" + moduleName);
+    }
+    if (modulePair != null) {
+      return modulePair.first.getData();
+    }
+    for (GradleBuildParticipant buildParticipant : myBuildParticipants) {
+      result = buildParticipant.findModuleDataByName(moduleName);
+      if (result != null) break;
+    }
+    return result;
+  }
+  public void addModuleMap(Map<String, Pair<DataNode<ModuleData>, IdeaModule>> moduleMap) {
+    myModuleMap = moduleMap;
+  }
+}",class,
+"  public void addBuildParticipant(GradleBuildParticipant participant) {
+    myBuildParticipants.add(participant);
+  }",method,
+"  @NotNull
+  public List<GradleBuildParticipant> getBuildParticipants() {
+    return Collections.unmodifiableList(myBuildParticipants);
+  }",method,
+"  @Nullable
+  public ModuleData findModuleDataByArtifacts(Collection<File> artifacts) {
+    ModuleData result = null;
+    for (GradleBuildParticipant buildParticipant : myBuildParticipants) {
+      result = buildParticipant.findModuleDataByArtifacts(artifacts);
+      if (result != null) break;
+    }
+    return result;
+  }",method,
+"    for (GradleBuildParticipant buildParticipant : myBuildParticipants) {
+      result = buildParticipant.findModuleDataByArtifacts(artifacts);
+      if (result != null) break;
+    }",method,
+"  public ModuleData findModuleDataByName(String moduleName) {
+    ModuleData result = null;
+    Pair<DataNode<ModuleData>, IdeaModule> modulePair = myModuleMap.get(moduleName);
+    if(modulePair == null) {
+      modulePair = myModuleMap.get("":"" + moduleName);
+    }
+    if (modulePair != null) {
+      return modulePair.first.getData();
+    }
+    for (GradleBuildParticipant buildParticipant : myBuildParticipants) {
+      result = buildParticipant.findModuleDataByName(moduleName);
+      if (result != null) break;
+    }
+    return result;
+  }",method,
+"    if(modulePair == null) {
+      modulePair = myModuleMap.get("":"" + moduleName);
+    }",method,
+"    if (modulePair != null) {
+      return modulePair.first.getData();
+    }",method,
+"    for (GradleBuildParticipant buildParticipant : myBuildParticipants) {
+      result = buildParticipant.findModuleDataByName(moduleName);
+      if (result != null) break;
+    }",method,
+"  public void addModuleMap(Map<String, Pair<DataNode<ModuleData>, IdeaModule>> moduleMap) {
+    myModuleMap = moduleMap;
+  }",method,
+"public class OtpErlangFun extends OtpErlangObject implements Serializable {
+    // don't change this!
+    private static final long serialVersionUID = -3423031125356706472L;
+    private final OtpErlangPid pid;
+    private final String module;
+    private final long index;
+    private final long old_index;
+    private final long uniq;
+    private final OtpErlangObject[] freeVars;
+    private final int arity;
+    private final byte[] md5;
+    public OtpErlangFun(final OtpInputStream buf)
+	    throws OtpErlangDecodeException {
+	final OtpErlangFun f = buf.read_fun();
+	pid = f.pid;
+	module = f.module;
+	arity = f.arity;
+	md5 = f.md5;
+	index = f.index;
+	old_index = f.old_index;
+	uniq = f.uniq;
+	freeVars = f.freeVars;
+    }
+    public OtpErlangFun(final OtpErlangPid pid, final String module,
+	    final long index, final long uniq, final OtpErlangObject[] freeVars) {
+	this.pid = pid;
+	this.module = module;
+	arity = -1;
+	md5 = null;
+	this.index = index;
+	old_index = 0;
+	this.uniq = uniq;
+	this.freeVars = freeVars;
+    }
+    public OtpErlangFun(final OtpErlangPid pid, final String module,
+	    final int arity, final byte[] md5, final int index,
+	    final long old_index, final long uniq,
+	    final OtpErlangObject[] freeVars) {
+	this.pid = pid;
+	this.module = module;
+	this.arity = arity;
+	this.md5 = md5;
+	this.index = index;
+	this.old_index = old_index;
+	this.uniq = uniq;
+	this.freeVars = freeVars;
+    }
+    @Override
+    public void encode(final OtpOutputStream buf) {
+	buf
+		.write_fun(pid, module, old_index, arity, md5, index, uniq,
+			freeVars);
+    }
+    @Override
+    public boolean equals(final Object o) {
+	if (!(o instanceof OtpErlangFun)) {
+	    return false;
+	}
+	final OtpErlangFun f = (OtpErlangFun) o;
+	if (!pid.equals(f.pid) || !module.equals(f.module) || arity != f.arity) {
+	    return false;
+	}
+	if (md5 == null) {
+	    if (f.md5 != null) {
+		return false;
+	    }
+	} else {
+	    if (!md5.equals(f.md5)) {
+		return false;
+	    }
+	}
+	if (index != f.index || uniq != f.uniq) {
+	    return false;
+	}
+	if (freeVars == null) {
+	    return f.freeVars == null;
+	}
+	return freeVars.equals(f.freeVars);
+    }
+    @Override
+    protected int doHashCode() {
+	OtpErlangObject.Hash hash = new OtpErlangObject.Hash(1);
+	hash.combine(pid.hashCode(), module.hashCode());
+	hash.combine(arity);
+	if (md5 != null) hash.combine(md5);
+	hash.combine(index);
+	hash.combine(uniq);
+	if (freeVars != null) {
+	    for (OtpErlangObject o: freeVars) {
+		hash.combine(o.hashCode(), 1);
+	    }
+	}
+	return hash.valueOf();
+    }
+    @Override
+    public String toString() {
+	return ""#Fun<"" + module + ""."" + old_index + ""."" + uniq + "">"";
+    }
+}",class,
+"    public OtpErlangFun(final OtpInputStream buf)
+	    throws OtpErlangDecodeException {
+	final OtpErlangFun f = buf.read_fun();
+	pid = f.pid;
+	module = f.module;
+	arity = f.arity;
+	md5 = f.md5;
+	index = f.index;
+	old_index = f.old_index;
+	uniq = f.uniq;
+	freeVars = f.freeVars;
+    }",method,
+"    public OtpErlangFun(final OtpErlangPid pid, final String module,
+	    final long index, final long uniq, final OtpErlangObject[] freeVars) {
+	this.pid = pid;
+	this.module = module;
+	arity = -1;
+	md5 = null;
+	this.index = index;
+	old_index = 0;
+	this.uniq = uniq;
+	this.freeVars = freeVars;
+    }",method,
+"    public OtpErlangFun(final OtpErlangPid pid, final String module,
+	    final int arity, final byte[] md5, final int index,
+	    final long old_index, final long uniq,
+	    final OtpErlangObject[] freeVars) {
+	this.pid = pid;
+	this.module = module;
+	this.arity = arity;
+	this.md5 = md5;
+	this.index = index;
+	this.old_index = old_index;
+	this.uniq = uniq;
+	this.freeVars = freeVars;
+    }",method,
+"    @Override
+    public void encode(final OtpOutputStream buf) {
+	buf
+		.write_fun(pid, module, old_index, arity, md5, index, uniq,
+			freeVars);
+    }",method,
+"    @Override
+    public boolean equals(final Object o) {
+	if (!(o instanceof OtpErlangFun)) {
+	    return false;
+	}
+	final OtpErlangFun f = (OtpErlangFun) o;
+	if (!pid.equals(f.pid) || !module.equals(f.module) || arity != f.arity) {
+	    return false;
+	}
+	if (md5 == null) {
+	    if (f.md5 != null) {
+		return false;
+	    }
+	} else {
+	    if (!md5.equals(f.md5)) {
+		return false;
+	    }
+	}
+	if (index != f.index || uniq != f.uniq) {
+	    return false;
+	}
+	if (freeVars == null) {
+	    return f.freeVars == null;
+	}
+	return freeVars.equals(f.freeVars);
+    }",method,
+"	if (md5 == null) {
+	    if (f.md5 != null) {
+		return false;
+	    }
+	}",method,
+"	    if (f.md5 != null) {
+		return false;
+	    }",method,
+"	if (index != f.index || uniq != f.uniq) {
+	    return false;
+	}",method,
+"	if (freeVars == null) {
+	    return f.freeVars == null;
+	}",method,
+"    @Override
+    protected int doHashCode() {
+	OtpErlangObject.Hash hash = new OtpErlangObject.Hash(1);
+	hash.combine(pid.hashCode(), module.hashCode());
+	hash.combine(arity);
+	if (md5 != null) hash.combine(md5);
+	hash.combine(index);
+	hash.combine(uniq);
+	if (freeVars != null) {
+	    for (OtpErlangObject o: freeVars) {
+		hash.combine(o.hashCode(), 1);
+	    }
+	}
+	return hash.valueOf();
+    }",method,
+"	if (freeVars != null) {
+	    for (OtpErlangObject o: freeVars) {
+		hash.combine(o.hashCode(), 1);
+	    }
+	}",method,
+"	    for (OtpErlangObject o: freeVars) {
+		hash.combine(o.hashCode(), 1);
+	    }",method,
+"    @Override
+    public String toString() {
+	return ""#Fun<"" + module + ""."" + old_index + ""."" + uniq + "">"";
+    }",method,
+"public class CodeWriter extends PrintWriter {
+  private final int myIndent;
+  private int myIndentLevel = 0;
+  // Printer state
+  private boolean myNewLineStarted = true;
+  public CodeWriter(PrintWriter writer) {
+    super(writer);
+    myIndent = 2;
+  }
+  @Override
+  public void print(@NonNls String s) {
+    possiblyIndent(s);
+    super.print(s);
+    for (int i = 0; i < s.length(); i++) {
+      if (isOpenBrace(s, i)) myIndentLevel++;
+      if (isCloseBrace(s, i)) myIndentLevel--;
+    }
+  }
+  private static boolean isCloseBrace(String s, int index) {
+    char c = s.charAt(index);
+    return c == ')' || c == ']' || c == '}';
+  }
+  private static boolean isOpenBrace(String s, int index) {
+    char c = s.charAt(index);
+    return c == '(' || c == '[' || c == '{';
+  }
+  @Override
+  public void println() {
+    ((PrintWriter)out).println();
+    myNewLineStarted = true;
+  }
+  private void possiblyIndent(String s) {
+    if (myNewLineStarted) {
+      int i = 0;
+      for (; i < s.length() && s.charAt(i) == ' '; i++) {
+      }
+      int firstNonBlank = (i < s.length() && s.charAt(i) != ' ') ? i : -1;
+      if (firstNonBlank >= 0) {
+        if (isCloseBrace(s, firstNonBlank)) myIndentLevel--;
+        int blanksToPrint = myIndent * myIndentLevel - firstNonBlank;
+        for (int j = 0; j < blanksToPrint; j++) {
+          write("" "");
+        }
+        if (isCloseBrace(s, firstNonBlank)) myIndentLevel++;
+      }
+      myNewLineStarted = false;
+    }
+  }
+  @Override
+  public void println(String s) {
+    StringTokenizer st = new StringTokenizer(s, ""\r\n"", false);
+    while (st.hasMoreTokens()) {
+      super.println(st.nextToken());
+    }
+  }
+}",class,
+"  public CodeWriter(PrintWriter writer) {
+    super(writer);
+    myIndent = 2;
+  }",method,
+"  @Override
+  public void print(@NonNls String s) {
+    possiblyIndent(s);
+    super.print(s);
+    for (int i = 0; i < s.length(); i++) {
+      if (isOpenBrace(s, i)) myIndentLevel++;
+      if (isCloseBrace(s, i)) myIndentLevel--;
+    }
+  }",method,
+"  private static boolean isCloseBrace(String s, int index) {
+    char c = s.charAt(index);
+    return c == ')' || c == ']' || c == '}';
+  }",method,
+"  private static boolean isOpenBrace(String s, int index) {
+    char c = s.charAt(index);
+    return c == '(' || c == '[' || c == '{';
+  }",method,
+"  @Override
+  public void println() {
+    ((PrintWriter)out).println();
+    myNewLineStarted = true;
+  }",method,
+"  private void possiblyIndent(String s) {
+    if (myNewLineStarted) {
+      int i = 0;
+      for (; i < s.length() && s.charAt(i) == ' '; i++) {
+      }
+      int firstNonBlank = (i < s.length() && s.charAt(i) != ' ') ? i : -1;
+      if (firstNonBlank >= 0) {
+        if (isCloseBrace(s, firstNonBlank)) myIndentLevel--;
+        int blanksToPrint = myIndent * myIndentLevel - firstNonBlank;
+        for (int j = 0; j < blanksToPrint; j++) {
+          write("" "");
+        }
+        if (isCloseBrace(s, firstNonBlank)) myIndentLevel++;
+      }
+      myNewLineStarted = false;
+    }
+  }",method,
+"    if (myNewLineStarted) {
+      int i = 0;
+      for (; i < s.length() && s.charAt(i) == ' '; i++) {
+      }
+      int firstNonBlank = (i < s.length() && s.charAt(i) != ' ') ? i : -1;
+      if (firstNonBlank >= 0) {
+        if (isCloseBrace(s, firstNonBlank)) myIndentLevel--;
+        int blanksToPrint = myIndent * myIndentLevel - firstNonBlank;
+        for (int j = 0; j < blanksToPrint; j++) {
+          write("" "");
+        }
+        if (isCloseBrace(s, firstNonBlank)) myIndentLevel++;
+      }
+      myNewLineStarted = false;
+    }",method,
+"      if (firstNonBlank >= 0) {
+        if (isCloseBrace(s, firstNonBlank)) myIndentLevel--;
+        int blanksToPrint = myIndent * myIndentLevel - firstNonBlank;
+        for (int j = 0; j < blanksToPrint; j++) {
+          write("" "");
+        }
+        if (isCloseBrace(s, firstNonBlank)) myIndentLevel++;
+      }",method,
+"        for (int j = 0; j < blanksToPrint; j++) {
+          write("" "");
+        }",method,
+"  @Override
+  public void println(String s) {
+    StringTokenizer st = new StringTokenizer(s, ""\r\n"", false);
+    while (st.hasMoreTokens()) {
+      super.println(st.nextToken());
+    }
+  }",method,
+"public class Z1Mote extends MspMote {
+    private static Logger logger = Logger.getLogger(Z1Mote.class);
+    public Z1Mote(MspMoteType moteType, Simulation sim) {
+        super(moteType, sim);
+    }
+    @Override
+    protected boolean initEmulator(File fileELF) {
+        try {
+            Z1Node z1Node = new Z1Node();
+            registry = z1Node.getRegistry();
+            z1Node.setFlash(new CoojaM25P80(z1Node.getCPU()));
+            prepareMote(fileELF, z1Node);
+        } catch (Exception e) {
+            logger.fatal(""Error when creating Z1 mote: "", e);
+            return false;
+        }
+        return true;
+    }
+    @Override
+    public String toString() {
+        return ""Z1 "" + getID();
+    }
+}",class,
+"    public Z1Mote(MspMoteType moteType, Simulation sim) {
+        super(moteType, sim);
+    }",method,
+"    @Override
+    protected boolean initEmulator(File fileELF) {
+        try {
+            Z1Node z1Node = new Z1Node();
+            registry = z1Node.getRegistry();
+            z1Node.setFlash(new CoojaM25P80(z1Node.getCPU()));
+            prepareMote(fileELF, z1Node);
+        } catch (Exception e) {
+            logger.fatal(""Error when creating Z1 mote: "", e);
+            return false;
+        }
+        return true;
+    }",method,
+"    @Override
+    public String toString() {
+        return ""Z1 "" + getID();
+    }",method,
+"public abstract class BuildEvent extends AbstractBuckEvent implements WorkAdvanceEvent {
+  public BuildEvent(EventKey eventKey) {
+    super(eventKey);
+  }
+  public static Started started(Iterable<String> buildArgs) {
+    return new Started(ImmutableSet.copyOf(buildArgs));
+  }
+  public static Finished finished(Started started, int exitCode) {
+    return new Finished(started, exitCode);
+  }
+  public static DistBuildStarted distBuildStarted() {
+    return new DistBuildStarted();
+  }
+  public static DistBuildFinished distBuildFinished(DistBuildStarted started, int exitCode) {
+    return new DistBuildFinished(started, exitCode);
+  }
+  public static RuleCountCalculated ruleCountCalculated(
+      ImmutableSet<BuildTarget> buildTargets, int ruleCount) {
+    return new RuleCountCalculated(buildTargets, ruleCount);
+  }
+  public static UnskippedRuleCountUpdated unskippedRuleCountUpdated(int ruleCount) {
+    return new UnskippedRuleCountUpdated(ruleCount);
+  }
+  public static class Started extends BuildEvent {
+    private final ImmutableSet<String> buildArgs;
+    protected Started(ImmutableSet<String> buildArgs) {
+      super(EventKey.unique());
+      this.buildArgs = buildArgs;
+    }
+    @Override
+    public String getEventName() {
+      return BUILD_STARTED;
+    }
+    @Override
+    protected String getValueString() {
+      return Joiner.on("", "").join(buildArgs);
+    }
+    public ImmutableSet<String> getBuildArgs() {
+      return buildArgs;
+    }
+  }
+  public static class Finished extends BuildEvent {
+    private final ImmutableSet<String> buildArgs;
+    private final int exitCode;
+    protected Finished(Started started, int exitCode) {
+      super(started.getEventKey());
+      this.buildArgs = started.getBuildArgs();
+      this.exitCode = exitCode;
+    }
+    public ImmutableSet<String> getBuildArgs() {
+      return buildArgs;
+    }
+    public int getExitCode() {
+      return exitCode;
+    }
+    @Override
+    public String getEventName() {
+      return BUILD_FINISHED;
+    }
+    @Override
+    protected String getValueString() {
+      return String.format(""exit code: %d"", exitCode);
+    }
+    @Override
+    public boolean equals(Object o) {
+      if (!super.equals(o)) {
+        return false;
+      }
+      // Because super.equals compares the EventKey, getting here means that we've somehow managed
+      // to create 2 Finished events for the same Started event.
+      throw new UnsupportedOperationException(""Multiple conflicting Finished events detected."");
+    }
+    @Override
+    public int hashCode() {
+      return Objects.hashCode(super.hashCode(), buildArgs, exitCode);
+    }
+  }
+  public static class DistBuildStarted extends BuildEvent {
+    protected DistBuildStarted() {
+      super(EventKey.unique());
+    }
+    @Override
+    public String getEventName() {
+      return DIST_BUILD_STARTED;
+    }
+    @Override
+    protected String getValueString() {
+      return """";
+    }
+  }
+  public static class DistBuildFinished extends BuildEvent {
+    private final int exitCode;
+    protected DistBuildFinished(DistBuildStarted started, int exitCode) {
+      super(started.getEventKey());
+      this.exitCode = exitCode;
+    }
+    public int getExitCode() {
+      return exitCode;
+    }
+    @Override
+    public String getEventName() {
+      return DIST_BUILD_FINISHED;
+    }
+    @Override
+    protected String getValueString() {
+      return String.format(""exit code: %d"", exitCode);
+    }
+    @Override
+    public boolean equals(Object o) {
+      if (!super.equals(o)) {
+        return false;
+      }
+      // Because super.equals compares the EventKey, getting here means that we've somehow managed
+      // to create 2 Finished events for the same Started event.
+      throw new UnsupportedOperationException(""Multiple conflicting Finished events detected."");
+    }
+    @Override
+    public int hashCode() {
+      return Objects.hashCode(super.hashCode(), exitCode);
+    }
+  }
+  public static class RuleCountCalculated extends BuildEvent {
+    private final ImmutableSet<BuildTarget> buildRules;
+    private final int numRules;
+    protected RuleCountCalculated(ImmutableSet<BuildTarget> buildRules, int numRulesToBuild) {
+      super(EventKey.unique());
+      this.buildRules = buildRules;
+      this.numRules = numRulesToBuild;
+    }
+    public ImmutableSet<BuildTarget> getBuildRules() {
+      return buildRules;
+    }
+    public int getNumRules() {
+      return numRules;
+    }
+    @Override
+    public String getEventName() {
+      return ""RuleCountCalculated"";
+    }
+    @Override
+    protected String getValueString() {
+      return Joiner.on("", "").join(buildRules);
+    }
+    @Override
+    public boolean equals(Object o) {
+      if (!super.equals(o)) {
+        return false;
+      }
+      // Because super.equals compares the EventKey, getting here means that we've somehow managed
+      // to create 2 Finished events for the same Started event.
+      throw new UnsupportedOperationException(""Multiple conflicting Finished events detected."");
+    }
+    @Override
+    public int hashCode() {
+      return Objects.hashCode(super.hashCode(), buildRules, numRules);
+    }
+  }
+  public static class UnskippedRuleCountUpdated extends BuildEvent {
+    private final int numRules;
+    protected UnskippedRuleCountUpdated(int numRulesToBuild) {
+      super(EventKey.unique());
+      this.numRules = numRulesToBuild;
+    }
+    public int getNumRules() {
+      return numRules;
+    }
+    @Override
+    public String getEventName() {
+      return ""UnskippedRuleCountUpdated"";
+    }
+    @Override
+    protected String getValueString() {
+      return Integer.toString(numRules);
+    }
+    @Override
+    public boolean equals(Object o) {
+      return this == o;
+    }
+    @Override
+    public int hashCode() {
+      return System.identityHashCode(this);
+    }
+  }
+}",class,
+"  public static class Started extends BuildEvent {
+    private final ImmutableSet<String> buildArgs;
+    protected Started(ImmutableSet<String> buildArgs) {
+      super(EventKey.unique());
+      this.buildArgs = buildArgs;
+    }
+    @Override
+    public String getEventName() {
+      return BUILD_STARTED;
+    }
+    @Override
+    protected String getValueString() {
+      return Joiner.on("", "").join(buildArgs);
+    }
+    public ImmutableSet<String> getBuildArgs() {
+      return buildArgs;
+    }
+  }",class,
+"  public static class Finished extends BuildEvent {
+    private final ImmutableSet<String> buildArgs;
+    private final int exitCode;
+    protected Finished(Started started, int exitCode) {
+      super(started.getEventKey());
+      this.buildArgs = started.getBuildArgs();
+      this.exitCode = exitCode;
+    }
+    public ImmutableSet<String> getBuildArgs() {
+      return buildArgs;
+    }
+    public int getExitCode() {
+      return exitCode;
+    }
+    @Override
+    public String getEventName() {
+      return BUILD_FINISHED;
+    }
+    @Override
+    protected String getValueString() {
+      return String.format(""exit code: %d"", exitCode);
+    }
+    @Override
+    public boolean equals(Object o) {
+      if (!super.equals(o)) {
+        return false;
+      }
+      // Because super.equals compares the EventKey, getting here means that we've somehow managed
+      // to create 2 Finished events for the same Started event.
+      throw new UnsupportedOperationException(""Multiple conflicting Finished events detected."");
+    }
+    @Override
+    public int hashCode() {
+      return Objects.hashCode(super.hashCode(), buildArgs, exitCode);
+    }
+  }",class,
+"  public static class DistBuildStarted extends BuildEvent {
+    protected DistBuildStarted() {
+      super(EventKey.unique());
+    }
+    @Override
+    public String getEventName() {
+      return DIST_BUILD_STARTED;
+    }
+    @Override
+    protected String getValueString() {
+      return """";
+    }
+  }",class,
+"  public static class DistBuildFinished extends BuildEvent {
+    private final int exitCode;
+    protected DistBuildFinished(DistBuildStarted started, int exitCode) {
+      super(started.getEventKey());
+      this.exitCode = exitCode;
+    }
+    public int getExitCode() {
+      return exitCode;
+    }
+    @Override
+    public String getEventName() {
+      return DIST_BUILD_FINISHED;
+    }
+    @Override
+    protected String getValueString() {
+      return String.format(""exit code: %d"", exitCode);
+    }
+    @Override
+    public boolean equals(Object o) {
+      if (!super.equals(o)) {
+        return false;
+      }
+      // Because super.equals compares the EventKey, getting here means that we've somehow managed
+      // to create 2 Finished events for the same Started event.
+      throw new UnsupportedOperationException(""Multiple conflicting Finished events detected."");
+    }
+    @Override
+    public int hashCode() {
+      return Objects.hashCode(super.hashCode(), exitCode);
+    }
+  }",class,
+"  public static class RuleCountCalculated extends BuildEvent {
+    private final ImmutableSet<BuildTarget> buildRules;
+    private final int numRules;
+    protected RuleCountCalculated(ImmutableSet<BuildTarget> buildRules, int numRulesToBuild) {
+      super(EventKey.unique());
+      this.buildRules = buildRules;
+      this.numRules = numRulesToBuild;
+    }
+    public ImmutableSet<BuildTarget> getBuildRules() {
+      return buildRules;
+    }
+    public int getNumRules() {
+      return numRules;
+    }
+    @Override
+    public String getEventName() {
+      return ""RuleCountCalculated"";
+    }
+    @Override
+    protected String getValueString() {
+      return Joiner.on("", "").join(buildRules);
+    }
+    @Override
+    public boolean equals(Object o) {
+      if (!super.equals(o)) {
+        return false;
+      }
+      // Because super.equals compares the EventKey, getting here means that we've somehow managed
+      // to create 2 Finished events for the same Started event.
+      throw new UnsupportedOperationException(""Multiple conflicting Finished events detected."");
+    }
+    @Override
+    public int hashCode() {
+      return Objects.hashCode(super.hashCode(), buildRules, numRules);
+    }
+  }",class,
+"  public static class UnskippedRuleCountUpdated extends BuildEvent {
+    private final int numRules;
+    protected UnskippedRuleCountUpdated(int numRulesToBuild) {
+      super(EventKey.unique());
+      this.numRules = numRulesToBuild;
+    }
+    public int getNumRules() {
+      return numRules;
+    }
+    @Override
+    public String getEventName() {
+      return ""UnskippedRuleCountUpdated"";
+    }
+    @Override
+    protected String getValueString() {
+      return Integer.toString(numRules);
+    }
+    @Override
+    public boolean equals(Object o) {
+      return this == o;
+    }
+    @Override
+    public int hashCode() {
+      return System.identityHashCode(this);
+    }
+  }",class,
+"  public BuildEvent(EventKey eventKey) {
+    super(eventKey);
+  }",method,
+"  public static Started started(Iterable<String> buildArgs) {
+    return new Started(ImmutableSet.copyOf(buildArgs));
+  }",method,
+"  public static Finished finished(Started started, int exitCode) {
+    return new Finished(started, exitCode);
+  }",method,
+"  public static DistBuildStarted distBuildStarted() {
+    return new DistBuildStarted();
+  }",method,
+"  public static DistBuildFinished distBuildFinished(DistBuildStarted started, int exitCode) {
+    return new DistBuildFinished(started, exitCode);
+  }",method,
+"  public static RuleCountCalculated ruleCountCalculated(
+      ImmutableSet<BuildTarget> buildTargets, int ruleCount) {
+    return new RuleCountCalculated(buildTargets, ruleCount);
+  }",method,
+"  public static UnskippedRuleCountUpdated unskippedRuleCountUpdated(int ruleCount) {
+    return new UnskippedRuleCountUpdated(ruleCount);
+  }",method,
+"    protected Started(ImmutableSet<String> buildArgs) {
+      super(EventKey.unique());
+      this.buildArgs = buildArgs;
+    }",method,
+"    @Override
+    public String getEventName() {
+      return BUILD_STARTED;
+    }",method,
+"    @Override
+    protected String getValueString() {
+      return Joiner.on("", "").join(buildArgs);
+    }",method,
+"    public ImmutableSet<String> getBuildArgs() {
+      return buildArgs;
+    }",method,
+"    protected Finished(Started started, int exitCode) {
+      super(started.getEventKey());
+      this.buildArgs = started.getBuildArgs();
+      this.exitCode = exitCode;
+    }",method,
+"    public ImmutableSet<String> getBuildArgs() {
+      return buildArgs;
+    }",method,
+"    public int getExitCode() {
+      return exitCode;
+    }",method,
+"    @Override
+    public String getEventName() {
+      return BUILD_FINISHED;
+    }",method,
+"    @Override
+    protected String getValueString() {
+      return String.format(""exit code: %d"", exitCode);
+    }",method,
+"    @Override
+    public boolean equals(Object o) {
+      if (!super.equals(o)) {
+        return false;
+      }
+      // Because super.equals compares the EventKey, getting here means that we've somehow managed
+      // to create 2 Finished events for the same Started event.
+      throw new UnsupportedOperationException(""Multiple conflicting Finished events detected."");
+    }",method,
+"    @Override
+    public int hashCode() {
+      return Objects.hashCode(super.hashCode(), buildArgs, exitCode);
+    }",method,
+"    protected DistBuildStarted() {
+      super(EventKey.unique());
+    }",method,
+"    @Override
+    public String getEventName() {
+      return DIST_BUILD_STARTED;
+    }",method,
+"    @Override
+    protected String getValueString() {
+      return """";
+    }",method,
+"    protected DistBuildFinished(DistBuildStarted started, int exitCode) {
+      super(started.getEventKey());
+      this.exitCode = exitCode;
+    }",method,
+"    public int getExitCode() {
+      return exitCode;
+    }",method,
+"    @Override
+    public String getEventName() {
+      return DIST_BUILD_FINISHED;
+    }",method,
+"    @Override
+    protected String getValueString() {
+      return String.format(""exit code: %d"", exitCode);
+    }",method,
+"    @Override
+    public boolean equals(Object o) {
+      if (!super.equals(o)) {
+        return false;
+      }
+      // Because super.equals compares the EventKey, getting here means that we've somehow managed
+      // to create 2 Finished events for the same Started event.
+      throw new UnsupportedOperationException(""Multiple conflicting Finished events detected."");
+    }",method,
+"    @Override
+    public int hashCode() {
+      return Objects.hashCode(super.hashCode(), exitCode);
+    }",method,
+"    protected RuleCountCalculated(ImmutableSet<BuildTarget> buildRules, int numRulesToBuild) {
+      super(EventKey.unique());
+      this.buildRules = buildRules;
+      this.numRules = numRulesToBuild;
+    }",method,

@@ -1,0 +1,1078 @@
+code_snippet,type,score
+"    if (!SystemInfo.isFileSystemCaseSensitive) {
+      String bPath = bFile.getPath();
+      String aPath = aFile.getPath();
+      if (!bPath.equals(aPath) && bPath.equalsIgnoreCase(aPath)) return Type.MOVED;
+    }",method,
+"  @Nullable
+  public ContentRevision getBeforeRevision() {
+    return myBeforeRevision;
+  }",method,
+"  @Nullable
+  public ContentRevision getAfterRevision() {
+    return myAfterRevision;
+  }",method,
+"  @NotNull
+  public FileStatus getFileStatus() {
+    return myFileStatus;
+  }",method,
+"  @Nullable
+  public VirtualFile getVirtualFile() {
+    return myAfterRevision == null ? null : myAfterRevision.getFile().getVirtualFile();
+  }",method,
+"  public boolean equals(final Object o) {
+    if (this == o) return true;
+    if (o == null || (! (o instanceof Change))) return false;
+    final Change otherChange = ((Change)o);
+    final ContentRevision br1 = getBeforeRevision();
+    final ContentRevision br2 = otherChange.getBeforeRevision();
+    final ContentRevision ar1 = getAfterRevision();
+    final ContentRevision ar2 = otherChange.getAfterRevision();
+    FilePath fbr1 = br1 != null ? br1.getFile() : null;
+    FilePath fbr2 = br2 != null ? br2.getFile() : null;
+    FilePath far1 = ar1 != null ? ar1.getFile() : null;
+    FilePath far2 = ar2 != null ? ar2.getFile() : null;
+    return Comparing.equal(fbr1, fbr2) && Comparing.equal(far1, far2);
+  }",method,
+"  public int hashCode() {
+    if (myHash == -1) {
+      myHash = calculateHash();
+    }
+    return myHash;
+  }",method,
+"    if (myHash == -1) {
+      myHash = calculateHash();
+    }",method,
+"  private int calculateHash() {
+    return revisionHashCode(getBeforeRevision()) * 27 + revisionHashCode(getAfterRevision());
+  }",method,
+"  private static int revisionHashCode(@Nullable ContentRevision rev) {
+    return rev != null ? rev.getFile().hashCode() : 0;
+  }",method,
+"  public boolean affectsFile(File ioFile) {
+    if (myBeforeRevision != null && myBeforeRevision.getFile().getIOFile().equals(ioFile)) return true;
+    if (myAfterRevision != null && myAfterRevision.getFile().getIOFile().equals(ioFile)) return true;
+    return false;
+  }",method,
+"  public boolean isRenamed() {
+    cacheRenameOrMove(null);
+    return myRenamed;
+  }",method,
+"  public boolean isMoved() {
+    cacheRenameOrMove(null);
+    return myMoved;
+  }",method,
+"  public String getMoveRelativePath(Project project) {
+    cacheRenameOrMove(project);
+    return myMoveRelativePath;
+  }",method,
+"  private void cacheRenameOrMove(final Project project) {
+    if (myBeforeRevision != null && myAfterRevision != null && (! revisionPathsSame())) {
+      if (!myRenameOrMoveCached) {
+        myRenameOrMoveCached = true;
+        if (Comparing.equal(myBeforeRevision.getFile().getParentPath(), myAfterRevision.getFile().getParentPath())) {
+          myRenamed = true;
+        }
+        else {
+          myMoved = true;
+        }
+      }
+      if (myMoved && myMoveRelativePath == null && project != null) {
+        myMoveRelativePath = VcsPathPresenter.getInstance(project).getPresentableRelativePath(myBeforeRevision, myAfterRevision);
+      }
+    }
+  }",method,
+"      if (!myRenameOrMoveCached) {
+        myRenameOrMoveCached = true;
+        if (Comparing.equal(myBeforeRevision.getFile().getParentPath(), myAfterRevision.getFile().getParentPath())) {
+          myRenamed = true;
+        }
+        else {
+          myMoved = true;
+        }
+      }",method,
+"      if (myMoved && myMoveRelativePath == null && project != null) {
+        myMoveRelativePath = VcsPathPresenter.getInstance(project).getPresentableRelativePath(myBeforeRevision, myAfterRevision);
+      }",method,
+"  private boolean revisionPathsSame() {
+    final String path1 = myBeforeRevision.getFile().getPath();
+    final String path2 = myAfterRevision.getFile().getPath();
+    // intentionally comparing case-sensitively even on case-insensitive OS to identify case-only renames
+    return path1.equals(path2);
+  }",method,
+"  @NonNls
+  public String toString() {
+    final Type type = getType();
+    //noinspection EnumSwitchStatementWhichMissesCases
+    switch (type) {
+      case NEW: return ""A: "" + myAfterRevision;
+      case DELETED: return ""D: "" + myBeforeRevision;
+      case MOVED: return ""M: "" + myBeforeRevision + "" -> "" + myAfterRevision;
+      default: return ""M: "" + myAfterRevision;
+    }
+  }",method,
+"    switch (type) {
+      case NEW: return ""A: "" + myAfterRevision;
+      case DELETED: return ""D: "" + myBeforeRevision;
+      case MOVED: return ""M: "" + myBeforeRevision + "" -> "" + myAfterRevision;
+      default: return ""M: "" + myAfterRevision;
+    }",method,
+"  @Nullable
+  public String getOriginText(final Project project) {
+    cacheRenameOrMove(project);
+    if (isMoved()) {
+      return getMovedText(project);
+    } else if (isRenamed()) {
+      return getRenamedText();
+    }
+    return myIsReplaced ? VcsBundle.message(""change.file.replaced.text"") : null;
+  }",method,
+"  @Nullable
+  protected String getRenamedText() {
+    return VcsBundle.message(""change.file.renamed.from.text"", myBeforeRevision.getFile().getName());
+  }",method,
+"  @Nullable
+  protected String getMovedText(final Project project) {
+    return VcsBundle.message(""change.file.moved.from.text"", getMoveRelativePath(project));
+  }",method,
+"  public boolean isIsReplaced() {
+    return myIsReplaced;
+  }",method,
+"  public void setIsReplaced(final boolean isReplaced) {
+    myIsReplaced = isReplaced;
+  }",method,
+"  @Nullable
+  public Icon getAdditionalIcon() {
+    return null;
+  }",method,
+"  @Nullable
+  public String getDescription() {
+    return null;
+  }",method,
+"public class DLConfigs {
+    public static final boolean LOG = true;
+    public static ClassLoader sPluginClassloader = DLConstants.class.getClassLoader();
+    @TargetApi(Build.VERSION_CODES.HONEYCOMB)
+    public static void setSoLastModifiedTime(Context cxt, String soName, long time) {
+        SharedPreferences prefs = cxt.getSharedPreferences(DLConstants.PREFERENCE_NAME,
+                Context.MODE_PRIVATE | Context.MODE_MULTI_PROCESS);
+        prefs.edit().putLong(soName, time).apply();
+    }
+    @TargetApi(Build.VERSION_CODES.HONEYCOMB)
+    public static long getSoLastModifiedTime(Context cxt, String soName) {
+        SharedPreferences prefs = cxt.getSharedPreferences(DLConstants.PREFERENCE_NAME,
+                Context.MODE_PRIVATE | Context.MODE_MULTI_PROCESS);
+        return prefs.getLong(soName, 0);
+    }
+}",class,
+"public class DLConstants {
+    public static final String FROM = ""extra.from"";
+    public static final int FROM_INTERNAL = 0;
+    public static final int FROM_EXTERNAL = 1;
+    public static final String EXTRA_DEX_PATH = ""extra.dex.path"";
+    public static final String EXTRA_CLASS = ""extra.class"";
+    public static final String EXTRA_PACKAGE = ""extra.package"";
+    public static final int ACTIVITY_TYPE_UNKNOWN = -1;
+    public static final int ACTIVITY_TYPE_NORMAL = 1;
+    public static final int ACTIVITY_TYPE_FRAGMENT = 2;
+    public static final int ACTIVITY_TYPE_ACTIONBAR = 3;
+    public static final String PROXY_ACTIVITY_VIEW_ACTION =
+            ""com.ryg.dynamicload.proxy.activity.VIEW"";
+    public static final String PROXY_FRAGMENT_ACTIVITY_VIEW_ACTION =
+            ""com.ryg.dynamicload.proxy.fragmentactivity.VIEW"";
+    public static final String BRAND_SAMSUNG = ""samsung"";
+    public static final String CPU_ARMEABI = ""armeabi"";
+    public static final String CPU_X86 = ""x86"";
+    public static final String CPU_MIPS = ""mips"";
+    public static final String PREFERENCE_NAME = ""dynamic_load_configs"";
+    public final static String INTENT_PLUGIN_PACKAGE = ""dl_plugin_package"";
+    public final static String INTENT_PLUGIN_CLASS = ""dl_plugin_class"";
+}",class,
+"    @TargetApi(Build.VERSION_CODES.HONEYCOMB)
+    public static void setSoLastModifiedTime(Context cxt, String soName, long time) {
+        SharedPreferences prefs = cxt.getSharedPreferences(DLConstants.PREFERENCE_NAME,
+                Context.MODE_PRIVATE | Context.MODE_MULTI_PROCESS);
+        prefs.edit().putLong(soName, time).apply();
+    }",method,
+"    @TargetApi(Build.VERSION_CODES.HONEYCOMB)
+    public static long getSoLastModifiedTime(Context cxt, String soName) {
+        SharedPreferences prefs = cxt.getSharedPreferences(DLConstants.PREFERENCE_NAME,
+                Context.MODE_PRIVATE | Context.MODE_MULTI_PROCESS);
+        return prefs.getLong(soName, 0);
+    }",method,
+"public abstract class ListModelEditorBase<T> extends CollectionModelEditor<T, ListItemEditor<T>> {
+  // we use combobox model to avoid code duplication - in any case, we expose it as CollectionListModel
+  protected final MyModel model = new MyModel();
+  public ListModelEditorBase(@NotNull ListItemEditor<T> itemEditor) {
+    super(itemEditor);
+  }
+  @NotNull
+  public CollectionListModel<T> getModel() {
+    return model;
+  }
+  @NotNull
+  @Override
+  protected List<T> getItems() {
+    return model.items();
+  }
+  @Override
+  public void reset(@NotNull List<T> items) {
+    super.reset(items);
+    model.replaceAll(items);
+  }
+  public final void ensureNonEmptyNames(@NotNull String errorMessage) throws ConfigurationException {
+    List<T> items = getItems();
+    for (int i = items.size() - 1; i >= 0; i--) {
+      T item = items.get(i);
+      if (StringUtil.isEmptyOrSpaces(itemEditor.getName(item))) {
+        if (itemEditor.isEmpty(item)) {
+          removeEmptyItem(i);
+        }
+        else {
+          throw new ConfigurationException(errorMessage);
+        }
+      }
+    }
+  }
+  protected void removeEmptyItem(int i) {
+  }
+  @Override
+  protected boolean isEditable(@NotNull T item) {
+    return itemEditor.isEditable(item);
+  }
+  @NotNull
+  public List<T> apply() {
+    final List<T> items = getItems();
+    if (!helper.hasModifiedItems()) {
+      return items;
+    }
+    helper.process(new TObjectObjectProcedure<T, T>() {
+      @Override
+      public boolean execute(T newItem, T oldItem) {
+        itemEditor.applyModifiedProperties(newItem, oldItem);
+        silentlyReplaceItem(newItem, oldItem, -1);
+        return true;
+      }
+    });
+    helper.reset(items);
+    return items;
+  }
+  @Override
+  protected void silentlyReplaceItem(@NotNull T oldItem, @NotNull T newItem, int index) {
+    super.silentlyReplaceItem(oldItem, newItem, index);
+    model.checkSelectionOnSilentReplace(oldItem, newItem);
+  }
+  protected final class MyModel extends MutableCollectionComboBoxModel<T> {
+    @NotNull
+    final List<T> items() {
+      return super.getInternalList();
+    }
+    void checkSelectionOnSilentReplace(@NotNull T oldItem, @NotNull T newItem) {
+      if (mySelection == oldItem) {
+        mySelection = newItem;
+      }
+    }
+    @Override
+    protected void itemReplaced(@NotNull T existingItem, @Nullable T newItem) {
+      helper.remove(existingItem);
+    }
+    @Override
+    public void removeAll() {
+      super.removeAll();
+      helper.reset(null);
+    }
+  }
+}",class,
+"  protected final class MyModel extends MutableCollectionComboBoxModel<T> {
+    @NotNull
+    final List<T> items() {
+      return super.getInternalList();
+    }
+    void checkSelectionOnSilentReplace(@NotNull T oldItem, @NotNull T newItem) {
+      if (mySelection == oldItem) {
+        mySelection = newItem;
+      }
+    }
+    @Override
+    protected void itemReplaced(@NotNull T existingItem, @Nullable T newItem) {
+      helper.remove(existingItem);
+    }
+    @Override
+    public void removeAll() {
+      super.removeAll();
+      helper.reset(null);
+    }
+  }",class,
+"  public ListModelEditorBase(@NotNull ListItemEditor<T> itemEditor) {
+    super(itemEditor);
+  }",method,
+"  @NotNull
+  public CollectionListModel<T> getModel() {
+    return model;
+  }",method,
+"  @NotNull
+  @Override
+  protected List<T> getItems() {
+    return model.items();
+  }",method,
+"  @Override
+  public void reset(@NotNull List<T> items) {
+    super.reset(items);
+    model.replaceAll(items);
+  }",method,
+"  public final void ensureNonEmptyNames(@NotNull String errorMessage) throws ConfigurationException {
+    List<T> items = getItems();
+    for (int i = items.size() - 1; i >= 0; i--) {
+      T item = items.get(i);
+      if (StringUtil.isEmptyOrSpaces(itemEditor.getName(item))) {
+        if (itemEditor.isEmpty(item)) {
+          removeEmptyItem(i);
+        }
+        else {
+          throw new ConfigurationException(errorMessage);
+        }
+      }
+    }
+  }",method,
+"  protected void removeEmptyItem(int i) {
+  }",method,
+"  @Override
+  protected boolean isEditable(@NotNull T item) {
+    return itemEditor.isEditable(item);
+  }",method,
+"  @NotNull
+  public List<T> apply() {
+    final List<T> items = getItems();
+    if (!helper.hasModifiedItems()) {
+      return items;
+    }
+    helper.process(new TObjectObjectProcedure<T, T>() {
+      @Override
+      public boolean execute(T newItem, T oldItem) {
+        itemEditor.applyModifiedProperties(newItem, oldItem);
+        silentlyReplaceItem(newItem, oldItem, -1);
+        return true;
+      }
+    });
+    helper.reset(items);
+    return items;
+  }",method,
+"    helper.process(new TObjectObjectProcedure<T, T>() {
+      @Override
+      public boolean execute(T newItem, T oldItem) {
+        itemEditor.applyModifiedProperties(newItem, oldItem);
+        silentlyReplaceItem(newItem, oldItem, -1);
+        return true;
+      }
+    }",method,
+"      @Override
+      public boolean execute(T newItem, T oldItem) {
+        itemEditor.applyModifiedProperties(newItem, oldItem);
+        silentlyReplaceItem(newItem, oldItem, -1);
+        return true;
+      }",method,
+"  @Override
+  protected void silentlyReplaceItem(@NotNull T oldItem, @NotNull T newItem, int index) {
+    super.silentlyReplaceItem(oldItem, newItem, index);
+    model.checkSelectionOnSilentReplace(oldItem, newItem);
+  }",method,
+"    @NotNull
+    final List<T> items() {
+      return super.getInternalList();
+    }",method,
+"    void checkSelectionOnSilentReplace(@NotNull T oldItem, @NotNull T newItem) {
+      if (mySelection == oldItem) {
+        mySelection = newItem;
+      }
+    }",method,
+"      if (mySelection == oldItem) {
+        mySelection = newItem;
+      }",method,
+"    @Override
+    protected void itemReplaced(@NotNull T existingItem, @Nullable T newItem) {
+      helper.remove(existingItem);
+    }",method,
+"    @Override
+    public void removeAll() {
+      super.removeAll();
+      helper.reset(null);
+    }",method,
+"public class PyOverrideTest extends PyTestCase {
+  private void doTest() {
+    myFixture.configureByFile(""override/"" + getTestName(true) + "".py"");
+    PyFunction toOverride = getTopLevelClass(0).getMethods() [0];
+    PyOverrideImplementUtil.overrideMethods(myFixture.getEditor(), getTopLevelClass(1),
+                                            Collections.singletonList(new PyMethodMember(toOverride)), false);
+    myFixture.checkResultByFile(""override/"" + getTestName(true) + ""_after.py"", true);
+  }
+  private void doTest3k() {
+    runWithLanguageLevel(LanguageLevel.PYTHON32, () -> doTest());
+  }
+  private PyClass getTopLevelClass(int index) {
+    PyFile file = (PyFile) myFixture.getFile();
+    return file.getTopLevelClasses().get(index);
+  }
+  public final void testCircle() {
+    doTest();
+  }
+  public void testSimple() {
+    doTest();
+  }
+  public void testClassmethod() {
+    doTest();
+  }
+  public void testStaticMethod() {
+    doTest();
+  }
+  public void testNewStyle() {
+    doTest();
+  }
+  public void testReturnValue() {  // PY-1537
+    doTest();
+  }
+  public void testClassmethodNewStyle() {  // PY-1811
+    doTest();
+  }
+  public void testIndent() {  // PY-1796
+    doTest();
+  }
+  public void testInnerClass() {  // PY-10976
+    myFixture.configureByFile(""override/"" + getTestName(true) + "".py"");
+    PyFunction toOverride = getTopLevelClass(0).getMethods()[0];
+    PyClass pyClass = getTopLevelClass(1).getNestedClasses()[0];
+    PyOverrideImplementUtil.overrideMethods(myFixture.getEditor(), pyClass,
+                                            Collections.singletonList(new PyMethodMember(toOverride)), false);
+    myFixture.checkResultByFile(""override/"" + getTestName(true) + ""_after.py"", true);
+  }
+  public void testInnerFunctionClass() {
+    myFixture.configureByFile(""override/"" + getTestName(true) + "".py"");
+    PyFunction toOverride = getTopLevelClass(0).getMethods()[0];
+    final PsiElement element = myFixture.getElementAtCaret();
+    PyOverrideImplementUtil.overrideMethods(myFixture.getEditor(), PsiTreeUtil.getParentOfType(element, PyClass.class, false),
+                                            Collections.singletonList(new PyMethodMember(toOverride)), false);
+    myFixture.checkResultByFile(""override/"" + getTestName(true) + ""_after.py"", true);
+  }
+  public void testQualified() {  // PY-2171
+    myFixture.configureByFile(""override/"" + getTestName(true) + "".py"");
+    PyClass dateClass = PyClassNameIndex.findClass(""datetime.date"", myFixture.getProject());
+    assertNotNull(dateClass);
+    PyFunction initMethod = dateClass.findMethodByName(PyNames.INIT, false, null);
+    assertNotNull(initMethod);
+    PyOverrideImplementUtil.overrideMethods(myFixture.getEditor(), getTopLevelClass(0),
+                                            Collections.singletonList(new PyMethodMember(initMethod)), false);
+    myFixture.checkResultByFile(""override/"" + getTestName(true) + ""_after.py"", true);
+  }
+  public void testImplement() {
+    myFixture.configureByFile(""override/"" + getTestName(true) + "".py"");
+    PyFunction toImplement = getTopLevelClass(0).getMethods()[1];
+    PyOverrideImplementUtil.overrideMethods(myFixture.getEditor(), getTopLevelClass(1),
+                                            Collections.singletonList(new PyMethodMember(toImplement)), true);
+    myFixture.checkResultByFile(""override/"" + getTestName(true) + ""_after.py"", true);
+  }
+  // PY-11127
+  public void testOverriddenMethodRaisesNotImplementedError() {
+    doTest();
+  }
+  // PY-11127
+  public void testOverriddenMethodRaisesNotImplementedErrorNoInstance() {
+    doTest();
+  }
+  // PY-25906
+  public void testImplementationOrder() {
+    myFixture.configureByFile(""override/"" + getTestName(true) + "".py"");
+    final PyFunction[] toImplement = getTopLevelClass(0).getMethods();
+    assertEquals(Arrays.asList(""foo"", ""bar""), ContainerUtil.map(toImplement, PyFunction::getName));
+    PyOverrideImplementUtil.overrideMethods(myFixture.getEditor(),
+                                            getTopLevelClass(1),
+                                            ContainerUtil.map(toImplement, PyMethodMember::new),
+                                            true);
+    myFixture.checkResultByFile(""override/"" + getTestName(true) + ""_after.py"", true);
+  }
+  public void testPy3k() {
+    doTest3k();
+  }
+  // PY-15629
+  public void testStaticMethodPy3k() {
+    doTest3k();
+  }
+  // PY-15629
+  public void testDunderNewPy3k() {
+    doTest3k();
+  }
+  // PY-15629
+  public void testDunderNew() {
+    doTest();
+  }
+  public void testTypeAnnotations() {  // PY-2547
+    doTest3k();
+  }
+  public void testReturnAnnotation() {  // PY-2690
+    doTest3k();
+  }
+  public void testSingleStar() {  // PY-6455
+    doTest3k();
+  }
+  public void testStarArgs() {  // PY-6455
+    doTest3k();
+  }
+  public void testKwargs() {  // PY-7401
+    doTest3k();
+  }
+  public void testDocstring() {
+    doTest();
+  }
+  // PY-10229
+  public void testInstanceCheck() {
+    myFixture.configureByFile(""override/"" + getTestName(true) + "".py"");
+    final PyClass cls = getTopLevelClass(0);
+    final PyFunction method = cls.findMethodByName(""__instancecheck__"", true, null);
+    assertNotNull(method);
+    PyOverrideImplementUtil.overrideMethods(myFixture.getEditor(), cls, Collections.singletonList(new PyMethodMember(method)), false);
+    myFixture.checkResultByFile(""override/"" + getTestName(true) + ""_after.py"", true);
+  }
+}",class,
+"  private void doTest() {
+    myFixture.configureByFile(""override/"" + getTestName(true) + "".py"");
+    PyFunction toOverride = getTopLevelClass(0).getMethods() [0];
+    PyOverrideImplementUtil.overrideMethods(myFixture.getEditor(), getTopLevelClass(1),
+                                            Collections.singletonList(new PyMethodMember(toOverride)), false);
+    myFixture.checkResultByFile(""override/"" + getTestName(true) + ""_after.py"", true);
+  }",method,
+"  private void doTest3k() {
+    runWithLanguageLevel(LanguageLevel.PYTHON32, () -> doTest());
+  }",method,
+"  private PyClass getTopLevelClass(int index) {
+    PyFile file = (PyFile) myFixture.getFile();
+    return file.getTopLevelClasses().get(index);
+  }",method,
+"  public final void testCircle() {
+    doTest();
+  }",method,
+"  public void testSimple() {
+    doTest();
+  }",method,
+"  public void testClassmethod() {
+    doTest();
+  }",method,
+"  public void testStaticMethod() {
+    doTest();
+  }",method,
+"  public void testNewStyle() {
+    doTest();
+  }",method,
+"  public void testReturnValue() {  // PY-1537
+    doTest();
+  }",method,
+"  public void testClassmethodNewStyle() {  // PY-1811
+    doTest();
+  }",method,
+"  public void testIndent() {  // PY-1796
+    doTest();
+  }",method,
+"  public void testInnerClass() {  // PY-10976
+    myFixture.configureByFile(""override/"" + getTestName(true) + "".py"");
+    PyFunction toOverride = getTopLevelClass(0).getMethods()[0];
+    PyClass pyClass = getTopLevelClass(1).getNestedClasses()[0];
+    PyOverrideImplementUtil.overrideMethods(myFixture.getEditor(), pyClass,
+                                            Collections.singletonList(new PyMethodMember(toOverride)), false);
+    myFixture.checkResultByFile(""override/"" + getTestName(true) + ""_after.py"", true);
+  }",method,
+"  public void testInnerFunctionClass() {
+    myFixture.configureByFile(""override/"" + getTestName(true) + "".py"");
+    PyFunction toOverride = getTopLevelClass(0).getMethods()[0];
+    final PsiElement element = myFixture.getElementAtCaret();
+    PyOverrideImplementUtil.overrideMethods(myFixture.getEditor(), PsiTreeUtil.getParentOfType(element, PyClass.class, false),
+                                            Collections.singletonList(new PyMethodMember(toOverride)), false);
+    myFixture.checkResultByFile(""override/"" + getTestName(true) + ""_after.py"", true);
+  }",method,
+"  public void testQualified() {  // PY-2171
+    myFixture.configureByFile(""override/"" + getTestName(true) + "".py"");
+    PyClass dateClass = PyClassNameIndex.findClass(""datetime.date"", myFixture.getProject());
+    assertNotNull(dateClass);
+    PyFunction initMethod = dateClass.findMethodByName(PyNames.INIT, false, null);
+    assertNotNull(initMethod);
+    PyOverrideImplementUtil.overrideMethods(myFixture.getEditor(), getTopLevelClass(0),
+                                            Collections.singletonList(new PyMethodMember(initMethod)), false);
+    myFixture.checkResultByFile(""override/"" + getTestName(true) + ""_after.py"", true);
+  }",method,
+"  public void testImplement() {
+    myFixture.configureByFile(""override/"" + getTestName(true) + "".py"");
+    PyFunction toImplement = getTopLevelClass(0).getMethods()[1];
+    PyOverrideImplementUtil.overrideMethods(myFixture.getEditor(), getTopLevelClass(1),
+                                            Collections.singletonList(new PyMethodMember(toImplement)), true);
+    myFixture.checkResultByFile(""override/"" + getTestName(true) + ""_after.py"", true);
+  }",method,
+"  public void testOverriddenMethodRaisesNotImplementedError() {
+    doTest();
+  }",method,
+"  public void testOverriddenMethodRaisesNotImplementedErrorNoInstance() {
+    doTest();
+  }",method,
+"  public void testImplementationOrder() {
+    myFixture.configureByFile(""override/"" + getTestName(true) + "".py"");
+    final PyFunction[] toImplement = getTopLevelClass(0).getMethods();
+    assertEquals(Arrays.asList(""foo"", ""bar""), ContainerUtil.map(toImplement, PyFunction::getName));
+    PyOverrideImplementUtil.overrideMethods(myFixture.getEditor(),
+                                            getTopLevelClass(1),
+                                            ContainerUtil.map(toImplement, PyMethodMember::new),
+                                            true);
+    myFixture.checkResultByFile(""override/"" + getTestName(true) + ""_after.py"", true);
+  }",method,
+"  public void testPy3k() {
+    doTest3k();
+  }",method,
+"  public void testStaticMethodPy3k() {
+    doTest3k();
+  }",method,
+"  public void testDunderNewPy3k() {
+    doTest3k();
+  }",method,
+"  public void testDunderNew() {
+    doTest();
+  }",method,
+"  public void testTypeAnnotations() {  // PY-2547
+    doTest3k();
+  }",method,
+"  public void testReturnAnnotation() {  // PY-2690
+    doTest3k();
+  }",method,
+"  public void testSingleStar() {  // PY-6455
+    doTest3k();
+  }",method,
+"  public void testStarArgs() {  // PY-6455
+    doTest3k();
+  }",method,
+"  public void testKwargs() {  // PY-7401
+    doTest3k();
+  }",method,
+"  public void testDocstring() {
+    doTest();
+  }",method,
+"  public void testInstanceCheck() {
+    myFixture.configureByFile(""override/"" + getTestName(true) + "".py"");
+    final PyClass cls = getTopLevelClass(0);
+    final PyFunction method = cls.findMethodByName(""__instancecheck__"", true, null);
+    assertNotNull(method);
+    PyOverrideImplementUtil.overrideMethods(myFixture.getEditor(), cls, Collections.singletonList(new PyMethodMember(method)), false);
+    myFixture.checkResultByFile(""override/"" + getTestName(true) + ""_after.py"", true);
+  }",method,
+"public class ConfigureGroovyLibraryNotificationProvider extends EditorNotifications.Provider<EditorNotificationPanel> {
+  private static final Key<EditorNotificationPanel> KEY = Key.create(""configure.groovy.library"");
+  private final Project myProject;
+  private final Set<FileType> supportedFileTypes;
+  public ConfigureGroovyLibraryNotificationProvider(Project project, final EditorNotifications notifications) {
+    myProject = project;
+    project.getMessageBus().connect(project).subscribe(ProjectTopics.PROJECT_ROOTS, new ModuleRootListener() {
+      @Override
+      public void rootsChanged(ModuleRootEvent event) {
+        notifications.updateAllNotifications();
+      }
+    });
+    supportedFileTypes = new HashSet<>();
+    supportedFileTypes.add(GroovyFileType.GROOVY_FILE_TYPE);
+    for (GroovyFrameworkConfigNotification configNotification : GroovyFrameworkConfigNotification.EP_NAME.getExtensions()) {
+      Collections.addAll(supportedFileTypes, configNotification.getFrameworkFileTypes());
+    }
+  }
+  @NotNull
+  @Override
+  public Key<EditorNotificationPanel> getKey() {
+    return KEY;
+  }
+  @Override
+  public EditorNotificationPanel createNotificationPanel(@NotNull VirtualFile file, @NotNull FileEditor fileEditor) {
+    try {
+      if (!supportedFileTypes.contains(file.getFileType())) return null;
+      // do not show the panel for Gradle build scripts
+      // expecting groovy library to always be available at the gradle distribution
+      if (StringUtil.endsWith(file.getName(), "".gradle"")) return null;
+      if (CompilerManager.getInstance(myProject).isExcludedFromCompilation(file)) return null;
+      final Module module = ModuleUtilCore.findModuleForFile(file, myProject);
+      if (module == null) return null;
+      if (isMavenModule(module)) return null;
+      for (GroovyFrameworkConfigNotification configNotification : GroovyFrameworkConfigNotification.EP_NAME.getExtensions()) {
+        if (configNotification.hasFrameworkStructure(module)) {
+          if (!configNotification.hasFrameworkLibrary(module)) {
+            return (EditorNotificationPanel)configNotification.createConfigureNotificationPanel(module);
+          }
+          return null;
+        }
+      }
+    }
+    catch (ProcessCanceledException | IndexNotReadyException ignored) {
+    }
+    return null;
+  }
+  private static boolean isMavenModule(@NotNull Module module) {
+    for (VirtualFile root : ModuleRootManager.getInstance(module).getContentRoots()) {
+      if (root.findChild(""pom.xml"") != null) return true;
+    }
+    return false;
+  }
+}",class,
+"  public ConfigureGroovyLibraryNotificationProvider(Project project, final EditorNotifications notifications) {
+    myProject = project;
+    project.getMessageBus().connect(project).subscribe(ProjectTopics.PROJECT_ROOTS, new ModuleRootListener() {
+      @Override
+      public void rootsChanged(ModuleRootEvent event) {
+        notifications.updateAllNotifications();
+      }
+    });
+    supportedFileTypes = new HashSet<>();
+    supportedFileTypes.add(GroovyFileType.GROOVY_FILE_TYPE);
+    for (GroovyFrameworkConfigNotification configNotification : GroovyFrameworkConfigNotification.EP_NAME.getExtensions()) {
+      Collections.addAll(supportedFileTypes, configNotification.getFrameworkFileTypes());
+    }
+  }",method,
+"      @Override
+      public void rootsChanged(ModuleRootEvent event) {
+        notifications.updateAllNotifications();
+      }",method,
+"  @NotNull
+  @Override
+  public Key<EditorNotificationPanel> getKey() {
+    return KEY;
+  }",method,
+"  @Override
+  public EditorNotificationPanel createNotificationPanel(@NotNull VirtualFile file, @NotNull FileEditor fileEditor) {
+    try {
+      if (!supportedFileTypes.contains(file.getFileType())) return null;
+      // do not show the panel for Gradle build scripts
+      // expecting groovy library to always be available at the gradle distribution
+      if (StringUtil.endsWith(file.getName(), "".gradle"")) return null;
+      if (CompilerManager.getInstance(myProject).isExcludedFromCompilation(file)) return null;
+      final Module module = ModuleUtilCore.findModuleForFile(file, myProject);
+      if (module == null) return null;
+      if (isMavenModule(module)) return null;
+      for (GroovyFrameworkConfigNotification configNotification : GroovyFrameworkConfigNotification.EP_NAME.getExtensions()) {
+        if (configNotification.hasFrameworkStructure(module)) {
+          if (!configNotification.hasFrameworkLibrary(module)) {
+            return (EditorNotificationPanel)configNotification.createConfigureNotificationPanel(module);
+          }
+          return null;
+        }
+      }
+    }
+    catch (ProcessCanceledException | IndexNotReadyException ignored) {
+    }
+    return null;
+  }",method,
+"    catch (ProcessCanceledException | IndexNotReadyException ignored) {
+    }",method,
+"  private static boolean isMavenModule(@NotNull Module module) {
+    for (VirtualFile root : ModuleRootManager.getInstance(module).getContentRoots()) {
+      if (root.findChild(""pom.xml"") != null) return true;
+    }
+    return false;
+  }",method,
+"public class CategoryController extends BaseController {
+	@Autowired
+	private CategoryService categoryService;
+    @Autowired
+   	private FileTplService fileTplService;
+    @Autowired
+   	private SiteService siteService;
+	@ModelAttribute(""category"")
+	public Category get(@RequestParam(required=false) String id) {
+		if (StringUtils.isNotBlank(id)){
+			return categoryService.get(id);
+		}else{
+			return new Category();
+		}
+	}
+	@RequiresPermissions(""cms:category:view"")
+	@RequestMapping(value = {""list"", """"})
+	public String list(Model model) {
+		List<Category> list = Lists.newArrayList();
+		List<Category> sourcelist = categoryService.findByUser(true, null);
+		Category.sortList(list, sourcelist, ""1"");
+        model.addAttribute(""list"", list);
+		return ""modules/cms/categoryList"";
+	}
+	@RequiresPermissions(""cms:category:view"")
+	@RequestMapping(value = ""form"")
+	public String form(Category category, Model model) {
+		if (category.getParent()==null||category.getParent().getId()==null){
+			category.setParent(new Category(""1""));
+		}
+		Category parent = categoryService.get(category.getParent().getId());
+		category.setParent(parent);
+		if (category.getOffice()==null||category.getOffice().getId()==null){
+			category.setOffice(parent.getOffice());
+		}
+        model.addAttribute(""listViewList"",getTplContent(Category.DEFAULT_TEMPLATE));
+        model.addAttribute(""category_DEFAULT_TEMPLATE"",Category.DEFAULT_TEMPLATE);
+        model.addAttribute(""contentViewList"",getTplContent(Article.DEFAULT_TEMPLATE));
+        model.addAttribute(""article_DEFAULT_TEMPLATE"",Article.DEFAULT_TEMPLATE);
+		model.addAttribute(""office"", category.getOffice());
+		model.addAttribute(""category"", category);
+		return ""modules/cms/categoryForm"";
+	}
+	@RequiresPermissions(""cms:category:edit"")
+	@RequestMapping(value = ""save"")
+	public String save(Category category, Model model, RedirectAttributes redirectAttributes) {
+		if(Global.isDemoMode()){
+			addMessage(redirectAttributes, ""演示模式，不允许操作！"");
+			return ""redirect:"" + adminPath + ""/cms/category/"";
+		}
+		if (!beanValidator(model, category)){
+			return form(category, model);
+		}
+		categoryService.save(category);
+		addMessage(redirectAttributes, ""保存栏目'"" + category.getName() + ""'成功"");
+		return ""redirect:"" + adminPath + ""/cms/category/"";
+	}
+	@RequiresPermissions(""cms:category:edit"")
+	@RequestMapping(value = ""delete"")
+	public String delete(Category category, RedirectAttributes redirectAttributes) {
+		if(Global.isDemoMode()){
+			addMessage(redirectAttributes, ""演示模式，不允许操作！"");
+			return ""redirect:"" + adminPath + ""/cms/category/"";
+		}
+		if (Category.isRoot(category.getId())){
+			addMessage(redirectAttributes, ""删除栏目失败, 不允许删除顶级栏目或编号为空"");
+		}else{
+			categoryService.delete(category);
+			addMessage(redirectAttributes, ""删除栏目成功"");
+		}
+		return ""redirect:"" + adminPath + ""/cms/category/"";
+	}
+	@RequiresPermissions(""cms:category:edit"")
+	@RequestMapping(value = ""updateSort"")
+	public String updateSort(String[] ids, Integer[] sorts, RedirectAttributes redirectAttributes) {
+    	int len = ids.length;
+    	Category[] entitys = new Category[len];
+    	for (int i = 0; i < len; i++) {
+    		entitys[i] = categoryService.get(ids[i]);
+    		entitys[i].setSort(sorts[i]);
+    		categoryService.save(entitys[i]);
+    	}
+    	addMessage(redirectAttributes, ""保存栏目排序成功!"");
+		return ""redirect:"" + adminPath + ""/cms/category/"";
+	}
+	@RequiresUser
+	@ResponseBody
+	@RequestMapping(value = ""treeData"")
+	public List<Map<String, Object>> treeData(String module, @RequestParam(required=false) String extId, HttpServletResponse response) {
+		response.setContentType(""application/json; charset=UTF-8"");
+		List<Map<String, Object>> mapList = Lists.newArrayList();
+		List<Category> list = categoryService.findByUser(true, module);
+		for (int i=0; i<list.size(); i++){
+			Category e = list.get(i);
+			if (extId == null || (extId!=null && !extId.equals(e.getId()) && e.getParentIds().indexOf("",""+extId+"","")==-1)){
+				Map<String, Object> map = Maps.newHashMap();
+				map.put(""id"", e.getId());
+				map.put(""pId"", e.getParent()!=null?e.getParent().getId():0);
+				map.put(""name"", e.getName());
+				map.put(""module"", e.getModule());
+				mapList.add(map);
+			}
+		}
+		return mapList;
+	}
+    private List<String> getTplContent(String prefix) {
+   		List<String> tplList = fileTplService.getNameListByPrefix(siteService.get(Site.getCurrentSiteId()).getSolutionPath());
+   		tplList = TplUtils.tplTrim(tplList, prefix, """");
+   		return tplList;
+   	}
+}",class,
+"	@RequiresPermissions(""cms:category:view"")
+	@RequestMapping(value = {""list"", """"})
+	public String list(Model model) {
+		List<Category> list = Lists.newArrayList();
+		List<Category> sourcelist = categoryService.findByUser(true, null);
+		Category.sortList(list, sourcelist, ""1"");
+        model.addAttribute(""list"", list);
+		return ""modules/cms/categoryList"";
+	}",method,
+"	@RequiresPermissions(""cms:category:view"")
+	@RequestMapping(value = ""form"")
+	public String form(Category category, Model model) {
+		if (category.getParent()==null||category.getParent().getId()==null){
+			category.setParent(new Category(""1""));
+		}
+		Category parent = categoryService.get(category.getParent().getId());
+		category.setParent(parent);
+		if (category.getOffice()==null||category.getOffice().getId()==null){
+			category.setOffice(parent.getOffice());
+		}
+        model.addAttribute(""listViewList"",getTplContent(Category.DEFAULT_TEMPLATE));
+        model.addAttribute(""category_DEFAULT_TEMPLATE"",Category.DEFAULT_TEMPLATE);
+        model.addAttribute(""contentViewList"",getTplContent(Article.DEFAULT_TEMPLATE));
+        model.addAttribute(""article_DEFAULT_TEMPLATE"",Article.DEFAULT_TEMPLATE);
+		model.addAttribute(""office"", category.getOffice());
+		model.addAttribute(""category"", category);
+		return ""modules/cms/categoryForm"";
+	}",method,
+"	@RequiresPermissions(""cms:category:edit"")
+	@RequestMapping(value = ""save"")
+	public String save(Category category, Model model, RedirectAttributes redirectAttributes) {
+		if(Global.isDemoMode()){
+			addMessage(redirectAttributes, ""演示模式，不允许操作！"");
+			return ""redirect:"" + adminPath + ""/cms/category/"";
+		}
+		if (!beanValidator(model, category)){
+			return form(category, model);
+		}
+		categoryService.save(category);
+		addMessage(redirectAttributes, ""保存栏目'"" + category.getName() + ""'成功"");
+		return ""redirect:"" + adminPath + ""/cms/category/"";
+	}",method,
+"	@RequiresPermissions(""cms:category:edit"")
+	@RequestMapping(value = ""delete"")
+	public String delete(Category category, RedirectAttributes redirectAttributes) {
+		if(Global.isDemoMode()){
+			addMessage(redirectAttributes, ""演示模式，不允许操作！"");
+			return ""redirect:"" + adminPath + ""/cms/category/"";
+		}
+		if (Category.isRoot(category.getId())){
+			addMessage(redirectAttributes, ""删除栏目失败, 不允许删除顶级栏目或编号为空"");
+		}else{
+			categoryService.delete(category);
+			addMessage(redirectAttributes, ""删除栏目成功"");
+		}
+		return ""redirect:"" + adminPath + ""/cms/category/"";
+	}",method,
+"	@RequiresPermissions(""cms:category:edit"")
+	@RequestMapping(value = ""updateSort"")
+	public String updateSort(String[] ids, Integer[] sorts, RedirectAttributes redirectAttributes) {
+    	int len = ids.length;
+    	Category[] entitys = new Category[len];
+    	for (int i = 0; i < len; i++) {
+    		entitys[i] = categoryService.get(ids[i]);
+    		entitys[i].setSort(sorts[i]);
+    		categoryService.save(entitys[i]);
+    	}
+    	addMessage(redirectAttributes, ""保存栏目排序成功!"");
+		return ""redirect:"" + adminPath + ""/cms/category/"";
+	}",method,
+"    	for (int i = 0; i < len; i++) {
+    		entitys[i] = categoryService.get(ids[i]);
+    		entitys[i].setSort(sorts[i]);
+    		categoryService.save(entitys[i]);
+    	}",method,
+"    private List<String> getTplContent(String prefix) {
+   		List<String> tplList = fileTplService.getNameListByPrefix(siteService.get(Site.getCurrentSiteId()).getSolutionPath());
+   		tplList = TplUtils.tplTrim(tplList, prefix, """");
+   		return tplList;
+   	}",method,
+"public abstract class IdeFocusManager implements FocusRequestor {
+  public ActionCallback requestFocusInProject(@NotNull Component c, @Nullable Project project) {
+    return requestFocus(c, false);
+  }
+  @Nullable
+  public abstract JComponent getFocusTargetFor(@NotNull final JComponent comp);
+  public abstract void doWhenFocusSettlesDown(@NotNull Runnable runnable);
+  public abstract void doWhenFocusSettlesDown(@NotNull Runnable runnable, @NotNull ModalityState modality);
+  public abstract void doWhenFocusSettlesDown(@NotNull ExpirableRunnable runnable);
+  @Nullable
+  public abstract Component getFocusedDescendantFor(final Component comp);
+  public abstract boolean dispatch(@NotNull KeyEvent e);
+  @Deprecated
+  // use #typeAheadUntil(ActionCallback, String) instead
+  public void typeAheadUntil(ActionCallback done) {
+    typeAheadUntil(done, ""No cause has been provided"");
+  }
+  public void typeAheadUntil(ActionCallback done, @NotNull String cause) {}
+  public abstract boolean isFocusBeingTransferred();
+  @NotNull
+  public abstract ActionCallback requestDefaultFocus(boolean forced);
+  public abstract boolean isFocusTransferEnabled();
+  @NotNull
+  public abstract Expirable getTimestamp(boolean trackOnlyForcedCommands);
+  @NotNull
+  public abstract FocusRequestor getFurtherRequestor();
+  public abstract void revalidateFocus(@NotNull ExpirableRunnable runnable);
+  public abstract void setTypeaheadEnabled(boolean enabled);
+  public abstract Component getFocusOwner();
+  public abstract void runOnOwnContext(@NotNull DataContext context, @NotNull Runnable runnable);
+  @Nullable
+  public abstract Component getLastFocusedFor(@Nullable IdeFrame frame);
+  @Nullable
+  public abstract IdeFrame getLastFocusedFrame();
+  public abstract void toFront(JComponent c);
+  public static IdeFocusManager getInstance(@Nullable Project project) {
+    if (project == null || project.isDisposed() || !project.isInitialized()) return getGlobalInstance();
+    return project.getComponent(IdeFocusManager.class);
+  }
+  @NotNull
+  public static IdeFocusManager findInstanceByContext(@Nullable DataContext context) {
+    IdeFocusManager instance = null;
+    if (context != null) {
+      instance = getInstanceSafe(CommonDataKeys.PROJECT.getData(context));
+    }
+    if (instance == null) {
+      instance = findByComponent(KeyboardFocusManager.getCurrentKeyboardFocusManager().getActiveWindow());
+    }
+    if (instance == null) {
+      instance = getGlobalInstance();
+    }
+    return instance;
+  }
+  @NotNull
+  public static IdeFocusManager findInstanceByComponent(@NotNull Component c) {
+    final IdeFocusManager instance = findByComponent(c);
+    return instance != null ? instance : findInstanceByContext(null);
+  }
+  @Nullable
+  private static IdeFocusManager findByComponent(Component c) {
+    final Component parent = UIUtil.findUltimateParent(c);
+    if (parent instanceof IdeFrame) {
+      return getInstanceSafe(((IdeFrame)parent).getProject());
+    }
+    return null;
+  }
+  @Nullable
+  private static IdeFocusManager getInstanceSafe(@Nullable Project project) {
+    if (project != null && !project.isDisposed() && project.isInitialized()) {
+      return getInstance(project);
+    }
+    return null;
+  }
+  @NotNull
+  public static IdeFocusManager findInstance() {
+    final Component owner = KeyboardFocusManager.getCurrentKeyboardFocusManager().getFocusOwner();
+    return owner != null ? findInstanceByComponent(owner) : findInstanceByContext(null);
+  }
+  @NotNull
+  public static IdeFocusManager getGlobalInstance() {
+    IdeFocusManager fm = null;
+    Application app = ApplicationManager.getApplication();
+    if (app != null && app.hasComponent(IdeFocusManager.class)) {
+      fm = app.getComponent(IdeFocusManager.class);
+    }
+    if (fm == null) {
+      // happens when app is semi-initialized (e.g. when IDEA server dialog is shown)
+      fm = PassThroughIdeFocusManager.getInstance();
+    }
+    return fm;
+  }
+}",class,
+"  public ActionCallback requestFocusInProject(@NotNull Component c, @Nullable Project project) {
+    return requestFocus(c, false);
+  }",method,
+"  public void typeAheadUntil(ActionCallback done) {
+    typeAheadUntil(done, ""No cause has been provided"");
+  }",method,
+"  public void typeAheadUntil(ActionCallback done, @NotNull String cause) {}",method,
+"  public static IdeFocusManager getInstance(@Nullable Project project) {
+    if (project == null || project.isDisposed() || !project.isInitialized()) return getGlobalInstance();
+    return project.getComponent(IdeFocusManager.class);
+  }",method,
+"  @NotNull
+  public static IdeFocusManager findInstanceByContext(@Nullable DataContext context) {
+    IdeFocusManager instance = null;
+    if (context != null) {
+      instance = getInstanceSafe(CommonDataKeys.PROJECT.getData(context));
+    }
+    if (instance == null) {
+      instance = findByComponent(KeyboardFocusManager.getCurrentKeyboardFocusManager().getActiveWindow());
+    }
+    if (instance == null) {
+      instance = getGlobalInstance();
+    }
+    return instance;
+  }",method,
+"    if (context != null) {
+      instance = getInstanceSafe(CommonDataKeys.PROJECT.getData(context));
+    }",method,

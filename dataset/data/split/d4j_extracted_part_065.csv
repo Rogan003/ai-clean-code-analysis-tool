@@ -1,0 +1,1177 @@
+code_snippet,type,score
+"  public final Artifact getStrippedArtifact() {
+    return strippedArtifact;
+  }",method,
+"  public final Artifact getUnstrippedArtifact() {
+    return unstrippedArtifact;
+  }",method,
+"  @Nullable
+  public final Artifact getDwpArtifact() {
+    return dwpArtifact;
+  }",method,
+"public class ModelMergerUtil {
+  @Nullable
+  public static <T> T getFirstImplementation(final T t) {
+    T cur = t;
+    while (cur instanceof MergedObject) {
+      final List<T> implementations = ((MergedObject<T>)cur).getImplementations();
+      cur = implementations.isEmpty()? null : implementations.get(0);
+    }
+    return cur;
+  }
+  @Nullable
+  public static <T, V> V getImplementation(final Class<V> clazz, final Collection<T> elements) {
+    for (final T element : elements) {
+      final V implementation = getImplementation(element, clazz);
+      if (implementation != null) {
+        return implementation;
+      }
+    }
+    return null;
+  }
+  @Nullable
+  public static <T, V> V getImplementation(final Class<V> clazz, final T... elements) {
+    return getImplementation(clazz, Arrays.asList(elements));
+  }
+  @Nullable
+  public static <T, V> V getImplementation(final T element, final Class<V> clazz) {
+    if (element == null) return null;
+    CommonProcessors.FindFirstProcessor<T> processor = new CommonProcessors.FindFirstProcessor<T>() {
+      @Override
+      public boolean process(final T t) {
+        return !ReflectionUtil.isAssignable(clazz, t.getClass()) || super.process(t);
+      }
+    };
+    new ImplementationProcessor<>(processor, true).process(element);
+    return (V)processor.getFoundValue();
+  }
+  @NotNull
+  public static <T, V> Collection<V> getImplementations(final T element, final Class<V> clazz) {
+    if (element == null) return Collections.emptyList();
+    CommonProcessors.CollectProcessor<T> processor = new CommonProcessors.CollectProcessor<T>() {
+      @Override
+      public boolean process(final T t) {
+        return !ReflectionUtil.isAssignable(clazz, t.getClass()) || super.process(t);
+      }
+    };
+    new ImplementationProcessor<>(processor, true).process(element);
+    return (Collection<V>)processor.getResults();
+  }
+  @NotNull
+  public static <T> List<T> getImplementations(T element) {
+    if (element instanceof MergedObject) {
+      final MergedObject<T> mergedObject = (MergedObject<T>)element;
+      return mergedObject.getImplementations();
+    }
+    else if (element != null) {
+      return Collections.singletonList(element);
+    }
+    else {
+      return Collections.emptyList();
+    }
+  }
+  @NotNull
+  public static <T> List<T> getFilteredImplementations(final T element) {
+    if (element == null) return Collections.emptyList();
+    List<T> result = new ArrayList<>();
+    Processor<T> processor = Processors.cancelableCollectProcessor(result);
+    new ImplementationProcessor<>(processor, false).process(element);
+    return result;
+  }
+  @NotNull
+  public static <T> Processor<T> createFilteringProcessor(final Processor<T> processor) {
+    return new ImplementationProcessor<>(processor, false);
+  }
+  public static class ImplementationProcessor<T> implements Processor<T> {
+    private final Processor<T> myProcessor;
+    private final boolean myProcessMerged;
+    public ImplementationProcessor(Processor<T> processor, final boolean processMerged) {
+      myProcessor = processor;
+      myProcessMerged = processMerged;
+    }
+    @Override
+    public boolean process(final T t) {
+      final boolean merged = t instanceof MergedObject;
+      if ((!merged || myProcessMerged) && !myProcessor.process(t)) {
+        return false;
+      }
+      if (merged && !ContainerUtil.process(((MergedObject<T>)t).getImplementations(), this)) {
+        return false;
+      }
+      return true;
+    }
+  }
+}",class,
+"  public static class ImplementationProcessor<T> implements Processor<T> {
+    private final Processor<T> myProcessor;
+    private final boolean myProcessMerged;
+    public ImplementationProcessor(Processor<T> processor, final boolean processMerged) {
+      myProcessor = processor;
+      myProcessMerged = processMerged;
+    }
+    @Override
+    public boolean process(final T t) {
+      final boolean merged = t instanceof MergedObject;
+      if ((!merged || myProcessMerged) && !myProcessor.process(t)) {
+        return false;
+      }
+      if (merged && !ContainerUtil.process(((MergedObject<T>)t).getImplementations(), this)) {
+        return false;
+      }
+      return true;
+    }
+  }",class,
+"  @Nullable
+  public static <T> T getFirstImplementation(final T t) {
+    T cur = t;
+    while (cur instanceof MergedObject) {
+      final List<T> implementations = ((MergedObject<T>)cur).getImplementations();
+      cur = implementations.isEmpty()? null : implementations.get(0);
+    }
+    return cur;
+  }",method,
+"    while (cur instanceof MergedObject) {
+      final List<T> implementations = ((MergedObject<T>)cur).getImplementations();
+      cur = implementations.isEmpty()? null : implementations.get(0);
+    }",method,
+"  @Nullable
+  public static <T, V> V getImplementation(final Class<V> clazz, final Collection<T> elements) {
+    for (final T element : elements) {
+      final V implementation = getImplementation(element, clazz);
+      if (implementation != null) {
+        return implementation;
+      }
+    }
+    return null;
+  }",method,
+"    for (final T element : elements) {
+      final V implementation = getImplementation(element, clazz);
+      if (implementation != null) {
+        return implementation;
+      }
+    }",method,
+"      if (implementation != null) {
+        return implementation;
+      }",method,
+"  @Nullable
+  public static <T, V> V getImplementation(final Class<V> clazz, final T... elements) {
+    return getImplementation(clazz, Arrays.asList(elements));
+  }",method,
+"  @Nullable
+  public static <T, V> V getImplementation(final T element, final Class<V> clazz) {
+    if (element == null) return null;
+    CommonProcessors.FindFirstProcessor<T> processor = new CommonProcessors.FindFirstProcessor<T>() {
+      @Override
+      public boolean process(final T t) {
+        return !ReflectionUtil.isAssignable(clazz, t.getClass()) || super.process(t);
+      }
+    };
+    new ImplementationProcessor<>(processor, true).process(element);
+    return (V)processor.getFoundValue();
+  }",method,
+"      @Override
+      public boolean process(final T t) {
+        return !ReflectionUtil.isAssignable(clazz, t.getClass()) || super.process(t);
+      }",method,
+"  @NotNull
+  public static <T, V> Collection<V> getImplementations(final T element, final Class<V> clazz) {
+    if (element == null) return Collections.emptyList();
+    CommonProcessors.CollectProcessor<T> processor = new CommonProcessors.CollectProcessor<T>() {
+      @Override
+      public boolean process(final T t) {
+        return !ReflectionUtil.isAssignable(clazz, t.getClass()) || super.process(t);
+      }
+    };
+    new ImplementationProcessor<>(processor, true).process(element);
+    return (Collection<V>)processor.getResults();
+  }",method,
+"      @Override
+      public boolean process(final T t) {
+        return !ReflectionUtil.isAssignable(clazz, t.getClass()) || super.process(t);
+      }",method,
+"  @NotNull
+  public static <T> List<T> getImplementations(T element) {
+    if (element instanceof MergedObject) {
+      final MergedObject<T> mergedObject = (MergedObject<T>)element;
+      return mergedObject.getImplementations();
+    }
+    else if (element != null) {
+      return Collections.singletonList(element);
+    }
+    else {
+      return Collections.emptyList();
+    }
+  }",method,
+"    if (element instanceof MergedObject) {
+      final MergedObject<T> mergedObject = (MergedObject<T>)element;
+      return mergedObject.getImplementations();
+    }",method,
+"    else if (element != null) {
+      return Collections.singletonList(element);
+    }",method,
+"  @NotNull
+  public static <T> List<T> getFilteredImplementations(final T element) {
+    if (element == null) return Collections.emptyList();
+    List<T> result = new ArrayList<>();
+    Processor<T> processor = Processors.cancelableCollectProcessor(result);
+    new ImplementationProcessor<>(processor, false).process(element);
+    return result;
+  }",method,
+"  @NotNull
+  public static <T> Processor<T> createFilteringProcessor(final Processor<T> processor) {
+    return new ImplementationProcessor<>(processor, false);
+  }",method,
+"    public ImplementationProcessor(Processor<T> processor, final boolean processMerged) {
+      myProcessor = processor;
+      myProcessMerged = processMerged;
+    }",method,
+"    @Override
+    public boolean process(final T t) {
+      final boolean merged = t instanceof MergedObject;
+      if ((!merged || myProcessMerged) && !myProcessor.process(t)) {
+        return false;
+      }
+      if (merged && !ContainerUtil.process(((MergedObject<T>)t).getImplementations(), this)) {
+        return false;
+      }
+      return true;
+    }",method,
+"import org.springframework.util.ReflectionUtils;
+class ContextTypeMatchClassLoader extends DecoratingClassLoader implements SmartClassLoader {
+	static {
+		ClassLoader.registerAsParallelCapable();
+	}
+	private static Method findLoadedClassMethod;
+	static {
+		try {
+			findLoadedClassMethod = ClassLoader.class.getDeclaredMethod(""findLoadedClass"", String.class);
+		}
+		catch (NoSuchMethodException ex) {
+			throw new IllegalStateException(""Invalid [java.lang.ClassLoader] class: no 'findLoadedClass' method defined!"");
+		}
+	}
+	private final Map<String, byte[]> bytesCache = new ConcurrentHashMap<>(256);
+	public ContextTypeMatchClassLoader(@Nullable ClassLoader parent) {
+		super(parent);
+	}
+	@Override
+	public Class<?> loadClass(String name) throws ClassNotFoundException {
+		return new ContextOverridingClassLoader(getParent()).loadClass(name);
+	}
+	@Override
+	public boolean isClassReloadable(Class<?> clazz) {
+		return (clazz.getClassLoader() instanceof ContextOverridingClassLoader);
+	}
+	private class ContextOverridingClassLoader extends OverridingClassLoader {
+		public ContextOverridingClassLoader(ClassLoader parent) {
+			super(parent);
+		}
+		@Override
+		protected boolean isEligibleForOverriding(String className) {
+			if (isExcluded(className) || ContextTypeMatchClassLoader.this.isExcluded(className)) {
+				return false;
+			}
+			ReflectionUtils.makeAccessible(findLoadedClassMethod);
+			ClassLoader parent = getParent();
+			while (parent != null) {
+				if (ReflectionUtils.invokeMethod(findLoadedClassMethod, parent, className) != null) {
+					return false;
+				}
+				parent = parent.getParent();
+			}
+			return true;
+		}
+		@Override
+		protected Class<?> loadClassForOverriding(String name) throws ClassNotFoundException {
+			byte[] bytes = bytesCache.get(name);
+			if (bytes == null) {
+				bytes = loadBytesForClass(name);
+				if (bytes != null) {
+					bytesCache.put(name, bytes);
+				}
+				else {
+					return null;
+				}
+			}
+			return defineClass(name, bytes, 0, bytes.length);
+		}
+	}
+}",class,
+"	private class ContextOverridingClassLoader extends OverridingClassLoader {
+		public ContextOverridingClassLoader(ClassLoader parent) {
+			super(parent);
+		}
+		@Override
+		protected boolean isEligibleForOverriding(String className) {
+			if (isExcluded(className) || ContextTypeMatchClassLoader.this.isExcluded(className)) {
+				return false;
+			}
+			ReflectionUtils.makeAccessible(findLoadedClassMethod);
+			ClassLoader parent = getParent();
+			while (parent != null) {
+				if (ReflectionUtils.invokeMethod(findLoadedClassMethod, parent, className) != null) {
+					return false;
+				}
+				parent = parent.getParent();
+			}
+			return true;
+		}
+		@Override
+		protected Class<?> loadClassForOverriding(String name) throws ClassNotFoundException {
+			byte[] bytes = bytesCache.get(name);
+			if (bytes == null) {
+				bytes = loadBytesForClass(name);
+				if (bytes != null) {
+					bytesCache.put(name, bytes);
+				}
+				else {
+					return null;
+				}
+			}
+			return defineClass(name, bytes, 0, bytes.length);
+		}
+	}",class,
+"		catch (NoSuchMethodException ex) {
+			throw new IllegalStateException(""Invalid [java.lang.ClassLoader] class: no 'findLoadedClass' method defined!"");
+		}",method,
+"	public ContextTypeMatchClassLoader(@Nullable ClassLoader parent) {
+		super(parent);
+	}",method,
+"	@Override
+	public Class<?> loadClass(String name) throws ClassNotFoundException {
+		return new ContextOverridingClassLoader(getParent()).loadClass(name);
+	}",method,
+"	@Override
+	public boolean isClassReloadable(Class<?> clazz) {
+		return (clazz.getClassLoader() instanceof ContextOverridingClassLoader);
+	}",method,
+"		public ContextOverridingClassLoader(ClassLoader parent) {
+			super(parent);
+		}",method,
+"		@Override
+		protected boolean isEligibleForOverriding(String className) {
+			if (isExcluded(className) || ContextTypeMatchClassLoader.this.isExcluded(className)) {
+				return false;
+			}
+			ReflectionUtils.makeAccessible(findLoadedClassMethod);
+			ClassLoader parent = getParent();
+			while (parent != null) {
+				if (ReflectionUtils.invokeMethod(findLoadedClassMethod, parent, className) != null) {
+					return false;
+				}
+				parent = parent.getParent();
+			}
+			return true;
+		}",method,
+"			while (parent != null) {
+				if (ReflectionUtils.invokeMethod(findLoadedClassMethod, parent, className) != null) {
+					return false;
+				}
+				parent = parent.getParent();
+			}",method,
+"		@Override
+		protected Class<?> loadClassForOverriding(String name) throws ClassNotFoundException {
+			byte[] bytes = bytesCache.get(name);
+			if (bytes == null) {
+				bytes = loadBytesForClass(name);
+				if (bytes != null) {
+					bytesCache.put(name, bytes);
+				}
+				else {
+					return null;
+				}
+			}
+			return defineClass(name, bytes, 0, bytes.length);
+		}",method,
+"			if (bytes == null) {
+				bytes = loadBytesForClass(name);
+				if (bytes != null) {
+					bytesCache.put(name, bytes);
+				}
+				else {
+					return null;
+				}
+			}",method,
+"				if (bytes != null) {
+					bytesCache.put(name, bytes);
+				}",method,
+"public class BlackBoxCodegenTestForNoArgGenerated extends AbstractBlackBoxCodegenTestForNoArg {
+    public void testAllFilesPresentInBox() throws Exception {
+        KotlinTestUtils.assertAllTestsPresentByMetadata(this.getClass(), new File(""plugins/noarg/noarg-cli/testData/box""), Pattern.compile(""^(.+)\\.kt$""), TargetBackend.JVM, true);
+    }
+    @TestMetadata(""initializers.kt"")
+    public void testInitializers() throws Exception {
+        String fileName = KotlinTestUtils.navigationMetadata(""plugins/noarg/noarg-cli/testData/box/initializers.kt"");
+        doTest(fileName);
+    }
+    @TestMetadata(""initializersWithoutInvokeInitializers.kt"")
+    public void testInitializersWithoutInvokeInitializers() throws Exception {
+        String fileName = KotlinTestUtils.navigationMetadata(""plugins/noarg/noarg-cli/testData/box/initializersWithoutInvokeInitializers.kt"");
+        doTest(fileName);
+    }
+    @TestMetadata(""kt18245.kt"")
+    public void testKt18245() throws Exception {
+        String fileName = KotlinTestUtils.navigationMetadata(""plugins/noarg/noarg-cli/testData/box/kt18245.kt"");
+        doTest(fileName);
+    }
+    @TestMetadata(""kt18667.kt"")
+    public void testKt18667() throws Exception {
+        String fileName = KotlinTestUtils.navigationMetadata(""plugins/noarg/noarg-cli/testData/box/kt18667.kt"");
+        doTest(fileName);
+    }
+    @TestMetadata(""kt18668.kt"")
+    public void testKt18668() throws Exception {
+        String fileName = KotlinTestUtils.navigationMetadata(""plugins/noarg/noarg-cli/testData/box/kt18668.kt"");
+        doTest(fileName);
+    }
+    @TestMetadata(""simple.kt"")
+    public void testSimple() throws Exception {
+        String fileName = KotlinTestUtils.navigationMetadata(""plugins/noarg/noarg-cli/testData/box/simple.kt"");
+        doTest(fileName);
+    }
+}",class,
+"    public void testAllFilesPresentInBox() throws Exception {
+        KotlinTestUtils.assertAllTestsPresentByMetadata(this.getClass(), new File(""plugins/noarg/noarg-cli/testData/box""), Pattern.compile(""^(.+)\\.kt$""), TargetBackend.JVM, true);
+    }",method,
+"    @TestMetadata(""initializers.kt"")
+    public void testInitializers() throws Exception {
+        String fileName = KotlinTestUtils.navigationMetadata(""plugins/noarg/noarg-cli/testData/box/initializers.kt"");
+        doTest(fileName);
+    }",method,
+"    @TestMetadata(""initializersWithoutInvokeInitializers.kt"")
+    public void testInitializersWithoutInvokeInitializers() throws Exception {
+        String fileName = KotlinTestUtils.navigationMetadata(""plugins/noarg/noarg-cli/testData/box/initializersWithoutInvokeInitializers.kt"");
+        doTest(fileName);
+    }",method,
+"    @TestMetadata(""kt18245.kt"")
+    public void testKt18245() throws Exception {
+        String fileName = KotlinTestUtils.navigationMetadata(""plugins/noarg/noarg-cli/testData/box/kt18245.kt"");
+        doTest(fileName);
+    }",method,
+"    @TestMetadata(""kt18667.kt"")
+    public void testKt18667() throws Exception {
+        String fileName = KotlinTestUtils.navigationMetadata(""plugins/noarg/noarg-cli/testData/box/kt18667.kt"");
+        doTest(fileName);
+    }",method,
+"    @TestMetadata(""kt18668.kt"")
+    public void testKt18668() throws Exception {
+        String fileName = KotlinTestUtils.navigationMetadata(""plugins/noarg/noarg-cli/testData/box/kt18668.kt"");
+        doTest(fileName);
+    }",method,
+"    @TestMetadata(""simple.kt"")
+    public void testSimple() throws Exception {
+        String fileName = KotlinTestUtils.navigationMetadata(""plugins/noarg/noarg-cli/testData/box/simple.kt"");
+        doTest(fileName);
+    }",method,
+"public class InlineLocalVariableFeedback extends RefactoringFeedback {
+  public static final InlineLocalVariableFeedback[] EMPTY_ARRAY = new InlineLocalVariableFeedback[0];
+  public static final List<InlineLocalVariableFeedback> EMPTY_LIST = Lists.newArrayList();
+  private final String name;
+  private final int occurrences;
+  public InlineLocalVariableFeedback(String name, int occurrences) {
+    this.name = name;
+    this.occurrences = occurrences;
+  }
+  @Override
+  public boolean equals(Object obj) {
+    if (obj instanceof InlineLocalVariableFeedback) {
+      InlineLocalVariableFeedback other = (InlineLocalVariableFeedback) obj;
+      return
+        ObjectUtilities.equals(other.name, name) &&
+        other.occurrences == occurrences;
+    }
+    return false;
+  }
+  public static InlineLocalVariableFeedback fromJson(JsonObject jsonObject) {
+    String name = jsonObject.get(""name"").getAsString();
+    int occurrences = jsonObject.get(""occurrences"").getAsInt();
+    return new InlineLocalVariableFeedback(name, occurrences);
+  }
+  public static List<InlineLocalVariableFeedback> fromJsonArray(JsonArray jsonArray) {
+    if (jsonArray == null) {
+      return EMPTY_LIST;
+    }
+    ArrayList<InlineLocalVariableFeedback> list = new ArrayList<InlineLocalVariableFeedback>(jsonArray.size());
+    Iterator<JsonElement> iterator = jsonArray.iterator();
+    while (iterator.hasNext()) {
+      list.add(fromJson(iterator.next().getAsJsonObject()));
+    }
+    return list;
+  }
+  public String getName() {
+    return name;
+  }
+  public int getOccurrences() {
+    return occurrences;
+  }
+  @Override
+  public int hashCode() {
+    HashCodeBuilder builder = new HashCodeBuilder();
+    builder.append(name);
+    builder.append(occurrences);
+    return builder.toHashCode();
+  }
+  public JsonObject toJson() {
+    JsonObject jsonObject = new JsonObject();
+    jsonObject.addProperty(""name"", name);
+    jsonObject.addProperty(""occurrences"", occurrences);
+    return jsonObject;
+  }
+  @Override
+  public String toString() {
+    StringBuilder builder = new StringBuilder();
+    builder.append(""["");
+    builder.append(""name="");
+    builder.append(name + "", "");
+    builder.append(""occurrences="");
+    builder.append(occurrences);
+    builder.append(""]"");
+    return builder.toString();
+  }
+}",class,
+"  public InlineLocalVariableFeedback(String name, int occurrences) {
+    this.name = name;
+    this.occurrences = occurrences;
+  }",method,
+"  @Override
+  public boolean equals(Object obj) {
+    if (obj instanceof InlineLocalVariableFeedback) {
+      InlineLocalVariableFeedback other = (InlineLocalVariableFeedback) obj;
+      return
+        ObjectUtilities.equals(other.name, name) &&
+        other.occurrences == occurrences;
+    }
+    return false;
+  }",method,
+"    if (obj instanceof InlineLocalVariableFeedback) {
+      InlineLocalVariableFeedback other = (InlineLocalVariableFeedback) obj;
+      return
+        ObjectUtilities.equals(other.name, name) &&
+        other.occurrences == occurrences;
+    }",method,
+"  public static InlineLocalVariableFeedback fromJson(JsonObject jsonObject) {
+    String name = jsonObject.get(""name"").getAsString();
+    int occurrences = jsonObject.get(""occurrences"").getAsInt();
+    return new InlineLocalVariableFeedback(name, occurrences);
+  }",method,
+"  public static List<InlineLocalVariableFeedback> fromJsonArray(JsonArray jsonArray) {
+    if (jsonArray == null) {
+      return EMPTY_LIST;
+    }
+    ArrayList<InlineLocalVariableFeedback> list = new ArrayList<InlineLocalVariableFeedback>(jsonArray.size());
+    Iterator<JsonElement> iterator = jsonArray.iterator();
+    while (iterator.hasNext()) {
+      list.add(fromJson(iterator.next().getAsJsonObject()));
+    }
+    return list;
+  }",method,
+"    if (jsonArray == null) {
+      return EMPTY_LIST;
+    }",method,
+"  public String getName() {
+    return name;
+  }",method,
+"  public int getOccurrences() {
+    return occurrences;
+  }",method,
+"  @Override
+  public int hashCode() {
+    HashCodeBuilder builder = new HashCodeBuilder();
+    builder.append(name);
+    builder.append(occurrences);
+    return builder.toHashCode();
+  }",method,
+"  public JsonObject toJson() {
+    JsonObject jsonObject = new JsonObject();
+    jsonObject.addProperty(""name"", name);
+    jsonObject.addProperty(""occurrences"", occurrences);
+    return jsonObject;
+  }",method,
+"  @Override
+  public String toString() {
+    StringBuilder builder = new StringBuilder();
+    builder.append(""["");
+    builder.append(""name="");
+    builder.append(name + "", "");
+    builder.append(""occurrences="");
+    builder.append(occurrences);
+    builder.append(""]"");
+    return builder.toString();
+  }",method,
+"        if (configurator == null) {
+            // createa a fresh configurator
+            configurator = new CodegenConfigurator();
+        }",method,
+"        if (verbose != null) {
+            configurator.setVerbose(verbose);
+        }",method,
+"        if (skipOverwrite != null) {
+            configurator.setSkipOverwrite(skipOverwrite);
+        }",method,
+"        if (removeOperationIdPrefix != null) {
+            configurator.setRemoveOperationIdPrefix(removeOperationIdPrefix);
+        }",method,
+"public class GotoInspectionModel extends SimpleChooseByNameModel {
+  private final Map<String, InspectionToolWrapper> myToolNames = new HashMap<>();
+  private final String[] myNames;
+  private final InspectionListCellRenderer myListCellRenderer = new InspectionListCellRenderer();
+  public GotoInspectionModel(@NotNull Project project) {
+    super(project, IdeBundle.message(""prompt.goto.inspection.enter.name""), ""goto.inspection.help.id"");
+    InspectionProfileImpl rootProfile = InspectionProfileManager.getInstance().getCurrentProfile();
+    for (ScopeToolState state : rootProfile.getAllTools()) {
+      InspectionToolWrapper tool = LocalInspectionToolWrapper.findTool2RunInBatch(project, null, rootProfile, state.getTool());
+      if (tool != null) {
+        String name = tool.getDisplayName() + "" "" + StringUtil.join(tool.getGroupPath(), "" "");
+        myToolNames.put(name, tool);
+      }
+    }
+    myNames = ArrayUtil.toStringArray(myToolNames.keySet());
+  }
+  @Override
+  public ListCellRenderer getListCellRenderer() {
+    return myListCellRenderer;
+  }
+  @Override
+  public String[] getNames() {
+    return myNames;
+  }
+  @Override
+  public Object[] getElementsByName(final String name, final String pattern) {
+    final InspectionToolWrapper tool = myToolNames.get(name);
+    if (tool == null) {
+      return InspectionToolWrapper.EMPTY_ARRAY;
+    }
+    return new InspectionToolWrapper[] {tool};
+  }
+  @Override
+  public String getElementName(final Object element) {
+    if (element instanceof InspectionToolWrapper) {
+      InspectionToolWrapper entry = (InspectionToolWrapper)element;
+      return entry.getDisplayName() + "" "" + StringUtil.join(entry.getGroupPath(), "" "");
+    }
+    return null;
+  }
+}",class,
+"  public GotoInspectionModel(@NotNull Project project) {
+    super(project, IdeBundle.message(""prompt.goto.inspection.enter.name""), ""goto.inspection.help.id"");
+    InspectionProfileImpl rootProfile = InspectionProfileManager.getInstance().getCurrentProfile();
+    for (ScopeToolState state : rootProfile.getAllTools()) {
+      InspectionToolWrapper tool = LocalInspectionToolWrapper.findTool2RunInBatch(project, null, rootProfile, state.getTool());
+      if (tool != null) {
+        String name = tool.getDisplayName() + "" "" + StringUtil.join(tool.getGroupPath(), "" "");
+        myToolNames.put(name, tool);
+      }
+    }
+    myNames = ArrayUtil.toStringArray(myToolNames.keySet());
+  }",method,
+"      if (tool != null) {
+        String name = tool.getDisplayName() + "" "" + StringUtil.join(tool.getGroupPath(), "" "");
+        myToolNames.put(name, tool);
+      }",method,
+"  @Override
+  public ListCellRenderer getListCellRenderer() {
+    return myListCellRenderer;
+  }",method,
+"  @Override
+  public String[] getNames() {
+    return myNames;
+  }",method,
+"  @Override
+  public Object[] getElementsByName(final String name, final String pattern) {
+    final InspectionToolWrapper tool = myToolNames.get(name);
+    if (tool == null) {
+      return InspectionToolWrapper.EMPTY_ARRAY;
+    }
+    return new InspectionToolWrapper[] {tool};
+  }",method,
+"    if (tool == null) {
+      return InspectionToolWrapper.EMPTY_ARRAY;
+    }",method,
+"  @Override
+  public String getElementName(final Object element) {
+    if (element instanceof InspectionToolWrapper) {
+      InspectionToolWrapper entry = (InspectionToolWrapper)element;
+      return entry.getDisplayName() + "" "" + StringUtil.join(entry.getGroupPath(), "" "");
+    }
+    return null;
+  }",method,
+"    if (element instanceof InspectionToolWrapper) {
+      InspectionToolWrapper entry = (InspectionToolWrapper)element;
+      return entry.getDisplayName() + "" "" + StringUtil.join(entry.getGroupPath(), "" "");
+    }",method,
+"public class BazelActionContextConsumer implements ActionContextConsumer {
+  private final BazelExecutionOptions options;
+  protected BazelActionContextConsumer(BazelExecutionOptions options) {
+    this.options = options;
+  }
+  @Override
+  public ImmutableMap<String, String> getSpawnActionContexts() {
+    Map<String, String> contexts = new TreeMap<>(String.CASE_INSENSITIVE_ORDER);
+    // Default strategies for certain mnemonics - they can be overridden by --strategy= flags.
+    contexts.put(""Javac"", ""worker"");
+    contexts.put(""Closure"", ""worker"");
+    for (Map.Entry<String, String> strategy : options.strategy) {
+      String strategyName = strategy.getValue();
+      // TODO(philwo) - remove this when the standalone / local mess is cleaned up.
+      // Some flag expansions use ""local"" as the strategy name, but the strategy is now called
+      // ""standalone"", so we'll translate it here.
+      if (strategyName.equals(""local"")) {
+        strategyName = ""standalone"";
+      }
+      contexts.put(strategy.getKey(), strategyName);
+    }
+    if (!options.genruleStrategy.isEmpty()) {
+      contexts.put(""Genrule"", options.genruleStrategy);
+    }
+    // TODO(bazel-team): put this in getActionContexts (key=SpawnActionContext.class) instead
+    if (!options.spawnStrategy.isEmpty()) {
+      contexts.put("""", options.spawnStrategy);
+    }
+    return ImmutableMap.copyOf(contexts);
+  }
+  @Override
+  public Multimap<Class<? extends ActionContext>, String> getActionContexts() {
+    return ImmutableMultimap.<Class<? extends ActionContext>, String>builder()
+        .put(CppCompileActionContext.class, """")
+        .put(IncludeScanningContext.class, """")
+        .put(FileWriteActionContext.class, """")
+        .put(WriteAdbArgsActionContext.class, """")
+        .put(SpawnCache.class, """")
+        .build();
+  }
+}",class,
+"  protected BazelActionContextConsumer(BazelExecutionOptions options) {
+    this.options = options;
+  }",method,
+"  @Override
+  public ImmutableMap<String, String> getSpawnActionContexts() {
+    Map<String, String> contexts = new TreeMap<>(String.CASE_INSENSITIVE_ORDER);
+    // Default strategies for certain mnemonics - they can be overridden by --strategy= flags.
+    contexts.put(""Javac"", ""worker"");
+    contexts.put(""Closure"", ""worker"");
+    for (Map.Entry<String, String> strategy : options.strategy) {
+      String strategyName = strategy.getValue();
+      // TODO(philwo) - remove this when the standalone / local mess is cleaned up.
+      // Some flag expansions use ""local"" as the strategy name, but the strategy is now called
+      // ""standalone"", so we'll translate it here.
+      if (strategyName.equals(""local"")) {
+        strategyName = ""standalone"";
+      }
+      contexts.put(strategy.getKey(), strategyName);
+    }
+    if (!options.genruleStrategy.isEmpty()) {
+      contexts.put(""Genrule"", options.genruleStrategy);
+    }
+    // TODO(bazel-team): put this in getActionContexts (key=SpawnActionContext.class) instead
+    if (!options.spawnStrategy.isEmpty()) {
+      contexts.put("""", options.spawnStrategy);
+    }
+    return ImmutableMap.copyOf(contexts);
+  }",method,
+"    for (Map.Entry<String, String> strategy : options.strategy) {
+      String strategyName = strategy.getValue();
+      // TODO(philwo) - remove this when the standalone / local mess is cleaned up.
+      // Some flag expansions use ""local"" as the strategy name, but the strategy is now called
+      // ""standalone"", so we'll translate it here.
+      if (strategyName.equals(""local"")) {
+        strategyName = ""standalone"";
+      }
+      contexts.put(strategy.getKey(), strategyName);
+    }",method,
+"  @Override
+  public Multimap<Class<? extends ActionContext>, String> getActionContexts() {
+    return ImmutableMultimap.<Class<? extends ActionContext>, String>builder()
+        .put(CppCompileActionContext.class, """")
+        .put(IncludeScanningContext.class, """")
+        .put(FileWriteActionContext.class, """")
+        .put(WriteAdbArgsActionContext.class, """")
+        .put(SpawnCache.class, """")
+        .build();
+  }",method,
+"public class SiblingsFunction implements QueryFunction {
+  @Override
+  public String getName() {
+    return ""siblings"";
+  }
+  @Override
+  public int getMandatoryArguments() {
+    return 1;
+  }
+  @Override
+  public Iterable<ArgumentType> getArgumentTypes() {
+    return ImmutableList.of(ArgumentType.EXPRESSION);
+  }
+  @Override
+  public <T> QueryTaskFuture<Void> eval(
+      QueryEnvironment<T> env,
+      VariableContext<T> context,
+      final QueryExpression expression,
+      List<Argument> args,
+      final Callback<T> callback) {
+    final TargetAccessor<T> targetAccessor = env.getAccessor();
+    Set<String> packageNames = Sets.newConcurrentHashSet();
+    return env.eval(
+        args.get(0).getExpression(),
+        context,
+        new Callback<T>() {
+          @Override
+          public void process(Iterable<T> partialResult)
+              throws QueryException, InterruptedException {
+            for (T target : partialResult) {
+              if (packageNames.add(targetAccessor.getPackage(target))) {
+                callback.process(env.getSiblingTargetsInPackage(target));
+              }
+            }
+          }
+        });
+  }
+}",class,
+"public class SkyframeRestartQueryException extends RuntimeException {
+  public SkyframeRestartQueryException() {
+    super(""need skyframe retry. missing dep"");
+  }
+}",class,
+"  @Override
+  public String getName() {
+    return ""siblings"";
+  }",method,
+"  @Override
+  public int getMandatoryArguments() {
+    return 1;
+  }",method,
+"  @Override
+  public Iterable<ArgumentType> getArgumentTypes() {
+    return ImmutableList.of(ArgumentType.EXPRESSION);
+  }",method,
+"  @Override
+  public <T> QueryTaskFuture<Void> eval(
+      QueryEnvironment<T> env,
+      VariableContext<T> context,
+      final QueryExpression expression,
+      List<Argument> args,
+      final Callback<T> callback) {
+    final TargetAccessor<T> targetAccessor = env.getAccessor();
+    Set<String> packageNames = Sets.newConcurrentHashSet();
+    return env.eval(
+        args.get(0).getExpression(),
+        context,
+        new Callback<T>() {
+          @Override
+          public void process(Iterable<T> partialResult)
+              throws QueryException, InterruptedException {
+            for (T target : partialResult) {
+              if (packageNames.add(targetAccessor.getPackage(target))) {
+                callback.process(env.getSiblingTargetsInPackage(target));
+              }
+            }
+          }
+        });
+  }",method,
+"          @Override
+          public void process(Iterable<T> partialResult)
+              throws QueryException, InterruptedException {
+            for (T target : partialResult) {
+              if (packageNames.add(targetAccessor.getPackage(target))) {
+                callback.process(env.getSiblingTargetsInPackage(target));
+              }
+            }
+          }",method,
+"            for (T target : partialResult) {
+              if (packageNames.add(targetAccessor.getPackage(target))) {
+                callback.process(env.getSiblingTargetsInPackage(target));
+              }
+            }",method,
+"  public SkyframeRestartQueryException() {
+    super(""need skyframe retry. missing dep"");
+  }",method,
+"public class AspectRatioMeasure {
+  public static class Spec {
+    public int width;
+    public int height;
+  }
+  public static void updateMeasureSpec(
+      Spec spec,
+      float aspectRatio,
+      @Nullable ViewGroup.LayoutParams layoutParams,
+      int widthPadding,
+      int heightPadding) {
+    if (aspectRatio <= 0 || layoutParams == null) {
+      return;
+    }
+    if (shouldAdjust(layoutParams.height)) {
+      int widthSpecSize = View.MeasureSpec.getSize(spec.width);
+      int desiredHeight = (int) ((widthSpecSize - widthPadding) / aspectRatio + heightPadding);
+      int resolvedHeight = View.resolveSize(desiredHeight, spec.height);
+      spec.height = View.MeasureSpec.makeMeasureSpec(resolvedHeight, View.MeasureSpec.EXACTLY);
+    } else if (shouldAdjust(layoutParams.width)) {
+      int heightSpecSize = View.MeasureSpec.getSize(spec.height);
+      int desiredWidth = (int) ((heightSpecSize - heightPadding) * aspectRatio + widthPadding);
+      int resolvedWidth = View.resolveSize(desiredWidth, spec.width);
+      spec.width = View.MeasureSpec.makeMeasureSpec(resolvedWidth, View.MeasureSpec.EXACTLY);
+    }
+  }
+  private static boolean shouldAdjust(int layoutDimension) {
+    // Note: wrap_content is supported for backwards compatibility, but should not be used.
+    return layoutDimension == 0 || layoutDimension == ViewGroup.LayoutParams.WRAP_CONTENT;
+  }
+}",class,
+"  public static class Spec {
+    public int width;
+    public int height;
+  }",class,
+"  public static void updateMeasureSpec(
+      Spec spec,
+      float aspectRatio,
+      @Nullable ViewGroup.LayoutParams layoutParams,
+      int widthPadding,
+      int heightPadding) {
+    if (aspectRatio <= 0 || layoutParams == null) {
+      return;
+    }
+    if (shouldAdjust(layoutParams.height)) {
+      int widthSpecSize = View.MeasureSpec.getSize(spec.width);
+      int desiredHeight = (int) ((widthSpecSize - widthPadding) / aspectRatio + heightPadding);
+      int resolvedHeight = View.resolveSize(desiredHeight, spec.height);
+      spec.height = View.MeasureSpec.makeMeasureSpec(resolvedHeight, View.MeasureSpec.EXACTLY);
+    } else if (shouldAdjust(layoutParams.width)) {
+      int heightSpecSize = View.MeasureSpec.getSize(spec.height);
+      int desiredWidth = (int) ((heightSpecSize - heightPadding) * aspectRatio + widthPadding);
+      int resolvedWidth = View.resolveSize(desiredWidth, spec.width);
+      spec.width = View.MeasureSpec.makeMeasureSpec(resolvedWidth, View.MeasureSpec.EXACTLY);
+    }
+  }",method,
+"    if (aspectRatio <= 0 || layoutParams == null) {
+      return;
+    }",method,
+"  private static boolean shouldAdjust(int layoutDimension) {
+    // Note: wrap_content is supported for backwards compatibility, but should not be used.
+    return layoutDimension == 0 || layoutDimension == ViewGroup.LayoutParams.WRAP_CONTENT;
+  }",method,
+"public class SocksCmdResponseDecoderTest {
+    private static final InternalLogger logger = InternalLoggerFactory.getInstance(SocksCmdResponseDecoderTest.class);
+    private static void testSocksCmdResponseDecoderWithDifferentParams(
+            SocksCmdStatus cmdStatus, SocksAddressType addressType, String host, int port) {
+        logger.debug(""Testing cmdStatus: "" + cmdStatus + "" addressType: "" + addressType);
+        SocksResponse msg = new SocksCmdResponse(cmdStatus, addressType, host, port);
+        SocksCmdResponseDecoder decoder = new SocksCmdResponseDecoder();
+        EmbeddedChannel embedder = new EmbeddedChannel(decoder);
+        SocksCommonTestUtils.writeMessageIntoEmbedder(embedder, msg);
+        if (addressType == SocksAddressType.UNKNOWN) {
+            assertTrue(embedder.readInbound() instanceof UnknownSocksResponse);
+        } else {
+            msg = embedder.readInbound();
+            assertEquals(((SocksCmdResponse) msg).cmdStatus(), cmdStatus);
+            if (host != null) {
+                assertEquals(((SocksCmdResponse) msg).host(), host);
+            }
+            assertEquals(((SocksCmdResponse) msg).port(), port);
+        }
+        assertNull(embedder.readInbound());
+    }
+    @Test
+    public void testSocksCmdResponseDecoder() {
+        for (SocksCmdStatus cmdStatus : SocksCmdStatus.values()) {
+            for (SocksAddressType addressType : SocksAddressType.values()) {
+                testSocksCmdResponseDecoderWithDifferentParams(cmdStatus, addressType, null, 0);
+            }
+        }
+    }
+    @Test(expected = IllegalArgumentException.class)
+    public void testInvalidAddress() {
+        testSocksCmdResponseDecoderWithDifferentParams(SocksCmdStatus.SUCCESS, SocksAddressType.IPv4, ""1"", 80);
+    }
+    @Test
+    public void testSocksCmdResponseDecoderIncludingHost() {
+        for (SocksCmdStatus cmdStatus : SocksCmdStatus.values()) {
+            testSocksCmdResponseDecoderWithDifferentParams(cmdStatus, SocksAddressType.IPv4,
+                    ""127.0.0.1"", 80);
+            testSocksCmdResponseDecoderWithDifferentParams(cmdStatus, SocksAddressType.DOMAIN,
+                    ""testDomain.com"", 80);
+            testSocksCmdResponseDecoderWithDifferentParams(cmdStatus, SocksAddressType.IPv6,
+                    ""2001:db8:85a3:42:1000:8a2e:370:7334"", 80);
+            testSocksCmdResponseDecoderWithDifferentParams(cmdStatus, SocksAddressType.IPv6,
+                    ""1111:111:11:1:0:0:0:1"", 80);
+        }
+    }
+}",class,
+"    private static void testSocksCmdResponseDecoderWithDifferentParams(
+            SocksCmdStatus cmdStatus, SocksAddressType addressType, String host, int port) {
+        logger.debug(""Testing cmdStatus: "" + cmdStatus + "" addressType: "" + addressType);
+        SocksResponse msg = new SocksCmdResponse(cmdStatus, addressType, host, port);
+        SocksCmdResponseDecoder decoder = new SocksCmdResponseDecoder();
+        EmbeddedChannel embedder = new EmbeddedChannel(decoder);
+        SocksCommonTestUtils.writeMessageIntoEmbedder(embedder, msg);
+        if (addressType == SocksAddressType.UNKNOWN) {
+            assertTrue(embedder.readInbound() instanceof UnknownSocksResponse);
+        } else {
+            msg = embedder.readInbound();
+            assertEquals(((SocksCmdResponse) msg).cmdStatus(), cmdStatus);
+            if (host != null) {
+                assertEquals(((SocksCmdResponse) msg).host(), host);
+            }
+            assertEquals(((SocksCmdResponse) msg).port(), port);
+        }
+        assertNull(embedder.readInbound());
+    }",method,
+"        if (addressType == SocksAddressType.UNKNOWN) {
+            assertTrue(embedder.readInbound() instanceof UnknownSocksResponse);
+        }",method,
+"            if (host != null) {
+                assertEquals(((SocksCmdResponse) msg).host(), host);
+            }",method,
+"    @Test
+    public void testSocksCmdResponseDecoder() {
+        for (SocksCmdStatus cmdStatus : SocksCmdStatus.values()) {
+            for (SocksAddressType addressType : SocksAddressType.values()) {
+                testSocksCmdResponseDecoderWithDifferentParams(cmdStatus, addressType, null, 0);
+            }
+        }
+    }",method,
+"    @Test(expected = IllegalArgumentException.class)
+    public void testInvalidAddress() {
+        testSocksCmdResponseDecoderWithDifferentParams(SocksCmdStatus.SUCCESS, SocksAddressType.IPv4, ""1"", 80);
+    }",method,
+"    @Test
+    public void testSocksCmdResponseDecoderIncludingHost() {
+        for (SocksCmdStatus cmdStatus : SocksCmdStatus.values()) {
+            testSocksCmdResponseDecoderWithDifferentParams(cmdStatus, SocksAddressType.IPv4,
+                    ""127.0.0.1"", 80);
+            testSocksCmdResponseDecoderWithDifferentParams(cmdStatus, SocksAddressType.DOMAIN,
+                    ""testDomain.com"", 80);
+            testSocksCmdResponseDecoderWithDifferentParams(cmdStatus, SocksAddressType.IPv6,
+                    ""2001:db8:85a3:42:1000:8a2e:370:7334"", 80);
+            testSocksCmdResponseDecoderWithDifferentParams(cmdStatus, SocksAddressType.IPv6,
+                    ""1111:111:11:1:0:0:0:1"", 80);
+        }
+    }",method,
+"public class UseDefMap {
+  private Map<LValue, Assignment> assignmentMap = Maps.newHashMap();
+  private Map<LValue, BasicBlock> defBlockMap = Maps.newHashMap();
+  private Multimap<LValue, BasicBlock> useBlockMap = HashMultimap.create();
+  private Multimap<LValue, Statement> useStatementMap = HashMultimap.create();
+  private final Set<LValue> variableUsages = new HashSet<>();
+  private final Multimap<LValue, SsaEdge> ssaEdges = HashMultimap.create();
+  private ControlFlowGraph cfg;
+  public UseDefMap(ControlFlowGraph cfg) {
+    this.cfg = cfg;
+    for (BasicBlock basicBlock : cfg.getBasicBlocks()) {
+      for (Statement statement : basicBlock.getStatements()) {
+        if(statement instanceof Assignment) {
+          Assignment assignment = (Assignment) statement;
+          assignmentMap.put(assignment.getLHS(), assignment);
+          defBlockMap.put(assignment.getLHS(), basicBlock);
+        }
+      }
+    }
+    for (BasicBlock basicBlock : cfg.getBasicBlocks()) {
+      for (Statement statement : basicBlock.getStatements()) {
+        Expression rhs = statement.getRHS();
+        if(rhs instanceof LValue) {
+          addSsaEdge((LValue) rhs, basicBlock, statement);
+          useBlockMap.put((LValue)rhs, basicBlock);
+        } else {
+          for(int i=0;i!= rhs.getChildCount();++i) {
+            TreeNode uses = rhs.childAt(i);
+            if(uses instanceof LValue) {
+              addSsaEdge((LValue) uses, basicBlock, statement);
+              useBlockMap.put((LValue)uses, basicBlock);
+            }
+          }
+        }
+      }
+    }
+  }
+  private void addSsaEdge(LValue variable, BasicBlock basicBlock, Statement usage) {
+    Assignment definition = assignmentMap.get(variable);
+    if(definition != null) {
+      SsaEdge edge = new SsaEdge(definition, basicBlock, usage);
+      ssaEdges.put(definition.getLHS(), edge);
+      if(basicBlock != cfg.getExit()) {
+        variableUsages.add(definition.getLHS());
+      }
+    }
+  }
+  public boolean isDefined(LValue variable) {
+    return assignmentMap.containsKey(variable);
+  }
+  public Assignment getDefinition(LValue variable) {
+    return assignmentMap.get(variable);
+  }
+  public BasicBlock getDefinitionBlock(LValue a) {
+    return defBlockMap.get(a);
+  }
+  public Collection<SsaEdge> getSsaEdges(LValue lhs) {
+    return ssaEdges.get(lhs);
+  }
+  public boolean isUsed(LValue variable) {
+    return variableUsages.contains(variable);
+  }
+  public Set<LValue> getUsedVariables() {
+    return variableUsages;
+  }
+  public Collection<BasicBlock> getUsedBlocks(LValue a) {
+    return useBlockMap.get(a);
+  }
+}",class,
+"  public UseDefMap(ControlFlowGraph cfg) {
+    this.cfg = cfg;
+    for (BasicBlock basicBlock : cfg.getBasicBlocks()) {
+      for (Statement statement : basicBlock.getStatements()) {
+        if(statement instanceof Assignment) {
+          Assignment assignment = (Assignment) statement;
+          assignmentMap.put(assignment.getLHS(), assignment);
+          defBlockMap.put(assignment.getLHS(), basicBlock);
+        }
+      }
+    }
+    for (BasicBlock basicBlock : cfg.getBasicBlocks()) {
+      for (Statement statement : basicBlock.getStatements()) {
+        Expression rhs = statement.getRHS();
+        if(rhs instanceof LValue) {
+          addSsaEdge((LValue) rhs, basicBlock, statement);
+          useBlockMap.put((LValue)rhs, basicBlock);
+        } else {
+          for(int i=0;i!= rhs.getChildCount();++i) {
+            TreeNode uses = rhs.childAt(i);
+            if(uses instanceof LValue) {
+              addSsaEdge((LValue) uses, basicBlock, statement);
+              useBlockMap.put((LValue)uses, basicBlock);
+            }
+          }
+        }
+      }
+    }
+  }",method,
+"        if(statement instanceof Assignment) {
+          Assignment assignment = (Assignment) statement;
+          assignmentMap.put(assignment.getLHS(), assignment);
+          defBlockMap.put(assignment.getLHS(), basicBlock);
+        }",method,
+"        if(rhs instanceof LValue) {
+          addSsaEdge((LValue) rhs, basicBlock, statement);
+          useBlockMap.put((LValue)rhs, basicBlock);
+        }",method,
+"            if(uses instanceof LValue) {
+              addSsaEdge((LValue) uses, basicBlock, statement);
+              useBlockMap.put((LValue)uses, basicBlock);
+            }",method,
+"  private void addSsaEdge(LValue variable, BasicBlock basicBlock, Statement usage) {
+    Assignment definition = assignmentMap.get(variable);
+    if(definition != null) {
+      SsaEdge edge = new SsaEdge(definition, basicBlock, usage);
+      ssaEdges.put(definition.getLHS(), edge);
+      if(basicBlock != cfg.getExit()) {
+        variableUsages.add(definition.getLHS());
+      }
+    }
+  }",method,
+"    if(definition != null) {
+      SsaEdge edge = new SsaEdge(definition, basicBlock, usage);
+      ssaEdges.put(definition.getLHS(), edge);
+      if(basicBlock != cfg.getExit()) {
+        variableUsages.add(definition.getLHS());
+      }
+    }",method,
+"  public boolean isDefined(LValue variable) {
+    return assignmentMap.containsKey(variable);
+  }",method,

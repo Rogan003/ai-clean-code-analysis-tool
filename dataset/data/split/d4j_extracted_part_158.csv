@@ -1,0 +1,1417 @@
+code_snippet,type,score
+"  private PsiReference configure() throws Exception {
+    return configureByFile(""class/"" + getTestName(false) + "".java"");
+  }",method,
+"  public void testNoSubpackagesAccess() throws Exception {
+    PsiElementFinder mock = createMockFinder();
+    PlatformTestUtil.registerExtension(Extensions.getArea(getProject()), PsiElementFinder.EP_NAME, mock, getTestRootDisposable());
+    PsiReference reference = configure();
+    assertNull(reference.resolve());
+    reference.getVariants();
+    verify(mock);
+  }",method,
+"  private static PsiElementFinder createMockFinder() {
+    Set<String> ignoredMethods = ContainerUtil.newHashSet(""getClassesFilter"", ""processPackageDirectories"", ""getClasses"");
+    Method[] methods = ContainerUtil.findAllAsArray(PsiElementFinder.class.getDeclaredMethods(), m -> !ignoredMethods.contains(m.getName()));
+    PsiElementFinder mock = createMockBuilder(PsiElementFinder.class).addMockedMethods(methods).createMock();
+    expect(mock.findClasses(anyObject(), anyObject())).andReturn(PsiClass.EMPTY_ARRAY).anyTimes();
+    expect(mock.findPackage(eq(""foo""))).andReturn(null);
+    expect(mock.getSubPackages(rootPackage(), anyObject())).andReturn(PsiPackage.EMPTY_ARRAY);
+    replay(mock);
+    return mock;
+  }",method,
+"  private static PsiPackage rootPackage() {
+    reportMatcher(new IArgumentMatcher() {
+      @Override
+      public boolean matches(Object argument) {
+        return ""PsiPackage:"".equals(String.valueOf(argument));
+      }
+      @Override
+      public void appendTo(StringBuffer buffer) {
+        buffer.append(""PsiPackage:"");
+      }
+    });
+    return null;
+  }",method,
+"    reportMatcher(new IArgumentMatcher() {
+      @Override
+      public boolean matches(Object argument) {
+        return ""PsiPackage:"".equals(String.valueOf(argument));
+      }
+      @Override
+      public void appendTo(StringBuffer buffer) {
+        buffer.append(""PsiPackage:"");
+      }
+    }",method,
+"      @Override
+      public boolean matches(Object argument) {
+        return ""PsiPackage:"".equals(String.valueOf(argument));
+      }",method,
+"      @Override
+      public void appendTo(StringBuffer buffer) {
+        buffer.append(""PsiPackage:"");
+      }",method,
+"public class FileLikesTest {
+  @Test
+  public void testIsClassFile() {
+    assertTrue(FileLikes.isClassFile(new FakeFileLike(""com/example/Bar.class"")));
+    assertFalse(FileLikes.isClassFile(new FakeFileLike(""com/example/Bar.txt"")));
+  }
+  @Test(expected = NullPointerException.class)
+  public void testIsClassFileRejectsNull() {
+    assertTrue(FileLikes.isClassFile(null));
+  }
+  @Test
+  public void testGetFileNameWithoutClassSuffix() {
+    assertEquals(
+        ""com/example/Bar"",
+        FileLikes.getFileNameWithoutClassSuffix(new FakeFileLike(""com/example/Bar.class"")));
+    assertEquals(
+        ""com/example/Foo$1"",
+        FileLikes.getFileNameWithoutClassSuffix(new FakeFileLike(""com/example/Foo$1.class"")));
+  }
+  private static class FakeFileLike implements FileLike {
+    private final String relativePath;
+    private FakeFileLike(String relativePath) {
+      this.relativePath = Preconditions.checkNotNull(relativePath);
+    }
+    @Override
+    public String getRelativePath() {
+      return relativePath;
+    }
+    @Override
+    public Path getContainer() {
+      throw new UnsupportedOperationException();
+    }
+    @Override
+    public long getSize() {
+      throw new UnsupportedOperationException();
+    }
+    @Override
+    public InputStream getInput() throws IOException {
+      throw new UnsupportedOperationException();
+    }
+  }
+}",class,
+"  private static class FakeFileLike implements FileLike {
+    private final String relativePath;
+    private FakeFileLike(String relativePath) {
+      this.relativePath = Preconditions.checkNotNull(relativePath);
+    }
+    @Override
+    public String getRelativePath() {
+      return relativePath;
+    }
+    @Override
+    public Path getContainer() {
+      throw new UnsupportedOperationException();
+    }
+    @Override
+    public long getSize() {
+      throw new UnsupportedOperationException();
+    }
+    @Override
+    public InputStream getInput() throws IOException {
+      throw new UnsupportedOperationException();
+    }
+  }",class,
+"  @Test
+  public void testIsClassFile() {
+    assertTrue(FileLikes.isClassFile(new FakeFileLike(""com/example/Bar.class"")));
+    assertFalse(FileLikes.isClassFile(new FakeFileLike(""com/example/Bar.txt"")));
+  }",method,
+"  @Test(expected = NullPointerException.class)
+  public void testIsClassFileRejectsNull() {
+    assertTrue(FileLikes.isClassFile(null));
+  }",method,
+"  @Test
+  public void testGetFileNameWithoutClassSuffix() {
+    assertEquals(
+        ""com/example/Bar"",
+        FileLikes.getFileNameWithoutClassSuffix(new FakeFileLike(""com/example/Bar.class"")));
+    assertEquals(
+        ""com/example/Foo$1"",
+        FileLikes.getFileNameWithoutClassSuffix(new FakeFileLike(""com/example/Foo$1.class"")));
+  }",method,
+"    private FakeFileLike(String relativePath) {
+      this.relativePath = Preconditions.checkNotNull(relativePath);
+    }",method,
+"    @Override
+    public String getRelativePath() {
+      return relativePath;
+    }",method,
+"    @Override
+    public Path getContainer() {
+      throw new UnsupportedOperationException();
+    }",method,
+"    @Override
+    public long getSize() {
+      throw new UnsupportedOperationException();
+    }",method,
+"    @Override
+    public InputStream getInput() throws IOException {
+      throw new UnsupportedOperationException();
+    }",method,
+"public class NoUnboundElementsBindHandler extends AbstractBindHandler {
+	private final Set<ConfigurationPropertyName> boundNames = new HashSet<>();
+	private final Function<ConfigurationPropertySource, Boolean> filter;
+	NoUnboundElementsBindHandler() {
+		this(BindHandler.DEFAULT, (configurationPropertySource) -> true);
+	}
+	public NoUnboundElementsBindHandler(BindHandler parent) {
+		this(parent, (configurationPropertySource) -> true);
+	}
+	public NoUnboundElementsBindHandler(BindHandler parent,
+			Function<ConfigurationPropertySource, Boolean> filter) {
+		super(parent);
+		this.filter = filter;
+	}
+	@Override
+	public Object onSuccess(ConfigurationPropertyName name, Bindable<?> target,
+			BindContext context, Object result) {
+		this.boundNames.add(name);
+		return super.onSuccess(name, target, context, result);
+	}
+	@Override
+	public void onFinish(ConfigurationPropertyName name, Bindable<?> target,
+			BindContext context, Object result) throws Exception {
+		if (context.getDepth() == 0) {
+			checkNoUnboundElements(name, context);
+		}
+	}
+	private void checkNoUnboundElements(ConfigurationPropertyName name,
+			BindContext context) {
+		Set<ConfigurationProperty> unbound = new TreeSet<>();
+		for (ConfigurationPropertySource source : context.getSources()) {
+			if (source instanceof IterableConfigurationPropertySource
+					&& this.filter.apply(source)) {
+				collectUnbound(name, unbound,
+						(IterableConfigurationPropertySource) source);
+			}
+		}
+		if (!unbound.isEmpty()) {
+			throw new UnboundConfigurationPropertiesException(unbound);
+		}
+	}
+	private void collectUnbound(ConfigurationPropertyName name,
+			Set<ConfigurationProperty> unbound,
+			IterableConfigurationPropertySource source) {
+		IterableConfigurationPropertySource filtered = source
+				.filter((candidate) -> isUnbound(name, candidate));
+		for (ConfigurationPropertyName unboundName : filtered) {
+			try {
+				unbound.add(source.filter((candidate) -> isUnbound(name, candidate))
+						.getConfigurationProperty(unboundName));
+			}
+			catch (Exception ex) {
+			}
+		}
+	}
+	private boolean isUnbound(ConfigurationPropertyName name,
+			ConfigurationPropertyName candidate) {
+		return name.isAncestorOf(candidate) && !this.boundNames.contains(candidate);
+	}
+}",class,
+"	NoUnboundElementsBindHandler() {
+		this(BindHandler.DEFAULT, (configurationPropertySource) -> true);
+	}",method,
+"	public NoUnboundElementsBindHandler(BindHandler parent) {
+		this(parent, (configurationPropertySource) -> true);
+	}",method,
+"	public NoUnboundElementsBindHandler(BindHandler parent,
+			Function<ConfigurationPropertySource, Boolean> filter) {
+		super(parent);
+		this.filter = filter;
+	}",method,
+"	@Override
+	public Object onSuccess(ConfigurationPropertyName name, Bindable<?> target,
+			BindContext context, Object result) {
+		this.boundNames.add(name);
+		return super.onSuccess(name, target, context, result);
+	}",method,
+"	@Override
+	public void onFinish(ConfigurationPropertyName name, Bindable<?> target,
+			BindContext context, Object result) throws Exception {
+		if (context.getDepth() == 0) {
+			checkNoUnboundElements(name, context);
+		}
+	}",method,
+"	private void checkNoUnboundElements(ConfigurationPropertyName name,
+			BindContext context) {
+		Set<ConfigurationProperty> unbound = new TreeSet<>();
+		for (ConfigurationPropertySource source : context.getSources()) {
+			if (source instanceof IterableConfigurationPropertySource
+					&& this.filter.apply(source)) {
+				collectUnbound(name, unbound,
+						(IterableConfigurationPropertySource) source);
+			}
+		}
+		if (!unbound.isEmpty()) {
+			throw new UnboundConfigurationPropertiesException(unbound);
+		}
+	}",method,
+"	private void collectUnbound(ConfigurationPropertyName name,
+			Set<ConfigurationProperty> unbound,
+			IterableConfigurationPropertySource source) {
+		IterableConfigurationPropertySource filtered = source
+				.filter((candidate) -> isUnbound(name, candidate));
+		for (ConfigurationPropertyName unboundName : filtered) {
+			try {
+				unbound.add(source.filter((candidate) -> isUnbound(name, candidate))
+						.getConfigurationProperty(unboundName));
+			}
+			catch (Exception ex) {
+			}
+		}
+	}",method,
+"		for (ConfigurationPropertyName unboundName : filtered) {
+			try {
+				unbound.add(source.filter((candidate) -> isUnbound(name, candidate))
+						.getConfigurationProperty(unboundName));
+			}
+			catch (Exception ex) {
+			}
+		}",method,
+"			catch (Exception ex) {
+			}",method,
+"	private boolean isUnbound(ConfigurationPropertyName name,
+			ConfigurationPropertyName candidate) {
+		return name.isAncestorOf(candidate) && !this.boundNames.contains(candidate);
+	}",method,
+"public class SystemServiceHandler extends BaseAnnotationHandler<EComponentHolder>implements MethodInjectionHandler<EComponentHolder> {
+	private final InjectHelper<EComponentHolder> injectHelper;
+	public SystemServiceHandler(AndroidAnnotationsEnvironment environment) {
+		super(SystemService.class, environment);
+		injectHelper = new InjectHelper<>(validatorHelper, this);
+	}
+	@Override
+	public void validate(Element element, ElementValidation validation) {
+		injectHelper.validate(SystemService.class, element, validation);
+		if (!validation.isValid()) {
+			return;
+		}
+		validatorHelper.androidService(element, validation);
+		validatorHelper.isNotPrivate(element, validation);
+	}
+	@Override
+	public void process(Element element, EComponentHolder holder) {
+		injectHelper.process(element, holder);
+	}
+	@Override
+	public JBlock getInvocationBlock(EComponentHolder holder) {
+		return holder.getInitBodyInjectionBlock();
+	}
+	@Override
+	public void assignValue(JBlock targetBlock, IJAssignmentTarget fieldRef, EComponentHolder holder, Element element, Element param) {
+		TypeMirror serviceType = param.asType();
+		String fieldTypeQualifiedName = serviceType.toString();
+		JFieldRef serviceRef = new AndroidSystemServices(getEnvironment()).getServiceConstantRef(serviceType);
+		if (CanonicalNameConstants.APP_WIDGET_MANAGER.equals(fieldTypeQualifiedName)) {
+			targetBlock.add(fieldRef.assign(createSpecialInjection(holder, fieldTypeQualifiedName, serviceRef, 21, ""LOLLIPOP"", getClasses().APP_WIDGET_MANAGER, ""getInstance"", true)));
+		} else {
+			targetBlock.add(fieldRef.assign(createNormalInjection(holder, fieldTypeQualifiedName, serviceRef)));
+		}
+	}
+	@SuppressWarnings(""checkstyle:parameternumber"")
+	private IJExpression createSpecialInjection(EComponentHolder holder, String fieldTypeQualifiedName, JFieldRef serviceRef, int apiLevel, String apiLevelName, AbstractJClass serviceClass,
+			String injectionMethodName, boolean invocationRequiresContext) {
+		if (getEnvironment().getAndroidManifest().getMinSdkVersion() >= apiLevel) {
+			return createNormalInjection(holder, fieldTypeQualifiedName, serviceRef);
+		} else {
+			JInvocation serviceClassInvocation = serviceClass.staticInvoke(injectionMethodName);
+			if (invocationRequiresContext) {
+				serviceClassInvocation.arg(holder.getContextRef());
+			}
+			if (isApiOnClasspath(apiLevelName)) {
+				IJExpression condition = getClasses().BUILD_VERSION.staticRef(""SDK_INT"").gte(getClasses().BUILD_VERSION_CODES.staticRef(apiLevelName));
+				IJExpression normalInjection = createNormalInjection(holder, fieldTypeQualifiedName, serviceRef);
+				return JOp.cond(condition, normalInjection, serviceClassInvocation);
+			} else {
+				return serviceClassInvocation;
+			}
+		}
+	}
+	private IJExpression createNormalInjection(EComponentHolder holder, String fieldTypeQualifiedName, JFieldRef serviceRef) {
+		return cast(getJClass(fieldTypeQualifiedName), getAppropriateContextRef(holder, fieldTypeQualifiedName).invoke(""getSystemService"").arg(serviceRef));
+	}
+	private IJExpression getAppropriateContextRef(EComponentHolder holder, String fieldTypeQualifiedName) {
+		if (CanonicalNameConstants.WIFI_MANAGER.equals(fieldTypeQualifiedName) || CanonicalNameConstants.AUDIO_MANAGER.equals(fieldTypeQualifiedName)) {
+			return holder.getContextRef().invoke(""getApplicationContext"");
+		}
+		return holder.getContextRef();
+	}
+	private boolean isApiOnClasspath(String apiName) {
+		TypeElement typeElement = getProcessingEnvironment().getElementUtils().getTypeElement(CanonicalNameConstants.BUILD_VERSION_CODES);
+		for (Element element : typeElement.getEnclosedElements()) {
+			if (element.getSimpleName().contentEquals(apiName)) {
+				return true;
+			}
+		}
+		return false;
+	}
+	@Override
+	public void validateEnclosingElement(Element element, ElementValidation valid) {
+		validatorHelper.enclosingElementHasEnhancedComponentAnnotation(element, valid);
+	}
+}",class,
+"	public SystemServiceHandler(AndroidAnnotationsEnvironment environment) {
+		super(SystemService.class, environment);
+		injectHelper = new InjectHelper<>(validatorHelper, this);
+	}",method,
+"	@Override
+	public void validate(Element element, ElementValidation validation) {
+		injectHelper.validate(SystemService.class, element, validation);
+		if (!validation.isValid()) {
+			return;
+		}
+		validatorHelper.androidService(element, validation);
+		validatorHelper.isNotPrivate(element, validation);
+	}",method,
+"	@Override
+	public void process(Element element, EComponentHolder holder) {
+		injectHelper.process(element, holder);
+	}",method,
+"	@Override
+	public JBlock getInvocationBlock(EComponentHolder holder) {
+		return holder.getInitBodyInjectionBlock();
+	}",method,
+"	@Override
+	public void assignValue(JBlock targetBlock, IJAssignmentTarget fieldRef, EComponentHolder holder, Element element, Element param) {
+		TypeMirror serviceType = param.asType();
+		String fieldTypeQualifiedName = serviceType.toString();
+		JFieldRef serviceRef = new AndroidSystemServices(getEnvironment()).getServiceConstantRef(serviceType);
+		if (CanonicalNameConstants.APP_WIDGET_MANAGER.equals(fieldTypeQualifiedName)) {
+			targetBlock.add(fieldRef.assign(createSpecialInjection(holder, fieldTypeQualifiedName, serviceRef, 21, ""LOLLIPOP"", getClasses().APP_WIDGET_MANAGER, ""getInstance"", true)));
+		} else {
+			targetBlock.add(fieldRef.assign(createNormalInjection(holder, fieldTypeQualifiedName, serviceRef)));
+		}
+	}",method,
+"	@SuppressWarnings(""checkstyle:parameternumber"")
+	private IJExpression createSpecialInjection(EComponentHolder holder, String fieldTypeQualifiedName, JFieldRef serviceRef, int apiLevel, String apiLevelName, AbstractJClass serviceClass,
+			String injectionMethodName, boolean invocationRequiresContext) {
+		if (getEnvironment().getAndroidManifest().getMinSdkVersion() >= apiLevel) {
+			return createNormalInjection(holder, fieldTypeQualifiedName, serviceRef);
+		} else {
+			JInvocation serviceClassInvocation = serviceClass.staticInvoke(injectionMethodName);
+			if (invocationRequiresContext) {
+				serviceClassInvocation.arg(holder.getContextRef());
+			}
+			if (isApiOnClasspath(apiLevelName)) {
+				IJExpression condition = getClasses().BUILD_VERSION.staticRef(""SDK_INT"").gte(getClasses().BUILD_VERSION_CODES.staticRef(apiLevelName));
+				IJExpression normalInjection = createNormalInjection(holder, fieldTypeQualifiedName, serviceRef);
+				return JOp.cond(condition, normalInjection, serviceClassInvocation);
+			} else {
+				return serviceClassInvocation;
+			}
+		}
+	}",method,
+"			if (invocationRequiresContext) {
+				serviceClassInvocation.arg(holder.getContextRef());
+			}",method,
+"	private IJExpression createNormalInjection(EComponentHolder holder, String fieldTypeQualifiedName, JFieldRef serviceRef) {
+		return cast(getJClass(fieldTypeQualifiedName), getAppropriateContextRef(holder, fieldTypeQualifiedName).invoke(""getSystemService"").arg(serviceRef));
+	}",method,
+"	private IJExpression getAppropriateContextRef(EComponentHolder holder, String fieldTypeQualifiedName) {
+		if (CanonicalNameConstants.WIFI_MANAGER.equals(fieldTypeQualifiedName) || CanonicalNameConstants.AUDIO_MANAGER.equals(fieldTypeQualifiedName)) {
+			return holder.getContextRef().invoke(""getApplicationContext"");
+		}
+		return holder.getContextRef();
+	}",method,
+"	private boolean isApiOnClasspath(String apiName) {
+		TypeElement typeElement = getProcessingEnvironment().getElementUtils().getTypeElement(CanonicalNameConstants.BUILD_VERSION_CODES);
+		for (Element element : typeElement.getEnclosedElements()) {
+			if (element.getSimpleName().contentEquals(apiName)) {
+				return true;
+			}
+		}
+		return false;
+	}",method,
+"	@Override
+	public void validateEnclosingElement(Element element, ElementValidation valid) {
+		validatorHelper.enclosingElementHasEnhancedComponentAnnotation(element, valid);
+	}",method,
+"public class PluginActivities {
+	public static final String SEARCH_SNEER_APPS_URL = ""https://play.google.com/store/search?q=SneerApp"";
+	public static void start(final Context context, Plugin plugin, long convoId) {
+		start(context, plugin, convoId, null);
+	}
+	public static void open(Context context, SessionHandle session, long convoId) {
+		Plugin plugin = Plugins.forSessionType(context, session.type);
+		if (plugin == null) {
+			Intent urlIntent = new Intent(Intent.ACTION_VIEW, Uri.parse(SEARCH_SNEER_APPS_URL + "" "" + session.type));
+			urlIntent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
+			context.startActivity(urlIntent);
+		}",class,
+"	public static void start(final Context context, Plugin plugin, long convoId) {
+		start(context, plugin, convoId, null);
+	}
+	public static void open(Context context, SessionHandle session, long convoId) {
+		Plugin plugin = Plugins.forSessionType(context, session.type);
+		if (plugin == null) {
+			Intent urlIntent = new Intent(Intent.ACTION_VIEW, Uri.parse(SEARCH_SNEER_APPS_URL + "" "" + session.type));
+			urlIntent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
+			context.startActivity(urlIntent);
+		} else
+			start(context, plugin, convoId, session);
+	}
+	private static void start(final Context context, final Plugin plugin, long convoId, SessionHandle session) {
+		final Intent intent = new Intent();
+		intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
+		intent.setClassName(plugin.packageName, plugin.activityName);
+		intent.putExtra(SEND_MESSAGE, SendMessage.intentFor(convoId));
+		if (plugin.partnerSessionType != null && session == null)
+			request(Sessions.Actions.startSession(convoId, plugin.partnerSessionType)).subscribe(new Action1<Long>() {
+				@Override
+				public void call(Long sessionId) {
+					startActivity(context, intent, new SessionHandle(sessionId, plugin.partnerSessionType, true));
+				}
+			});
+		else
+			startActivity(context, intent, session);
+	}",method,
+"	public static void open(Context context, SessionHandle session, long convoId) {
+		Plugin plugin = Plugins.forSessionType(context, session.type);
+		if (plugin == null) {
+			Intent urlIntent = new Intent(Intent.ACTION_VIEW, Uri.parse(SEARCH_SNEER_APPS_URL + "" "" + session.type));
+			urlIntent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
+			context.startActivity(urlIntent);
+		} else
+			start(context, plugin, convoId, session);
+	}
+	private static void start(final Context context, final Plugin plugin, long convoId, SessionHandle session) {
+		final Intent intent = new Intent();
+		intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
+		intent.setClassName(plugin.packageName, plugin.activityName);
+		intent.putExtra(SEND_MESSAGE, SendMessage.intentFor(convoId));
+		if (plugin.partnerSessionType != null && session == null)
+			request(Sessions.Actions.startSession(convoId, plugin.partnerSessionType)).subscribe(new Action1<Long>() {
+				@Override
+				public void call(Long sessionId) {
+					startActivity(context, intent, new SessionHandle(sessionId, plugin.partnerSessionType, true));
+				}
+			});
+		else
+			startActivity(context, intent, session);
+	}",method,
+"		if (plugin == null) {
+			Intent urlIntent = new Intent(Intent.ACTION_VIEW, Uri.parse(SEARCH_SNEER_APPS_URL + "" "" + session.type));
+			urlIntent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
+			context.startActivity(urlIntent);
+		} else
+			start(context, plugin, convoId, session);
+	}
+	private static void start(final Context context, final Plugin plugin, long convoId, SessionHandle session) {
+		final Intent intent = new Intent();
+		intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
+		intent.setClassName(plugin.packageName, plugin.activityName);
+		intent.putExtra(SEND_MESSAGE, SendMessage.intentFor(convoId));
+		if (plugin.partnerSessionType != null && session == null)
+			request(Sessions.Actions.startSession(convoId, plugin.partnerSessionType)).subscribe(new Action1<Long>() {
+				@Override
+				public void call(Long sessionId) {
+					startActivity(context, intent, new SessionHandle(sessionId, plugin.partnerSessionType, true));
+				}
+			});
+		else
+			startActivity(context, intent, session);
+	}",method,
+"	private static void start(final Context context, final Plugin plugin, long convoId, SessionHandle session) {
+		final Intent intent = new Intent();
+		intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
+		intent.setClassName(plugin.packageName, plugin.activityName);
+		intent.putExtra(SEND_MESSAGE, SendMessage.intentFor(convoId));
+		if (plugin.partnerSessionType != null && session == null)
+			request(Sessions.Actions.startSession(convoId, plugin.partnerSessionType)).subscribe(new Action1<Long>() {
+				@Override
+				public void call(Long sessionId) {
+					startActivity(context, intent, new SessionHandle(sessionId, plugin.partnerSessionType, true));
+				}
+			});
+		else
+			startActivity(context, intent, session);
+	}",method,
+"				@Override
+				public void call(Long sessionId) {
+					startActivity(context, intent, new SessionHandle(sessionId, plugin.partnerSessionType, true));
+				}",method,
+"	private static void startActivity(Context context, Intent intent, SessionHandle session) {
+		if (session != null) {
+			intent.putExtra(JOIN_SESSION, PartnerSessions.intentFor(session));
+			intent.putExtra(IS_OWN, session.isOwn);
+		}
+		startActivity(context, intent);
+	}",method,
+"		if (session != null) {
+			intent.putExtra(JOIN_SESSION, PartnerSessions.intentFor(session));
+			intent.putExtra(IS_OWN, session.isOwn);
+		}",method,
+"	private static void startActivity(Context context, Intent intent) {
+		try {
+			context.startActivity(intent);
+		} catch(Exception e) {
+			AndroidUtils.toast(context, e.getMessage(), Toast.LENGTH_LONG);
+		}
+	}",method,
+"import java.io.*;
+class CopyThread extends Thread
+{  //
+   //  This is a crude adapter to connect two streams together.
+   //  One use of this class is to connect the output and input
+   //  threads of an forked-ed process to the standard input and
+   //  output streams of the parent process.
+   //
+    InputStream in;
+    OutputStream out;
+    CopyThread(InputStream i, OutputStream o) {
+	in = i; out = o;
+    }
+    public void run() {
+	try {
+	    for (int ch = in.read(); ch != -1; ch = in.read()) {
+		out.write(ch);
+	    }
+	} catch(Exception e) {
+	    return;
+	}
+    }
+}",class,
+"   //  One use of this class is to connect the output and input
+   //  threads of an forked-ed process to the standard input and
+   //  output streams of the parent process.
+   //
+    InputStream in;
+    OutputStream out;
+    CopyThread(InputStream i, OutputStream o) {
+	in = i; out = o;
+    }",class,
+"public final class CPJ
+{
+	public static final String newLn = ""\n"";
+	public static String MkStr(char[] arr)
+	{
+	    for (int i = 0; i < arr.length; i++) {
+		if (arr[i] == '\0')
+		    return new String(arr, 0, i);
+	    }
+	    return null;
+	}
+	public static void MkArr(String str, char[] arr)
+	{
+	    if (str == null) {
+		arr[0] = '\0'; return;
+	    }
+	    int    len = str.length();
+	    if (len >= arr.length)
+		len = arr.length - 1;
+	    str.getChars(0, len, arr, 0);
+	    arr[len] = '\0';
+	}
+	public static String JCat(String l, String r)
+	{
+	    return l+r;
+	}
+	public static String GetProperty(String key)
+	{
+	    return System.getProperty(key);
+	}
+        // OBSOLETE 2011 ?
+	public static void StrToReal(String str,
+					double[] o, 	// OUT param
+					boolean[] r)	// OUT param
+	{
+	    try {
+		o[0] = Double.valueOf(str.trim()).doubleValue();
+		r[0] = true;
+	    } catch(Exception e) {
+		r[0] = false;
+	    }
+	}
+        // OBSOLETE 2011 ?
+	public static double StrToReal(String str,
+					boolean[] r)	// OUT param
+	{
+	    try {
+		r[0] = true;
+		return Double.valueOf(str.trim()).doubleValue();
+	    } catch(Exception e) {
+		r[0] = false;
+		return 0.0;
+	    }
+	}
+        // OBSOLETE 2011 ?
+	public static void StrToInt(String str,
+					int[] o,	// OUT param
+					boolean[] r)	// OUT param
+	{
+	    try {
+		o[0] = Integer.parseInt(str.trim());
+		r[0] = true;
+	    } catch(Exception e) {
+		r[0] = false;
+	    }
+	}
+        // OBSOLETE 2011 ?
+	public static int StrToInt(String str,
+					boolean[] r)	// OUT param
+	{
+	    try {
+		r[0] = true;
+		return Integer.parseInt(str.trim());
+	    } catch(Exception e) {
+		r[0] = false;
+		return 0;
+	    }
+	}
+    public static int ExecResult(String[] args)
+    {
+	try {
+	    Process p = Runtime.getRuntime().exec(args);
+	    CopyThread cOut = new CopyThread(p.getInputStream(), System.out);
+	    cOut.start();
+	    CopyThread cErr = new CopyThread(p.getErrorStream(), System.err);
+	    cErr.start();
+	    CopyThread cIn  = new CopyThread(System.in, p.getOutputStream());
+	    cIn.start();
+	    return p.waitFor();
+	} catch(Exception e) {
+	    System.err.println(e.toString());
+	    return 1;
+	}
+    }
+    public static void DiagProperties()
+    {
+	    System.getProperties().list(System.out);
+    }
+    public static void DiagClass(Object o)
+    {
+	    System.out.print(o.getClass().getName());
+    }
+}",class,
+"    CopyThread(InputStream i, OutputStream o) {
+	in = i; out = o;
+    }",method,
+"    public void run() {
+	try {
+	    for (int ch = in.read(); ch != -1; ch = in.read()) {
+		out.write(ch);
+	    }
+	} catch(Exception e) {
+	    return;
+	}
+    }",method,
+"	public static String MkStr(char[] arr)
+	{
+	    for (int i = 0; i < arr.length; i++) {
+		if (arr[i] == '\0')
+		    return new String(arr, 0, i);
+	    }
+	    return null;
+	}",method,
+"	    for (int i = 0; i < arr.length; i++) {
+		if (arr[i] == '\0')
+		    return new String(arr, 0, i);
+	    }",method,
+"	public static void MkArr(String str, char[] arr)
+	{
+	    if (str == null) {
+		arr[0] = '\0'; return;
+	    }
+	    int    len = str.length();
+	    if (len >= arr.length)
+		len = arr.length - 1;
+	    str.getChars(0, len, arr, 0);
+	    arr[len] = '\0';
+	}",method,
+"	    if (str == null) {
+		arr[0] = '\0'; return;
+	    }",method,
+"	public static String JCat(String l, String r)
+	{
+	    return l+r;
+	}",method,
+"	public static String GetProperty(String key)
+	{
+	    return System.getProperty(key);
+	}",method,
+"    public static int ExecResult(String[] args)
+    {
+	try {
+	    Process p = Runtime.getRuntime().exec(args);
+	    CopyThread cOut = new CopyThread(p.getInputStream(), System.out);
+	    cOut.start();
+	    CopyThread cErr = new CopyThread(p.getErrorStream(), System.err);
+	    cErr.start();
+	    CopyThread cIn  = new CopyThread(System.in, p.getOutputStream());
+	    cIn.start();
+	    return p.waitFor();
+	} catch(Exception e) {
+	    System.err.println(e.toString());
+	    return 1;
+	}
+    }",method,
+"    public static void DiagProperties()
+    {
+	    System.getProperties().list(System.out);
+    }",method,
+"    public static void DiagClass(Object o)
+    {
+	    System.out.print(o.getClass().getName());
+    }",method,
+"public class MySqlSelectTest_57 extends MysqlTest {
+    public void test_0() throws Exception {
+        String sql =  ""SELECT SUBSTR('12345678' FROM 2 FOR 4)"";
+        System.out.println(sql);
+        List<SQLStatement> statementList = SQLUtils.parseStatements(sql, JdbcConstants.MYSQL, true);
+        SQLStatement stmt = statementList.get(0);
+        assertEquals(1, statementList.size());
+        SchemaStatVisitor visitor = SQLUtils.createSchemaStatVisitor(JdbcConstants.MYSQL);
+        stmt.accept(visitor);
+//        System.out.println(""Tables : "" + visitor.getTables());
+        System.out.println(""fields : "" + visitor.getColumns());
+//        System.out.println(""coditions : "" + visitor.getConditions());
+//        System.out.println(""orderBy : "" + visitor.getOrderByColumns());
+//        assertEquals(1, visitor.getTables().size());
+//        assertEquals(1, visitor.getColumns().size());
+//        assertEquals(0, visitor.getConditions().size());
+//        assertEquals(0, visitor.getOrderByColumns().size());
+        {
+            String output = SQLUtils.toMySqlString(stmt);
+            assertEquals(""SELECT SUBSTR('12345678' FROM 2 FOR 4)"", //
+                                output);
+        }
+        {
+            String output = SQLUtils.toMySqlString(stmt, SQLUtils.DEFAULT_LCASE_FORMAT_OPTION);
+            assertEquals(""select SUBSTR('12345678' from 2 for 4)"", //
+                                output);
+        }
+        {
+            String output = SQLUtils.toMySqlString(stmt, new SQLUtils.FormatOption(true, true, true));
+            assertEquals(""SELECT SUBSTR(? FROM ? FOR ?)"", //
+                    output);
+        }
+    }
+}",class,
+"    public void test_0() throws Exception {
+        String sql =  ""SELECT SUBSTR('12345678' FROM 2 FOR 4)"";
+        System.out.println(sql);
+        List<SQLStatement> statementList = SQLUtils.parseStatements(sql, JdbcConstants.MYSQL, true);
+        SQLStatement stmt = statementList.get(0);
+        assertEquals(1, statementList.size());
+        SchemaStatVisitor visitor = SQLUtils.createSchemaStatVisitor(JdbcConstants.MYSQL);
+        stmt.accept(visitor);
+//        System.out.println(""Tables : "" + visitor.getTables());
+        System.out.println(""fields : "" + visitor.getColumns());
+//        System.out.println(""coditions : "" + visitor.getConditions());
+//        System.out.println(""orderBy : "" + visitor.getOrderByColumns());
+//        assertEquals(1, visitor.getTables().size());
+//        assertEquals(1, visitor.getColumns().size());
+//        assertEquals(0, visitor.getConditions().size());
+//        assertEquals(0, visitor.getOrderByColumns().size());
+        {
+            String output = SQLUtils.toMySqlString(stmt);
+            assertEquals(""SELECT SUBSTR('12345678' FROM 2 FOR 4)"", //
+                                output);
+        }
+        {
+            String output = SQLUtils.toMySqlString(stmt, SQLUtils.DEFAULT_LCASE_FORMAT_OPTION);
+            assertEquals(""select SUBSTR('12345678' from 2 for 4)"", //
+                                output);
+        }
+        {
+            String output = SQLUtils.toMySqlString(stmt, new SQLUtils.FormatOption(true, true, true));
+            assertEquals(""SELECT SUBSTR(? FROM ? FOR ?)"", //
+                    output);
+        }
+    }",method,
+"public class VcsRootIterator {
+  // folder path to files to be excluded
+  private final Map<String, MyRootFilter> myOtherVcsFolders;
+  private final FileIndexFacade myExcludedFileIndex;
+  private final ProjectLevelVcsManager myVcsManager;
+  private final Project myProject;
+  public VcsRootIterator(final Project project, final AbstractVcs vcs) {
+    myProject = project;
+    myVcsManager = ProjectLevelVcsManager.getInstance(project);
+    myOtherVcsFolders = new HashMap<>();
+    myExcludedFileIndex = ServiceManager.getService(project, FileIndexFacade.class);
+    final VcsRoot[] allRoots = myVcsManager.getAllVcsRoots();
+    final VirtualFile[] roots = myVcsManager.getRootsUnderVcs(vcs);
+    for (VirtualFile root : roots) {
+      final MyRootFilter rootPresentFilter = new MyRootFilter(root, vcs.getName());
+      rootPresentFilter.init(allRoots);
+      myOtherVcsFolders.put(root.getUrl(), rootPresentFilter);
+    }
+  }
+  public boolean acceptFolderUnderVcs(final VirtualFile vcsRoot, final VirtualFile file) {
+    final String vcsUrl = vcsRoot.getUrl();
+    final MyRootFilter rootFilter = myOtherVcsFolders.get(vcsUrl);
+    if ((rootFilter != null) && (!rootFilter.accept(file))) {
+      return false;
+    }
+    return !isIgnoredByVcs(myVcsManager, myProject, file);
+  }
+  private static boolean isIgnoredByVcs(final ProjectLevelVcsManager vcsManager, final Project project, final VirtualFile file) {
+    return ReadAction.compute(() -> project.isDisposed() || vcsManager.isIgnored(file));
+  }
+  private static class MyRootFilter {
+    private final VirtualFile myRoot;
+    private final String myVcsName;
+    // virtual file URLs
+    private final List<String> myExcludedByOthers;
+    private MyRootFilter(final VirtualFile root, final String vcsName) {
+      myRoot = root;
+      myVcsName = vcsName;
+      myExcludedByOthers = new LinkedList<>();
+    }
+    private void init(final VcsRoot[] allRoots) {
+      final String ourPath = myRoot.getUrl();
+      for (VcsRoot root : allRoots) {
+        final AbstractVcs vcs = root.getVcs();
+        if (vcs == null || Comparing.equal(vcs.getName(), myVcsName)) continue;
+        final VirtualFile path = root.getPath();
+        if (path != null) {
+          final String url = path.getUrl();
+          if (url.startsWith(ourPath)) {
+            myExcludedByOthers.add(url);
+          }
+        }
+      }
+      Collections.sort(myExcludedByOthers, StringLenComparator.getDescendingInstance());
+    }
+    public boolean accept(final VirtualFile vf) {
+      final String url = vf.getUrl();
+      for (String excludedByOtherVcs : myExcludedByOthers) {
+        // use the fact that they are sorted
+        if (url.length() > excludedByOtherVcs.length()) return true;
+        if (url.startsWith(excludedByOtherVcs)) return false;
+      }
+      return true;
+    }
+  }
+  public static void iterateVfUnderVcsRoot(final Project project,
+                                           final VirtualFile root,
+                                           final Processor<VirtualFile> processor) {
+    final MyRootIterator rootIterator = new MyRootIterator(project, root, null, processor, null);
+    rootIterator.iterate();
+  }
+  public static void iterateVcsRoot(final Project project,
+                                    final VirtualFile root,
+                                    final Processor<FilePath> processor) {
+    iterateVcsRoot(project, root, processor, null);
+  }
+  public static void iterateVcsRoot(final Project project,
+                                    final VirtualFile root,
+                                    final Processor<FilePath> processor,
+                                    @Nullable VirtualFileFilter directoryFilter) {
+    final MyRootIterator rootIterator = new MyRootIterator(project, root, processor, null, directoryFilter);
+    rootIterator.iterate();
+  }
+  private static class MyRootIterator {
+    private final Project myProject;
+    private final Processor<FilePath> myPathProcessor;
+    private final Processor<VirtualFile> myFileProcessor;
+    @Nullable private final VirtualFileFilter myDirectoryFilter;
+    private final VirtualFile myRoot;
+    private final MyRootFilter myRootPresentFilter;
+    private final ProjectLevelVcsManager myVcsManager;
+    private MyRootIterator(final Project project,
+                           final VirtualFile root,
+                           @Nullable final Processor<FilePath> pathProcessor,
+                           @Nullable final Processor<VirtualFile> fileProcessor,
+                           @Nullable VirtualFileFilter directoryFilter) {
+      myProject = project;
+      myPathProcessor = pathProcessor;
+      myFileProcessor = fileProcessor;
+      myDirectoryFilter = directoryFilter;
+      myRoot = root;
+      myVcsManager = ProjectLevelVcsManager.getInstance(project);
+      final AbstractVcs vcs = myVcsManager.getVcsFor(root);
+      myRootPresentFilter = vcs == null ? null : new MyRootFilter(root, vcs.getName());
+      if (myRootPresentFilter != null) {
+        myRootPresentFilter.init(myVcsManager.getAllVcsRoots());
+      }
+    }
+    public void iterate() {
+      VfsUtilCore.visitChildrenRecursively(myRoot, new VirtualFileVisitor(VirtualFileVisitor.NO_FOLLOW_SYMLINKS) {
+        @Override
+        public void afterChildrenVisited(@NotNull VirtualFile file) {
+          if (myDirectoryFilter != null) {
+            myDirectoryFilter.afterChildrenVisited(file);
+          }
+        }
+        @NotNull
+        @Override
+        public Result visitFileEx(@NotNull VirtualFile file) {
+          if (isIgnoredByVcs(myVcsManager, myProject, file)) return SKIP_CHILDREN;
+          if (myRootPresentFilter != null && !myRootPresentFilter.accept(file)) return SKIP_CHILDREN;
+          if (myProject.isDisposed() || !process(file)) return skipTo(myRoot);
+          if (myDirectoryFilter != null && file.isDirectory() && !myDirectoryFilter.shouldGoIntoDirectory(file)) return SKIP_CHILDREN;
+          return CONTINUE;
+        }
+      });
+    }
+    private boolean process(VirtualFile current) {
+      if (myPathProcessor != null) {
+        return myPathProcessor.process(VcsUtil.getFilePath(current));
+      }
+      else if (myFileProcessor != null) {
+        return myFileProcessor.process(current);
+      }
+      return false;
+    }
+  }
+}",class,
+"  private static class MyRootFilter {
+    private final VirtualFile myRoot;
+    private final String myVcsName;
+    // virtual file URLs
+    private final List<String> myExcludedByOthers;
+    private MyRootFilter(final VirtualFile root, final String vcsName) {
+      myRoot = root;
+      myVcsName = vcsName;
+      myExcludedByOthers = new LinkedList<>();
+    }
+    private void init(final VcsRoot[] allRoots) {
+      final String ourPath = myRoot.getUrl();
+      for (VcsRoot root : allRoots) {
+        final AbstractVcs vcs = root.getVcs();
+        if (vcs == null || Comparing.equal(vcs.getName(), myVcsName)) continue;
+        final VirtualFile path = root.getPath();
+        if (path != null) {
+          final String url = path.getUrl();
+          if (url.startsWith(ourPath)) {
+            myExcludedByOthers.add(url);
+          }
+        }
+      }
+      Collections.sort(myExcludedByOthers, StringLenComparator.getDescendingInstance());
+    }
+    public boolean accept(final VirtualFile vf) {
+      final String url = vf.getUrl();
+      for (String excludedByOtherVcs : myExcludedByOthers) {
+        // use the fact that they are sorted
+        if (url.length() > excludedByOtherVcs.length()) return true;
+        if (url.startsWith(excludedByOtherVcs)) return false;
+      }
+      return true;
+    }
+  }",class,
+"  private static class MyRootIterator {
+    private final Project myProject;
+    private final Processor<FilePath> myPathProcessor;
+    private final Processor<VirtualFile> myFileProcessor;
+    @Nullable private final VirtualFileFilter myDirectoryFilter;
+    private final VirtualFile myRoot;
+    private final MyRootFilter myRootPresentFilter;
+    private final ProjectLevelVcsManager myVcsManager;
+    private MyRootIterator(final Project project,
+                           final VirtualFile root,
+                           @Nullable final Processor<FilePath> pathProcessor,
+                           @Nullable final Processor<VirtualFile> fileProcessor,
+                           @Nullable VirtualFileFilter directoryFilter) {
+      myProject = project;
+      myPathProcessor = pathProcessor;
+      myFileProcessor = fileProcessor;
+      myDirectoryFilter = directoryFilter;
+      myRoot = root;
+      myVcsManager = ProjectLevelVcsManager.getInstance(project);
+      final AbstractVcs vcs = myVcsManager.getVcsFor(root);
+      myRootPresentFilter = vcs == null ? null : new MyRootFilter(root, vcs.getName());
+      if (myRootPresentFilter != null) {
+        myRootPresentFilter.init(myVcsManager.getAllVcsRoots());
+      }
+    }
+    public void iterate() {
+      VfsUtilCore.visitChildrenRecursively(myRoot, new VirtualFileVisitor(VirtualFileVisitor.NO_FOLLOW_SYMLINKS) {
+        @Override
+        public void afterChildrenVisited(@NotNull VirtualFile file) {
+          if (myDirectoryFilter != null) {
+            myDirectoryFilter.afterChildrenVisited(file);
+          }
+        }
+        @NotNull
+        @Override
+        public Result visitFileEx(@NotNull VirtualFile file) {
+          if (isIgnoredByVcs(myVcsManager, myProject, file)) return SKIP_CHILDREN;
+          if (myRootPresentFilter != null && !myRootPresentFilter.accept(file)) return SKIP_CHILDREN;
+          if (myProject.isDisposed() || !process(file)) return skipTo(myRoot);
+          if (myDirectoryFilter != null && file.isDirectory() && !myDirectoryFilter.shouldGoIntoDirectory(file)) return SKIP_CHILDREN;
+          return CONTINUE;
+        }
+      });
+    }
+    private boolean process(VirtualFile current) {
+      if (myPathProcessor != null) {
+        return myPathProcessor.process(VcsUtil.getFilePath(current));
+      }
+      else if (myFileProcessor != null) {
+        return myFileProcessor.process(current);
+      }
+      return false;
+    }
+  }",class,
+"  public VcsRootIterator(final Project project, final AbstractVcs vcs) {
+    myProject = project;
+    myVcsManager = ProjectLevelVcsManager.getInstance(project);
+    myOtherVcsFolders = new HashMap<>();
+    myExcludedFileIndex = ServiceManager.getService(project, FileIndexFacade.class);
+    final VcsRoot[] allRoots = myVcsManager.getAllVcsRoots();
+    final VirtualFile[] roots = myVcsManager.getRootsUnderVcs(vcs);
+    for (VirtualFile root : roots) {
+      final MyRootFilter rootPresentFilter = new MyRootFilter(root, vcs.getName());
+      rootPresentFilter.init(allRoots);
+      myOtherVcsFolders.put(root.getUrl(), rootPresentFilter);
+    }
+  }",method,
+"    for (VirtualFile root : roots) {
+      final MyRootFilter rootPresentFilter = new MyRootFilter(root, vcs.getName());
+      rootPresentFilter.init(allRoots);
+      myOtherVcsFolders.put(root.getUrl(), rootPresentFilter);
+    }",method,
+"  public boolean acceptFolderUnderVcs(final VirtualFile vcsRoot, final VirtualFile file) {
+    final String vcsUrl = vcsRoot.getUrl();
+    final MyRootFilter rootFilter = myOtherVcsFolders.get(vcsUrl);
+    if ((rootFilter != null) && (!rootFilter.accept(file))) {
+      return false;
+    }
+    return !isIgnoredByVcs(myVcsManager, myProject, file);
+  }",method,
+"  private static boolean isIgnoredByVcs(final ProjectLevelVcsManager vcsManager, final Project project, final VirtualFile file) {
+    return ReadAction.compute(() -> project.isDisposed() || vcsManager.isIgnored(file));
+  }",method,
+"    private MyRootFilter(final VirtualFile root, final String vcsName) {
+      myRoot = root;
+      myVcsName = vcsName;
+      myExcludedByOthers = new LinkedList<>();
+    }",method,
+"    private void init(final VcsRoot[] allRoots) {
+      final String ourPath = myRoot.getUrl();
+      for (VcsRoot root : allRoots) {
+        final AbstractVcs vcs = root.getVcs();
+        if (vcs == null || Comparing.equal(vcs.getName(), myVcsName)) continue;
+        final VirtualFile path = root.getPath();
+        if (path != null) {
+          final String url = path.getUrl();
+          if (url.startsWith(ourPath)) {
+            myExcludedByOthers.add(url);
+          }
+        }
+      }
+      Collections.sort(myExcludedByOthers, StringLenComparator.getDescendingInstance());
+    }",method,
+"      for (VcsRoot root : allRoots) {
+        final AbstractVcs vcs = root.getVcs();
+        if (vcs == null || Comparing.equal(vcs.getName(), myVcsName)) continue;
+        final VirtualFile path = root.getPath();
+        if (path != null) {
+          final String url = path.getUrl();
+          if (url.startsWith(ourPath)) {
+            myExcludedByOthers.add(url);
+          }
+        }
+      }",method,
+"        if (path != null) {
+          final String url = path.getUrl();
+          if (url.startsWith(ourPath)) {
+            myExcludedByOthers.add(url);
+          }
+        }",method,
+"    public boolean accept(final VirtualFile vf) {
+      final String url = vf.getUrl();
+      for (String excludedByOtherVcs : myExcludedByOthers) {
+        // use the fact that they are sorted
+        if (url.length() > excludedByOtherVcs.length()) return true;
+        if (url.startsWith(excludedByOtherVcs)) return false;
+      }
+      return true;
+    }",method,
+"      for (String excludedByOtherVcs : myExcludedByOthers) {
+        // use the fact that they are sorted
+        if (url.length() > excludedByOtherVcs.length()) return true;
+        if (url.startsWith(excludedByOtherVcs)) return false;
+      }",method,
+"  public static void iterateVfUnderVcsRoot(final Project project,
+                                           final VirtualFile root,
+                                           final Processor<VirtualFile> processor) {
+    final MyRootIterator rootIterator = new MyRootIterator(project, root, null, processor, null);
+    rootIterator.iterate();
+  }",method,
+"  public static void iterateVcsRoot(final Project project,
+                                    final VirtualFile root,
+                                    final Processor<FilePath> processor) {
+    iterateVcsRoot(project, root, processor, null);
+  }",method,
+"  public static void iterateVcsRoot(final Project project,
+                                    final VirtualFile root,
+                                    final Processor<FilePath> processor,
+                                    @Nullable VirtualFileFilter directoryFilter) {
+    final MyRootIterator rootIterator = new MyRootIterator(project, root, processor, null, directoryFilter);
+    rootIterator.iterate();
+  }",method,
+"    private MyRootIterator(final Project project,
+                           final VirtualFile root,
+                           @Nullable final Processor<FilePath> pathProcessor,
+                           @Nullable final Processor<VirtualFile> fileProcessor,
+                           @Nullable VirtualFileFilter directoryFilter) {
+      myProject = project;
+      myPathProcessor = pathProcessor;
+      myFileProcessor = fileProcessor;
+      myDirectoryFilter = directoryFilter;
+      myRoot = root;
+      myVcsManager = ProjectLevelVcsManager.getInstance(project);
+      final AbstractVcs vcs = myVcsManager.getVcsFor(root);
+      myRootPresentFilter = vcs == null ? null : new MyRootFilter(root, vcs.getName());
+      if (myRootPresentFilter != null) {
+        myRootPresentFilter.init(myVcsManager.getAllVcsRoots());
+      }
+    }",method,
+"      if (myRootPresentFilter != null) {
+        myRootPresentFilter.init(myVcsManager.getAllVcsRoots());
+      }",method,
+"    public void iterate() {
+      VfsUtilCore.visitChildrenRecursively(myRoot, new VirtualFileVisitor(VirtualFileVisitor.NO_FOLLOW_SYMLINKS) {
+        @Override
+        public void afterChildrenVisited(@NotNull VirtualFile file) {
+          if (myDirectoryFilter != null) {
+            myDirectoryFilter.afterChildrenVisited(file);
+          }
+        }
+        @NotNull
+        @Override
+        public Result visitFileEx(@NotNull VirtualFile file) {
+          if (isIgnoredByVcs(myVcsManager, myProject, file)) return SKIP_CHILDREN;
+          if (myRootPresentFilter != null && !myRootPresentFilter.accept(file)) return SKIP_CHILDREN;
+          if (myProject.isDisposed() || !process(file)) return skipTo(myRoot);
+          if (myDirectoryFilter != null && file.isDirectory() && !myDirectoryFilter.shouldGoIntoDirectory(file)) return SKIP_CHILDREN;
+          return CONTINUE;
+        }
+      });
+    }",method,
+"      VfsUtilCore.visitChildrenRecursively(myRoot, new VirtualFileVisitor(VirtualFileVisitor.NO_FOLLOW_SYMLINKS) {
+        @Override
+        public void afterChildrenVisited(@NotNull VirtualFile file) {
+          if (myDirectoryFilter != null) {
+            myDirectoryFilter.afterChildrenVisited(file);
+          }
+        }
+        @NotNull
+        @Override
+        public Result visitFileEx(@NotNull VirtualFile file) {
+          if (isIgnoredByVcs(myVcsManager, myProject, file)) return SKIP_CHILDREN;
+          if (myRootPresentFilter != null && !myRootPresentFilter.accept(file)) return SKIP_CHILDREN;
+          if (myProject.isDisposed() || !process(file)) return skipTo(myRoot);
+          if (myDirectoryFilter != null && file.isDirectory() && !myDirectoryFilter.shouldGoIntoDirectory(file)) return SKIP_CHILDREN;
+          return CONTINUE;
+        }
+      }",method,
+"        @Override
+        public void afterChildrenVisited(@NotNull VirtualFile file) {
+          if (myDirectoryFilter != null) {
+            myDirectoryFilter.afterChildrenVisited(file);
+          }
+        }",method,
+"          if (myDirectoryFilter != null) {
+            myDirectoryFilter.afterChildrenVisited(file);
+          }",method,
+"        @NotNull
+        @Override
+        public Result visitFileEx(@NotNull VirtualFile file) {
+          if (isIgnoredByVcs(myVcsManager, myProject, file)) return SKIP_CHILDREN;
+          if (myRootPresentFilter != null && !myRootPresentFilter.accept(file)) return SKIP_CHILDREN;
+          if (myProject.isDisposed() || !process(file)) return skipTo(myRoot);
+          if (myDirectoryFilter != null && file.isDirectory() && !myDirectoryFilter.shouldGoIntoDirectory(file)) return SKIP_CHILDREN;
+          return CONTINUE;
+        }",method,
+"    private boolean process(VirtualFile current) {
+      if (myPathProcessor != null) {
+        return myPathProcessor.process(VcsUtil.getFilePath(current));
+      }
+      else if (myFileProcessor != null) {
+        return myFileProcessor.process(current);
+      }
+      return false;
+    }",method,
+"      if (myPathProcessor != null) {
+        return myPathProcessor.process(VcsUtil.getFilePath(current));
+      }",method,
+"      else if (myFileProcessor != null) {
+        return myFileProcessor.process(current);
+      }",method,
+"public class ProgressBarShadowNode extends LayoutShadowNode implements YogaMeasureFunction {
+  private String mStyle = ReactProgressBarViewManager.DEFAULT_STYLE;
+  private final SparseIntArray mHeight = new SparseIntArray();
+  private final SparseIntArray mWidth = new SparseIntArray();
+  private final Set<Integer> mMeasured = new HashSet<>();
+  public ProgressBarShadowNode() {
+    setMeasureFunction(this);
+  }
+  public @Nullable String getStyle() {
+    return mStyle;
+  }
+  @ReactProp(name = ReactProgressBarViewManager.PROP_STYLE)
+  public void setStyle(@Nullable String style) {
+    mStyle = style == null ? ReactProgressBarViewManager.DEFAULT_STYLE : style;
+  }
+  @Override
+  public long measure(
+      YogaNode node,
+      float width,
+      YogaMeasureMode widthMode,
+      float height,
+      YogaMeasureMode heightMode) {
+    final int style = ReactProgressBarViewManager.getStyleFromString(getStyle());
+    if (!mMeasured.contains(style)) {
+      ProgressBar progressBar = ReactProgressBarViewManager.createProgressBar(getThemedContext(), style);
+      final int spec = View.MeasureSpec.makeMeasureSpec(
+          ViewGroup.LayoutParams.WRAP_CONTENT,
+          View.MeasureSpec.UNSPECIFIED);
+      progressBar.measure(spec, spec);
+      mHeight.put(style, progressBar.getMeasuredHeight());
+      mWidth.put(style, progressBar.getMeasuredWidth());
+      mMeasured.add(style);
+    }
+    return YogaMeasureOutput.make(mWidth.get(style), mHeight.get(style));
+  }
+}",class,
+"  public ProgressBarShadowNode() {
+    setMeasureFunction(this);
+  }",method,
+"  @ReactProp(name = ReactProgressBarViewManager.PROP_STYLE)
+  public void setStyle(@Nullable String style) {
+    mStyle = style == null ? ReactProgressBarViewManager.DEFAULT_STYLE : style;
+  }",method,
+"  @Override
+  public long measure(
+      YogaNode node,
+      float width,
+      YogaMeasureMode widthMode,
+      float height,
+      YogaMeasureMode heightMode) {
+    final int style = ReactProgressBarViewManager.getStyleFromString(getStyle());
+    if (!mMeasured.contains(style)) {
+      ProgressBar progressBar = ReactProgressBarViewManager.createProgressBar(getThemedContext(), style);
+      final int spec = View.MeasureSpec.makeMeasureSpec(
+          ViewGroup.LayoutParams.WRAP_CONTENT,
+          View.MeasureSpec.UNSPECIFIED);
+      progressBar.measure(spec, spec);
+      mHeight.put(style, progressBar.getMeasuredHeight());
+      mWidth.put(style, progressBar.getMeasuredWidth());
+      mMeasured.add(style);
+    }
+    return YogaMeasureOutput.make(mWidth.get(style), mHeight.get(style));
+  }",method,
+"public class SvnKitBrowseClient extends BaseSvnClient implements BrowseClient {
+  @Override
+  public void list(@NotNull SvnTarget target,
+                   @Nullable SVNRevision revision,
+                   @Nullable Depth depth,
+                   @Nullable DirectoryEntryConsumer handler) throws VcsException {
+    assertUrl(target);
+    SVNLogClient client = getLogClient();
+    ISVNDirEntryHandler wrappedHandler = wrapHandler(handler);
+    client.setIgnoreExternals(true);
+    try {
+      if (target.isFile()) {
+        client.doList(target.getFile(), target.getPegRevision(), notNullize(revision), true, toDepth(depth), SVNDirEntry.DIRENT_ALL, wrappedHandler);
+      }
+      else {
+        client.doList(target.getURL(), target.getPegRevision(), notNullize(revision), true, toDepth(depth), SVNDirEntry.DIRENT_ALL, wrappedHandler);
+      }
+    }
+    catch (SVNException e) {
+      throw new SvnBindException(e);
+    }
+  }
+  @Override
+  public long createDirectory(@NotNull SvnTarget target, @NotNull String message, boolean makeParents) throws VcsException {
+    assertUrl(target);
+    try {
+      SVNCommitInfo commitInfo =
+        myVcs.getSvnKitManager().createCommitClient().doMkDir(new SVNURL[]{target.getURL()}, message, null, makeParents);
+      return commitInfo.getNewRevision();
+    }
+    catch (SVNException e) {
+      throw new SvnBindException(e);
+    }
+  }
+  @NotNull
+  private SVNLogClient getLogClient() {
+    ISVNAuthenticationManager authManager = myIsActive
+                                            ? myVcs.getSvnConfiguration().getInteractiveManager(myVcs)
+                                            : myVcs.getSvnConfiguration().getPassiveAuthenticationManager(myVcs);
+    return myVcs.getSvnKitManager().createLogClient(authManager);
+  }
+  @Nullable
+  private static ISVNDirEntryHandler wrapHandler(@Nullable DirectoryEntryConsumer handler) {
+    return handler == null ? null : new SkipEmptyNameDirectoriesHandler(handler);
+  }
+  public static class SkipEmptyNameDirectoriesHandler implements ISVNDirEntryHandler {
+    @NotNull private final DirectoryEntryConsumer handler;
+    public SkipEmptyNameDirectoriesHandler(@NotNull DirectoryEntryConsumer handler) {
+      this.handler = handler;
+    }
+    @Override
+    public void handleDirEntry(SVNDirEntry dirEntry) throws SVNException {
+      if (!isEmptyNameDirectory(dirEntry)) {
+        handler.consume(DirectoryEntry.create(dirEntry));
+      }
+    }
+    private static boolean isEmptyNameDirectory(@NotNull SVNDirEntry dirEntry) {
+      return SVNNodeKind.DIR.equals(dirEntry.getKind()) && StringUtil.isEmpty(dirEntry.getName());
+    }
+  }
+}",class,
+"  public static class SkipEmptyNameDirectoriesHandler implements ISVNDirEntryHandler {
+    @NotNull private final DirectoryEntryConsumer handler;
+    public SkipEmptyNameDirectoriesHandler(@NotNull DirectoryEntryConsumer handler) {
+      this.handler = handler;
+    }
+    @Override
+    public void handleDirEntry(SVNDirEntry dirEntry) throws SVNException {
+      if (!isEmptyNameDirectory(dirEntry)) {
+        handler.consume(DirectoryEntry.create(dirEntry));
+      }
+    }
+    private static boolean isEmptyNameDirectory(@NotNull SVNDirEntry dirEntry) {
+      return SVNNodeKind.DIR.equals(dirEntry.getKind()) && StringUtil.isEmpty(dirEntry.getName());
+    }
+  }",class,
+"  @Override
+  public void list(@NotNull SvnTarget target,
+                   @Nullable SVNRevision revision,
+                   @Nullable Depth depth,
+                   @Nullable DirectoryEntryConsumer handler) throws VcsException {
+    assertUrl(target);
+    SVNLogClient client = getLogClient();
+    ISVNDirEntryHandler wrappedHandler = wrapHandler(handler);
+    client.setIgnoreExternals(true);
+    try {
+      if (target.isFile()) {
+        client.doList(target.getFile(), target.getPegRevision(), notNullize(revision), true, toDepth(depth), SVNDirEntry.DIRENT_ALL, wrappedHandler);
+      }
+      else {
+        client.doList(target.getURL(), target.getPegRevision(), notNullize(revision), true, toDepth(depth), SVNDirEntry.DIRENT_ALL, wrappedHandler);
+      }
+    }
+    catch (SVNException e) {
+      throw new SvnBindException(e);
+    }
+  }",method,
+"    catch (SVNException e) {
+      throw new SvnBindException(e);
+    }",method,
+"  @Override
+  public long createDirectory(@NotNull SvnTarget target, @NotNull String message, boolean makeParents) throws VcsException {
+    assertUrl(target);
+    try {
+      SVNCommitInfo commitInfo =
+        myVcs.getSvnKitManager().createCommitClient().doMkDir(new SVNURL[]{target.getURL()}, message, null, makeParents);
+      return commitInfo.getNewRevision();
+    }
+    catch (SVNException e) {
+      throw new SvnBindException(e);
+    }
+  }",method,
+"    catch (SVNException e) {
+      throw new SvnBindException(e);
+    }",method,

@@ -1,0 +1,1195 @@
+code_snippet,type,score
+"    if (call != null) {
+      PyArgumentList arglist = call.getArgumentList();
+      if (arglist != null) {
+        PyExpression[] accessors = new PyExpression[3];
+        String doc = null;
+        int position = 0;
+        String[] keywords = new String[] { ""fget"", ""fset"", ""fdel"", ""doc"" };
+        for (PyExpression arg: arglist.getArguments()) {
+          int index = -1;
+          if (arg instanceof PyKeywordArgument) {
+            String keyword = ((PyKeywordArgument)arg).getKeyword();
+            index = ArrayUtil.indexOf(keywords, keyword);
+            if (index < 0) {
+              continue;
+            }
+            position = -1;
+          }
+          else if (position >= 0) {
+            index = position;
+            position++;
+          }
+          if (index >= 0) {
+            arg = PyUtil.peelArgument(arg);
+            if (index < 3) {
+              accessors [index] = arg;
+            }
+            else if (index == 3 && arg instanceof PyStringLiteralExpression) {
+              doc = ((PyStringLiteralExpression)arg).getStringValue();
+            }
+          }
+        }
+        target.myGetter = target.translate(accessors[0]);
+        target.mySetter = target.translate(accessors[1]);
+        target.myDeleter = target.translate(accessors[2]);
+        target.myDoc = doc;
+        return true;
+      }
+    }",method,
+"      if (arglist != null) {
+        PyExpression[] accessors = new PyExpression[3];
+        String doc = null;
+        int position = 0;
+        String[] keywords = new String[] { ""fget"", ""fset"", ""fdel"", ""doc"" };
+        for (PyExpression arg: arglist.getArguments()) {
+          int index = -1;
+          if (arg instanceof PyKeywordArgument) {
+            String keyword = ((PyKeywordArgument)arg).getKeyword();
+            index = ArrayUtil.indexOf(keywords, keyword);
+            if (index < 0) {
+              continue;
+            }
+            position = -1;
+          }
+          else if (position >= 0) {
+            index = position;
+            position++;
+          }
+          if (index >= 0) {
+            arg = PyUtil.peelArgument(arg);
+            if (index < 3) {
+              accessors [index] = arg;
+            }
+            else if (index == 3 && arg instanceof PyStringLiteralExpression) {
+              doc = ((PyStringLiteralExpression)arg).getStringValue();
+            }
+          }
+        }
+        target.myGetter = target.translate(accessors[0]);
+        target.mySetter = target.translate(accessors[1]);
+        target.myDeleter = target.translate(accessors[2]);
+        target.myDoc = doc;
+        return true;
+      }",method,
+"          if (arg instanceof PyKeywordArgument) {
+            String keyword = ((PyKeywordArgument)arg).getKeyword();
+            index = ArrayUtil.indexOf(keywords, keyword);
+            if (index < 0) {
+              continue;
+            }
+            position = -1;
+          }",method,
+"            if (index < 0) {
+              continue;
+            }",method,
+"          else if (position >= 0) {
+            index = position;
+            position++;
+          }",method,
+"          if (index >= 0) {
+            arg = PyUtil.peelArgument(arg);
+            if (index < 3) {
+              accessors [index] = arg;
+            }
+            else if (index == 3 && arg instanceof PyStringLiteralExpression) {
+              doc = ((PyStringLiteralExpression)arg).getStringValue();
+            }
+          }",method,
+"            if (index < 3) {
+              accessors [index] = arg;
+            }",method,
+"            else if (index == 3 && arg instanceof PyStringLiteralExpression) {
+              doc = ((PyStringLiteralExpression)arg).getStringValue();
+            }",method,
+"public class UnsizedQueue {
+    private final ReentrantLock lock = new ReentrantLock();
+    private final Condition canTake = lock.newCondition();
+    private Item addEnd;
+    private Item takeEnd;
+    private int size;
+    public void add(Object item) {
+        lock.lock();
+        try {
+            final Item newItem = new Item(item);
+            if (addEnd != null) {
+                addEnd.setNextToTake(newItem);
+            }
+            addEnd = newItem;
+            if (takeEnd == null) {
+                takeEnd = addEnd;
+            }
+            size++;
+            canTake.signal();
+        } finally {
+            lock.unlock();
+        }
+    }
+    public Object poll() {
+        lock.lock();
+        try {
+            if (takeEnd == null) {
+                return null;
+            } else {
+                return doTake();
+            }
+        } finally {
+            lock.unlock();
+        }
+    }
+    public Object take() throws InterruptedException {
+        lock.lock();
+        try {
+            while (takeEnd == null) {
+                canTake.await();
+            }
+            return doTake();
+        } finally {
+            lock.unlock();
+        }
+    }
+    public Object poll(long timeoutMilliseconds) throws InterruptedException {
+        lock.lock();
+        try {
+            if (takeEnd == null) {
+                if (!canTake.await(timeoutMilliseconds, TimeUnit.MILLISECONDS)) {
+                    return null;
+                }
+            }
+            return doTake();
+        } finally {
+            lock.unlock();
+        }
+    }
+    private Object doTake() {
+        assert lock.isHeldByCurrentThread();
+        final Object item = takeEnd.getItem();
+        final Item nextToTake = takeEnd.getNextToTake();
+        takeEnd.clearNextReference();
+        takeEnd = nextToTake;
+        if (takeEnd == null) {
+            addEnd = null;
+        }
+        size--;
+        return item;
+    }
+    public int size() {
+        lock.lock();
+        try {
+            return size;
+        } finally {
+            lock.unlock();
+        }
+    }
+    public boolean isEmpty() {
+        return size() == 0;
+    }
+    public void clear() {
+        lock.lock();
+        try {
+            while (takeEnd != null) {
+                final Item next = takeEnd.getNextToTake();
+                takeEnd.clearNextReference();
+                takeEnd = next;
+            }
+            addEnd = null;
+            takeEnd = null;
+            size = 0;
+        } finally {
+            lock.unlock();
+        }
+    }
+    public int getNumberWaitingToTake() {
+        lock.lock();
+        try {
+            return lock.getWaitQueueLength(canTake);
+        } finally {
+            lock.unlock();
+        }
+    }
+    public Collection<Object> getContents() {
+        final Collection<Object> objects = new ArrayList<>();
+        lock.lock();
+        try {
+            Item iterator = takeEnd;
+            while (iterator != null) {
+                objects.add(iterator.getItem());
+                iterator = iterator.getNextToTake();
+            }
+        } finally {
+            lock.unlock();
+        }
+        return objects;
+    }
+    private class Item {
+        private final Object item;
+        private Item nextToTake;
+        public Item(Object item) {
+            this.item = item;
+        }
+        public Object getItem() {
+            return item;
+        }
+        public void setNextToTake(Item nextToTake) {
+            this.nextToTake = nextToTake;
+        }
+        public Item getNextToTake() {
+            return nextToTake;
+        }
+        public void clearNextReference() {
+            nextToTake = null;
+        }
+    }
+}",class,
+"    private class Item {
+        private final Object item;
+        private Item nextToTake;
+        public Item(Object item) {
+            this.item = item;
+        }
+        public Object getItem() {
+            return item;
+        }
+        public void setNextToTake(Item nextToTake) {
+            this.nextToTake = nextToTake;
+        }
+        public Item getNextToTake() {
+            return nextToTake;
+        }
+        public void clearNextReference() {
+            nextToTake = null;
+        }
+    }",class,
+"    public void add(Object item) {
+        lock.lock();
+        try {
+            final Item newItem = new Item(item);
+            if (addEnd != null) {
+                addEnd.setNextToTake(newItem);
+            }
+            addEnd = newItem;
+            if (takeEnd == null) {
+                takeEnd = addEnd;
+            }
+            size++;
+            canTake.signal();
+        } finally {
+            lock.unlock();
+        }
+    }",method,
+"            if (addEnd != null) {
+                addEnd.setNextToTake(newItem);
+            }",method,
+"            if (takeEnd == null) {
+                takeEnd = addEnd;
+            }",method,
+"    public Object poll() {
+        lock.lock();
+        try {
+            if (takeEnd == null) {
+                return null;
+            } else {
+                return doTake();
+            }
+        } finally {
+            lock.unlock();
+        }
+    }",method,
+"            if (takeEnd == null) {
+                return null;
+            }",method,
+"    public Object take() throws InterruptedException {
+        lock.lock();
+        try {
+            while (takeEnd == null) {
+                canTake.await();
+            }
+            return doTake();
+        } finally {
+            lock.unlock();
+        }
+    }",method,
+"            while (takeEnd == null) {
+                canTake.await();
+            }",method,
+"    public Object poll(long timeoutMilliseconds) throws InterruptedException {
+        lock.lock();
+        try {
+            if (takeEnd == null) {
+                if (!canTake.await(timeoutMilliseconds, TimeUnit.MILLISECONDS)) {
+                    return null;
+                }
+            }
+            return doTake();
+        } finally {
+            lock.unlock();
+        }
+    }",method,
+"            if (takeEnd == null) {
+                if (!canTake.await(timeoutMilliseconds, TimeUnit.MILLISECONDS)) {
+                    return null;
+                }
+            }",method,
+"    private Object doTake() {
+        assert lock.isHeldByCurrentThread();
+        final Object item = takeEnd.getItem();
+        final Item nextToTake = takeEnd.getNextToTake();
+        takeEnd.clearNextReference();
+        takeEnd = nextToTake;
+        if (takeEnd == null) {
+            addEnd = null;
+        }
+        size--;
+        return item;
+    }",method,
+"        if (takeEnd == null) {
+            addEnd = null;
+        }",method,
+"    public int size() {
+        lock.lock();
+        try {
+            return size;
+        } finally {
+            lock.unlock();
+        }
+    }",method,
+"    public boolean isEmpty() {
+        return size() == 0;
+    }",method,
+"    public void clear() {
+        lock.lock();
+        try {
+            while (takeEnd != null) {
+                final Item next = takeEnd.getNextToTake();
+                takeEnd.clearNextReference();
+                takeEnd = next;
+            }
+            addEnd = null;
+            takeEnd = null;
+            size = 0;
+        } finally {
+            lock.unlock();
+        }
+    }",method,
+"            while (takeEnd != null) {
+                final Item next = takeEnd.getNextToTake();
+                takeEnd.clearNextReference();
+                takeEnd = next;
+            }",method,
+"    public int getNumberWaitingToTake() {
+        lock.lock();
+        try {
+            return lock.getWaitQueueLength(canTake);
+        } finally {
+            lock.unlock();
+        }
+    }",method,
+"    public Collection<Object> getContents() {
+        final Collection<Object> objects = new ArrayList<>();
+        lock.lock();
+        try {
+            Item iterator = takeEnd;
+            while (iterator != null) {
+                objects.add(iterator.getItem());
+                iterator = iterator.getNextToTake();
+            }
+        } finally {
+            lock.unlock();
+        }
+        return objects;
+    }",method,
+"            while (iterator != null) {
+                objects.add(iterator.getItem());
+                iterator = iterator.getNextToTake();
+            }",method,
+"        public Item(Object item) {
+            this.item = item;
+        }",method,
+"        public Object getItem() {
+            return item;
+        }",method,
+"        public void setNextToTake(Item nextToTake) {
+            this.nextToTake = nextToTake;
+        }",method,
+"        public Item getNextToTake() {
+            return nextToTake;
+        }",method,
+"        public void clearNextReference() {
+            nextToTake = null;
+        }",method,
+"public class XsltStylesheetImpl extends XsltElementImpl implements XsltStylesheet {
+  public XsltStylesheetImpl(XmlTag target) {
+    super(target);
+  }
+  @NotNull
+  public XsltParameter[] getParameters() {
+    return convertArray(ResolveUtil.collect(new ParamMatcher(getTag(), null)), XsltParameter.class);
+  }
+  @NotNull
+  public XsltVariable[] getVariables() {
+    return convertArray(ResolveUtil.collect(new ParamMatcher(getTag(), null) {
+      protected boolean isApplicable(XmlTag tag) {
+        return XsltSupport.isVariable(tag);
+      }
+    }), XsltVariable.class);
+  }
+  @NotNull
+  public XsltTemplate[] getTemplates() {
+    final XmlDocument document = PsiTreeUtil.getParentOfType(getTag(), XmlDocument.class);
+    return convertArray(ResolveUtil.collect(new TemplateMatcher(document)), XsltTemplate.class);
+  }
+  @NotNull
+  @Override
+  public XsltFunction[] getFunctions() {
+    final XmlDocument document = PsiTreeUtil.getParentOfType(getTag(), XmlDocument.class);
+    return convertArray(ResolveUtil.collect(new FunctionMatcher(document)), XsltFunction.class);
+  }
+  @Override
+  public String toString() {
+    return ""XsltStylesheet"";
+  }
+  private class FunctionMatcher extends IncludeAwareMatcher {
+    public FunctionMatcher(XmlDocument document) {
+      super(document);
+    }
+    protected boolean matches(XmlTag element) {
+      return XsltSupport.isFunction(element);
+    }
+    protected ResolveUtil.Matcher changeDocument(XmlDocument document) {
+      return new FunctionMatcher(document);
+    }
+    public ResolveUtil.Matcher variantMatcher() {
+      return new FunctionMatcher(myDocument);
+    }
+  }
+}",class,
+"  private class FunctionMatcher extends IncludeAwareMatcher {
+    public FunctionMatcher(XmlDocument document) {
+      super(document);
+    }
+    protected boolean matches(XmlTag element) {
+      return XsltSupport.isFunction(element);
+    }
+    protected ResolveUtil.Matcher changeDocument(XmlDocument document) {
+      return new FunctionMatcher(document);
+    }
+    public ResolveUtil.Matcher variantMatcher() {
+      return new FunctionMatcher(myDocument);
+    }
+  }",class,
+"  public XsltStylesheetImpl(XmlTag target) {
+    super(target);
+  }",method,
+"  @NotNull
+  public XsltParameter[] getParameters() {
+    return convertArray(ResolveUtil.collect(new ParamMatcher(getTag(), null)), XsltParameter.class);
+  }",method,
+"  @NotNull
+  public XsltVariable[] getVariables() {
+    return convertArray(ResolveUtil.collect(new ParamMatcher(getTag(), null) {
+      protected boolean isApplicable(XmlTag tag) {
+        return XsltSupport.isVariable(tag);
+      }
+    }), XsltVariable.class);
+  }",method,
+"      protected boolean isApplicable(XmlTag tag) {
+        return XsltSupport.isVariable(tag);
+      }",method,
+"  @NotNull
+  public XsltTemplate[] getTemplates() {
+    final XmlDocument document = PsiTreeUtil.getParentOfType(getTag(), XmlDocument.class);
+    return convertArray(ResolveUtil.collect(new TemplateMatcher(document)), XsltTemplate.class);
+  }",method,
+"  @NotNull
+  @Override
+  public XsltFunction[] getFunctions() {
+    final XmlDocument document = PsiTreeUtil.getParentOfType(getTag(), XmlDocument.class);
+    return convertArray(ResolveUtil.collect(new FunctionMatcher(document)), XsltFunction.class);
+  }",method,
+"  @Override
+  public String toString() {
+    return ""XsltStylesheet"";
+  }",method,
+"    public FunctionMatcher(XmlDocument document) {
+      super(document);
+    }",method,
+"    protected boolean matches(XmlTag element) {
+      return XsltSupport.isFunction(element);
+    }",method,
+"    protected ResolveUtil.Matcher changeDocument(XmlDocument document) {
+      return new FunctionMatcher(document);
+    }",method,
+"    public ResolveUtil.Matcher variantMatcher() {
+      return new FunctionMatcher(myDocument);
+    }",method,
+"public class AndEngineTouchExample extends BaseGameActivity {
+	// ===========================================================
+	// Constants
+	// ===========================================================
+	private static final int CAMERA_WIDTH = 480;
+	private static final int CAMERA_HEIGHT = 320;
+	private String tag = ""AndEngineTouchExample"";
+	// ===========================================================
+	// Fields
+	// ===========================================================
+	protected Camera mCamera;
+	protected Scene mMainScene;
+	protected Sprite mIcon;
+	private BuildableTexture mIconTexture;
+	private TextureRegion mIconTextureRegion;
+	// ===========================================================
+	// Constructors
+	// ===========================================================
+	// ===========================================================
+	// Getter & Setter
+	// ===========================================================
+	// ===========================================================
+	// Methods for/from SuperClass/Interfaces
+	// ===========================================================
+	@Override
+	public Engine onLoadEngine() {
+		this.mCamera = new Camera(0, 0, CAMERA_WIDTH, CAMERA_HEIGHT);
+		return new Engine(new EngineOptions(true, ScreenOrientation.LANDSCAPE, new RatioResolutionPolicy(CAMERA_WIDTH, CAMERA_HEIGHT), this.mCamera));
+	}
+	@Override
+	public void onLoadResources() {
+		mIconTexture = new BuildableTexture(128, 128, TextureOptions.BILINEAR_PREMULTIPLYALPHA);
+		mIconTextureRegion = TextureRegionFactory.createFromAsset(this.mIconTexture, this, ""icon.png"");
+		   try {
+			      mIconTexture.build(new BlackPawnTextureBuilder(2));
+			   } catch (final TextureSourcePackingException e) {
+			      Log.d(tag, ""Sprites won't fit in mIconTexture"");
+			   }
+		this.mEngine.getTextureManager().loadTexture(this.mIconTexture);
+	}
+	@Override
+	public Scene onLoadScene() {
+		final Scene scene = new Scene(1);
+		scene.setBackground(new ColorBackground(0.1f, 0.6f, 0.9f));
+		scene.setOnSceneTouchListener(new IOnSceneTouchListener() {
+			@Override
+			public boolean onSceneTouchEvent(final Scene pScene, final TouchEvent pSceneTouchEvent) {
+				switch(pSceneTouchEvent.getAction()) {
+					case TouchEvent.ACTION_DOWN:
+						Toast.makeText(AndEngineTouchExample.this, ""Scene touch DOWN"", Toast.LENGTH_SHORT).show();
+						break;
+					case TouchEvent.ACTION_UP:
+						Toast.makeText(AndEngineTouchExample.this, ""Scene touch UP"", Toast.LENGTH_SHORT).show();
+						break;
+				}
+				return true;
+			}
+		});
+		mIcon = new Sprite(100, 100, this.mIconTextureRegion) {
+			@Override
+			public boolean onAreaTouched(final TouchEvent pAreaTouchEvent, final float pTouchAreaLocalX, final float pTouchAreaLocalY) {
+				switch(pAreaTouchEvent.getAction()) {
+				case TouchEvent.ACTION_DOWN:
+					Toast.makeText(AndEngineTouchExample.this, ""Sprite touch DOWN"", Toast.LENGTH_SHORT).show();
+					break;
+				case TouchEvent.ACTION_UP:
+					Toast.makeText(AndEngineTouchExample.this, ""Sprite touch UP"", Toast.LENGTH_SHORT).show();
+					break;
+				}
+				return true;
+			}
+		};
+		scene.getLastChild().attachChild(mIcon);		
+		scene.registerTouchArea(mIcon);
+		scene.setTouchAreaBindingEnabled(true);
+		return scene;
+	}
+	@Override
+	public void onLoadComplete() {
+	}
+	// ===========================================================
+	// Methods
+	// ===========================================================
+	// ===========================================================
+	// Inner and Anonymous Classes
+	// ===========================================================
+}",class,
+"public final class R {
+    public static final class attr {
+    }
+    public static final class drawable {
+        public static final int icon=0x7f020000;
+    }
+    public static final class layout {
+        public static final int main=0x7f030000;
+    }
+    public static final class string {
+        public static final int app_name=0x7f040001;
+        public static final int hello=0x7f040000;
+    }
+}",class,
+"    public static final class attr {
+    }",class,
+"    public static final class drawable {
+        public static final int icon=0x7f020000;
+    }",class,
+"    public static final class layout {
+        public static final int main=0x7f030000;
+    }",class,
+"    public static final class string {
+        public static final int app_name=0x7f040001;
+        public static final int hello=0x7f040000;
+    }",class,
+"	@Override
+	public Engine onLoadEngine() {
+		this.mCamera = new Camera(0, 0, CAMERA_WIDTH, CAMERA_HEIGHT);
+		return new Engine(new EngineOptions(true, ScreenOrientation.LANDSCAPE, new RatioResolutionPolicy(CAMERA_WIDTH, CAMERA_HEIGHT), this.mCamera));
+	}",method,
+"	@Override
+	public void onLoadResources() {
+		mIconTexture = new BuildableTexture(128, 128, TextureOptions.BILINEAR_PREMULTIPLYALPHA);
+		mIconTextureRegion = TextureRegionFactory.createFromAsset(this.mIconTexture, this, ""icon.png"");
+		   try {
+			      mIconTexture.build(new BlackPawnTextureBuilder(2));
+			   } catch (final TextureSourcePackingException e) {
+			      Log.d(tag, ""Sprites won't fit in mIconTexture"");
+			   }
+		this.mEngine.getTextureManager().loadTexture(this.mIconTexture);
+	}",method,
+"	@Override
+	public Scene onLoadScene() {
+		final Scene scene = new Scene(1);
+		scene.setBackground(new ColorBackground(0.1f, 0.6f, 0.9f));
+		scene.setOnSceneTouchListener(new IOnSceneTouchListener() {
+			@Override
+			public boolean onSceneTouchEvent(final Scene pScene, final TouchEvent pSceneTouchEvent) {
+				switch(pSceneTouchEvent.getAction()) {
+					case TouchEvent.ACTION_DOWN:
+						Toast.makeText(AndEngineTouchExample.this, ""Scene touch DOWN"", Toast.LENGTH_SHORT).show();
+						break;
+					case TouchEvent.ACTION_UP:
+						Toast.makeText(AndEngineTouchExample.this, ""Scene touch UP"", Toast.LENGTH_SHORT).show();
+						break;
+				}
+				return true;
+			}
+		});
+		mIcon = new Sprite(100, 100, this.mIconTextureRegion) {
+			@Override
+			public boolean onAreaTouched(final TouchEvent pAreaTouchEvent, final float pTouchAreaLocalX, final float pTouchAreaLocalY) {
+				switch(pAreaTouchEvent.getAction()) {
+				case TouchEvent.ACTION_DOWN:
+					Toast.makeText(AndEngineTouchExample.this, ""Sprite touch DOWN"", Toast.LENGTH_SHORT).show();
+					break;
+				case TouchEvent.ACTION_UP:
+					Toast.makeText(AndEngineTouchExample.this, ""Sprite touch UP"", Toast.LENGTH_SHORT).show();
+					break;
+				}
+				return true;
+			}
+		};
+		scene.getLastChild().attachChild(mIcon);		
+		scene.registerTouchArea(mIcon);
+		scene.setTouchAreaBindingEnabled(true);
+		return scene;
+	}",method,
+"		scene.setOnSceneTouchListener(new IOnSceneTouchListener() {
+			@Override
+			public boolean onSceneTouchEvent(final Scene pScene, final TouchEvent pSceneTouchEvent) {
+				switch(pSceneTouchEvent.getAction()) {
+					case TouchEvent.ACTION_DOWN:
+						Toast.makeText(AndEngineTouchExample.this, ""Scene touch DOWN"", Toast.LENGTH_SHORT).show();
+						break;
+					case TouchEvent.ACTION_UP:
+						Toast.makeText(AndEngineTouchExample.this, ""Scene touch UP"", Toast.LENGTH_SHORT).show();
+						break;
+				}
+				return true;
+			}
+		}",method,
+"			@Override
+			public boolean onSceneTouchEvent(final Scene pScene, final TouchEvent pSceneTouchEvent) {
+				switch(pSceneTouchEvent.getAction()) {
+					case TouchEvent.ACTION_DOWN:
+						Toast.makeText(AndEngineTouchExample.this, ""Scene touch DOWN"", Toast.LENGTH_SHORT).show();
+						break;
+					case TouchEvent.ACTION_UP:
+						Toast.makeText(AndEngineTouchExample.this, ""Scene touch UP"", Toast.LENGTH_SHORT).show();
+						break;
+				}
+				return true;
+			}",method,
+"			@Override
+			public boolean onAreaTouched(final TouchEvent pAreaTouchEvent, final float pTouchAreaLocalX, final float pTouchAreaLocalY) {
+				switch(pAreaTouchEvent.getAction()) {
+				case TouchEvent.ACTION_DOWN:
+					Toast.makeText(AndEngineTouchExample.this, ""Sprite touch DOWN"", Toast.LENGTH_SHORT).show();
+					break;
+				case TouchEvent.ACTION_UP:
+					Toast.makeText(AndEngineTouchExample.this, ""Sprite touch UP"", Toast.LENGTH_SHORT).show();
+					break;
+				}
+				return true;
+			}",method,
+"	@Override
+	public void onLoadComplete() {
+	}",method,
+"public abstract class ApplicationLike implements ApplicationLifeCycle {
+    private final Application application;
+    private final Intent      tinkerResultIntent;
+    private final long        applicationStartElapsedTime;
+    private final long        applicationStartMillisTime;
+    private final int         tinkerFlags;
+    private final boolean     tinkerLoadVerifyFlag;
+    public ApplicationLike(Application application, int tinkerFlags, boolean tinkerLoadVerifyFlag,
+                           long applicationStartElapsedTime, long applicationStartMillisTime, Intent tinkerResultIntent) {
+        this.application = application;
+        this.tinkerFlags = tinkerFlags;
+        this.tinkerLoadVerifyFlag = tinkerLoadVerifyFlag;
+        this.applicationStartElapsedTime = applicationStartElapsedTime;
+        this.applicationStartMillisTime = applicationStartMillisTime;
+        this.tinkerResultIntent = tinkerResultIntent;
+    }
+    public Application getApplication() {
+        return application;
+    }
+    public final Intent getTinkerResultIntent() {
+        return tinkerResultIntent;
+    }
+    public final int getTinkerFlags() {
+        return tinkerFlags;
+    }
+    public final boolean getTinkerLoadVerifyFlag() {
+        return tinkerLoadVerifyFlag;
+    }
+    public long getApplicationStartElapsedTime() {
+        return applicationStartElapsedTime;
+    }
+    public long getApplicationStartMillisTime() {
+        return applicationStartMillisTime;
+    }
+    @Override
+    public void onCreate() {
+    }
+    @Override
+    public void onLowMemory() {
+    }
+    @Override
+    public void onTrimMemory(int level) {
+    }
+    @Override
+    public void onTerminate() {
+    }
+    @Override
+    public void onConfigurationChanged(Configuration newConfig) {
+    }
+    @Override
+    public void onBaseContextAttached(Context base) {
+    }
+    //some get methods that may be overwrite
+    public Resources getResources(Resources resources) {
+        return resources;
+    }
+    public ClassLoader getClassLoader(ClassLoader classLoader) {
+        return classLoader;
+    }
+    public AssetManager getAssets(AssetManager assetManager) {
+       return assetManager;
+    }
+    public Object getSystemService(String name, Object service) {
+        return service;
+    }
+    public Context getBaseContext(Context base) {
+        return base;
+    }
+}",class,
+"    public ApplicationLike(Application application, int tinkerFlags, boolean tinkerLoadVerifyFlag,
+                           long applicationStartElapsedTime, long applicationStartMillisTime, Intent tinkerResultIntent) {
+        this.application = application;
+        this.tinkerFlags = tinkerFlags;
+        this.tinkerLoadVerifyFlag = tinkerLoadVerifyFlag;
+        this.applicationStartElapsedTime = applicationStartElapsedTime;
+        this.applicationStartMillisTime = applicationStartMillisTime;
+        this.tinkerResultIntent = tinkerResultIntent;
+    }",method,
+"    public Application getApplication() {
+        return application;
+    }",method,
+"    public final Intent getTinkerResultIntent() {
+        return tinkerResultIntent;
+    }",method,
+"    public final int getTinkerFlags() {
+        return tinkerFlags;
+    }",method,
+"    public final boolean getTinkerLoadVerifyFlag() {
+        return tinkerLoadVerifyFlag;
+    }",method,
+"    public long getApplicationStartElapsedTime() {
+        return applicationStartElapsedTime;
+    }",method,
+"    public long getApplicationStartMillisTime() {
+        return applicationStartMillisTime;
+    }",method,
+"    @Override
+    public void onCreate() {
+    }",method,
+"    @Override
+    public void onLowMemory() {
+    }",method,
+"    @Override
+    public void onTrimMemory(int level) {
+    }",method,
+"    @Override
+    public void onTerminate() {
+    }",method,
+"    @Override
+    public void onConfigurationChanged(Configuration newConfig) {
+    }",method,
+"    @Override
+    public void onBaseContextAttached(Context base) {
+    }",method,
+"    public Resources getResources(Resources resources) {
+        return resources;
+    }",method,
+"    public ClassLoader getClassLoader(ClassLoader classLoader) {
+        return classLoader;
+    }",method,
+"    public AssetManager getAssets(AssetManager assetManager) {
+       return assetManager;
+    }",method,
+"    public Object getSystemService(String name, Object service) {
+        return service;
+    }",method,
+"    public Context getBaseContext(Context base) {
+        return base;
+    }",method,
+"public class DefaultProcessForkOptions implements ProcessForkOptions {
+    private final PathToFileResolver resolver;
+    private Object executable;
+    private Factory<File> workingDir;
+    private Map<String, Object> environment;
+    public DefaultProcessForkOptions(PathToFileResolver resolver) {
+        this.resolver = resolver;
+        workingDir = resolver.resolveLater(""."");
+    }
+    public String getExecutable() {
+        return executable == null ? null : executable.toString();
+    }
+    public void setExecutable(String executable) {
+        this.executable = executable;
+    }
+    public void setExecutable(Object executable) {
+        this.executable = executable;
+    }
+    public ProcessForkOptions executable(Object executable) {
+        setExecutable(executable);
+        return this;
+    }
+    public File getWorkingDir() {
+        return workingDir.create();
+    }
+    public void setWorkingDir(File dir) {
+        this.workingDir = resolver.resolveLater(dir);
+    }
+    public void setWorkingDir(Object dir) {
+        this.workingDir = resolver.resolveLater(dir);
+    }
+    public ProcessForkOptions workingDir(Object dir) {
+        setWorkingDir(dir);
+        return this;
+    }
+    public Map<String, Object> getEnvironment() {
+        if (environment == null) {
+            setEnvironment(Jvm.current().getInheritableEnvironmentVariables(System.getenv()));
+        }
+        return environment;
+    }
+    public Map<String, String> getActualEnvironment() {
+        Map<String, String> actual = new HashMap<String, String>();
+        for (Map.Entry<String, Object> entry : getEnvironment().entrySet()) {
+            actual.put(entry.getKey(), String.valueOf(entry.getValue()));
+        }
+        return actual;
+    }
+    public void setEnvironment(Map<String, ?> environmentVariables) {
+        environment = Maps.newHashMap(environmentVariables);
+    }
+    public ProcessForkOptions environment(String name, Object value) {
+        getEnvironment().put(name, value);
+        return this;
+    }
+    public ProcessForkOptions environment(Map<String, ?> environmentVariables) {
+        getEnvironment().putAll(environmentVariables);
+        return this;
+    }
+    public ProcessForkOptions copyTo(ProcessForkOptions target) {
+        target.setExecutable(executable);
+        target.setWorkingDir(workingDir);
+        target.setEnvironment(getEnvironment());
+        return this;
+    }
+}",class,
+"    public DefaultProcessForkOptions(PathToFileResolver resolver) {
+        this.resolver = resolver;
+        workingDir = resolver.resolveLater(""."");
+    }",method,
+"    public String getExecutable() {
+        return executable == null ? null : executable.toString();
+    }",method,
+"    public void setExecutable(String executable) {
+        this.executable = executable;
+    }",method,
+"    public void setExecutable(Object executable) {
+        this.executable = executable;
+    }",method,
+"    public ProcessForkOptions executable(Object executable) {
+        setExecutable(executable);
+        return this;
+    }",method,
+"    public File getWorkingDir() {
+        return workingDir.create();
+    }",method,
+"    public void setWorkingDir(File dir) {
+        this.workingDir = resolver.resolveLater(dir);
+    }",method,
+"    public void setWorkingDir(Object dir) {
+        this.workingDir = resolver.resolveLater(dir);
+    }",method,
+"    public ProcessForkOptions workingDir(Object dir) {
+        setWorkingDir(dir);
+        return this;
+    }",method,
+"    public Map<String, Object> getEnvironment() {
+        if (environment == null) {
+            setEnvironment(Jvm.current().getInheritableEnvironmentVariables(System.getenv()));
+        }
+        return environment;
+    }",method,
+"        if (environment == null) {
+            setEnvironment(Jvm.current().getInheritableEnvironmentVariables(System.getenv()));
+        }",method,
+"    public Map<String, String> getActualEnvironment() {
+        Map<String, String> actual = new HashMap<String, String>();
+        for (Map.Entry<String, Object> entry : getEnvironment().entrySet()) {
+            actual.put(entry.getKey(), String.valueOf(entry.getValue()));
+        }
+        return actual;
+    }",method,
+"    public void setEnvironment(Map<String, ?> environmentVariables) {
+        environment = Maps.newHashMap(environmentVariables);
+    }",method,
+"    public ProcessForkOptions environment(String name, Object value) {
+        getEnvironment().put(name, value);
+        return this;
+    }",method,
+"    public ProcessForkOptions environment(Map<String, ?> environmentVariables) {
+        getEnvironment().putAll(environmentVariables);
+        return this;
+    }",method,
+"    public ProcessForkOptions copyTo(ProcessForkOptions target) {
+        target.setExecutable(executable);
+        target.setWorkingDir(workingDir);
+        target.setEnvironment(getEnvironment());
+        return this;
+    }",method,
+"public class SidePanelSeparator extends SeparatorWithText {
+  @Override
+  protected void paintComponent(Graphics g) {
+    final JBColor separatorColor = new JBColor(GroupedElementsRenderer.POPUP_SEPARATOR_FOREGROUND, Gray._80);
+    g.setColor(separatorColor);
+    if (""--"".equals(getCaption())) {
+      final GraphicsConfig config = GraphicsUtil.setupAAPainting(g);
+      final int h = getHeight() / 2;
+      g.drawLine(30, h, getWidth() - 30, h);
+      ((Graphics2D)g).setPaint(new GradientPaint(5, h, ColorUtil.toAlpha(separatorColor, 0), 30, h, separatorColor));
+      g.drawLine(5, h, 30, h);
+      ((Graphics2D)g).setPaint(
+        new GradientPaint(getWidth() - 5, h, ColorUtil.toAlpha(separatorColor, 0), getWidth() - 30, h, separatorColor));
+      g.drawLine(getWidth() - 5, h, getWidth() - 30, h);
+      config.restore();
+      return;
+    }
+    Rectangle viewR = new Rectangle(0, getVgap(), getWidth() - 1, getHeight() - getVgap() - 1);
+    Rectangle iconR = new Rectangle();
+    Rectangle textR = new Rectangle();
+    String s = SwingUtilities
+      .layoutCompoundLabel(g.getFontMetrics(), getCaption(), null, CENTER,
+                           LEFT,
+                           CENTER,
+                           LEFT,
+                           viewR, iconR, textR, 0);
+    GraphicsUtil.setupAAPainting(g);
+    g.setColor(new JBColor(Gray._255.withAlpha(80), Gray._0.withAlpha(80)));
+    g.drawString(s, textR.x + 10, textR.y + 1 + g.getFontMetrics().getAscent());
+    g.setColor(new JBColor(new Color(0x5F6D7B), Gray._120));
+    g.drawString(s, textR.x + 10, textR.y + g.getFontMetrics().getAscent());
+  }
+}",class,
+"  @Override
+  protected void paintComponent(Graphics g) {
+    final JBColor separatorColor = new JBColor(GroupedElementsRenderer.POPUP_SEPARATOR_FOREGROUND, Gray._80);
+    g.setColor(separatorColor);
+    if (""--"".equals(getCaption())) {
+      final GraphicsConfig config = GraphicsUtil.setupAAPainting(g);
+      final int h = getHeight() / 2;
+      g.drawLine(30, h, getWidth() - 30, h);
+      ((Graphics2D)g).setPaint(new GradientPaint(5, h, ColorUtil.toAlpha(separatorColor, 0), 30, h, separatorColor));
+      g.drawLine(5, h, 30, h);
+      ((Graphics2D)g).setPaint(
+        new GradientPaint(getWidth() - 5, h, ColorUtil.toAlpha(separatorColor, 0), getWidth() - 30, h, separatorColor));
+      g.drawLine(getWidth() - 5, h, getWidth() - 30, h);
+      config.restore();
+      return;
+    }
+    Rectangle viewR = new Rectangle(0, getVgap(), getWidth() - 1, getHeight() - getVgap() - 1);
+    Rectangle iconR = new Rectangle();
+    Rectangle textR = new Rectangle();
+    String s = SwingUtilities
+      .layoutCompoundLabel(g.getFontMetrics(), getCaption(), null, CENTER,
+                           LEFT,
+                           CENTER,
+                           LEFT,
+                           viewR, iconR, textR, 0);
+    GraphicsUtil.setupAAPainting(g);
+    g.setColor(new JBColor(Gray._255.withAlpha(80), Gray._0.withAlpha(80)));
+    g.drawString(s, textR.x + 10, textR.y + 1 + g.getFontMetrics().getAscent());
+    g.setColor(new JBColor(new Color(0x5F6D7B), Gray._120));
+    g.drawString(s, textR.x + 10, textR.y + g.getFontMetrics().getAscent());
+  }",method,
+"public class SessionBasicTest extends BaseTest {
+    @Test(expected = NoSuchSessionException.class)
+    public void quitShouldTerminatePhantomJSProcess() throws MalformedURLException {
+        // Get Driver Instance
+        WebDriver d = getDriver();
+        d.navigate().to(""about:blank"");
+        // Quit the driver, that will cause the process to close
+        d.quit();
+        // Throws ""SessionNotFoundException"", because no process is actually left to respond
+        d.getWindowHandle();
+    }
+    @Test(expected = NoSuchWindowException.class)
+    public void closeShouldNotTerminatePhantomJSProcess() throws MalformedURLException {
+        // By default, 1 window is created when Driver is launched
+        WebDriver d = getDriver();
+        assertEquals(1, d.getWindowHandles().size());
+        // Check the number of windows
+        d.navigate().to(""about:blank"");
+        assertEquals(1, d.getWindowHandles().size());
+        // Create a new window
+        ((JavascriptExecutor) d).executeScript(""window.open('http://www.google.com','google');"");
+        assertEquals(2, d.getWindowHandles().size());
+        // Close 1 window and check that 1 is left
+        d.close();
+        assertEquals(1, d.getWindowHandles().size());
+        // Switch to that window
+        d.switchTo().window(""google"");
+        assertNotNull(d.getWindowHandle());
+        // Close the remaining window and check now there are no windows available
+        d.close();
+        assertEquals(0, d.getWindowHandles().size());
+        // This should throw a ""NoSuchWindowException"": the Driver is still running, but no Session/Window are left
+        d.getWindowHandle();
+    }
+}",class,
+"    @Test(expected = NoSuchSessionException.class)
+    public void quitShouldTerminatePhantomJSProcess() throws MalformedURLException {
+        // Get Driver Instance
+        WebDriver d = getDriver();
+        d.navigate().to(""about:blank"");
+        // Quit the driver, that will cause the process to close
+        d.quit();
+        // Throws ""SessionNotFoundException"", because no process is actually left to respond
+        d.getWindowHandle();
+    }",method,
+"    @Test(expected = NoSuchWindowException.class)
+    public void closeShouldNotTerminatePhantomJSProcess() throws MalformedURLException {
+        // By default, 1 window is created when Driver is launched
+        WebDriver d = getDriver();
+        assertEquals(1, d.getWindowHandles().size());
+        // Check the number of windows
+        d.navigate().to(""about:blank"");
+        assertEquals(1, d.getWindowHandles().size());
+        // Create a new window
+        ((JavascriptExecutor) d).executeScript(""window.open('http://www.google.com','google');"");
+        assertEquals(2, d.getWindowHandles().size());
+        // Close 1 window and check that 1 is left
+        d.close();
+        assertEquals(1, d.getWindowHandles().size());
+        // Switch to that window
+        d.switchTo().window(""google"");
+        assertNotNull(d.getWindowHandle());
+        // Close the remaining window and check now there are no windows available
+        d.close();
+        assertEquals(0, d.getWindowHandles().size());
+        // This should throw a ""NoSuchWindowException"": the Driver is still running, but no Session/Window are left
+        d.getWindowHandle();
+    }",method,
+"public class Base {
+    private int iX;     //posicion en x.       
+    private int iY;     //posicion en y.
+    private int iAncho; //ancho del objeto
+    private int iAlto; //largo del objeto
+    private Image imaImagen;	//imagen.
+    public Base(int iX, int iY, int iAncho, int iAlto, Image imaImagen) {
+        this.iX = iX;
+        this.iY = iY;
+        this.iAncho = iAncho;
+        this.iAlto = iAlto;
+        this.imaImagen = imaImagen;
+    }
+    public void setX(int iX) {
+        this.iX = iX;
+    }
+    public int getX() {
+        return iX;
+    }
+    public void setY(int iY) {
+        this.iY = iY;
+    }
+    public int getY() {
+        return iY;
+    }
+    public void setImagen(Image imaImagen) {
+        this.imaImagen = imaImagen;
+    }
+    public Image getImagen() {
+        return imaImagen;
+    }
+    public int getAncho() {
+        return iAncho;
+    }
+    public int getAlto() {
+        return iAlto;
+    }
+    public void paint(Graphics graGrafico, ImageObserver imoObserver) {
+        graGrafico.drawImage(getImagen(), getX(), getY(), getAncho(), getAlto(), imoObserver);
+    }
+    public boolean equals(Object objObjeto) {
+        // si el objeto parametro es una instancia de la clase Base
+        if (objObjeto instanceof Base) {
+            // se regresa la comparación entre este objeto que invoca y el
+            // objeto recibido como parametro
+            Base basParam = (Base) objObjeto;
+            return this.getX() == basParam.getX()
+                    && this.getY() == basParam.getY()
+                    && this.getAncho() == basParam.getAncho()
+                    && this.getAlto() == basParam.getAlto()
+                    && this.getImagen() == basParam.getImagen();
+        } else {
+            // se regresa un falso porque el objeto recibido no es tipo Base
+            return false;
+        }
+    }
+    public boolean intersecta(Object objObjeto) {
+        if (objObjeto instanceof Base) {
+            Rectangle rctObjetoActual = new Rectangle(this.getX(), this.getY(), this.getAncho(), this.getAlto());
+            Base basObjeto = (Base) objObjeto;
+            Rectangle rctObjetoParametro = new Rectangle(basObjeto.getX(), basObjeto.getY(), basObjeto.getAncho(), basObjeto.getAlto());
+            return rctObjetoActual.intersects(rctObjetoParametro);
+        } else {
+            return false;
+        }
+    }
+    public String toString() {
+        return "" x: "" + this.getX() + "" y: "" + this.getY()
+                + "" ancho: "" + this.getAncho() + "" alto: "" + this.getAlto();
+    }
+    void actualiza(long tiempoTranscurrido) {
+        throw new UnsupportedOperationException(""Not supported yet.""); //To change body of generated methods, choose Tools | Templates.
+    }
+}",class,

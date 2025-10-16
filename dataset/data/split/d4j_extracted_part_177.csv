@@ -1,0 +1,1050 @@
+code_snippet,type,score
+  private ChainUniquenessUtils() {},method,
+"  static SkyKey key(SkyFunctionName functionName, ImmutableList<? extends Object> chain) {
+    Preconditions.checkState(!chain.isEmpty());
+    return LegacySkyKey.create(functionName, canonicalize(chain));
+  }",method,
+"  private static ImmutableList<Object> canonicalize(ImmutableList<? extends Object> cycle) {
+    int minPos = 0;
+    String minString = cycle.get(0).toString();
+    for (int i = 1; i < cycle.size(); i++) {
+      // TOOD(bazel-team): Is the toString representation stable enough?
+      String candidateString = cycle.get(i).toString();
+      if (candidateString.compareTo(minString) < 0) {
+        minPos = i;
+        minString = candidateString;
+      }
+    }
+    ImmutableList.Builder<Object> builder = ImmutableList.builder();
+    for (int i = 0; i < cycle.size(); i++) {
+      int pos = (minPos + i) % cycle.size();
+      builder.add(cycle.get(pos));
+    }
+    return builder.build();
+  }",method,
+"import java.util.Vector;
+class FrameQueue {
+    public static class Builder {
+        private FrameType mReadType = null;
+        private FrameType mWriteType = null;
+        private Vector<FrameQueue> mAttachedQueues = new Vector<FrameQueue>();
+        public Builder() {}
+        public void setWriteType(FrameType type) {
+            mWriteType = type;
+        }
+        public void setReadType(FrameType type) {
+            mReadType = type;
+        }
+        public void attachQueue(FrameQueue queue) {
+            mAttachedQueues.add(queue);
+        }
+        public FrameQueue build(String name) {
+            FrameType type = buildType();
+            // TODO: This currently does not work correctly (Try camera -> branch -> target-slot)
+            //validateType(type, name);
+            FrameQueue result = new FrameQueue(type, name);
+            buildQueueImpl(result);
+            return result;
+        }
+        private void buildQueueImpl(FrameQueue queue) {
+            QueueImpl queueImpl = queue.new SingleFrameQueueImpl();
+            queue.mQueueImpl = queueImpl;
+        }
+        private FrameType buildType() {
+            FrameType result = FrameType.merge(mWriteType, mReadType);
+            for (FrameQueue queue : mAttachedQueues) {
+                result = FrameType.merge(result, queue.mType);
+            }
+            return result;
+        }
+    }
+    private interface QueueImpl {
+        public boolean canPull();
+        public boolean canPush();
+        public Frame pullFrame();
+        public Frame fetchAvailableFrame(int[] dimensions);
+        public Frame peek();
+        public void pushFrame(Frame frame);
+        public void clear();
+    }
+    private class SingleFrameQueueImpl implements QueueImpl {
+        private Frame mFrame = null;
+        @Override
+        public boolean canPull() {
+            return mFrame != null;
+        }
+        @Override
+        public boolean canPush() {
+            return mFrame == null;
+        }
+        @Override
+        public Frame pullFrame() {
+            Frame result = mFrame;
+            mFrame = null;
+            return result;
+        }
+        @Override
+        public Frame peek() {
+            return mFrame;
+        }
+        @Override
+        public Frame fetchAvailableFrame(int[] dimensions) {
+            // Note that we cannot use a cached frame here, as we do not know where that cached
+            // instance would end up.
+            FrameManager manager = FrameManager.current();
+            return new Frame(mType, dimensions, manager);
+        }
+        @Override
+        public void pushFrame(Frame frame) {
+            mFrame = frame.retain();
+            mFrame.setReadOnly(true);
+        }
+        @Override
+        public void clear() {
+            if (mFrame != null) {
+                mFrame.release();
+                mFrame = null;
+            }
+        }
+    }
+    private QueueImpl mQueueImpl;
+    private FrameType mType;
+    private String mName;
+    public FrameType getType() {
+        return mType;
+    }
+    public boolean canPull() {
+        return mQueueImpl.canPull();
+    }
+    public boolean canPush() {
+        return mQueueImpl.canPush();
+    }
+    public Frame pullFrame() {
+        return mQueueImpl.pullFrame();
+    }
+    public Frame fetchAvailableFrame(int[] dimensions) {
+        return mQueueImpl.fetchAvailableFrame(dimensions);
+    }
+    public void pushFrame(Frame frame) {
+        mQueueImpl.pushFrame(frame);
+    }
+    public Frame peek() {
+        return mQueueImpl.peek();
+    }
+    @Override
+    public String toString() {
+        return mName;
+    }
+    public void clear() {
+        mQueueImpl.clear();
+    }
+    private FrameQueue(FrameType type, String name) {
+        mType = type;
+        mName = name;
+    }
+}",class,
+"    public static class Builder {
+        private FrameType mReadType = null;
+        private FrameType mWriteType = null;
+        private Vector<FrameQueue> mAttachedQueues = new Vector<FrameQueue>();
+        public Builder() {}
+        public void setWriteType(FrameType type) {
+            mWriteType = type;
+        }
+        public void setReadType(FrameType type) {
+            mReadType = type;
+        }
+        public void attachQueue(FrameQueue queue) {
+            mAttachedQueues.add(queue);
+        }
+        public FrameQueue build(String name) {
+            FrameType type = buildType();
+            // TODO: This currently does not work correctly (Try camera -> branch -> target-slot)
+            //validateType(type, name);
+            FrameQueue result = new FrameQueue(type, name);
+            buildQueueImpl(result);
+            return result;
+        }
+        private void buildQueueImpl(FrameQueue queue) {
+            QueueImpl queueImpl = queue.new SingleFrameQueueImpl();
+            queue.mQueueImpl = queueImpl;
+        }
+        private FrameType buildType() {
+            FrameType result = FrameType.merge(mWriteType, mReadType);
+            for (FrameQueue queue : mAttachedQueues) {
+                result = FrameType.merge(result, queue.mType);
+            }
+            return result;
+        }
+    }",class,
+"    private class SingleFrameQueueImpl implements QueueImpl {
+        private Frame mFrame = null;
+        @Override
+        public boolean canPull() {
+            return mFrame != null;
+        }
+        @Override
+        public boolean canPush() {
+            return mFrame == null;
+        }
+        @Override
+        public Frame pullFrame() {
+            Frame result = mFrame;
+            mFrame = null;
+            return result;
+        }
+        @Override
+        public Frame peek() {
+            return mFrame;
+        }
+        @Override
+        public Frame fetchAvailableFrame(int[] dimensions) {
+            // Note that we cannot use a cached frame here, as we do not know where that cached
+            // instance would end up.
+            FrameManager manager = FrameManager.current();
+            return new Frame(mType, dimensions, manager);
+        }
+        @Override
+        public void pushFrame(Frame frame) {
+            mFrame = frame.retain();
+            mFrame.setReadOnly(true);
+        }
+        @Override
+        public void clear() {
+            if (mFrame != null) {
+                mFrame.release();
+                mFrame = null;
+            }
+        }
+    }",class,
+        public Builder() {},method,
+"        public void setWriteType(FrameType type) {
+            mWriteType = type;
+        }",method,
+"        public void setReadType(FrameType type) {
+            mReadType = type;
+        }",method,
+"        public void attachQueue(FrameQueue queue) {
+            mAttachedQueues.add(queue);
+        }",method,
+"        public FrameQueue build(String name) {
+            FrameType type = buildType();
+            // TODO: This currently does not work correctly (Try camera -> branch -> target-slot)
+            //validateType(type, name);
+            FrameQueue result = new FrameQueue(type, name);
+            buildQueueImpl(result);
+            return result;
+        }",method,
+"        private void buildQueueImpl(FrameQueue queue) {
+            QueueImpl queueImpl = queue.new SingleFrameQueueImpl();
+            queue.mQueueImpl = queueImpl;
+        }",method,
+"        private FrameType buildType() {
+            FrameType result = FrameType.merge(mWriteType, mReadType);
+            for (FrameQueue queue : mAttachedQueues) {
+                result = FrameType.merge(result, queue.mType);
+            }
+            return result;
+        }",method,
+"            for (FrameQueue queue : mAttachedQueues) {
+                result = FrameType.merge(result, queue.mType);
+            }",method,
+"        @Override
+        public boolean canPull() {
+            return mFrame != null;
+        }",method,
+"        @Override
+        public boolean canPush() {
+            return mFrame == null;
+        }",method,
+"        @Override
+        public Frame pullFrame() {
+            Frame result = mFrame;
+            mFrame = null;
+            return result;
+        }",method,
+"        @Override
+        public Frame peek() {
+            return mFrame;
+        }",method,
+"        @Override
+        public Frame fetchAvailableFrame(int[] dimensions) {
+            // Note that we cannot use a cached frame here, as we do not know where that cached
+            // instance would end up.
+            FrameManager manager = FrameManager.current();
+            return new Frame(mType, dimensions, manager);
+        }",method,
+"        @Override
+        public void pushFrame(Frame frame) {
+            mFrame = frame.retain();
+            mFrame.setReadOnly(true);
+        }",method,
+"        @Override
+        public void clear() {
+            if (mFrame != null) {
+                mFrame.release();
+                mFrame = null;
+            }
+        }",method,
+"            if (mFrame != null) {
+                mFrame.release();
+                mFrame = null;
+            }",method,
+"    public FrameType getType() {
+        return mType;
+    }",method,
+"    public boolean canPull() {
+        return mQueueImpl.canPull();
+    }",method,
+"    public boolean canPush() {
+        return mQueueImpl.canPush();
+    }",method,
+"    public Frame pullFrame() {
+        return mQueueImpl.pullFrame();
+    }",method,
+"    public Frame fetchAvailableFrame(int[] dimensions) {
+        return mQueueImpl.fetchAvailableFrame(dimensions);
+    }",method,
+"    public void pushFrame(Frame frame) {
+        mQueueImpl.pushFrame(frame);
+    }",method,
+"    public Frame peek() {
+        return mQueueImpl.peek();
+    }",method,
+"    @Override
+    public String toString() {
+        return mName;
+    }",method,
+"    public void clear() {
+        mQueueImpl.clear();
+    }",method,
+"    private FrameQueue(FrameType type, String name) {
+        mType = type;
+        mName = name;
+    }",method,
+"public abstract class AcknowledgedRequest<Request extends MasterNodeRequest<Request>> extends MasterNodeRequest<Request> implements AckedRequest {
+    public static final TimeValue DEFAULT_ACK_TIMEOUT = timeValueSeconds(30);
+    protected TimeValue timeout = DEFAULT_ACK_TIMEOUT;
+    protected AcknowledgedRequest() {
+    }
+    @SuppressWarnings(""unchecked"")
+    public final Request timeout(String timeout) {
+        this.timeout = TimeValue.parseTimeValue(timeout, this.timeout, getClass().getSimpleName() + "".timeout"");
+        return (Request)this;
+    }
+    @SuppressWarnings(""unchecked"")
+    public final Request timeout(TimeValue timeout) {
+        this.timeout = timeout;
+        return (Request) this;
+    }
+    public final TimeValue timeout() {
+        return  timeout;
+    }
+    @Override
+    public TimeValue ackTimeout() {
+        return timeout;
+    }
+    @Override
+    public void readFrom(StreamInput in) throws IOException {
+        super.readFrom(in);
+        timeout = new TimeValue(in);
+    }
+    @Override
+    public void writeTo(StreamOutput out) throws IOException {
+        super.writeTo(out);
+        timeout.writeTo(out);
+    }
+}",class,
+"    protected AcknowledgedRequest() {
+    }",method,
+"    @SuppressWarnings(""unchecked"")
+    public final Request timeout(String timeout) {
+        this.timeout = TimeValue.parseTimeValue(timeout, this.timeout, getClass().getSimpleName() + "".timeout"");
+        return (Request)this;
+    }",method,
+"    @SuppressWarnings(""unchecked"")
+    public final Request timeout(TimeValue timeout) {
+        this.timeout = timeout;
+        return (Request) this;
+    }",method,
+"    public final TimeValue timeout() {
+        return  timeout;
+    }",method,
+"    @Override
+    public TimeValue ackTimeout() {
+        return timeout;
+    }",method,
+"    @Override
+    public void readFrom(StreamInput in) throws IOException {
+        super.readFrom(in);
+        timeout = new TimeValue(in);
+    }",method,
+"    @Override
+    public void writeTo(StreamOutput out) throws IOException {
+        super.writeTo(out);
+        timeout.writeTo(out);
+    }",method,
+"public final class MetaClass extends RubyClass {
+    public MetaClass(Ruby runtime, RubyClass superClass, IRubyObject attached) {
+        super(runtime, superClass, false);
+        this.attached = attached;
+        setClassIndex(superClass.getClassIndex()); // use same ClassIndex as metaclass, since we're technically still of that type
+    }
+    @Override
+    public boolean isSingleton() {
+        return true;
+    }
+    public final IRubyObject allocate(){
+        throw runtime.newTypeError(""can't create instance of virtual class"");
+    }
+    public IRubyObject getAttached() {
+        return attached;
+    }
+    public void setAttached(IRubyObject attached) {
+        this.attached = attached;
+    }
+    private IRubyObject attached = null;
+}",class,
+"    public MetaClass(Ruby runtime, RubyClass superClass, IRubyObject attached) {
+        super(runtime, superClass, false);
+        this.attached = attached;
+        setClassIndex(superClass.getClassIndex()); // use same ClassIndex as metaclass, since we're technically still of that type
+    }",method,
+"    @Override
+    public boolean isSingleton() {
+        return true;
+    }",method,
+"    public final IRubyObject allocate(){
+        throw runtime.newTypeError(""can't create instance of virtual class"");
+    }",method,
+"    public IRubyObject getAttached() {
+        return attached;
+    }",method,
+"    public void setAttached(IRubyObject attached) {
+        this.attached = attached;
+    }",method,
+"import net.i2p.util.Log;
+class OutboundRefiller implements Runnable {
+    private RouterContext _context;
+    private Log _log;
+    private OutboundMessageFragments _fragments;
+    private MessageQueue _messages;
+    private boolean _alive;
+    // private Object _refillLock;
+    public OutboundRefiller(RouterContext ctx, OutboundMessageFragments fragments, MessageQueue messages) {
+        _context = ctx;
+        _log = ctx.logManager().getLog(OutboundRefiller.class);
+        _fragments = fragments;
+        _messages = messages;
+        // _refillLock = this;
+        _context.statManager().createRateStat(""udp.timeToActive"", ""Message lifetime until it reaches the outbound fragment queue"", ""udp"", UDPTransport.RATES);
+    }
+    public void startup() {
+        _alive = true;
+        I2PThread t = new I2PThread(this, ""UDP outbound refiller"", true);
+        t.start();
+    }
+    public void shutdown() { _alive = false; }
+    public void run() {
+        while (_alive) {
+            if (_log.shouldLog(Log.DEBUG))
+                _log.debug(""Check the fragments to see if we can add more..."");
+            boolean wantMore = _fragments.waitForMoreAllowed();
+            if (wantMore) {
+                if (_log.shouldLog(Log.DEBUG))
+                    _log.debug(""Want more fragments..."");
+                OutNetMessage msg = _messages.getNext(-1);
+                if (msg != null) {
+                    if (_log.shouldLog(Log.DEBUG))
+                        _log.debug(""New message found to fragments: "" + msg);
+                    _context.statManager().addRateData(""udp.timeToActive"", msg.getLifetime(), msg.getLifetime());
+                    _fragments.add(msg);
+                } else {
+                    if (_log.shouldLog(Log.DEBUG))
+                        _log.debug(""No message found to fragment"");
+                }
+            } else {
+                if (_log.shouldLog(Log.WARN))
+                    _log.warn(""No more fragments allowed, looping"");
+            }
+        }
+    }
+}",class,
+"    public OutboundRefiller(RouterContext ctx, OutboundMessageFragments fragments, MessageQueue messages) {
+        _context = ctx;
+        _log = ctx.logManager().getLog(OutboundRefiller.class);
+        _fragments = fragments;
+        _messages = messages;
+        // _refillLock = this;
+        _context.statManager().createRateStat(""udp.timeToActive"", ""Message lifetime until it reaches the outbound fragment queue"", ""udp"", UDPTransport.RATES);
+    }",method,
+"    public void startup() {
+        _alive = true;
+        I2PThread t = new I2PThread(this, ""UDP outbound refiller"", true);
+        t.start();
+    }",method,
+    public void shutdown() { _alive = false; },method,
+"    public void run() {
+        while (_alive) {
+            if (_log.shouldLog(Log.DEBUG))
+                _log.debug(""Check the fragments to see if we can add more..."");
+            boolean wantMore = _fragments.waitForMoreAllowed();
+            if (wantMore) {
+                if (_log.shouldLog(Log.DEBUG))
+                    _log.debug(""Want more fragments..."");
+                OutNetMessage msg = _messages.getNext(-1);
+                if (msg != null) {
+                    if (_log.shouldLog(Log.DEBUG))
+                        _log.debug(""New message found to fragments: "" + msg);
+                    _context.statManager().addRateData(""udp.timeToActive"", msg.getLifetime(), msg.getLifetime());
+                    _fragments.add(msg);
+                } else {
+                    if (_log.shouldLog(Log.DEBUG))
+                        _log.debug(""No message found to fragment"");
+                }
+            } else {
+                if (_log.shouldLog(Log.WARN))
+                    _log.warn(""No more fragments allowed, looping"");
+            }
+        }
+    }",method,
+"        while (_alive) {
+            if (_log.shouldLog(Log.DEBUG))
+                _log.debug(""Check the fragments to see if we can add more..."");
+            boolean wantMore = _fragments.waitForMoreAllowed();
+            if (wantMore) {
+                if (_log.shouldLog(Log.DEBUG))
+                    _log.debug(""Want more fragments..."");
+                OutNetMessage msg = _messages.getNext(-1);
+                if (msg != null) {
+                    if (_log.shouldLog(Log.DEBUG))
+                        _log.debug(""New message found to fragments: "" + msg);
+                    _context.statManager().addRateData(""udp.timeToActive"", msg.getLifetime(), msg.getLifetime());
+                    _fragments.add(msg);
+                } else {
+                    if (_log.shouldLog(Log.DEBUG))
+                        _log.debug(""No message found to fragment"");
+                }
+            } else {
+                if (_log.shouldLog(Log.WARN))
+                    _log.warn(""No more fragments allowed, looping"");
+            }
+        }",method,
+"            if (wantMore) {
+                if (_log.shouldLog(Log.DEBUG))
+                    _log.debug(""Want more fragments..."");
+                OutNetMessage msg = _messages.getNext(-1);
+                if (msg != null) {
+                    if (_log.shouldLog(Log.DEBUG))
+                        _log.debug(""New message found to fragments: "" + msg);
+                    _context.statManager().addRateData(""udp.timeToActive"", msg.getLifetime(), msg.getLifetime());
+                    _fragments.add(msg);
+                } else {
+                    if (_log.shouldLog(Log.DEBUG))
+                        _log.debug(""No message found to fragment"");
+                }
+            }",method,
+"                if (msg != null) {
+                    if (_log.shouldLog(Log.DEBUG))
+                        _log.debug(""New message found to fragments: "" + msg);
+                    _context.statManager().addRateData(""udp.timeToActive"", msg.getLifetime(), msg.getLifetime());
+                    _fragments.add(msg);
+                }",method,
+"public class DefaultTestResult implements TestResult, Serializable {
+    private final List<Throwable> failures;
+    private final ResultType resultType;
+    private final long startTime;
+    private final long endTime;
+    private final long testCount;
+    private final long successfulCount;
+    private final long failedCount;
+    public DefaultTestResult(TestState state) {
+        this(state.resultType, state.getStartTime(), state.getEndTime(), state.testCount, state.successfulCount, state.failedCount, state.failures);
+    }
+    public DefaultTestResult(ResultType resultType, long startTime, long endTime, long testCount, long successfulCount, long failedCount, List<Throwable> failures) {
+        this.resultType = resultType;
+        this.startTime = startTime;
+        this.endTime = endTime;
+        this.testCount = testCount;
+        this.successfulCount = successfulCount;
+        this.failedCount = failedCount;
+        this.failures = failures;
+    }
+    @Override
+    public ResultType getResultType() {
+        return resultType;
+    }
+    @Override
+    public Throwable getException() {
+        return failures.isEmpty() ? null : failures.get(0);
+    }
+    @Override
+    public List<Throwable> getExceptions() {
+        return failures;
+    }
+    @Override
+    public long getStartTime() {
+        return startTime;
+    }
+    @Override
+    public long getEndTime() {
+        return endTime;
+    }
+    @Override
+    public long getTestCount() {
+        return testCount;
+    }
+    @Override
+    public long getSuccessfulTestCount() {
+        return successfulCount;
+    }
+    @Override
+    public long getSkippedTestCount() {
+        return testCount - successfulCount - failedCount;
+    }
+    @Override
+    public long getFailedTestCount() {
+        return failedCount;
+    }
+    @Override
+    public String toString() {
+        return resultType.toString();
+    }
+}",class,
+"    public DefaultTestResult(TestState state) {
+        this(state.resultType, state.getStartTime(), state.getEndTime(), state.testCount, state.successfulCount, state.failedCount, state.failures);
+    }",method,
+"    public DefaultTestResult(ResultType resultType, long startTime, long endTime, long testCount, long successfulCount, long failedCount, List<Throwable> failures) {
+        this.resultType = resultType;
+        this.startTime = startTime;
+        this.endTime = endTime;
+        this.testCount = testCount;
+        this.successfulCount = successfulCount;
+        this.failedCount = failedCount;
+        this.failures = failures;
+    }",method,
+"    @Override
+    public ResultType getResultType() {
+        return resultType;
+    }",method,
+"    @Override
+    public Throwable getException() {
+        return failures.isEmpty() ? null : failures.get(0);
+    }",method,
+"    @Override
+    public List<Throwable> getExceptions() {
+        return failures;
+    }",method,
+"    @Override
+    public long getStartTime() {
+        return startTime;
+    }",method,
+"    @Override
+    public long getEndTime() {
+        return endTime;
+    }",method,
+"    @Override
+    public long getTestCount() {
+        return testCount;
+    }",method,
+"    @Override
+    public long getSuccessfulTestCount() {
+        return successfulCount;
+    }",method,
+"    @Override
+    public long getSkippedTestCount() {
+        return testCount - successfulCount - failedCount;
+    }",method,
+"    @Override
+    public long getFailedTestCount() {
+        return failedCount;
+    }",method,
+"    @Override
+    public String toString() {
+        return resultType.toString();
+    }",method,
+"final class RegularContiguousSet<C extends Comparable> extends ContiguousSet<C> {
+  private final Range<C> range;
+  RegularContiguousSet(Range<C> range, DiscreteDomain<C> domain) {
+    super(domain);
+    this.range = range;
+  }
+  private ContiguousSet<C> intersectionInCurrentDomain(Range<C> other) {
+    return (range.isConnected(other))
+        ? ContiguousSet.create(range.intersection(other), domain)
+        : new EmptyContiguousSet<C>(domain);
+  }
+  @Override
+  ContiguousSet<C> headSetImpl(C toElement, boolean inclusive) {
+    return intersectionInCurrentDomain(Range.upTo(toElement, BoundType.forBoolean(inclusive)));
+  }
+  @Override
+  ContiguousSet<C> subSetImpl(
+      C fromElement, boolean fromInclusive, C toElement, boolean toInclusive) {
+    if (fromElement.compareTo(toElement) == 0 && !fromInclusive && !toInclusive) {
+      // Range would reject our attempt to create (x, x).
+      return new EmptyContiguousSet<C>(domain);
+    }
+    return intersectionInCurrentDomain(
+        Range.range(
+            fromElement, BoundType.forBoolean(fromInclusive),
+            toElement, BoundType.forBoolean(toInclusive)));
+  }
+  @Override
+  ContiguousSet<C> tailSetImpl(C fromElement, boolean inclusive) {
+    return intersectionInCurrentDomain(Range.downTo(fromElement, BoundType.forBoolean(inclusive)));
+  }
+  @GwtIncompatible // not used by GWT emulation
+  @Override
+  int indexOf(Object target) {
+    return contains(target) ? (int) domain.distance(first(), (C) target) : -1;
+  }
+  @Override
+  public UnmodifiableIterator<C> iterator() {
+    return new AbstractSequentialIterator<C>(first()) {
+      final C last = last();
+      @Override
+      protected C computeNext(C previous) {
+        return equalsOrThrow(previous, last) ? null : domain.next(previous);
+      }
+    };
+  }
+  @GwtIncompatible // NavigableSet
+  @Override
+  public UnmodifiableIterator<C> descendingIterator() {
+    return new AbstractSequentialIterator<C>(last()) {
+      final C first = first();
+      @Override
+      protected C computeNext(C previous) {
+        return equalsOrThrow(previous, first) ? null : domain.previous(previous);
+      }
+    };
+  }
+  private static boolean equalsOrThrow(Comparable<?> left, @Nullable Comparable<?> right) {
+    return right != null && Range.compareOrThrow(left, right) == 0;
+  }
+  @Override
+  boolean isPartialView() {
+    return false;
+  }
+  @Override
+  public C first() {
+    return range.lowerBound.leastValueAbove(domain);
+  }
+  @Override
+  public C last() {
+    return range.upperBound.greatestValueBelow(domain);
+  }
+  @Override
+  ImmutableList<C> createAsList() {
+    if (domain.supportsFastOffset) {
+      return new ImmutableAsList<C>() {
+        @Override
+        ImmutableSortedSet<C> delegateCollection() {
+          return RegularContiguousSet.this;
+        }
+        @Override
+        public C get(int i) {
+          checkElementIndex(i, size());
+          return domain.offset(first(), i);
+        }
+      };
+    } else {
+      return super.createAsList();
+    }
+  }
+  @Override
+  public int size() {
+    long distance = domain.distance(first(), last());
+    return (distance >= Integer.MAX_VALUE) ? Integer.MAX_VALUE : (int) distance + 1;
+  }
+  @Override
+  public boolean contains(@Nullable Object object) {
+    if (object == null) {
+      return false;
+    }
+    try {
+      return range.contains((C) object);
+    } catch (ClassCastException e) {
+      return false;
+    }
+  }
+  @Override
+  public boolean containsAll(Collection<?> targets) {
+    return Collections2.containsAllImpl(this, targets);
+  }
+  @Override
+  public boolean isEmpty() {
+    return false;
+  }
+  @Override
+  public ContiguousSet<C> intersection(ContiguousSet<C> other) {
+    checkNotNull(other);
+    checkArgument(this.domain.equals(other.domain));
+    if (other.isEmpty()) {
+      return other;
+    } else {
+      C lowerEndpoint = Ordering.natural().max(this.first(), other.first());
+      C upperEndpoint = Ordering.natural().min(this.last(), other.last());
+      return (lowerEndpoint.compareTo(upperEndpoint) <= 0)
+          ? ContiguousSet.create(Range.closed(lowerEndpoint, upperEndpoint), domain)
+          : new EmptyContiguousSet<C>(domain);
+    }
+  }
+  @Override
+  public Range<C> range() {
+    return range(CLOSED, CLOSED);
+  }
+  @Override
+  public Range<C> range(BoundType lowerBoundType, BoundType upperBoundType) {
+    return Range.create(
+        range.lowerBound.withLowerBoundType(lowerBoundType, domain),
+        range.upperBound.withUpperBoundType(upperBoundType, domain));
+  }
+  @Override
+  public boolean equals(@Nullable Object object) {
+    if (object == this) {
+      return true;
+    } else if (object instanceof RegularContiguousSet) {
+      RegularContiguousSet<?> that = (RegularContiguousSet<?>) object;
+      if (this.domain.equals(that.domain)) {
+        return this.first().equals(that.first()) && this.last().equals(that.last());
+      }
+    }
+    return super.equals(object);
+  }
+  // copied to make sure not to use the GWT-emulated version
+  @Override
+  public int hashCode() {
+    return Sets.hashCodeImpl(this);
+  }
+  @GwtIncompatible // serialization
+  private static final class SerializedForm<C extends Comparable> implements Serializable {
+    final Range<C> range;
+    final DiscreteDomain<C> domain;
+    private SerializedForm(Range<C> range, DiscreteDomain<C> domain) {
+      this.range = range;
+      this.domain = domain;
+    }
+    private Object readResolve() {
+      return new RegularContiguousSet<C>(range, domain);
+    }
+  }
+  @GwtIncompatible // serialization
+  @Override
+  Object writeReplace() {
+    return new SerializedForm<C>(range, domain);
+  }
+  private static final long serialVersionUID = 0;
+}",class,
+"  private static final class SerializedForm<C extends Comparable> implements Serializable {
+    final Range<C> range;
+    final DiscreteDomain<C> domain;
+    private SerializedForm(Range<C> range, DiscreteDomain<C> domain) {
+      this.range = range;
+      this.domain = domain;
+    }
+    private Object readResolve() {
+      return new RegularContiguousSet<C>(range, domain);
+    }
+  }",class,
+"  RegularContiguousSet(Range<C> range, DiscreteDomain<C> domain) {
+    super(domain);
+    this.range = range;
+  }",method,
+"  private ContiguousSet<C> intersectionInCurrentDomain(Range<C> other) {
+    return (range.isConnected(other))
+        ? ContiguousSet.create(range.intersection(other), domain)
+        : new EmptyContiguousSet<C>(domain);
+  }",method,
+"  @Override
+  ContiguousSet<C> headSetImpl(C toElement, boolean inclusive) {
+    return intersectionInCurrentDomain(Range.upTo(toElement, BoundType.forBoolean(inclusive)));
+  }",method,
+"  @Override
+  ContiguousSet<C> subSetImpl(
+      C fromElement, boolean fromInclusive, C toElement, boolean toInclusive) {
+    if (fromElement.compareTo(toElement) == 0 && !fromInclusive && !toInclusive) {
+      // Range would reject our attempt to create (x, x).
+      return new EmptyContiguousSet<C>(domain);
+    }
+    return intersectionInCurrentDomain(
+        Range.range(
+            fromElement, BoundType.forBoolean(fromInclusive),
+            toElement, BoundType.forBoolean(toInclusive)));
+  }",method,
+"  @Override
+  ContiguousSet<C> tailSetImpl(C fromElement, boolean inclusive) {
+    return intersectionInCurrentDomain(Range.downTo(fromElement, BoundType.forBoolean(inclusive)));
+  }",method,
+"  @GwtIncompatible // not used by GWT emulation
+  @Override
+  int indexOf(Object target) {
+    return contains(target) ? (int) domain.distance(first(), (C) target) : -1;
+  }",method,
+"  @Override
+  public UnmodifiableIterator<C> iterator() {
+    return new AbstractSequentialIterator<C>(first()) {
+      final C last = last();
+      @Override
+      protected C computeNext(C previous) {
+        return equalsOrThrow(previous, last) ? null : domain.next(previous);
+      }
+    };
+  }",method,
+"      @Override
+      protected C computeNext(C previous) {
+        return equalsOrThrow(previous, last) ? null : domain.next(previous);
+      }",method,
+"  @GwtIncompatible // NavigableSet
+  @Override
+  public UnmodifiableIterator<C> descendingIterator() {
+    return new AbstractSequentialIterator<C>(last()) {
+      final C first = first();
+      @Override
+      protected C computeNext(C previous) {
+        return equalsOrThrow(previous, first) ? null : domain.previous(previous);
+      }
+    };
+  }",method,
+"      @Override
+      protected C computeNext(C previous) {
+        return equalsOrThrow(previous, first) ? null : domain.previous(previous);
+      }",method,
+"  private static boolean equalsOrThrow(Comparable<?> left, @Nullable Comparable<?> right) {
+    return right != null && Range.compareOrThrow(left, right) == 0;
+  }",method,
+"  @Override
+  boolean isPartialView() {
+    return false;
+  }",method,
+"  @Override
+  public C first() {
+    return range.lowerBound.leastValueAbove(domain);
+  }",method,
+"  @Override
+  public C last() {
+    return range.upperBound.greatestValueBelow(domain);
+  }",method,
+"  @Override
+  ImmutableList<C> createAsList() {
+    if (domain.supportsFastOffset) {
+      return new ImmutableAsList<C>() {
+        @Override
+        ImmutableSortedSet<C> delegateCollection() {
+          return RegularContiguousSet.this;
+        }
+        @Override
+        public C get(int i) {
+          checkElementIndex(i, size());
+          return domain.offset(first(), i);
+        }
+      };
+    } else {
+      return super.createAsList();
+    }
+  }",method,
+"    if (domain.supportsFastOffset) {
+      return new ImmutableAsList<C>() {
+        @Override
+        ImmutableSortedSet<C> delegateCollection() {
+          return RegularContiguousSet.this;
+        }
+        @Override
+        public C get(int i) {
+          checkElementIndex(i, size());
+          return domain.offset(first(), i);
+        }
+      };
+    }",method,
+"        @Override
+        ImmutableSortedSet<C> delegateCollection() {
+          return RegularContiguousSet.this;
+        }",method,
+"        @Override
+        public C get(int i) {
+          checkElementIndex(i, size());
+          return domain.offset(first(), i);
+        }",method,
+"  @Override
+  public int size() {
+    long distance = domain.distance(first(), last());
+    return (distance >= Integer.MAX_VALUE) ? Integer.MAX_VALUE : (int) distance + 1;
+  }",method,
+"  @Override
+  public boolean contains(@Nullable Object object) {
+    if (object == null) {
+      return false;
+    }
+    try {
+      return range.contains((C) object);
+    } catch (ClassCastException e) {
+      return false;
+    }
+  }",method,
+"    if (object == null) {
+      return false;
+    }",method,
+"  @Override
+  public boolean containsAll(Collection<?> targets) {
+    return Collections2.containsAllImpl(this, targets);
+  }",method,
+"  @Override
+  public boolean isEmpty() {
+    return false;
+  }",method,
+"  @Override
+  public ContiguousSet<C> intersection(ContiguousSet<C> other) {
+    checkNotNull(other);
+    checkArgument(this.domain.equals(other.domain));
+    if (other.isEmpty()) {
+      return other;
+    } else {
+      C lowerEndpoint = Ordering.natural().max(this.first(), other.first());
+      C upperEndpoint = Ordering.natural().min(this.last(), other.last());
+      return (lowerEndpoint.compareTo(upperEndpoint) <= 0)
+          ? ContiguousSet.create(Range.closed(lowerEndpoint, upperEndpoint), domain)
+          : new EmptyContiguousSet<C>(domain);
+    }
+  }",method,
+"  @Override
+  public Range<C> range() {
+    return range(CLOSED, CLOSED);
+  }",method,
+"  @Override
+  public Range<C> range(BoundType lowerBoundType, BoundType upperBoundType) {
+    return Range.create(
+        range.lowerBound.withLowerBoundType(lowerBoundType, domain),
+        range.upperBound.withUpperBoundType(upperBoundType, domain));
+  }",method,
+"  @Override
+  public boolean equals(@Nullable Object object) {
+    if (object == this) {
+      return true;
+    } else if (object instanceof RegularContiguousSet) {
+      RegularContiguousSet<?> that = (RegularContiguousSet<?>) object;
+      if (this.domain.equals(that.domain)) {
+        return this.first().equals(that.first()) && this.last().equals(that.last());
+      }
+    }
+    return super.equals(object);
+  }",method,
+"    if (object == this) {
+      return true;
+    }",method,
+"  @Override
+  public int hashCode() {
+    return Sets.hashCodeImpl(this);
+  }",method,
+"    private SerializedForm(Range<C> range, DiscreteDomain<C> domain) {
+      this.range = range;
+      this.domain = domain;
+    }",method,
+"    private Object readResolve() {
+      return new RegularContiguousSet<C>(range, domain);
+    }",method,
+"  @GwtIncompatible // serialization
+  @Override
+  Object writeReplace() {
+    return new SerializedForm<C>(range, domain);
+  }",method,

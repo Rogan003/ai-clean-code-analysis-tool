@@ -1,0 +1,1232 @@
+code_snippet,type,score
+"    public UpgradeSettingsRequest versions(Map<String, Tuple<Version, String>> versions) {
+        this.versions = versions;
+        return this;
+    }",method,
+"    @Override
+    public void readFrom(StreamInput in) throws IOException {
+        super.readFrom(in);
+        int size = in.readVInt();
+        versions = new HashMap<>();
+        for (int i=0; i<size; i++) {
+            String index = in.readString();
+            Version upgradeVersion = Version.readVersion(in);
+            String oldestLuceneSegment = in.readString();
+            versions.put(index, new Tuple<>(upgradeVersion, oldestLuceneSegment));
+        }
+    }",method,
+"        for (int i=0; i<size; i++) {
+            String index = in.readString();
+            Version upgradeVersion = Version.readVersion(in);
+            String oldestLuceneSegment = in.readString();
+            versions.put(index, new Tuple<>(upgradeVersion, oldestLuceneSegment));
+        }",method,
+"    @Override
+    public void writeTo(StreamOutput out) throws IOException {
+        super.writeTo(out);
+        out.writeVInt(versions.size());
+        for(Map.Entry<String, Tuple<Version, String>> entry : versions.entrySet()) {
+            out.writeString(entry.getKey());
+            Version.writeVersion(entry.getValue().v1(), out);
+            out.writeString(entry.getValue().v2());
+        }
+    }",method,
+"public class RequiredAnnotationBeanPostProcessorTests {
+	@Test
+	public void testWithRequiredPropertyOmitted() {
+		try {
+			DefaultListableBeanFactory factory = new DefaultListableBeanFactory();
+			BeanDefinition beanDef = BeanDefinitionBuilder
+				.genericBeanDefinition(RequiredTestBean.class)
+				.addPropertyValue(""name"", ""Rob Harrop"")
+				.addPropertyValue(""favouriteColour"", ""Blue"")
+				.addPropertyValue(""jobTitle"", ""Grand Poobah"")
+				.getBeanDefinition();
+			factory.registerBeanDefinition(""testBean"", beanDef);
+			factory.addBeanPostProcessor(new RequiredAnnotationBeanPostProcessor());
+			factory.preInstantiateSingletons();
+			fail(""Should have thrown BeanCreationException"");
+		}
+		catch (BeanCreationException ex) {
+			String message = ex.getCause().getMessage();
+			assertTrue(message.contains(""Property""));
+			assertTrue(message.contains(""age""));
+			assertTrue(message.contains(""testBean""));
+		}
+	}
+	@Test
+	public void testWithThreeRequiredPropertiesOmitted() {
+		try {
+			DefaultListableBeanFactory factory = new DefaultListableBeanFactory();
+			BeanDefinition beanDef = BeanDefinitionBuilder
+				.genericBeanDefinition(RequiredTestBean.class)
+				.addPropertyValue(""name"", ""Rob Harrop"")
+				.getBeanDefinition();
+			factory.registerBeanDefinition(""testBean"", beanDef);
+			factory.addBeanPostProcessor(new RequiredAnnotationBeanPostProcessor());
+			factory.preInstantiateSingletons();
+			fail(""Should have thrown BeanCreationException"");
+		}
+		catch (BeanCreationException ex) {
+			String message = ex.getCause().getMessage();
+			assertTrue(message.contains(""Properties""));
+			assertTrue(message.contains(""age""));
+			assertTrue(message.contains(""favouriteColour""));
+			assertTrue(message.contains(""jobTitle""));
+			assertTrue(message.contains(""testBean""));
+		}
+	}
+	@Test
+	public void testWithAllRequiredPropertiesSpecified() {
+		DefaultListableBeanFactory factory = new DefaultListableBeanFactory();
+		BeanDefinition beanDef = BeanDefinitionBuilder
+			.genericBeanDefinition(RequiredTestBean.class)
+			.addPropertyValue(""age"", ""24"")
+			.addPropertyValue(""favouriteColour"", ""Blue"")
+			.addPropertyValue(""jobTitle"", ""Grand Poobah"")
+			.getBeanDefinition();
+		factory.registerBeanDefinition(""testBean"", beanDef);
+		factory.addBeanPostProcessor(new RequiredAnnotationBeanPostProcessor());
+		factory.preInstantiateSingletons();
+		RequiredTestBean bean = (RequiredTestBean) factory.getBean(""testBean"");
+		assertEquals(24, bean.getAge());
+		assertEquals(""Blue"", bean.getFavouriteColour());
+	}
+	@Test
+	public void testWithCustomAnnotation() {
+		try {
+			DefaultListableBeanFactory factory = new DefaultListableBeanFactory();
+			BeanDefinition beanDef = BeanDefinitionBuilder
+				.genericBeanDefinition(RequiredTestBean.class)
+				.getBeanDefinition();
+			factory.registerBeanDefinition(""testBean"", beanDef);
+			RequiredAnnotationBeanPostProcessor rabpp = new RequiredAnnotationBeanPostProcessor();
+			rabpp.setRequiredAnnotationType(MyRequired.class);
+			factory.addBeanPostProcessor(rabpp);
+			factory.preInstantiateSingletons();
+			fail(""Should have thrown BeanCreationException"");
+		}
+		catch (BeanCreationException ex) {
+			String message = ex.getCause().getMessage();
+			assertTrue(message.contains(""Property""));
+			assertTrue(message.contains(""name""));
+			assertTrue(message.contains(""testBean""));
+		}
+	}
+	@Test
+	public void testWithStaticFactoryMethod() {
+		try {
+			DefaultListableBeanFactory factory = new DefaultListableBeanFactory();
+			BeanDefinition beanDef = BeanDefinitionBuilder
+					.genericBeanDefinition(RequiredTestBean.class)
+					.setFactoryMethod(""create"")
+					.addPropertyValue(""name"", ""Rob Harrop"")
+					.addPropertyValue(""favouriteColour"", ""Blue"")
+					.addPropertyValue(""jobTitle"", ""Grand Poobah"")
+					.getBeanDefinition();
+			factory.registerBeanDefinition(""testBean"", beanDef);
+			factory.addBeanPostProcessor(new RequiredAnnotationBeanPostProcessor());
+			factory.preInstantiateSingletons();
+			fail(""Should have thrown BeanCreationException"");
+		}
+		catch (BeanCreationException ex) {
+			String message = ex.getCause().getMessage();
+			assertTrue(message.contains(""Property""));
+			assertTrue(message.contains(""age""));
+			assertTrue(message.contains(""testBean""));
+		}
+	}
+	@Test
+	public void testWithStaticFactoryMethodAndRequiredPropertiesSpecified() {
+		DefaultListableBeanFactory factory = new DefaultListableBeanFactory();
+		BeanDefinition beanDef = BeanDefinitionBuilder
+				.genericBeanDefinition(RequiredTestBean.class)
+				.setFactoryMethod(""create"")
+				.addPropertyValue(""age"", ""24"")
+				.addPropertyValue(""favouriteColour"", ""Blue"")
+				.addPropertyValue(""jobTitle"", ""Grand Poobah"")
+				.getBeanDefinition();
+		factory.registerBeanDefinition(""testBean"", beanDef);
+		factory.addBeanPostProcessor(new RequiredAnnotationBeanPostProcessor());
+		factory.preInstantiateSingletons();
+		RequiredTestBean bean = (RequiredTestBean) factory.getBean(""testBean"");
+		assertEquals(24, bean.getAge());
+		assertEquals(""Blue"", bean.getFavouriteColour());
+	}
+	@Test
+	public void testWithFactoryBean() {
+		DefaultListableBeanFactory factory = new DefaultListableBeanFactory();
+		RootBeanDefinition beanDef = new RootBeanDefinition(RequiredTestBean.class);
+		beanDef.setFactoryBeanName(""testBeanFactory"");
+		beanDef.setFactoryMethodName(""create"");
+		factory.registerBeanDefinition(""testBean"", beanDef);
+		factory.registerBeanDefinition(""testBeanFactory"", new RootBeanDefinition(RequiredTestBeanFactory.class));
+		RequiredAnnotationBeanPostProcessor bpp = new RequiredAnnotationBeanPostProcessor();
+		bpp.setBeanFactory(factory);
+		factory.addBeanPostProcessor(bpp);
+		factory.preInstantiateSingletons();
+	}
+	@Retention(RetentionPolicy.RUNTIME)
+	@Target(ElementType.METHOD)
+	public @interface MyRequired {
+	}
+	public static class RequiredTestBean implements BeanNameAware, BeanFactoryAware {
+		private String name;
+		private int age;
+		private String favouriteColour;
+		private String jobTitle;
+		public int getAge() {
+			return age;
+		}
+		@Required
+		public void setAge(int age) {
+			this.age = age;
+		}
+		public String getName() {
+			return name;
+		}
+		@MyRequired
+		public void setName(String name) {
+			this.name = name;
+		}
+		public String getFavouriteColour() {
+			return favouriteColour;
+		}
+		@Required
+		public void setFavouriteColour(String favouriteColour) {
+			this.favouriteColour = favouriteColour;
+		}
+		public String getJobTitle() {
+			return jobTitle;
+		}
+		@Required
+		public void setJobTitle(String jobTitle) {
+			this.jobTitle = jobTitle;
+		}
+		@Override
+		@Required
+		public void setBeanName(String name) {
+		}
+		@Override
+		@Required
+		public void setBeanFactory(BeanFactory beanFactory) {
+		}
+		public static RequiredTestBean create() {
+			return new RequiredTestBean();
+		}
+	}
+	public static class RequiredTestBeanFactory {
+		public RequiredTestBean create() {
+			return new RequiredTestBean();
+		}
+	}
+}",class,
+"	public static class RequiredTestBean implements BeanNameAware, BeanFactoryAware {
+		private String name;
+		private int age;
+		private String favouriteColour;
+		private String jobTitle;
+		public int getAge() {
+			return age;
+		}
+		@Required
+		public void setAge(int age) {
+			this.age = age;
+		}
+		public String getName() {
+			return name;
+		}
+		@MyRequired
+		public void setName(String name) {
+			this.name = name;
+		}
+		public String getFavouriteColour() {
+			return favouriteColour;
+		}
+		@Required
+		public void setFavouriteColour(String favouriteColour) {
+			this.favouriteColour = favouriteColour;
+		}
+		public String getJobTitle() {
+			return jobTitle;
+		}
+		@Required
+		public void setJobTitle(String jobTitle) {
+			this.jobTitle = jobTitle;
+		}
+		@Override
+		@Required
+		public void setBeanName(String name) {
+		}
+		@Override
+		@Required
+		public void setBeanFactory(BeanFactory beanFactory) {
+		}
+		public static RequiredTestBean create() {
+			return new RequiredTestBean();
+		}
+	}",class,
+"	public static class RequiredTestBeanFactory {
+		public RequiredTestBean create() {
+			return new RequiredTestBean();
+		}
+	}",class,
+"	@Test
+	public void testWithRequiredPropertyOmitted() {
+		try {
+			DefaultListableBeanFactory factory = new DefaultListableBeanFactory();
+			BeanDefinition beanDef = BeanDefinitionBuilder
+				.genericBeanDefinition(RequiredTestBean.class)
+				.addPropertyValue(""name"", ""Rob Harrop"")
+				.addPropertyValue(""favouriteColour"", ""Blue"")
+				.addPropertyValue(""jobTitle"", ""Grand Poobah"")
+				.getBeanDefinition();
+			factory.registerBeanDefinition(""testBean"", beanDef);
+			factory.addBeanPostProcessor(new RequiredAnnotationBeanPostProcessor());
+			factory.preInstantiateSingletons();
+			fail(""Should have thrown BeanCreationException"");
+		}
+		catch (BeanCreationException ex) {
+			String message = ex.getCause().getMessage();
+			assertTrue(message.contains(""Property""));
+			assertTrue(message.contains(""age""));
+			assertTrue(message.contains(""testBean""));
+		}
+	}",method,
+"		catch (BeanCreationException ex) {
+			String message = ex.getCause().getMessage();
+			assertTrue(message.contains(""Property""));
+			assertTrue(message.contains(""age""));
+			assertTrue(message.contains(""testBean""));
+		}",method,
+"	@Test
+	public void testWithThreeRequiredPropertiesOmitted() {
+		try {
+			DefaultListableBeanFactory factory = new DefaultListableBeanFactory();
+			BeanDefinition beanDef = BeanDefinitionBuilder
+				.genericBeanDefinition(RequiredTestBean.class)
+				.addPropertyValue(""name"", ""Rob Harrop"")
+				.getBeanDefinition();
+			factory.registerBeanDefinition(""testBean"", beanDef);
+			factory.addBeanPostProcessor(new RequiredAnnotationBeanPostProcessor());
+			factory.preInstantiateSingletons();
+			fail(""Should have thrown BeanCreationException"");
+		}
+		catch (BeanCreationException ex) {
+			String message = ex.getCause().getMessage();
+			assertTrue(message.contains(""Properties""));
+			assertTrue(message.contains(""age""));
+			assertTrue(message.contains(""favouriteColour""));
+			assertTrue(message.contains(""jobTitle""));
+			assertTrue(message.contains(""testBean""));
+		}
+	}",method,
+"		catch (BeanCreationException ex) {
+			String message = ex.getCause().getMessage();
+			assertTrue(message.contains(""Properties""));
+			assertTrue(message.contains(""age""));
+			assertTrue(message.contains(""favouriteColour""));
+			assertTrue(message.contains(""jobTitle""));
+			assertTrue(message.contains(""testBean""));
+		}",method,
+"	@Test
+	public void testWithAllRequiredPropertiesSpecified() {
+		DefaultListableBeanFactory factory = new DefaultListableBeanFactory();
+		BeanDefinition beanDef = BeanDefinitionBuilder
+			.genericBeanDefinition(RequiredTestBean.class)
+			.addPropertyValue(""age"", ""24"")
+			.addPropertyValue(""favouriteColour"", ""Blue"")
+			.addPropertyValue(""jobTitle"", ""Grand Poobah"")
+			.getBeanDefinition();
+		factory.registerBeanDefinition(""testBean"", beanDef);
+		factory.addBeanPostProcessor(new RequiredAnnotationBeanPostProcessor());
+		factory.preInstantiateSingletons();
+		RequiredTestBean bean = (RequiredTestBean) factory.getBean(""testBean"");
+		assertEquals(24, bean.getAge());
+		assertEquals(""Blue"", bean.getFavouriteColour());
+	}",method,
+"	@Test
+	public void testWithCustomAnnotation() {
+		try {
+			DefaultListableBeanFactory factory = new DefaultListableBeanFactory();
+			BeanDefinition beanDef = BeanDefinitionBuilder
+				.genericBeanDefinition(RequiredTestBean.class)
+				.getBeanDefinition();
+			factory.registerBeanDefinition(""testBean"", beanDef);
+			RequiredAnnotationBeanPostProcessor rabpp = new RequiredAnnotationBeanPostProcessor();
+			rabpp.setRequiredAnnotationType(MyRequired.class);
+			factory.addBeanPostProcessor(rabpp);
+			factory.preInstantiateSingletons();
+			fail(""Should have thrown BeanCreationException"");
+		}
+		catch (BeanCreationException ex) {
+			String message = ex.getCause().getMessage();
+			assertTrue(message.contains(""Property""));
+			assertTrue(message.contains(""name""));
+			assertTrue(message.contains(""testBean""));
+		}
+	}",method,
+"		catch (BeanCreationException ex) {
+			String message = ex.getCause().getMessage();
+			assertTrue(message.contains(""Property""));
+			assertTrue(message.contains(""name""));
+			assertTrue(message.contains(""testBean""));
+		}",method,
+"	@Test
+	public void testWithStaticFactoryMethod() {
+		try {
+			DefaultListableBeanFactory factory = new DefaultListableBeanFactory();
+			BeanDefinition beanDef = BeanDefinitionBuilder
+					.genericBeanDefinition(RequiredTestBean.class)
+					.setFactoryMethod(""create"")
+					.addPropertyValue(""name"", ""Rob Harrop"")
+					.addPropertyValue(""favouriteColour"", ""Blue"")
+					.addPropertyValue(""jobTitle"", ""Grand Poobah"")
+					.getBeanDefinition();
+			factory.registerBeanDefinition(""testBean"", beanDef);
+			factory.addBeanPostProcessor(new RequiredAnnotationBeanPostProcessor());
+			factory.preInstantiateSingletons();
+			fail(""Should have thrown BeanCreationException"");
+		}
+		catch (BeanCreationException ex) {
+			String message = ex.getCause().getMessage();
+			assertTrue(message.contains(""Property""));
+			assertTrue(message.contains(""age""));
+			assertTrue(message.contains(""testBean""));
+		}
+	}",method,
+"		catch (BeanCreationException ex) {
+			String message = ex.getCause().getMessage();
+			assertTrue(message.contains(""Property""));
+			assertTrue(message.contains(""age""));
+			assertTrue(message.contains(""testBean""));
+		}",method,
+"	@Test
+	public void testWithStaticFactoryMethodAndRequiredPropertiesSpecified() {
+		DefaultListableBeanFactory factory = new DefaultListableBeanFactory();
+		BeanDefinition beanDef = BeanDefinitionBuilder
+				.genericBeanDefinition(RequiredTestBean.class)
+				.setFactoryMethod(""create"")
+				.addPropertyValue(""age"", ""24"")
+				.addPropertyValue(""favouriteColour"", ""Blue"")
+				.addPropertyValue(""jobTitle"", ""Grand Poobah"")
+				.getBeanDefinition();
+		factory.registerBeanDefinition(""testBean"", beanDef);
+		factory.addBeanPostProcessor(new RequiredAnnotationBeanPostProcessor());
+		factory.preInstantiateSingletons();
+		RequiredTestBean bean = (RequiredTestBean) factory.getBean(""testBean"");
+		assertEquals(24, bean.getAge());
+		assertEquals(""Blue"", bean.getFavouriteColour());
+	}",method,
+"	@Test
+	public void testWithFactoryBean() {
+		DefaultListableBeanFactory factory = new DefaultListableBeanFactory();
+		RootBeanDefinition beanDef = new RootBeanDefinition(RequiredTestBean.class);
+		beanDef.setFactoryBeanName(""testBeanFactory"");
+		beanDef.setFactoryMethodName(""create"");
+		factory.registerBeanDefinition(""testBean"", beanDef);
+		factory.registerBeanDefinition(""testBeanFactory"", new RootBeanDefinition(RequiredTestBeanFactory.class));
+		RequiredAnnotationBeanPostProcessor bpp = new RequiredAnnotationBeanPostProcessor();
+		bpp.setBeanFactory(factory);
+		factory.addBeanPostProcessor(bpp);
+		factory.preInstantiateSingletons();
+	}",method,
+"		public int getAge() {
+			return age;
+		}",method,
+"		@Required
+		public void setAge(int age) {
+			this.age = age;
+		}",method,
+"		public String getName() {
+			return name;
+		}",method,
+"		@MyRequired
+		public void setName(String name) {
+			this.name = name;
+		}",method,
+"		public String getFavouriteColour() {
+			return favouriteColour;
+		}",method,
+"		@Required
+		public void setFavouriteColour(String favouriteColour) {
+			this.favouriteColour = favouriteColour;
+		}",method,
+"		public String getJobTitle() {
+			return jobTitle;
+		}",method,
+"		@Required
+		public void setJobTitle(String jobTitle) {
+			this.jobTitle = jobTitle;
+		}",method,
+"		@Override
+		@Required
+		public void setBeanName(String name) {
+		}",method,
+"		@Override
+		@Required
+		public void setBeanFactory(BeanFactory beanFactory) {
+		}",method,
+"		public static RequiredTestBean create() {
+			return new RequiredTestBean();
+		}",method,
+"		public RequiredTestBean create() {
+			return new RequiredTestBean();
+		}",method,
+"public abstract class GetTimeZoneNode extends RubyNode {
+    protected static final CyclicAssumption TZ_UNCHANGED = new CyclicAssumption(""ENV['TZ'] is unmodified"");
+    public static void invalidateTZ() {
+        TZ_UNCHANGED.invalidate();
+    }
+    @Child private CallDispatchHeadNode lookupEnvNode = CallDispatchHeadNode.createOnSelf();
+    public abstract TimeZoneAndName executeGetTimeZone();
+    @Specialization(assumptions = ""TZ_UNCHANGED.getAssumption()"")
+    public TimeZoneAndName getTimeZone(
+            @Cached(""getTZ()"") Object tzValue,
+            @Cached(""getTimeZone(tzValue)"") TimeZoneAndName zone) {
+        return zone;
+    }
+    protected Object getTZ() {
+        return lookupEnvNode.call(null, coreLibrary().getENV(), ""[]"", coreStrings().TZ.createInstance());
+    }
+    @TruffleBoundary
+    protected TimeZoneAndName getTimeZone(Object tz) {
+        String tzString = """";
+        if (RubyGuards.isRubyString(tz)) {
+            tzString = StringOperations.getString((DynamicObject) tz);
+        }
+        // TODO CS 4-May-15 not sure how TZ ends up being nil
+        if (tz == nil()) {
+            return new TimeZoneAndName(ZoneId.systemDefault(), null);
+        } else if (tzString.equalsIgnoreCase(""localtime"")) {
+            // On Solaris, $TZ is ""localtime"", so get it from Java
+            return new TimeZoneAndName(ZoneId.systemDefault(), null);
+        } else if (RubyGuards.isRubyString(tz)) {
+            return TimeZoneParser.parse(this, tzString);
+        } else {
+            throw new UnsupportedOperationException();
+        }
+    }
+}",class,
+"    public static void invalidateTZ() {
+        TZ_UNCHANGED.invalidate();
+    }",method,
+"    protected Object getTZ() {
+        return lookupEnvNode.call(null, coreLibrary().getENV(), ""[]"", coreStrings().TZ.createInstance());
+    }",method,
+"    @TruffleBoundary
+    protected TimeZoneAndName getTimeZone(Object tz) {
+        String tzString = """";
+        if (RubyGuards.isRubyString(tz)) {
+            tzString = StringOperations.getString((DynamicObject) tz);
+        }
+        // TODO CS 4-May-15 not sure how TZ ends up being nil
+        if (tz == nil()) {
+            return new TimeZoneAndName(ZoneId.systemDefault(), null);
+        } else if (tzString.equalsIgnoreCase(""localtime"")) {
+            // On Solaris, $TZ is ""localtime"", so get it from Java
+            return new TimeZoneAndName(ZoneId.systemDefault(), null);
+        } else if (RubyGuards.isRubyString(tz)) {
+            return TimeZoneParser.parse(this, tzString);
+        } else {
+            throw new UnsupportedOperationException();
+        }
+    }",method,
+"public class ThumbnailRequestCoordinator implements RequestCoordinator,
+    Request {
+  private Request full;
+  private Request thumb;
+  @Nullable private RequestCoordinator coordinator;
+  private boolean isRunning;
+  public ThumbnailRequestCoordinator() {
+    this(null);
+  }
+  public ThumbnailRequestCoordinator(RequestCoordinator coordinator) {
+    this.coordinator = coordinator;
+  }
+  public void setRequests(Request full, Request thumb) {
+    this.full = full;
+    this.thumb = thumb;
+  }
+  @Override
+  public boolean canSetImage(Request request) {
+    return parentCanSetImage() && (request.equals(full) || !full.isResourceSet());
+  }
+  private boolean parentCanSetImage() {
+    return coordinator == null || coordinator.canSetImage(this);
+  }
+  @Override
+  public boolean canNotifyStatusChanged(Request request) {
+    return parentCanNotifyStatusChanged() && request.equals(full) && !isAnyResourceSet();
+  }
+  private boolean parentCanNotifyStatusChanged() {
+    return coordinator == null || coordinator.canNotifyStatusChanged(this);
+  }
+  @Override
+  public boolean isAnyResourceSet() {
+    return parentIsAnyResourceSet() || isResourceSet();
+  }
+  @Override
+  public void onRequestSuccess(Request request) {
+    if (request.equals(thumb)) {
+      return;
+    }
+    if (coordinator != null) {
+      coordinator.onRequestSuccess(this);
+    }
+    // Clearing the thumb is not necessarily safe if the thumb is being displayed in the Target,
+    // as a layer in a cross fade for example. The only way we know the thumb is not being
+    // displayed and is therefore safe to clear is if the thumb request has not yet completed.
+    if (!thumb.isComplete()) {
+      thumb.clear();
+    }
+  }
+  @Override
+  public void onRequestFailed(Request request) {
+    if (!request.equals(full)) {
+      return;
+    }
+    if (coordinator != null) {
+      coordinator.onRequestFailed(this);
+    }
+  }
+  private boolean parentIsAnyResourceSet() {
+    return coordinator != null && coordinator.isAnyResourceSet();
+  }
+  @Override
+  public void begin() {
+    isRunning = true;
+    if (!thumb.isRunning()) {
+      thumb.begin();
+    }
+    if (isRunning && !full.isRunning()) {
+      full.begin();
+    }
+  }
+  @Override
+  public void pause() {
+    isRunning = false;
+    full.pause();
+    thumb.pause();
+  }
+  @Override
+  public void clear() {
+    isRunning = false;
+    thumb.clear();
+    full.clear();
+  }
+  @Override
+  public boolean isPaused() {
+    return full.isPaused();
+  }
+  @Override
+  public boolean isRunning() {
+    return full.isRunning();
+  }
+  @Override
+  public boolean isComplete() {
+    return full.isComplete() || thumb.isComplete();
+  }
+  @Override
+  public boolean isResourceSet() {
+    return full.isResourceSet() || thumb.isResourceSet();
+  }
+  @Override
+  public boolean isCancelled() {
+    return full.isCancelled();
+  }
+  @Override
+  public boolean isFailed() {
+    return full.isFailed();
+  }
+  @Override
+  public void recycle() {
+    full.recycle();
+    thumb.recycle();
+  }
+  @Override
+  public boolean isEquivalentTo(Request o) {
+    if (o instanceof ThumbnailRequestCoordinator) {
+      ThumbnailRequestCoordinator that = (ThumbnailRequestCoordinator) o;
+      return (full == null ? that.full == null : full.isEquivalentTo(that.full))
+          && (thumb == null ? that.thumb == null : thumb.isEquivalentTo(that.thumb));
+    }
+    return false;
+  }
+}",class,
+"  public ThumbnailRequestCoordinator() {
+    this(null);
+  }",method,
+"  public ThumbnailRequestCoordinator(RequestCoordinator coordinator) {
+    this.coordinator = coordinator;
+  }",method,
+"  public void setRequests(Request full, Request thumb) {
+    this.full = full;
+    this.thumb = thumb;
+  }",method,
+"  @Override
+  public boolean canSetImage(Request request) {
+    return parentCanSetImage() && (request.equals(full) || !full.isResourceSet());
+  }",method,
+"  private boolean parentCanSetImage() {
+    return coordinator == null || coordinator.canSetImage(this);
+  }",method,
+"  @Override
+  public boolean canNotifyStatusChanged(Request request) {
+    return parentCanNotifyStatusChanged() && request.equals(full) && !isAnyResourceSet();
+  }",method,
+"  private boolean parentCanNotifyStatusChanged() {
+    return coordinator == null || coordinator.canNotifyStatusChanged(this);
+  }",method,
+"  @Override
+  public boolean isAnyResourceSet() {
+    return parentIsAnyResourceSet() || isResourceSet();
+  }",method,
+"  @Override
+  public void onRequestSuccess(Request request) {
+    if (request.equals(thumb)) {
+      return;
+    }
+    if (coordinator != null) {
+      coordinator.onRequestSuccess(this);
+    }
+    // Clearing the thumb is not necessarily safe if the thumb is being displayed in the Target,
+    // as a layer in a cross fade for example. The only way we know the thumb is not being
+    // displayed and is therefore safe to clear is if the thumb request has not yet completed.
+    if (!thumb.isComplete()) {
+      thumb.clear();
+    }
+  }",method,
+"    if (coordinator != null) {
+      coordinator.onRequestSuccess(this);
+    }",method,
+"  @Override
+  public void onRequestFailed(Request request) {
+    if (!request.equals(full)) {
+      return;
+    }
+    if (coordinator != null) {
+      coordinator.onRequestFailed(this);
+    }
+  }",method,
+"    if (coordinator != null) {
+      coordinator.onRequestFailed(this);
+    }",method,
+"  private boolean parentIsAnyResourceSet() {
+    return coordinator != null && coordinator.isAnyResourceSet();
+  }",method,
+"  @Override
+  public void begin() {
+    isRunning = true;
+    if (!thumb.isRunning()) {
+      thumb.begin();
+    }
+    if (isRunning && !full.isRunning()) {
+      full.begin();
+    }
+  }",method,
+"  @Override
+  public void pause() {
+    isRunning = false;
+    full.pause();
+    thumb.pause();
+  }",method,
+"  @Override
+  public void clear() {
+    isRunning = false;
+    thumb.clear();
+    full.clear();
+  }",method,
+"  @Override
+  public boolean isPaused() {
+    return full.isPaused();
+  }",method,
+"  @Override
+  public boolean isRunning() {
+    return full.isRunning();
+  }",method,
+"  @Override
+  public boolean isComplete() {
+    return full.isComplete() || thumb.isComplete();
+  }",method,
+"  @Override
+  public boolean isResourceSet() {
+    return full.isResourceSet() || thumb.isResourceSet();
+  }",method,
+"  @Override
+  public boolean isCancelled() {
+    return full.isCancelled();
+  }",method,
+"  @Override
+  public boolean isFailed() {
+    return full.isFailed();
+  }",method,
+"  @Override
+  public void recycle() {
+    full.recycle();
+    thumb.recycle();
+  }",method,
+"  @Override
+  public boolean isEquivalentTo(Request o) {
+    if (o instanceof ThumbnailRequestCoordinator) {
+      ThumbnailRequestCoordinator that = (ThumbnailRequestCoordinator) o;
+      return (full == null ? that.full == null : full.isEquivalentTo(that.full))
+          && (thumb == null ? that.thumb == null : thumb.isEquivalentTo(that.thumb));
+    }
+    return false;
+  }",method,
+"    if (o instanceof ThumbnailRequestCoordinator) {
+      ThumbnailRequestCoordinator that = (ThumbnailRequestCoordinator) o;
+      return (full == null ? that.full == null : full.isEquivalentTo(that.full))
+          && (thumb == null ? that.thumb == null : thumb.isEquivalentTo(that.thumb));
+    }",method,
+"public class ShardFetchRequest extends TransportRequest {
+    private long id;
+    private int[] docIds;
+    private int size;
+    private ScoreDoc lastEmittedDoc;
+    public ShardFetchRequest() {
+    }
+    public ShardFetchRequest(long id, IntArrayList list, ScoreDoc lastEmittedDoc) {
+        this.id = id;
+        this.docIds = list.buffer;
+        this.size = list.size();
+        this.lastEmittedDoc = lastEmittedDoc;
+    }
+    public ShardFetchRequest(StreamInput in) throws IOException {
+        super(in);
+        id = in.readLong();
+        size = in.readVInt();
+        docIds = new int[size];
+        for (int i = 0; i < size; i++) {
+            docIds[i] = in.readVInt();
+        }
+        byte flag = in.readByte();
+        if (flag == 1) {
+            lastEmittedDoc = Lucene.readFieldDoc(in);
+        } else if (flag == 2) {
+            lastEmittedDoc = Lucene.readScoreDoc(in);
+        } else if (flag != 0) {
+            throw new IOException(""Unknown flag: "" + flag);
+        }
+    }
+    @Override
+    public void writeTo(StreamOutput out) throws IOException {
+        super.writeTo(out);
+        out.writeLong(id);
+        out.writeVInt(size);
+        for (int i = 0; i < size; i++) {
+            out.writeVInt(docIds[i]);
+        }
+        if (lastEmittedDoc == null) {
+            out.writeByte((byte) 0);
+        } else if (lastEmittedDoc instanceof FieldDoc) {
+            out.writeByte((byte) 1);
+            Lucene.writeFieldDoc(out, (FieldDoc) lastEmittedDoc);
+        } else {
+            out.writeByte((byte) 2);
+            Lucene.writeScoreDoc(out, lastEmittedDoc);
+        }
+    }
+    public long id() {
+        return id;
+    }
+    public int[] docIds() {
+        return docIds;
+    }
+    public int docIdsSize() {
+        return size;
+    }
+    public ScoreDoc lastEmittedDoc() {
+        return lastEmittedDoc;
+    }
+    @Override
+    public void readFrom(StreamInput in) throws IOException {
+        throw new UnsupportedOperationException(""usage of Streamable is to be replaced by Writeable"");
+    }
+    @Override
+    public Task createTask(long id, String type, String action, TaskId parentTaskId) {
+        return new SearchTask(id, type, action, getDescription(), parentTaskId);
+    }
+    @Override
+    public String getDescription() {
+        return ""id["" + id + ""], size["" + size + ""], lastEmittedDoc["" + lastEmittedDoc + ""]"";
+    }
+}",class,
+"    public ShardFetchRequest() {
+    }",method,
+"    public ShardFetchRequest(long id, IntArrayList list, ScoreDoc lastEmittedDoc) {
+        this.id = id;
+        this.docIds = list.buffer;
+        this.size = list.size();
+        this.lastEmittedDoc = lastEmittedDoc;
+    }",method,
+"    public ShardFetchRequest(StreamInput in) throws IOException {
+        super(in);
+        id = in.readLong();
+        size = in.readVInt();
+        docIds = new int[size];
+        for (int i = 0; i < size; i++) {
+            docIds[i] = in.readVInt();
+        }
+        byte flag = in.readByte();
+        if (flag == 1) {
+            lastEmittedDoc = Lucene.readFieldDoc(in);
+        } else if (flag == 2) {
+            lastEmittedDoc = Lucene.readScoreDoc(in);
+        } else if (flag != 0) {
+            throw new IOException(""Unknown flag: "" + flag);
+        }
+    }",method,
+"        for (int i = 0; i < size; i++) {
+            docIds[i] = in.readVInt();
+        }",method,
+"        if (flag == 1) {
+            lastEmittedDoc = Lucene.readFieldDoc(in);
+        }",method,
+"    @Override
+    public void writeTo(StreamOutput out) throws IOException {
+        super.writeTo(out);
+        out.writeLong(id);
+        out.writeVInt(size);
+        for (int i = 0; i < size; i++) {
+            out.writeVInt(docIds[i]);
+        }
+        if (lastEmittedDoc == null) {
+            out.writeByte((byte) 0);
+        } else if (lastEmittedDoc instanceof FieldDoc) {
+            out.writeByte((byte) 1);
+            Lucene.writeFieldDoc(out, (FieldDoc) lastEmittedDoc);
+        } else {
+            out.writeByte((byte) 2);
+            Lucene.writeScoreDoc(out, lastEmittedDoc);
+        }
+    }",method,
+"        for (int i = 0; i < size; i++) {
+            out.writeVInt(docIds[i]);
+        }",method,
+"        if (lastEmittedDoc == null) {
+            out.writeByte((byte) 0);
+        }",method,
+"    public long id() {
+        return id;
+    }",method,
+"    public int[] docIds() {
+        return docIds;
+    }",method,
+"    public int docIdsSize() {
+        return size;
+    }",method,
+"    public ScoreDoc lastEmittedDoc() {
+        return lastEmittedDoc;
+    }",method,
+"    @Override
+    public void readFrom(StreamInput in) throws IOException {
+        throw new UnsupportedOperationException(""usage of Streamable is to be replaced by Writeable"");
+    }",method,
+"    @Override
+    public Task createTask(long id, String type, String action, TaskId parentTaskId) {
+        return new SearchTask(id, type, action, getDescription(), parentTaskId);
+    }",method,
+"    @Override
+    public String getDescription() {
+        return ""id["" + id + ""], size["" + size + ""], lastEmittedDoc["" + lastEmittedDoc + ""]"";
+    }",method,
+"public abstract class AbstractConfigUtils {
+  // SDK-dependent entities
+  @NonNls protected String STARTER_SCRIPT_FILE_NAME;
+  private final Condition<Library> LIB_SEARCH_CONDITION = library -> isSDKLibrary(library);
+  // Common entities
+  @NonNls public static final String UNDEFINED_VERSION = ""undefined"";
+  @NonNls public static final String MANIFEST_PATH = ""META-INF/MANIFEST.MF"";
+  public abstract boolean isSDKHome(final VirtualFile file);
+  @NotNull
+  public abstract String getSDKVersion(@NotNull String path);
+  @Nullable
+  public static String getSDKJarVersion(String jarPath, final String jarRegex, String manifestPath) {
+    return getSDKJarVersion(jarPath, Pattern.compile(jarRegex), manifestPath);
+  }
+  @Nullable
+  public static String getSDKJarVersion(String jarPath, final Pattern jarPattern, String manifestPath) {
+    return getSDKJarVersion(jarPath, jarPattern, manifestPath, 1);
+  }
+  @Nullable
+  public static String getSDKJarVersion(String jarPath, final Pattern jarPattern, String manifestPath, int versionGroup) {
+    try {
+      File[] jars = LibrariesUtil.getFilesInDirectoryByPattern(jarPath, jarPattern);
+      if (jars.length != 1) {
+        return null;
+      }
+      JarFile jarFile = new JarFile(jars[0]);
+      try {
+        JarEntry jarEntry = jarFile.getJarEntry(manifestPath);
+        if (jarEntry == null) {
+          return null;
+        }
+        final InputStream inputStream = jarFile.getInputStream(jarEntry);
+        Manifest manifest;
+        try {
+          manifest = new Manifest(inputStream);
+        }
+        finally {
+          inputStream.close();
+        }
+        final String version = manifest.getMainAttributes().getValue(Attributes.Name.IMPLEMENTATION_VERSION);
+        if (version != null) {
+          return version;
+        }
+        final Matcher matcher = jarPattern.matcher(jars[0].getName());
+        if (matcher.matches() && matcher.groupCount() >= versionGroup) {
+          return matcher.group(versionGroup);
+        }
+        return null;
+      }
+      finally {
+        jarFile.close();
+      }
+    }
+    catch (Exception e) {
+      return null;
+    }
+  }
+  public Library[] getProjectSDKLibraries(Project project) {
+    if (project == null || project.isDisposed()) return Library.EMPTY_ARRAY;
+    final LibraryTable table = ProjectLibraryTable.getInstance(project);
+    final List<Library> all = ContainerUtil.findAll(table.getLibraries(), LIB_SEARCH_CONDITION);
+    return all.toArray(new Library[all.size()]);
+  }
+  public Library[] getAllSDKLibraries(@Nullable Project project) {
+    return ArrayUtil.mergeArrays(getGlobalSDKLibraries(), getProjectSDKLibraries(project));
+  }
+  public Library[] getAllUsedSDKLibraries(Project project) {
+    final List<Library> libraries = new ArrayList<>();
+    for (Module module : ModuleManager.getInstance(project).getModules()) {
+      libraries.addAll(Arrays.asList(getSDKLibrariesByModule(module)));
+    }
+    return libraries.toArray(new Library[libraries.size()]);
+  }
+  public Library[] getGlobalSDKLibraries() {
+    return LibrariesUtil.getGlobalLibraries(LIB_SEARCH_CONDITION);
+  }
+  public abstract boolean isSDKLibrary(Library library);
+  public Library[] getSDKLibrariesByModule(final Module module) {
+    return LibrariesUtil.getLibrariesByCondition(module, LIB_SEARCH_CONDITION);
+  }
+}",class,
+"  @Nullable
+  public static String getSDKJarVersion(String jarPath, final String jarRegex, String manifestPath) {
+    return getSDKJarVersion(jarPath, Pattern.compile(jarRegex), manifestPath);
+  }",method,
+"  @Nullable
+  public static String getSDKJarVersion(String jarPath, final Pattern jarPattern, String manifestPath) {
+    return getSDKJarVersion(jarPath, jarPattern, manifestPath, 1);
+  }",method,
+"  @Nullable
+  public static String getSDKJarVersion(String jarPath, final Pattern jarPattern, String manifestPath, int versionGroup) {
+    try {
+      File[] jars = LibrariesUtil.getFilesInDirectoryByPattern(jarPath, jarPattern);
+      if (jars.length != 1) {
+        return null;
+      }
+      JarFile jarFile = new JarFile(jars[0]);
+      try {
+        JarEntry jarEntry = jarFile.getJarEntry(manifestPath);
+        if (jarEntry == null) {
+          return null;
+        }
+        final InputStream inputStream = jarFile.getInputStream(jarEntry);
+        Manifest manifest;
+        try {
+          manifest = new Manifest(inputStream);
+        }
+        finally {
+          inputStream.close();
+        }
+        final String version = manifest.getMainAttributes().getValue(Attributes.Name.IMPLEMENTATION_VERSION);
+        if (version != null) {
+          return version;
+        }
+        final Matcher matcher = jarPattern.matcher(jars[0].getName());
+        if (matcher.matches() && matcher.groupCount() >= versionGroup) {
+          return matcher.group(versionGroup);
+        }
+        return null;
+      }
+      finally {
+        jarFile.close();
+      }
+    }
+    catch (Exception e) {
+      return null;
+    }
+  }",method,
+"      if (jars.length != 1) {
+        return null;
+      }",method,
+"        if (jarEntry == null) {
+          return null;
+        }",method,
+"        if (version != null) {
+          return version;
+        }",method,
+"    catch (Exception e) {
+      return null;
+    }",method,
+"  public Library[] getProjectSDKLibraries(Project project) {
+    if (project == null || project.isDisposed()) return Library.EMPTY_ARRAY;
+    final LibraryTable table = ProjectLibraryTable.getInstance(project);
+    final List<Library> all = ContainerUtil.findAll(table.getLibraries(), LIB_SEARCH_CONDITION);
+    return all.toArray(new Library[all.size()]);
+  }",method,
+"  public Library[] getAllSDKLibraries(@Nullable Project project) {
+    return ArrayUtil.mergeArrays(getGlobalSDKLibraries(), getProjectSDKLibraries(project));
+  }",method,
+"  public Library[] getAllUsedSDKLibraries(Project project) {
+    final List<Library> libraries = new ArrayList<>();
+    for (Module module : ModuleManager.getInstance(project).getModules()) {
+      libraries.addAll(Arrays.asList(getSDKLibrariesByModule(module)));
+    }
+    return libraries.toArray(new Library[libraries.size()]);
+  }",method,
+"  public Library[] getGlobalSDKLibraries() {
+    return LibrariesUtil.getGlobalLibraries(LIB_SEARCH_CONDITION);
+  }",method,
+"  public Library[] getSDKLibrariesByModule(final Module module) {
+    return LibrariesUtil.getLibrariesByCondition(module, LIB_SEARCH_CONDITION);
+  }",method,
+"public class Loader extends DisplayObjectContainer {
+	private DisplayObject _content;
+	private final LoaderInfo _contentLoaderInfo = new LoaderInfo();
+	private LoaderContext _loaderContext;
+	private URLLoader _urlLoader;
+	public Loader() {}
+	public void close() {
+	}
+	public DisplayObject content() { return _content; }
+	public LoaderInfo contentLoaderInfo() { return _contentLoaderInfo; }
+	//load(request:URLRequest, context:LoaderContext = null):void
+	public void load(final URLRequest request) {
+		load(request, null);
+	}
+	public void load(final URLRequest request, final LoaderContext context) {
+		_urlLoader = new URLLoader();
+		_urlLoader.dataFormat = URLLoaderDataFormat.BINARY;
+		_urlLoader.addEventListener(Event.COMPLETE,
+			new Function1<Event, Object>() {
+				@Override
+				public Object apply1(final jitb.lang.Object thisArg, final Event value) {
+					applyVoid1(thisArg, value);
+					return null;
+				}
+				@Override
+				public void applyVoid1(jitb.lang.Object thisArg, Event value) {
+					onURLLoaderComplete();
+				}
+			}, false, 0, true);
+		_urlLoader.load(request);
+	}
+	public void loadBytes(final ByteArray bytes) {
+		loadBytes(bytes, null);
+	}
+	public void loadBytes(final ByteArray bytes, final LoaderContext context) {
+		Require.nonNull(""bytes"", bytes);
+		final ByteBuffer buffer = bytes.JITB$buffer();
+		try {
+			final byte[] buf = new byte[bytes.JITB$buffer().capacity()];
+			bytes.JITB$buffer().get(buf);//todo fixme and get rid of buffer
+			final BufferedImage image = ImageIO.read(new ByteArrayInputStream(buf));
+			final BitmapData bitmapData = BitmapData.JITB$fromImage(image);
+			_content = new Bitmap(bitmapData);
+		} catch(IOException e) {
+			e.printStackTrace();
+			throw new Error(""IOError"");//todo dispatch proper error...
+		}
+		_contentLoaderInfo.dispatchEvent(new Event(Event.COMPLETE));
+	}
+	public void unload() {
+		_content = null;
+	}
+	public void unloadAndStop() {
+		unloadAndStop(true);
+	}
+	public void unloadAndStop(final boolean gc) {
+		if(gc) {
+			// We ignore this flag since it is more specific to the Flash Player
+			// and not required in the JVM.
+		}
+		_content = null;
+	}
+	private void onURLLoaderComplete() {
+		loadBytes((ByteArray)_urlLoader.data, _loaderContext);
+	}
+	@Override
+	protected void JITB$render() {
+		if(null != content()) {
+			content().JITB$render();
+		}
+	}
+}",class,
+	public Loader() {},method,
+"	public void close() {
+	}",method,
+	public DisplayObject content() { return _content; },method,
+	public LoaderInfo contentLoaderInfo() { return _contentLoaderInfo; },method,
+"	public void load(final URLRequest request) {
+		load(request, null);
+	}",method,
+"	public void load(final URLRequest request, final LoaderContext context) {
+		_urlLoader = new URLLoader();
+		_urlLoader.dataFormat = URLLoaderDataFormat.BINARY;
+		_urlLoader.addEventListener(Event.COMPLETE,
+			new Function1<Event, Object>() {
+				@Override
+				public Object apply1(final jitb.lang.Object thisArg, final Event value) {
+					applyVoid1(thisArg, value);
+					return null;
+				}
+				@Override
+				public void applyVoid1(jitb.lang.Object thisArg, Event value) {
+					onURLLoaderComplete();
+				}
+			}, false, 0, true);
+		_urlLoader.load(request);
+	}",method,
+"		_urlLoader.addEventListener(Event.COMPLETE,
+			new Function1<Event, Object>() {
+				@Override
+				public Object apply1(final jitb.lang.Object thisArg, final Event value) {
+					applyVoid1(thisArg, value);
+					return null;
+				}
+				@Override
+				public void applyVoid1(jitb.lang.Object thisArg, Event value) {
+					onURLLoaderComplete();
+				}
+			}",method,
+"				@Override
+				public Object apply1(final jitb.lang.Object thisArg, final Event value) {
+					applyVoid1(thisArg, value);
+					return null;
+				}",method,
+"				@Override
+				public void applyVoid1(jitb.lang.Object thisArg, Event value) {
+					onURLLoaderComplete();
+				}",method,
+"	public void loadBytes(final ByteArray bytes) {
+		loadBytes(bytes, null);
+	}",method,
+"	public void loadBytes(final ByteArray bytes, final LoaderContext context) {
+		Require.nonNull(""bytes"", bytes);
+		final ByteBuffer buffer = bytes.JITB$buffer();
+		try {
+			final byte[] buf = new byte[bytes.JITB$buffer().capacity()];
+			bytes.JITB$buffer().get(buf);//todo fixme and get rid of buffer
+			final BufferedImage image = ImageIO.read(new ByteArrayInputStream(buf));
+			final BitmapData bitmapData = BitmapData.JITB$fromImage(image);
+			_content = new Bitmap(bitmapData);
+		} catch(IOException e) {
+			e.printStackTrace();
+			throw new Error(""IOError"");//todo dispatch proper error...
+		}
+		_contentLoaderInfo.dispatchEvent(new Event(Event.COMPLETE));
+	}",method,

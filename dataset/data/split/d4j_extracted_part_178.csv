@@ -1,0 +1,1507 @@
+code_snippet,type,score
+"public class MessageAnnotationsTest
+    extends TestCase
+{
+    public static final String ADDRESS = ""/message_annotations-q"";
+    public static final String PAYLOAD = ""Payload"";
+    public MessageAnnotationsTest(String testName)
+    {
+        super(testName);
+    }
+    public static Test suite()
+    {
+        return new TestSuite(MessageAnnotationsTest.class);
+    }
+    public void test_message_annotations()
+    {
+        String uri = System.getProperty(""rmq_broker_uri"");
+        assertNotNull(uri);
+        String address = uri + ADDRESS;
+        Messenger mng = new MessengerImpl();
+        Message sent_msg, received_msg;
+        mng.setTimeout(1000);
+        try {
+            mng.start();
+        } catch (Exception e) {
+            fail();
+        }
+        sent_msg = new MessageImpl();
+        sent_msg.setAddress(address);
+        sent_msg.setBody(new AmqpValue(PAYLOAD));
+        Map<Symbol, Object> map = new HashMap<Symbol, Object>();
+        map.put(Symbol.valueOf(""key1""), ""value1"");
+        map.put(Symbol.valueOf(""key2""), ""value2"");
+        MessageAnnotations annotations = new MessageAnnotations(map);
+        sent_msg.setMessageAnnotations(annotations);
+        mng.put(sent_msg);
+        mng.send();
+        mng.subscribe(address);
+        mng.recv();
+        received_msg = mng.get();
+        assertEquals(sent_msg.getSubject(),
+          received_msg.getSubject());
+        assertEquals(sent_msg.getContentType(),
+          received_msg.getContentType());
+        assertEquals(sent_msg.getBody().toString(),
+          received_msg.getBody().toString());
+        assertEquals(sent_msg.getMessageAnnotations().toString(),
+          received_msg.getMessageAnnotations().toString());
+        mng.stop();
+    }
+}",class,
+"    public MessageAnnotationsTest(String testName)
+    {
+        super(testName);
+    }",method,
+"    public static Test suite()
+    {
+        return new TestSuite(MessageAnnotationsTest.class);
+    }",method,
+"    public void test_message_annotations()
+    {
+        String uri = System.getProperty(""rmq_broker_uri"");
+        assertNotNull(uri);
+        String address = uri + ADDRESS;
+        Messenger mng = new MessengerImpl();
+        Message sent_msg, received_msg;
+        mng.setTimeout(1000);
+        try {
+            mng.start();
+        } catch (Exception e) {
+            fail();
+        }
+        sent_msg = new MessageImpl();
+        sent_msg.setAddress(address);
+        sent_msg.setBody(new AmqpValue(PAYLOAD));
+        Map<Symbol, Object> map = new HashMap<Symbol, Object>();
+        map.put(Symbol.valueOf(""key1""), ""value1"");
+        map.put(Symbol.valueOf(""key2""), ""value2"");
+        MessageAnnotations annotations = new MessageAnnotations(map);
+        sent_msg.setMessageAnnotations(annotations);
+        mng.put(sent_msg);
+        mng.send();
+        mng.subscribe(address);
+        mng.recv();
+        received_msg = mng.get();
+        assertEquals(sent_msg.getSubject(),
+          received_msg.getSubject());
+        assertEquals(sent_msg.getContentType(),
+          received_msg.getContentType());
+        assertEquals(sent_msg.getBody().toString(),
+          received_msg.getBody().toString());
+        assertEquals(sent_msg.getMessageAnnotations().toString(),
+          received_msg.getMessageAnnotations().toString());
+        mng.stop();
+    }",method,
+"public class EitherTypeCoercer<Left, Right> implements TypeCoercer<Either<Left, Right>> {
+  private final TypeCoercer<Left> leftTypeCoercer;
+  private final TypeCoercer<Right> rightTypeCoercer;
+  public EitherTypeCoercer(TypeCoercer<Left> leftTypeCoercer, TypeCoercer<Right> rightTypeCoercer) {
+    this.leftTypeCoercer = leftTypeCoercer;
+    this.rightTypeCoercer = rightTypeCoercer;
+  }
+  @SuppressWarnings(""unchecked"")
+  @Override
+  public Class<Either<Left, Right>> getOutputClass() {
+    return (Class<Either<Left, Right>>) (Class<?>) Either.class;
+  }
+  @Override
+  public boolean hasElementClass(Class<?>... types) {
+    return leftTypeCoercer.hasElementClass(types) || rightTypeCoercer.hasElementClass(types);
+  }
+  @Override
+  public void traverse(Either<Left, Right> object, Traversal traversal) {
+    if (object.isLeft()) {
+      leftTypeCoercer.traverse(object.getLeft(), traversal);
+    } else {
+      rightTypeCoercer.traverse(object.getRight(), traversal);
+    }
+  }
+  // Classifications for the ""type"" of object/coercer.  We use this to unambiguously
+  // choose which ""side"" of the coercion fork we want to choose, rather than relying
+  // on catching `CoerceFailedException` exceptions, which can lead to really unhelpful
+  // error messages hitting the user.
+  private enum Type {
+    DEFAULT,
+    COLLECTION,
+    MAP,
+  }
+  private static <T> Type getCoercerType(TypeCoercer<T> coercer) {
+    if (coercer instanceof MapTypeCoercer || coercer instanceof SortedMapTypeCoercer) {
+      return Type.MAP;
+    } else if (coercer instanceof CollectionTypeCoercer || coercer instanceof PairTypeCoercer) {
+      return Type.COLLECTION;
+    } else {
+      return Type.DEFAULT;
+    }
+  }
+  private static Type getObjectType(Object object) {
+    if (object instanceof Map) {
+      return Type.MAP;
+    } else if (object instanceof Collection) {
+      return Type.COLLECTION;
+    } else {
+      return Type.DEFAULT;
+    }
+  }
+  @Override
+  public Either<Left, Right> coerce(
+      CellPathResolver cellRoots,
+      ProjectFilesystem filesystem,
+      Path pathRelativeToProjectRoot,
+      Object object)
+      throws CoerceFailedException {
+    // Determine the ""type"" of the object we're coercing and our left and right coercers.
+    Type objectType = getObjectType(object);
+    Type leftCoercerType = getCoercerType(leftTypeCoercer);
+    Type rightCoercerType = getCoercerType(rightTypeCoercer);
+    // If both coercers match, try the left one first, and if it fails try the right
+    // side.  If neither work, throw an exception combining the two errors.  Long term,
+    // we probably should require some way to ""choose"" a side without relying on failures,
+    // as this would make errors reported to the user much more clear.
+    if (leftCoercerType == objectType && rightCoercerType == objectType) {
+      try {
+        return Either.ofLeft(
+            leftTypeCoercer.coerce(cellRoots, filesystem, pathRelativeToProjectRoot, object));
+      } catch (CoerceFailedException eLeft) {
+        try {
+          return Either.ofRight(
+              rightTypeCoercer.coerce(cellRoots, filesystem, pathRelativeToProjectRoot, object));
+        } catch (CoerceFailedException eRight) {
+          throw new CoerceFailedException(
+              String.format(""%s, or %s"", eLeft.getMessage(), eRight.getMessage()));
+        }
+      }
+    }
+    // Only the left coercer matches, so use that to parse the input and let any inner
+    // exceptions propagate up.
+    if (leftCoercerType == objectType) {
+      return Either.ofLeft(
+          leftTypeCoercer.coerce(cellRoots, filesystem, pathRelativeToProjectRoot, object));
+    }
+    // Only the right coercer matches, so use that to parse the input and let any inner
+    // exceptions propagate up.
+    if (rightCoercerType == objectType) {
+      return Either.ofRight(
+          rightTypeCoercer.coerce(cellRoots, filesystem, pathRelativeToProjectRoot, object));
+    }
+    // None of our coercers matched the ""type"" of the object, so throw the generic
+    // error message.
+    throw new CoerceFailedException(String.format(""cannot parse %s"", object));
+  }
+}",class,
+"  public EitherTypeCoercer(TypeCoercer<Left> leftTypeCoercer, TypeCoercer<Right> rightTypeCoercer) {
+    this.leftTypeCoercer = leftTypeCoercer;
+    this.rightTypeCoercer = rightTypeCoercer;
+  }",method,
+"  @SuppressWarnings(""unchecked"")
+  @Override
+  public Class<Either<Left, Right>> getOutputClass() {
+    return (Class<Either<Left, Right>>) (Class<?>) Either.class;
+  }",method,
+"  @Override
+  public boolean hasElementClass(Class<?>... types) {
+    return leftTypeCoercer.hasElementClass(types) || rightTypeCoercer.hasElementClass(types);
+  }",method,
+"  @Override
+  public void traverse(Either<Left, Right> object, Traversal traversal) {
+    if (object.isLeft()) {
+      leftTypeCoercer.traverse(object.getLeft(), traversal);
+    } else {
+      rightTypeCoercer.traverse(object.getRight(), traversal);
+    }
+  }",method,
+"  private static <T> Type getCoercerType(TypeCoercer<T> coercer) {
+    if (coercer instanceof MapTypeCoercer || coercer instanceof SortedMapTypeCoercer) {
+      return Type.MAP;
+    } else if (coercer instanceof CollectionTypeCoercer || coercer instanceof PairTypeCoercer) {
+      return Type.COLLECTION;
+    } else {
+      return Type.DEFAULT;
+    }
+  }",method,
+"    if (coercer instanceof MapTypeCoercer || coercer instanceof SortedMapTypeCoercer) {
+      return Type.MAP;
+    }",method,
+"  private static Type getObjectType(Object object) {
+    if (object instanceof Map) {
+      return Type.MAP;
+    } else if (object instanceof Collection) {
+      return Type.COLLECTION;
+    } else {
+      return Type.DEFAULT;
+    }
+  }",method,
+"    if (object instanceof Map) {
+      return Type.MAP;
+    }",method,
+"  @Override
+  public Either<Left, Right> coerce(
+      CellPathResolver cellRoots,
+      ProjectFilesystem filesystem,
+      Path pathRelativeToProjectRoot,
+      Object object)
+      throws CoerceFailedException {
+    // Determine the ""type"" of the object we're coercing and our left and right coercers.
+    Type objectType = getObjectType(object);
+    Type leftCoercerType = getCoercerType(leftTypeCoercer);
+    Type rightCoercerType = getCoercerType(rightTypeCoercer);
+    // If both coercers match, try the left one first, and if it fails try the right
+    // side.  If neither work, throw an exception combining the two errors.  Long term,
+    // we probably should require some way to ""choose"" a side without relying on failures,
+    // as this would make errors reported to the user much more clear.
+    if (leftCoercerType == objectType && rightCoercerType == objectType) {
+      try {
+        return Either.ofLeft(
+            leftTypeCoercer.coerce(cellRoots, filesystem, pathRelativeToProjectRoot, object));
+      } catch (CoerceFailedException eLeft) {
+        try {
+          return Either.ofRight(
+              rightTypeCoercer.coerce(cellRoots, filesystem, pathRelativeToProjectRoot, object));
+        } catch (CoerceFailedException eRight) {
+          throw new CoerceFailedException(
+              String.format(""%s, or %s"", eLeft.getMessage(), eRight.getMessage()));
+        }
+      }
+    }
+    // Only the left coercer matches, so use that to parse the input and let any inner
+    // exceptions propagate up.
+    if (leftCoercerType == objectType) {
+      return Either.ofLeft(
+          leftTypeCoercer.coerce(cellRoots, filesystem, pathRelativeToProjectRoot, object));
+    }
+    // Only the right coercer matches, so use that to parse the input and let any inner
+    // exceptions propagate up.
+    if (rightCoercerType == objectType) {
+      return Either.ofRight(
+          rightTypeCoercer.coerce(cellRoots, filesystem, pathRelativeToProjectRoot, object));
+    }
+    // None of our coercers matched the ""type"" of the object, so throw the generic
+    // error message.
+    throw new CoerceFailedException(String.format(""cannot parse %s"", object));
+  }",method,
+"    if (leftCoercerType == objectType && rightCoercerType == objectType) {
+      try {
+        return Either.ofLeft(
+            leftTypeCoercer.coerce(cellRoots, filesystem, pathRelativeToProjectRoot, object));
+      } catch (CoerceFailedException eLeft) {
+        try {
+          return Either.ofRight(
+              rightTypeCoercer.coerce(cellRoots, filesystem, pathRelativeToProjectRoot, object));
+        } catch (CoerceFailedException eRight) {
+          throw new CoerceFailedException(
+              String.format(""%s, or %s"", eLeft.getMessage(), eRight.getMessage()));
+        }
+      }
+    }",method,
+"    if (leftCoercerType == objectType) {
+      return Either.ofLeft(
+          leftTypeCoercer.coerce(cellRoots, filesystem, pathRelativeToProjectRoot, object));
+    }",method,
+"    if (rightCoercerType == objectType) {
+      return Either.ofRight(
+          rightTypeCoercer.coerce(cellRoots, filesystem, pathRelativeToProjectRoot, object));
+    }",method,
+"@BTrace public class SysProp {
+    @OnMethod(
+        clazz=""java.lang.System"",
+        method=""getProperty""
+    )
+    public static void onGetProperty(String name) {
+        println(name);
+        // call property safely here.
+        println(Sys.Env.property(name));
+    } 
+}",class,
+"    public static void onGetProperty(String name) {
+        println(name);
+        // call property safely here.
+        println(Sys.Env.property(name));
+    }",method,
+"public class UISimpleSettingsProvider implements SearchTopHitProvider, OptionsTopHitProvider.CoveredByToggleActions {
+  private static OptionDescription CYCLING_SCROLLING = AppearanceOptionsTopHitProvider.appearance(""Cyclic scrolling"", ""cycleScrolling"");
+  private static OptionDescription MEMORY_INDICATOR = AppearanceOptionsTopHitProvider.appearance(""Show Memory Indicator"",
+                                                                                                 ""showMemoryIndicator"");
+  private static OptionDescription SHOW_MAIN_TOOLBAR = AppearanceOptionsTopHitProvider.appearance(""Show Main Toolbar"", ""showMainToolbar"");
+  private static OptionDescription SHOW_NAVIGATION_BAR = AppearanceOptionsTopHitProvider.appearance(""Show Navigation Bar"",
+                                                                                                    ""showNavigationBar"");
+  private static OptionDescription HIDE_TOOL_STRIPES = AppearanceOptionsTopHitProvider.appearance(""Hide Tool Window Bars"",
+                                                                                                  ""hideToolStripes"");
+  private static OptionDescription SHOW_STATUS_BAR = AppearanceOptionsTopHitProvider.appearance(""Show Status Bar"", ""showStatusBar"");
+  private static OptionDescription IS_BLOCK_CURSOR = EditorOptionsTopHitProvider.editor(""Show Block Cursor"", ""IS_BLOCK_CURSOR"");
+  private static OptionDescription IS_WHITESPACES_SHOWN = EditorOptionsTopHitProvider.editor(""Show Whitespaces"", ""IS_WHITESPACES_SHOWN"");
+  private static OptionDescription ARE_LINE_NUMBERS_SHOWN = EditorOptionsTopHitProvider.editor(""Show Line Numbers"",
+                                                                                               ""ARE_LINE_NUMBERS_SHOWN"");
+  private static OptionDescription SHOW_METHOD_SEPARATORS = new DaemonCodeAnalyzerOptionDescription(""SHOW_METHOD_SEPARATORS"", ""Show Method Separators"", ""appearance"");
+  @Override
+  public void consumeTopHits(String pattern, Consumer<Object> collector, Project project) {
+    pattern = pattern.trim().toLowerCase();
+    if (StringUtil.isBetween(pattern, ""cyc"", ""cyclic "") || StringUtil.isBetween(pattern, ""scr"", ""scroll "")) {
+      collector.consume(CYCLING_SCROLLING);
+    } else if (patternContains(pattern, ""memo"")) {
+      collector.consume(MEMORY_INDICATOR);
+    } else if (StringUtil.isBetween(pattern, ""nav"", ""navigation bar "") || StringUtil.isBetween(pattern, ""navb"", ""navbar "")) {
+      collector.consume(SHOW_NAVIGATION_BAR);
+    } else if (StringUtil.isBetween(pattern, ""tool"", ""toolbar "")) {
+      collector.consume(SHOW_MAIN_TOOLBAR);
+    } else if (StringUtil.isBetween(pattern, ""tool w"", ""tool window bars"") || StringUtil.isBetween(pattern, ""toolw"", ""toolwindow "")) {
+      collector.consume(HIDE_TOOL_STRIPES);
+    } else if (StringUtil.isBetween(pattern, ""stat"", ""status bar "")) {
+      collector.consume(SHOW_STATUS_BAR);
+    } else if (StringUtil.isBetween(pattern, ""curs"", ""cursor "") || StringUtil.isBetween(pattern, ""block "", ""block cursor "")
+      || StringUtil.isBetween(pattern, ""caret"", ""caret "") || StringUtil.isBetween(pattern, ""block "", ""block caret "")) {
+      collector.consume(IS_BLOCK_CURSOR);
+    } else if (StringUtil.isBetween(pattern, ""whites"", ""whitespaces "") || StringUtil.isBetween(pattern, ""show whi"", ""show whitespaces "")) {
+      collector.consume(IS_WHITESPACES_SHOWN);
+    } else if (StringUtil.isBetween(pattern, ""line "", ""line numbers "") || StringUtil.isBetween(pattern, ""show li"", ""show line numbers "")) {
+      collector.consume(ARE_LINE_NUMBERS_SHOWN);
+    } else if (StringUtil.isBetween(pattern, ""separa "", ""separators "") || StringUtil.isBetween(pattern, ""method s"", ""method separators "")) {
+      collector.consume(SHOW_METHOD_SEPARATORS);
+    }
+  }
+  private static boolean patternContains(String pattern, String search) {
+    for (String s : pattern.split("" "")) {
+      if (s.contains(search)) {
+        return true;
+      }
+    }
+    return false;
+  }
+}",class,
+"  @Override
+  public void consumeTopHits(String pattern, Consumer<Object> collector, Project project) {
+    pattern = pattern.trim().toLowerCase();
+    if (StringUtil.isBetween(pattern, ""cyc"", ""cyclic "") || StringUtil.isBetween(pattern, ""scr"", ""scroll "")) {
+      collector.consume(CYCLING_SCROLLING);
+    } else if (patternContains(pattern, ""memo"")) {
+      collector.consume(MEMORY_INDICATOR);
+    } else if (StringUtil.isBetween(pattern, ""nav"", ""navigation bar "") || StringUtil.isBetween(pattern, ""navb"", ""navbar "")) {
+      collector.consume(SHOW_NAVIGATION_BAR);
+    } else if (StringUtil.isBetween(pattern, ""tool"", ""toolbar "")) {
+      collector.consume(SHOW_MAIN_TOOLBAR);
+    } else if (StringUtil.isBetween(pattern, ""tool w"", ""tool window bars"") || StringUtil.isBetween(pattern, ""toolw"", ""toolwindow "")) {
+      collector.consume(HIDE_TOOL_STRIPES);
+    } else if (StringUtil.isBetween(pattern, ""stat"", ""status bar "")) {
+      collector.consume(SHOW_STATUS_BAR);
+    } else if (StringUtil.isBetween(pattern, ""curs"", ""cursor "") || StringUtil.isBetween(pattern, ""block "", ""block cursor "")
+      || StringUtil.isBetween(pattern, ""caret"", ""caret "") || StringUtil.isBetween(pattern, ""block "", ""block caret "")) {
+      collector.consume(IS_BLOCK_CURSOR);
+    } else if (StringUtil.isBetween(pattern, ""whites"", ""whitespaces "") || StringUtil.isBetween(pattern, ""show whi"", ""show whitespaces "")) {
+      collector.consume(IS_WHITESPACES_SHOWN);
+    } else if (StringUtil.isBetween(pattern, ""line "", ""line numbers "") || StringUtil.isBetween(pattern, ""show li"", ""show line numbers "")) {
+      collector.consume(ARE_LINE_NUMBERS_SHOWN);
+    } else if (StringUtil.isBetween(pattern, ""separa "", ""separators "") || StringUtil.isBetween(pattern, ""method s"", ""method separators "")) {
+      collector.consume(SHOW_METHOD_SEPARATORS);
+    }
+  }",method,
+"  private static boolean patternContains(String pattern, String search) {
+    for (String s : pattern.split("" "")) {
+      if (s.contains(search)) {
+        return true;
+      }
+    }
+    return false;
+  }",method,
+"public class FragmentAlertDialogSupport extends SherlockFragmentActivity {
+    @Override
+    protected void onCreate(Bundle savedInstanceState) {
+        setTheme(SampleList.THEME); //Used for theme switching in samples
+        super.onCreate(savedInstanceState);
+        setContentView(R.layout.fragment_dialog);
+        View tv = findViewById(R.id.text);
+        ((TextView)tv).setText(""Example of displaying an alert dialog with a DialogFragment"");
+        // Watch for button clicks.
+        Button button = (Button)findViewById(R.id.show);
+        button.setOnClickListener(new OnClickListener() {
+            public void onClick(View v) {
+                showDialog();
+            }
+        });
+    }
+    void showDialog() {
+        DialogFragment newFragment = MyAlertDialogFragment.newInstance(
+                R.string.alert_dialog_two_buttons_title);
+        newFragment.show(getSupportFragmentManager(), ""dialog"");
+    }
+    public void doPositiveClick() {
+        // Do stuff here.
+        Log.i(""FragmentAlertDialog"", ""Positive click!"");
+    }
+    public void doNegativeClick() {
+        // Do stuff here.
+        Log.i(""FragmentAlertDialog"", ""Negative click!"");
+    }
+    public static class MyAlertDialogFragment extends SherlockDialogFragment {
+        public static MyAlertDialogFragment newInstance(int title) {
+            MyAlertDialogFragment frag = new MyAlertDialogFragment();
+            Bundle args = new Bundle();
+            args.putInt(""title"", title);
+            frag.setArguments(args);
+            return frag;
+        }
+        @Override
+        public Dialog onCreateDialog(Bundle savedInstanceState) {
+            int title = getArguments().getInt(""title"");
+            return new AlertDialog.Builder(getActivity())
+                    .setIcon(R.drawable.alert_dialog_icon)
+                    .setTitle(title)
+                    .setPositiveButton(R.string.alert_dialog_ok,
+                        new DialogInterface.OnClickListener() {
+                            public void onClick(DialogInterface dialog, int whichButton) {
+                                ((FragmentAlertDialogSupport)getActivity()).doPositiveClick();
+                            }
+                        }
+                    )
+                    .setNegativeButton(R.string.alert_dialog_cancel,
+                        new DialogInterface.OnClickListener() {
+                            public void onClick(DialogInterface dialog, int whichButton) {
+                                ((FragmentAlertDialogSupport)getActivity()).doNegativeClick();
+                            }
+                        }
+                    )
+                    .create();
+        }
+    }
+}",class,
+"    public static class MyAlertDialogFragment extends SherlockDialogFragment {
+        public static MyAlertDialogFragment newInstance(int title) {
+            MyAlertDialogFragment frag = new MyAlertDialogFragment();
+            Bundle args = new Bundle();
+            args.putInt(""title"", title);
+            frag.setArguments(args);
+            return frag;
+        }
+        @Override
+        public Dialog onCreateDialog(Bundle savedInstanceState) {
+            int title = getArguments().getInt(""title"");
+            return new AlertDialog.Builder(getActivity())
+                    .setIcon(R.drawable.alert_dialog_icon)
+                    .setTitle(title)
+                    .setPositiveButton(R.string.alert_dialog_ok,
+                        new DialogInterface.OnClickListener() {
+                            public void onClick(DialogInterface dialog, int whichButton) {
+                                ((FragmentAlertDialogSupport)getActivity()).doPositiveClick();
+                            }
+                        }
+                    )
+                    .setNegativeButton(R.string.alert_dialog_cancel,
+                        new DialogInterface.OnClickListener() {
+                            public void onClick(DialogInterface dialog, int whichButton) {
+                                ((FragmentAlertDialogSupport)getActivity()).doNegativeClick();
+                            }
+                        }
+                    )
+                    .create();
+        }
+    }",class,
+"    @Override
+    protected void onCreate(Bundle savedInstanceState) {
+        setTheme(SampleList.THEME); //Used for theme switching in samples
+        super.onCreate(savedInstanceState);
+        setContentView(R.layout.fragment_dialog);
+        View tv = findViewById(R.id.text);
+        ((TextView)tv).setText(""Example of displaying an alert dialog with a DialogFragment"");
+        // Watch for button clicks.
+        Button button = (Button)findViewById(R.id.show);
+        button.setOnClickListener(new OnClickListener() {
+            public void onClick(View v) {
+                showDialog();
+            }
+        });
+    }",method,
+"        button.setOnClickListener(new OnClickListener() {
+            public void onClick(View v) {
+                showDialog();
+            }
+        }",method,
+"            public void onClick(View v) {
+                showDialog();
+            }",method,
+"    void showDialog() {
+        DialogFragment newFragment = MyAlertDialogFragment.newInstance(
+                R.string.alert_dialog_two_buttons_title);
+        newFragment.show(getSupportFragmentManager(), ""dialog"");
+    }",method,
+"    public void doPositiveClick() {
+        // Do stuff here.
+        Log.i(""FragmentAlertDialog"", ""Positive click!"");
+    }",method,
+"    public void doNegativeClick() {
+        // Do stuff here.
+        Log.i(""FragmentAlertDialog"", ""Negative click!"");
+    }",method,
+"        public static MyAlertDialogFragment newInstance(int title) {
+            MyAlertDialogFragment frag = new MyAlertDialogFragment();
+            Bundle args = new Bundle();
+            args.putInt(""title"", title);
+            frag.setArguments(args);
+            return frag;
+        }",method,
+"        @Override
+        public Dialog onCreateDialog(Bundle savedInstanceState) {
+            int title = getArguments().getInt(""title"");
+            return new AlertDialog.Builder(getActivity())
+                    .setIcon(R.drawable.alert_dialog_icon)
+                    .setTitle(title)
+                    .setPositiveButton(R.string.alert_dialog_ok,
+                        new DialogInterface.OnClickListener() {
+                            public void onClick(DialogInterface dialog, int whichButton) {
+                                ((FragmentAlertDialogSupport)getActivity()).doPositiveClick();
+                            }
+                        }
+                    )
+                    .setNegativeButton(R.string.alert_dialog_cancel,
+                        new DialogInterface.OnClickListener() {
+                            public void onClick(DialogInterface dialog, int whichButton) {
+                                ((FragmentAlertDialogSupport)getActivity()).doNegativeClick();
+                            }
+                        }
+                    )
+                    .create();
+        }",method,
+"                    .setPositiveButton(R.string.alert_dialog_ok,
+                        new DialogInterface.OnClickListener() {
+                            public void onClick(DialogInterface dialog, int whichButton) {
+                                ((FragmentAlertDialogSupport)getActivity()).doPositiveClick();
+                            }
+                        }",method,
+"                            public void onClick(DialogInterface dialog, int whichButton) {
+                                ((FragmentAlertDialogSupport)getActivity()).doPositiveClick();
+                            }",method,
+"                    .setNegativeButton(R.string.alert_dialog_cancel,
+                        new DialogInterface.OnClickListener() {
+                            public void onClick(DialogInterface dialog, int whichButton) {
+                                ((FragmentAlertDialogSupport)getActivity()).doNegativeClick();
+                            }
+                        }",method,
+"                            public void onClick(DialogInterface dialog, int whichButton) {
+                                ((FragmentAlertDialogSupport)getActivity()).doNegativeClick();
+                            }",method,
+"public class TreeTableView extends TreeTable implements ItemsProvider, SelectionProvider {
+  private static final Logger LOG = Logger.getInstance(""#com.intellij.ui.dualView.TreeTableView"");
+  public TreeTableView(ListTreeTableModelOnColumns treeTableModel) {
+    super(treeTableModel);
+    setRootVisible(false);
+    setTreeCellRenderer(new TreeCellRenderer() {
+      private final TreeCellRenderer myBaseRenderer = new HighlightableCellRenderer();
+      public Component getTreeCellRendererComponent(JTree tree1,
+                                                    Object value,
+                                                    boolean selected,
+                                                    boolean expanded,
+                                                    boolean leaf,
+                                                    int row,
+                                                    boolean hasFocus) {
+        JComponent result = (JComponent)myBaseRenderer.getTreeCellRendererComponent(tree1, value, selected, expanded, leaf, row, hasFocus);
+        result.setOpaque(!selected);
+        return result;
+      }
+    });
+    setSizes();
+  }
+  public void setTableModel(TreeTableModel treeTableModel) {
+    super.setTableModel(treeTableModel);
+    LOG.assertTrue(treeTableModel instanceof SortableColumnModel);
+  }
+  private void setSizes() {
+    ColumnInfo[] columns = ((ListTreeTableModelOnColumns)getTableModel()).getColumns();
+    for (int i = 0; i < columns.length; i++) {
+      ColumnInfo columnInfo = columns[i];
+      TableColumn column = getColumnModel().getColumn(i);
+      if (columnInfo.getWidth(this) > 0) {
+        int width = columnInfo.getWidth(this);
+        column.setMaxWidth(width);
+        column.setMinWidth(width);
+      }
+      else {
+        final String preferredValue = columnInfo.getPreferredStringValue();
+        if (preferredValue != null) {
+          int width = getFontMetrics(getFont()).stringWidth(preferredValue) + columnInfo.getAdditionalWidth();
+          column.setPreferredWidth(width);
+        }
+      }
+    }
+  }
+  public TableCellEditor getCellEditor(int row, int column) {
+    TableCellEditor editor = getColumnInfo(column).getEditor(getRowElement(row));
+    return editor == null ? super.getCellEditor(row, column) : editor;
+  }
+  public TreeTableCellRenderer createTableRenderer(TreeTableModel treeTableModel) {
+    return new TreeTableCellRenderer(TreeTableView.this, getTree()) {
+      public Component getTableCellRendererComponent(JTable table,
+                                                     Object value,
+                                                     boolean isSelected,
+                                                     boolean hasFocus,
+                                                     int row,
+                                                     int column) {
+        JComponent component = (JComponent)super.getTableCellRendererComponent(table, value, isSelected, hasFocus, row, column);
+        component.setOpaque(isSelected);
+        return component;
+      }
+    };
+  }
+  ListTreeTableModelOnColumns getTreeViewModel() {
+    return (ListTreeTableModelOnColumns)getTableModel();
+  }
+  public List<DualTreeElement> getFlattenItems() {
+    List<DualTreeElement> items = getTreeViewModel().getItems();
+    return ContainerUtil.findAll(items, object -> object.shouldBeInTheFlatView());
+  }
+  public TableCellRenderer getCellRenderer(int row, int column) {
+    TableCellRenderer renderer = getColumnInfo(column).getRenderer(getRowElement(row));
+    final TableCellRenderer baseRenderer = renderer == null ? super.getCellRenderer(row, column) : renderer;
+    return new CellRendererWrapper(baseRenderer);
+  }
+  protected Object getRowElement(final int row) {
+    return getTree().getPathForRow(row).getLastPathComponent();
+  }
+  protected final ColumnInfo<Object, ?> getColumnInfo(final int column) {
+    return getTreeViewModel().getColumnInfos()[convertColumnIndexToModel(column)];
+  }
+  public List getItems() {
+    return getTreeViewModel().getItems();
+  }
+  public List getSelection() {
+    final TreeTableTree tree = getTree();
+    if (tree == null) return Collections.emptyList();
+    final int[] rows = getSelectedRows();
+    final ArrayList result = new ArrayList();
+    for (int row : rows) {
+      final TreePath pathForRow = tree.getPathForRow(row);
+      if (pathForRow != null) result.add(pathForRow.getLastPathComponent());
+    }
+    return result;
+  }
+  public void addSelection(Object item) {
+    getTree().setExpandsSelectedPaths(true);
+    DefaultMutableTreeNode treeNode = (DefaultMutableTreeNode)item;
+    addSelectedPath(new TreePath(treeNode.getPath()));
+  }
+  public static class CellRendererWrapper implements TableCellRendererWrapper {
+    @NotNull private final TableCellRenderer myBaseRenderer;
+    public CellRendererWrapper(@NotNull TableCellRenderer baseRenderer) {
+      myBaseRenderer = baseRenderer;
+    }
+    @Override
+    @NotNull
+    public TableCellRenderer getBaseRenderer() {
+      return myBaseRenderer;
+    }
+    public Component getTableCellRendererComponent(JTable table,
+                                                   Object value,
+                                                   boolean isSelected,
+                                                   boolean hasFocus,
+                                                   int row,
+                                                   int column) {
+      JComponent rendererComponent = (JComponent)myBaseRenderer.getTableCellRendererComponent(table, value, isSelected, hasFocus,
+                                                                                              row, column);
+      if (isSelected) {
+        rendererComponent.setBackground(table.getSelectionBackground());
+        rendererComponent.setForeground(table.getSelectionForeground());
+      }
+      else {
+        final Color bg = table.getBackground();
+        rendererComponent.setBackground(bg);
+        rendererComponent.setForeground(table.getForeground());
+      }
+      rendererComponent.setOpaque(isSelected);
+      return rendererComponent;
+    }
+  }
+}",class,
+"  public static class CellRendererWrapper implements TableCellRendererWrapper {
+    @NotNull private final TableCellRenderer myBaseRenderer;
+    public CellRendererWrapper(@NotNull TableCellRenderer baseRenderer) {
+      myBaseRenderer = baseRenderer;
+    }
+    @Override
+    @NotNull
+    public TableCellRenderer getBaseRenderer() {
+      return myBaseRenderer;
+    }
+    public Component getTableCellRendererComponent(JTable table,
+                                                   Object value,
+                                                   boolean isSelected,
+                                                   boolean hasFocus,
+                                                   int row,
+                                                   int column) {
+      JComponent rendererComponent = (JComponent)myBaseRenderer.getTableCellRendererComponent(table, value, isSelected, hasFocus,
+                                                                                              row, column);
+      if (isSelected) {
+        rendererComponent.setBackground(table.getSelectionBackground());
+        rendererComponent.setForeground(table.getSelectionForeground());
+      }
+      else {
+        final Color bg = table.getBackground();
+        rendererComponent.setBackground(bg);
+        rendererComponent.setForeground(table.getForeground());
+      }
+      rendererComponent.setOpaque(isSelected);
+      return rendererComponent;
+    }
+  }",class,
+"  public TreeTableView(ListTreeTableModelOnColumns treeTableModel) {
+    super(treeTableModel);
+    setRootVisible(false);
+    setTreeCellRenderer(new TreeCellRenderer() {
+      private final TreeCellRenderer myBaseRenderer = new HighlightableCellRenderer();
+      public Component getTreeCellRendererComponent(JTree tree1,
+                                                    Object value,
+                                                    boolean selected,
+                                                    boolean expanded,
+                                                    boolean leaf,
+                                                    int row,
+                                                    boolean hasFocus) {
+        JComponent result = (JComponent)myBaseRenderer.getTreeCellRendererComponent(tree1, value, selected, expanded, leaf, row, hasFocus);
+        result.setOpaque(!selected);
+        return result;
+      }
+    });
+    setSizes();
+  }",method,
+"    setTreeCellRenderer(new TreeCellRenderer() {
+      private final TreeCellRenderer myBaseRenderer = new HighlightableCellRenderer();
+      public Component getTreeCellRendererComponent(JTree tree1,
+                                                    Object value,
+                                                    boolean selected,
+                                                    boolean expanded,
+                                                    boolean leaf,
+                                                    int row,
+                                                    boolean hasFocus) {
+        JComponent result = (JComponent)myBaseRenderer.getTreeCellRendererComponent(tree1, value, selected, expanded, leaf, row, hasFocus);
+        result.setOpaque(!selected);
+        return result;
+      }
+    }",method,
+"      public Component getTreeCellRendererComponent(JTree tree1,
+                                                    Object value,
+                                                    boolean selected,
+                                                    boolean expanded,
+                                                    boolean leaf,
+                                                    int row,
+                                                    boolean hasFocus) {
+        JComponent result = (JComponent)myBaseRenderer.getTreeCellRendererComponent(tree1, value, selected, expanded, leaf, row, hasFocus);
+        result.setOpaque(!selected);
+        return result;
+      }",method,
+"  public void setTableModel(TreeTableModel treeTableModel) {
+    super.setTableModel(treeTableModel);
+    LOG.assertTrue(treeTableModel instanceof SortableColumnModel);
+  }",method,
+"  private void setSizes() {
+    ColumnInfo[] columns = ((ListTreeTableModelOnColumns)getTableModel()).getColumns();
+    for (int i = 0; i < columns.length; i++) {
+      ColumnInfo columnInfo = columns[i];
+      TableColumn column = getColumnModel().getColumn(i);
+      if (columnInfo.getWidth(this) > 0) {
+        int width = columnInfo.getWidth(this);
+        column.setMaxWidth(width);
+        column.setMinWidth(width);
+      }
+      else {
+        final String preferredValue = columnInfo.getPreferredStringValue();
+        if (preferredValue != null) {
+          int width = getFontMetrics(getFont()).stringWidth(preferredValue) + columnInfo.getAdditionalWidth();
+          column.setPreferredWidth(width);
+        }
+      }
+    }
+  }",method,
+"    for (int i = 0; i < columns.length; i++) {
+      ColumnInfo columnInfo = columns[i];
+      TableColumn column = getColumnModel().getColumn(i);
+      if (columnInfo.getWidth(this) > 0) {
+        int width = columnInfo.getWidth(this);
+        column.setMaxWidth(width);
+        column.setMinWidth(width);
+      }
+      else {
+        final String preferredValue = columnInfo.getPreferredStringValue();
+        if (preferredValue != null) {
+          int width = getFontMetrics(getFont()).stringWidth(preferredValue) + columnInfo.getAdditionalWidth();
+          column.setPreferredWidth(width);
+        }
+      }
+    }",method,
+"        if (preferredValue != null) {
+          int width = getFontMetrics(getFont()).stringWidth(preferredValue) + columnInfo.getAdditionalWidth();
+          column.setPreferredWidth(width);
+        }",method,
+"  public TableCellEditor getCellEditor(int row, int column) {
+    TableCellEditor editor = getColumnInfo(column).getEditor(getRowElement(row));
+    return editor == null ? super.getCellEditor(row, column) : editor;
+  }",method,
+"  public TreeTableCellRenderer createTableRenderer(TreeTableModel treeTableModel) {
+    return new TreeTableCellRenderer(TreeTableView.this, getTree()) {
+      public Component getTableCellRendererComponent(JTable table,
+                                                     Object value,
+                                                     boolean isSelected,
+                                                     boolean hasFocus,
+                                                     int row,
+                                                     int column) {
+        JComponent component = (JComponent)super.getTableCellRendererComponent(table, value, isSelected, hasFocus, row, column);
+        component.setOpaque(isSelected);
+        return component;
+      }
+    };
+  }",method,
+"      public Component getTableCellRendererComponent(JTable table,
+                                                     Object value,
+                                                     boolean isSelected,
+                                                     boolean hasFocus,
+                                                     int row,
+                                                     int column) {
+        JComponent component = (JComponent)super.getTableCellRendererComponent(table, value, isSelected, hasFocus, row, column);
+        component.setOpaque(isSelected);
+        return component;
+      }",method,
+"  ListTreeTableModelOnColumns getTreeViewModel() {
+    return (ListTreeTableModelOnColumns)getTableModel();
+  }",method,
+"  public List<DualTreeElement> getFlattenItems() {
+    List<DualTreeElement> items = getTreeViewModel().getItems();
+    return ContainerUtil.findAll(items, object -> object.shouldBeInTheFlatView());
+  }",method,
+"  public TableCellRenderer getCellRenderer(int row, int column) {
+    TableCellRenderer renderer = getColumnInfo(column).getRenderer(getRowElement(row));
+    final TableCellRenderer baseRenderer = renderer == null ? super.getCellRenderer(row, column) : renderer;
+    return new CellRendererWrapper(baseRenderer);
+  }",method,
+"  protected Object getRowElement(final int row) {
+    return getTree().getPathForRow(row).getLastPathComponent();
+  }",method,
+"  protected final ColumnInfo<Object, ?> getColumnInfo(final int column) {
+    return getTreeViewModel().getColumnInfos()[convertColumnIndexToModel(column)];
+  }",method,
+"  public List getItems() {
+    return getTreeViewModel().getItems();
+  }",method,
+"  public List getSelection() {
+    final TreeTableTree tree = getTree();
+    if (tree == null) return Collections.emptyList();
+    final int[] rows = getSelectedRows();
+    final ArrayList result = new ArrayList();
+    for (int row : rows) {
+      final TreePath pathForRow = tree.getPathForRow(row);
+      if (pathForRow != null) result.add(pathForRow.getLastPathComponent());
+    }
+    return result;
+  }",method,
+"    for (int row : rows) {
+      final TreePath pathForRow = tree.getPathForRow(row);
+      if (pathForRow != null) result.add(pathForRow.getLastPathComponent());
+    }",method,
+"  public void addSelection(Object item) {
+    getTree().setExpandsSelectedPaths(true);
+    DefaultMutableTreeNode treeNode = (DefaultMutableTreeNode)item;
+    addSelectedPath(new TreePath(treeNode.getPath()));
+  }",method,
+"    @NotNull private final TableCellRenderer myBaseRenderer;
+    public CellRendererWrapper(@NotNull TableCellRenderer baseRenderer) {
+      myBaseRenderer = baseRenderer;
+    }",method,
+"    @Override
+    @NotNull
+    public TableCellRenderer getBaseRenderer() {
+      return myBaseRenderer;
+    }",method,
+"    public Component getTableCellRendererComponent(JTable table,
+                                                   Object value,
+                                                   boolean isSelected,
+                                                   boolean hasFocus,
+                                                   int row,
+                                                   int column) {
+      JComponent rendererComponent = (JComponent)myBaseRenderer.getTableCellRendererComponent(table, value, isSelected, hasFocus,
+                                                                                              row, column);
+      if (isSelected) {
+        rendererComponent.setBackground(table.getSelectionBackground());
+        rendererComponent.setForeground(table.getSelectionForeground());
+      }
+      else {
+        final Color bg = table.getBackground();
+        rendererComponent.setBackground(bg);
+        rendererComponent.setForeground(table.getForeground());
+      }
+      rendererComponent.setOpaque(isSelected);
+      return rendererComponent;
+    }",method,
+"      if (isSelected) {
+        rendererComponent.setBackground(table.getSelectionBackground());
+        rendererComponent.setForeground(table.getSelectionForeground());
+      }",method,
+"public class BatchSuppressManagerImpl implements BatchSuppressManager {
+  @NotNull
+  @Override
+  public SuppressQuickFix[] createBatchSuppressActions(@NotNull HighlightDisplayKey displayKey) {
+    return new SuppressQuickFix[] {
+        new SuppressByJavaCommentFix(displayKey),
+        new SuppressLocalWithCommentFix(displayKey),
+        new SuppressParameterFix(displayKey),
+        new SuppressFix(displayKey),
+        new SuppressForClassFix(displayKey),
+        new SuppressAllForClassFix()
+      };
+  }
+  @Override
+  public boolean isSuppressedFor(@NotNull final PsiElement element, @NotNull final String toolId) {
+    return JavaSuppressionUtil.getElementToolSuppressedIn(element, toolId) != null;
+  }
+  @Override
+  @Nullable
+  public PsiElement getElementMemberSuppressedIn(@NotNull final PsiDocCommentOwner owner, @NotNull final String inspectionToolID) {
+    return JavaSuppressionUtil.getElementMemberSuppressedIn(owner, inspectionToolID);
+  }
+  @Override
+  @Nullable
+  public PsiElement getAnnotationMemberSuppressedIn(@NotNull final PsiModifierListOwner owner, @NotNull final String inspectionToolID) {
+    return JavaSuppressionUtil.getAnnotationMemberSuppressedIn(owner, inspectionToolID);
+  }
+  @Override
+  @Nullable
+  public PsiElement getDocCommentToolSuppressedIn(@NotNull final PsiDocCommentOwner owner, @NotNull final String inspectionToolID) {
+    return JavaSuppressionUtil.getDocCommentToolSuppressedIn(owner, inspectionToolID);
+  }
+  @Override
+  @NotNull
+  public Collection<String> getInspectionIdsSuppressedInAnnotation(@NotNull final PsiModifierListOwner owner) {
+    return JavaSuppressionUtil.getInspectionIdsSuppressedInAnnotation(owner);
+  }
+  @Override
+  @Nullable
+  public String getSuppressedInspectionIdsIn(@NotNull PsiElement element) {
+    return JavaSuppressionUtil.getSuppressedInspectionIdsIn(element);
+  }
+  @Override
+  @Nullable
+  public PsiElement getElementToolSuppressedIn(@NotNull final PsiElement place, @NotNull final String toolId) {
+    return JavaSuppressionUtil.getElementToolSuppressedIn(place, toolId);
+  }
+  @Override
+  public boolean canHave15Suppressions(@NotNull final PsiElement file) {
+    return JavaSuppressionUtil.canHave15Suppressions(file);
+  }
+  @Override
+  public boolean alreadyHas14Suppressions(@NotNull final PsiDocCommentOwner commentOwner) {
+    return JavaSuppressionUtil.alreadyHas14Suppressions(commentOwner);
+  }
+}",class,
+"  @NotNull
+  @Override
+  public SuppressQuickFix[] createBatchSuppressActions(@NotNull HighlightDisplayKey displayKey) {
+    return new SuppressQuickFix[] {
+        new SuppressByJavaCommentFix(displayKey),
+        new SuppressLocalWithCommentFix(displayKey),
+        new SuppressParameterFix(displayKey),
+        new SuppressFix(displayKey),
+        new SuppressForClassFix(displayKey),
+        new SuppressAllForClassFix()
+      };
+  }",method,
+"  @Override
+  public boolean isSuppressedFor(@NotNull final PsiElement element, @NotNull final String toolId) {
+    return JavaSuppressionUtil.getElementToolSuppressedIn(element, toolId) != null;
+  }",method,
+"  @Override
+  @Nullable
+  public PsiElement getElementMemberSuppressedIn(@NotNull final PsiDocCommentOwner owner, @NotNull final String inspectionToolID) {
+    return JavaSuppressionUtil.getElementMemberSuppressedIn(owner, inspectionToolID);
+  }",method,
+"  @Override
+  @Nullable
+  public PsiElement getAnnotationMemberSuppressedIn(@NotNull final PsiModifierListOwner owner, @NotNull final String inspectionToolID) {
+    return JavaSuppressionUtil.getAnnotationMemberSuppressedIn(owner, inspectionToolID);
+  }",method,
+"  @Override
+  @Nullable
+  public PsiElement getDocCommentToolSuppressedIn(@NotNull final PsiDocCommentOwner owner, @NotNull final String inspectionToolID) {
+    return JavaSuppressionUtil.getDocCommentToolSuppressedIn(owner, inspectionToolID);
+  }",method,
+"  @Override
+  @NotNull
+  public Collection<String> getInspectionIdsSuppressedInAnnotation(@NotNull final PsiModifierListOwner owner) {
+    return JavaSuppressionUtil.getInspectionIdsSuppressedInAnnotation(owner);
+  }",method,
+"  @Override
+  @Nullable
+  public String getSuppressedInspectionIdsIn(@NotNull PsiElement element) {
+    return JavaSuppressionUtil.getSuppressedInspectionIdsIn(element);
+  }",method,
+"  @Override
+  @Nullable
+  public PsiElement getElementToolSuppressedIn(@NotNull final PsiElement place, @NotNull final String toolId) {
+    return JavaSuppressionUtil.getElementToolSuppressedIn(place, toolId);
+  }",method,
+"  @Override
+  public boolean canHave15Suppressions(@NotNull final PsiElement file) {
+    return JavaSuppressionUtil.canHave15Suppressions(file);
+  }",method,
+"  @Override
+  public boolean alreadyHas14Suppressions(@NotNull final PsiDocCommentOwner commentOwner) {
+    return JavaSuppressionUtil.alreadyHas14Suppressions(commentOwner);
+  }",method,
+"public class KafkaEmbedded {
+    private static final Logger log = LoggerFactory.getLogger(KafkaEmbedded.class);
+    private static final String DEFAULT_ZK_CONNECT = ""127.0.0.1:2181"";
+    private static final int DEFAULT_ZK_SESSION_TIMEOUT_MS = 10 * 1000;
+    private static final int DEFAULT_ZK_CONNECTION_TIMEOUT_MS = 8 * 1000;
+    private final Properties effectiveConfig;
+    private final File logDir;
+    public final TemporaryFolder tmpFolder;
+    private final KafkaServer kafka;
+    public KafkaEmbedded(final Properties config, final MockTime time) throws IOException {
+        tmpFolder = new TemporaryFolder();
+        tmpFolder.create();
+        logDir = tmpFolder.newFolder();
+        effectiveConfig = effectiveConfigFrom(config);
+        final boolean loggingEnabled = true;
+        final KafkaConfig kafkaConfig = new KafkaConfig(effectiveConfig, loggingEnabled);
+        log.debug(""Starting embedded Kafka broker (with log.dirs={} and ZK ensemble at {}) ..."",
+            logDir, zookeeperConnect());
+        kafka = TestUtils.createServer(kafkaConfig, time);
+        log.debug(""Startup of embedded Kafka broker at {} completed (with ZK ensemble at {}) ..."",
+            brokerList(), zookeeperConnect());
+    }
+    private Properties effectiveConfigFrom(final Properties initialConfig) throws IOException {
+        final Properties effectiveConfig = new Properties();
+        effectiveConfig.put(KafkaConfig$.MODULE$.BrokerIdProp(), 0);
+        effectiveConfig.put(KafkaConfig$.MODULE$.HostNameProp(), ""127.0.0.1"");
+        effectiveConfig.put(KafkaConfig$.MODULE$.PortProp(), ""9092"");
+        effectiveConfig.put(KafkaConfig$.MODULE$.NumPartitionsProp(), 1);
+        effectiveConfig.put(KafkaConfig$.MODULE$.AutoCreateTopicsEnableProp(), true);
+        effectiveConfig.put(KafkaConfig$.MODULE$.MessageMaxBytesProp(), 1000000);
+        effectiveConfig.put(KafkaConfig$.MODULE$.ControlledShutdownEnableProp(), true);
+        effectiveConfig.putAll(initialConfig);
+        effectiveConfig.setProperty(KafkaConfig$.MODULE$.LogDirProp(), logDir.getAbsolutePath());
+        return effectiveConfig;
+    }
+    public String brokerList() {
+        Object listenerConfig = effectiveConfig.get(KafkaConfig$.MODULE$.InterBrokerListenerNameProp());
+        return kafka.config().hostName() + "":"" + kafka.boundPort(
+            new ListenerName(listenerConfig != null ? listenerConfig.toString() : ""PLAINTEXT""));
+    }
+    public String zookeeperConnect() {
+        return effectiveConfig.getProperty(""zookeeper.connect"", DEFAULT_ZK_CONNECT);
+    }
+    public void stop() {
+        log.debug(""Shutting down embedded Kafka broker at {} (with ZK ensemble at {}) ..."",
+            brokerList(), zookeeperConnect());
+        kafka.shutdown();
+        kafka.awaitShutdown();
+        log.debug(""Removing logs.dir at {} ..."", logDir);
+        final List<String> logDirs = Collections.singletonList(logDir.getAbsolutePath());
+        CoreUtils.delete(scala.collection.JavaConversions.asScalaBuffer(logDirs).seq());
+        tmpFolder.delete();
+        log.debug(""Shutdown of embedded Kafka broker at {} completed (with ZK ensemble at {}) ..."",
+            brokerList(), zookeeperConnect());
+    }
+    public void createTopic(final String topic) {
+        createTopic(topic, 1, 1, new Properties());
+    }
+    public void createTopic(final String topic, final int partitions, final int replication) {
+        createTopic(topic, partitions, replication, new Properties());
+    }
+    public void createTopic(final String topic,
+                            final int partitions,
+                            final int replication,
+                            final Properties topicConfig) {
+        log.debug(""Creating topic { name: {}, partitions: {}, replication: {}, config: {} }"",
+            topic, partitions, replication, topicConfig);
+        // Note: You must initialize the ZkClient with ZKStringSerializer.  If you don't, then
+        // createTopic() will only seem to work (it will return without error).  The topic will exist in
+        // only ZooKeeper and will be returned when listing topics, but Kafka itself does not create the
+        // topic.
+        final ZkClient zkClient = new ZkClient(
+            zookeeperConnect(),
+            DEFAULT_ZK_SESSION_TIMEOUT_MS,
+            DEFAULT_ZK_CONNECTION_TIMEOUT_MS,
+            ZKStringSerializer$.MODULE$);
+        final boolean isSecure = false;
+        final ZkUtils zkUtils = new ZkUtils(zkClient, new ZkConnection(zookeeperConnect()), isSecure);
+        AdminUtils.createTopic(zkUtils, topic, partitions, replication, topicConfig, RackAwareMode.Enforced$.MODULE$);
+        zkClient.close();
+    }
+    public void deleteTopic(final String topic) {
+        log.debug(""Deleting topic { name: {} }"", topic);
+        final ZkClient zkClient = new ZkClient(
+            zookeeperConnect(),
+            DEFAULT_ZK_SESSION_TIMEOUT_MS,
+            DEFAULT_ZK_CONNECTION_TIMEOUT_MS,
+            ZKStringSerializer$.MODULE$);
+        final boolean isSecure = false;
+        final ZkUtils zkUtils = new ZkUtils(zkClient, new ZkConnection(zookeeperConnect()), isSecure);
+        AdminUtils.deleteTopic(zkUtils, topic);
+        zkClient.close();
+    }
+    public KafkaServer kafkaServer() {
+        return kafka;
+    }
+}",class,
+"    public KafkaEmbedded(final Properties config, final MockTime time) throws IOException {
+        tmpFolder = new TemporaryFolder();
+        tmpFolder.create();
+        logDir = tmpFolder.newFolder();
+        effectiveConfig = effectiveConfigFrom(config);
+        final boolean loggingEnabled = true;
+        final KafkaConfig kafkaConfig = new KafkaConfig(effectiveConfig, loggingEnabled);
+        log.debug(""Starting embedded Kafka broker (with log.dirs={} and ZK ensemble at {}) ..."",
+            logDir, zookeeperConnect());
+        kafka = TestUtils.createServer(kafkaConfig, time);
+        log.debug(""Startup of embedded Kafka broker at {} completed (with ZK ensemble at {}) ..."",
+            brokerList(), zookeeperConnect());
+    }",method,
+"    private Properties effectiveConfigFrom(final Properties initialConfig) throws IOException {
+        final Properties effectiveConfig = new Properties();
+        effectiveConfig.put(KafkaConfig$.MODULE$.BrokerIdProp(), 0);
+        effectiveConfig.put(KafkaConfig$.MODULE$.HostNameProp(), ""127.0.0.1"");
+        effectiveConfig.put(KafkaConfig$.MODULE$.PortProp(), ""9092"");
+        effectiveConfig.put(KafkaConfig$.MODULE$.NumPartitionsProp(), 1);
+        effectiveConfig.put(KafkaConfig$.MODULE$.AutoCreateTopicsEnableProp(), true);
+        effectiveConfig.put(KafkaConfig$.MODULE$.MessageMaxBytesProp(), 1000000);
+        effectiveConfig.put(KafkaConfig$.MODULE$.ControlledShutdownEnableProp(), true);
+        effectiveConfig.putAll(initialConfig);
+        effectiveConfig.setProperty(KafkaConfig$.MODULE$.LogDirProp(), logDir.getAbsolutePath());
+        return effectiveConfig;
+    }",method,
+"    public String brokerList() {
+        Object listenerConfig = effectiveConfig.get(KafkaConfig$.MODULE$.InterBrokerListenerNameProp());
+        return kafka.config().hostName() + "":"" + kafka.boundPort(
+            new ListenerName(listenerConfig != null ? listenerConfig.toString() : ""PLAINTEXT""));
+    }",method,
+"    public String zookeeperConnect() {
+        return effectiveConfig.getProperty(""zookeeper.connect"", DEFAULT_ZK_CONNECT);
+    }",method,
+"    public void stop() {
+        log.debug(""Shutting down embedded Kafka broker at {} (with ZK ensemble at {}) ..."",
+            brokerList(), zookeeperConnect());
+        kafka.shutdown();
+        kafka.awaitShutdown();
+        log.debug(""Removing logs.dir at {} ..."", logDir);
+        final List<String> logDirs = Collections.singletonList(logDir.getAbsolutePath());
+        CoreUtils.delete(scala.collection.JavaConversions.asScalaBuffer(logDirs).seq());
+        tmpFolder.delete();
+        log.debug(""Shutdown of embedded Kafka broker at {} completed (with ZK ensemble at {}) ..."",
+            brokerList(), zookeeperConnect());
+    }",method,
+"    public void createTopic(final String topic) {
+        createTopic(topic, 1, 1, new Properties());
+    }",method,
+"    public void createTopic(final String topic, final int partitions, final int replication) {
+        createTopic(topic, partitions, replication, new Properties());
+    }",method,
+"    public void createTopic(final String topic,
+                            final int partitions,
+                            final int replication,
+                            final Properties topicConfig) {
+        log.debug(""Creating topic { name: {}, partitions: {}, replication: {}, config: {} }"",
+            topic, partitions, replication, topicConfig);
+        // Note: You must initialize the ZkClient with ZKStringSerializer.  If you don't, then
+        // createTopic() will only seem to work (it will return without error).  The topic will exist in
+        // only ZooKeeper and will be returned when listing topics, but Kafka itself does not create the
+        // topic.
+        final ZkClient zkClient = new ZkClient(
+            zookeeperConnect(),
+            DEFAULT_ZK_SESSION_TIMEOUT_MS,
+            DEFAULT_ZK_CONNECTION_TIMEOUT_MS,
+            ZKStringSerializer$.MODULE$);
+        final boolean isSecure = false;
+        final ZkUtils zkUtils = new ZkUtils(zkClient, new ZkConnection(zookeeperConnect()), isSecure);
+        AdminUtils.createTopic(zkUtils, topic, partitions, replication, topicConfig, RackAwareMode.Enforced$.MODULE$);
+        zkClient.close();
+    }",method,
+"    public void deleteTopic(final String topic) {
+        log.debug(""Deleting topic { name: {} }"", topic);
+        final ZkClient zkClient = new ZkClient(
+            zookeeperConnect(),
+            DEFAULT_ZK_SESSION_TIMEOUT_MS,
+            DEFAULT_ZK_CONNECTION_TIMEOUT_MS,
+            ZKStringSerializer$.MODULE$);
+        final boolean isSecure = false;
+        final ZkUtils zkUtils = new ZkUtils(zkClient, new ZkConnection(zookeeperConnect()), isSecure);
+        AdminUtils.deleteTopic(zkUtils, topic);
+        zkClient.close();
+    }",method,
+"    public KafkaServer kafkaServer() {
+        return kafka;
+    }",method,
+"public class UnixConsoleMetaData implements ConsoleMetaData {
+    public static final Logger LOGGER = LoggerFactory.getLogger(UnixConsoleMetaData.class);
+    private final boolean stdout;
+    private final boolean stderr;
+    public UnixConsoleMetaData(boolean stdout, boolean stderr) {
+        this.stdout = stdout;
+        this.stderr = stderr;
+    }
+    @Override
+    public boolean isStdOut() {
+        return stdout;
+    }
+    @Override
+    public boolean isStdErr() {
+        return stderr;
+    }
+    @Override
+    public int getCols() {
+        final String columns = System.getenv(""COLUMNS"");
+        if (columns != null) {
+            try {
+                return Integer.parseInt(columns);
+            } catch (NumberFormatException ex) {
+                LOGGER.debug(""Cannot parse COLUMNS environment variable to get console width. Value: '{}'"", columns);
+            }
+        }
+        return 0;
+    }
+    @Override
+    public int getRows() {
+        final String rows = System.getenv(""LINES"");
+        if (rows != null) {
+            try {
+                return Integer.parseInt(rows);
+            } catch (NumberFormatException ex) {
+                LOGGER.debug(""Cannot parse LINES environment variable to get console height. Value: '{}'"", rows);
+            }
+        }
+        return 0;
+    }
+}",class,
+"    public UnixConsoleMetaData(boolean stdout, boolean stderr) {
+        this.stdout = stdout;
+        this.stderr = stderr;
+    }",method,
+"    @Override
+    public boolean isStdOut() {
+        return stdout;
+    }",method,
+"    @Override
+    public boolean isStdErr() {
+        return stderr;
+    }",method,
+"    @Override
+    public int getCols() {
+        final String columns = System.getenv(""COLUMNS"");
+        if (columns != null) {
+            try {
+                return Integer.parseInt(columns);
+            } catch (NumberFormatException ex) {
+                LOGGER.debug(""Cannot parse COLUMNS environment variable to get console width. Value: '{}'"", columns);
+            }
+        }
+        return 0;
+    }",method,
+"        if (columns != null) {
+            try {
+                return Integer.parseInt(columns);
+            } catch (NumberFormatException ex) {
+                LOGGER.debug(""Cannot parse COLUMNS environment variable to get console width. Value: '{}'"", columns);
+            }
+        }",method,
+"    @Override
+    public int getRows() {
+        final String rows = System.getenv(""LINES"");
+        if (rows != null) {
+            try {
+                return Integer.parseInt(rows);
+            } catch (NumberFormatException ex) {
+                LOGGER.debug(""Cannot parse LINES environment variable to get console height. Value: '{}'"", rows);
+            }
+        }
+        return 0;
+    }",method,
+"        if (rows != null) {
+            try {
+                return Integer.parseInt(rows);
+            } catch (NumberFormatException ex) {
+                LOGGER.debug(""Cannot parse LINES environment variable to get console height. Value: '{}'"", rows);
+            }
+        }",method,
+"public class ParallelBackgroundModifier extends ParallelModifier<IBackground> implements IBackgroundModifier {
+	// ===========================================================
+	// Constants
+	// ===========================================================
+	// ===========================================================
+	// Fields
+	// ===========================================================
+	// ===========================================================
+	// Constructors
+	// ===========================================================
+	public ParallelBackgroundModifier(final IBackgroundModifier... pBackgroundModifiers) throws IllegalArgumentException {
+		super(pBackgroundModifiers);
+	}
+	public ParallelBackgroundModifier(final IBackgroundModifierListener pBackgroundModifierListener, final IBackgroundModifier... pBackgroundModifiers) throws IllegalArgumentException {
+		super(pBackgroundModifierListener, pBackgroundModifiers);
+	}
+	protected ParallelBackgroundModifier(final ParallelBackgroundModifier pParallelBackgroundModifier) throws DeepCopyNotSupportedException {
+		super(pParallelBackgroundModifier);
+	}
+	@Override
+	public ParallelBackgroundModifier deepCopy() throws DeepCopyNotSupportedException {
+		return new ParallelBackgroundModifier(this);
+	}
+	// ===========================================================
+	// Getter & Setter
+	// ===========================================================
+	// ===========================================================
+	// Methods for/from SuperClass/Interfaces
+	// ===========================================================
+	// ===========================================================
+	// Methods
+	// ===========================================================
+	// ===========================================================
+	// Inner and Anonymous Classes
+	// ===========================================================
+}",class,
+"	public ParallelBackgroundModifier(final IBackgroundModifier... pBackgroundModifiers) throws IllegalArgumentException {
+		super(pBackgroundModifiers);
+	}",method,
+"	public ParallelBackgroundModifier(final IBackgroundModifierListener pBackgroundModifierListener, final IBackgroundModifier... pBackgroundModifiers) throws IllegalArgumentException {
+		super(pBackgroundModifierListener, pBackgroundModifiers);
+	}",method,
+"	protected ParallelBackgroundModifier(final ParallelBackgroundModifier pParallelBackgroundModifier) throws DeepCopyNotSupportedException {
+		super(pParallelBackgroundModifier);
+	}",method,
+"	@Override
+	public ParallelBackgroundModifier deepCopy() throws DeepCopyNotSupportedException {
+		return new ParallelBackgroundModifier(this);
+	}",method,
+"public abstract class SysuiTestCase {
+    private static final String TAG = ""SysuiTestCase"";
+    private Handler mHandler;
+    @Rule
+    public SysuiTestableContext mContext = new SysuiTestableContext(
+            InstrumentationRegistry.getContext(), getLeakCheck());
+    public TestableDependency mDependency = new TestableDependency(mContext);
+    private Instrumentation mRealInstrumentation;
+    @Before
+    public void SysuiSetup() throws Exception {
+        System.setProperty(""dexmaker.share_classloader"", ""true"");
+        SystemUIFactory.createFromConfig(mContext);
+        mRealInstrumentation = InstrumentationRegistry.getInstrumentation();
+        Instrumentation inst = spy(mRealInstrumentation);
+        when(inst.getContext()).thenThrow(new RuntimeException(
+                ""SysUI Tests should use SysuiTestCase#getContext or SysuiTestCase#mContext""));
+        when(inst.getTargetContext()).thenThrow(new RuntimeException(
+                ""SysUI Tests should use SysuiTestCase#getContext or SysuiTestCase#mContext""));
+        InstrumentationRegistry.registerInstance(inst, InstrumentationRegistry.getArguments());
+    }
+    @After
+    public void SysuiTeardown() {
+        InstrumentationRegistry.registerInstance(mRealInstrumentation,
+                InstrumentationRegistry.getArguments());
+    }
+    protected LeakCheck getLeakCheck() {
+        return null;
+    }
+    public Context getContext() {
+        return mContext;
+    }
+    protected void waitForIdleSync() {
+        if (mHandler == null) {
+            mHandler = new Handler(Looper.getMainLooper());
+        }
+        waitForIdleSync(mHandler);
+    }
+    protected void waitForUiOffloadThread() {
+        Future<?> future = Dependency.get(UiOffloadThread.class).submit(() -> {});
+        try {
+            future.get();
+        } catch (InterruptedException | ExecutionException e) {
+            Log.e(TAG, ""Failed to wait for ui offload thread."", e);
+        }
+    }
+    public static void waitForIdleSync(Handler h) {
+        validateThread(h.getLooper());
+        Idler idler = new Idler(null);
+        h.getLooper().getQueue().addIdleHandler(idler);
+        // Ensure we are non-idle, so the idle handler can run.
+        h.post(new EmptyRunnable());
+        idler.waitForIdle();
+    }
+    private static final void validateThread(Looper l) {
+        if (Looper.myLooper() == l) {
+            throw new RuntimeException(
+                ""This method can not be called from the looper being synced"");
+        }
+    }
+    public static final class EmptyRunnable implements Runnable {
+        public void run() {
+        }
+    }
+    public static final class Idler implements MessageQueue.IdleHandler {
+        private final Runnable mCallback;
+        private boolean mIdle;
+        public Idler(Runnable callback) {
+            mCallback = callback;
+            mIdle = false;
+        }
+        @Override
+        public boolean queueIdle() {
+            if (mCallback != null) {
+                mCallback.run();
+            }
+            synchronized (this) {
+                mIdle = true;
+                notifyAll();
+            }
+            return false;
+        }
+        public void waitForIdle() {
+            synchronized (this) {
+                while (!mIdle) {
+                    try {
+                        wait();
+                    } catch (InterruptedException e) {
+                    }
+                }
+            }
+        }
+    }
+}",class,
+"    public static final class EmptyRunnable implements Runnable {
+        public void run() {
+        }
+    }",class,
+"    public static final class Idler implements MessageQueue.IdleHandler {
+        private final Runnable mCallback;
+        private boolean mIdle;
+        public Idler(Runnable callback) {
+            mCallback = callback;
+            mIdle = false;
+        }
+        @Override
+        public boolean queueIdle() {
+            if (mCallback != null) {
+                mCallback.run();
+            }
+            synchronized (this) {
+                mIdle = true;
+                notifyAll();
+            }
+            return false;
+        }
+        public void waitForIdle() {
+            synchronized (this) {
+                while (!mIdle) {
+                    try {
+                        wait();
+                    } catch (InterruptedException e) {
+                    }
+                }
+            }
+        }
+    }",class,
+"    @Before
+    public void SysuiSetup() throws Exception {
+        System.setProperty(""dexmaker.share_classloader"", ""true"");
+        SystemUIFactory.createFromConfig(mContext);
+        mRealInstrumentation = InstrumentationRegistry.getInstrumentation();
+        Instrumentation inst = spy(mRealInstrumentation);
+        when(inst.getContext()).thenThrow(new RuntimeException(
+                ""SysUI Tests should use SysuiTestCase#getContext or SysuiTestCase#mContext""));
+        when(inst.getTargetContext()).thenThrow(new RuntimeException(
+                ""SysUI Tests should use SysuiTestCase#getContext or SysuiTestCase#mContext""));
+        InstrumentationRegistry.registerInstance(inst, InstrumentationRegistry.getArguments());
+    }",method,
+"    @After
+    public void SysuiTeardown() {
+        InstrumentationRegistry.registerInstance(mRealInstrumentation,
+                InstrumentationRegistry.getArguments());
+    }",method,

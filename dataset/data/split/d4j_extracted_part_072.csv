@@ -1,0 +1,2079 @@
+code_snippet,type,score
+"  private String getText(@NotNull TextType textType, boolean annotated) {
+    mySubstitutor.ensureValid();
+    StringBuilder buffer = new StringBuilder();
+    buildText(myClass, mySubstitutor, buffer, textType, annotated);
+    return buffer.toString();
+  }",method,
+"  private void buildText(@NotNull PsiClass aClass,
+                         @NotNull PsiSubstitutor substitutor,
+                         @NotNull StringBuilder buffer,
+                         @NotNull TextType textType,
+                         boolean annotated) {
+    if (aClass instanceof PsiAnonymousClass) {
+      ClassResolveResult baseResolveResult = ((PsiAnonymousClass)aClass).getBaseClassType().resolveGenerics();
+      PsiClass baseClass = baseResolveResult.getElement();
+      if (baseClass != null) {
+        if (textType == TextType.INT_CANONICAL) {
+          buffer.append(""anonymous "");
+        }
+        buildText(baseClass, baseResolveResult.getSubstitutor(), buffer, textType, false);
+      }
+      return;
+    }
+    boolean qualified = textType != TextType.PRESENTABLE;
+    PsiClass enclosingClass = null;
+    if (!aClass.hasModifierProperty(PsiModifier.STATIC)) {
+      PsiElement parent = aClass.getParent();
+      if (parent instanceof PsiClass && !(parent instanceof PsiAnonymousClass)) {
+        enclosingClass = (PsiClass)parent;
+      }
+    }
+    if (enclosingClass != null) {
+      buildText(enclosingClass, substitutor, buffer, textType, false);
+      buffer.append('.');
+    }
+    else if (qualified) {
+      String fqn = aClass.getQualifiedName();
+      if (fqn != null) {
+        String prefix = StringUtil.getPackageName(fqn);
+        if (!StringUtil.isEmpty(prefix)) {
+          buffer.append(prefix);
+          buffer.append('.');
+        }
+      }
+    }
+    if (annotated) {
+      PsiNameHelper.appendAnnotations(buffer, getAnnotations(), qualified);
+    }
+    buffer.append(aClass.getName());
+    PsiTypeParameter[] typeParameters = aClass.getTypeParameters();
+    if (typeParameters.length > 0) {
+      int pos = buffer.length();
+      buffer.append('<');
+      for (int i = 0; i < typeParameters.length; i++) {
+        PsiTypeParameter typeParameter = typeParameters[i];
+        PsiUtilCore.ensureValid(typeParameter);
+        if (i > 0) {
+          buffer.append(',');
+          if (textType == TextType.PRESENTABLE) buffer.append(' ');
+        }
+        PsiType substitutionResult = substitutor.substitute(typeParameter);
+        if (substitutionResult == null) {
+          buffer.setLength(pos);
+          pos = -1;
+          break;
+        }
+        PsiUtil.ensureValidType(substitutionResult);
+        if (textType == TextType.PRESENTABLE) {
+          buffer.append(substitutionResult.getPresentableText());
+        }
+        else if (textType == TextType.CANONICAL) {
+          buffer.append(substitutionResult.getCanonicalText(annotated));
+        }
+        else {
+          buffer.append(substitutionResult.getInternalCanonicalText());
+        }
+      }
+      if (pos >= 0) {
+        buffer.append('>');
+      }
+    }
+  }",method,
+"    if (aClass instanceof PsiAnonymousClass) {
+      ClassResolveResult baseResolveResult = ((PsiAnonymousClass)aClass).getBaseClassType().resolveGenerics();
+      PsiClass baseClass = baseResolveResult.getElement();
+      if (baseClass != null) {
+        if (textType == TextType.INT_CANONICAL) {
+          buffer.append(""anonymous "");
+        }
+        buildText(baseClass, baseResolveResult.getSubstitutor(), buffer, textType, false);
+      }
+      return;
+    }",method,
+"      if (baseClass != null) {
+        if (textType == TextType.INT_CANONICAL) {
+          buffer.append(""anonymous "");
+        }
+        buildText(baseClass, baseResolveResult.getSubstitutor(), buffer, textType, false);
+      }",method,
+"        if (textType == TextType.INT_CANONICAL) {
+          buffer.append(""anonymous "");
+        }",method,
+"    if (enclosingClass != null) {
+      buildText(enclosingClass, substitutor, buffer, textType, false);
+      buffer.append('.');
+    }",method,
+"    else if (qualified) {
+      String fqn = aClass.getQualifiedName();
+      if (fqn != null) {
+        String prefix = StringUtil.getPackageName(fqn);
+        if (!StringUtil.isEmpty(prefix)) {
+          buffer.append(prefix);
+          buffer.append('.');
+        }
+      }
+    }",method,
+"      if (fqn != null) {
+        String prefix = StringUtil.getPackageName(fqn);
+        if (!StringUtil.isEmpty(prefix)) {
+          buffer.append(prefix);
+          buffer.append('.');
+        }
+      }",method,
+"    if (annotated) {
+      PsiNameHelper.appendAnnotations(buffer, getAnnotations(), qualified);
+    }",method,
+"    if (typeParameters.length > 0) {
+      int pos = buffer.length();
+      buffer.append('<');
+      for (int i = 0; i < typeParameters.length; i++) {
+        PsiTypeParameter typeParameter = typeParameters[i];
+        PsiUtilCore.ensureValid(typeParameter);
+        if (i > 0) {
+          buffer.append(',');
+          if (textType == TextType.PRESENTABLE) buffer.append(' ');
+        }
+        PsiType substitutionResult = substitutor.substitute(typeParameter);
+        if (substitutionResult == null) {
+          buffer.setLength(pos);
+          pos = -1;
+          break;
+        }
+        PsiUtil.ensureValidType(substitutionResult);
+        if (textType == TextType.PRESENTABLE) {
+          buffer.append(substitutionResult.getPresentableText());
+        }
+        else if (textType == TextType.CANONICAL) {
+          buffer.append(substitutionResult.getCanonicalText(annotated));
+        }
+        else {
+          buffer.append(substitutionResult.getInternalCanonicalText());
+        }
+      }
+      if (pos >= 0) {
+        buffer.append('>');
+      }
+    }",method,
+"      for (int i = 0; i < typeParameters.length; i++) {
+        PsiTypeParameter typeParameter = typeParameters[i];
+        PsiUtilCore.ensureValid(typeParameter);
+        if (i > 0) {
+          buffer.append(',');
+          if (textType == TextType.PRESENTABLE) buffer.append(' ');
+        }
+        PsiType substitutionResult = substitutor.substitute(typeParameter);
+        if (substitutionResult == null) {
+          buffer.setLength(pos);
+          pos = -1;
+          break;
+        }
+        PsiUtil.ensureValidType(substitutionResult);
+        if (textType == TextType.PRESENTABLE) {
+          buffer.append(substitutionResult.getPresentableText());
+        }
+        else if (textType == TextType.CANONICAL) {
+          buffer.append(substitutionResult.getCanonicalText(annotated));
+        }
+        else {
+          buffer.append(substitutionResult.getInternalCanonicalText());
+        }
+      }",method,
+"        if (i > 0) {
+          buffer.append(',');
+          if (textType == TextType.PRESENTABLE) buffer.append(' ');
+        }",method,
+"        if (substitutionResult == null) {
+          buffer.setLength(pos);
+          pos = -1;
+          break;
+        }",method,
+"        if (textType == TextType.PRESENTABLE) {
+          buffer.append(substitutionResult.getPresentableText());
+        }",method,
+"        else if (textType == TextType.CANONICAL) {
+          buffer.append(substitutionResult.getCanonicalText(annotated));
+        }",method,
+"      if (pos >= 0) {
+        buffer.append('>');
+      }",method,
+"  @Override
+  public boolean isValid() {
+    for (PsiAnnotation annotation : getAnnotations()) {
+      if (!annotation.isValid()) return false;
+    }
+    return myClass.isValid() && mySubstitutor.isValid();
+  }",method,
+"  @Override
+  public boolean equalsToText(@NotNull String text) {
+    String name = myClass.getName();
+    if (name == null || !text.contains(name)) return false;
+    if (text.equals(getCanonicalText(false))) return true;
+    PsiElementFactory factory = JavaPsiFacade.getInstance(myManager.getProject()).getElementFactory();
+    final PsiType patternType;
+    try {
+      patternType = factory.createTypeFromText(text, myClass);
+    }
+    catch (IncorrectOperationException e) {
+      return false;
+    }
+    return equals(patternType);
+  }",method,
+"    catch (IncorrectOperationException e) {
+      return false;
+    }",method,
+"  @Override
+  @NotNull
+  public GlobalSearchScope getResolveScope() {
+    return myClass.getResolveScope();
+  }",method,
+"  @Override
+  @NotNull
+  public LanguageLevel getLanguageLevel() {
+    return myLanguageLevel != null ? myLanguageLevel : PsiUtil.getLanguageLevel(myClass);
+  }",method,
+"  @NotNull
+  @Override
+  public PsiClassType setLanguageLevel(@NotNull LanguageLevel level) {
+    return level.equals(myLanguageLevel) ? this : new PsiImmediateClassType(myClass, mySubstitutor, level, getAnnotationProvider());
+  }",method,
+"public class UserApiController extends Controller {
+    private final UserApiControllerImpInterface imp;
+    private final ObjectMapper mapper;
+    @Inject
+    private UserApiController(UserApiControllerImpInterface imp) {
+        this.imp = imp;
+        mapper = new ObjectMapper();
+    }
+    @ApiAction
+    public Result createUser() throws IOException {
+        JsonNode nodebody = request().body().asJson();
+        User body;
+        if (nodebody != null) {
+            body = mapper.readValue(nodebody.toString(), User.class);
+            body.validate();
+        } else {
+            throw new IllegalArgumentException(""'body' parameter is required"");
+        }
+        imp.createUser(body);
+        return ok();
+    }
+    @ApiAction
+    public Result createUsersWithArrayInput() throws IOException {
+        JsonNode nodebody = request().body().asJson();
+        List<User> body;
+        if (nodebody != null) {
+            body = mapper.readValue(nodebody.toString(), new TypeReference<List<User>>(){});
+            for (User curItem : body) {
+                curItem.validate();
+            }
+        } else {
+            throw new IllegalArgumentException(""'body' parameter is required"");
+        }
+        imp.createUsersWithArrayInput(body);
+        return ok();
+    }
+    @ApiAction
+    public Result createUsersWithListInput() throws IOException {
+        JsonNode nodebody = request().body().asJson();
+        List<User> body;
+        if (nodebody != null) {
+            body = mapper.readValue(nodebody.toString(), new TypeReference<List<User>>(){});
+            for (User curItem : body) {
+                curItem.validate();
+            }
+        } else {
+            throw new IllegalArgumentException(""'body' parameter is required"");
+        }
+        imp.createUsersWithListInput(body);
+        return ok();
+    }
+    @ApiAction
+    public Result deleteUser(String username)  {
+        imp.deleteUser(username);
+        return ok();
+    }
+    @ApiAction
+    public Result getUserByName(String username)  {
+        User obj = imp.getUserByName(username);
+        obj.validate();
+        JsonNode result = mapper.valueToTree(obj);
+        return ok(result);
+    }
+    @ApiAction
+    public Result loginUser()  {
+        String valueusername = request().getQueryString(""username"");
+        String username;
+        if (valueusername != null) {
+            username = valueusername;
+        } else {
+            throw new IllegalArgumentException(""'username' parameter is required"");
+        }
+        String valuepassword = request().getQueryString(""password"");
+        String password;
+        if (valuepassword != null) {
+            password = valuepassword;
+        } else {
+            throw new IllegalArgumentException(""'password' parameter is required"");
+        }
+        String obj = imp.loginUser(username, password);
+        JsonNode result = mapper.valueToTree(obj);
+        return ok(result);
+    }
+    @ApiAction
+    public Result logoutUser()  {
+        imp.logoutUser();
+        return ok();
+    }
+    @ApiAction
+    public Result updateUser(String username) throws IOException {
+        JsonNode nodebody = request().body().asJson();
+        User body;
+        if (nodebody != null) {
+            body = mapper.readValue(nodebody.toString(), User.class);
+            body.validate();
+        } else {
+            throw new IllegalArgumentException(""'body' parameter is required"");
+        }
+        imp.updateUser(username, body);
+        return ok();
+    }
+}",class,
+"    @Inject
+    private UserApiController(UserApiControllerImpInterface imp) {
+        this.imp = imp;
+        mapper = new ObjectMapper();
+    }",method,
+"    @ApiAction
+    public Result createUser() throws IOException {
+        JsonNode nodebody = request().body().asJson();
+        User body;
+        if (nodebody != null) {
+            body = mapper.readValue(nodebody.toString(), User.class);
+            body.validate();
+        } else {
+            throw new IllegalArgumentException(""'body' parameter is required"");
+        }
+        imp.createUser(body);
+        return ok();
+    }",method,
+"        if (nodebody != null) {
+            body = mapper.readValue(nodebody.toString(), User.class);
+            body.validate();
+        }",method,
+"    @ApiAction
+    public Result createUsersWithArrayInput() throws IOException {
+        JsonNode nodebody = request().body().asJson();
+        List<User> body;
+        if (nodebody != null) {
+            body = mapper.readValue(nodebody.toString(), new TypeReference<List<User>>(){});
+            for (User curItem : body) {
+                curItem.validate();
+            }
+        } else {
+            throw new IllegalArgumentException(""'body' parameter is required"");
+        }
+        imp.createUsersWithArrayInput(body);
+        return ok();
+    }",method,
+"        if (nodebody != null) {
+            body = mapper.readValue(nodebody.toString(), new TypeReference<List<User>>(){});
+            for (User curItem : body) {
+                curItem.validate();
+            }
+        }",method,
+"            for (User curItem : body) {
+                curItem.validate();
+            }",method,
+"    @ApiAction
+    public Result createUsersWithListInput() throws IOException {
+        JsonNode nodebody = request().body().asJson();
+        List<User> body;
+        if (nodebody != null) {
+            body = mapper.readValue(nodebody.toString(), new TypeReference<List<User>>(){});
+            for (User curItem : body) {
+                curItem.validate();
+            }
+        } else {
+            throw new IllegalArgumentException(""'body' parameter is required"");
+        }
+        imp.createUsersWithListInput(body);
+        return ok();
+    }",method,
+"        if (nodebody != null) {
+            body = mapper.readValue(nodebody.toString(), new TypeReference<List<User>>(){});
+            for (User curItem : body) {
+                curItem.validate();
+            }
+        }",method,
+"            for (User curItem : body) {
+                curItem.validate();
+            }",method,
+"    @ApiAction
+    public Result deleteUser(String username)  {
+        imp.deleteUser(username);
+        return ok();
+    }",method,
+"    @ApiAction
+    public Result getUserByName(String username)  {
+        User obj = imp.getUserByName(username);
+        obj.validate();
+        JsonNode result = mapper.valueToTree(obj);
+        return ok(result);
+    }",method,
+"    @ApiAction
+    public Result loginUser()  {
+        String valueusername = request().getQueryString(""username"");
+        String username;
+        if (valueusername != null) {
+            username = valueusername;
+        } else {
+            throw new IllegalArgumentException(""'username' parameter is required"");
+        }
+        String valuepassword = request().getQueryString(""password"");
+        String password;
+        if (valuepassword != null) {
+            password = valuepassword;
+        } else {
+            throw new IllegalArgumentException(""'password' parameter is required"");
+        }
+        String obj = imp.loginUser(username, password);
+        JsonNode result = mapper.valueToTree(obj);
+        return ok(result);
+    }",method,
+"        if (valueusername != null) {
+            username = valueusername;
+        }",method,
+"        if (valuepassword != null) {
+            password = valuepassword;
+        }",method,
+"    @ApiAction
+    public Result logoutUser()  {
+        imp.logoutUser();
+        return ok();
+    }",method,
+"    @ApiAction
+    public Result updateUser(String username) throws IOException {
+        JsonNode nodebody = request().body().asJson();
+        User body;
+        if (nodebody != null) {
+            body = mapper.readValue(nodebody.toString(), User.class);
+            body.validate();
+        } else {
+            throw new IllegalArgumentException(""'body' parameter is required"");
+        }
+        imp.updateUser(username, body);
+        return ok();
+    }",method,
+"        if (nodebody != null) {
+            body = mapper.readValue(nodebody.toString(), User.class);
+            body.validate();
+        }",method,
+"public abstract class AdapterActionFuture<T, L> extends BaseFuture<T> implements ActionFuture<T>, ActionListener<L> {
+    @Override
+    public T actionGet() {
+        try {
+            return get();
+        } catch (InterruptedException e) {
+            Thread.currentThread().interrupt();
+            throw new IllegalStateException(""Future got interrupted"", e);
+        } catch (ExecutionException e) {
+            throw rethrowExecutionException(e);
+        }
+    }
+    @Override
+    public T actionGet(String timeout) {
+        return actionGet(TimeValue.parseTimeValue(timeout, null, getClass().getSimpleName() + "".actionGet.timeout""));
+    }
+    @Override
+    public T actionGet(long timeoutMillis) {
+        return actionGet(timeoutMillis, TimeUnit.MILLISECONDS);
+    }
+    @Override
+    public T actionGet(TimeValue timeout) {
+        return actionGet(timeout.millis(), TimeUnit.MILLISECONDS);
+    }
+    @Override
+    public T actionGet(long timeout, TimeUnit unit) {
+        try {
+            return get(timeout, unit);
+        } catch (TimeoutException e) {
+            throw new ElasticsearchTimeoutException(e);
+        } catch (InterruptedException e) {
+            Thread.currentThread().interrupt();
+            throw new IllegalStateException(""Future got interrupted"", e);
+        } catch (ExecutionException e) {
+            throw rethrowExecutionException(e);
+        }
+    }
+    static RuntimeException rethrowExecutionException(ExecutionException e) {
+        if (e.getCause() instanceof ElasticsearchException) {
+            ElasticsearchException esEx = (ElasticsearchException) e.getCause();
+            Throwable root = esEx.unwrapCause();
+            if (root instanceof ElasticsearchException) {
+                return (ElasticsearchException) root;
+            } else if (root instanceof RuntimeException) {
+                return (RuntimeException) root;
+            }
+            return new UncategorizedExecutionException(""Failed execution"", root);
+        } else if (e.getCause() instanceof RuntimeException) {
+            return (RuntimeException) e.getCause();
+        } else {
+            return new UncategorizedExecutionException(""Failed execution"", e);
+        }
+    }
+    @Override
+    public void onResponse(L result) {
+        set(convert(result));
+    }
+    @Override
+    public void onFailure(Exception e) {
+        setException(e);
+    }
+    protected abstract T convert(L listenerResponse);
+}",class,
+"    @Override
+    public T actionGet() {
+        try {
+            return get();
+        } catch (InterruptedException e) {
+            Thread.currentThread().interrupt();
+            throw new IllegalStateException(""Future got interrupted"", e);
+        } catch (ExecutionException e) {
+            throw rethrowExecutionException(e);
+        }
+    }",method,
+"    @Override
+    public T actionGet(String timeout) {
+        return actionGet(TimeValue.parseTimeValue(timeout, null, getClass().getSimpleName() + "".actionGet.timeout""));
+    }",method,
+"    @Override
+    public T actionGet(long timeoutMillis) {
+        return actionGet(timeoutMillis, TimeUnit.MILLISECONDS);
+    }",method,
+"    @Override
+    public T actionGet(TimeValue timeout) {
+        return actionGet(timeout.millis(), TimeUnit.MILLISECONDS);
+    }",method,
+"    @Override
+    public T actionGet(long timeout, TimeUnit unit) {
+        try {
+            return get(timeout, unit);
+        } catch (TimeoutException e) {
+            throw new ElasticsearchTimeoutException(e);
+        } catch (InterruptedException e) {
+            Thread.currentThread().interrupt();
+            throw new IllegalStateException(""Future got interrupted"", e);
+        } catch (ExecutionException e) {
+            throw rethrowExecutionException(e);
+        }
+    }",method,
+"    static RuntimeException rethrowExecutionException(ExecutionException e) {
+        if (e.getCause() instanceof ElasticsearchException) {
+            ElasticsearchException esEx = (ElasticsearchException) e.getCause();
+            Throwable root = esEx.unwrapCause();
+            if (root instanceof ElasticsearchException) {
+                return (ElasticsearchException) root;
+            } else if (root instanceof RuntimeException) {
+                return (RuntimeException) root;
+            }
+            return new UncategorizedExecutionException(""Failed execution"", root);
+        } else if (e.getCause() instanceof RuntimeException) {
+            return (RuntimeException) e.getCause();
+        } else {
+            return new UncategorizedExecutionException(""Failed execution"", e);
+        }
+    }",method,
+"            if (root instanceof ElasticsearchException) {
+                return (ElasticsearchException) root;
+            }",method,
+"    @Override
+    public void onResponse(L result) {
+        set(convert(result));
+    }",method,
+"    @Override
+    public void onFailure(Exception e) {
+        setException(e);
+    }",method,
+"public class PublicProvider extends ContentProvider {
+    public static final String AUTHORITY = ""org.jssec.android.provider.publicprovider"";
+    public static final String CONTENT_TYPE = ""vnd.android.cursor.dir/vnd.org.jssec.contenttype"";
+    public static final String CONTENT_ITEM_TYPE = ""vnd.android.cursor.item/vnd.org.jssec.contenttype"";
+    // Content Providerが提供するインターフェースを公開
+    public interface Download {
+        public static final String PATH = ""downloads"";
+        public static final Uri CONTENT_URI = Uri.parse(""content://"" + AUTHORITY + ""/"" + PATH);
+    }
+    public interface Address {
+        public static final String PATH = ""addresses"";
+        public static final Uri CONTENT_URI = Uri.parse(""content://"" + AUTHORITY + ""/"" + PATH);
+    }
+    // UriMatcher
+    private static final int DOWNLOADS_CODE = 1;
+    private static final int DOWNLOADS_ID_CODE = 2;
+    private static final int ADDRESSES_CODE = 3;
+    private static final int ADDRESSES_ID_CODE = 4;
+    private static UriMatcher sUriMatcher;
+    static {
+        sUriMatcher = new UriMatcher(UriMatcher.NO_MATCH);
+        sUriMatcher.addURI(AUTHORITY, Download.PATH, DOWNLOADS_CODE);
+        sUriMatcher.addURI(AUTHORITY, Download.PATH + ""/#"", DOWNLOADS_ID_CODE);
+        sUriMatcher.addURI(AUTHORITY, Address.PATH, ADDRESSES_CODE);
+        sUriMatcher.addURI(AUTHORITY, Address.PATH + ""/#"", ADDRESSES_ID_CODE);
+    }
+    // DBを使用せずに固定値を返す例にしているため、queryメソッドで返すCursorを事前に定義
+    private static MatrixCursor sAddressCursor = new MatrixCursor(new String[] { ""_id"", ""pref"" });
+    static {
+        sAddressCursor.addRow(new String[] { ""1"", ""北海道"" });
+        sAddressCursor.addRow(new String[] { ""2"", ""青森"" });
+        sAddressCursor.addRow(new String[] { ""3"", ""岩手"" });
+    }
+    private static MatrixCursor sDownloadCursor = new MatrixCursor(new String[] { ""_id"", ""path"" });
+    static {
+        sDownloadCursor.addRow(new String[] { ""1"", ""/sdcard/downloads/sample.jpg"" });
+        sDownloadCursor.addRow(new String[] { ""2"", ""/sdcard/downloads/sample.txt"" });
+    }
+    @Override
+    public boolean onCreate() {
+        return true;
+    }
+    @Override
+    public String getType(Uri uri) {
+		switch (sUriMatcher.match(uri)) {
+		case DOWNLOADS_CODE:
+		case ADDRESSES_CODE:
+			return CONTENT_TYPE;
+		case DOWNLOADS_ID_CODE:
+		case ADDRESSES_ID_CODE:
+			return CONTENT_ITEM_TYPE;
+		default:
+			throw new IllegalArgumentException(""Invalid URI："" + uri);
+		}
+	}
+    @Override
+    public Cursor query(Uri uri, String[] projection, String selection,
+            String[] selectionArgs, String sortOrder) {
+    	// ★ポイント2★ リクエストパラメータの安全性を確認する
+    	// ここではuriが想定の範囲内であることを、UriMatcher#match()とswitch caseで確認している。
+		// その他のパラメータの確認はサンプルにつき省略。「3.2 入力データの安全性を確認する」を参照。
+    	// ★ポイント3★ センシティブな情報を返送してはならない
+    	// queryの結果がセンシティブな意味を持つかどうかはアプリ次第。
+    	// リクエスト元のアプリがマルウェアである可能性がある。
+    	// マルウェアに取得されても問題のない情報であれば結果として返してもよい。
+        switch (sUriMatcher.match(uri)) {
+        case DOWNLOADS_CODE:
+        case DOWNLOADS_ID_CODE:
+            return sDownloadCursor;
+        case ADDRESSES_CODE:
+        case ADDRESSES_ID_CODE:
+            return sAddressCursor;
+        default:
+            throw new IllegalArgumentException(""Invalid URI："" + uri);
+        }
+    }
+    @Override
+    public Uri insert(Uri uri, ContentValues values) {
+    	// ★ポイント2★ リクエストパラメータの安全性を確認する
+    	// ここではuriが想定の範囲内であることを、UriMatcher#match()とswitch caseで確認している。
+		// その他のパラメータの確認はサンプルにつき省略。「3.2 入力データの安全性を確認する」を参照。
+    	// ★ポイント3★ センシティブな情報を返送してはならない
+    	// Insert結果、発番されるIDがセンシティブな意味を持つかどうかはアプリ次第。
+    	// リクエスト元のアプリがマルウェアである可能性がある。
+    	// マルウェアに取得されても問題のない情報であれば結果として返してもよい。
+        switch (sUriMatcher.match(uri)) {
+        case DOWNLOADS_CODE:
+            return ContentUris.withAppendedId(Download.CONTENT_URI, 3);
+        case ADDRESSES_CODE:
+            return ContentUris.withAppendedId(Address.CONTENT_URI, 4);
+        default:
+            throw new IllegalArgumentException(""Invalid URI："" + uri);
+        }
+    }
+    @Override
+    public int update(Uri uri, ContentValues values, String selection,
+            String[] selectionArgs) {
+    	// ★ポイント2★ リクエストパラメータの安全性を確認する
+    	// ここではuriが想定の範囲内であることを、UriMatcher#match()とswitch caseで確認している。
+		// その他のパラメータの確認はサンプルにつき省略。「3.2 入力データの安全性を確認する」を参照。
+    	// ★ポイント3★ センシティブな情報を返送してはならない
+    	// Updateされたレコード数がセンシティブな意味を持つかどうかはアプリ次第。
+    	// リクエスト元のアプリがマルウェアである可能性がある。
+    	// マルウェアに取得されても問題のない情報であれば結果として返してもよい。
+        switch (sUriMatcher.match(uri)) {
+        case DOWNLOADS_CODE:
+        	return 5;	// updateされたレコード数を返す
+        case DOWNLOADS_ID_CODE:
+            return 1;
+        case ADDRESSES_CODE:
+        	return 15;
+        case ADDRESSES_ID_CODE:
+            return 1;
+        default:
+            throw new IllegalArgumentException(""Invalid URI："" + uri);
+        }
+    }
+    @Override
+    public int delete(Uri uri, String selection, String[] selectionArgs) {
+    	// ★ポイント2★ リクエストパラメータの安全性を確認する
+    	// ここではuriが想定の範囲内であることを、UriMatcher#match()とswitch caseで確認している。
+		// その他のパラメータの確認はサンプルにつき省略。「3.2 入力データの安全性を確認する」を参照。
+    	// ★ポイント3★ センシティブな情報を返送してはならない
+    	// Deleteされたレコード数がセンシティブな意味を持つかどうかはアプリ次第。
+    	// リクエスト元のアプリがマルウェアである可能性がある。
+    	// マルウェアに取得されても問題のない情報であれば結果として返してもよい。
+        switch (sUriMatcher.match(uri)) {
+        case DOWNLOADS_CODE:
+        	return 10;	// deleteされたレコード数を返す
+        case DOWNLOADS_ID_CODE:
+            return 1;
+        case ADDRESSES_CODE:
+        	return 20;
+        case ADDRESSES_ID_CODE:
+            return 1;
+        default:
+            throw new IllegalArgumentException(""Invalid URI："" + uri);
+        }
+    }
+}",class,
+"    @Override
+    public boolean onCreate() {
+        return true;
+    }",method,
+"    @Override
+    public String getType(Uri uri) {
+		switch (sUriMatcher.match(uri)) {
+		case DOWNLOADS_CODE:
+		case ADDRESSES_CODE:
+			return CONTENT_TYPE;
+		case DOWNLOADS_ID_CODE:
+		case ADDRESSES_ID_CODE:
+			return CONTENT_ITEM_TYPE;
+		default:
+			throw new IllegalArgumentException(""Invalid URI："" + uri);
+		}
+	}",method,
+"    @Override
+    public Cursor query(Uri uri, String[] projection, String selection,
+            String[] selectionArgs, String sortOrder) {
+    	// ★ポイント2★ リクエストパラメータの安全性を確認する
+    	// ここではuriが想定の範囲内であることを、UriMatcher#match()とswitch caseで確認している。
+		// その他のパラメータの確認はサンプルにつき省略。「3.2 入力データの安全性を確認する」を参照。
+    	// ★ポイント3★ センシティブな情報を返送してはならない
+    	// queryの結果がセンシティブな意味を持つかどうかはアプリ次第。
+    	// リクエスト元のアプリがマルウェアである可能性がある。
+    	// マルウェアに取得されても問題のない情報であれば結果として返してもよい。
+        switch (sUriMatcher.match(uri)) {
+        case DOWNLOADS_CODE:
+        case DOWNLOADS_ID_CODE:
+            return sDownloadCursor;
+        case ADDRESSES_CODE:
+        case ADDRESSES_ID_CODE:
+            return sAddressCursor;
+        default:
+            throw new IllegalArgumentException(""Invalid URI："" + uri);
+        }
+    }",method,
+"    @Override
+    public Uri insert(Uri uri, ContentValues values) {
+    	// ★ポイント2★ リクエストパラメータの安全性を確認する
+    	// ここではuriが想定の範囲内であることを、UriMatcher#match()とswitch caseで確認している。
+		// その他のパラメータの確認はサンプルにつき省略。「3.2 入力データの安全性を確認する」を参照。
+    	// ★ポイント3★ センシティブな情報を返送してはならない
+    	// Insert結果、発番されるIDがセンシティブな意味を持つかどうかはアプリ次第。
+    	// リクエスト元のアプリがマルウェアである可能性がある。
+    	// マルウェアに取得されても問題のない情報であれば結果として返してもよい。
+        switch (sUriMatcher.match(uri)) {
+        case DOWNLOADS_CODE:
+            return ContentUris.withAppendedId(Download.CONTENT_URI, 3);
+        case ADDRESSES_CODE:
+            return ContentUris.withAppendedId(Address.CONTENT_URI, 4);
+        default:
+            throw new IllegalArgumentException(""Invalid URI："" + uri);
+        }
+    }",method,
+"    @Override
+    public int update(Uri uri, ContentValues values, String selection,
+            String[] selectionArgs) {
+    	// ★ポイント2★ リクエストパラメータの安全性を確認する
+    	// ここではuriが想定の範囲内であることを、UriMatcher#match()とswitch caseで確認している。
+		// その他のパラメータの確認はサンプルにつき省略。「3.2 入力データの安全性を確認する」を参照。
+    	// ★ポイント3★ センシティブな情報を返送してはならない
+    	// Updateされたレコード数がセンシティブな意味を持つかどうかはアプリ次第。
+    	// リクエスト元のアプリがマルウェアである可能性がある。
+    	// マルウェアに取得されても問題のない情報であれば結果として返してもよい。
+        switch (sUriMatcher.match(uri)) {
+        case DOWNLOADS_CODE:
+        	return 5;	// updateされたレコード数を返す
+        case DOWNLOADS_ID_CODE:
+            return 1;
+        case ADDRESSES_CODE:
+        	return 15;
+        case ADDRESSES_ID_CODE:
+            return 1;
+        default:
+            throw new IllegalArgumentException(""Invalid URI："" + uri);
+        }
+    }",method,
+"    @Override
+    public int delete(Uri uri, String selection, String[] selectionArgs) {
+    	// ★ポイント2★ リクエストパラメータの安全性を確認する
+    	// ここではuriが想定の範囲内であることを、UriMatcher#match()とswitch caseで確認している。
+		// その他のパラメータの確認はサンプルにつき省略。「3.2 入力データの安全性を確認する」を参照。
+    	// ★ポイント3★ センシティブな情報を返送してはならない
+    	// Deleteされたレコード数がセンシティブな意味を持つかどうかはアプリ次第。
+    	// リクエスト元のアプリがマルウェアである可能性がある。
+    	// マルウェアに取得されても問題のない情報であれば結果として返してもよい。
+        switch (sUriMatcher.match(uri)) {
+        case DOWNLOADS_CODE:
+        	return 10;	// deleteされたレコード数を返す
+        case DOWNLOADS_ID_CODE:
+            return 1;
+        case ADDRESSES_CODE:
+        	return 20;
+        case ADDRESSES_ID_CODE:
+            return 1;
+        default:
+            throw new IllegalArgumentException(""Invalid URI："" + uri);
+        }
+    }",method,
+"public class GroovyStructuralSearchTest extends StructuralSearchTestCase {
+  public void test1() {
+    String s = ""def int x = 0;\n"" +
+               ""def y = 0;\n"" +
+               ""int z = 10;\n"" +
+               ""def int x1"";
+    doTest(s, ""def $x$ = $value$;"", 3, 1);
+    doTest(s, ""def $x$"", 4, 3);
+    doTest(s, ""int $x$"", 3, 3);
+    doTest(s, ""def $x$ = $value$"", 3, 1);
+    doTest(s, ""def $x$ = 0"", 2, 1);
+    doTest(s, ""int $x$ = 0"", 1, 1);
+    doTest(s, ""int $x$ = $value$"", 2, 2);
+  }
+  public void test2() {
+    String s = ""def void f(int x) {}\n"" +
+               ""def f(int x) {\n"" +
+               ""  System.out.println(\""hello\"");\n"" +
+               ""}\n"" +
+               ""def f(def x) {}\n"" +
+               ""void g(x) {}\n"" +
+               ""public def void f(def int y) {\n"" +
+               ""  System.out.println(\""hello\"");\n"" +
+               ""}\n"" +
+               ""def int f() {}"";
+    doTest(s, ""def $f$($param$)"", 5, 2);
+    doTest(s, ""def $f$($param$) {}"", 3, 1);
+    doTest(s, ""void $f$($param$) {}"", 2, 2);
+    doTest(s, ""void $f$(def x)"", 2, 0);
+    doTest(s, ""def $f$(def x)"", 4, 1);
+    doTest(s, ""void $f$(def $x$)"", 3, 0);
+    doTest(s, ""void $f$(int $x$)"", 2, 2);
+    doTest(s, ""def $f$(int $x$)"", 3, 1);
+    doTest(s, ""def g($param$)"", 1, 0);
+    doTest(s, ""def '_T1('_T2*)"", 6, 2);
+    // a problem with default eq is that ; is not part of statement
+    doTest(s, ""def '_T1('_T2*) {'_T3+}"", 2, 0);
+    doTest(s, ""def '_T1('_T2*) {'_T3*}"", 6, 1);
+  }
+  public void test3() {
+    String s = ""public class C implements I1, I2 {\n"" +
+               ""  void f() {\n"" +
+               ""    def a = 1;\n"" +
+               ""    def int b = 2;\n"" +
+               ""  }\n"" +
+               ""}"";
+    doTest(s, ""class $name$"", 1, 1);
+    doTest(s, ""class $name$ implements I1, I2"", 1, 1);
+    doTest(s, ""class $name$ implements $interface$"", 1, 0);
+    doTest(s, ""class '_T1 implements '_T2*"", 1, 1);
+    doTest(s, ""class '_T1 implements '_T2+"", 1, 1);
+    doTest(s, ""class $name$ implements I2, I1"", 1, 0);
+    doTest(s, ""class C implements I1, I2 {}"", 1, 0);
+    doTest(s, ""def a = 1;\n def b = 2;"", 1, 0);
+    doTest(s, ""def a = 1\n def b = 2"", 1, 0);
+  }
+  public void test4() {
+    String s = ""for (a in list) {\n"" +
+               ""  println(\""hello1\"");\n"" +
+               ""  println(\""hello2\"");\n"" +
+               ""}"";
+    doTest(s, ""for ($a$ in $b$) {\n"" +
+              ""  $st1$;\n"" +
+              ""  $st2$\n"" +
+              ""}"", 1, 0);
+    doTest(s, ""for ($a$ in $b$) {\n"" +
+              ""  $st1$;\n"" +
+              ""  $st2$;\n"" +
+              ""}"", 1, 1);
+    doTest(s, ""for ($a$ in $b$) {\n"" +
+              ""  $st1$\n"" +
+              ""  $st2$\n"" +
+              ""}"", 1, 0);
+    doTest(s, ""for ($a$ in $b$) {\n"" +
+              ""  $st$\n"" +
+              ""}"", 0, 0);
+    doTest(s, ""for ($a$ in $b$) {\n"" +
+              ""  '_T*\n"" +
+              ""}"", 1, 0);
+    doTest(s, ""for ($a$ in $b$) {\n"" +
+              ""  '_T+\n"" +
+              ""}"", 1, 0);
+  }
+  public void test5() {
+    String s = ""class A {\n"" +
+               ""  def f = {\n"" +
+               ""    println('Hello1')\n"" +
+               ""    println('Hello2')\n"" +
+               ""  }\n"" +
+               ""  def f1 = {\n"" +
+               ""    println('Hello')\n"" +
+               ""  }\n"" +
+               ""}"";
+    doTest(s, ""def $name$ = {\n"" +
+              ""  '_T+\n"" +
+              ""}"", 0, 0);
+    final String old = options.getPatternContext();
+    try {
+      options.setPatternContext(GroovyStructuralSearchProfile.CLASS_CONTEXT);
+      doTest(s, ""def $name$ = {\n"" +
+                    ""  '_T+\n"" +
+                    ""}"", 2, 2);
+    }
+    finally {
+      options.setPatternContext(old);
+    }
+  }
+  private void doTest(String source, String pattern, int expectedOccurrences, int expectedWithDefaultEquivalence) {
+    findAndCheck(source, pattern, expectedOccurrences);
+    try {
+      EquivalenceDescriptorProvider.ourUseDefaultEquivalence = true;
+      findAndCheck(source, pattern, expectedWithDefaultEquivalence);
+    }
+    finally {
+      EquivalenceDescriptorProvider.ourUseDefaultEquivalence = false;
+    }
+  }
+  private void findAndCheck(String source, String pattern, int expectedOccurrences) {
+    testMatcher.clearContext();
+    assertEquals(expectedOccurrences, findMatchesCount(source, pattern, GroovyFileType.GROOVY_FILE_TYPE));
+  }
+}",class,
+"    String s = ""public class C implements I1, I2 {\n"" +
+               ""  void f() {\n"" +
+               ""    def a = 1;\n"" +
+               ""    def int b = 2;\n"" +
+               ""  }\n"" +
+               ""}"";
+    doTest(s, ""class $name$"", 1, 1);
+    doTest(s, ""class $name$ implements I1, I2"", 1, 1);
+    doTest(s, ""class $name$ implements $interface$"", 1, 0);
+    doTest(s, ""class '_T1 implements '_T2*"", 1, 1);
+    doTest(s, ""class '_T1 implements '_T2+"", 1, 1);
+    doTest(s, ""class $name$ implements I2, I1"", 1, 0);
+    doTest(s, ""class C implements I1, I2 {}"", 1, 0);
+    doTest(s, ""def a = 1;\n def b = 2;"", 1, 0);
+    doTest(s, ""def a = 1\n def b = 2"", 1, 0);
+  }
+  public void test4() {
+    String s = ""for (a in list) {\n"" +
+               ""  println(\""hello1\"");\n"" +
+               ""  println(\""hello2\"");\n"" +
+               ""}"";
+    doTest(s, ""for ($a$ in $b$) {\n"" +
+              ""  $st1$;\n"" +
+              ""  $st2$\n"" +
+              ""}"", 1, 0);
+    doTest(s, ""for ($a$ in $b$) {\n"" +
+              ""  $st1$;\n"" +
+              ""  $st2$;\n"" +
+              ""}"", 1, 1);
+    doTest(s, ""for ($a$ in $b$) {\n"" +
+              ""  $st1$\n"" +
+              ""  $st2$\n"" +
+              ""}"", 1, 0);
+    doTest(s, ""for ($a$ in $b$) {\n"" +
+              ""  $st$\n"" +
+              ""}"", 0, 0);
+    doTest(s, ""for ($a$ in $b$) {\n"" +
+              ""  '_T*\n"" +
+              ""}"", 1, 0);
+    doTest(s, ""for ($a$ in $b$) {\n"" +
+              ""  '_T+\n"" +
+              ""}"", 1, 0);
+  }",class,
+"    doTest(s, ""class $name$"", 1, 1);
+    doTest(s, ""class $name$ implements I1, I2"", 1, 1);
+    doTest(s, ""class $name$ implements $interface$"", 1, 0);
+    doTest(s, ""class '_T1 implements '_T2*"", 1, 1);
+    doTest(s, ""class '_T1 implements '_T2+"", 1, 1);
+    doTest(s, ""class $name$ implements I2, I1"", 1, 0);
+    doTest(s, ""class C implements I1, I2 {}"", 1, 0);
+    doTest(s, ""def a = 1;\n def b = 2;"", 1, 0);
+    doTest(s, ""def a = 1\n def b = 2"", 1, 0);
+  }
+  public void test4() {
+    String s = ""for (a in list) {\n"" +
+               ""  println(\""hello1\"");\n"" +
+               ""  println(\""hello2\"");\n"" +
+               ""}"";
+    doTest(s, ""for ($a$ in $b$) {\n"" +
+              ""  $st1$;\n"" +
+              ""  $st2$\n"" +
+              ""}"", 1, 0);
+    doTest(s, ""for ($a$ in $b$) {\n"" +
+              ""  $st1$;\n"" +
+              ""  $st2$;\n"" +
+              ""}"", 1, 1);
+    doTest(s, ""for ($a$ in $b$) {\n"" +
+              ""  $st1$\n"" +
+              ""  $st2$\n"" +
+              ""}"", 1, 0);
+    doTest(s, ""for ($a$ in $b$) {\n"" +
+              ""  $st$\n"" +
+              ""}"", 0, 0);
+    doTest(s, ""for ($a$ in $b$) {\n"" +
+              ""  '_T*\n"" +
+              ""}"", 1, 0);
+    doTest(s, ""for ($a$ in $b$) {\n"" +
+              ""  '_T+\n"" +
+              ""}"", 1, 0);
+  }",class,
+"    String s = ""class A {\n"" +
+               ""  def f = {\n"" +
+               ""    println('Hello1')\n"" +
+               ""    println('Hello2')\n"" +
+               ""  }\n"" +
+               ""  def f1 = {\n"" +
+               ""    println('Hello')\n"" +
+               ""  }\n"" +
+               ""}"";
+    doTest(s, ""def $name$ = {\n"" +
+              ""  '_T+\n"" +
+              ""}"", 0, 0);
+    final String old = options.getPatternContext();
+    try {
+      options.setPatternContext(GroovyStructuralSearchProfile.CLASS_CONTEXT);
+      doTest(s, ""def $name$ = {\n"" +
+                    ""  '_T+\n"" +
+                    ""}"", 2, 2);
+    }",class,
+"  public void test1() {
+    String s = ""def int x = 0;\n"" +
+               ""def y = 0;\n"" +
+               ""int z = 10;\n"" +
+               ""def int x1"";
+    doTest(s, ""def $x$ = $value$;"", 3, 1);
+    doTest(s, ""def $x$"", 4, 3);
+    doTest(s, ""int $x$"", 3, 3);
+    doTest(s, ""def $x$ = $value$"", 3, 1);
+    doTest(s, ""def $x$ = 0"", 2, 1);
+    doTest(s, ""int $x$ = 0"", 1, 1);
+    doTest(s, ""int $x$ = $value$"", 2, 2);
+  }",method,
+"  public void test2() {
+    String s = ""def void f(int x) {}\n"" +
+               ""def f(int x) {\n"" +
+               ""  System.out.println(\""hello\"");\n"" +
+               ""}\n"" +
+               ""def f(def x) {}\n"" +
+               ""void g(x) {}\n"" +
+               ""public def void f(def int y) {\n"" +
+               ""  System.out.println(\""hello\"");\n"" +
+               ""}\n"" +
+               ""def int f() {}"";
+    doTest(s, ""def $f$($param$)"", 5, 2);
+    doTest(s, ""def $f$($param$) {}"", 3, 1);
+    doTest(s, ""void $f$($param$) {}"", 2, 2);
+    doTest(s, ""void $f$(def x)"", 2, 0);
+    doTest(s, ""def $f$(def x)"", 4, 1);
+    doTest(s, ""void $f$(def $x$)"", 3, 0);
+    doTest(s, ""void $f$(int $x$)"", 2, 2);
+    doTest(s, ""def $f$(int $x$)"", 3, 1);
+    doTest(s, ""def g($param$)"", 1, 0);
+    doTest(s, ""def '_T1('_T2*)"", 6, 2);
+    // a problem with default eq is that ; is not part of statement
+    doTest(s, ""def '_T1('_T2*) {'_T3+}"", 2, 0);
+    doTest(s, ""def '_T1('_T2*) {'_T3*}"", 6, 1);
+  }",method,
+"    doTest(s, ""def $f$($param$) {}"", 3, 1);
+    doTest(s, ""void $f$($param$) {}"", 2, 2);
+    doTest(s, ""void $f$(def x)"", 2, 0);
+    doTest(s, ""def $f$(def x)"", 4, 1);
+    doTest(s, ""void $f$(def $x$)"", 3, 0);
+    doTest(s, ""void $f$(int $x$)"", 2, 2);
+    doTest(s, ""def $f$(int $x$)"", 3, 1);
+    doTest(s, ""def g($param$)"", 1, 0);
+    doTest(s, ""def '_T1('_T2*)"", 6, 2);
+    // a problem with default eq is that ; is not part of statement
+    doTest(s, ""def '_T1('_T2*) {'_T3+}"", 2, 0);
+    doTest(s, ""def '_T1('_T2*) {'_T3*}"", 6, 1);
+  }
+  public void test3() {
+    String s = ""public class C implements I1, I2 {\n"" +
+               ""  void f() {\n"" +
+               ""    def a = 1;\n"" +
+               ""    def int b = 2;\n"" +
+               ""  }\n"" +
+               ""}"";
+    doTest(s, ""class $name$"", 1, 1);
+    doTest(s, ""class $name$ implements I1, I2"", 1, 1);
+    doTest(s, ""class $name$ implements $interface$"", 1, 0);
+    doTest(s, ""class '_T1 implements '_T2*"", 1, 1);
+    doTest(s, ""class '_T1 implements '_T2+"", 1, 1);
+    doTest(s, ""class $name$ implements I2, I1"", 1, 0);
+    doTest(s, ""class C implements I1, I2 {}"", 1, 0);
+    doTest(s, ""def a = 1;\n def b = 2;"", 1, 0);
+    doTest(s, ""def a = 1\n def b = 2"", 1, 0);
+  }",method,
+"    doTest(s, ""void $f$($param$) {}"", 2, 2);
+    doTest(s, ""void $f$(def x)"", 2, 0);
+    doTest(s, ""def $f$(def x)"", 4, 1);
+    doTest(s, ""void $f$(def $x$)"", 3, 0);
+    doTest(s, ""void $f$(int $x$)"", 2, 2);
+    doTest(s, ""def $f$(int $x$)"", 3, 1);
+    doTest(s, ""def g($param$)"", 1, 0);
+    doTest(s, ""def '_T1('_T2*)"", 6, 2);
+    // a problem with default eq is that ; is not part of statement
+    doTest(s, ""def '_T1('_T2*) {'_T3+}"", 2, 0);
+    doTest(s, ""def '_T1('_T2*) {'_T3*}"", 6, 1);
+  }
+  public void test3() {
+    String s = ""public class C implements I1, I2 {\n"" +
+               ""  void f() {\n"" +
+               ""    def a = 1;\n"" +
+               ""    def int b = 2;\n"" +
+               ""  }\n"" +
+               ""}"";
+    doTest(s, ""class $name$"", 1, 1);
+    doTest(s, ""class $name$ implements I1, I2"", 1, 1);
+    doTest(s, ""class $name$ implements $interface$"", 1, 0);
+    doTest(s, ""class '_T1 implements '_T2*"", 1, 1);
+    doTest(s, ""class '_T1 implements '_T2+"", 1, 1);
+    doTest(s, ""class $name$ implements I2, I1"", 1, 0);
+    doTest(s, ""class C implements I1, I2 {}"", 1, 0);
+    doTest(s, ""def a = 1;\n def b = 2;"", 1, 0);
+    doTest(s, ""def a = 1\n def b = 2"", 1, 0);
+  }",method,
+"    doTest(s, ""def '_T1('_T2*) {'_T3+}"", 2, 0);
+    doTest(s, ""def '_T1('_T2*) {'_T3*}"", 6, 1);
+  }
+  public void test3() {
+    String s = ""public class C implements I1, I2 {\n"" +
+               ""  void f() {\n"" +
+               ""    def a = 1;\n"" +
+               ""    def int b = 2;\n"" +
+               ""  }\n"" +
+               ""}"";
+    doTest(s, ""class $name$"", 1, 1);
+    doTest(s, ""class $name$ implements I1, I2"", 1, 1);
+    doTest(s, ""class $name$ implements $interface$"", 1, 0);
+    doTest(s, ""class '_T1 implements '_T2*"", 1, 1);
+    doTest(s, ""class '_T1 implements '_T2+"", 1, 1);
+    doTest(s, ""class $name$ implements I2, I1"", 1, 0);
+    doTest(s, ""class C implements I1, I2 {}"", 1, 0);
+    doTest(s, ""def a = 1;\n def b = 2;"", 1, 0);
+    doTest(s, ""def a = 1\n def b = 2"", 1, 0);
+  }",method,
+"    doTest(s, ""def '_T1('_T2*) {'_T3*}"", 6, 1);
+  }
+  public void test3() {
+    String s = ""public class C implements I1, I2 {\n"" +
+               ""  void f() {\n"" +
+               ""    def a = 1;\n"" +
+               ""    def int b = 2;\n"" +
+               ""  }\n"" +
+               ""}"";
+    doTest(s, ""class $name$"", 1, 1);
+    doTest(s, ""class $name$ implements I1, I2"", 1, 1);
+    doTest(s, ""class $name$ implements $interface$"", 1, 0);
+    doTest(s, ""class '_T1 implements '_T2*"", 1, 1);
+    doTest(s, ""class '_T1 implements '_T2+"", 1, 1);
+    doTest(s, ""class $name$ implements I2, I1"", 1, 0);
+    doTest(s, ""class C implements I1, I2 {}"", 1, 0);
+    doTest(s, ""def a = 1;\n def b = 2;"", 1, 0);
+    doTest(s, ""def a = 1\n def b = 2"", 1, 0);
+  }",method,
+"  public void test3() {
+    String s = ""public class C implements I1, I2 {\n"" +
+               ""  void f() {\n"" +
+               ""    def a = 1;\n"" +
+               ""    def int b = 2;\n"" +
+               ""  }\n"" +
+               ""}"";
+    doTest(s, ""class $name$"", 1, 1);
+    doTest(s, ""class $name$ implements I1, I2"", 1, 1);
+    doTest(s, ""class $name$ implements $interface$"", 1, 0);
+    doTest(s, ""class '_T1 implements '_T2*"", 1, 1);
+    doTest(s, ""class '_T1 implements '_T2+"", 1, 1);
+    doTest(s, ""class $name$ implements I2, I1"", 1, 0);
+    doTest(s, ""class C implements I1, I2 {}"", 1, 0);
+    doTest(s, ""def a = 1;\n def b = 2;"", 1, 0);
+    doTest(s, ""def a = 1\n def b = 2"", 1, 0);
+  }",method,
+"  public void test4() {
+    String s = ""for (a in list) {\n"" +
+               ""  println(\""hello1\"");\n"" +
+               ""  println(\""hello2\"");\n"" +
+               ""}"";
+    doTest(s, ""for ($a$ in $b$) {\n"" +
+              ""  $st1$;\n"" +
+              ""  $st2$\n"" +
+              ""}"", 1, 0);
+    doTest(s, ""for ($a$ in $b$) {\n"" +
+              ""  $st1$;\n"" +
+              ""  $st2$;\n"" +
+              ""}"", 1, 1);
+    doTest(s, ""for ($a$ in $b$) {\n"" +
+              ""  $st1$\n"" +
+              ""  $st2$\n"" +
+              ""}"", 1, 0);
+    doTest(s, ""for ($a$ in $b$) {\n"" +
+              ""  $st$\n"" +
+              ""}"", 0, 0);
+    doTest(s, ""for ($a$ in $b$) {\n"" +
+              ""  '_T*\n"" +
+              ""}"", 1, 0);
+    doTest(s, ""for ($a$ in $b$) {\n"" +
+              ""  '_T+\n"" +
+              ""}"", 1, 0);
+  }",method,
+"    doTest(s, ""for ($a$ in $b$) {\n"" +
+              ""  $st1$;\n"" +
+              ""  $st2$\n"" +
+              ""}"", 1, 0);
+    doTest(s, ""for ($a$ in $b$) {\n"" +
+              ""  $st1$;\n"" +
+              ""  $st2$;\n"" +
+              ""}"", 1, 1);
+    doTest(s, ""for ($a$ in $b$) {\n"" +
+              ""  $st1$\n"" +
+              ""  $st2$\n"" +
+              ""}"", 1, 0);
+    doTest(s, ""for ($a$ in $b$) {\n"" +
+              ""  $st$\n"" +
+              ""}"", 0, 0);
+    doTest(s, ""for ($a$ in $b$) {\n"" +
+              ""  '_T*\n"" +
+              ""}"", 1, 0);
+    doTest(s, ""for ($a$ in $b$) {\n"" +
+              ""  '_T+\n"" +
+              ""}"", 1, 0);
+  }
+  public void test5() {
+    String s = ""class A {\n"" +
+               ""  def f = {\n"" +
+               ""    println('Hello1')\n"" +
+               ""    println('Hello2')\n"" +
+               ""  }\n"" +
+               ""  def f1 = {\n"" +
+               ""    println('Hello')\n"" +
+               ""  }\n"" +
+               ""}"";
+    doTest(s, ""def $name$ = {\n"" +
+              ""  '_T+\n"" +
+              ""}"", 0, 0);
+    final String old = options.getPatternContext();
+    try {
+      options.setPatternContext(GroovyStructuralSearchProfile.CLASS_CONTEXT);
+      doTest(s, ""def $name$ = {\n"" +
+                    ""  '_T+\n"" +
+                    ""}"", 2, 2);
+    }
+    finally {
+      options.setPatternContext(old);
+    }
+  }",method,
+"    doTest(s, ""for ($a$ in $b$) {\n"" +
+              ""  $st1$;\n"" +
+              ""  $st2$;\n"" +
+              ""}"", 1, 1);
+    doTest(s, ""for ($a$ in $b$) {\n"" +
+              ""  $st1$\n"" +
+              ""  $st2$\n"" +
+              ""}"", 1, 0);
+    doTest(s, ""for ($a$ in $b$) {\n"" +
+              ""  $st$\n"" +
+              ""}"", 0, 0);
+    doTest(s, ""for ($a$ in $b$) {\n"" +
+              ""  '_T*\n"" +
+              ""}"", 1, 0);
+    doTest(s, ""for ($a$ in $b$) {\n"" +
+              ""  '_T+\n"" +
+              ""}"", 1, 0);
+  }
+  public void test5() {
+    String s = ""class A {\n"" +
+               ""  def f = {\n"" +
+               ""    println('Hello1')\n"" +
+               ""    println('Hello2')\n"" +
+               ""  }\n"" +
+               ""  def f1 = {\n"" +
+               ""    println('Hello')\n"" +
+               ""  }\n"" +
+               ""}"";
+    doTest(s, ""def $name$ = {\n"" +
+              ""  '_T+\n"" +
+              ""}"", 0, 0);
+    final String old = options.getPatternContext();
+    try {
+      options.setPatternContext(GroovyStructuralSearchProfile.CLASS_CONTEXT);
+      doTest(s, ""def $name$ = {\n"" +
+                    ""  '_T+\n"" +
+                    ""}"", 2, 2);
+    }
+    finally {
+      options.setPatternContext(old);
+    }
+  }",method,
+"    doTest(s, ""for ($a$ in $b$) {\n"" +
+              ""  $st1$\n"" +
+              ""  $st2$\n"" +
+              ""}"", 1, 0);
+    doTest(s, ""for ($a$ in $b$) {\n"" +
+              ""  $st$\n"" +
+              ""}"", 0, 0);
+    doTest(s, ""for ($a$ in $b$) {\n"" +
+              ""  '_T*\n"" +
+              ""}"", 1, 0);
+    doTest(s, ""for ($a$ in $b$) {\n"" +
+              ""  '_T+\n"" +
+              ""}"", 1, 0);
+  }
+  public void test5() {
+    String s = ""class A {\n"" +
+               ""  def f = {\n"" +
+               ""    println('Hello1')\n"" +
+               ""    println('Hello2')\n"" +
+               ""  }\n"" +
+               ""  def f1 = {\n"" +
+               ""    println('Hello')\n"" +
+               ""  }\n"" +
+               ""}"";
+    doTest(s, ""def $name$ = {\n"" +
+              ""  '_T+\n"" +
+              ""}"", 0, 0);
+    final String old = options.getPatternContext();
+    try {
+      options.setPatternContext(GroovyStructuralSearchProfile.CLASS_CONTEXT);
+      doTest(s, ""def $name$ = {\n"" +
+                    ""  '_T+\n"" +
+                    ""}"", 2, 2);
+    }
+    finally {
+      options.setPatternContext(old);
+    }
+  }",method,
+"    doTest(s, ""for ($a$ in $b$) {\n"" +
+              ""  $st$\n"" +
+              ""}"", 0, 0);
+    doTest(s, ""for ($a$ in $b$) {\n"" +
+              ""  '_T*\n"" +
+              ""}"", 1, 0);
+    doTest(s, ""for ($a$ in $b$) {\n"" +
+              ""  '_T+\n"" +
+              ""}"", 1, 0);
+  }
+  public void test5() {
+    String s = ""class A {\n"" +
+               ""  def f = {\n"" +
+               ""    println('Hello1')\n"" +
+               ""    println('Hello2')\n"" +
+               ""  }\n"" +
+               ""  def f1 = {\n"" +
+               ""    println('Hello')\n"" +
+               ""  }\n"" +
+               ""}"";
+    doTest(s, ""def $name$ = {\n"" +
+              ""  '_T+\n"" +
+              ""}"", 0, 0);
+    final String old = options.getPatternContext();
+    try {
+      options.setPatternContext(GroovyStructuralSearchProfile.CLASS_CONTEXT);
+      doTest(s, ""def $name$ = {\n"" +
+                    ""  '_T+\n"" +
+                    ""}"", 2, 2);
+    }
+    finally {
+      options.setPatternContext(old);
+    }
+  }",method,
+"    doTest(s, ""for ($a$ in $b$) {\n"" +
+              ""  '_T*\n"" +
+              ""}"", 1, 0);
+    doTest(s, ""for ($a$ in $b$) {\n"" +
+              ""  '_T+\n"" +
+              ""}"", 1, 0);
+  }
+  public void test5() {
+    String s = ""class A {\n"" +
+               ""  def f = {\n"" +
+               ""    println('Hello1')\n"" +
+               ""    println('Hello2')\n"" +
+               ""  }\n"" +
+               ""  def f1 = {\n"" +
+               ""    println('Hello')\n"" +
+               ""  }\n"" +
+               ""}"";
+    doTest(s, ""def $name$ = {\n"" +
+              ""  '_T+\n"" +
+              ""}"", 0, 0);
+    final String old = options.getPatternContext();
+    try {
+      options.setPatternContext(GroovyStructuralSearchProfile.CLASS_CONTEXT);
+      doTest(s, ""def $name$ = {\n"" +
+                    ""  '_T+\n"" +
+                    ""}"", 2, 2);
+    }
+    finally {
+      options.setPatternContext(old);
+    }
+  }",method,
+"    doTest(s, ""for ($a$ in $b$) {\n"" +
+              ""  '_T+\n"" +
+              ""}"", 1, 0);
+  }
+  public void test5() {
+    String s = ""class A {\n"" +
+               ""  def f = {\n"" +
+               ""    println('Hello1')\n"" +
+               ""    println('Hello2')\n"" +
+               ""  }\n"" +
+               ""  def f1 = {\n"" +
+               ""    println('Hello')\n"" +
+               ""  }\n"" +
+               ""}"";
+    doTest(s, ""def $name$ = {\n"" +
+              ""  '_T+\n"" +
+              ""}"", 0, 0);
+    final String old = options.getPatternContext();
+    try {
+      options.setPatternContext(GroovyStructuralSearchProfile.CLASS_CONTEXT);
+      doTest(s, ""def $name$ = {\n"" +
+                    ""  '_T+\n"" +
+                    ""}"", 2, 2);
+    }
+    finally {
+      options.setPatternContext(old);
+    }
+  }",method,
+"  public void test5() {
+    String s = ""class A {\n"" +
+               ""  def f = {\n"" +
+               ""    println('Hello1')\n"" +
+               ""    println('Hello2')\n"" +
+               ""  }\n"" +
+               ""  def f1 = {\n"" +
+               ""    println('Hello')\n"" +
+               ""  }\n"" +
+               ""}"";
+    doTest(s, ""def $name$ = {\n"" +
+              ""  '_T+\n"" +
+              ""}"", 0, 0);
+    final String old = options.getPatternContext();
+    try {
+      options.setPatternContext(GroovyStructuralSearchProfile.CLASS_CONTEXT);
+      doTest(s, ""def $name$ = {\n"" +
+                    ""  '_T+\n"" +
+                    ""}"", 2, 2);
+    }
+    finally {
+      options.setPatternContext(old);
+    }
+  }",method,
+"  private void doTest(String source, String pattern, int expectedOccurrences, int expectedWithDefaultEquivalence) {
+    findAndCheck(source, pattern, expectedOccurrences);
+    try {
+      EquivalenceDescriptorProvider.ourUseDefaultEquivalence = true;
+      findAndCheck(source, pattern, expectedWithDefaultEquivalence);
+    }
+    finally {
+      EquivalenceDescriptorProvider.ourUseDefaultEquivalence = false;
+    }
+  }",method,
+"  private void findAndCheck(String source, String pattern, int expectedOccurrences) {
+    testMatcher.clearContext();
+    assertEquals(expectedOccurrences, findMatchesCount(source, pattern, GroovyFileType.GROOVY_FILE_TYPE));
+  }",method,
+"final class Helper {
+  private Helper() {
+    throw new AssertionError();
+  }
+  static int getQueries(HttpServerExchange exchange) {
+    Deque<String> values = exchange.getQueryParameters().get(""queries"");
+    if (values == null) {
+      return 1;
+    }
+    String textValue = values.peekFirst();
+    if (textValue == null) {
+      return 1;
+    }
+    int parsedValue;
+    try {
+      parsedValue = Integer.parseInt(textValue);
+    } catch (NumberFormatException e) {
+      return 1;
+    }
+    return Math.min(500, Math.max(1, parsedValue));
+  }
+  static int randomWorld() {
+    return 1 + ThreadLocalRandom.current().nextInt(10000);
+  }
+  static void sendJson(HttpServerExchange exchange, Object value) {
+    byte[] jsonBytes;
+    try {
+      jsonBytes = objectMapper.writeValueAsBytes(value);
+    } catch (IOException e) {
+      throw new IllegalArgumentException(e);
+    }
+    ByteBuffer jsonBuffer = ByteBuffer.wrap(jsonBytes);
+    exchange.getResponseHeaders().put(CONTENT_TYPE, ""application/json"");
+    exchange.getResponseSender().send(jsonBuffer);
+  }
+  private static final ObjectMapper objectMapper = new ObjectMapper();
+  static void sendHtml(HttpServerExchange exchange,
+                       Object value,
+                       String templatePath) {
+    Mustache mustache = mustacheFactory.compile(templatePath);
+    StringWriter writer = new StringWriter();
+    mustache.execute(writer, value);
+    String html = writer.toString();
+    exchange.getResponseHeaders().put(CONTENT_TYPE, ""text/html;charset=utf-8"");
+    exchange.getResponseSender().send(html);
+  }
+  private static final MustacheFactory mustacheFactory =
+      new DefaultMustacheFactory();
+  static void sendException(HttpServerExchange exchange, Throwable exception) {
+    exchange.setStatusCode(500);
+    exchange.endExchange();
+    exception.printStackTrace();
+  }
+  static World mongoDocumentToWorld(Document document) {
+    int id = mongoGetInt(document, ""_id"");
+    int randomNumber = mongoGetInt(document, ""randomNumber"");
+    return new World(id, randomNumber);
+  }
+  static Fortune mongoDocumentToFortune(Document document) {
+    int id = mongoGetInt(document, ""_id"");
+    String message = document.getString(""message"");
+    return new Fortune(id, message);
+  }
+  // We don't know ahead of time whether these values are instances of Integer
+  // or Double.  This code is compatible with both.
+  private static int mongoGetInt(Document document, String key) {
+    return ((Number) document.get(key)).intValue();
+  }
+}",class,
+"  private Helper() {
+    throw new AssertionError();
+  }",method,
+"  static int getQueries(HttpServerExchange exchange) {
+    Deque<String> values = exchange.getQueryParameters().get(""queries"");
+    if (values == null) {
+      return 1;
+    }
+    String textValue = values.peekFirst();
+    if (textValue == null) {
+      return 1;
+    }
+    int parsedValue;
+    try {
+      parsedValue = Integer.parseInt(textValue);
+    } catch (NumberFormatException e) {
+      return 1;
+    }
+    return Math.min(500, Math.max(1, parsedValue));
+  }",method,
+"    if (values == null) {
+      return 1;
+    }",method,
+"    if (textValue == null) {
+      return 1;
+    }",method,
+"  static int randomWorld() {
+    return 1 + ThreadLocalRandom.current().nextInt(10000);
+  }",method,
+"  static void sendJson(HttpServerExchange exchange, Object value) {
+    byte[] jsonBytes;
+    try {
+      jsonBytes = objectMapper.writeValueAsBytes(value);
+    } catch (IOException e) {
+      throw new IllegalArgumentException(e);
+    }
+    ByteBuffer jsonBuffer = ByteBuffer.wrap(jsonBytes);
+    exchange.getResponseHeaders().put(CONTENT_TYPE, ""application/json"");
+    exchange.getResponseSender().send(jsonBuffer);
+  }",method,
+"  static void sendHtml(HttpServerExchange exchange,
+                       Object value,
+                       String templatePath) {
+    Mustache mustache = mustacheFactory.compile(templatePath);
+    StringWriter writer = new StringWriter();
+    mustache.execute(writer, value);
+    String html = writer.toString();
+    exchange.getResponseHeaders().put(CONTENT_TYPE, ""text/html;charset=utf-8"");
+    exchange.getResponseSender().send(html);
+  }",method,
+"  static void sendException(HttpServerExchange exchange, Throwable exception) {
+    exchange.setStatusCode(500);
+    exchange.endExchange();
+    exception.printStackTrace();
+  }",method,
+"  static World mongoDocumentToWorld(Document document) {
+    int id = mongoGetInt(document, ""_id"");
+    int randomNumber = mongoGetInt(document, ""randomNumber"");
+    return new World(id, randomNumber);
+  }",method,
+"  static Fortune mongoDocumentToFortune(Document document) {
+    int id = mongoGetInt(document, ""_id"");
+    String message = document.getString(""message"");
+    return new Fortune(id, message);
+  }",method,
+"  private static int mongoGetInt(Document document, String key) {
+    return ((Number) document.get(key)).intValue();
+  }",method,
+"public final class SingleFlatMapIterableFlowable<T, R> extends Flowable<R> {
+    final SingleSource<T> source;
+    final Function<? super T, ? extends Iterable<? extends R>> mapper;
+    public SingleFlatMapIterableFlowable(SingleSource<T> source,
+            Function<? super T, ? extends Iterable<? extends R>> mapper) {
+        this.source = source;
+        this.mapper = mapper;
+    }
+    @Override
+    protected void subscribeActual(Subscriber<? super R> s) {
+        source.subscribe(new FlatMapIterableObserver<T, R>(s, mapper));
+    }
+    static final class FlatMapIterableObserver<T, R>
+    extends BasicIntQueueSubscription<R>
+    implements SingleObserver<T> {
+        private static final long serialVersionUID = -8938804753851907758L;
+        final Subscriber<? super R> actual;
+        final Function<? super T, ? extends Iterable<? extends R>> mapper;
+        final AtomicLong requested;
+        Disposable d;
+        volatile Iterator<? extends R> it;
+        volatile boolean cancelled;
+        boolean outputFused;
+        FlatMapIterableObserver(Subscriber<? super R> actual,
+                Function<? super T, ? extends Iterable<? extends R>> mapper) {
+            this.actual = actual;
+            this.mapper = mapper;
+            this.requested = new AtomicLong();
+        }
+        @Override
+        public void onSubscribe(Disposable d) {
+            if (DisposableHelper.validate(this.d, d)) {
+                this.d = d;
+                actual.onSubscribe(this);
+            }
+        }
+        @Override
+        public void onSuccess(T value) {
+            Iterator<? extends R> iterator;
+            boolean has;
+            try {
+                iterator = mapper.apply(value).iterator();
+                has = iterator.hasNext();
+            } catch (Throwable ex) {
+                Exceptions.throwIfFatal(ex);
+                actual.onError(ex);
+                return;
+            }
+            if (!has) {
+                actual.onComplete();
+                return;
+            }
+            this.it = iterator;
+            drain();
+        }
+        @Override
+        public void onError(Throwable e) {
+            d = DisposableHelper.DISPOSED;
+            actual.onError(e);
+        }
+        @Override
+        public void request(long n) {
+            if (SubscriptionHelper.validate(n)) {
+                BackpressureHelper.add(requested, n);
+                drain();
+            }
+        }
+        @Override
+        public void cancel() {
+            cancelled = true;
+            d.dispose();
+            d = DisposableHelper.DISPOSED;
+        }
+        void drain() {
+            if (getAndIncrement() != 0) {
+                return;
+            }
+            Subscriber<? super R> a = actual;
+            Iterator<? extends R> iterator = this.it;
+            if (outputFused && iterator != null) {
+                a.onNext(null);
+                a.onComplete();
+                return;
+            }
+            int missed = 1;
+            for (;;) {
+                if (iterator != null) {
+                    long r = requested.get();
+                    long e = 0L;
+                    if (r == Long.MAX_VALUE) {
+                        slowPath(a, iterator);
+                        return;
+                    }
+                    while (e != r) {
+                        if (cancelled) {
+                            return;
+                        }
+                        R v;
+                        try {
+                            v = ObjectHelper.requireNonNull(iterator.next(), ""The iterator returned a null value"");
+                        } catch (Throwable ex) {
+                            Exceptions.throwIfFatal(ex);
+                            a.onError(ex);
+                            return;
+                        }
+                        a.onNext(v);
+                        if (cancelled) {
+                            return;
+                        }
+                        e++;
+                        boolean b;
+                        try {
+                            b = iterator.hasNext();
+                        } catch (Throwable ex) {
+                            Exceptions.throwIfFatal(ex);
+                            a.onError(ex);
+                            return;
+                        }
+                        if (!b) {
+                            a.onComplete();
+                            return;
+                        }
+                    }
+                    if (e != 0L) {
+                        BackpressureHelper.produced(requested, e);
+                    }
+                }
+                missed = addAndGet(-missed);
+                if (missed == 0) {
+                    break;
+                }
+                if (iterator == null) {
+                    iterator = it;
+                }
+            }
+        }
+        void slowPath(Subscriber<? super R> a, Iterator<? extends R> iterator) {
+            for (;;) {
+                if (cancelled) {
+                    return;
+                }
+                R v;
+                try {
+                    v = iterator.next();
+                } catch (Throwable ex) {
+                    Exceptions.throwIfFatal(ex);
+                    a.onError(ex);
+                    return;
+                }
+                a.onNext(v);
+                if (cancelled) {
+                    return;
+                }
+                boolean b;
+                try {
+                    b = iterator.hasNext();
+                } catch (Throwable ex) {
+                    Exceptions.throwIfFatal(ex);
+                    a.onError(ex);
+                    return;
+                }
+                if (!b) {
+                    a.onComplete();
+                    return;
+                }
+            }
+        }
+        @Override
+        public int requestFusion(int mode) {
+            if ((mode & ASYNC) != 0) {
+                outputFused = true;
+                return ASYNC;
+            }
+            return NONE;
+        }
+        @Override
+        public void clear() {
+            it = null;
+        }
+        @Override
+        public boolean isEmpty() {
+            return it == null;
+        }
+        @Nullable
+        @Override
+        public R poll() throws Exception {
+            Iterator<? extends R> iterator = it;
+            if (iterator != null) {
+                R v = ObjectHelper.requireNonNull(iterator.next(), ""The iterator returned a null value"");
+                if (!iterator.hasNext()) {
+                    it = null;
+                }
+                return v;
+            }
+            return null;
+        }
+    }
+}",class,
+"    static final class FlatMapIterableObserver<T, R>
+    extends BasicIntQueueSubscription<R>
+    implements SingleObserver<T> {
+        private static final long serialVersionUID = -8938804753851907758L;
+        final Subscriber<? super R> actual;
+        final Function<? super T, ? extends Iterable<? extends R>> mapper;
+        final AtomicLong requested;
+        Disposable d;
+        volatile Iterator<? extends R> it;
+        volatile boolean cancelled;
+        boolean outputFused;
+        FlatMapIterableObserver(Subscriber<? super R> actual,
+                Function<? super T, ? extends Iterable<? extends R>> mapper) {
+            this.actual = actual;
+            this.mapper = mapper;
+            this.requested = new AtomicLong();
+        }
+        @Override
+        public void onSubscribe(Disposable d) {
+            if (DisposableHelper.validate(this.d, d)) {
+                this.d = d;
+                actual.onSubscribe(this);
+            }
+        }
+        @Override
+        public void onSuccess(T value) {
+            Iterator<? extends R> iterator;
+            boolean has;
+            try {
+                iterator = mapper.apply(value).iterator();
+                has = iterator.hasNext();
+            } catch (Throwable ex) {
+                Exceptions.throwIfFatal(ex);
+                actual.onError(ex);
+                return;
+            }
+            if (!has) {
+                actual.onComplete();
+                return;
+            }
+            this.it = iterator;
+            drain();
+        }
+        @Override
+        public void onError(Throwable e) {
+            d = DisposableHelper.DISPOSED;
+            actual.onError(e);
+        }
+        @Override
+        public void request(long n) {
+            if (SubscriptionHelper.validate(n)) {
+                BackpressureHelper.add(requested, n);
+                drain();
+            }
+        }
+        @Override
+        public void cancel() {
+            cancelled = true;
+            d.dispose();
+            d = DisposableHelper.DISPOSED;
+        }
+        void drain() {
+            if (getAndIncrement() != 0) {
+                return;
+            }
+            Subscriber<? super R> a = actual;
+            Iterator<? extends R> iterator = this.it;
+            if (outputFused && iterator != null) {
+                a.onNext(null);
+                a.onComplete();
+                return;
+            }
+            int missed = 1;
+            for (;;) {
+                if (iterator != null) {
+                    long r = requested.get();
+                    long e = 0L;
+                    if (r == Long.MAX_VALUE) {
+                        slowPath(a, iterator);
+                        return;
+                    }
+                    while (e != r) {
+                        if (cancelled) {
+                            return;
+                        }
+                        R v;
+                        try {
+                            v = ObjectHelper.requireNonNull(iterator.next(), ""The iterator returned a null value"");
+                        } catch (Throwable ex) {
+                            Exceptions.throwIfFatal(ex);
+                            a.onError(ex);
+                            return;
+                        }
+                        a.onNext(v);
+                        if (cancelled) {
+                            return;
+                        }
+                        e++;
+                        boolean b;
+                        try {
+                            b = iterator.hasNext();
+                        } catch (Throwable ex) {
+                            Exceptions.throwIfFatal(ex);
+                            a.onError(ex);
+                            return;
+                        }
+                        if (!b) {
+                            a.onComplete();
+                            return;
+                        }
+                    }
+                    if (e != 0L) {
+                        BackpressureHelper.produced(requested, e);
+                    }
+                }
+                missed = addAndGet(-missed);
+                if (missed == 0) {
+                    break;
+                }
+                if (iterator == null) {
+                    iterator = it;
+                }
+            }
+        }
+        void slowPath(Subscriber<? super R> a, Iterator<? extends R> iterator) {
+            for (;;) {
+                if (cancelled) {
+                    return;
+                }
+                R v;
+                try {
+                    v = iterator.next();
+                } catch (Throwable ex) {
+                    Exceptions.throwIfFatal(ex);
+                    a.onError(ex);
+                    return;
+                }
+                a.onNext(v);
+                if (cancelled) {
+                    return;
+                }
+                boolean b;
+                try {
+                    b = iterator.hasNext();
+                } catch (Throwable ex) {
+                    Exceptions.throwIfFatal(ex);
+                    a.onError(ex);
+                    return;
+                }
+                if (!b) {
+                    a.onComplete();
+                    return;
+                }
+            }
+        }
+        @Override
+        public int requestFusion(int mode) {
+            if ((mode & ASYNC) != 0) {
+                outputFused = true;
+                return ASYNC;
+            }
+            return NONE;
+        }
+        @Override
+        public void clear() {
+            it = null;
+        }
+        @Override
+        public boolean isEmpty() {
+            return it == null;
+        }
+        @Nullable
+        @Override
+        public R poll() throws Exception {
+            Iterator<? extends R> iterator = it;
+            if (iterator != null) {
+                R v = ObjectHelper.requireNonNull(iterator.next(), ""The iterator returned a null value"");
+                if (!iterator.hasNext()) {
+                    it = null;
+                }
+                return v;
+            }
+            return null;
+        }
+    }",class,
+"    public SingleFlatMapIterableFlowable(SingleSource<T> source,
+            Function<? super T, ? extends Iterable<? extends R>> mapper) {
+        this.source = source;
+        this.mapper = mapper;
+    }",method,
+"    @Override
+    protected void subscribeActual(Subscriber<? super R> s) {
+        source.subscribe(new FlatMapIterableObserver<T, R>(s, mapper));
+    }",method,
+"        FlatMapIterableObserver(Subscriber<? super R> actual,
+                Function<? super T, ? extends Iterable<? extends R>> mapper) {
+            this.actual = actual;
+            this.mapper = mapper;
+            this.requested = new AtomicLong();
+        }",method,
+"        @Override
+        public void onSubscribe(Disposable d) {
+            if (DisposableHelper.validate(this.d, d)) {
+                this.d = d;
+                actual.onSubscribe(this);
+            }
+        }",method,
+"        @Override
+        public void onSuccess(T value) {
+            Iterator<? extends R> iterator;
+            boolean has;
+            try {
+                iterator = mapper.apply(value).iterator();
+                has = iterator.hasNext();
+            } catch (Throwable ex) {
+                Exceptions.throwIfFatal(ex);
+                actual.onError(ex);
+                return;
+            }
+            if (!has) {
+                actual.onComplete();
+                return;
+            }
+            this.it = iterator;
+            drain();
+        }",method,
+"            if (!has) {
+                actual.onComplete();
+                return;
+            }",method,
+"        @Override
+        public void onError(Throwable e) {
+            d = DisposableHelper.DISPOSED;
+            actual.onError(e);
+        }",method,
+"        @Override
+        public void request(long n) {
+            if (SubscriptionHelper.validate(n)) {
+                BackpressureHelper.add(requested, n);
+                drain();
+            }
+        }",method,
+"        @Override
+        public void cancel() {
+            cancelled = true;
+            d.dispose();
+            d = DisposableHelper.DISPOSED;
+        }",method,

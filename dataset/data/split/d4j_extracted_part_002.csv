@@ -1,0 +1,1217 @@
+code_snippet,type,score
+"        if (mPreparedStatement == null) {
+            acquirePreparedStatement();
+            mPreparedStatement.bindArguments(getBindArgs());
+        }",method,good
+"    void release() {
+        releasePreparedStatement();
+    }",method,good
+"    int fillRows(ChunkedCursorWindow window, int startPos, int count) {
+        // Ensure prepared statement is acquired.
+        acquire();
+        // Check whether number of columns has been set.
+        if (window.getNumColumns() != mResultColumns) {
+            window.setNumColumns(mResultColumns);
+        }
+        try {
+            return nativeFillRows(mPreparedStatement.getPtr(), window.mWindowPtr, startPos, count);
+        } catch (SQLiteDatabaseCorruptException e) {
+            onCorruption();
+            throw e;
+        } catch (SQLiteException e) {
+            Log.e(TAG, ""Got exception on fillRows: "" + e.getMessage() + "", SQL: "" + getSql());
+            throw e;
+        }
+    }",method,good
+"    int getCount() {
+        // Ensure prepared statement is acquired.
+        acquire();
+        try {
+            return nativeCount(mPreparedStatement.getPtr());
+        } catch (SQLiteDatabaseCorruptException e) {
+            onCorruption();
+            throw e;
+        } catch (SQLiteException e) {
+            Log.e(TAG, ""Got exception on getCount: "" + e.getMessage() + "", SQL: "" + getSql());
+            throw e;
+        }
+    }",method,good
+"    void reset() {
+        if (mPreparedStatement != null)
+            mPreparedStatement.reset(false);
+    }",method,good
+    public SQLiteBindOrColumnIndexOutOfRangeException() {},method,good
+"    public SQLiteBindOrColumnIndexOutOfRangeException(String error) {
+        super(error);
+    }",method,good
+    public SQLiteBlobTooBigException() {},method,good
+"    public SQLiteBlobTooBigException(String error) {
+        super(error);
+    }",method,good
+    public SQLiteCantOpenDatabaseException() {},method,good
+"    public SQLiteCantOpenDatabaseException(String error) {
+        super(error);
+    }",method,good
+"public class CcToolchainAlias implements RuleConfiguredTargetFactory {
+  @Override
+  public ConfiguredTarget create(RuleContext ruleContext)
+      throws InterruptedException, RuleErrorException {
+    ConfiguredTarget actual =
+        (ConfiguredTarget) ruleContext.getPrerequisite("":cc_toolchain"", Mode.TARGET);
+    return new AliasConfiguredTarget(
+        ruleContext,
+        actual,
+        ImmutableMap.of(
+            AliasProvider.class,
+            AliasProvider.fromAliasRule(ruleContext.getLabel(), actual),
+            VisibilityProvider.class,
+            new VisibilityProviderImpl(ruleContext.getVisibility())));
+  }
+  public static class CcToolchainAliasRule implements RuleDefinition {
+    @Override
+    public RuleClass build(RuleClass.Builder builder, RuleDefinitionEnvironment environment) {
+      return builder
+          .requiresConfigurationFragments(CppConfiguration.class)
+          .removeAttribute(""licenses"")
+          .removeAttribute(""distribs"")
+          .add(attr("":cc_toolchain"", LABEL).value(CppRuleClasses.ccToolchainAttribute(environment)))
+          .build();
+    }
+    @Override
+    public Metadata getMetadata() {
+      return Metadata.builder()
+          .name(""cc_toolchain_alias"")
+          .ancestors(BaseRuleClasses.BaseRule.class)
+          .factoryClass(CcToolchainAlias.class)
+          .build();
+    }
+  }
+}",class,changes_recommended
+"  public static class CcToolchainAliasRule implements RuleDefinition {
+    @Override
+    public RuleClass build(RuleClass.Builder builder, RuleDefinitionEnvironment environment) {
+      return builder
+          .requiresConfigurationFragments(CppConfiguration.class)
+          .removeAttribute(""licenses"")
+          .removeAttribute(""distribs"")
+          .add(attr("":cc_toolchain"", LABEL).value(CppRuleClasses.ccToolchainAttribute(environment)))
+          .build();
+    }
+    @Override
+    public Metadata getMetadata() {
+      return Metadata.builder()
+          .name(""cc_toolchain_alias"")
+          .ancestors(BaseRuleClasses.BaseRule.class)
+          .factoryClass(CcToolchainAlias.class)
+          .build();
+    }
+  }",class,good
+"  @Override
+  public ConfiguredTarget create(RuleContext ruleContext)
+      throws InterruptedException, RuleErrorException {
+    ConfiguredTarget actual =
+        (ConfiguredTarget) ruleContext.getPrerequisite("":cc_toolchain"", Mode.TARGET);
+    return new AliasConfiguredTarget(
+        ruleContext,
+        actual,
+        ImmutableMap.of(
+            AliasProvider.class,
+            AliasProvider.fromAliasRule(ruleContext.getLabel(), actual),
+            VisibilityProvider.class,
+            new VisibilityProviderImpl(ruleContext.getVisibility())));
+  }",method,good
+"    @Override
+    public RuleClass build(RuleClass.Builder builder, RuleDefinitionEnvironment environment) {
+      return builder
+          .requiresConfigurationFragments(CppConfiguration.class)
+          .removeAttribute(""licenses"")
+          .removeAttribute(""distribs"")
+          .add(attr("":cc_toolchain"", LABEL).value(CppRuleClasses.ccToolchainAttribute(environment)))
+          .build();
+    }",method,good
+"    @Override
+    public Metadata getMetadata() {
+      return Metadata.builder()
+          .name(""cc_toolchain_alias"")
+          .ancestors(BaseRuleClasses.BaseRule.class)
+          .factoryClass(CcToolchainAlias.class)
+          .build();
+    }",method,good
+"public class CollapserPerfTest {
+    @State(Scope.Benchmark)
+    public static class ThreadPoolState {
+        HystrixThreadPool hystrixThreadPool;
+        @Setup
+        public void setUp() {
+            hystrixThreadPool = new HystrixThreadPool.HystrixThreadPoolDefault(
+                    HystrixThreadPoolKey.Factory.asKey(""PERF"")
+                    , HystrixThreadPoolProperties.Setter().withCoreSize(100));
+        }
+        @TearDown
+        public void tearDown() {
+            hystrixThreadPool.getExecutor().shutdownNow();
+        }
+    }
+    @State(Scope.Thread)
+    public static class CollapserState {
+        @Param({""1"", ""10"", ""100"", ""1000""})
+        int numToCollapse;
+        @Param({""1"", ""1000"", ""1000000""})
+        int blackholeConsumption;
+        HystrixRequestContext reqContext;
+        Observable<String> executionHandle;
+        @Setup(Level.Invocation)
+        public void setUp() {
+            reqContext = HystrixRequestContext.initializeContext();
+            List<Observable<String>> os = new ArrayList<Observable<String>>();
+            for (int i = 0; i < numToCollapse; i++) {
+                IdentityCollapser collapser = new IdentityCollapser(i, blackholeConsumption);
+                os.add(collapser.observe());
+            }
+            executionHandle = Observable.merge(os);
+        }
+        @TearDown(Level.Invocation)
+        public void tearDown() {
+            reqContext.shutdown();
+        }
+    }
+    private static class IdentityCollapser extends HystrixCollapser<List<String>, String, String> {
+        private final int arg;
+        private final int blackholeConsumption;
+        IdentityCollapser(int arg, int blackholeConsumption) {
+            super(Setter.withCollapserKey(HystrixCollapserKey.Factory.asKey(""COLLAPSER"")).andCollapserPropertiesDefaults(HystrixCollapserProperties.Setter().withMaxRequestsInBatch(1000).withTimerDelayInMilliseconds(1)));
+            this.arg = arg;
+            this.blackholeConsumption = blackholeConsumption;
+        }
+        @Override
+        public String getRequestArgument() {
+            return arg + """";
+        }
+        @Override
+        protected HystrixCommand<List<String>> createCommand(Collection<CollapsedRequest<String, String>> collapsedRequests) {
+            List<String> args = new ArrayList<String>();
+            for (CollapsedRequest<String, String> collapsedReq: collapsedRequests) {
+                args.add(collapsedReq.getArgument());
+            }
+            return new BatchCommand(args, blackholeConsumption);
+        }
+        @Override
+        protected void mapResponseToRequests(List<String> batchResponse, Collection<CollapsedRequest<String, String>> collapsedRequests) {
+            for (CollapsedRequest<String, String> collapsedReq: collapsedRequests) {
+                String requestArg = collapsedReq.getArgument();
+                String response = ""<not found>"";
+                for (String responsePiece: batchResponse) {
+                    if (responsePiece.startsWith(requestArg + "":"")) {
+                        response = responsePiece;
+                        break;
+                    }
+                }
+                collapsedReq.setResponse(response);
+            }
+        }
+    }
+    private static class BatchCommand extends HystrixCommand<List<String>> {
+        private final List<String> inputArgs;
+        private final int blackholeConsumption;
+        BatchCommand(List<String> inputArgs, int blackholeConsumption) {
+            super(Setter.withGroupKey(HystrixCommandGroupKey.Factory.asKey(""PERF"")).andThreadPoolKey(HystrixThreadPoolKey.Factory.asKey(""PERF"")));
+            this.inputArgs = inputArgs;
+            this.blackholeConsumption = blackholeConsumption;
+        }
+        @Override
+        protected List<String> run() throws Exception {
+            Blackhole.consumeCPU(blackholeConsumption);
+            List<String> toReturn = new ArrayList<String>();
+            for (String inputArg: inputArgs) {
+                toReturn.add(inputArg + "":1"");
+            }
+            return toReturn;
+        }
+    }
+    @Benchmark
+    @BenchmarkMode({Mode.Throughput})
+    @OutputTimeUnit(TimeUnit.SECONDS)
+    public List<String> observeCollapsedAndWait(CollapserState collapserState, ThreadPoolState threadPoolState) {
+        return collapserState.executionHandle.toList().toBlocking().single();
+    }
+}",class,changes_required
+"    public static class ThreadPoolState {
+        HystrixThreadPool hystrixThreadPool;
+        @Setup
+        public void setUp() {
+            hystrixThreadPool = new HystrixThreadPool.HystrixThreadPoolDefault(
+                    HystrixThreadPoolKey.Factory.asKey(""PERF"")
+                    , HystrixThreadPoolProperties.Setter().withCoreSize(100));
+        }
+        @TearDown
+        public void tearDown() {
+            hystrixThreadPool.getExecutor().shutdownNow();
+        }
+    }",class,good
+"    public static class CollapserState {
+        @Param({""1"", ""10"", ""100"", ""1000""})
+        int numToCollapse;
+        @Param({""1"", ""1000"", ""1000000""})
+        int blackholeConsumption;
+        HystrixRequestContext reqContext;
+        Observable<String> executionHandle;
+        @Setup(Level.Invocation)
+        public void setUp() {
+            reqContext = HystrixRequestContext.initializeContext();
+            List<Observable<String>> os = new ArrayList<Observable<String>>();
+            for (int i = 0; i < numToCollapse; i++) {
+                IdentityCollapser collapser = new IdentityCollapser(i, blackholeConsumption);
+                os.add(collapser.observe());
+            }
+            executionHandle = Observable.merge(os);
+        }
+        @TearDown(Level.Invocation)
+        public void tearDown() {
+            reqContext.shutdown();
+        }
+    }",class,good
+"    private static class IdentityCollapser extends HystrixCollapser<List<String>, String, String> {
+        private final int arg;
+        private final int blackholeConsumption;
+        IdentityCollapser(int arg, int blackholeConsumption) {
+            super(Setter.withCollapserKey(HystrixCollapserKey.Factory.asKey(""COLLAPSER"")).andCollapserPropertiesDefaults(HystrixCollapserProperties.Setter().withMaxRequestsInBatch(1000).withTimerDelayInMilliseconds(1)));
+            this.arg = arg;
+            this.blackholeConsumption = blackholeConsumption;
+        }
+        @Override
+        public String getRequestArgument() {
+            return arg + """";
+        }
+        @Override
+        protected HystrixCommand<List<String>> createCommand(Collection<CollapsedRequest<String, String>> collapsedRequests) {
+            List<String> args = new ArrayList<String>();
+            for (CollapsedRequest<String, String> collapsedReq: collapsedRequests) {
+                args.add(collapsedReq.getArgument());
+            }
+            return new BatchCommand(args, blackholeConsumption);
+        }
+        @Override
+        protected void mapResponseToRequests(List<String> batchResponse, Collection<CollapsedRequest<String, String>> collapsedRequests) {
+            for (CollapsedRequest<String, String> collapsedReq: collapsedRequests) {
+                String requestArg = collapsedReq.getArgument();
+                String response = ""<not found>"";
+                for (String responsePiece: batchResponse) {
+                    if (responsePiece.startsWith(requestArg + "":"")) {
+                        response = responsePiece;
+                        break;
+                    }
+                }
+                collapsedReq.setResponse(response);
+            }
+        }
+    }",class,changes_recommended
+"    private static class BatchCommand extends HystrixCommand<List<String>> {
+        private final List<String> inputArgs;
+        private final int blackholeConsumption;
+        BatchCommand(List<String> inputArgs, int blackholeConsumption) {
+            super(Setter.withGroupKey(HystrixCommandGroupKey.Factory.asKey(""PERF"")).andThreadPoolKey(HystrixThreadPoolKey.Factory.asKey(""PERF"")));
+            this.inputArgs = inputArgs;
+            this.blackholeConsumption = blackholeConsumption;
+        }
+        @Override
+        protected List<String> run() throws Exception {
+            Blackhole.consumeCPU(blackholeConsumption);
+            List<String> toReturn = new ArrayList<String>();
+            for (String inputArg: inputArgs) {
+                toReturn.add(inputArg + "":1"");
+            }
+            return toReturn;
+        }
+    }",class,good
+"        @Setup
+        public void setUp() {
+            hystrixThreadPool = new HystrixThreadPool.HystrixThreadPoolDefault(
+                    HystrixThreadPoolKey.Factory.asKey(""PERF"")
+                    , HystrixThreadPoolProperties.Setter().withCoreSize(100));
+        }",method,good
+"        @TearDown
+        public void tearDown() {
+            hystrixThreadPool.getExecutor().shutdownNow();
+        }",method,good
+"        @Setup(Level.Invocation)
+        public void setUp() {
+            reqContext = HystrixRequestContext.initializeContext();
+            List<Observable<String>> os = new ArrayList<Observable<String>>();
+            for (int i = 0; i < numToCollapse; i++) {
+                IdentityCollapser collapser = new IdentityCollapser(i, blackholeConsumption);
+                os.add(collapser.observe());
+            }
+            executionHandle = Observable.merge(os);
+        }",method,good
+"            for (int i = 0; i < numToCollapse; i++) {
+                IdentityCollapser collapser = new IdentityCollapser(i, blackholeConsumption);
+                os.add(collapser.observe());
+            }",method,good
+"        @TearDown(Level.Invocation)
+        public void tearDown() {
+            reqContext.shutdown();
+        }",method,good
+"        IdentityCollapser(int arg, int blackholeConsumption) {
+            super(Setter.withCollapserKey(HystrixCollapserKey.Factory.asKey(""COLLAPSER"")).andCollapserPropertiesDefaults(HystrixCollapserProperties.Setter().withMaxRequestsInBatch(1000).withTimerDelayInMilliseconds(1)));
+            this.arg = arg;
+            this.blackholeConsumption = blackholeConsumption;
+        }",method,good
+"        @Override
+        public String getRequestArgument() {
+            return arg + """";
+        }",method,good
+"        @Override
+        protected HystrixCommand<List<String>> createCommand(Collection<CollapsedRequest<String, String>> collapsedRequests) {
+            List<String> args = new ArrayList<String>();
+            for (CollapsedRequest<String, String> collapsedReq: collapsedRequests) {
+                args.add(collapsedReq.getArgument());
+            }
+            return new BatchCommand(args, blackholeConsumption);
+        }",method,good
+"            for (CollapsedRequest<String, String> collapsedReq: collapsedRequests) {
+                args.add(collapsedReq.getArgument());
+            }",method,good
+"        @Override
+        protected void mapResponseToRequests(List<String> batchResponse, Collection<CollapsedRequest<String, String>> collapsedRequests) {
+            for (CollapsedRequest<String, String> collapsedReq: collapsedRequests) {
+                String requestArg = collapsedReq.getArgument();
+                String response = ""<not found>"";
+                for (String responsePiece: batchResponse) {
+                    if (responsePiece.startsWith(requestArg + "":"")) {
+                        response = responsePiece;
+                        break;
+                    }
+                }
+                collapsedReq.setResponse(response);
+            }
+        }",method,good
+"            for (CollapsedRequest<String, String> collapsedReq: collapsedRequests) {
+                String requestArg = collapsedReq.getArgument();
+                String response = ""<not found>"";
+                for (String responsePiece: batchResponse) {
+                    if (responsePiece.startsWith(requestArg + "":"")) {
+                        response = responsePiece;
+                        break;
+                    }
+                }
+                collapsedReq.setResponse(response);
+            }",method,good
+"                for (String responsePiece: batchResponse) {
+                    if (responsePiece.startsWith(requestArg + "":"")) {
+                        response = responsePiece;
+                        break;
+                    }
+                }",method,good
+"        BatchCommand(List<String> inputArgs, int blackholeConsumption) {
+            super(Setter.withGroupKey(HystrixCommandGroupKey.Factory.asKey(""PERF"")).andThreadPoolKey(HystrixThreadPoolKey.Factory.asKey(""PERF"")));
+            this.inputArgs = inputArgs;
+            this.blackholeConsumption = blackholeConsumption;
+        }",method,good
+"        @Override
+        protected List<String> run() throws Exception {
+            Blackhole.consumeCPU(blackholeConsumption);
+            List<String> toReturn = new ArrayList<String>();
+            for (String inputArg: inputArgs) {
+                toReturn.add(inputArg + "":1"");
+            }
+            return toReturn;
+        }",method,good
+"            for (String inputArg: inputArgs) {
+                toReturn.add(inputArg + "":1"");
+            }",method,good
+"    @Benchmark
+    @BenchmarkMode({Mode.Throughput})
+    @OutputTimeUnit(TimeUnit.SECONDS)
+    public List<String> observeCollapsedAndWait(CollapserState collapserState, ThreadPoolState threadPoolState) {
+        return collapserState.executionHandle.toList().toBlocking().single();
+    }",method,good
+"import java.util.concurrent.ConcurrentMap;
+class EmptyFileManager implements FileManager {
+  private final PsiManagerImpl myManager;
+  private final ConcurrentMap<VirtualFile, FileViewProvider> myVFileToViewProviderMap = ContainerUtil.createConcurrentWeakValueMap();
+  EmptyFileManager(final PsiManagerImpl manager) {
+    myManager = manager;
+  }
+  @Override
+  public void dispose() {
+  }
+  @Override
+  public PsiFile findFile(@NotNull VirtualFile vFile) {
+    FileViewProvider viewProvider = findViewProvider(vFile);
+    return viewProvider == null ? null : viewProvider.getPsi(viewProvider.getBaseLanguage());
+  }
+  @Override
+  public PsiDirectory findDirectory(@NotNull VirtualFile vFile) {
+    return null;
+  }
+  @Override
+  public void reloadFromDisk(@NotNull PsiFile file) {
+  }
+  @Override
+  public PsiFile getCachedPsiFile(@NotNull VirtualFile vFile) {
+    return null;
+  }
+  @Override
+  public void cleanupForNextTest() {
+    myVFileToViewProviderMap.clear();
+  }
+  @Override
+  public FileViewProvider findViewProvider(@NotNull VirtualFile file) {
+    return myVFileToViewProviderMap.get(file);
+  }
+  @Override
+  public FileViewProvider findCachedViewProvider(@NotNull VirtualFile file) {
+    return myVFileToViewProviderMap.get(file);
+  }
+  @Override
+  @NotNull
+  public FileViewProvider createFileViewProvider(@NotNull final VirtualFile file, final boolean eventSystemEnabled) {
+    return new SingleRootFileViewProvider(myManager, file, eventSystemEnabled);
+  }
+  @Override
+  public void setViewProvider(@NotNull final VirtualFile virtualFile, final FileViewProvider singleRootFileViewProvider) {
+    if (!(virtualFile instanceof VirtualFileWindow)) {
+      if (singleRootFileViewProvider == null) {
+        myVFileToViewProviderMap.remove(virtualFile);
+      }
+      else {
+        myVFileToViewProviderMap.put(virtualFile, singleRootFileViewProvider);
+      }
+    }
+  }
+  @NotNull
+  @Override
+  public List<PsiFile> getAllCachedFiles() {
+    return Collections.emptyList();
+  }
+}",class,good
+"  EmptyFileManager(final PsiManagerImpl manager) {
+    myManager = manager;
+  }",method,good
+"  @Override
+  public void dispose() {
+  }",method,good
+"  @Override
+  public PsiFile findFile(@NotNull VirtualFile vFile) {
+    FileViewProvider viewProvider = findViewProvider(vFile);
+    return viewProvider == null ? null : viewProvider.getPsi(viewProvider.getBaseLanguage());
+  }",method,good
+"  @Override
+  public PsiDirectory findDirectory(@NotNull VirtualFile vFile) {
+    return null;
+  }",method,good
+"  @Override
+  public void reloadFromDisk(@NotNull PsiFile file) {
+  }",method,good
+"  @Override
+  public PsiFile getCachedPsiFile(@NotNull VirtualFile vFile) {
+    return null;
+  }",method,good
+"  @Override
+  public void cleanupForNextTest() {
+    myVFileToViewProviderMap.clear();
+  }",method,good
+"  @Override
+  public FileViewProvider findViewProvider(@NotNull VirtualFile file) {
+    return myVFileToViewProviderMap.get(file);
+  }",method,good
+"  @Override
+  public FileViewProvider findCachedViewProvider(@NotNull VirtualFile file) {
+    return myVFileToViewProviderMap.get(file);
+  }",method,good
+"  @Override
+  @NotNull
+  public FileViewProvider createFileViewProvider(@NotNull final VirtualFile file, final boolean eventSystemEnabled) {
+    return new SingleRootFileViewProvider(myManager, file, eventSystemEnabled);
+  }",method,good
+"  @Override
+  public void setViewProvider(@NotNull final VirtualFile virtualFile, final FileViewProvider singleRootFileViewProvider) {
+    if (!(virtualFile instanceof VirtualFileWindow)) {
+      if (singleRootFileViewProvider == null) {
+        myVFileToViewProviderMap.remove(virtualFile);
+      }
+      else {
+        myVFileToViewProviderMap.put(virtualFile, singleRootFileViewProvider);
+      }
+    }
+  }",method,good
+"      if (singleRootFileViewProvider == null) {
+        myVFileToViewProviderMap.remove(virtualFile);
+      }",method,good
+"  @NotNull
+  @Override
+  public List<PsiFile> getAllCachedFiles() {
+    return Collections.emptyList();
+  }",method,good
+"public class TryStatementWithMultipleResourcesInspection extends BaseInspection {
+  @Nls
+  @NotNull
+  @Override
+  public String getDisplayName() {
+    return InspectionGadgetsBundle.message(""try.statement.with.multiple.resources.name"");
+  }
+  @NotNull
+  @Override
+  protected String buildErrorString(Object... infos) {
+    return getDisplayName();
+  }
+  @Override
+  public BaseInspectionVisitor buildVisitor() {
+    return new SplitTryWithResourcesVisitor();
+  }
+  @Nullable
+  @Override
+  protected InspectionGadgetsFix buildFix(Object... infos) {
+    return new SplitTryWithResourcesFix();
+  }
+  private static void doFixImpl(@NotNull PsiElement element) throws IncorrectOperationException {
+    final PsiTryStatement tryStatement = (PsiTryStatement)element.getParent();
+    final PsiResourceList resourceList = tryStatement.getResourceList();
+    if (resourceList == null || resourceList.getResourceVariablesCount() <= 1) {
+      return;
+    }
+    final StringBuilder newTryStatementText = new StringBuilder();
+    int count = 0;
+    for (PsiResourceListElement resource : resourceList) {
+      if (count > 0) {
+        newTryStatementText.append(""{\n"");
+      }
+      ++count;
+      newTryStatementText.append(""try ("").append(resource.getText()).append("")"");
+    }
+    final PsiCodeBlock tryBlock = tryStatement.getTryBlock();
+    if (tryBlock == null) {
+      return;
+    }
+    newTryStatementText.append(tryBlock.getText());
+    for (int i = 1; i < count; i++) {
+      newTryStatementText.append(""\n}"");
+    }
+    final PsiCatchSection[] catchSections = tryStatement.getCatchSections();
+    for (PsiCatchSection catchSection : catchSections) {
+      newTryStatementText.append(catchSection.getText());
+    }
+    final PsiCodeBlock finallyBlock = tryStatement.getFinallyBlock();
+    if (finallyBlock != null) {
+      newTryStatementText.append(""finally"").append(finallyBlock.getText());
+    }
+    PsiReplacementUtil.replaceStatement(tryStatement, newTryStatementText.toString());
+  }
+  private static boolean isAcceptable(PsiElement element) {
+    final PsiElement parent = element.getParent();
+    if (!(parent instanceof PsiTryStatement)) {
+      return false;
+    }
+    final PsiTryStatement tryStatement = (PsiTryStatement)parent;
+    final PsiResourceList resourceList = tryStatement.getResourceList();
+    if (resourceList == null) {
+      return false;
+    }
+    final PsiCodeBlock tryBlock = tryStatement.getTryBlock();
+    if (tryBlock == null) {
+      return false;
+    }
+    return resourceList.getResourceVariablesCount() > 1;
+  }
+  private static class SplitTryWithResourcesVisitor extends BaseInspectionVisitor {
+    @Override
+    public void visitKeyword(PsiKeyword keyword) {
+      super.visitKeyword(keyword);
+      if (isOnTheFly() && keyword.getTokenType() == JavaTokenType.TRY_KEYWORD && isAcceptable(keyword)) {
+        registerError(keyword);
+      }
+    }
+    @Override
+    public void visitResourceList(PsiResourceList resourceList) {
+      super.visitResourceList(resourceList);
+      if (isAcceptable(resourceList)) {
+        registerError(resourceList);
+      }
+    }
+  }
+  private static class SplitTryWithResourcesFix extends InspectionGadgetsFix {
+    @Override
+    protected void doFix(Project project, ProblemDescriptor descriptor) {
+      doFixImpl(descriptor.getPsiElement());
+    }
+    @Nls
+    @NotNull
+    @Override
+    public String getFamilyName() {
+      return InspectionGadgetsBundle.message(""try.statement.with.multiple.resources.quickfix"");
+    }
+  }
+}",class,changes_recommended
+"  private static class SplitTryWithResourcesVisitor extends BaseInspectionVisitor {
+    @Override
+    public void visitKeyword(PsiKeyword keyword) {
+      super.visitKeyword(keyword);
+      if (isOnTheFly() && keyword.getTokenType() == JavaTokenType.TRY_KEYWORD && isAcceptable(keyword)) {
+        registerError(keyword);
+      }
+    }
+    @Override
+    public void visitResourceList(PsiResourceList resourceList) {
+      super.visitResourceList(resourceList);
+      if (isAcceptable(resourceList)) {
+        registerError(resourceList);
+      }
+    }
+  }",class,good
+"  private static class SplitTryWithResourcesFix extends InspectionGadgetsFix {
+    @Override
+    protected void doFix(Project project, ProblemDescriptor descriptor) {
+      doFixImpl(descriptor.getPsiElement());
+    }
+    @Nls
+    @NotNull
+    @Override
+    public String getFamilyName() {
+      return InspectionGadgetsBundle.message(""try.statement.with.multiple.resources.quickfix"");
+    }
+  }",class,good
+"  @Nls
+  @NotNull
+  @Override
+  public String getDisplayName() {
+    return InspectionGadgetsBundle.message(""try.statement.with.multiple.resources.name"");
+  }",method,good
+"  @NotNull
+  @Override
+  protected String buildErrorString(Object... infos) {
+    return getDisplayName();
+  }",method,good
+"  @Override
+  public BaseInspectionVisitor buildVisitor() {
+    return new SplitTryWithResourcesVisitor();
+  }",method,good
+"  @Nullable
+  @Override
+  protected InspectionGadgetsFix buildFix(Object... infos) {
+    return new SplitTryWithResourcesFix();
+  }",method,good
+"  private static void doFixImpl(@NotNull PsiElement element) throws IncorrectOperationException {
+    final PsiTryStatement tryStatement = (PsiTryStatement)element.getParent();
+    final PsiResourceList resourceList = tryStatement.getResourceList();
+    if (resourceList == null || resourceList.getResourceVariablesCount() <= 1) {
+      return;
+    }
+    final StringBuilder newTryStatementText = new StringBuilder();
+    int count = 0;
+    for (PsiResourceListElement resource : resourceList) {
+      if (count > 0) {
+        newTryStatementText.append(""{\n"");
+      }
+      ++count;
+      newTryStatementText.append(""try ("").append(resource.getText()).append("")"");
+    }
+    final PsiCodeBlock tryBlock = tryStatement.getTryBlock();
+    if (tryBlock == null) {
+      return;
+    }
+    newTryStatementText.append(tryBlock.getText());
+    for (int i = 1; i < count; i++) {
+      newTryStatementText.append(""\n}"");
+    }
+    final PsiCatchSection[] catchSections = tryStatement.getCatchSections();
+    for (PsiCatchSection catchSection : catchSections) {
+      newTryStatementText.append(catchSection.getText());
+    }
+    final PsiCodeBlock finallyBlock = tryStatement.getFinallyBlock();
+    if (finallyBlock != null) {
+      newTryStatementText.append(""finally"").append(finallyBlock.getText());
+    }
+    PsiReplacementUtil.replaceStatement(tryStatement, newTryStatementText.toString());
+  }",method,good
+"    for (PsiResourceListElement resource : resourceList) {
+      if (count > 0) {
+        newTryStatementText.append(""{\n"");
+      }
+      ++count;
+      newTryStatementText.append(""try ("").append(resource.getText()).append("")"");
+    }",method,good
+"      if (count > 0) {
+        newTryStatementText.append(""{\n"");
+      }",method,good
+"    if (tryBlock == null) {
+      return;
+    }",method,good
+"    for (int i = 1; i < count; i++) {
+      newTryStatementText.append(""\n}"");
+    }",method,good
+"    for (PsiCatchSection catchSection : catchSections) {
+      newTryStatementText.append(catchSection.getText());
+    }",method,good
+"    if (finallyBlock != null) {
+      newTryStatementText.append(""finally"").append(finallyBlock.getText());
+    }",method,good
+"  private static boolean isAcceptable(PsiElement element) {
+    final PsiElement parent = element.getParent();
+    if (!(parent instanceof PsiTryStatement)) {
+      return false;
+    }
+    final PsiTryStatement tryStatement = (PsiTryStatement)parent;
+    final PsiResourceList resourceList = tryStatement.getResourceList();
+    if (resourceList == null) {
+      return false;
+    }
+    final PsiCodeBlock tryBlock = tryStatement.getTryBlock();
+    if (tryBlock == null) {
+      return false;
+    }
+    return resourceList.getResourceVariablesCount() > 1;
+  }",method,good
+"    if (resourceList == null) {
+      return false;
+    }",method,good
+"    if (tryBlock == null) {
+      return false;
+    }",method,good
+"    @Override
+    public void visitKeyword(PsiKeyword keyword) {
+      super.visitKeyword(keyword);
+      if (isOnTheFly() && keyword.getTokenType() == JavaTokenType.TRY_KEYWORD && isAcceptable(keyword)) {
+        registerError(keyword);
+      }
+    }",method,good
+"    @Override
+    public void visitResourceList(PsiResourceList resourceList) {
+      super.visitResourceList(resourceList);
+      if (isAcceptable(resourceList)) {
+        registerError(resourceList);
+      }
+    }",method,good
+"    @Override
+    protected void doFix(Project project, ProblemDescriptor descriptor) {
+      doFixImpl(descriptor.getPsiElement());
+    }",method,good
+"    @Nls
+    @NotNull
+    @Override
+    public String getFamilyName() {
+      return InspectionGadgetsBundle.message(""try.statement.with.multiple.resources.quickfix"");
+    }",method,good
+"import org.jetbrains.annotations.NotNull;
+class SimplifyQuantifierAction implements IntentionAction {
+    private final RegExpQuantifier myQuantifier;
+    private final String myReplacement;
+    public SimplifyQuantifierAction(RegExpQuantifier quantifier, String s) {
+        myQuantifier = quantifier;
+        myReplacement = s;
+    }
+    @NotNull
+    public String getText() {
+        return myReplacement == null ? ""Simplify"" : ""Replace with '"" + myReplacement + ""'"";
+    }
+    @NotNull
+    public String getFamilyName() {
+        return ""Simplify Quantifier"";
+    }
+    public boolean isAvailable(@NotNull Project project, Editor editor, PsiFile file) {
+        return myQuantifier.isValid();
+    }
+    public void invoke(@NotNull Project project, Editor editor, PsiFile file) throws IncorrectOperationException {
+        if (myReplacement == null) {
+            myQuantifier.delete();
+        } else {
+            final PsiFileFactory factory = PsiFileFactory.getInstance(project);
+            final ASTNode modifier = myQuantifier.getModifier();
+            final PsiFile f = factory.createFileFromText(""dummy.regexp"", RegExpFileType.INSTANCE,
+                                                         ""a"" + myReplacement + (modifier != null ? modifier.getText() : """"));
+            final RegExpPattern pattern = PsiTreeUtil.getChildOfType(f, RegExpPattern.class);
+            assert pattern != null;
+            final RegExpClosure closure = (RegExpClosure)pattern.getBranches()[0].getAtoms()[0];
+            myQuantifier.replace(closure.getQuantifier());
+        }
+    }
+    public boolean startInWriteAction() {
+        return true;
+    }
+}",class,changes_recommended
+"    public SimplifyQuantifierAction(RegExpQuantifier quantifier, String s) {
+        myQuantifier = quantifier;
+        myReplacement = s;
+    }",method,good
+"    @NotNull
+    public String getText() {
+        return myReplacement == null ? ""Simplify"" : ""Replace with '"" + myReplacement + ""'"";
+    }",method,good
+"    @NotNull
+    public String getFamilyName() {
+        return ""Simplify Quantifier"";
+    }",method,good
+"    public boolean isAvailable(@NotNull Project project, Editor editor, PsiFile file) {
+        return myQuantifier.isValid();
+    }",method,good
+"    public void invoke(@NotNull Project project, Editor editor, PsiFile file) throws IncorrectOperationException {
+        if (myReplacement == null) {
+            myQuantifier.delete();
+        } else {
+            final PsiFileFactory factory = PsiFileFactory.getInstance(project);
+            final ASTNode modifier = myQuantifier.getModifier();
+            final PsiFile f = factory.createFileFromText(""dummy.regexp"", RegExpFileType.INSTANCE,
+                                                         ""a"" + myReplacement + (modifier != null ? modifier.getText() : """"));
+            final RegExpPattern pattern = PsiTreeUtil.getChildOfType(f, RegExpPattern.class);
+            assert pattern != null;
+            final RegExpClosure closure = (RegExpClosure)pattern.getBranches()[0].getAtoms()[0];
+            myQuantifier.replace(closure.getQuantifier());
+        }
+    }",method,good
+"        if (myReplacement == null) {
+            myQuantifier.delete();
+        }",method,good
+"    public boolean startInWriteAction() {
+        return true;
+    }",method,good
+"public class SearchSortValues implements ToXContentFragment, Writeable {
+    static final SearchSortValues EMPTY = new SearchSortValues(new Object[0]);
+    private final Object[] sortValues;
+    SearchSortValues(Object[] sortValues) {
+        this.sortValues = Objects.requireNonNull(sortValues, ""sort values must not be empty"");
+    }
+    public SearchSortValues(Object[] sortValues, DocValueFormat[] sortValueFormats) {
+        Objects.requireNonNull(sortValues);
+        Objects.requireNonNull(sortValueFormats);
+        this.sortValues = Arrays.copyOf(sortValues, sortValues.length);
+        for (int i = 0; i < sortValues.length; ++i) {
+            if (this.sortValues[i] instanceof BytesRef) {
+                this.sortValues[i] = sortValueFormats[i].format((BytesRef) sortValues[i]);
+            }
+        }
+    }
+    public SearchSortValues(StreamInput in) throws IOException {
+        int size = in.readVInt();
+        if (size > 0) {
+            sortValues = new Object[size];
+            for (int i = 0; i < sortValues.length; i++) {
+                byte type = in.readByte();
+                if (type == 0) {
+                    sortValues[i] = null;
+                } else if (type == 1) {
+                    sortValues[i] = in.readString();
+                } else if (type == 2) {
+                    sortValues[i] = in.readInt();
+                } else if (type == 3) {
+                    sortValues[i] = in.readLong();
+                } else if (type == 4) {
+                    sortValues[i] = in.readFloat();
+                } else if (type == 5) {
+                    sortValues[i] = in.readDouble();
+                } else if (type == 6) {
+                    sortValues[i] = in.readByte();
+                } else if (type == 7) {
+                    sortValues[i] = in.readShort();
+                } else if (type == 8) {
+                    sortValues[i] = in.readBoolean();
+                } else {
+                    throw new IOException(""Can't match type ["" + type + ""]"");
+                }
+            }
+        } else {
+            sortValues = new Object[0];
+        }
+    }
+    @Override
+    public void writeTo(StreamOutput out) throws IOException {
+        out.writeVInt(sortValues.length);
+        for (Object sortValue : sortValues) {
+            if (sortValue == null) {
+                out.writeByte((byte) 0);
+            } else {
+                Class type = sortValue.getClass();
+                if (type == String.class) {
+                    out.writeByte((byte) 1);
+                    out.writeString((String) sortValue);
+                } else if (type == Integer.class) {
+                    out.writeByte((byte) 2);
+                    out.writeInt((Integer) sortValue);
+                } else if (type == Long.class) {
+                    out.writeByte((byte) 3);
+                    out.writeLong((Long) sortValue);
+                } else if (type == Float.class) {
+                    out.writeByte((byte) 4);
+                    out.writeFloat((Float) sortValue);
+                } else if (type == Double.class) {
+                    out.writeByte((byte) 5);
+                    out.writeDouble((Double) sortValue);
+                } else if (type == Byte.class) {
+                    out.writeByte((byte) 6);
+                    out.writeByte((Byte) sortValue);
+                } else if (type == Short.class) {
+                    out.writeByte((byte) 7);
+                    out.writeShort((Short) sortValue);
+                } else if (type == Boolean.class) {
+                    out.writeByte((byte) 8);
+                    out.writeBoolean((Boolean) sortValue);
+                } else {
+                    throw new IOException(""Can't handle sort field value of type ["" + type + ""]"");
+                }
+            }
+        }
+    }
+    @Override
+    public XContentBuilder toXContent(XContentBuilder builder, Params params) throws IOException {
+        if (sortValues.length > 0) {
+            builder.startArray(Fields.SORT);
+            for (Object sortValue : sortValues) {
+                builder.value(sortValue);
+            }
+            builder.endArray();
+        }
+        return builder;
+    }
+    public static SearchSortValues fromXContent(XContentParser parser) throws IOException {
+        XContentParserUtils.ensureExpectedToken(XContentParser.Token.START_ARRAY, parser.currentToken(), parser::getTokenLocation);
+        return new SearchSortValues(parser.list().toArray());
+    }
+    public Object[] sortValues() {
+        return sortValues;
+    }
+    @Override
+    public boolean equals(Object obj) {
+        if (this == obj) {
+            return true;
+        }
+        if (obj == null || getClass() != obj.getClass()) {
+            return false;
+        }
+        SearchSortValues other = (SearchSortValues) obj;
+        return Arrays.equals(sortValues, other.sortValues);
+    }
+    @Override
+    public int hashCode() {
+        return Arrays.hashCode(sortValues);
+    }
+}",class,changes_required
+"    SearchSortValues(Object[] sortValues) {
+        this.sortValues = Objects.requireNonNull(sortValues, ""sort values must not be empty"");
+    }",method,good
+"    public SearchSortValues(Object[] sortValues, DocValueFormat[] sortValueFormats) {
+        Objects.requireNonNull(sortValues);
+        Objects.requireNonNull(sortValueFormats);
+        this.sortValues = Arrays.copyOf(sortValues, sortValues.length);
+        for (int i = 0; i < sortValues.length; ++i) {
+            if (this.sortValues[i] instanceof BytesRef) {
+                this.sortValues[i] = sortValueFormats[i].format((BytesRef) sortValues[i]);
+            }
+        }
+    }",method,good
+"        for (int i = 0; i < sortValues.length; ++i) {
+            if (this.sortValues[i] instanceof BytesRef) {
+                this.sortValues[i] = sortValueFormats[i].format((BytesRef) sortValues[i]);
+            }
+        }",method,good
+"            if (this.sortValues[i] instanceof BytesRef) {
+                this.sortValues[i] = sortValueFormats[i].format((BytesRef) sortValues[i]);
+            }",method,good
+"    public SearchSortValues(StreamInput in) throws IOException {
+        int size = in.readVInt();
+        if (size > 0) {
+            sortValues = new Object[size];
+            for (int i = 0; i < sortValues.length; i++) {
+                byte type = in.readByte();
+                if (type == 0) {
+                    sortValues[i] = null;
+                } else if (type == 1) {
+                    sortValues[i] = in.readString();
+                } else if (type == 2) {
+                    sortValues[i] = in.readInt();
+                } else if (type == 3) {
+                    sortValues[i] = in.readLong();
+                } else if (type == 4) {
+                    sortValues[i] = in.readFloat();
+                } else if (type == 5) {
+                    sortValues[i] = in.readDouble();
+                } else if (type == 6) {
+                    sortValues[i] = in.readByte();
+                } else if (type == 7) {
+                    sortValues[i] = in.readShort();
+                } else if (type == 8) {
+                    sortValues[i] = in.readBoolean();
+                } else {
+                    throw new IOException(""Can't match type ["" + type + ""]"");
+                }
+            }
+        } else {
+            sortValues = new Object[0];
+        }
+    }",method,changes_recommended
+"        if (size > 0) {
+            sortValues = new Object[size];
+            for (int i = 0; i < sortValues.length; i++) {
+                byte type = in.readByte();
+                if (type == 0) {
+                    sortValues[i] = null;
+                } else if (type == 1) {
+                    sortValues[i] = in.readString();
+                } else if (type == 2) {
+                    sortValues[i] = in.readInt();
+                } else if (type == 3) {
+                    sortValues[i] = in.readLong();
+                } else if (type == 4) {
+                    sortValues[i] = in.readFloat();
+                } else if (type == 5) {
+                    sortValues[i] = in.readDouble();
+                } else if (type == 6) {
+                    sortValues[i] = in.readByte();
+                } else if (type == 7) {
+                    sortValues[i] = in.readShort();
+                } else if (type == 8) {
+                    sortValues[i] = in.readBoolean();
+                } else {
+                    throw new IOException(""Can't match type ["" + type + ""]"");
+                }
+            }
+        }",method,good
+"            for (int i = 0; i < sortValues.length; i++) {
+                byte type = in.readByte();
+                if (type == 0) {
+                    sortValues[i] = null;
+                } else if (type == 1) {
+                    sortValues[i] = in.readString();
+                } else if (type == 2) {
+                    sortValues[i] = in.readInt();
+                } else if (type == 3) {
+                    sortValues[i] = in.readLong();
+                } else if (type == 4) {
+                    sortValues[i] = in.readFloat();
+                } else if (type == 5) {
+                    sortValues[i] = in.readDouble();
+                } else if (type == 6) {
+                    sortValues[i] = in.readByte();
+                } else if (type == 7) {
+                    sortValues[i] = in.readShort();
+                } else if (type == 8) {
+                    sortValues[i] = in.readBoolean();
+                } else {
+                    throw new IOException(""Can't match type ["" + type + ""]"");
+                }
+            }",method,good
+"                if (type == 0) {
+                    sortValues[i] = null;
+                }",method,good
+"    @Override
+    public void writeTo(StreamOutput out) throws IOException {
+        out.writeVInt(sortValues.length);
+        for (Object sortValue : sortValues) {
+            if (sortValue == null) {
+                out.writeByte((byte) 0);
+            } else {
+                Class type = sortValue.getClass();
+                if (type == String.class) {
+                    out.writeByte((byte) 1);
+                    out.writeString((String) sortValue);
+                } else if (type == Integer.class) {
+                    out.writeByte((byte) 2);
+                    out.writeInt((Integer) sortValue);
+                } else if (type == Long.class) {
+                    out.writeByte((byte) 3);
+                    out.writeLong((Long) sortValue);
+                } else if (type == Float.class) {
+                    out.writeByte((byte) 4);
+                    out.writeFloat((Float) sortValue);
+                } else if (type == Double.class) {
+                    out.writeByte((byte) 5);
+                    out.writeDouble((Double) sortValue);
+                } else if (type == Byte.class) {
+                    out.writeByte((byte) 6);
+                    out.writeByte((Byte) sortValue);
+                } else if (type == Short.class) {
+                    out.writeByte((byte) 7);
+                    out.writeShort((Short) sortValue);
+                } else if (type == Boolean.class) {
+                    out.writeByte((byte) 8);
+                    out.writeBoolean((Boolean) sortValue);
+                } else {
+                    throw new IOException(""Can't handle sort field value of type ["" + type + ""]"");
+                }
+            }
+        }
+    }",method,changes_recommended
+"        for (Object sortValue : sortValues) {
+            if (sortValue == null) {
+                out.writeByte((byte) 0);
+            } else {
+                Class type = sortValue.getClass();
+                if (type == String.class) {
+                    out.writeByte((byte) 1);
+                    out.writeString((String) sortValue);
+                } else if (type == Integer.class) {
+                    out.writeByte((byte) 2);
+                    out.writeInt((Integer) sortValue);
+                } else if (type == Long.class) {
+                    out.writeByte((byte) 3);
+                    out.writeLong((Long) sortValue);
+                } else if (type == Float.class) {
+                    out.writeByte((byte) 4);
+                    out.writeFloat((Float) sortValue);
+                } else if (type == Double.class) {
+                    out.writeByte((byte) 5);
+                    out.writeDouble((Double) sortValue);
+                } else if (type == Byte.class) {
+                    out.writeByte((byte) 6);
+                    out.writeByte((Byte) sortValue);
+                } else if (type == Short.class) {
+                    out.writeByte((byte) 7);
+                    out.writeShort((Short) sortValue);
+                } else if (type == Boolean.class) {
+                    out.writeByte((byte) 8);
+                    out.writeBoolean((Boolean) sortValue);
+                } else {
+                    throw new IOException(""Can't handle sort field value of type ["" + type + ""]"");
+                }
+            }
+        }",method,changes_recommended
+"            if (sortValue == null) {
+                out.writeByte((byte) 0);
+            }",method,good
+"                if (type == String.class) {
+                    out.writeByte((byte) 1);
+                    out.writeString((String) sortValue);
+                }",method,good
+"    @Override
+    public XContentBuilder toXContent(XContentBuilder builder, Params params) throws IOException {
+        if (sortValues.length > 0) {
+            builder.startArray(Fields.SORT);
+            for (Object sortValue : sortValues) {
+                builder.value(sortValue);
+            }
+            builder.endArray();
+        }
+        return builder;
+    }",method,good
+"        if (sortValues.length > 0) {
+            builder.startArray(Fields.SORT);
+            for (Object sortValue : sortValues) {
+                builder.value(sortValue);
+            }
+            builder.endArray();
+        }",method,good
+"            for (Object sortValue : sortValues) {
+                builder.value(sortValue);
+            }",method,good
+"    public static SearchSortValues fromXContent(XContentParser parser) throws IOException {
+        XContentParserUtils.ensureExpectedToken(XContentParser.Token.START_ARRAY, parser.currentToken(), parser::getTokenLocation);
+        return new SearchSortValues(parser.list().toArray());
+    }",method,good
+"    public Object[] sortValues() {
+        return sortValues;
+    }",method,good
+"    @Override
+    public boolean equals(Object obj) {
+        if (this == obj) {
+            return true;
+        }
+        if (obj == null || getClass() != obj.getClass()) {
+            return false;
+        }
+        SearchSortValues other = (SearchSortValues) obj;
+        return Arrays.equals(sortValues, other.sortValues);
+    }",method,good
+"        if (this == obj) {
+            return true;
+        }",method,good
+"    @Override
+    public int hashCode() {
+        return Arrays.hashCode(sortValues);
+    }",method,good

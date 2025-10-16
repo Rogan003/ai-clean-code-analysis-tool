@@ -1,0 +1,1409 @@
+code_snippet,type,score
+"	public DepthShader (final Renderable renderable, final Config config, final String prefix, final String vertexShader,
+		final String fragmentShader) {
+		this(renderable, config, new ShaderProgram(prefix + vertexShader, prefix + fragmentShader));
+	}",method,
+"	public DepthShader (final Renderable renderable, final Config config, final ShaderProgram shaderProgram) {
+		super(renderable, config, shaderProgram);
+		final Attributes attributes = combineAttributes(renderable);
+		this.numBones = renderable.bones == null ? 0 : config.numBones;
+		int w = 0;
+		final int n = renderable.meshPart.mesh.getVertexAttributes().size();
+		for (int i = 0; i < n; i++) {
+			final VertexAttribute attr = renderable.meshPart.mesh.getVertexAttributes().get(i);
+			if (attr.usage == Usage.BoneWeight) w |= (1 << attr.unit);
+		}
+		weights = w;
+		alphaTestAttribute = new FloatAttribute(FloatAttribute.AlphaTest, config.defaultAlphaTest);
+	}",method,
+"		for (int i = 0; i < n; i++) {
+			final VertexAttribute attr = renderable.meshPart.mesh.getVertexAttributes().get(i);
+			if (attr.usage == Usage.BoneWeight) w |= (1 << attr.unit);
+		}",method,
+"	@Override
+	public void begin (Camera camera, RenderContext context) {
+		super.begin(camera, context);
+		// Gdx.gl20.glEnable(GL20.GL_POLYGON_OFFSET_FILL);
+		// Gdx.gl20.glPolygonOffset(2.f, 100.f);
+	}",method,
+"	@Override
+	public void end () {
+		super.end();
+		// Gdx.gl20.glDisable(GL20.GL_POLYGON_OFFSET_FILL);
+	}",method,
+"	@Override
+	public boolean canRender (Renderable renderable) {
+		final Attributes attributes = combineAttributes(renderable);
+		if (attributes.has(BlendingAttribute.Type)) {
+			if ((attributesMask & BlendingAttribute.Type) != BlendingAttribute.Type)
+				return false;
+			if (attributes.has(TextureAttribute.Diffuse) != ((attributesMask & TextureAttribute.Diffuse) == TextureAttribute.Diffuse))
+				return false;
+		}
+		final boolean skinned = ((renderable.meshPart.mesh.getVertexAttributes().getMask() & Usage.BoneWeight) == Usage.BoneWeight);
+		if (skinned != (numBones > 0)) return false;
+		if (!skinned) return true;
+		int w = 0;
+		final int n = renderable.meshPart.mesh.getVertexAttributes().size();
+		for (int i = 0; i < n; i++) {
+			final VertexAttribute attr = renderable.meshPart.mesh.getVertexAttributes().get(i);
+			if (attr.usage == Usage.BoneWeight) w |= (1 << attr.unit);
+		}
+		return w == weights;
+	}",method,
+"		for (int i = 0; i < n; i++) {
+			final VertexAttribute attr = renderable.meshPart.mesh.getVertexAttributes().get(i);
+			if (attr.usage == Usage.BoneWeight) w |= (1 << attr.unit);
+		}",method,
+"	@Override
+	public void render (Renderable renderable, Attributes combinedAttributes) {
+		if (combinedAttributes.has(BlendingAttribute.Type)) {
+			final BlendingAttribute blending = (BlendingAttribute)combinedAttributes.get(BlendingAttribute.Type);
+			combinedAttributes.remove(BlendingAttribute.Type);
+			final boolean hasAlphaTest = combinedAttributes.has(FloatAttribute.AlphaTest);
+			if (!hasAlphaTest)
+				combinedAttributes.set(alphaTestAttribute);
+			if (blending.opacity >= ((FloatAttribute)combinedAttributes.get(FloatAttribute.AlphaTest)).value)
+				super.render(renderable, combinedAttributes);
+			if (!hasAlphaTest)
+				combinedAttributes.remove(FloatAttribute.AlphaTest);
+			combinedAttributes.set(blending);
+		} else
+			super.render(renderable, combinedAttributes);
+	}",method,
+"	private static final Attributes combineAttributes(final Renderable renderable) {
+		tmpAttributes.clear();
+		if (renderable.environment != null) tmpAttributes.set(renderable.environment);
+		if (renderable.material != null) tmpAttributes.set(renderable.material);
+		return tmpAttributes;
+	}",method,
+"public class SettingsProviderPerformanceTest extends BaseSettingsProviderTest {
+    private static final String LOG_TAG = ""SettingsProviderPerformanceTest"";
+    private static final int ITERATION_COUNT = 100;
+    private static final int MICRO_SECONDS_IN_MILLISECOND = 1000;
+    private static final long MAX_AVERAGE_SET_AND_GET_SETTING_DURATION_MILLIS = 20;
+    @Test
+    public void testSetAndGetPerformanceForGlobalViaFrontEndApi() throws Exception {
+        // Start with a clean slate.
+        insertStringViaProviderApi(SETTING_TYPE_GLOBAL,
+                FAKE_SETTING_NAME, FAKE_SETTING_VALUE, false);
+        final long startTimeMicro = SystemClock.currentTimeMicro();
+        try {
+            for (int i = 0; i < ITERATION_COUNT; i++) {
+                // Set the setting to its first value.
+                updateStringViaProviderApiSetting(SETTING_TYPE_GLOBAL, FAKE_SETTING_NAME,
+                        FAKE_SETTING_VALUE);
+                // Make sure the setting changed.
+                String firstValue = getStringViaFrontEndApiSetting(SETTING_TYPE_GLOBAL,
+                        FAKE_SETTING_NAME, UserHandle.USER_SYSTEM);
+                assertEquals(""Setting value didn't change"", FAKE_SETTING_VALUE, firstValue);
+                // Set the setting to its second value.
+                updateStringViaProviderApiSetting(SETTING_TYPE_GLOBAL, FAKE_SETTING_NAME,
+                        FAKE_SETTING_VALUE_1);
+                // Make sure the setting changed.
+                String secondValue = getStringViaFrontEndApiSetting(SETTING_TYPE_GLOBAL,
+                        FAKE_SETTING_NAME, UserHandle.USER_SYSTEM);
+                assertEquals(""Setting value didn't change"", FAKE_SETTING_VALUE_1, secondValue);
+            }
+        } finally {
+            // Clean up.
+            deleteStringViaProviderApi(SETTING_TYPE_GLOBAL, FAKE_SETTING_NAME);
+        }
+        final long elapsedTimeMicro = SystemClock.currentTimeMicro() - startTimeMicro;
+        final long averageTimePerIterationMillis = (long) ((((float) elapsedTimeMicro)
+                / ITERATION_COUNT) / MICRO_SECONDS_IN_MILLISECOND);
+        Log.i(LOG_TAG, ""Average time to set and get setting via provider APIs: ""
+                + averageTimePerIterationMillis + "" ms"");
+        assertTrue(""Setting and getting a settings takes too long."", averageTimePerIterationMillis
+                < MAX_AVERAGE_SET_AND_GET_SETTING_DURATION_MILLIS);
+    }
+    @Test
+    public void testSetAndGetPerformanceForGlobalViaProviderApi() throws Exception {
+        // Start with a clean slate.
+        deleteStringViaProviderApi(SETTING_TYPE_GLOBAL, FAKE_SETTING_NAME);
+        final long startTimeMicro = SystemClock.currentTimeMicro();
+        try {
+            for (int i = 0; i < ITERATION_COUNT; i++) {
+                // Set the setting to its first value.
+                setStringViaFrontEndApiSetting(SETTING_TYPE_GLOBAL, FAKE_SETTING_NAME,
+                        FAKE_SETTING_VALUE, UserHandle.USER_SYSTEM);
+                // Make sure the setting changed.
+                String firstValue = getStringViaFrontEndApiSetting(SETTING_TYPE_GLOBAL,
+                        FAKE_SETTING_NAME, UserHandle.USER_SYSTEM);
+                assertEquals(""Setting value didn't change"", FAKE_SETTING_VALUE, firstValue);
+                // Set the setting to its second value.
+                setStringViaFrontEndApiSetting(SETTING_TYPE_GLOBAL, FAKE_SETTING_NAME,
+                        FAKE_SETTING_VALUE_1, UserHandle.USER_SYSTEM);
+                // Make sure the setting changed.
+                String secondValue = getStringViaFrontEndApiSetting(SETTING_TYPE_GLOBAL,
+                        FAKE_SETTING_NAME, UserHandle.USER_SYSTEM);
+                assertEquals(""Setting value didn't change"", FAKE_SETTING_VALUE_1, secondValue);
+            }
+        } finally {
+            // Clean up.
+            deleteStringViaProviderApi(SETTING_TYPE_GLOBAL, FAKE_SETTING_NAME);
+        }
+        final long elapsedTimeMicro = SystemClock.currentTimeMicro() - startTimeMicro;
+        final long averageTimePerIterationMillis = (long) ((((float) elapsedTimeMicro)
+                / ITERATION_COUNT) / MICRO_SECONDS_IN_MILLISECOND);
+        Log.i(LOG_TAG, ""Average time to set and get setting via front-eng APIs: ""
+                + averageTimePerIterationMillis + "" ms"");
+        assertTrue(""Setting and getting a settings takes too long."", averageTimePerIterationMillis
+                < MAX_AVERAGE_SET_AND_GET_SETTING_DURATION_MILLIS);
+    }
+}",class,
+"    @Test
+    public void testSetAndGetPerformanceForGlobalViaFrontEndApi() throws Exception {
+        // Start with a clean slate.
+        insertStringViaProviderApi(SETTING_TYPE_GLOBAL,
+                FAKE_SETTING_NAME, FAKE_SETTING_VALUE, false);
+        final long startTimeMicro = SystemClock.currentTimeMicro();
+        try {
+            for (int i = 0; i < ITERATION_COUNT; i++) {
+                // Set the setting to its first value.
+                updateStringViaProviderApiSetting(SETTING_TYPE_GLOBAL, FAKE_SETTING_NAME,
+                        FAKE_SETTING_VALUE);
+                // Make sure the setting changed.
+                String firstValue = getStringViaFrontEndApiSetting(SETTING_TYPE_GLOBAL,
+                        FAKE_SETTING_NAME, UserHandle.USER_SYSTEM);
+                assertEquals(""Setting value didn't change"", FAKE_SETTING_VALUE, firstValue);
+                // Set the setting to its second value.
+                updateStringViaProviderApiSetting(SETTING_TYPE_GLOBAL, FAKE_SETTING_NAME,
+                        FAKE_SETTING_VALUE_1);
+                // Make sure the setting changed.
+                String secondValue = getStringViaFrontEndApiSetting(SETTING_TYPE_GLOBAL,
+                        FAKE_SETTING_NAME, UserHandle.USER_SYSTEM);
+                assertEquals(""Setting value didn't change"", FAKE_SETTING_VALUE_1, secondValue);
+            }
+        } finally {
+            // Clean up.
+            deleteStringViaProviderApi(SETTING_TYPE_GLOBAL, FAKE_SETTING_NAME);
+        }
+        final long elapsedTimeMicro = SystemClock.currentTimeMicro() - startTimeMicro;
+        final long averageTimePerIterationMillis = (long) ((((float) elapsedTimeMicro)
+                / ITERATION_COUNT) / MICRO_SECONDS_IN_MILLISECOND);
+        Log.i(LOG_TAG, ""Average time to set and get setting via provider APIs: ""
+                + averageTimePerIterationMillis + "" ms"");
+        assertTrue(""Setting and getting a settings takes too long."", averageTimePerIterationMillis
+                < MAX_AVERAGE_SET_AND_GET_SETTING_DURATION_MILLIS);
+    }",method,
+"            for (int i = 0; i < ITERATION_COUNT; i++) {
+                // Set the setting to its first value.
+                updateStringViaProviderApiSetting(SETTING_TYPE_GLOBAL, FAKE_SETTING_NAME,
+                        FAKE_SETTING_VALUE);
+                // Make sure the setting changed.
+                String firstValue = getStringViaFrontEndApiSetting(SETTING_TYPE_GLOBAL,
+                        FAKE_SETTING_NAME, UserHandle.USER_SYSTEM);
+                assertEquals(""Setting value didn't change"", FAKE_SETTING_VALUE, firstValue);
+                // Set the setting to its second value.
+                updateStringViaProviderApiSetting(SETTING_TYPE_GLOBAL, FAKE_SETTING_NAME,
+                        FAKE_SETTING_VALUE_1);
+                // Make sure the setting changed.
+                String secondValue = getStringViaFrontEndApiSetting(SETTING_TYPE_GLOBAL,
+                        FAKE_SETTING_NAME, UserHandle.USER_SYSTEM);
+                assertEquals(""Setting value didn't change"", FAKE_SETTING_VALUE_1, secondValue);
+            }",method,
+"    @Test
+    public void testSetAndGetPerformanceForGlobalViaProviderApi() throws Exception {
+        // Start with a clean slate.
+        deleteStringViaProviderApi(SETTING_TYPE_GLOBAL, FAKE_SETTING_NAME);
+        final long startTimeMicro = SystemClock.currentTimeMicro();
+        try {
+            for (int i = 0; i < ITERATION_COUNT; i++) {
+                // Set the setting to its first value.
+                setStringViaFrontEndApiSetting(SETTING_TYPE_GLOBAL, FAKE_SETTING_NAME,
+                        FAKE_SETTING_VALUE, UserHandle.USER_SYSTEM);
+                // Make sure the setting changed.
+                String firstValue = getStringViaFrontEndApiSetting(SETTING_TYPE_GLOBAL,
+                        FAKE_SETTING_NAME, UserHandle.USER_SYSTEM);
+                assertEquals(""Setting value didn't change"", FAKE_SETTING_VALUE, firstValue);
+                // Set the setting to its second value.
+                setStringViaFrontEndApiSetting(SETTING_TYPE_GLOBAL, FAKE_SETTING_NAME,
+                        FAKE_SETTING_VALUE_1, UserHandle.USER_SYSTEM);
+                // Make sure the setting changed.
+                String secondValue = getStringViaFrontEndApiSetting(SETTING_TYPE_GLOBAL,
+                        FAKE_SETTING_NAME, UserHandle.USER_SYSTEM);
+                assertEquals(""Setting value didn't change"", FAKE_SETTING_VALUE_1, secondValue);
+            }
+        } finally {
+            // Clean up.
+            deleteStringViaProviderApi(SETTING_TYPE_GLOBAL, FAKE_SETTING_NAME);
+        }
+        final long elapsedTimeMicro = SystemClock.currentTimeMicro() - startTimeMicro;
+        final long averageTimePerIterationMillis = (long) ((((float) elapsedTimeMicro)
+                / ITERATION_COUNT) / MICRO_SECONDS_IN_MILLISECOND);
+        Log.i(LOG_TAG, ""Average time to set and get setting via front-eng APIs: ""
+                + averageTimePerIterationMillis + "" ms"");
+        assertTrue(""Setting and getting a settings takes too long."", averageTimePerIterationMillis
+                < MAX_AVERAGE_SET_AND_GET_SETTING_DURATION_MILLIS);
+    }",method,
+"            for (int i = 0; i < ITERATION_COUNT; i++) {
+                // Set the setting to its first value.
+                setStringViaFrontEndApiSetting(SETTING_TYPE_GLOBAL, FAKE_SETTING_NAME,
+                        FAKE_SETTING_VALUE, UserHandle.USER_SYSTEM);
+                // Make sure the setting changed.
+                String firstValue = getStringViaFrontEndApiSetting(SETTING_TYPE_GLOBAL,
+                        FAKE_SETTING_NAME, UserHandle.USER_SYSTEM);
+                assertEquals(""Setting value didn't change"", FAKE_SETTING_VALUE, firstValue);
+                // Set the setting to its second value.
+                setStringViaFrontEndApiSetting(SETTING_TYPE_GLOBAL, FAKE_SETTING_NAME,
+                        FAKE_SETTING_VALUE_1, UserHandle.USER_SYSTEM);
+                // Make sure the setting changed.
+                String secondValue = getStringViaFrontEndApiSetting(SETTING_TYPE_GLOBAL,
+                        FAKE_SETTING_NAME, UserHandle.USER_SYSTEM);
+                assertEquals(""Setting value didn't change"", FAKE_SETTING_VALUE_1, secondValue);
+            }",method,
+"public class DefaultCompletionContributor extends CompletionContributor {
+  static void addDefaultAdvertisements(LookupImpl lookup, boolean includePsiFeatures) {
+    Project project = lookup.getProject();
+    if (CompletionUtil.shouldShowFeature(project, CodeCompletionFeatures.EDITING_COMPLETION_FINISH_BY_DOT_ETC)) {
+      lookup.addAdvertisement(LangBundle.message(""completion.dot.etc.ad""), null);
+    }
+    if (!includePsiFeatures) return;
+    if (CompletionUtil.shouldShowFeature(project, CodeCompletionFeatures.EDITING_COMPLETION_FINISH_BY_SMART_ENTER)) {
+      final String shortcut = getActionShortcut(IdeActions.ACTION_CHOOSE_LOOKUP_ITEM_COMPLETE_STATEMENT);
+      if (StringUtil.isNotEmpty(shortcut)) {
+        lookup.addAdvertisement(LangBundle.message(""completion.smart.enter.ad"", shortcut), null);
+      }
+    }
+    if ((CompletionUtil.shouldShowFeature(project, ShowQuickDocInfoAction.CODEASSISTS_QUICKJAVADOC_FEATURE) ||
+         CompletionUtil.shouldShowFeature(project, ShowQuickDocInfoAction.CODEASSISTS_QUICKJAVADOC_LOOKUP_FEATURE))) {
+      final String shortcut = getActionShortcut(IdeActions.ACTION_QUICK_JAVADOC);
+      if (StringUtil.isNotEmpty(shortcut)) {
+        lookup.addAdvertisement(LangBundle.message(""completion.quick.javadoc.ad"", shortcut), null);
+      }
+    }
+    if (CompletionUtil.shouldShowFeature(project, ShowImplementationsAction.CODEASSISTS_QUICKDEFINITION_FEATURE) ||
+        CompletionUtil.shouldShowFeature(project, ShowImplementationsAction.CODEASSISTS_QUICKDEFINITION_LOOKUP_FEATURE)) {
+      final String shortcut = getActionShortcut(IdeActions.ACTION_QUICK_IMPLEMENTATIONS);
+      if (StringUtil.isNotEmpty(shortcut)) {
+        lookup.addAdvertisement(LangBundle.message(""completion.quick.implementations.ad"", shortcut), null);
+      }
+    }
+  }
+  @Override
+  public String handleEmptyLookup(@NotNull final CompletionParameters parameters, final Editor editor) {
+    return LangBundle.message(""completion.no.suggestions"");
+  }
+  @Override
+  public AutoCompletionDecision handleAutoCompletionPossibility(@NotNull AutoCompletionContext context) {
+    final LookupElement[] items = context.getItems();
+    if (items.length == 1) {
+      final LookupElement item = items[0];
+      if (!StringUtil.isEmpty(context.getLookup().itemPattern(item)) || context.getParameters().getCompletionType() == CompletionType.SMART) {
+        return AutoCompletionDecision.insertItem(item);
+      }
+    }
+    return null;
+  }
+}",class,
+"  static void addDefaultAdvertisements(LookupImpl lookup, boolean includePsiFeatures) {
+    Project project = lookup.getProject();
+    if (CompletionUtil.shouldShowFeature(project, CodeCompletionFeatures.EDITING_COMPLETION_FINISH_BY_DOT_ETC)) {
+      lookup.addAdvertisement(LangBundle.message(""completion.dot.etc.ad""), null);
+    }
+    if (!includePsiFeatures) return;
+    if (CompletionUtil.shouldShowFeature(project, CodeCompletionFeatures.EDITING_COMPLETION_FINISH_BY_SMART_ENTER)) {
+      final String shortcut = getActionShortcut(IdeActions.ACTION_CHOOSE_LOOKUP_ITEM_COMPLETE_STATEMENT);
+      if (StringUtil.isNotEmpty(shortcut)) {
+        lookup.addAdvertisement(LangBundle.message(""completion.smart.enter.ad"", shortcut), null);
+      }
+    }
+    if ((CompletionUtil.shouldShowFeature(project, ShowQuickDocInfoAction.CODEASSISTS_QUICKJAVADOC_FEATURE) ||
+         CompletionUtil.shouldShowFeature(project, ShowQuickDocInfoAction.CODEASSISTS_QUICKJAVADOC_LOOKUP_FEATURE))) {
+      final String shortcut = getActionShortcut(IdeActions.ACTION_QUICK_JAVADOC);
+      if (StringUtil.isNotEmpty(shortcut)) {
+        lookup.addAdvertisement(LangBundle.message(""completion.quick.javadoc.ad"", shortcut), null);
+      }
+    }
+    if (CompletionUtil.shouldShowFeature(project, ShowImplementationsAction.CODEASSISTS_QUICKDEFINITION_FEATURE) ||
+        CompletionUtil.shouldShowFeature(project, ShowImplementationsAction.CODEASSISTS_QUICKDEFINITION_LOOKUP_FEATURE)) {
+      final String shortcut = getActionShortcut(IdeActions.ACTION_QUICK_IMPLEMENTATIONS);
+      if (StringUtil.isNotEmpty(shortcut)) {
+        lookup.addAdvertisement(LangBundle.message(""completion.quick.implementations.ad"", shortcut), null);
+      }
+    }
+  }",method,
+"  @Override
+  public String handleEmptyLookup(@NotNull final CompletionParameters parameters, final Editor editor) {
+    return LangBundle.message(""completion.no.suggestions"");
+  }",method,
+"  @Override
+  public AutoCompletionDecision handleAutoCompletionPossibility(@NotNull AutoCompletionContext context) {
+    final LookupElement[] items = context.getItems();
+    if (items.length == 1) {
+      final LookupElement item = items[0];
+      if (!StringUtil.isEmpty(context.getLookup().itemPattern(item)) || context.getParameters().getCompletionType() == CompletionType.SMART) {
+        return AutoCompletionDecision.insertItem(item);
+      }
+    }
+    return null;
+  }",method,
+"    if (items.length == 1) {
+      final LookupElement item = items[0];
+      if (!StringUtil.isEmpty(context.getLookup().itemPattern(item)) || context.getParameters().getCompletionType() == CompletionType.SMART) {
+        return AutoCompletionDecision.insertItem(item);
+      }
+    }",method,
+"public class NakedObjectCollectionsView
+	extends AbstractNodeView {  
+    public static final String ID = NakedObjectCollectionsView.class.getCanonicalName();
+	private final static Logger LOGGER = Logger.getLogger(NakedObjectCollectionsView.class);
+	public Logger getLOGGER() {
+		return LOGGER;
+	}
+	public NakedObjectCollectionsView() {
+		super(XP_COLLECTIONS_METADATA_DESCRIPTORS_PROVIDER);
+	}
+	private static final String XP_COLLECTIONS_METADATA_DESCRIPTORS_PROVIDER = 
+		Activator.getPluginId() + "".collectionsMetadataDescriptorsProviders"";
+	public void init(IViewSite site) throws PartInitException {
+		getLOGGER().info(""init: started"");
+		try {
+			super.setSite(site);
+		} finally {
+			getLOGGER().info(""init: completed"");
+		}
+	}
+	public void createPartControl(Composite parent) {
+		getLOGGER().info(""createPartControl: started"");
+		try {
+			super.createPartControl(parent);
+		} finally {
+			getLOGGER().info(""createPartControl: completed"");
+		}
+	}
+	//////////////////// Select, Reselect ////////////////////////
+	protected void doSelectInEditor(IStructuredSelection selectedElement) {
+		if (selectedElement instanceof NakedObjectCollection) {
+			selectInEditor((NakedObjectCollection)selectedElement);
+		} else if (selectedElement instanceof MethodDeclaration) {
+			selectInEditor((MethodDeclaration)selectedElement);
+		} 
+	}
+	private void selectInEditor(NakedObjectCollection selectedElement) {
+		MethodDeclaration methodDeclaration = 
+			selectedElement.getDeclaration();
+		selectInEditor(methodDeclaration);
+	}
+	///////// ContentProvider, CellModifier, LabelProvider ////////////////////
+	protected IContentProvider createContentProvider() {
+		return new NakedObjectCollectionsContentProvider(this);
+	}
+	private ICellModifier cellModifier;
+	public <T extends ICellModifier> T getCellModifier(MetadataDescriptorSet set) {
+		if (cellModifier == null) {
+			cellModifier = new NakedObjectCollectionsCellModifier(set);
+		}
+		return Generics.asT(cellModifier);
+	}
+	private IBaseLabelProvider labelProvider;
+	public <T extends IBaseLabelProvider> T getLabelProvider(MetadataDescriptorSet set) {
+		if (labelProvider == null) {
+			labelProvider = new NakedObjectCollectionsLabelProvider(set); 
+		}
+		return Generics.asT(labelProvider);
+	}
+}",class,
+"	public Logger getLOGGER() {
+		return LOGGER;
+	}",method,
+"	public NakedObjectCollectionsView() {
+		super(XP_COLLECTIONS_METADATA_DESCRIPTORS_PROVIDER);
+	}",method,
+"	public void init(IViewSite site) throws PartInitException {
+		getLOGGER().info(""init: started"");
+		try {
+			super.setSite(site);
+		} finally {
+			getLOGGER().info(""init: completed"");
+		}
+	}",method,
+"	public void createPartControl(Composite parent) {
+		getLOGGER().info(""createPartControl: started"");
+		try {
+			super.createPartControl(parent);
+		} finally {
+			getLOGGER().info(""createPartControl: completed"");
+		}
+	}",method,
+"	protected void doSelectInEditor(IStructuredSelection selectedElement) {
+		if (selectedElement instanceof NakedObjectCollection) {
+			selectInEditor((NakedObjectCollection)selectedElement);
+		} else if (selectedElement instanceof MethodDeclaration) {
+			selectInEditor((MethodDeclaration)selectedElement);
+		} 
+	}",method,
+"		if (selectedElement instanceof NakedObjectCollection) {
+			selectInEditor((NakedObjectCollection)selectedElement);
+		}",method,
+"	private void selectInEditor(NakedObjectCollection selectedElement) {
+		MethodDeclaration methodDeclaration = 
+			selectedElement.getDeclaration();
+		selectInEditor(methodDeclaration);
+	}",method,
+"	protected IContentProvider createContentProvider() {
+		return new NakedObjectCollectionsContentProvider(this);
+	}",method,
+"	public <T extends ICellModifier> T getCellModifier(MetadataDescriptorSet set) {
+		if (cellModifier == null) {
+			cellModifier = new NakedObjectCollectionsCellModifier(set);
+		}
+		return Generics.asT(cellModifier);
+	}",method,
+"		if (cellModifier == null) {
+			cellModifier = new NakedObjectCollectionsCellModifier(set);
+		}",method,
+"	public <T extends IBaseLabelProvider> T getLabelProvider(MetadataDescriptorSet set) {
+		if (labelProvider == null) {
+			labelProvider = new NakedObjectCollectionsLabelProvider(set); 
+		}
+		return Generics.asT(labelProvider);
+	}",method,
+"		if (labelProvider == null) {
+			labelProvider = new NakedObjectCollectionsLabelProvider(set); 
+		}",method,
+"public class Task implements Runnable
+{
+    private API api;
+    private long count;
+    public Task(final int thread_index)
+    {
+        try
+        {
+            this.api = new API(thread_index);
+            this.count = 0;
+        }
+        catch (API.InvalidInputException e)
+        {
+            e.printStackTrace(API.err);
+            System.exit(1);
+        }
+        catch (API.MessageDecodingException e)
+        {
+            e.printStackTrace(API.err);
+            System.exit(1);
+        }
+        catch (API.TerminateException e)
+        {
+            API.err.println(""terminate count java (before init)"");
+            System.exit(1);
+        }
+    }
+    public Object request(Integer request_type, String name, String pattern,
+                          byte[] request_info, byte[] request,
+                          Integer timeout, Byte priority,
+                          byte[] trans_id, OtpErlangPid pid)
+        throws API.ReturnAsyncException,
+               API.ReturnSyncException,
+               API.InvalidInputException
+    {
+        if (this.count == 4294967295L)
+        {
+            this.count = 0;
+        }
+        else
+        {
+            this.count += 1;
+        }
+        API.out.println(""count == "" + this.count + "" java"");
+        String response = Long.toString(this.count);
+        this.api.return_(request_type, name, pattern,
+                         ("""").getBytes(), response.getBytes(),
+                         timeout, trans_id, pid);
+        return null;
+    }
+    public void run()
+    {
+        try
+        {
+            // possible with Java >= 8
+            //this.api.subscribe(""java/get"", this::request);
+            // required with Java < 8
+            this.api.subscribe(""java/get"", this, ""request"");
+            Object result = this.api.poll();
+            assert result == Boolean.FALSE;
+        }
+        catch (API.TerminateException e)
+        {
+        }
+        catch (Exception e)
+        {
+            e.printStackTrace(API.err);
+        }
+        API.out.println(""terminate count java"");
+    }
+}",class,
+"    public Task(final int thread_index)
+    {
+        try
+        {
+            this.api = new API(thread_index);
+            this.count = 0;
+        }
+        catch (API.InvalidInputException e)
+        {
+            e.printStackTrace(API.err);
+            System.exit(1);
+        }
+        catch (API.MessageDecodingException e)
+        {
+            e.printStackTrace(API.err);
+            System.exit(1);
+        }
+        catch (API.TerminateException e)
+        {
+            API.err.println(""terminate count java (before init)"");
+            System.exit(1);
+        }
+    }",method,
+"        catch (API.InvalidInputException e)
+        {
+            e.printStackTrace(API.err);
+            System.exit(1);
+        }",method,
+"        catch (API.MessageDecodingException e)
+        {
+            e.printStackTrace(API.err);
+            System.exit(1);
+        }",method,
+"        catch (API.TerminateException e)
+        {
+            API.err.println(""terminate count java (before init)"");
+            System.exit(1);
+        }",method,
+"    public Object request(Integer request_type, String name, String pattern,
+                          byte[] request_info, byte[] request,
+                          Integer timeout, Byte priority,
+                          byte[] trans_id, OtpErlangPid pid)
+        throws API.ReturnAsyncException,
+               API.ReturnSyncException,
+               API.InvalidInputException
+    {
+        if (this.count == 4294967295L)
+        {
+            this.count = 0;
+        }
+        else
+        {
+            this.count += 1;
+        }
+        API.out.println(""count == "" + this.count + "" java"");
+        String response = Long.toString(this.count);
+        this.api.return_(request_type, name, pattern,
+                         ("""").getBytes(), response.getBytes(),
+                         timeout, trans_id, pid);
+        return null;
+    }",method,
+"        if (this.count == 4294967295L)
+        {
+            this.count = 0;
+        }",method,
+"    public void run()
+    {
+        try
+        {
+            // possible with Java >= 8
+            //this.api.subscribe(""java/get"", this::request);
+            // required with Java < 8
+            this.api.subscribe(""java/get"", this, ""request"");
+            Object result = this.api.poll();
+            assert result == Boolean.FALSE;
+        }
+        catch (API.TerminateException e)
+        {
+        }
+        catch (Exception e)
+        {
+            e.printStackTrace(API.err);
+        }
+        API.out.println(""terminate count java"");
+    }",method,
+"        catch (API.TerminateException e)
+        {
+        }",method,
+"        catch (Exception e)
+        {
+            e.printStackTrace(API.err);
+        }",method,
+"public class PrimaryExpression {
+  public static IElementType parsePrimaryExpression(PsiBuilder builder, GroovyParser parser) {
+    return parsePrimaryExpression(builder, parser, false);
+  }
+  public static IElementType parsePrimaryExpression(PsiBuilder builder, GroovyParser parser, boolean literalsAsRefExprs) {
+    final IElementType tokenType = builder.getTokenType();
+    if (TokenSets.BUILT_IN_TYPES.contains(tokenType)) {
+      ParserUtils.eatElement(builder, GroovyElementTypes.BUILT_IN_TYPE_EXPRESSION);
+      return GroovyElementTypes.BUILT_IN_TYPE_EXPRESSION;
+    }
+    if (GroovyTokenTypes.kNEW == tokenType) {
+      PsiBuilder.Marker marker = builder.mark();
+      final GroovyElementType type = newExprParse(builder, parser);
+      marker.done(type);
+      return type;
+    }
+    if (GroovyTokenTypes.mIDENT == tokenType || GroovyTokenTypes.kSUPER == tokenType || GroovyTokenTypes.kTHIS == tokenType ||
+        TokenSets.CODE_REFERENCE_ELEMENT_NAME_TOKENS.contains(tokenType) && PathExpression.isQualificationDotAhead(builder)) {
+      return ParserUtils.eatElement(builder, GroovyElementTypes.REFERENCE_EXPRESSION);
+    }
+    if (GroovyTokenTypes.mGSTRING_BEGIN == tokenType) {
+      final boolean result = CompoundStringExpression.parse(builder, parser, false, GroovyTokenTypes.mGSTRING_BEGIN,
+                                                            GroovyTokenTypes.mGSTRING_CONTENT, GroovyTokenTypes.mGSTRING_END, null,
+                                                            GroovyElementTypes.GSTRING, GroovyBundle.message(""string.end.expected""));
+      return result ? GroovyElementTypes.GSTRING : GroovyElementTypes.LITERAL;
+    }
+    if (GroovyTokenTypes.mREGEX_BEGIN == tokenType) {
+      CompoundStringExpression.parse(builder, parser, false, GroovyTokenTypes.mREGEX_BEGIN, GroovyTokenTypes.mREGEX_CONTENT,
+                                     GroovyTokenTypes.mREGEX_END, GroovyTokenTypes.mREGEX_LITERAL,
+                                     GroovyElementTypes.REGEX, GroovyBundle.message(""regex.end.expected""));
+      return GroovyElementTypes.REGEX;
+    }
+    if (GroovyTokenTypes.mDOLLAR_SLASH_REGEX_BEGIN == tokenType) {
+      CompoundStringExpression
+        .parse(builder, parser, false, GroovyTokenTypes.mDOLLAR_SLASH_REGEX_BEGIN, GroovyTokenTypes.mDOLLAR_SLASH_REGEX_CONTENT,
+               GroovyTokenTypes.mDOLLAR_SLASH_REGEX_END,
+               GroovyTokenTypes.mDOLLAR_SLASH_REGEX_LITERAL,
+               GroovyElementTypes.REGEX, GroovyBundle.message(""dollar.slash.end.expected""));
+      return GroovyElementTypes.REGEX;
+    }
+    if (GroovyTokenTypes.mLBRACK == tokenType) {
+      return ListOrMapConstructorExpression.parse(builder, parser);
+    }
+    if (GroovyTokenTypes.mLPAREN == tokenType) {
+      return parenthesizedExprParse(builder, parser);
+    }
+    if (GroovyTokenTypes.mLCURLY == tokenType) {
+      return OpenOrClosableBlock.parseClosableBlock(builder, parser);
+    }
+    if (tokenType == GroovyTokenTypes.mSTRING_LITERAL || tokenType == GroovyTokenTypes.mGSTRING_LITERAL) {
+      return ParserUtils.eatElement(builder, literalsAsRefExprs ? GroovyElementTypes.REFERENCE_EXPRESSION : GroovyElementTypes.LITERAL);
+    }
+    if (TokenSets.CONSTANTS.contains(tokenType)) {
+      return ParserUtils.eatElement(builder, GroovyElementTypes.LITERAL);
+    }
+    return GroovyElementTypes.WRONGWAY;
+  }
+  public static GroovyElementType parenthesizedExprParse(PsiBuilder builder, GroovyParser parser) {
+    PsiBuilder.Marker marker = builder.mark();
+    ParserUtils.getToken(builder, GroovyTokenTypes.mLPAREN);
+    if (!AssignmentExpression.parse(builder, parser)) {
+      builder.error(GroovyBundle.message(""expression.expected""));
+    }
+    ParserUtils.getToken(builder, GroovyTokenTypes.mNLS);
+    ParserUtils.getToken(builder, GroovyTokenTypes.mRPAREN, GroovyBundle.message(""rparen.expected""));
+    marker.done(GroovyElementTypes.PARENTHESIZED_EXPRESSION);
+    return GroovyElementTypes.PARENTHESIZED_EXPRESSION;
+  }
+  public static GroovyElementType newExprParse(PsiBuilder builder, GroovyParser parser) {
+    ParserUtils.getToken(builder, GroovyTokenTypes.kNEW);
+    ParserUtils.getToken(builder, GroovyTokenTypes.mNLS);
+    PsiBuilder.Marker rb = builder.mark();
+    TypeArguments.parseTypeArguments(builder, false);
+    if (!TokenSets.BUILT_IN_TYPES.contains(builder.getTokenType()) && GroovyTokenTypes.mIDENT != builder.getTokenType()) {
+      rb.rollbackTo();
+    }
+    else {
+      rb.drop();
+    }
+    PsiBuilder.Marker anonymousMarker = builder.mark();
+    String name;
+    if (TokenSets.BUILT_IN_TYPES.contains(builder.getTokenType())) {
+      ParserUtils.eatElement(builder, GroovyElementTypes.BUILT_IN_TYPE);
+      name = null;
+    }
+    else if (TokenSets.CODE_REFERENCE_ELEMENT_NAME_TOKENS.contains(builder.getTokenType())) {
+      name = builder.getTokenText();
+      ReferenceElement.parse(builder, false, true, false, true, true);
+    }
+    else {
+      builder.error(GroovyBundle.message(""type.specification.expected""));
+      anonymousMarker.drop();
+      return GroovyElementTypes.NEW_EXPRESSION;
+    }
+    if (builder.getTokenType() == GroovyTokenTypes.mLPAREN || ParserUtils.lookAhead(builder, GroovyTokenTypes.mNLS,
+                                                                                    GroovyTokenTypes.mLPAREN)) {
+      ParserUtils.getToken(builder, GroovyTokenTypes.mNLS);
+      methodCallArgsParse(builder, parser);
+      if (builder.getTokenType() == GroovyTokenTypes.mLCURLY || ParserUtils.lookAhead(builder, GroovyTokenTypes.mNLS,
+                                                                                      GroovyTokenTypes.mLCURLY)) {
+        ParserUtils.getToken(builder, GroovyTokenTypes.mNLS);
+        TypeDefinition.parseBody(builder, name, parser, false);
+        anonymousMarker.done(GroovyElementTypes.ANONYMOUS_CLASS_DEFINITION);
+        return GroovyElementTypes.NEW_EXPRESSION;
+      }
+    }
+    else if (builder.getTokenType() == GroovyTokenTypes.mLBRACK) {
+      PsiBuilder.Marker forArray = builder.mark();
+      ParserUtils.getToken(builder, GroovyTokenTypes.mNLS);
+      ParserUtils.getToken(builder, GroovyTokenTypes.mLBRACK);
+      if (!AssignmentExpression.parse(builder, parser)) {
+        builder.error(GroovyBundle.message(""expression.expected""));
+      }
+      ParserUtils.getToken(builder, GroovyTokenTypes.mNLS);
+      ParserUtils.getToken(builder, GroovyTokenTypes.mRBRACK, GroovyBundle.message(""rbrack.expected""));
+      while (ParserUtils.getToken(builder, GroovyTokenTypes.mLBRACK)) {
+        ParserUtils.getToken(builder, GroovyTokenTypes.mNLS);
+        AssignmentExpression.parse(builder, parser);
+        ParserUtils.getToken(builder, GroovyTokenTypes.mNLS);
+        ParserUtils.getToken(builder, GroovyTokenTypes.mRBRACK, GroovyBundle.message(""rbrack.expected""));
+      }
+      forArray.done(GroovyElementTypes.ARRAY_DECLARATOR);
+    }
+    else {
+      builder.error(GroovyBundle.message(""lparen.expected""));
+    }
+    anonymousMarker.drop();
+    return GroovyElementTypes.NEW_EXPRESSION;
+  }
+  public static boolean methodCallArgsParse(PsiBuilder builder, GroovyParser parser) {
+    PsiBuilder.Marker marker = builder.mark();
+    if (ParserUtils.getToken(builder, GroovyTokenTypes.mLPAREN, GroovyBundle.message(""lparen.expected""))) {
+      ParserUtils.getToken(builder, GroovyTokenTypes.mNLS);
+      ArgumentList.parseArgumentList(builder, GroovyTokenTypes.mRPAREN, parser);
+      ParserUtils.getToken(builder, GroovyTokenTypes.mNLS);
+      ParserUtils.getToken(builder, GroovyTokenTypes.mRPAREN, GroovyBundle.message(""rparen.expected""));
+    }
+    marker.done(GroovyElementTypes.ARGUMENTS);
+    return true;
+  }
+}",class,
+"  public static IElementType parsePrimaryExpression(PsiBuilder builder, GroovyParser parser) {
+    return parsePrimaryExpression(builder, parser, false);
+  }",method,
+"  public static IElementType parsePrimaryExpression(PsiBuilder builder, GroovyParser parser, boolean literalsAsRefExprs) {
+    final IElementType tokenType = builder.getTokenType();
+    if (TokenSets.BUILT_IN_TYPES.contains(tokenType)) {
+      ParserUtils.eatElement(builder, GroovyElementTypes.BUILT_IN_TYPE_EXPRESSION);
+      return GroovyElementTypes.BUILT_IN_TYPE_EXPRESSION;
+    }
+    if (GroovyTokenTypes.kNEW == tokenType) {
+      PsiBuilder.Marker marker = builder.mark();
+      final GroovyElementType type = newExprParse(builder, parser);
+      marker.done(type);
+      return type;
+    }
+    if (GroovyTokenTypes.mIDENT == tokenType || GroovyTokenTypes.kSUPER == tokenType || GroovyTokenTypes.kTHIS == tokenType ||
+        TokenSets.CODE_REFERENCE_ELEMENT_NAME_TOKENS.contains(tokenType) && PathExpression.isQualificationDotAhead(builder)) {
+      return ParserUtils.eatElement(builder, GroovyElementTypes.REFERENCE_EXPRESSION);
+    }
+    if (GroovyTokenTypes.mGSTRING_BEGIN == tokenType) {
+      final boolean result = CompoundStringExpression.parse(builder, parser, false, GroovyTokenTypes.mGSTRING_BEGIN,
+                                                            GroovyTokenTypes.mGSTRING_CONTENT, GroovyTokenTypes.mGSTRING_END, null,
+                                                            GroovyElementTypes.GSTRING, GroovyBundle.message(""string.end.expected""));
+      return result ? GroovyElementTypes.GSTRING : GroovyElementTypes.LITERAL;
+    }
+    if (GroovyTokenTypes.mREGEX_BEGIN == tokenType) {
+      CompoundStringExpression.parse(builder, parser, false, GroovyTokenTypes.mREGEX_BEGIN, GroovyTokenTypes.mREGEX_CONTENT,
+                                     GroovyTokenTypes.mREGEX_END, GroovyTokenTypes.mREGEX_LITERAL,
+                                     GroovyElementTypes.REGEX, GroovyBundle.message(""regex.end.expected""));
+      return GroovyElementTypes.REGEX;
+    }
+    if (GroovyTokenTypes.mDOLLAR_SLASH_REGEX_BEGIN == tokenType) {
+      CompoundStringExpression
+        .parse(builder, parser, false, GroovyTokenTypes.mDOLLAR_SLASH_REGEX_BEGIN, GroovyTokenTypes.mDOLLAR_SLASH_REGEX_CONTENT,
+               GroovyTokenTypes.mDOLLAR_SLASH_REGEX_END,
+               GroovyTokenTypes.mDOLLAR_SLASH_REGEX_LITERAL,
+               GroovyElementTypes.REGEX, GroovyBundle.message(""dollar.slash.end.expected""));
+      return GroovyElementTypes.REGEX;
+    }
+    if (GroovyTokenTypes.mLBRACK == tokenType) {
+      return ListOrMapConstructorExpression.parse(builder, parser);
+    }
+    if (GroovyTokenTypes.mLPAREN == tokenType) {
+      return parenthesizedExprParse(builder, parser);
+    }
+    if (GroovyTokenTypes.mLCURLY == tokenType) {
+      return OpenOrClosableBlock.parseClosableBlock(builder, parser);
+    }
+    if (tokenType == GroovyTokenTypes.mSTRING_LITERAL || tokenType == GroovyTokenTypes.mGSTRING_LITERAL) {
+      return ParserUtils.eatElement(builder, literalsAsRefExprs ? GroovyElementTypes.REFERENCE_EXPRESSION : GroovyElementTypes.LITERAL);
+    }
+    if (TokenSets.CONSTANTS.contains(tokenType)) {
+      return ParserUtils.eatElement(builder, GroovyElementTypes.LITERAL);
+    }
+    return GroovyElementTypes.WRONGWAY;
+  }",method,
+"    if (GroovyTokenTypes.kNEW == tokenType) {
+      PsiBuilder.Marker marker = builder.mark();
+      final GroovyElementType type = newExprParse(builder, parser);
+      marker.done(type);
+      return type;
+    }",method,
+"    if (GroovyTokenTypes.mGSTRING_BEGIN == tokenType) {
+      final boolean result = CompoundStringExpression.parse(builder, parser, false, GroovyTokenTypes.mGSTRING_BEGIN,
+                                                            GroovyTokenTypes.mGSTRING_CONTENT, GroovyTokenTypes.mGSTRING_END, null,
+                                                            GroovyElementTypes.GSTRING, GroovyBundle.message(""string.end.expected""));
+      return result ? GroovyElementTypes.GSTRING : GroovyElementTypes.LITERAL;
+    }",method,
+"    if (GroovyTokenTypes.mREGEX_BEGIN == tokenType) {
+      CompoundStringExpression.parse(builder, parser, false, GroovyTokenTypes.mREGEX_BEGIN, GroovyTokenTypes.mREGEX_CONTENT,
+                                     GroovyTokenTypes.mREGEX_END, GroovyTokenTypes.mREGEX_LITERAL,
+                                     GroovyElementTypes.REGEX, GroovyBundle.message(""regex.end.expected""));
+      return GroovyElementTypes.REGEX;
+    }",method,
+"    if (GroovyTokenTypes.mDOLLAR_SLASH_REGEX_BEGIN == tokenType) {
+      CompoundStringExpression
+        .parse(builder, parser, false, GroovyTokenTypes.mDOLLAR_SLASH_REGEX_BEGIN, GroovyTokenTypes.mDOLLAR_SLASH_REGEX_CONTENT,
+               GroovyTokenTypes.mDOLLAR_SLASH_REGEX_END,
+               GroovyTokenTypes.mDOLLAR_SLASH_REGEX_LITERAL,
+               GroovyElementTypes.REGEX, GroovyBundle.message(""dollar.slash.end.expected""));
+      return GroovyElementTypes.REGEX;
+    }",method,
+"    if (GroovyTokenTypes.mLBRACK == tokenType) {
+      return ListOrMapConstructorExpression.parse(builder, parser);
+    }",method,
+"    if (GroovyTokenTypes.mLPAREN == tokenType) {
+      return parenthesizedExprParse(builder, parser);
+    }",method,
+"    if (GroovyTokenTypes.mLCURLY == tokenType) {
+      return OpenOrClosableBlock.parseClosableBlock(builder, parser);
+    }",method,
+"    if (tokenType == GroovyTokenTypes.mSTRING_LITERAL || tokenType == GroovyTokenTypes.mGSTRING_LITERAL) {
+      return ParserUtils.eatElement(builder, literalsAsRefExprs ? GroovyElementTypes.REFERENCE_EXPRESSION : GroovyElementTypes.LITERAL);
+    }",method,
+"  public static GroovyElementType parenthesizedExprParse(PsiBuilder builder, GroovyParser parser) {
+    PsiBuilder.Marker marker = builder.mark();
+    ParserUtils.getToken(builder, GroovyTokenTypes.mLPAREN);
+    if (!AssignmentExpression.parse(builder, parser)) {
+      builder.error(GroovyBundle.message(""expression.expected""));
+    }
+    ParserUtils.getToken(builder, GroovyTokenTypes.mNLS);
+    ParserUtils.getToken(builder, GroovyTokenTypes.mRPAREN, GroovyBundle.message(""rparen.expected""));
+    marker.done(GroovyElementTypes.PARENTHESIZED_EXPRESSION);
+    return GroovyElementTypes.PARENTHESIZED_EXPRESSION;
+  }",method,
+"  public static GroovyElementType newExprParse(PsiBuilder builder, GroovyParser parser) {
+    ParserUtils.getToken(builder, GroovyTokenTypes.kNEW);
+    ParserUtils.getToken(builder, GroovyTokenTypes.mNLS);
+    PsiBuilder.Marker rb = builder.mark();
+    TypeArguments.parseTypeArguments(builder, false);
+    if (!TokenSets.BUILT_IN_TYPES.contains(builder.getTokenType()) && GroovyTokenTypes.mIDENT != builder.getTokenType()) {
+      rb.rollbackTo();
+    }
+    else {
+      rb.drop();
+    }
+    PsiBuilder.Marker anonymousMarker = builder.mark();
+    String name;
+    if (TokenSets.BUILT_IN_TYPES.contains(builder.getTokenType())) {
+      ParserUtils.eatElement(builder, GroovyElementTypes.BUILT_IN_TYPE);
+      name = null;
+    }
+    else if (TokenSets.CODE_REFERENCE_ELEMENT_NAME_TOKENS.contains(builder.getTokenType())) {
+      name = builder.getTokenText();
+      ReferenceElement.parse(builder, false, true, false, true, true);
+    }
+    else {
+      builder.error(GroovyBundle.message(""type.specification.expected""));
+      anonymousMarker.drop();
+      return GroovyElementTypes.NEW_EXPRESSION;
+    }
+    if (builder.getTokenType() == GroovyTokenTypes.mLPAREN || ParserUtils.lookAhead(builder, GroovyTokenTypes.mNLS,
+                                                                                    GroovyTokenTypes.mLPAREN)) {
+      ParserUtils.getToken(builder, GroovyTokenTypes.mNLS);
+      methodCallArgsParse(builder, parser);
+      if (builder.getTokenType() == GroovyTokenTypes.mLCURLY || ParserUtils.lookAhead(builder, GroovyTokenTypes.mNLS,
+                                                                                      GroovyTokenTypes.mLCURLY)) {
+        ParserUtils.getToken(builder, GroovyTokenTypes.mNLS);
+        TypeDefinition.parseBody(builder, name, parser, false);
+        anonymousMarker.done(GroovyElementTypes.ANONYMOUS_CLASS_DEFINITION);
+        return GroovyElementTypes.NEW_EXPRESSION;
+      }
+    }
+    else if (builder.getTokenType() == GroovyTokenTypes.mLBRACK) {
+      PsiBuilder.Marker forArray = builder.mark();
+      ParserUtils.getToken(builder, GroovyTokenTypes.mNLS);
+      ParserUtils.getToken(builder, GroovyTokenTypes.mLBRACK);
+      if (!AssignmentExpression.parse(builder, parser)) {
+        builder.error(GroovyBundle.message(""expression.expected""));
+      }
+      ParserUtils.getToken(builder, GroovyTokenTypes.mNLS);
+      ParserUtils.getToken(builder, GroovyTokenTypes.mRBRACK, GroovyBundle.message(""rbrack.expected""));
+      while (ParserUtils.getToken(builder, GroovyTokenTypes.mLBRACK)) {
+        ParserUtils.getToken(builder, GroovyTokenTypes.mNLS);
+        AssignmentExpression.parse(builder, parser);
+        ParserUtils.getToken(builder, GroovyTokenTypes.mNLS);
+        ParserUtils.getToken(builder, GroovyTokenTypes.mRBRACK, GroovyBundle.message(""rbrack.expected""));
+      }
+      forArray.done(GroovyElementTypes.ARRAY_DECLARATOR);
+    }
+    else {
+      builder.error(GroovyBundle.message(""lparen.expected""));
+    }
+    anonymousMarker.drop();
+    return GroovyElementTypes.NEW_EXPRESSION;
+  }",method,
+"  public static boolean methodCallArgsParse(PsiBuilder builder, GroovyParser parser) {
+    PsiBuilder.Marker marker = builder.mark();
+    if (ParserUtils.getToken(builder, GroovyTokenTypes.mLPAREN, GroovyBundle.message(""lparen.expected""))) {
+      ParserUtils.getToken(builder, GroovyTokenTypes.mNLS);
+      ArgumentList.parseArgumentList(builder, GroovyTokenTypes.mRPAREN, parser);
+      ParserUtils.getToken(builder, GroovyTokenTypes.mNLS);
+      ParserUtils.getToken(builder, GroovyTokenTypes.mRPAREN, GroovyBundle.message(""rparen.expected""));
+    }
+    marker.done(GroovyElementTypes.ARGUMENTS);
+    return true;
+  }",method,
+"public class CreateDirectoryOrPackageAction extends AnAction implements DumbAware {
+  public CreateDirectoryOrPackageAction() {
+    super(IdeBundle.message(""action.create.new.directory.or.package""), IdeBundle.message(""action.create.new.directory.or.package""), null);
+  }
+  @Override
+  public void actionPerformed(AnActionEvent e) {
+    IdeView view = e.getData(LangDataKeys.IDE_VIEW);
+    final Project project = e.getData(CommonDataKeys.PROJECT);
+    if (view == null || project == null) {
+      return;
+    }
+    PsiDirectory directory = DirectoryChooserUtil.getOrChooseDirectory(view);
+    if (directory == null) return;
+    final boolean isDirectory = !PsiDirectoryFactory.getInstance(project).isPackage(directory);
+    final CreateDirectoryOrPackageHandler validator = new CreateDirectoryOrPackageHandler(project, directory, isDirectory,
+                                                                                   isDirectory ? ""\\/"" : ""."");
+    Messages.showInputDialog(project,
+                             isDirectory ? IdeBundle.message(""prompt.enter.new.directory.name"")
+                                         : IdeBundle.message(""prompt.enter.new.package.name""),
+                             isDirectory ? IdeBundle.message(""title.new.directory"")
+                                         : IdeBundle.message(""title.new.package""),
+                             Messages.getQuestionIcon(), """", validator);
+    final PsiElement result = validator.getCreatedElement();
+    if (result != null) {
+      view.selectElement(result);
+    }
+  }
+  @Override
+  public void update(AnActionEvent event) {
+    Presentation presentation = event.getPresentation();
+    Project project = event.getData(CommonDataKeys.PROJECT);
+    if (project == null) {
+      presentation.setVisible(false);
+      presentation.setEnabled(false);
+      return;
+    }
+    IdeView view = event.getData(LangDataKeys.IDE_VIEW);
+    if (view == null) {
+      presentation.setVisible(false);
+      presentation.setEnabled(false);
+      return;
+    }
+    final PsiDirectory[] directories = view.getDirectories();
+    if (directories.length == 0) {
+      presentation.setVisible(false);
+      presentation.setEnabled(false);
+      return;
+    }
+    presentation.setVisible(true);
+    presentation.setEnabled(true);
+    boolean isPackage = false;
+    final PsiDirectoryFactory factory = PsiDirectoryFactory.getInstance(project);
+    for (PsiDirectory directory : directories) {
+      if (factory.isPackage(directory)) {
+        isPackage = true;
+        break;
+      }
+    }
+    if (isPackage) {
+      presentation.setText(IdeBundle.message(""action.package""));
+      presentation.setIcon(PlatformIcons.PACKAGE_ICON);
+    }
+    else {
+      presentation.setText(IdeBundle.message(""action.directory""));
+      presentation.setIcon(PlatformIcons.DIRECTORY_CLOSED_ICON);
+    }
+  }
+}",class,
+"  public CreateDirectoryOrPackageAction() {
+    super(IdeBundle.message(""action.create.new.directory.or.package""), IdeBundle.message(""action.create.new.directory.or.package""), null);
+  }",method,
+"  @Override
+  public void actionPerformed(AnActionEvent e) {
+    IdeView view = e.getData(LangDataKeys.IDE_VIEW);
+    final Project project = e.getData(CommonDataKeys.PROJECT);
+    if (view == null || project == null) {
+      return;
+    }
+    PsiDirectory directory = DirectoryChooserUtil.getOrChooseDirectory(view);
+    if (directory == null) return;
+    final boolean isDirectory = !PsiDirectoryFactory.getInstance(project).isPackage(directory);
+    final CreateDirectoryOrPackageHandler validator = new CreateDirectoryOrPackageHandler(project, directory, isDirectory,
+                                                                                   isDirectory ? ""\\/"" : ""."");
+    Messages.showInputDialog(project,
+                             isDirectory ? IdeBundle.message(""prompt.enter.new.directory.name"")
+                                         : IdeBundle.message(""prompt.enter.new.package.name""),
+                             isDirectory ? IdeBundle.message(""title.new.directory"")
+                                         : IdeBundle.message(""title.new.package""),
+                             Messages.getQuestionIcon(), """", validator);
+    final PsiElement result = validator.getCreatedElement();
+    if (result != null) {
+      view.selectElement(result);
+    }
+  }",method,
+"    if (view == null || project == null) {
+      return;
+    }",method,
+"    if (result != null) {
+      view.selectElement(result);
+    }",method,
+"  @Override
+  public void update(AnActionEvent event) {
+    Presentation presentation = event.getPresentation();
+    Project project = event.getData(CommonDataKeys.PROJECT);
+    if (project == null) {
+      presentation.setVisible(false);
+      presentation.setEnabled(false);
+      return;
+    }
+    IdeView view = event.getData(LangDataKeys.IDE_VIEW);
+    if (view == null) {
+      presentation.setVisible(false);
+      presentation.setEnabled(false);
+      return;
+    }
+    final PsiDirectory[] directories = view.getDirectories();
+    if (directories.length == 0) {
+      presentation.setVisible(false);
+      presentation.setEnabled(false);
+      return;
+    }
+    presentation.setVisible(true);
+    presentation.setEnabled(true);
+    boolean isPackage = false;
+    final PsiDirectoryFactory factory = PsiDirectoryFactory.getInstance(project);
+    for (PsiDirectory directory : directories) {
+      if (factory.isPackage(directory)) {
+        isPackage = true;
+        break;
+      }
+    }
+    if (isPackage) {
+      presentation.setText(IdeBundle.message(""action.package""));
+      presentation.setIcon(PlatformIcons.PACKAGE_ICON);
+    }
+    else {
+      presentation.setText(IdeBundle.message(""action.directory""));
+      presentation.setIcon(PlatformIcons.DIRECTORY_CLOSED_ICON);
+    }
+  }",method,
+"    if (project == null) {
+      presentation.setVisible(false);
+      presentation.setEnabled(false);
+      return;
+    }",method,
+"    if (view == null) {
+      presentation.setVisible(false);
+      presentation.setEnabled(false);
+      return;
+    }",method,
+"    if (directories.length == 0) {
+      presentation.setVisible(false);
+      presentation.setEnabled(false);
+      return;
+    }",method,
+"    for (PsiDirectory directory : directories) {
+      if (factory.isPackage(directory)) {
+        isPackage = true;
+        break;
+      }
+    }",method,
+"    if (isPackage) {
+      presentation.setText(IdeBundle.message(""action.package""));
+      presentation.setIcon(PlatformIcons.PACKAGE_ICON);
+    }",method,
+"public class EscapeBodyTag extends HtmlEscapingAwareTag implements BodyTag {
+	private boolean javaScriptEscape = false;
+	@Nullable
+	private BodyContent bodyContent;
+	public void setJavaScriptEscape(boolean javaScriptEscape) throws JspException {
+		this.javaScriptEscape = javaScriptEscape;
+	}
+	@Override
+	protected int doStartTagInternal() {
+		// do nothing
+		return EVAL_BODY_BUFFERED;
+	}
+	@Override
+	public void doInitBody() {
+		// do nothing
+	}
+	@Override
+	public void setBodyContent(BodyContent bodyContent) {
+		this.bodyContent = bodyContent;
+	}
+	@Override
+	public int doAfterBody() throws JspException {
+		try {
+			String content = readBodyContent();
+			// HTML and/or JavaScript escape, if demanded
+			content = htmlEscape(content);
+			content = (this.javaScriptEscape ? JavaScriptUtils.javaScriptEscape(content) : content);
+			writeBodyContent(content);
+		}
+		catch (IOException ex) {
+			throw new JspException(""Could not write escaped body"", ex);
+		}
+		return (SKIP_BODY);
+	}
+	protected String readBodyContent() throws IOException {
+		Assert.state(this.bodyContent != null, ""No BodyContent set"");
+		return this.bodyContent.getString();
+	}
+	protected void writeBodyContent(String content) throws IOException {
+		Assert.state(this.bodyContent != null, ""No BodyContent set"");
+		this.bodyContent.getEnclosingWriter().print(content);
+	}
+}",class,
+"	public void setJavaScriptEscape(boolean javaScriptEscape) throws JspException {
+		this.javaScriptEscape = javaScriptEscape;
+	}",method,
+"	@Override
+	protected int doStartTagInternal() {
+		// do nothing
+		return EVAL_BODY_BUFFERED;
+	}",method,
+"	@Override
+	public void doInitBody() {
+		// do nothing
+	}",method,
+"	@Override
+	public void setBodyContent(BodyContent bodyContent) {
+		this.bodyContent = bodyContent;
+	}",method,
+"	@Override
+	public int doAfterBody() throws JspException {
+		try {
+			String content = readBodyContent();
+			// HTML and/or JavaScript escape, if demanded
+			content = htmlEscape(content);
+			content = (this.javaScriptEscape ? JavaScriptUtils.javaScriptEscape(content) : content);
+			writeBodyContent(content);
+		}
+		catch (IOException ex) {
+			throw new JspException(""Could not write escaped body"", ex);
+		}
+		return (SKIP_BODY);
+	}",method,
+"		catch (IOException ex) {
+			throw new JspException(""Could not write escaped body"", ex);
+		}",method,
+"	protected String readBodyContent() throws IOException {
+		Assert.state(this.bodyContent != null, ""No BodyContent set"");
+		return this.bodyContent.getString();
+	}",method,
+"	protected void writeBodyContent(String content) throws IOException {
+		Assert.state(this.bodyContent != null, ""No BodyContent set"");
+		this.bodyContent.getEnclosingWriter().print(content);
+	}",method,
+"  @NotNull
+  @Override
+  public IntentionAction createCollectionToArrayFix(@NotNull PsiExpression collectionExpression,
+                                                    @NotNull PsiExpression expressionToReplace,
+                                                    @NotNull PsiArrayType arrayType) {
+    return new ConvertCollectionToArrayFix(collectionExpression, expressionToReplace, arrayType);
+  }",method,
+"  @NotNull
+  @Override
+  public IntentionAction createInsertMethodCallFix(@NotNull PsiMethodCallExpression call, PsiMethod method) {
+    return new InsertMethodCallFix(call, method);
+  }",method,
+"  @NotNull
+  @Override
+  public LocalQuickFixAndIntentionActionOnPsiElement createAccessStaticViaInstanceFix(PsiReferenceExpression methodRef,
+                                                                                      JavaResolveResult result) {
+    return new AccessStaticViaInstanceFix(methodRef, result, true);
+  }",method,
+"  @NotNull
+  @Override
+  public IntentionAction createWrapWithAdapterFix(@Nullable PsiType type, @NotNull PsiExpression expression) {
+    return new WrapWithAdapterMethodCallFix(type, expression);
+  }",method,
+"  @NotNull
+  @Override
+  public IntentionAction createDeleteSideEffectAwareFix(@NotNull PsiExpressionStatement statement) {
+    return new DeleteSideEffectsAwareFix(statement, statement.getExpression());
+  }",method,
+"final class KQueueRecvByteAllocatorHandle implements RecvByteBufAllocator.ExtendedHandle {
+    private final RecvByteBufAllocator.ExtendedHandle delegate;
+    private final UncheckedBooleanSupplier defaultMaybeMoreDataSupplier = new UncheckedBooleanSupplier() {
+        @Override
+        public boolean get() {
+            return maybeMoreDataToRead();
+        }
+    };
+    private boolean overrideGuess;
+    private boolean readEOF;
+    private long numberBytesPending;
+    KQueueRecvByteAllocatorHandle(RecvByteBufAllocator.ExtendedHandle handle) {
+        this.delegate = ObjectUtil.checkNotNull(handle, ""handle"");
+    }
+    @Override
+    public int guess() {
+        return overrideGuess ? guess0() : delegate.guess();
+    }
+    @Override
+    public void reset(ChannelConfig config) {
+        overrideGuess = ((KQueueChannelConfig) config).getRcvAllocTransportProvidesGuess();
+        delegate.reset(config);
+    }
+    @Override
+    public void incMessagesRead(int numMessages) {
+        delegate.incMessagesRead(numMessages);
+    }
+    @Override
+    public ByteBuf allocate(ByteBufAllocator alloc) {
+        return overrideGuess ? alloc.ioBuffer(guess0()) : delegate.allocate(alloc);
+    }
+    @Override
+    public void lastBytesRead(int bytes) {
+        numberBytesPending = bytes < 0 ? 0 : max(0, numberBytesPending - bytes);
+        delegate.lastBytesRead(bytes);
+    }
+    @Override
+    public int lastBytesRead() {
+        return delegate.lastBytesRead();
+    }
+    @Override
+    public void attemptedBytesRead(int bytes) {
+        delegate.attemptedBytesRead(bytes);
+    }
+    @Override
+    public int attemptedBytesRead() {
+        return delegate.attemptedBytesRead();
+    }
+    @Override
+    public void readComplete() {
+        delegate.readComplete();
+    }
+    @Override
+    public boolean continueReading(UncheckedBooleanSupplier maybeMoreDataSupplier) {
+        return delegate.continueReading(maybeMoreDataSupplier);
+    }
+    @Override
+    public boolean continueReading() {
+        // We must override the supplier which determines if there maybe more data to read.
+        return delegate.continueReading(defaultMaybeMoreDataSupplier);
+    }
+    void readEOF() {
+        readEOF = true;
+    }
+    void numberBytesPending(long numberBytesPending) {
+        this.numberBytesPending = numberBytesPending;
+    }
+    boolean maybeMoreDataToRead() {
+        return numberBytesPending != 0 || readEOF;
+    }
+    private int guess0() {
+        return (int) min(numberBytesPending, Integer.MAX_VALUE);
+    }
+}",class,
+"        @Override
+        public boolean get() {
+            return maybeMoreDataToRead();
+        }",method,
+"    KQueueRecvByteAllocatorHandle(RecvByteBufAllocator.ExtendedHandle handle) {
+        this.delegate = ObjectUtil.checkNotNull(handle, ""handle"");
+    }",method,
+"    @Override
+    public int guess() {
+        return overrideGuess ? guess0() : delegate.guess();
+    }",method,
+"    @Override
+    public void reset(ChannelConfig config) {
+        overrideGuess = ((KQueueChannelConfig) config).getRcvAllocTransportProvidesGuess();
+        delegate.reset(config);
+    }",method,
+"    @Override
+    public void incMessagesRead(int numMessages) {
+        delegate.incMessagesRead(numMessages);
+    }",method,
+"    @Override
+    public ByteBuf allocate(ByteBufAllocator alloc) {
+        return overrideGuess ? alloc.ioBuffer(guess0()) : delegate.allocate(alloc);
+    }",method,
+"    @Override
+    public void lastBytesRead(int bytes) {
+        numberBytesPending = bytes < 0 ? 0 : max(0, numberBytesPending - bytes);
+        delegate.lastBytesRead(bytes);
+    }",method,
+"    @Override
+    public int lastBytesRead() {
+        return delegate.lastBytesRead();
+    }",method,
+"    @Override
+    public void attemptedBytesRead(int bytes) {
+        delegate.attemptedBytesRead(bytes);
+    }",method,
+"    @Override
+    public int attemptedBytesRead() {
+        return delegate.attemptedBytesRead();
+    }",method,
+"    @Override
+    public void readComplete() {
+        delegate.readComplete();
+    }",method,
+"    @Override
+    public boolean continueReading(UncheckedBooleanSupplier maybeMoreDataSupplier) {
+        return delegate.continueReading(maybeMoreDataSupplier);
+    }",method,
+"    @Override
+    public boolean continueReading() {
+        // We must override the supplier which determines if there maybe more data to read.
+        return delegate.continueReading(defaultMaybeMoreDataSupplier);
+    }",method,
+"    void readEOF() {
+        readEOF = true;
+    }",method,
+"    void numberBytesPending(long numberBytesPending) {
+        this.numberBytesPending = numberBytesPending;
+    }",method,
+"    boolean maybeMoreDataToRead() {
+        return numberBytesPending != 0 || readEOF;
+    }",method,
+"    private int guess0() {
+        return (int) min(numberBytesPending, Integer.MAX_VALUE);
+    }",method,
+"  private static boolean isBuiltinFile(@NotNull PsiFile file) {
+    final String name = file.getName();
+    return PyBuiltinCache.BUILTIN_FILE.equals(name) || PyBuiltinCache.BUILTIN_FILE_3K.equals(name);
+  }",method,
+"  protected static <MType> boolean fillFromCall(PyExpression source, PropertyBunch<MType> target) {
+    PyCallExpression call = findPropertyCallSite(source);
+    if (call != null) {
+      PyArgumentList arglist = call.getArgumentList();
+      if (arglist != null) {
+        PyExpression[] accessors = new PyExpression[3];
+        String doc = null;
+        int position = 0;
+        String[] keywords = new String[] { ""fget"", ""fset"", ""fdel"", ""doc"" };
+        for (PyExpression arg: arglist.getArguments()) {
+          int index = -1;
+          if (arg instanceof PyKeywordArgument) {
+            String keyword = ((PyKeywordArgument)arg).getKeyword();
+            index = ArrayUtil.indexOf(keywords, keyword);
+            if (index < 0) {
+              continue;
+            }
+            position = -1;
+          }
+          else if (position >= 0) {
+            index = position;
+            position++;
+          }
+          if (index >= 0) {
+            arg = PyUtil.peelArgument(arg);
+            if (index < 3) {
+              accessors [index] = arg;
+            }
+            else if (index == 3 && arg instanceof PyStringLiteralExpression) {
+              doc = ((PyStringLiteralExpression)arg).getStringValue();
+            }
+          }
+        }
+        target.myGetter = target.translate(accessors[0]);
+        target.mySetter = target.translate(accessors[1]);
+        target.myDeleter = target.translate(accessors[2]);
+        target.myDoc = doc;
+        return true;
+      }
+    }
+    return false;
+  }",method,

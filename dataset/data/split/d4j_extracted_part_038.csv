@@ -1,0 +1,1353 @@
+code_snippet,type,score
+"        if (stylesOffset!=0) {
+            int size=(chunkSize-stylesOffset);
+            if ((size%4)!=0) {
+                throw new IOException(""Style data size is not multiple of 4 (""+size+"")."");
+            }
+            block.m_styles=reader.readIntArray(size/4);
+        }",method,
+"    public int getCount() {
+        return m_stringOffsets!=null?
+                m_stringOffsets.length:
+                0;
+    }",method,
+"    public String getRaw(int index) {
+        if (m_strings == null || index < 0 || index > m_strings.length - 1) {
+            return null;
+        }
+        return m_strings[index];
+    }",method,
+"        if (m_strings == null || index < 0 || index > m_strings.length - 1) {
+            return null;
+        }",method,
+"    public CharSequence get(int index) {
+        return Cast.toCharSequence(getRaw(index));
+    }",method,
+"    public String getHTML(int index) {
+        String raw=getRaw(index);
+        if (raw==null) {
+            return raw;
+        }
+        int[] style=getStyle(index);
+        if (style==null) {
+            return raw;
+        }
+        StringBuilder html=new StringBuilder(raw.length()+32);
+        int offset=0;
+        while (true) {
+            int i=-1;
+            for (int j=0;j!=style.length;j+=3) {
+                if (style[j+1]==-1) {
+                    continue;
+                }
+                if (i==-1 || style[i+1]>style[j+1]) {
+                    i=j;
+                }
+            }
+            int start=((i!=-1)?style[i+1]:raw.length());
+            for (int j=0;j!=style.length;j+=3) {
+                int end=style[j+2];
+                if (end==-1 || end>=start) {
+                    continue;
+                }
+                if (offset<=end) {
+                    html.append(raw,offset,end+1);
+                    offset=end+1;
+                }
+                style[j+2]=-1;
+                html.append('<');
+                html.append('/');
+                html.append(getRaw(style[j]));
+                html.append('>');
+            }
+            if (offset<start) {
+                html.append(raw,offset,start);
+                offset=start;
+            }
+            if (i==-1) {
+                break;
+            }
+            html.append('<');
+            html.append(getRaw(style[i]));
+            html.append('>');
+            style[i+1]=-1;
+        }
+        return html.toString();
+    }",method,
+"        if (raw==null) {
+            return raw;
+        }",method,
+"        if (style==null) {
+            return raw;
+        }",method,
+"        while (true) {
+            int i=-1;
+            for (int j=0;j!=style.length;j+=3) {
+                if (style[j+1]==-1) {
+                    continue;
+                }
+                if (i==-1 || style[i+1]>style[j+1]) {
+                    i=j;
+                }
+            }
+            int start=((i!=-1)?style[i+1]:raw.length());
+            for (int j=0;j!=style.length;j+=3) {
+                int end=style[j+2];
+                if (end==-1 || end>=start) {
+                    continue;
+                }
+                if (offset<=end) {
+                    html.append(raw,offset,end+1);
+                    offset=end+1;
+                }
+                style[j+2]=-1;
+                html.append('<');
+                html.append('/');
+                html.append(getRaw(style[j]));
+                html.append('>');
+            }
+            if (offset<start) {
+                html.append(raw,offset,start);
+                offset=start;
+            }
+            if (i==-1) {
+                break;
+            }
+            html.append('<');
+            html.append(getRaw(style[i]));
+            html.append('>');
+            style[i+1]=-1;
+        }",method,
+"            for (int j=0;j!=style.length;j+=3) {
+                if (style[j+1]==-1) {
+                    continue;
+                }
+                if (i==-1 || style[i+1]>style[j+1]) {
+                    i=j;
+                }
+            }",method,
+"                if (style[j+1]==-1) {
+                    continue;
+                }",method,
+"                if (i==-1 || style[i+1]>style[j+1]) {
+                    i=j;
+                }",method,
+"            for (int j=0;j!=style.length;j+=3) {
+                int end=style[j+2];
+                if (end==-1 || end>=start) {
+                    continue;
+                }
+                if (offset<=end) {
+                    html.append(raw,offset,end+1);
+                    offset=end+1;
+                }
+                style[j+2]=-1;
+                html.append('<');
+                html.append('/');
+                html.append(getRaw(style[j]));
+                html.append('>');
+            }",method,
+"                if (end==-1 || end>=start) {
+                    continue;
+                }",method,
+"                if (offset<=end) {
+                    html.append(raw,offset,end+1);
+                    offset=end+1;
+                }",method,
+"            if (offset<start) {
+                html.append(raw,offset,start);
+                offset=start;
+            }",method,
+"            if (i==-1) {
+                break;
+            }",method,
+"    public int find(String string) {
+        if (m_strings == null) {
+            return -1;
+        }
+        for (int i = 0; i < m_strings.length - 1; i++) {
+            if (m_strings[i].equals(string)) {
+                return i;
+            }
+        }
+        return -1;
+    }",method,
+"        if (m_strings == null) {
+            return -1;
+        }",method,
+"        for (int i = 0; i < m_strings.length - 1; i++) {
+            if (m_strings[i].equals(string)) {
+                return i;
+            }
+        }",method,
+"    private StringBlock() {
+    }",method,
+"    private int[] getStyle(int index) {
+        if (m_styleOffsets==null || m_styles==null ||
+                index>=m_styleOffsets.length)
+        {
+            return null;
+        }
+        int offset=m_styleOffsets[index]/4;
+        int style[];
+        {
+            int count=0;
+            for (int i=offset;i<m_styles.length;++i) {
+                if (m_styles[i]==-1) {
+                    break;
+                }
+                count+=1;
+            }
+            if (count==0 || (count%3)!=0) {
+                return null;
+            }
+            style=new int[count];
+        }
+        for (int i=offset,j=0;i<m_styles.length;) {
+            if (m_styles[i]==-1) {
+                break;
+            }
+            style[j++]=m_styles[i++];
+        }
+        return style;
+    }",method,
+"        if (m_styleOffsets==null || m_styles==null ||
+                index>=m_styleOffsets.length)
+        {
+            return null;
+        }",method,
+"            for (int i=offset;i<m_styles.length;++i) {
+                if (m_styles[i]==-1) {
+                    break;
+                }
+                count+=1;
+            }",method,
+"                if (m_styles[i]==-1) {
+                    break;
+                }",method,
+"        for (int i=offset,j=0;i<m_styles.length;) {
+            if (m_styles[i]==-1) {
+                break;
+            }
+            style[j++]=m_styles[i++];
+        }",method,
+"            if (m_styles[i]==-1) {
+                break;
+            }",method,
+"    private int decodeLengthUtf8(ByteBuffer buffer) {
+        int length = buffer.get();
+        if ((length & 0x8000) != 0) {
+            length = ((length & 0x7FFF) << 16) | buffer.get();
+        } else {
+            // Advance past the 2nd useless duplicate length byte.
+            buffer.get();
+        }
+        return length;
+    }",method,
+"    private int decodeLength(ByteBuffer byteBuffer) {
+        return m_isUtf8 ? decodeLengthUtf8(byteBuffer) : decodeLengthUtf16(byteBuffer);
+    }",method,
+"    private static int decodeLengthUtf16(ByteBuffer buffer) {
+        int length = buffer.get();
+        if ((length & 0x80) != 0) {
+            length = ((length & 0x7F) << 8) | buffer.get();
+        }
+        return length;
+    }",method,
+"    private String stringAt(int index) {
+        // Determine the offset from the start of the string pool.
+        int offset = m_stringOffsets[index];
+        // For convenience, wrap the string pool in ByteBuffer
+        // so that it will handle advancing the buffer index.
+        ByteBuffer buffer =
+                ByteBuffer.wrap(m_stringPool, offset, m_stringPool.length - offset)
+                        .order(ByteOrder.BIG_ENDIAN);
+        // Now get the decoded string length.
+        int length = decodeLength(buffer);
+        StringBuilder stringBuilder = new StringBuilder();
+        for (int i = 0; i < length; i++) {
+            if (m_isUtf8) {
+                stringBuilder.append((char) buffer.get());
+            } else {
+                int byte1 = buffer.get();
+                int byte2 = buffer.get();
+                stringBuilder.append((char) (byte2 | byte1));
+            }
+        }
+        return stringBuilder.toString();
+    }",method,
+"        for (int i = 0; i < length; i++) {
+            if (m_isUtf8) {
+                stringBuilder.append((char) buffer.get());
+            } else {
+                int byte1 = buffer.get();
+                int byte2 = buffer.get();
+                stringBuilder.append((char) (byte2 | byte1));
+            }
+        }",method,
+"            if (m_isUtf8) {
+                stringBuilder.append((char) buffer.get());
+            }",method,
+"public class AWTPathProducer implements PathHandler, ShapeProducer {
+    protected ExtendedGeneralPath path;
+    protected float currentX;
+    protected float currentY;
+    protected float xCenter;
+    protected float yCenter;
+    protected int windingRule;
+    public static Shape createShape(Reader r, int wr)
+        throws IOException,
+               ParseException {
+        PathParser p = new PathParser();
+        AWTPathProducer ph = new AWTPathProducer();
+        ph.setWindingRule(wr);
+        p.setPathHandler(ph);
+        p.parse(r);
+        return ph.getShape();
+    }
+    public void setWindingRule(int i) {
+        windingRule = i;
+    }
+    public int getWindingRule() {
+        return windingRule;
+    }
+    public Shape getShape() {
+        return path;
+    }
+    public void startPath() throws ParseException {
+        currentX = 0;
+        currentY = 0;
+        xCenter = 0;
+        yCenter = 0;
+        path = new ExtendedGeneralPath(windingRule);
+    }
+    public void endPath() throws ParseException {
+    }
+    public void movetoRel(float x, float y) throws ParseException {
+        path.moveTo(xCenter = currentX += x, yCenter = currentY += y);
+    }
+    public void movetoAbs(float x, float y) throws ParseException {
+        path.moveTo(xCenter = currentX = x, yCenter = currentY = y);
+    }
+    public void closePath() throws ParseException {
+        path.closePath();
+        Point2D pt = path.getCurrentPoint();
+        currentX = (float)pt.getX();
+        currentY = (float)pt.getY();
+    }
+    public void linetoRel(float x, float y) throws ParseException {
+        path.lineTo(xCenter = currentX += x, yCenter = currentY += y);
+    }
+    public void linetoAbs(float x, float y) throws ParseException {
+        path.lineTo(xCenter = currentX = x, yCenter = currentY = y);
+    }
+    public void linetoHorizontalRel(float x) throws ParseException {
+        path.lineTo(xCenter = currentX += x, yCenter = currentY);
+    }
+    public void linetoHorizontalAbs(float x) throws ParseException {
+        path.lineTo(xCenter = currentX = x, yCenter = currentY);
+    }
+    public void linetoVerticalRel(float y) throws ParseException {
+        path.lineTo(xCenter = currentX, yCenter = currentY += y);
+    }
+    public void linetoVerticalAbs(float y) throws ParseException {
+        path.lineTo(xCenter = currentX, yCenter = currentY = y);
+    }
+    public void curvetoCubicRel(float x1, float y1,
+                                float x2, float y2,
+                                float x, float y) throws ParseException {
+        path.curveTo(currentX + x1, currentY + y1,
+                     xCenter = currentX + x2, yCenter = currentY + y2,
+                     currentX += x, currentY += y);
+    }
+    public void curvetoCubicAbs(float x1, float y1,
+                                float x2, float y2,
+                                float x, float y) throws ParseException {
+        path.curveTo(x1, y1, xCenter = x2, yCenter = y2, currentX = x,
+                     currentY = y);
+    }
+    public void curvetoCubicSmoothRel(float x2, float y2,
+                                      float x, float y) throws ParseException {
+        path.curveTo(currentX * 2 - xCenter,
+                     currentY * 2 - yCenter,
+                     xCenter = currentX + x2,
+                     yCenter = currentY + y2,
+                     currentX += x,
+                     currentY += y);
+    }
+    public void curvetoCubicSmoothAbs(float x2, float y2,
+                                      float x, float y) throws ParseException {
+        path.curveTo(currentX * 2 - xCenter,
+                     currentY * 2 - yCenter,
+                     xCenter = x2,
+                     yCenter = y2,
+                     currentX = x,
+                     currentY = y);
+    }
+    public void curvetoQuadraticRel(float x1, float y1,
+                                    float x, float y) throws ParseException {
+        path.quadTo(xCenter = currentX + x1, yCenter = currentY + y1,
+                    currentX += x, currentY += y);
+    }
+    public void curvetoQuadraticAbs(float x1, float y1,
+                                    float x, float y) throws ParseException {
+        path.quadTo(xCenter = x1, yCenter = y1, currentX = x, currentY = y);
+    }
+    public void curvetoQuadraticSmoothRel(float x, float y)
+        throws ParseException {
+        path.quadTo(xCenter = currentX * 2 - xCenter,
+                    yCenter = currentY * 2 - yCenter,
+                    currentX += x,
+                    currentY += y);
+    }
+    public void curvetoQuadraticSmoothAbs(float x, float y)
+        throws ParseException {
+        path.quadTo(xCenter = currentX * 2 - xCenter,
+                    yCenter = currentY * 2 - yCenter,
+                    currentX = x,
+                    currentY = y);
+    }
+    public void arcRel(float rx, float ry,
+                       float xAxisRotation,
+                       boolean largeArcFlag, boolean sweepFlag,
+                       float x, float y) throws ParseException {
+        path.arcTo(rx, ry, xAxisRotation, largeArcFlag, sweepFlag,
+                   xCenter = currentX += x, yCenter = currentY += y);
+    }
+    public void arcAbs(float rx, float ry,
+                       float xAxisRotation,
+                       boolean largeArcFlag, boolean sweepFlag,
+                       float x, float y) throws ParseException {
+        path.arcTo(rx, ry, xAxisRotation, largeArcFlag, sweepFlag,
+                   xCenter = currentX = x, yCenter = currentY = y);
+    }
+}",class,
+"    public static Shape createShape(Reader r, int wr)
+        throws IOException,
+               ParseException {
+        PathParser p = new PathParser();
+        AWTPathProducer ph = new AWTPathProducer();
+        ph.setWindingRule(wr);
+        p.setPathHandler(ph);
+        p.parse(r);
+        return ph.getShape();
+    }",method,
+"    public void setWindingRule(int i) {
+        windingRule = i;
+    }",method,
+"    public int getWindingRule() {
+        return windingRule;
+    }",method,
+"    public Shape getShape() {
+        return path;
+    }",method,
+"    public void startPath() throws ParseException {
+        currentX = 0;
+        currentY = 0;
+        xCenter = 0;
+        yCenter = 0;
+        path = new ExtendedGeneralPath(windingRule);
+    }",method,
+"    public void endPath() throws ParseException {
+    }",method,
+"    public void movetoRel(float x, float y) throws ParseException {
+        path.moveTo(xCenter = currentX += x, yCenter = currentY += y);
+    }",method,
+"    public void movetoAbs(float x, float y) throws ParseException {
+        path.moveTo(xCenter = currentX = x, yCenter = currentY = y);
+    }",method,
+"    public void closePath() throws ParseException {
+        path.closePath();
+        Point2D pt = path.getCurrentPoint();
+        currentX = (float)pt.getX();
+        currentY = (float)pt.getY();
+    }",method,
+"    public void linetoRel(float x, float y) throws ParseException {
+        path.lineTo(xCenter = currentX += x, yCenter = currentY += y);
+    }",method,
+"    public void linetoAbs(float x, float y) throws ParseException {
+        path.lineTo(xCenter = currentX = x, yCenter = currentY = y);
+    }",method,
+"    public void linetoHorizontalRel(float x) throws ParseException {
+        path.lineTo(xCenter = currentX += x, yCenter = currentY);
+    }",method,
+"    public void linetoHorizontalAbs(float x) throws ParseException {
+        path.lineTo(xCenter = currentX = x, yCenter = currentY);
+    }",method,
+"    public void linetoVerticalRel(float y) throws ParseException {
+        path.lineTo(xCenter = currentX, yCenter = currentY += y);
+    }",method,
+"    public void linetoVerticalAbs(float y) throws ParseException {
+        path.lineTo(xCenter = currentX, yCenter = currentY = y);
+    }",method,
+"    public void curvetoCubicRel(float x1, float y1,
+                                float x2, float y2,
+                                float x, float y) throws ParseException {
+        path.curveTo(currentX + x1, currentY + y1,
+                     xCenter = currentX + x2, yCenter = currentY + y2,
+                     currentX += x, currentY += y);
+    }",method,
+"    public void curvetoCubicAbs(float x1, float y1,
+                                float x2, float y2,
+                                float x, float y) throws ParseException {
+        path.curveTo(x1, y1, xCenter = x2, yCenter = y2, currentX = x,
+                     currentY = y);
+    }",method,
+"    public void curvetoCubicSmoothRel(float x2, float y2,
+                                      float x, float y) throws ParseException {
+        path.curveTo(currentX * 2 - xCenter,
+                     currentY * 2 - yCenter,
+                     xCenter = currentX + x2,
+                     yCenter = currentY + y2,
+                     currentX += x,
+                     currentY += y);
+    }",method,
+"    public void curvetoCubicSmoothAbs(float x2, float y2,
+                                      float x, float y) throws ParseException {
+        path.curveTo(currentX * 2 - xCenter,
+                     currentY * 2 - yCenter,
+                     xCenter = x2,
+                     yCenter = y2,
+                     currentX = x,
+                     currentY = y);
+    }",method,
+"    public void curvetoQuadraticRel(float x1, float y1,
+                                    float x, float y) throws ParseException {
+        path.quadTo(xCenter = currentX + x1, yCenter = currentY + y1,
+                    currentX += x, currentY += y);
+    }",method,
+"    public void curvetoQuadraticAbs(float x1, float y1,
+                                    float x, float y) throws ParseException {
+        path.quadTo(xCenter = x1, yCenter = y1, currentX = x, currentY = y);
+    }",method,
+"    public void curvetoQuadraticSmoothRel(float x, float y)
+        throws ParseException {
+        path.quadTo(xCenter = currentX * 2 - xCenter,
+                    yCenter = currentY * 2 - yCenter,
+                    currentX += x,
+                    currentY += y);
+    }",method,
+"    public void curvetoQuadraticSmoothAbs(float x, float y)
+        throws ParseException {
+        path.quadTo(xCenter = currentX * 2 - xCenter,
+                    yCenter = currentY * 2 - yCenter,
+                    currentX = x,
+                    currentY = y);
+    }",method,
+"    public void arcRel(float rx, float ry,
+                       float xAxisRotation,
+                       boolean largeArcFlag, boolean sweepFlag,
+                       float x, float y) throws ParseException {
+        path.arcTo(rx, ry, xAxisRotation, largeArcFlag, sweepFlag,
+                   xCenter = currentX += x, yCenter = currentY += y);
+    }",method,
+"    public void arcAbs(float rx, float ry,
+                       float xAxisRotation,
+                       boolean largeArcFlag, boolean sweepFlag,
+                       float x, float y) throws ParseException {
+        path.arcTo(rx, ry, xAxisRotation, largeArcFlag, sweepFlag,
+                   xCenter = currentX = x, yCenter = currentY = y);
+    }",method,
+"  public static void addFromImportStatement(@NotNull PsiFile file,
+                                            @NotNull PyFromImportStatement newImport,
+                                            @Nullable ImportPriority priority,
+                                            @Nullable PsiElement anchor) {
+    try {
+      final PyImportStatementBase parentImport = PsiTreeUtil.getParentOfType(anchor, PyImportStatementBase.class, false);
+      final InjectedLanguageManager manager = InjectedLanguageManager.getInstance(file.getProject());
+      final PsiLanguageInjectionHost injectionHost = manager.getInjectionHost(file);
+      final boolean insideDoctest = file instanceof PyDocstringFile &&
+                                    injectionHost != null &&
+                                    DocStringUtil.getParentDefinitionDocString(injectionHost) == injectionHost;
+      final PsiElement insertParent;
+      if (parentImport != null && parentImport.getContainingFile() == file) {
+        insertParent = parentImport.getParent();
+      }
+      else if (injectionHost != null && !insideDoctest) {
+        insertParent = manager.getTopLevelFile(file);
+      }
+      else {
+        insertParent = file;
+      }
+      if (insideDoctest) {
+        final PsiElement element = insertParent.addBefore(newImport, getInsertPosition(insertParent, newImport, priority));
+        PsiElement whitespace = element.getNextSibling();
+        if (!(whitespace instanceof PsiWhiteSpace)) {
+          whitespace = PsiParserFacade.SERVICE.getInstance(file.getProject()).createWhiteSpaceFromText(""  >>> "");
+        }
+        insertParent.addBefore(whitespace, element);
+      }
+      else if (anchor instanceof PyImportStatementBase) {
+        insertParent.addAfter(newImport, anchor);
+      }
+      else {
+        insertParent.addBefore(newImport, getInsertPosition(insertParent, newImport, priority));
+      }
+    }
+    catch (IncorrectOperationException e) {
+      LOG.error(e);
+    }
+  }",method,
+"      else if (injectionHost != null && !insideDoctest) {
+        insertParent = manager.getTopLevelFile(file);
+      }",method,
+"      if (insideDoctest) {
+        final PsiElement element = insertParent.addBefore(newImport, getInsertPosition(insertParent, newImport, priority));
+        PsiElement whitespace = element.getNextSibling();
+        if (!(whitespace instanceof PsiWhiteSpace)) {
+          whitespace = PsiParserFacade.SERVICE.getInstance(file.getProject()).createWhiteSpaceFromText(""  >>> "");
+        }
+        insertParent.addBefore(whitespace, element);
+      }",method,
+"      else if (anchor instanceof PyImportStatementBase) {
+        insertParent.addAfter(newImport, anchor);
+      }",method,
+"    catch (IncorrectOperationException e) {
+      LOG.error(e);
+    }",method,
+"final class UnsafeHeapSwappedByteBuf extends AbstractUnsafeSwappedByteBuf {
+    UnsafeHeapSwappedByteBuf(AbstractByteBuf buf) {
+        super(buf);
+    }
+    private static int idx(ByteBuf wrapped, int index) {
+        return wrapped.arrayOffset() + index;
+    }
+    @Override
+    protected long _getLong(AbstractByteBuf wrapped, int index) {
+        return PlatformDependent.getLong(wrapped.array(), idx(wrapped, index));
+    }
+    @Override
+    protected int _getInt(AbstractByteBuf wrapped, int index) {
+        return PlatformDependent.getInt(wrapped.array(), idx(wrapped, index));
+    }
+    @Override
+    protected short _getShort(AbstractByteBuf wrapped, int index) {
+        return PlatformDependent.getShort(wrapped.array(), idx(wrapped, index));
+    }
+    @Override
+    protected void _setShort(AbstractByteBuf wrapped, int index, short value) {
+        PlatformDependent.putShort(wrapped.array(), idx(wrapped, index), value);
+    }
+    @Override
+    protected void _setInt(AbstractByteBuf wrapped, int index, int value) {
+        PlatformDependent.putInt(wrapped.array(), idx(wrapped, index), value);
+    }
+    @Override
+    protected void _setLong(AbstractByteBuf wrapped, int index, long value) {
+        PlatformDependent.putLong(wrapped.array(), idx(wrapped, index), value);
+    }
+}",class,
+"    UnsafeHeapSwappedByteBuf(AbstractByteBuf buf) {
+        super(buf);
+    }",method,
+"    private static int idx(ByteBuf wrapped, int index) {
+        return wrapped.arrayOffset() + index;
+    }",method,
+"    @Override
+    protected long _getLong(AbstractByteBuf wrapped, int index) {
+        return PlatformDependent.getLong(wrapped.array(), idx(wrapped, index));
+    }",method,
+"    @Override
+    protected int _getInt(AbstractByteBuf wrapped, int index) {
+        return PlatformDependent.getInt(wrapped.array(), idx(wrapped, index));
+    }",method,
+"    @Override
+    protected short _getShort(AbstractByteBuf wrapped, int index) {
+        return PlatformDependent.getShort(wrapped.array(), idx(wrapped, index));
+    }",method,
+"    @Override
+    protected void _setShort(AbstractByteBuf wrapped, int index, short value) {
+        PlatformDependent.putShort(wrapped.array(), idx(wrapped, index), value);
+    }",method,
+"    @Override
+    protected void _setInt(AbstractByteBuf wrapped, int index, int value) {
+        PlatformDependent.putInt(wrapped.array(), idx(wrapped, index), value);
+    }",method,
+"    @Override
+    protected void _setLong(AbstractByteBuf wrapped, int index, long value) {
+        PlatformDependent.putLong(wrapped.array(), idx(wrapped, index), value);
+    }",method,
+"public class clonesrv5
+{
+    private ZContext ctx;               //  Context wrapper
+    private Map<String, kvmsg> kvmap;   //  Key-value store
+    private ZLoop loop;                 //  zloop reactor
+    private int port;                   //  Main port we're working on
+    private long sequence;              //  How many updates we're at
+    private Socket snapshot;            //  Handle snapshot requests
+    private Socket publisher;           //  Publish updates to clients
+    private Socket collector;           //  Collect updates from clients
+    //  .split snapshot handler
+    //  This is the reactor handler for the snapshot socket; it accepts
+    //  just the ICANHAZ? request and replies with a state snapshot ending
+    //  with a KTHXBAI message:
+    private static class Snapshots implements IZLoopHandler
+    {
+        @Override
+        public int handle(ZLoop loop, PollItem item, Object arg)
+        {
+            clonesrv5 srv = (clonesrv5) arg;
+            Socket socket = item.getSocket();
+            byte[] identity = socket.recv();
+            if (identity != null) {
+                //  Request is in second frame of message
+                String request = socket.recvStr();
+                String subtree = null;
+                if (request.equals(""ICANHAZ?"")) {
+                    subtree = socket.recvStr();
+                }
+                else
+                    System.out.printf(""E: bad request, aborting\n"");
+                if (subtree != null) {
+                    //  Send state socket to client
+                    for (Entry<String, kvmsg> entry: srv.kvmap.entrySet()) {
+                        sendSingle(entry.getValue(), identity, subtree, socket);
+                    }
+                    //  Now send END message with getSequence number
+                    System.out.printf(""I: sending shapshot=%d\n"", srv.sequence);
+                    socket.send(identity, ZMQ.SNDMORE);
+                    kvmsg kvmsg = new kvmsg(srv.sequence);
+                    kvmsg.setKey(""KTHXBAI"");
+                    kvmsg.setBody(subtree.getBytes());
+                    kvmsg.send(socket);
+                    kvmsg.destroy();
+                }
+            }
+            return 0;
+        }
+    }
+    //  .split collect updates
+    //  We store each update with a new getSequence number, and if necessary, a
+    //  time-to-live. We publish updates immediately on our publisher socket:
+    private static class Collector implements IZLoopHandler
+    {
+        @Override
+        public int handle(ZLoop loop, PollItem item, Object arg)
+        {
+            clonesrv5 srv = (clonesrv5) arg;
+            Socket socket = item.getSocket();
+            kvmsg msg = kvmsg.recv(socket);
+            if (msg != null) {
+                msg.setSequence(++srv.sequence);
+                msg.send(srv.publisher);
+                int ttl = Integer.parseInt(msg.getProp(""ttl""));
+                if (ttl > 0)
+                    msg.setProp(""ttl"",
+                            ""%d"", System.currentTimeMillis() + ttl * 1000);
+                msg.store(srv.kvmap);
+                System.out.printf(""I: publishing update=%d\n"", srv.sequence);
+            }
+            return 0;
+        }
+    }
+    private static class FlushTTL implements IZLoopHandler
+    {
+        @Override
+        public int handle(ZLoop loop, PollItem item, Object arg)
+        {
+            clonesrv5 srv = (clonesrv5) arg;
+            if (srv.kvmap != null) {
+                for (kvmsg msg: new ArrayList<kvmsg>(srv.kvmap.values())) {
+                    srv.flushSingle(msg);
+                }
+            }
+            return 0;
+        }
+    }
+    public clonesrv5 ()
+    {
+        port = 5556;
+        ctx = new ZContext();
+        kvmap = new HashMap<String, kvmsg>();
+        loop = new ZLoop();
+        loop.verbose(false);
+        //  Set up our clone server sockets
+        snapshot  = ctx.createSocket(ZMQ.ROUTER);
+        snapshot.bind(String.format(""tcp://*:%d"", port));
+        publisher = ctx.createSocket(ZMQ.PUB);
+        publisher.bind(String.format(""tcp://*:%d"", port + 1));
+        collector = ctx.createSocket(ZMQ.PULL);
+        collector.bind(String.format(""tcp://*:%d"", port + 2));
+    }
+    public void run()
+    {
+        //  Register our handlers with reactor
+        PollItem poller = new PollItem(snapshot, ZMQ.Poller.POLLIN);
+        loop.addPoller(poller, new Snapshots(), this);
+        poller = new PollItem(collector, ZMQ.Poller.POLLIN);
+        loop.addPoller(poller, new Collector(), this);
+        loop.addTimer(1000, 0, new FlushTTL(), this);
+        loop.start();
+        loop.destroy();
+        ctx.destroy();
+    }
+    //  We call this function for each getKey-value pair in our hash table
+    private static void sendSingle(kvmsg msg, byte[] identity, String subtree, Socket socket)
+    {
+        if (subtree.equals(msg.getKey())) {
+            socket.send (identity,    //  Choose recipient
+                            ZMQ.SNDMORE);
+            msg.send(socket);
+        }
+    }
+    //  .split flush ephemeral values
+    //  At regular intervals, we flush ephemeral values that have expired. This
+    //  could be slow on very large data sets:
+    //  If getKey-value pair has expired, delete it and publish the
+    //  fact to listening clients.
+    private void flushSingle(kvmsg msg)
+    {
+        long ttl = Long.parseLong(msg.getProp(""ttl""));
+        if (ttl > 0 && System.currentTimeMillis() >= ttl) {
+            msg.setSequence(++sequence);
+            msg.setBody("""".getBytes());
+            msg.send(publisher);
+            msg.store(kvmap);
+            System.out.printf(""I: publishing delete=%d\n"", sequence);
+        }
+    }",class,
+"    private static class Snapshots implements IZLoopHandler
+    {
+        @Override
+        public int handle(ZLoop loop, PollItem item, Object arg)
+        {
+            clonesrv5 srv = (clonesrv5) arg;
+            Socket socket = item.getSocket();
+            byte[] identity = socket.recv();
+            if (identity != null) {
+                //  Request is in second frame of message
+                String request = socket.recvStr();
+                String subtree = null;
+                if (request.equals(""ICANHAZ?"")) {
+                    subtree = socket.recvStr();
+                }
+                else
+                    System.out.printf(""E: bad request, aborting\n"");
+                if (subtree != null) {
+                    //  Send state socket to client
+                    for (Entry<String, kvmsg> entry: srv.kvmap.entrySet()) {
+                        sendSingle(entry.getValue(), identity, subtree, socket);
+                    }
+                    //  Now send END message with getSequence number
+                    System.out.printf(""I: sending shapshot=%d\n"", srv.sequence);
+                    socket.send(identity, ZMQ.SNDMORE);
+                    kvmsg kvmsg = new kvmsg(srv.sequence);
+                    kvmsg.setKey(""KTHXBAI"");
+                    kvmsg.setBody(subtree.getBytes());
+                    kvmsg.send(socket);
+                    kvmsg.destroy();
+                }
+            }
+            return 0;
+        }
+    }",class,
+"    private static class Collector implements IZLoopHandler
+    {
+        @Override
+        public int handle(ZLoop loop, PollItem item, Object arg)
+        {
+            clonesrv5 srv = (clonesrv5) arg;
+            Socket socket = item.getSocket();
+            kvmsg msg = kvmsg.recv(socket);
+            if (msg != null) {
+                msg.setSequence(++srv.sequence);
+                msg.send(srv.publisher);
+                int ttl = Integer.parseInt(msg.getProp(""ttl""));
+                if (ttl > 0)
+                    msg.setProp(""ttl"",
+                            ""%d"", System.currentTimeMillis() + ttl * 1000);
+                msg.store(srv.kvmap);
+                System.out.printf(""I: publishing update=%d\n"", srv.sequence);
+            }
+            return 0;
+        }
+    }",class,
+"    private static class FlushTTL implements IZLoopHandler
+    {
+        @Override
+        public int handle(ZLoop loop, PollItem item, Object arg)
+        {
+            clonesrv5 srv = (clonesrv5) arg;
+            if (srv.kvmap != null) {
+                for (kvmsg msg: new ArrayList<kvmsg>(srv.kvmap.values())) {
+                    srv.flushSingle(msg);
+                }
+            }
+            return 0;
+        }
+    }",class,
+"        @Override
+        public int handle(ZLoop loop, PollItem item, Object arg)
+        {
+            clonesrv5 srv = (clonesrv5) arg;
+            Socket socket = item.getSocket();
+            byte[] identity = socket.recv();
+            if (identity != null) {
+                //  Request is in second frame of message
+                String request = socket.recvStr();
+                String subtree = null;
+                if (request.equals(""ICANHAZ?"")) {
+                    subtree = socket.recvStr();
+                }
+                else
+                    System.out.printf(""E: bad request, aborting\n"");
+                if (subtree != null) {
+                    //  Send state socket to client
+                    for (Entry<String, kvmsg> entry: srv.kvmap.entrySet()) {
+                        sendSingle(entry.getValue(), identity, subtree, socket);
+                    }
+                    //  Now send END message with getSequence number
+                    System.out.printf(""I: sending shapshot=%d\n"", srv.sequence);
+                    socket.send(identity, ZMQ.SNDMORE);
+                    kvmsg kvmsg = new kvmsg(srv.sequence);
+                    kvmsg.setKey(""KTHXBAI"");
+                    kvmsg.setBody(subtree.getBytes());
+                    kvmsg.send(socket);
+                    kvmsg.destroy();
+                }
+            }
+            return 0;
+        }",method,
+"            if (identity != null) {
+                //  Request is in second frame of message
+                String request = socket.recvStr();
+                String subtree = null;
+                if (request.equals(""ICANHAZ?"")) {
+                    subtree = socket.recvStr();
+                }
+                else
+                    System.out.printf(""E: bad request, aborting\n"");
+                if (subtree != null) {
+                    //  Send state socket to client
+                    for (Entry<String, kvmsg> entry: srv.kvmap.entrySet()) {
+                        sendSingle(entry.getValue(), identity, subtree, socket);
+                    }
+                    //  Now send END message with getSequence number
+                    System.out.printf(""I: sending shapshot=%d\n"", srv.sequence);
+                    socket.send(identity, ZMQ.SNDMORE);
+                    kvmsg kvmsg = new kvmsg(srv.sequence);
+                    kvmsg.setKey(""KTHXBAI"");
+                    kvmsg.setBody(subtree.getBytes());
+                    kvmsg.send(socket);
+                    kvmsg.destroy();
+                }
+            }",method,
+"                if (subtree != null) {
+                    //  Send state socket to client
+                    for (Entry<String, kvmsg> entry: srv.kvmap.entrySet()) {
+                        sendSingle(entry.getValue(), identity, subtree, socket);
+                    }
+                    //  Now send END message with getSequence number
+                    System.out.printf(""I: sending shapshot=%d\n"", srv.sequence);
+                    socket.send(identity, ZMQ.SNDMORE);
+                    kvmsg kvmsg = new kvmsg(srv.sequence);
+                    kvmsg.setKey(""KTHXBAI"");
+                    kvmsg.setBody(subtree.getBytes());
+                    kvmsg.send(socket);
+                    kvmsg.destroy();
+                }",method,
+"        @Override
+        public int handle(ZLoop loop, PollItem item, Object arg)
+        {
+            clonesrv5 srv = (clonesrv5) arg;
+            Socket socket = item.getSocket();
+            kvmsg msg = kvmsg.recv(socket);
+            if (msg != null) {
+                msg.setSequence(++srv.sequence);
+                msg.send(srv.publisher);
+                int ttl = Integer.parseInt(msg.getProp(""ttl""));
+                if (ttl > 0)
+                    msg.setProp(""ttl"",
+                            ""%d"", System.currentTimeMillis() + ttl * 1000);
+                msg.store(srv.kvmap);
+                System.out.printf(""I: publishing update=%d\n"", srv.sequence);
+            }
+            return 0;
+        }",method,
+"            if (msg != null) {
+                msg.setSequence(++srv.sequence);
+                msg.send(srv.publisher);
+                int ttl = Integer.parseInt(msg.getProp(""ttl""));
+                if (ttl > 0)
+                    msg.setProp(""ttl"",
+                            ""%d"", System.currentTimeMillis() + ttl * 1000);
+                msg.store(srv.kvmap);
+                System.out.printf(""I: publishing update=%d\n"", srv.sequence);
+            }",method,
+"        @Override
+        public int handle(ZLoop loop, PollItem item, Object arg)
+        {
+            clonesrv5 srv = (clonesrv5) arg;
+            if (srv.kvmap != null) {
+                for (kvmsg msg: new ArrayList<kvmsg>(srv.kvmap.values())) {
+                    srv.flushSingle(msg);
+                }
+            }
+            return 0;
+        }",method,
+"            if (srv.kvmap != null) {
+                for (kvmsg msg: new ArrayList<kvmsg>(srv.kvmap.values())) {
+                    srv.flushSingle(msg);
+                }
+            }",method,
+"    public clonesrv5 ()
+    {
+        port = 5556;
+        ctx = new ZContext();
+        kvmap = new HashMap<String, kvmsg>();
+        loop = new ZLoop();
+        loop.verbose(false);
+        //  Set up our clone server sockets
+        snapshot  = ctx.createSocket(ZMQ.ROUTER);
+        snapshot.bind(String.format(""tcp://*:%d"", port));
+        publisher = ctx.createSocket(ZMQ.PUB);
+        publisher.bind(String.format(""tcp://*:%d"", port + 1));
+        collector = ctx.createSocket(ZMQ.PULL);
+        collector.bind(String.format(""tcp://*:%d"", port + 2));
+    }
+    public void run()
+    {
+        //  Register our handlers with reactor
+        PollItem poller = new PollItem(snapshot, ZMQ.Poller.POLLIN);
+        loop.addPoller(poller, new Snapshots(), this);
+        poller = new PollItem(collector, ZMQ.Poller.POLLIN);
+        loop.addPoller(poller, new Collector(), this);
+        loop.addTimer(1000, 0, new FlushTTL(), this);
+        loop.start();
+        loop.destroy();
+        ctx.destroy();
+    }
+    //  We call this function for each getKey-value pair in our hash table
+    private static void sendSingle(kvmsg msg, byte[] identity, String subtree, Socket socket)
+    {
+        if (subtree.equals(msg.getKey())) {
+            socket.send (identity,    //  Choose recipient
+                            ZMQ.SNDMORE);
+            msg.send(socket);
+        }
+    }
+    //  .split flush ephemeral values
+    //  At regular intervals, we flush ephemeral values that have expired. This
+    //  could be slow on very large data sets:
+    //  If getKey-value pair has expired, delete it and publish the
+    //  fact to listening clients.
+    private void flushSingle(kvmsg msg)
+    {
+        long ttl = Long.parseLong(msg.getProp(""ttl""));
+        if (ttl > 0 && System.currentTimeMillis() >= ttl) {
+            msg.setSequence(++sequence);
+            msg.setBody("""".getBytes());
+            msg.send(publisher);
+            msg.store(kvmap);
+            System.out.printf(""I: publishing delete=%d\n"", sequence);
+        }",method,
+"    public void run()
+    {
+        //  Register our handlers with reactor
+        PollItem poller = new PollItem(snapshot, ZMQ.Poller.POLLIN);
+        loop.addPoller(poller, new Snapshots(), this);
+        poller = new PollItem(collector, ZMQ.Poller.POLLIN);
+        loop.addPoller(poller, new Collector(), this);
+        loop.addTimer(1000, 0, new FlushTTL(), this);
+        loop.start();
+        loop.destroy();
+        ctx.destroy();
+    }
+    //  We call this function for each getKey-value pair in our hash table
+    private static void sendSingle(kvmsg msg, byte[] identity, String subtree, Socket socket)
+    {
+        if (subtree.equals(msg.getKey())) {
+            socket.send (identity,    //  Choose recipient
+                            ZMQ.SNDMORE);
+            msg.send(socket);
+        }
+    }
+    //  .split flush ephemeral values
+    //  At regular intervals, we flush ephemeral values that have expired. This
+    //  could be slow on very large data sets:
+    //  If getKey-value pair has expired, delete it and publish the
+    //  fact to listening clients.
+    private void flushSingle(kvmsg msg)
+    {
+        long ttl = Long.parseLong(msg.getProp(""ttl""));
+        if (ttl > 0 && System.currentTimeMillis() >= ttl) {
+            msg.setSequence(++sequence);
+            msg.setBody("""".getBytes());
+            msg.send(publisher);
+            msg.store(kvmap);
+            System.out.printf(""I: publishing delete=%d\n"", sequence);
+        }
+    }
+    public static void main(String[] args)
+    {
+        clonesrv5 srv = new clonesrv5();
+        srv.run();
+    }",method,
+"    private static void sendSingle(kvmsg msg, byte[] identity, String subtree, Socket socket)
+    {
+        if (subtree.equals(msg.getKey())) {
+            socket.send (identity,    //  Choose recipient
+                            ZMQ.SNDMORE);
+            msg.send(socket);
+        }
+    }
+    //  .split flush ephemeral values
+    //  At regular intervals, we flush ephemeral values that have expired. This
+    //  could be slow on very large data sets:
+    //  If getKey-value pair has expired, delete it and publish the
+    //  fact to listening clients.
+    private void flushSingle(kvmsg msg)
+    {
+        long ttl = Long.parseLong(msg.getProp(""ttl""));
+        if (ttl > 0 && System.currentTimeMillis() >= ttl) {
+            msg.setSequence(++sequence);
+            msg.setBody("""".getBytes());
+            msg.send(publisher);
+            msg.store(kvmap);
+            System.out.printf(""I: publishing delete=%d\n"", sequence);
+        }
+    }
+    public static void main(String[] args)
+    {
+        clonesrv5 srv = new clonesrv5();
+        srv.run();
+    }",method,
+"    private void flushSingle(kvmsg msg)
+    {
+        long ttl = Long.parseLong(msg.getProp(""ttl""));
+        if (ttl > 0 && System.currentTimeMillis() >= ttl) {
+            msg.setSequence(++sequence);
+            msg.setBody("""".getBytes());
+            msg.send(publisher);
+            msg.store(kvmap);
+            System.out.printf(""I: publishing delete=%d\n"", sequence);
+        }
+    }
+    public static void main(String[] args)
+    {
+        clonesrv5 srv = new clonesrv5();
+        srv.run();
+    }",method,
+"    public static void main(String[] args)
+    {
+        clonesrv5 srv = new clonesrv5();
+        srv.run();
+    }",method,
+"public class AbstractFutureFallbackAtomicHelperTest extends TestCase {
+  // stash these in static fields to avoid loading them over and over again (speeds up test
+  // execution significantly)
+  private static final ClassLoader NO_UNSAFE =
+      getClassLoader(ImmutableSet.of(sun.misc.Unsafe.class.getName()));
+  private static final ClassLoader NO_ATOMIC_REFERENCE_FIELD_UPDATER =
+      getClassLoader(
+          ImmutableSet.of(
+              sun.misc.Unsafe.class.getName(), AtomicReferenceFieldUpdater.class.getName()));
+  public static TestSuite suite() {
+    // we create a test suite containing a test for every AbstractFutureTest test method and we
+    // set it as the name of the test.  Then in runTest we can reflectively load and invoke the
+    // corresponding method on AbstractFutureTest in the correct classloader.
+    TestSuite suite = new TestSuite(AbstractFutureFallbackAtomicHelperTest.class.getName());
+    for (Method method : AbstractFutureTest.class.getDeclaredMethods()) {
+      if (Modifier.isPublic(method.getModifiers()) && method.getName().startsWith(""test"")) {
+        suite.addTest(
+            TestSuite.createTest(AbstractFutureFallbackAtomicHelperTest.class, method.getName()));
+      }
+    }
+    return suite;
+  }
+  @Override
+  public void runTest() throws Exception {
+    // First ensure that our classloaders are initializing the correct helper versions
+    checkHelperVersion(getClass().getClassLoader(), ""UnsafeAtomicHelper"");
+    checkHelperVersion(NO_UNSAFE, ""SafeAtomicHelper"");
+    checkHelperVersion(NO_ATOMIC_REFERENCE_FIELD_UPDATER, ""SynchronizedHelper"");
+    // Run the corresponding AbstractFutureTest test method in a new classloader that blacklists
+    // certain core jdk classes.
+    ClassLoader oldClassLoader = Thread.currentThread().getContextClassLoader();
+    Thread.currentThread().setContextClassLoader(NO_UNSAFE);
+    try {
+      runTestMethod(NO_UNSAFE);
+    } finally {
+      Thread.currentThread().setContextClassLoader(oldClassLoader);
+    }
+    Thread.currentThread().setContextClassLoader(NO_ATOMIC_REFERENCE_FIELD_UPDATER);
+    try {
+      runTestMethod(NO_ATOMIC_REFERENCE_FIELD_UPDATER);
+      // TODO(lukes): assert that the logs are full of errors
+    } finally {
+      Thread.currentThread().setContextClassLoader(oldClassLoader);
+    }
+  }
+  private void runTestMethod(ClassLoader classLoader) throws Exception {
+    Class<?> test = classLoader.loadClass(AbstractFutureTest.class.getName());
+    test.getMethod(getName()).invoke(test.newInstance());
+  }
+  private void checkHelperVersion(ClassLoader classLoader, String expectedHelperClassName)
+      throws Exception {
+    // Make sure we are actually running with the expected helper implementation
+    Class<?> abstractFutureClass = classLoader.loadClass(AbstractFuture.class.getName());
+    Field helperField = abstractFutureClass.getDeclaredField(""ATOMIC_HELPER"");
+    helperField.setAccessible(true);
+    assertEquals(expectedHelperClassName, helperField.get(null).getClass().getSimpleName());
+  }
+  private static ClassLoader getClassLoader(final Set<String> blacklist) {
+    final String concurrentPackage = SettableFuture.class.getPackage().getName();
+    ClassLoader classLoader = AbstractFutureFallbackAtomicHelperTest.class.getClassLoader();
+    // we delegate to the current classloader so both loaders agree on classes like TestCase
+    return new URLClassLoader(ClassPathUtil.getClassPathUrls(), classLoader) {
+      @Override
+      public Class<?> loadClass(String name) throws ClassNotFoundException {
+        if (blacklist.contains(name)) {
+          throw new ClassNotFoundException(""I'm sorry Dave, I'm afraid I can't do that."");
+        }
+        if (name.startsWith(concurrentPackage)) {
+          Class<?> c = findLoadedClass(name);
+          if (c == null) {
+            return super.findClass(name);
+          }
+          return c;
+        }
+        return super.loadClass(name);
+      }
+    };
+  }
+}",class,
+"  public static TestSuite suite() {
+    // we create a test suite containing a test for every AbstractFutureTest test method and we
+    // set it as the name of the test.  Then in runTest we can reflectively load and invoke the
+    // corresponding method on AbstractFutureTest in the correct classloader.
+    TestSuite suite = new TestSuite(AbstractFutureFallbackAtomicHelperTest.class.getName());
+    for (Method method : AbstractFutureTest.class.getDeclaredMethods()) {
+      if (Modifier.isPublic(method.getModifiers()) && method.getName().startsWith(""test"")) {
+        suite.addTest(
+            TestSuite.createTest(AbstractFutureFallbackAtomicHelperTest.class, method.getName()));
+      }
+    }
+    return suite;
+  }",method,
+"  @Override
+  public void runTest() throws Exception {
+    // First ensure that our classloaders are initializing the correct helper versions
+    checkHelperVersion(getClass().getClassLoader(), ""UnsafeAtomicHelper"");
+    checkHelperVersion(NO_UNSAFE, ""SafeAtomicHelper"");
+    checkHelperVersion(NO_ATOMIC_REFERENCE_FIELD_UPDATER, ""SynchronizedHelper"");
+    // Run the corresponding AbstractFutureTest test method in a new classloader that blacklists
+    // certain core jdk classes.
+    ClassLoader oldClassLoader = Thread.currentThread().getContextClassLoader();
+    Thread.currentThread().setContextClassLoader(NO_UNSAFE);
+    try {
+      runTestMethod(NO_UNSAFE);
+    } finally {
+      Thread.currentThread().setContextClassLoader(oldClassLoader);
+    }
+    Thread.currentThread().setContextClassLoader(NO_ATOMIC_REFERENCE_FIELD_UPDATER);
+    try {
+      runTestMethod(NO_ATOMIC_REFERENCE_FIELD_UPDATER);
+      // TODO(lukes): assert that the logs are full of errors
+    } finally {
+      Thread.currentThread().setContextClassLoader(oldClassLoader);
+    }
+  }",method,
+"  private void runTestMethod(ClassLoader classLoader) throws Exception {
+    Class<?> test = classLoader.loadClass(AbstractFutureTest.class.getName());
+    test.getMethod(getName()).invoke(test.newInstance());
+  }",method,
+"  private void checkHelperVersion(ClassLoader classLoader, String expectedHelperClassName)
+      throws Exception {
+    // Make sure we are actually running with the expected helper implementation
+    Class<?> abstractFutureClass = classLoader.loadClass(AbstractFuture.class.getName());
+    Field helperField = abstractFutureClass.getDeclaredField(""ATOMIC_HELPER"");
+    helperField.setAccessible(true);
+    assertEquals(expectedHelperClassName, helperField.get(null).getClass().getSimpleName());
+  }",method,
+"  private static ClassLoader getClassLoader(final Set<String> blacklist) {
+    final String concurrentPackage = SettableFuture.class.getPackage().getName();
+    ClassLoader classLoader = AbstractFutureFallbackAtomicHelperTest.class.getClassLoader();
+    // we delegate to the current classloader so both loaders agree on classes like TestCase
+    return new URLClassLoader(ClassPathUtil.getClassPathUrls(), classLoader) {
+      @Override
+      public Class<?> loadClass(String name) throws ClassNotFoundException {
+        if (blacklist.contains(name)) {
+          throw new ClassNotFoundException(""I'm sorry Dave, I'm afraid I can't do that."");
+        }
+        if (name.startsWith(concurrentPackage)) {
+          Class<?> c = findLoadedClass(name);
+          if (c == null) {
+            return super.findClass(name);
+          }
+          return c;
+        }
+        return super.loadClass(name);
+      }
+    };
+  }",method,
+"      @Override
+      public Class<?> loadClass(String name) throws ClassNotFoundException {
+        if (blacklist.contains(name)) {
+          throw new ClassNotFoundException(""I'm sorry Dave, I'm afraid I can't do that."");
+        }
+        if (name.startsWith(concurrentPackage)) {
+          Class<?> c = findLoadedClass(name);
+          if (c == null) {
+            return super.findClass(name);
+          }
+          return c;
+        }
+        return super.loadClass(name);
+      }",method,
+"          if (c == null) {
+            return super.findClass(name);
+          }",method,
+"public class NioServerSocketChannel extends AbstractNioChannel {
+  private static final Logger LOGGER = LoggerFactory.getLogger(NioServerSocketChannel.class);
+  private final int port;
+  public NioServerSocketChannel(int port, ChannelHandler handler) throws IOException {
+    super(handler, ServerSocketChannel.open());
+    this.port = port;
+  }
+  @Override
+  public int getInterestedOps() {
+    // being a server socket channel it is interested in accepting connection from remote peers.
+    return SelectionKey.OP_ACCEPT;
+  }
+  @Override
+  public ServerSocketChannel getJavaChannel() {
+    return (ServerSocketChannel) super.getJavaChannel();
+  }
+  @Override
+  public ByteBuffer read(SelectionKey key) throws IOException {
+    SocketChannel socketChannel = (SocketChannel) key.channel();
+    ByteBuffer buffer = ByteBuffer.allocate(1024);
+    int read = socketChannel.read(buffer);
+    buffer.flip();
+    if (read == -1) {
+      throw new IOException(""Socket closed"");
+    }
+    return buffer;
+  }
+  @Override
+  public void bind() throws IOException {
+    ((ServerSocketChannel) getJavaChannel()).socket().bind(
+        new InetSocketAddress(InetAddress.getLocalHost(), port));
+    ((ServerSocketChannel) getJavaChannel()).configureBlocking(false);
+    LOGGER.info(""Bound TCP socket at port: {}"", port);
+  }
+  @Override
+  protected void doWrite(Object pendingWrite, SelectionKey key) throws IOException {
+    ByteBuffer pendingBuffer = (ByteBuffer) pendingWrite;
+    ((SocketChannel) key.channel()).write(pendingBuffer);
+  }
+}",class,
+"  public NioServerSocketChannel(int port, ChannelHandler handler) throws IOException {
+    super(handler, ServerSocketChannel.open());
+    this.port = port;
+  }",method,
+"  @Override
+  public int getInterestedOps() {
+    // being a server socket channel it is interested in accepting connection from remote peers.
+    return SelectionKey.OP_ACCEPT;
+  }",method,
+"  @Override
+  public ServerSocketChannel getJavaChannel() {
+    return (ServerSocketChannel) super.getJavaChannel();
+  }",method,

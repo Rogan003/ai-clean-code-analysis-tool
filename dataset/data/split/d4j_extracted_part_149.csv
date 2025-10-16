@@ -1,0 +1,1365 @@
+code_snippet,type,score
+"	public static void readAndCloseStream(InputStream is) {
+		final byte[] bytes = new byte[DEFAULT_BUFFER_SIZE];
+		try {
+			while (is.read(bytes, 0, DEFAULT_BUFFER_SIZE) != -1);
+		} catch (IOException ignored) {
+		} finally {
+			closeSilently(is);
+		}
+	}",method,
+"	public static void closeSilently(Closeable closeable) {
+		if (closeable != null) {
+			try {
+				closeable.close();
+			} catch (Exception ignored) {
+			}
+		}
+	}",method,
+"		if (closeable != null) {
+			try {
+				closeable.close();
+			} catch (Exception ignored) {
+			}
+		}",method,
+"public class CompressedRefs {
+  @NotNull private final VcsLogStorage myStorage;
+  // maps each commit id to the list of tag ids on this commit
+  @NotNull private final TIntObjectHashMap<TIntArrayList> myTags = new TIntObjectHashMap<>();
+  // maps each commit id to the list of branches on this commit
+  @NotNull private final TIntObjectHashMap<List<VcsRef>> myBranches = new TIntObjectHashMap<>();
+  public CompressedRefs(@NotNull Set<VcsRef> refs, @NotNull VcsLogStorage storage) {
+    myStorage = storage;
+    Ref<VirtualFile> root = new Ref<>();
+    refs.forEach(ref -> {
+      assert root.get() == null || root.get().equals(ref.getRoot()) : ""All references are supposed to be from the single root"";
+      root.set(ref.getRoot());
+      if (ref.getType().isBranch()) {
+        putRef(myBranches, ref, myStorage);
+      }
+      else {
+        putRefIndex(myTags, ref, myStorage);
+      }
+    });
+    myTags.forEachValue(list -> {
+      list.trimToSize();
+      return true;
+    });
+    myStorage.flush();
+  }
+  @NotNull
+  SmartList<VcsRef> refsToCommit(int index) {
+    SmartList<VcsRef> result = new SmartList<>();
+    if (myBranches.containsKey(index)) result.addAll(myBranches.get(index));
+    TIntArrayList tags = myTags.get(index);
+    if (tags != null) {
+      tags.forEach(value -> {
+        result.add(myStorage.getVcsRef(value));
+        return true;
+      });
+    }
+    return result;
+  }
+  @NotNull
+  public Stream<VcsRef> streamBranches() {
+    return TroveUtil.streamValues(myBranches).flatMap(Collection::stream);
+  }
+  @NotNull
+  private Stream<VcsRef> streamTags() {
+    return TroveUtil.streamValues(myTags).flatMapToInt(TroveUtil::stream).mapToObj(myStorage::getVcsRef);
+  }
+  @NotNull
+  public Stream<VcsRef> stream() {
+    return Stream.concat(streamBranches(), streamTags());
+  }
+  @NotNull
+  public Collection<VcsRef> getRefs() {
+    return new AbstractCollection<VcsRef>() {
+      private final Supplier<Collection<VcsRef>> myLoadedRefs =
+        Suppliers.memoize(() -> CompressedRefs.this.stream().collect(Collectors.toList()));
+      @NotNull
+      @Override
+      public Iterator<VcsRef> iterator() {
+        return myLoadedRefs.get().iterator();
+      }
+      @Override
+      public int size() {
+        return myLoadedRefs.get().size();
+      }
+    };
+  }
+  @NotNull
+  public Collection<Integer> getCommits() {
+    Set<Integer> result = ContainerUtil.newHashSet();
+    TroveUtil.streamKeys(myBranches).forEach(result::add);
+    TroveUtil.streamKeys(myTags).forEach(result::add);
+    return result;
+  }
+  private static void putRef(@NotNull TIntObjectHashMap<List<VcsRef>> map, @NotNull VcsRef ref, @NotNull VcsLogStorage storage) {
+    int index = storage.getCommitIndex(ref.getCommitHash(), ref.getRoot());
+    List<VcsRef> list = map.get(index);
+    if (list == null) map.put(index, list = new SmartList<>());
+    list.add(ref);
+  }
+  private static void putRefIndex(@NotNull TIntObjectHashMap<TIntArrayList> map, @NotNull VcsRef ref, @NotNull VcsLogStorage storage) {
+    int index = storage.getCommitIndex(ref.getCommitHash(), ref.getRoot());
+    TIntArrayList list = map.get(index);
+    if (list == null) map.put(index, list = new TIntArrayList());
+    list.add(storage.getRefIndex(ref));
+  }
+}",class,
+"  @NotNull private final TIntObjectHashMap<List<VcsRef>> myBranches = new TIntObjectHashMap<>();
+  public CompressedRefs(@NotNull Set<VcsRef> refs, @NotNull VcsLogStorage storage) {
+    myStorage = storage;
+    Ref<VirtualFile> root = new Ref<>();
+    refs.forEach(ref -> {
+      assert root.get() == null || root.get().equals(ref.getRoot()) : ""All references are supposed to be from the single root"";
+      root.set(ref.getRoot());
+      if (ref.getType().isBranch()) {
+        putRef(myBranches, ref, myStorage);
+      }
+      else {
+        putRefIndex(myTags, ref, myStorage);
+      }
+    });
+    myTags.forEachValue(list -> {
+      list.trimToSize();
+      return true;
+    });
+    myStorage.flush();
+  }",method,
+"  @NotNull
+  SmartList<VcsRef> refsToCommit(int index) {
+    SmartList<VcsRef> result = new SmartList<>();
+    if (myBranches.containsKey(index)) result.addAll(myBranches.get(index));
+    TIntArrayList tags = myTags.get(index);
+    if (tags != null) {
+      tags.forEach(value -> {
+        result.add(myStorage.getVcsRef(value));
+        return true;
+      });
+    }
+    return result;
+  }",method,
+"    if (tags != null) {
+      tags.forEach(value -> {
+        result.add(myStorage.getVcsRef(value));
+        return true;
+      });
+    }",method,
+"  @NotNull
+  public Stream<VcsRef> streamBranches() {
+    return TroveUtil.streamValues(myBranches).flatMap(Collection::stream);
+  }",method,
+"  @NotNull
+  private Stream<VcsRef> streamTags() {
+    return TroveUtil.streamValues(myTags).flatMapToInt(TroveUtil::stream).mapToObj(myStorage::getVcsRef);
+  }",method,
+"  @NotNull
+  public Stream<VcsRef> stream() {
+    return Stream.concat(streamBranches(), streamTags());
+  }",method,
+"  @NotNull
+  public Collection<VcsRef> getRefs() {
+    return new AbstractCollection<VcsRef>() {
+      private final Supplier<Collection<VcsRef>> myLoadedRefs =
+        Suppliers.memoize(() -> CompressedRefs.this.stream().collect(Collectors.toList()));
+      @NotNull
+      @Override
+      public Iterator<VcsRef> iterator() {
+        return myLoadedRefs.get().iterator();
+      }
+      @Override
+      public int size() {
+        return myLoadedRefs.get().size();
+      }
+    };
+  }",method,
+"      @NotNull
+      @Override
+      public Iterator<VcsRef> iterator() {
+        return myLoadedRefs.get().iterator();
+      }",method,
+"      @Override
+      public int size() {
+        return myLoadedRefs.get().size();
+      }",method,
+"  @NotNull
+  public Collection<Integer> getCommits() {
+    Set<Integer> result = ContainerUtil.newHashSet();
+    TroveUtil.streamKeys(myBranches).forEach(result::add);
+    TroveUtil.streamKeys(myTags).forEach(result::add);
+    return result;
+  }",method,
+"  private static void putRef(@NotNull TIntObjectHashMap<List<VcsRef>> map, @NotNull VcsRef ref, @NotNull VcsLogStorage storage) {
+    int index = storage.getCommitIndex(ref.getCommitHash(), ref.getRoot());
+    List<VcsRef> list = map.get(index);
+    if (list == null) map.put(index, list = new SmartList<>());
+    list.add(ref);
+  }",method,
+"  private static void putRefIndex(@NotNull TIntObjectHashMap<TIntArrayList> map, @NotNull VcsRef ref, @NotNull VcsLogStorage storage) {
+    int index = storage.getCommitIndex(ref.getCommitHash(), ref.getRoot());
+    TIntArrayList list = map.get(index);
+    if (list == null) map.put(index, list = new TIntArrayList());
+    list.add(storage.getRefIndex(ref));
+  }",method,
+"public class PsiTreeChangeEventImpl extends PsiTreeChangeEvent{
+  private boolean isGenericChange;
+  public enum PsiEventType {
+    BEFORE_CHILD_ADDITION,
+    CHILD_ADDED,
+    BEFORE_CHILD_REMOVAL,
+    CHILD_REMOVED,
+    BEFORE_CHILD_REPLACEMENT,
+    CHILD_REPLACED,
+    BEFORE_CHILD_MOVEMENT,
+    CHILD_MOVED,
+    BEFORE_CHILDREN_CHANGE,
+    CHILDREN_CHANGED,
+    BEFORE_PROPERTY_CHANGE,
+    PROPERTY_CHANGED
+  }
+  private PsiEventType myCode;
+  public PsiTreeChangeEventImpl(@NotNull PsiManager manager) {
+    super(manager);
+  }
+  public PsiEventType getCode() {
+    return myCode;
+  }
+  public void setCode(@NotNull PsiEventType code) {
+    myCode = code;
+  }
+  public void setParent(PsiElement parent) {
+    myParent = parent;
+  }
+  public void setOldParent(PsiElement oldParent) {
+    myOldParent = oldParent;
+  }
+  public void setNewParent(PsiElement newParent) {
+    myNewParent = newParent;
+  }
+  public void setChild(PsiElement child) {
+    myChild = child;
+  }
+  public void setOldChild(PsiElement oldChild) {
+    myOldChild = oldChild;
+  }
+  public void setNewChild(PsiElement newChild) {
+    myNewChild = newChild;
+  }
+  public void setElement(PsiElement element) {
+    myElement = element;
+  }
+  public void setPropertyName(@NotNull String propertyName) {
+    myPropertyName = propertyName;
+  }
+  public void setOldValue(Object oldValue) {
+    myOldValue = oldValue;
+  }
+  public void setNewValue(Object newValue) {
+    myNewValue = newValue;
+  }
+  public void setFile(PsiFile file) {
+    myFile = file;
+  }
+  public void setOffset(int offset) {
+    myOffset = offset;
+  }
+  public int getOffset() {
+    return myOffset;
+  }
+  public void setOldLength(int oldLength) {
+    myOldLength = oldLength;
+  }
+  public int getOldLength() {
+    return myOldLength;
+  }
+  // this is a generic event which is send after all events for concrete PSI changes in a file (e.g. childAdded(), childReplaced() etc).
+  // this event means ""something changed in the file"", not the ""this PSI element changed in the file""
+  public boolean isGenericChange() {
+    return isGenericChange;
+  }
+  public void setGenericChange(boolean genericChange) {
+    isGenericChange = genericChange;
+  }
+  @NotNull
+  @Override
+  public String toString() {
+    return ""PsiTreeChangeEventImpl{"" + myCode
+           + (isGenericChange ? "" (generic)"" : """")
+           + (myPropertyName == null ? """" : "" (""+myPropertyName+"")"")
+           + (myFile == null ? """" : "" in file ""+myFile.getName())
+           +'}';
+  }
+}",class,
+"  public PsiTreeChangeEventImpl(@NotNull PsiManager manager) {
+    super(manager);
+  }",method,
+"  public PsiEventType getCode() {
+    return myCode;
+  }",method,
+"  public void setCode(@NotNull PsiEventType code) {
+    myCode = code;
+  }",method,
+"  public void setParent(PsiElement parent) {
+    myParent = parent;
+  }",method,
+"  public void setOldParent(PsiElement oldParent) {
+    myOldParent = oldParent;
+  }",method,
+"  public void setNewParent(PsiElement newParent) {
+    myNewParent = newParent;
+  }",method,
+"  public void setChild(PsiElement child) {
+    myChild = child;
+  }",method,
+"  public void setOldChild(PsiElement oldChild) {
+    myOldChild = oldChild;
+  }",method,
+"  public void setNewChild(PsiElement newChild) {
+    myNewChild = newChild;
+  }",method,
+"  public void setElement(PsiElement element) {
+    myElement = element;
+  }",method,
+"  public void setPropertyName(@NotNull String propertyName) {
+    myPropertyName = propertyName;
+  }",method,
+"  public void setOldValue(Object oldValue) {
+    myOldValue = oldValue;
+  }",method,
+"  public void setNewValue(Object newValue) {
+    myNewValue = newValue;
+  }",method,
+"  public void setFile(PsiFile file) {
+    myFile = file;
+  }",method,
+"  public void setOffset(int offset) {
+    myOffset = offset;
+  }",method,
+"  public int getOffset() {
+    return myOffset;
+  }",method,
+"  public void setOldLength(int oldLength) {
+    myOldLength = oldLength;
+  }",method,
+"  public int getOldLength() {
+    return myOldLength;
+  }",method,
+"  public boolean isGenericChange() {
+    return isGenericChange;
+  }",method,
+"  public void setGenericChange(boolean genericChange) {
+    isGenericChange = genericChange;
+  }",method,
+"  @NotNull
+  @Override
+  public String toString() {
+    return ""PsiTreeChangeEventImpl{"" + myCode
+           + (isGenericChange ? "" (generic)"" : """")
+           + (myPropertyName == null ? """" : "" (""+myPropertyName+"")"")
+           + (myFile == null ? """" : "" in file ""+myFile.getName())
+           +'}';
+  }",method,
+"public class CompanyFormController extends BaseFormController {
+	public static Integer startYear = Integer.parseInt(ResourceBundle
+			.getBundle(""yearsconfig"").getString(""startYear""));
+	public static Integer endYear = Integer.parseInt(ResourceBundle.getBundle(
+			""yearsconfig"").getString(""endYear""));
+	private CompanyManager companyManager = null;
+	private StateManager stateManager = null;
+	private BookManager bookManager = null;
+	private VolumeManager volumeManager = null;
+	@Autowired
+	public void setCompanyManager(CompanyManager companyManager) {
+		this.companyManager = companyManager;
+	}
+	@Autowired
+	public void setStateManager(StateManager stateManager) {
+		this.stateManager = stateManager;
+	}
+	@Autowired
+	public void setBookManager(BookManager bookManager) {
+		this.bookManager = bookManager;
+	}
+	@Autowired
+	public void setVolumeManager(VolumeManager volumeManager) {
+		this.volumeManager = volumeManager;
+	}
+	private List<Year> getYears() {
+		List<Year> years = new ArrayList<Year>();
+		for (int i = startYear; i < endYear; i++) {
+			Year year = new Year();
+			year.setId(i);
+			year.setName(String.valueOf(i));
+			years.add(year);
+		}
+		return years;
+	}
+	public CompanyFormController() {
+		setCancelView(""redirect:company"");
+		setSuccessView(""redirect:company"");
+	}
+	@ModelAttribute
+	@RequestMapping(method = RequestMethod.GET)
+	public Company showForm(HttpServletRequest request, ModelMap map)
+			throws Exception {
+		String id = request.getParameter(""id"");
+		List<Year> years = getYears();
+		List<State> states = stateManager.getAll();
+		List<Book> books = bookManager.getAll();
+		List<Volume> volumes = volumeManager.getAll();
+		map.addAttribute(""yearList"", years);
+		map.addAttribute(""stateList"", states);
+		map.addAttribute(""bookList"", books);
+		map.addAttribute(""volumeList"", volumes);
+		if (!StringUtils.isBlank(id)) {
+			return companyManager.get(new Integer(id));
+		}
+		return new Company();
+	}
+	@RequestMapping(method = RequestMethod.POST)
+	public String onSubmit(Company company, BindingResult errors,
+			HttpServletRequest request, HttpServletResponse response)
+			throws Exception {
+		if (request.getParameter(""cancel"") != null) {
+			return getCancelView();
+		}
+		if (getValidator() != null) { // validator is null during testing
+			getValidator().validate(company, errors);
+			if (errors.hasErrors() && request.getParameter(""delete"") == null) { // don't
+																				// validate
+																				// when
+																				// deleting
+				Logger.getLogger(CompanyFormController.class.getName()).log(
+						Level.ERROR, ""Erros: "" + errors.toString());
+				return ""registering/companyform"";
+			}
+		}
+		log.debug(""entering 'onSubmit' method..."");
+		boolean isNew = (company.getId() == null);
+		String success = getSuccessView();
+		Locale locale = request.getLocale();
+		//TODO Ponemos aqui este codigo para que funcione, pero tenemos que borrarlo luego
+		Record record = new Record();
+		record.setId(1);
+		company.setRecord(record);
+		if (request.getParameter(""delete"") != null) {
+			companyManager.remove(company.getId());
+			saveMessage(request, getText(""company.deleted"", locale));
+		} else {
+			companyManager.save(company);
+			String key = (isNew) ? ""company.added"" : ""company.updated"";
+			saveMessage(request, getText(key, locale));
+			if (!isNew) {
+				success = ""redirect:companyform?id="" + company.getId();
+			}
+		}
+		return success;
+	}
+}",class,
+"	@Autowired
+	public void setCompanyManager(CompanyManager companyManager) {
+		this.companyManager = companyManager;
+	}",method,
+"	@Autowired
+	public void setStateManager(StateManager stateManager) {
+		this.stateManager = stateManager;
+	}",method,
+"	@Autowired
+	public void setBookManager(BookManager bookManager) {
+		this.bookManager = bookManager;
+	}",method,
+"	@Autowired
+	public void setVolumeManager(VolumeManager volumeManager) {
+		this.volumeManager = volumeManager;
+	}",method,
+"	private List<Year> getYears() {
+		List<Year> years = new ArrayList<Year>();
+		for (int i = startYear; i < endYear; i++) {
+			Year year = new Year();
+			year.setId(i);
+			year.setName(String.valueOf(i));
+			years.add(year);
+		}
+		return years;
+	}",method,
+"		for (int i = startYear; i < endYear; i++) {
+			Year year = new Year();
+			year.setId(i);
+			year.setName(String.valueOf(i));
+			years.add(year);
+		}",method,
+"	public CompanyFormController() {
+		setCancelView(""redirect:company"");
+		setSuccessView(""redirect:company"");
+	}",method,
+"	@ModelAttribute
+	@RequestMapping(method = RequestMethod.GET)
+	public Company showForm(HttpServletRequest request, ModelMap map)
+			throws Exception {
+		String id = request.getParameter(""id"");
+		List<Year> years = getYears();
+		List<State> states = stateManager.getAll();
+		List<Book> books = bookManager.getAll();
+		List<Volume> volumes = volumeManager.getAll();
+		map.addAttribute(""yearList"", years);
+		map.addAttribute(""stateList"", states);
+		map.addAttribute(""bookList"", books);
+		map.addAttribute(""volumeList"", volumes);
+		if (!StringUtils.isBlank(id)) {
+			return companyManager.get(new Integer(id));
+		}
+		return new Company();
+	}",method,
+"	@RequestMapping(method = RequestMethod.POST)
+	public String onSubmit(Company company, BindingResult errors,
+			HttpServletRequest request, HttpServletResponse response)
+			throws Exception {
+		if (request.getParameter(""cancel"") != null) {
+			return getCancelView();
+		}
+		if (getValidator() != null) { // validator is null during testing
+			getValidator().validate(company, errors);
+			if (errors.hasErrors() && request.getParameter(""delete"") == null) { // don't
+																				// validate
+																				// when
+																				// deleting
+				Logger.getLogger(CompanyFormController.class.getName()).log(
+						Level.ERROR, ""Erros: "" + errors.toString());
+				return ""registering/companyform"";
+			}
+		}
+		log.debug(""entering 'onSubmit' method..."");
+		boolean isNew = (company.getId() == null);
+		String success = getSuccessView();
+		Locale locale = request.getLocale();
+		//TODO Ponemos aqui este codigo para que funcione, pero tenemos que borrarlo luego
+		Record record = new Record();
+		record.setId(1);
+		company.setRecord(record);
+		if (request.getParameter(""delete"") != null) {
+			companyManager.remove(company.getId());
+			saveMessage(request, getText(""company.deleted"", locale));
+		} else {
+			companyManager.save(company);
+			String key = (isNew) ? ""company.added"" : ""company.updated"";
+			saveMessage(request, getText(key, locale));
+			if (!isNew) {
+				success = ""redirect:companyform?id="" + company.getId();
+			}
+		}
+		return success;
+	}",method,
+"			if (!isNew) {
+				success = ""redirect:companyform?id="" + company.getId();
+			}",method,
+"public class IgnoreComparatorUnitTest {
+  private static final Platform CURRENT_PLATFORM = Platform.MAC;
+  private static final Platform OTHER_PLATFORM = Platform.WINDOWS;
+  private static final Set<Platform> CURRENT_PLATFORM_SET = Sets.newHashSet(CURRENT_PLATFORM);
+  private static final Set<Platform> OTHER_PLATFORM_SET = Sets.newHashSet(OTHER_PLATFORM);
+  IgnoreComparator ignoreComparator = new IgnoreComparator();
+  @Before
+  public void setupComparator() {
+    ignoreComparator.setCurrentPlatform(CURRENT_PLATFORM);
+  }
+  @Test
+  public void shouldNotIgnoreIfNothingBeingIgnored() {
+    assertFalse(new IgnoreComparator().shouldIgnore((Ignore) null));
+    assertFalse(new IgnoreComparator().shouldIgnore((IgnoreList) null));
+  }
+  @Test
+  public void shouldIgnoreOnlyDriverBeingIgnored() {
+    ignoreComparator.addDriver(SAFARI);
+    assertTrue(ignoreComparator.shouldIgnore(ignoreForDriver(
+      Sets.newHashSet(SAFARI),
+      CURRENT_PLATFORM_SET)));
+  }
+  @Test
+  public void shouldIgnoreDriverAll() {
+    assertTrue(ignoreComparator.shouldIgnore(ignoreForDriver(
+      Sets.newHashSet(Driver.ALL),
+      CURRENT_PLATFORM_SET)));
+  }
+  @Test
+  @org.junit.Ignore
+  public void shouldNotIgnoreOtherPlatform() {
+    ignoreComparator.addDriver(SAFARI);
+    assertFalse(ignoreComparator.shouldIgnore(ignoreForDriver(
+      Sets.newHashSet(SAFARI),
+      OTHER_PLATFORM_SET)));
+  }
+  @Test
+  public void shouldNotIgnoreOtherBrowser() {
+    ignoreComparator.addDriver(SAFARI);
+    assertFalse(ignoreComparator.shouldIgnore(ignoreForDriver(
+      Sets.newHashSet(IE),
+      CURRENT_PLATFORM_SET)));
+  }
+  @Test
+  public void shouldIgnoreEnabledNativeEventsIfIgnoringEnabled() {
+    ignoreComparator.addDriver(SAFARI);
+    assertTrue(ignoreComparator.shouldIgnore(ignoreForDriver(
+      Sets.newHashSet(SAFARI),
+      CURRENT_PLATFORM_SET)));
+  }
+  @Test
+  public void shouldIgnoreDisabledNativeEventsIfIgnoringDisabled() {
+    ignoreComparator.addDriver(SAFARI);
+    assertTrue(ignoreComparator.shouldIgnore(ignoreForDriver(
+      Sets.newHashSet(SAFARI),
+      CURRENT_PLATFORM_SET)));
+  }
+  @Test
+  public void shouldIgnoreEnabledNativeEventsIfIgnoringAll() {
+    ignoreComparator.addDriver(SAFARI);
+    assertTrue(ignoreComparator.shouldIgnore(ignoreForDriver(
+      Sets.newHashSet(SAFARI),
+      CURRENT_PLATFORM_SET)));
+  }
+  @Test
+  public void shouldIgnoreDisabledNativeEventsIfIgnoringAll() {
+    ignoreComparator.addDriver(SAFARI);
+    assertTrue(ignoreComparator.shouldIgnore(ignoreForDriver(
+      Sets.newHashSet(SAFARI),
+      CURRENT_PLATFORM_SET)));
+  }
+  private IgnoreList ignoreForDriver(final Set<Driver> drivers,
+                                    final Set<Platform> platforms) {
+    final IgnoreList ignore = mock(IgnoreList.class, Mockito.RETURNS_SMART_NULLS);
+    final Ignore[] list = drivers.stream().map(driver -> {
+      Ignore ig = mock(Ignore.class, Mockito.RETURNS_SMART_NULLS);
+      when(ig.value()).thenReturn(driver);
+      return ig;
+    }).collect(Collectors.toList()).toArray(new Ignore[drivers.size()]);
+    when(ignore.value()).thenReturn(list);
+    //when(ignore.platforms()).thenReturn(platforms.toArray(new Platform[platforms.size()]));
+    return ignore;
+  }
+}",class,
+"  @Before
+  public void setupComparator() {
+    ignoreComparator.setCurrentPlatform(CURRENT_PLATFORM);
+  }",method,
+"  @Test
+  public void shouldNotIgnoreIfNothingBeingIgnored() {
+    assertFalse(new IgnoreComparator().shouldIgnore((Ignore) null));
+    assertFalse(new IgnoreComparator().shouldIgnore((IgnoreList) null));
+  }",method,
+"  @Test
+  public void shouldIgnoreOnlyDriverBeingIgnored() {
+    ignoreComparator.addDriver(SAFARI);
+    assertTrue(ignoreComparator.shouldIgnore(ignoreForDriver(
+      Sets.newHashSet(SAFARI),
+      CURRENT_PLATFORM_SET)));
+  }",method,
+"  @Test
+  public void shouldIgnoreDriverAll() {
+    assertTrue(ignoreComparator.shouldIgnore(ignoreForDriver(
+      Sets.newHashSet(Driver.ALL),
+      CURRENT_PLATFORM_SET)));
+  }",method,
+"  @Test
+  @org.junit.Ignore
+  public void shouldNotIgnoreOtherPlatform() {
+    ignoreComparator.addDriver(SAFARI);
+    assertFalse(ignoreComparator.shouldIgnore(ignoreForDriver(
+      Sets.newHashSet(SAFARI),
+      OTHER_PLATFORM_SET)));
+  }",method,
+"  @Test
+  public void shouldNotIgnoreOtherBrowser() {
+    ignoreComparator.addDriver(SAFARI);
+    assertFalse(ignoreComparator.shouldIgnore(ignoreForDriver(
+      Sets.newHashSet(IE),
+      CURRENT_PLATFORM_SET)));
+  }",method,
+"  @Test
+  public void shouldIgnoreEnabledNativeEventsIfIgnoringEnabled() {
+    ignoreComparator.addDriver(SAFARI);
+    assertTrue(ignoreComparator.shouldIgnore(ignoreForDriver(
+      Sets.newHashSet(SAFARI),
+      CURRENT_PLATFORM_SET)));
+  }",method,
+"  @Test
+  public void shouldIgnoreDisabledNativeEventsIfIgnoringDisabled() {
+    ignoreComparator.addDriver(SAFARI);
+    assertTrue(ignoreComparator.shouldIgnore(ignoreForDriver(
+      Sets.newHashSet(SAFARI),
+      CURRENT_PLATFORM_SET)));
+  }",method,
+"  @Test
+  public void shouldIgnoreEnabledNativeEventsIfIgnoringAll() {
+    ignoreComparator.addDriver(SAFARI);
+    assertTrue(ignoreComparator.shouldIgnore(ignoreForDriver(
+      Sets.newHashSet(SAFARI),
+      CURRENT_PLATFORM_SET)));
+  }",method,
+"  @Test
+  public void shouldIgnoreDisabledNativeEventsIfIgnoringAll() {
+    ignoreComparator.addDriver(SAFARI);
+    assertTrue(ignoreComparator.shouldIgnore(ignoreForDriver(
+      Sets.newHashSet(SAFARI),
+      CURRENT_PLATFORM_SET)));
+  }",method,
+"  private IgnoreList ignoreForDriver(final Set<Driver> drivers,
+                                    final Set<Platform> platforms) {
+    final IgnoreList ignore = mock(IgnoreList.class, Mockito.RETURNS_SMART_NULLS);
+    final Ignore[] list = drivers.stream().map(driver -> {
+      Ignore ig = mock(Ignore.class, Mockito.RETURNS_SMART_NULLS);
+      when(ig.value()).thenReturn(driver);
+      return ig;
+    }).collect(Collectors.toList()).toArray(new Ignore[drivers.size()]);
+    when(ignore.value()).thenReturn(list);
+    //when(ignore.platforms()).thenReturn(platforms.toArray(new Platform[platforms.size()]));
+    return ignore;
+  }",method,
+"public class NotificationsQuickSettingsContainer extends FrameLayout
+        implements OnInflateListener, FragmentListener, OnHeadsUpChangedListener {
+    private FrameLayout mQsFrame;
+    private View mUserSwitcher;
+    private View mStackScroller;
+    private View mKeyguardStatusBar;
+    private boolean mInflated;
+    private boolean mQsExpanded;
+    private boolean mCustomizerAnimating;
+    private int mBottomPadding;
+    private int mStackScrollerMargin;
+    private boolean mHeadsUp;
+    private HeadsUpManager mHeadsUpManager;
+    public NotificationsQuickSettingsContainer(Context context, AttributeSet attrs) {
+        super(context, attrs);
+    }
+    @Override
+    protected void onFinishInflate() {
+        super.onFinishInflate();
+        mQsFrame = (FrameLayout) findViewById(R.id.qs_frame);
+        mStackScroller = findViewById(R.id.notification_stack_scroller);
+        mStackScrollerMargin = ((LayoutParams) mStackScroller.getLayoutParams()).bottomMargin;
+        mKeyguardStatusBar = findViewById(R.id.keyguard_header);
+        ViewStub userSwitcher = (ViewStub) findViewById(R.id.keyguard_user_switcher);
+        userSwitcher.setOnInflateListener(this);
+        mUserSwitcher = userSwitcher;
+    }
+    @Override
+    protected void onAttachedToWindow() {
+        super.onAttachedToWindow();
+        FragmentHostManager.get(this).addTagListener(QS.TAG, this);
+        mHeadsUpManager = SysUiServiceProvider.getComponent(getContext(), StatusBar.class)
+                .mHeadsUpManager;
+        mHeadsUpManager.addListener(this);
+    }
+    @Override
+    protected void onDetachedFromWindow() {
+        super.onDetachedFromWindow();
+        FragmentHostManager.get(this).removeTagListener(QS.TAG, this);
+        mHeadsUpManager.removeListener(this);
+    }
+    @Override
+    protected void onConfigurationChanged(Configuration newConfig) {
+        super.onConfigurationChanged(newConfig);
+        reloadWidth(mQsFrame);
+        reloadWidth(mStackScroller);
+    }
+    private void reloadWidth(View view) {
+        LayoutParams params = (LayoutParams) view.getLayoutParams();
+        params.width = getContext().getResources().getDimensionPixelSize(
+                R.dimen.notification_panel_width);
+        view.setLayoutParams(params);
+    }
+    @Override
+    public WindowInsets onApplyWindowInsets(WindowInsets insets) {
+        mBottomPadding = insets.getStableInsetBottom();
+        setPadding(0, 0, 0, mBottomPadding);
+        return insets;
+    }
+    @Override
+    protected boolean drawChild(Canvas canvas, View child, long drawingTime) {
+        boolean userSwitcherVisible = mInflated && mUserSwitcher.getVisibility() == View.VISIBLE;
+        boolean statusBarVisible = mKeyguardStatusBar.getVisibility() == View.VISIBLE;
+        final boolean qsBottom = mHeadsUp;
+        View stackQsTop = qsBottom ? mStackScroller : mQsFrame;
+        View stackQsBottom = !qsBottom ? mStackScroller : mQsFrame;
+        // Invert the order of the scroll view and user switcher such that the notifications receive
+        // touches first but the panel gets drawn above.
+        if (child == mQsFrame) {
+            return super.drawChild(canvas, userSwitcherVisible && statusBarVisible ? mUserSwitcher
+                    : statusBarVisible ? mKeyguardStatusBar
+                    : userSwitcherVisible ? mUserSwitcher
+                    : stackQsBottom, drawingTime);
+        } else if (child == mStackScroller) {
+            return super.drawChild(canvas,
+                    userSwitcherVisible && statusBarVisible ? mKeyguardStatusBar
+                    : statusBarVisible || userSwitcherVisible ? stackQsBottom
+                    : stackQsTop,
+                    drawingTime);
+        } else if (child == mUserSwitcher) {
+            return super.drawChild(canvas,
+                    userSwitcherVisible && statusBarVisible ? stackQsBottom
+                    : stackQsTop,
+                    drawingTime);
+        } else if (child == mKeyguardStatusBar) {
+            return super.drawChild(canvas,
+                    stackQsTop,
+                    drawingTime);
+        } else {
+            return super.drawChild(canvas, child, drawingTime);
+        }
+    }
+    @Override
+    public void onInflate(ViewStub stub, View inflated) {
+        if (stub == mUserSwitcher) {
+            mUserSwitcher = inflated;
+            mInflated = true;
+        }
+    }
+    @Override
+    public void onFragmentViewCreated(String tag, Fragment fragment) {
+        QS container = (QS) fragment;
+        container.setContainer(this);
+    }
+    public void setQsExpanded(boolean expanded) {
+        if (mQsExpanded != expanded) {
+            mQsExpanded = expanded;
+            invalidate();
+        }
+    }
+    public void setCustomizerAnimating(boolean isAnimating) {
+        if (mCustomizerAnimating != isAnimating) {
+            mCustomizerAnimating = isAnimating;
+            invalidate();
+        }
+    }
+    public void setCustomizerShowing(boolean isShowing) {
+        if (isShowing) {
+            // Clear out bottom paddings/margins so the qs customization can be full height.
+            setPadding(0, 0, 0, 0);
+            setBottomMargin(mStackScroller, 0);
+        } else {
+            setPadding(0, 0, 0, mBottomPadding);
+            setBottomMargin(mStackScroller, mStackScrollerMargin);
+        }
+    }
+    private void setBottomMargin(View v, int bottomMargin) {
+        LayoutParams params = (LayoutParams) v.getLayoutParams();
+        params.bottomMargin = bottomMargin;
+        v.setLayoutParams(params);
+    }
+    @Override
+    public void onHeadsUpStateChanged(Entry entry, boolean isHeadsUp) {
+        boolean hasHeadsUp = mHeadsUpManager.getAllEntries().size() != 0;
+        if (mHeadsUp == hasHeadsUp) {
+            return;
+        }
+        mHeadsUp = hasHeadsUp;
+        invalidate();
+    }
+}",class,
+"    public NotificationsQuickSettingsContainer(Context context, AttributeSet attrs) {
+        super(context, attrs);
+    }",method,
+"    @Override
+    protected void onFinishInflate() {
+        super.onFinishInflate();
+        mQsFrame = (FrameLayout) findViewById(R.id.qs_frame);
+        mStackScroller = findViewById(R.id.notification_stack_scroller);
+        mStackScrollerMargin = ((LayoutParams) mStackScroller.getLayoutParams()).bottomMargin;
+        mKeyguardStatusBar = findViewById(R.id.keyguard_header);
+        ViewStub userSwitcher = (ViewStub) findViewById(R.id.keyguard_user_switcher);
+        userSwitcher.setOnInflateListener(this);
+        mUserSwitcher = userSwitcher;
+    }",method,
+"    @Override
+    protected void onAttachedToWindow() {
+        super.onAttachedToWindow();
+        FragmentHostManager.get(this).addTagListener(QS.TAG, this);
+        mHeadsUpManager = SysUiServiceProvider.getComponent(getContext(), StatusBar.class)
+                .mHeadsUpManager;
+        mHeadsUpManager.addListener(this);
+    }",method,
+"    @Override
+    protected void onDetachedFromWindow() {
+        super.onDetachedFromWindow();
+        FragmentHostManager.get(this).removeTagListener(QS.TAG, this);
+        mHeadsUpManager.removeListener(this);
+    }",method,
+"    @Override
+    protected void onConfigurationChanged(Configuration newConfig) {
+        super.onConfigurationChanged(newConfig);
+        reloadWidth(mQsFrame);
+        reloadWidth(mStackScroller);
+    }",method,
+"    private void reloadWidth(View view) {
+        LayoutParams params = (LayoutParams) view.getLayoutParams();
+        params.width = getContext().getResources().getDimensionPixelSize(
+                R.dimen.notification_panel_width);
+        view.setLayoutParams(params);
+    }",method,
+"    @Override
+    public WindowInsets onApplyWindowInsets(WindowInsets insets) {
+        mBottomPadding = insets.getStableInsetBottom();
+        setPadding(0, 0, 0, mBottomPadding);
+        return insets;
+    }",method,
+"    @Override
+    protected boolean drawChild(Canvas canvas, View child, long drawingTime) {
+        boolean userSwitcherVisible = mInflated && mUserSwitcher.getVisibility() == View.VISIBLE;
+        boolean statusBarVisible = mKeyguardStatusBar.getVisibility() == View.VISIBLE;
+        final boolean qsBottom = mHeadsUp;
+        View stackQsTop = qsBottom ? mStackScroller : mQsFrame;
+        View stackQsBottom = !qsBottom ? mStackScroller : mQsFrame;
+        // Invert the order of the scroll view and user switcher such that the notifications receive
+        // touches first but the panel gets drawn above.
+        if (child == mQsFrame) {
+            return super.drawChild(canvas, userSwitcherVisible && statusBarVisible ? mUserSwitcher
+                    : statusBarVisible ? mKeyguardStatusBar
+                    : userSwitcherVisible ? mUserSwitcher
+                    : stackQsBottom, drawingTime);
+        } else if (child == mStackScroller) {
+            return super.drawChild(canvas,
+                    userSwitcherVisible && statusBarVisible ? mKeyguardStatusBar
+                    : statusBarVisible || userSwitcherVisible ? stackQsBottom
+                    : stackQsTop,
+                    drawingTime);
+        } else if (child == mUserSwitcher) {
+            return super.drawChild(canvas,
+                    userSwitcherVisible && statusBarVisible ? stackQsBottom
+                    : stackQsTop,
+                    drawingTime);
+        } else if (child == mKeyguardStatusBar) {
+            return super.drawChild(canvas,
+                    stackQsTop,
+                    drawingTime);
+        } else {
+            return super.drawChild(canvas, child, drawingTime);
+        }
+    }",method,
+"        if (child == mQsFrame) {
+            return super.drawChild(canvas, userSwitcherVisible && statusBarVisible ? mUserSwitcher
+                    : statusBarVisible ? mKeyguardStatusBar
+                    : userSwitcherVisible ? mUserSwitcher
+                    : stackQsBottom, drawingTime);
+        }",method,
+"    @Override
+    public void onInflate(ViewStub stub, View inflated) {
+        if (stub == mUserSwitcher) {
+            mUserSwitcher = inflated;
+            mInflated = true;
+        }
+    }",method,
+"        if (stub == mUserSwitcher) {
+            mUserSwitcher = inflated;
+            mInflated = true;
+        }",method,
+"    @Override
+    public void onFragmentViewCreated(String tag, Fragment fragment) {
+        QS container = (QS) fragment;
+        container.setContainer(this);
+    }",method,
+"    public void setQsExpanded(boolean expanded) {
+        if (mQsExpanded != expanded) {
+            mQsExpanded = expanded;
+            invalidate();
+        }
+    }",method,
+"        if (mQsExpanded != expanded) {
+            mQsExpanded = expanded;
+            invalidate();
+        }",method,
+"    public void setCustomizerAnimating(boolean isAnimating) {
+        if (mCustomizerAnimating != isAnimating) {
+            mCustomizerAnimating = isAnimating;
+            invalidate();
+        }
+    }",method,
+"        if (mCustomizerAnimating != isAnimating) {
+            mCustomizerAnimating = isAnimating;
+            invalidate();
+        }",method,
+"    public void setCustomizerShowing(boolean isShowing) {
+        if (isShowing) {
+            // Clear out bottom paddings/margins so the qs customization can be full height.
+            setPadding(0, 0, 0, 0);
+            setBottomMargin(mStackScroller, 0);
+        } else {
+            setPadding(0, 0, 0, mBottomPadding);
+            setBottomMargin(mStackScroller, mStackScrollerMargin);
+        }
+    }",method,
+"        if (isShowing) {
+            // Clear out bottom paddings/margins so the qs customization can be full height.
+            setPadding(0, 0, 0, 0);
+            setBottomMargin(mStackScroller, 0);
+        }",method,
+"    private void setBottomMargin(View v, int bottomMargin) {
+        LayoutParams params = (LayoutParams) v.getLayoutParams();
+        params.bottomMargin = bottomMargin;
+        v.setLayoutParams(params);
+    }",method,
+"    @Override
+    public void onHeadsUpStateChanged(Entry entry, boolean isHeadsUp) {
+        boolean hasHeadsUp = mHeadsUpManager.getAllEntries().size() != 0;
+        if (mHeadsUp == hasHeadsUp) {
+            return;
+        }
+        mHeadsUp = hasHeadsUp;
+        invalidate();
+    }",method,
+"        if (mHeadsUp == hasHeadsUp) {
+            return;
+        }",method,
+"public class StatisticsInfo {
+  public static final StatisticsInfo EMPTY = new StatisticsInfo(""empty"", ""empty"");
+  private static final StatisticsManager ourManager = StatisticsManager.getInstance();
+  private final String myContext;
+  private final String myValue;
+  private final List<StatisticsInfo> myConjuncts;
+  public StatisticsInfo(@NonNls @NotNull final String context, @NonNls @NotNull final String value) {
+    myContext = context;
+    myValue = value;
+    myConjuncts = Collections.singletonList(this);
+  }
+  private StatisticsInfo(String context, String value, List<StatisticsInfo> conjuncts) {
+    myContext = context;
+    myValue = value;
+    myConjuncts = conjuncts;
+  }
+  public static StatisticsInfo createComposite(List<StatisticsInfo> conjuncts) {
+    if (conjuncts.isEmpty()) {
+      return EMPTY;
+    }
+    ArrayList<StatisticsInfo> flattened = new ArrayList<>(conjuncts.size());
+    for (StatisticsInfo conjunct : conjuncts) {
+      flattened.addAll(conjunct.getConjuncts());
+    }
+    return new StatisticsInfo(conjuncts.get(0).getContext(), conjuncts.get(0).getValue(), flattened);
+  }
+  @NotNull
+  public String getContext() {
+    return myContext;
+  }
+  @NotNull
+  public String getValue() {
+    return myValue;
+  }
+  public List<StatisticsInfo> getConjuncts() {
+    return myConjuncts;
+  }
+  public void incUseCount() {
+    ourManager.incUseCount(this);
+  }
+  public int getUseCount() {
+    return ourManager.getUseCount(this);
+  }
+  public int getLastUseRecency() {
+    return ourManager.getLastUseRecency(this);
+  }
+  public String toString() {
+    return myContext + ""::::"" + myValue + (myConjuncts.size() == 1 ? """" : ""::::"" + myConjuncts);
+  }
+}",class,
+"  public StatisticsInfo(@NonNls @NotNull final String context, @NonNls @NotNull final String value) {
+    myContext = context;
+    myValue = value;
+    myConjuncts = Collections.singletonList(this);
+  }",method,
+"  private StatisticsInfo(String context, String value, List<StatisticsInfo> conjuncts) {
+    myContext = context;
+    myValue = value;
+    myConjuncts = conjuncts;
+  }",method,
+"  public static StatisticsInfo createComposite(List<StatisticsInfo> conjuncts) {
+    if (conjuncts.isEmpty()) {
+      return EMPTY;
+    }
+    ArrayList<StatisticsInfo> flattened = new ArrayList<>(conjuncts.size());
+    for (StatisticsInfo conjunct : conjuncts) {
+      flattened.addAll(conjunct.getConjuncts());
+    }
+    return new StatisticsInfo(conjuncts.get(0).getContext(), conjuncts.get(0).getValue(), flattened);
+  }",method,
+"    for (StatisticsInfo conjunct : conjuncts) {
+      flattened.addAll(conjunct.getConjuncts());
+    }",method,
+"  @NotNull
+  public String getContext() {
+    return myContext;
+  }",method,
+"  @NotNull
+  public String getValue() {
+    return myValue;
+  }",method,
+"  public List<StatisticsInfo> getConjuncts() {
+    return myConjuncts;
+  }",method,
+"  public void incUseCount() {
+    ourManager.incUseCount(this);
+  }",method,
+"  public int getUseCount() {
+    return ourManager.getUseCount(this);
+  }",method,
+"  public int getLastUseRecency() {
+    return ourManager.getLastUseRecency(this);
+  }",method,
+"  public String toString() {
+    return myContext + ""::::"" + myValue + (myConjuncts.size() == 1 ? """" : ""::::"" + myConjuncts);
+  }",method,
+"public class ReceiveBuilderTest extends JUnitSuite {
+  public static interface Msg {}
+  public static class Msg1 implements Msg {
+    @Override
+    public String toString() {
+      return ""Msg1"";
+    }
+  }
+  public static class Msg2 implements Msg {
+    public final String value;
+    public Msg2(String value) {
+      this.value = value;
+    }
+    @Override
+    public int hashCode() {
+      final int prime = 31;
+      int result = 1;
+      result = prime * result + ((value == null) ? 0 : value.hashCode());
+      return result;
+    }
+    @Override
+    public boolean equals(Object obj) {
+      if (this == obj)
+        return true;
+      if (obj == null)
+        return false;
+      if (getClass() != obj.getClass())
+        return false;
+      Msg2 other = (Msg2) obj;
+      if (value == null) {
+        if (other.value != null)
+          return false;
+      } else if (!value.equals(other.value))
+        return false;
+      return true;
+    }
+    @Override
+    public String toString() {
+      return ""Msg2 [value="" + value + ""]"";
+    }
+  }
+  // using instance variable, because lambdas can only modify final fields
+  private String result = """";
+  private String result() {
+    String r = result;
+    result = """";
+    return r;
+  }
+  private void result(String r) {
+    result = r;
+  }
+  @Before
+  public void beforeEach() {
+    result = """";
+   }
+  @Test
+  public void shouldNotMatchWhenEmpty() {
+    Receive rcv = ReceiveBuilder.create().build();
+    assertFalse(rcv.onMessage().isDefinedAt(""hello""));
+    assertFalse(rcv.onMessage().isDefinedAt(42));
+  }
+  @Test
+  public void shouldMatchByClass() {
+    Receive rcv = ReceiveBuilder.create()
+        .match(Msg1.class, m -> result(""match Msg1""))
+        .build();
+    assertTrue(rcv.onMessage().isDefinedAt(new Msg1()));
+    rcv.onMessage().apply(new Msg1());
+    assertEquals(""match Msg1"", result());
+    assertFalse(rcv.onMessage().isDefinedAt(new Msg2(""foo"")));
+    assertFalse(rcv.onMessage().isDefinedAt(""hello""));
+    assertFalse(rcv.onMessage().isDefinedAt(42));
+  }
+  @Test
+  public void shouldMatchBySubclass() {
+    Receive rcv = ReceiveBuilder.create()
+        .match(Msg.class, m -> result(""match Msg""))
+        .build();
+    assertTrue(rcv.onMessage().isDefinedAt(new Msg1()));
+    rcv.onMessage().apply(new Msg1());
+    assertEquals(""match Msg"", result());
+    assertTrue(rcv.onMessage().isDefinedAt(new Msg2(""foo"")));
+    rcv.onMessage().apply(new Msg2(""foo""));
+    assertEquals(""match Msg"", result());
+    assertFalse(rcv.onMessage().isDefinedAt(""hello""));
+    assertFalse(rcv.onMessage().isDefinedAt(42));
+  }
+  private void handleMsg(Msg msg) {
+    result(""match Msg"");
+  }
+  private void handleMsg(Msg1 msg) {
+    result(""match Msg1"");
+  }
+  private void handleMsg(Msg2 msg) {
+    result(""match Msg2"");
+  }
+  @Test
+  public void shouldMatchDelegatingToSpecificMethod() {
+    Receive rcv = ReceiveBuilder.create()
+        .match(Msg1.class, this::handleMsg)
+        .match(Msg2.class, this::handleMsg)
+        .match(Msg.class, this::handleMsg)
+        .build();
+    assertTrue(rcv.onMessage().isDefinedAt(new Msg1()));
+    rcv.onMessage().apply(new Msg1());
+    assertEquals(""match Msg1"", result());
+    assertTrue(rcv.onMessage().isDefinedAt(new Msg2(""foo"")));
+    rcv.onMessage().apply(new Msg2(""foo""));
+    assertEquals(""match Msg2"", result());
+  }
+  private void anotherHandleMsg(Msg msg) {
+    result(""match Msg"");
+  }
+  private void anotherHandleMsg(Msg1 msg) {
+    result(""match Msg1"");
+  }
+  @Test
+  public void shouldMatchDelegatingToGeneralMethod() {
+    Receive rcv = ReceiveBuilder.create()
+        .match(Msg1.class, this::anotherHandleMsg)
+        .match(Msg2.class, this::anotherHandleMsg)
+        .build();
+    assertTrue(rcv.onMessage().isDefinedAt(new Msg1()));
+    rcv.onMessage().apply(new Msg1());
+    assertEquals(""match Msg1"", result());
+    assertTrue(rcv.onMessage().isDefinedAt(new Msg2(""foo"")));
+    rcv.onMessage().apply(new Msg2(""foo""));
+    assertEquals(""match Msg"", result());
+  }
+  @Test
+  public void shouldMatchByPredicate() {
+    Receive rcv = ReceiveBuilder.create()
+        .match(Msg1.class, m -> true, m -> result(""match Msg1""))
+        .match(Msg2.class, m -> m.value.equals(""foo""), m -> result(""match Msg2""))
+        .build();
+    assertTrue(rcv.onMessage().isDefinedAt(new Msg1()));
+    rcv.onMessage().apply(new Msg1());
+    assertEquals(""match Msg1"", result());
+    assertTrue(rcv.onMessage().isDefinedAt(new Msg2(""foo"")));
+    rcv.onMessage().apply(new Msg2(""foo""));
+    assertEquals(""match Msg2"", result());
+    assertFalse(rcv.onMessage().isDefinedAt(new Msg2(""bar"")));
+    assertFalse(rcv.onMessage().isDefinedAt(""hello""));
+    assertFalse(rcv.onMessage().isDefinedAt(42));
+  }
+  @Test
+  public void shouldMatchEquals() {
+    Msg2 msg2 = new Msg2(""foo"");
+    Receive rcv = ReceiveBuilder.create()
+        .matchEquals(msg2, m -> result(""match msg2""))
+        .matchEquals(""foo"", m -> result(""match foo""))
+        .matchEquals(17, m -> result(""match 17""))
+        .build();
+    assertTrue(rcv.onMessage().isDefinedAt(new Msg2(""foo"")));
+    rcv.onMessage().apply(new Msg2(""foo""));
+    assertEquals(""match msg2"", result());
+    assertTrue(rcv.onMessage().isDefinedAt(""foo""));
+    rcv.onMessage().apply(""foo"");
+    assertEquals(""match foo"", result());
+    assertTrue(rcv.onMessage().isDefinedAt(17));
+    rcv.onMessage().apply(17);
+    assertEquals(""match 17"", result());
+    assertFalse(rcv.onMessage().isDefinedAt(new Msg2(""bar"")));
+    assertFalse(rcv.onMessage().isDefinedAt(""hello""));
+    assertFalse(rcv.onMessage().isDefinedAt(42));
+  }
+  @Test
+  public void shouldMatchAny() {
+    Receive rcv = ReceiveBuilder.create()
+        .match(Msg1.class, m -> result(""match Msg1""))
+        .matchAny(m -> result(""match any""))
+        .build();
+    assertTrue(rcv.onMessage().isDefinedAt(new Msg1()));
+    rcv.onMessage().apply(new Msg1());
+    assertEquals(""match Msg1"", result());
+    assertTrue(rcv.onMessage().isDefinedAt(new Msg2(""foo"")));
+    rcv.onMessage().apply(new Msg2(""foo""));
+    assertEquals(""match any"", result());
+    assertTrue(rcv.onMessage().isDefinedAt(""hello""));
+    assertTrue(rcv.onMessage().isDefinedAt(42));
+  }
+  @Test
+  public void shouldMatchUnchecked() {
+    Receive rcv = ReceiveBuilder.create()
+        .matchUnchecked(List.class, (List<String> list) -> {
+          result(""match List"");
+        })
+        .build();
+    List<String> list = Arrays.asList(""foo"");
+    assertTrue(rcv.onMessage().isDefinedAt(list));
+    rcv.onMessage().apply(list);
+    assertEquals(""match List"", result());
+  }
+  @Test(expected = ClassCastException.class)
+  public void shouldThrowWhenUncheckedWithWrongTypes() {
+    // note that this doesn't compile with ordinary match
+    Receive rcv = ReceiveBuilder.create()
+      .matchUnchecked(String.class, (Integer i) -> {
+        result(String.valueOf(i + 2));
+      })
+      .build();
+    assertTrue(rcv.onMessage().isDefinedAt(""foo""));
+    rcv.onMessage().apply(""foo"");
+  }
+}",class,
+"  public static class Msg1 implements Msg {
+    @Override
+    public String toString() {
+      return ""Msg1"";
+    }
+  }",class,
+"  public static class Msg2 implements Msg {
+    public final String value;
+    public Msg2(String value) {
+      this.value = value;
+    }
+    @Override
+    public int hashCode() {
+      final int prime = 31;
+      int result = 1;
+      result = prime * result + ((value == null) ? 0 : value.hashCode());
+      return result;
+    }
+    @Override
+    public boolean equals(Object obj) {
+      if (this == obj)
+        return true;
+      if (obj == null)
+        return false;
+      if (getClass() != obj.getClass())
+        return false;
+      Msg2 other = (Msg2) obj;
+      if (value == null) {
+        if (other.value != null)
+          return false;
+      } else if (!value.equals(other.value))
+        return false;
+      return true;
+    }
+    @Override
+    public String toString() {
+      return ""Msg2 [value="" + value + ""]"";
+    }
+  }",class,
+"    @Override
+    public String toString() {
+      return ""Msg1"";
+    }",method,
+"    public Msg2(String value) {
+      this.value = value;
+    }",method,
+"    @Override
+    public int hashCode() {
+      final int prime = 31;
+      int result = 1;
+      result = prime * result + ((value == null) ? 0 : value.hashCode());
+      return result;
+    }",method,

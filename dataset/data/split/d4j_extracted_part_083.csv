@@ -1,0 +1,1307 @@
+code_snippet,type,score
+"		@Bean
+		@Override
+		public CacheManager cacheManager() {
+			SimpleCacheManager cacheManager = new SimpleCacheManager();
+			cacheManager.setCaches(Arrays.asList(mockCache(), mockErrorCache()));
+			return cacheManager;
+		}",method,
+"		@Bean
+		@Override
+		public CacheErrorHandler errorHandler() {
+			return mock(CacheErrorHandler.class);
+		}",method,
+"		@Bean
+		public SimpleService simpleService() {
+			return new SimpleService();
+		}",method,
+"		@Bean
+		public Cache mockCache() {
+			Cache cache = mock(Cache.class);
+			given(cache.getName()).willReturn(""test"");
+			return cache;
+		}",method,
+"		@Bean
+		public Cache mockErrorCache() {
+			Cache cache = mock(Cache.class);
+			given(cache.getName()).willReturn(""error"");
+			return cache;
+		}",method,
+"		@CacheResult
+		public Object get(long id) {
+			return this.counter.getAndIncrement();
+		}",method,
+"		@CacheResult(exceptionCacheName = ""error"")
+		public Object getFail(long id) {
+			throw TEST_EXCEPTION;
+		}",method,
+"		@CachePut
+		public void put(long id, @CacheValue Object object) {
+		}",method,
+"		@CacheRemove
+		public void evict(long id) {
+		}",method,
+"		@CacheRemoveAll
+		public void clear() {
+		}",method,
+"public class EncodedMemoryCacheProducer implements Producer<EncodedImage> {
+  public static final String PRODUCER_NAME = ""EncodedMemoryCacheProducer"";
+  public static final String EXTRA_CACHED_VALUE_FOUND = ProducerConstants.EXTRA_CACHED_VALUE_FOUND;
+  private final MemoryCache<CacheKey, PooledByteBuffer> mMemoryCache;
+  private final CacheKeyFactory mCacheKeyFactory;
+  private final Producer<EncodedImage> mInputProducer;
+  public EncodedMemoryCacheProducer(
+      MemoryCache<CacheKey, PooledByteBuffer> memoryCache,
+      CacheKeyFactory cacheKeyFactory,
+      Producer<EncodedImage> inputProducer) {
+    mMemoryCache = memoryCache;
+    mCacheKeyFactory = cacheKeyFactory;
+    mInputProducer = inputProducer;
+  }
+  @Override
+  public void produceResults(
+      final Consumer<EncodedImage> consumer,
+      final ProducerContext producerContext) {
+    final String requestId = producerContext.getId();
+    final ProducerListener listener = producerContext.getListener();
+    listener.onProducerStart(requestId, PRODUCER_NAME);
+    final ImageRequest imageRequest = producerContext.getImageRequest();
+    final CacheKey cacheKey =
+        mCacheKeyFactory.getEncodedCacheKey(imageRequest, producerContext.getCallerContext());
+    CloseableReference<PooledByteBuffer> cachedReference = mMemoryCache.get(cacheKey);
+    try {
+      if (cachedReference != null) {
+        EncodedImage cachedEncodedImage = new EncodedImage(cachedReference);
+        try {
+          listener.onProducerFinishWithSuccess(
+              requestId,
+              PRODUCER_NAME,
+              listener.requiresExtraMap(requestId)
+                  ? ImmutableMap.of(EXTRA_CACHED_VALUE_FOUND, ""true"")
+                  : null);
+          listener.onUltimateProducerReached(requestId, PRODUCER_NAME, true);
+          consumer.onProgressUpdate(1f);
+          consumer.onNewResult(cachedEncodedImage, Consumer.IS_LAST);
+          return;
+        } finally {
+          EncodedImage.closeSafely(cachedEncodedImage);
+        }
+      }
+      if (producerContext.getLowestPermittedRequestLevel().getValue() >=
+          ImageRequest.RequestLevel.ENCODED_MEMORY_CACHE.getValue()) {
+        listener.onProducerFinishWithSuccess(
+            requestId,
+            PRODUCER_NAME,
+            listener.requiresExtraMap(requestId)
+                ? ImmutableMap.of(EXTRA_CACHED_VALUE_FOUND, ""false"")
+                : null);
+        listener.onUltimateProducerReached(requestId, PRODUCER_NAME, false);
+        consumer.onNewResult(null, Consumer.IS_LAST);
+        return;
+      }
+      Consumer consumerOfInputProducer =
+          new EncodedMemoryCacheConsumer(consumer, mMemoryCache, cacheKey);
+      listener.onProducerFinishWithSuccess(
+          requestId,
+          PRODUCER_NAME,
+          listener.requiresExtraMap(requestId)
+              ? ImmutableMap.of(EXTRA_CACHED_VALUE_FOUND, ""false"")
+              : null);
+      mInputProducer.produceResults(consumerOfInputProducer, producerContext);
+    } finally {
+      CloseableReference.closeSafely(cachedReference);
+    }
+  }
+  private static class EncodedMemoryCacheConsumer
+      extends DelegatingConsumer<EncodedImage, EncodedImage> {
+    private final MemoryCache<CacheKey, PooledByteBuffer> mMemoryCache;
+    private final CacheKey mRequestedCacheKey;
+    public EncodedMemoryCacheConsumer(
+        Consumer<EncodedImage> consumer,
+        MemoryCache<CacheKey, PooledByteBuffer> memoryCache,
+        CacheKey requestedCacheKey) {
+      super(consumer);
+      mMemoryCache = memoryCache;
+      mRequestedCacheKey = requestedCacheKey;
+    }
+    @Override
+    public void onNewResultImpl(EncodedImage newResult, @Status int status) {
+      // intermediate, null or uncacheable results are not cached, so we just forward them
+      if (isNotLast(status) || newResult == null ||
+          statusHasAnyFlag(status, DO_NOT_CACHE_ENCODED | IS_PARTIAL_RESULT)) {
+        getConsumer().onNewResult(newResult, status);
+        return;
+      }
+      // cache and forward the last result
+      CloseableReference<PooledByteBuffer> ref = newResult.getByteBufferRef();
+      if (ref != null) {
+        CloseableReference<PooledByteBuffer> cachedResult;
+        try {
+          cachedResult = mMemoryCache.cache(mRequestedCacheKey, ref);
+        } finally {
+          CloseableReference.closeSafely(ref);
+        }
+        if (cachedResult != null) {
+          EncodedImage cachedEncodedImage;
+          try {
+            cachedEncodedImage = new EncodedImage(cachedResult);
+            cachedEncodedImage.copyMetaDataFrom(newResult);
+          } finally {
+            CloseableReference.closeSafely(cachedResult);
+          }
+          try {
+            getConsumer().onProgressUpdate(1f);
+            getConsumer().onNewResult(cachedEncodedImage, status);
+            return;
+          } finally {
+            EncodedImage.closeSafely(cachedEncodedImage);
+          }
+        }
+      }
+      getConsumer().onNewResult(newResult, status);
+    }
+  }
+}",class,
+"  private static class EncodedMemoryCacheConsumer
+      extends DelegatingConsumer<EncodedImage, EncodedImage> {
+    private final MemoryCache<CacheKey, PooledByteBuffer> mMemoryCache;
+    private final CacheKey mRequestedCacheKey;
+    public EncodedMemoryCacheConsumer(
+        Consumer<EncodedImage> consumer,
+        MemoryCache<CacheKey, PooledByteBuffer> memoryCache,
+        CacheKey requestedCacheKey) {
+      super(consumer);
+      mMemoryCache = memoryCache;
+      mRequestedCacheKey = requestedCacheKey;
+    }
+    @Override
+    public void onNewResultImpl(EncodedImage newResult, @Status int status) {
+      // intermediate, null or uncacheable results are not cached, so we just forward them
+      if (isNotLast(status) || newResult == null ||
+          statusHasAnyFlag(status, DO_NOT_CACHE_ENCODED | IS_PARTIAL_RESULT)) {
+        getConsumer().onNewResult(newResult, status);
+        return;
+      }
+      // cache and forward the last result
+      CloseableReference<PooledByteBuffer> ref = newResult.getByteBufferRef();
+      if (ref != null) {
+        CloseableReference<PooledByteBuffer> cachedResult;
+        try {
+          cachedResult = mMemoryCache.cache(mRequestedCacheKey, ref);
+        } finally {
+          CloseableReference.closeSafely(ref);
+        }
+        if (cachedResult != null) {
+          EncodedImage cachedEncodedImage;
+          try {
+            cachedEncodedImage = new EncodedImage(cachedResult);
+            cachedEncodedImage.copyMetaDataFrom(newResult);
+          } finally {
+            CloseableReference.closeSafely(cachedResult);
+          }
+          try {
+            getConsumer().onProgressUpdate(1f);
+            getConsumer().onNewResult(cachedEncodedImage, status);
+            return;
+          } finally {
+            EncodedImage.closeSafely(cachedEncodedImage);
+          }
+        }
+      }
+      getConsumer().onNewResult(newResult, status);
+    }
+  }",class,
+"  public EncodedMemoryCacheProducer(
+      MemoryCache<CacheKey, PooledByteBuffer> memoryCache,
+      CacheKeyFactory cacheKeyFactory,
+      Producer<EncodedImage> inputProducer) {
+    mMemoryCache = memoryCache;
+    mCacheKeyFactory = cacheKeyFactory;
+    mInputProducer = inputProducer;
+  }",method,
+"  @Override
+  public void produceResults(
+      final Consumer<EncodedImage> consumer,
+      final ProducerContext producerContext) {
+    final String requestId = producerContext.getId();
+    final ProducerListener listener = producerContext.getListener();
+    listener.onProducerStart(requestId, PRODUCER_NAME);
+    final ImageRequest imageRequest = producerContext.getImageRequest();
+    final CacheKey cacheKey =
+        mCacheKeyFactory.getEncodedCacheKey(imageRequest, producerContext.getCallerContext());
+    CloseableReference<PooledByteBuffer> cachedReference = mMemoryCache.get(cacheKey);
+    try {
+      if (cachedReference != null) {
+        EncodedImage cachedEncodedImage = new EncodedImage(cachedReference);
+        try {
+          listener.onProducerFinishWithSuccess(
+              requestId,
+              PRODUCER_NAME,
+              listener.requiresExtraMap(requestId)
+                  ? ImmutableMap.of(EXTRA_CACHED_VALUE_FOUND, ""true"")
+                  : null);
+          listener.onUltimateProducerReached(requestId, PRODUCER_NAME, true);
+          consumer.onProgressUpdate(1f);
+          consumer.onNewResult(cachedEncodedImage, Consumer.IS_LAST);
+          return;
+        } finally {
+          EncodedImage.closeSafely(cachedEncodedImage);
+        }
+      }
+      if (producerContext.getLowestPermittedRequestLevel().getValue() >=
+          ImageRequest.RequestLevel.ENCODED_MEMORY_CACHE.getValue()) {
+        listener.onProducerFinishWithSuccess(
+            requestId,
+            PRODUCER_NAME,
+            listener.requiresExtraMap(requestId)
+                ? ImmutableMap.of(EXTRA_CACHED_VALUE_FOUND, ""false"")
+                : null);
+        listener.onUltimateProducerReached(requestId, PRODUCER_NAME, false);
+        consumer.onNewResult(null, Consumer.IS_LAST);
+        return;
+      }
+      Consumer consumerOfInputProducer =
+          new EncodedMemoryCacheConsumer(consumer, mMemoryCache, cacheKey);
+      listener.onProducerFinishWithSuccess(
+          requestId,
+          PRODUCER_NAME,
+          listener.requiresExtraMap(requestId)
+              ? ImmutableMap.of(EXTRA_CACHED_VALUE_FOUND, ""false"")
+              : null);
+      mInputProducer.produceResults(consumerOfInputProducer, producerContext);
+    } finally {
+      CloseableReference.closeSafely(cachedReference);
+    }
+  }",method,
+"      if (cachedReference != null) {
+        EncodedImage cachedEncodedImage = new EncodedImage(cachedReference);
+        try {
+          listener.onProducerFinishWithSuccess(
+              requestId,
+              PRODUCER_NAME,
+              listener.requiresExtraMap(requestId)
+                  ? ImmutableMap.of(EXTRA_CACHED_VALUE_FOUND, ""true"")
+                  : null);
+          listener.onUltimateProducerReached(requestId, PRODUCER_NAME, true);
+          consumer.onProgressUpdate(1f);
+          consumer.onNewResult(cachedEncodedImage, Consumer.IS_LAST);
+          return;
+        } finally {
+          EncodedImage.closeSafely(cachedEncodedImage);
+        }
+      }",method,
+"    public EncodedMemoryCacheConsumer(
+        Consumer<EncodedImage> consumer,
+        MemoryCache<CacheKey, PooledByteBuffer> memoryCache,
+        CacheKey requestedCacheKey) {
+      super(consumer);
+      mMemoryCache = memoryCache;
+      mRequestedCacheKey = requestedCacheKey;
+    }",method,
+"    @Override
+    public void onNewResultImpl(EncodedImage newResult, @Status int status) {
+      // intermediate, null or uncacheable results are not cached, so we just forward them
+      if (isNotLast(status) || newResult == null ||
+          statusHasAnyFlag(status, DO_NOT_CACHE_ENCODED | IS_PARTIAL_RESULT)) {
+        getConsumer().onNewResult(newResult, status);
+        return;
+      }
+      // cache and forward the last result
+      CloseableReference<PooledByteBuffer> ref = newResult.getByteBufferRef();
+      if (ref != null) {
+        CloseableReference<PooledByteBuffer> cachedResult;
+        try {
+          cachedResult = mMemoryCache.cache(mRequestedCacheKey, ref);
+        } finally {
+          CloseableReference.closeSafely(ref);
+        }
+        if (cachedResult != null) {
+          EncodedImage cachedEncodedImage;
+          try {
+            cachedEncodedImage = new EncodedImage(cachedResult);
+            cachedEncodedImage.copyMetaDataFrom(newResult);
+          } finally {
+            CloseableReference.closeSafely(cachedResult);
+          }
+          try {
+            getConsumer().onProgressUpdate(1f);
+            getConsumer().onNewResult(cachedEncodedImage, status);
+            return;
+          } finally {
+            EncodedImage.closeSafely(cachedEncodedImage);
+          }
+        }
+      }
+      getConsumer().onNewResult(newResult, status);
+    }",method,
+"      if (ref != null) {
+        CloseableReference<PooledByteBuffer> cachedResult;
+        try {
+          cachedResult = mMemoryCache.cache(mRequestedCacheKey, ref);
+        } finally {
+          CloseableReference.closeSafely(ref);
+        }
+        if (cachedResult != null) {
+          EncodedImage cachedEncodedImage;
+          try {
+            cachedEncodedImage = new EncodedImage(cachedResult);
+            cachedEncodedImage.copyMetaDataFrom(newResult);
+          } finally {
+            CloseableReference.closeSafely(cachedResult);
+          }
+          try {
+            getConsumer().onProgressUpdate(1f);
+            getConsumer().onNewResult(cachedEncodedImage, status);
+            return;
+          } finally {
+            EncodedImage.closeSafely(cachedEncodedImage);
+          }
+        }
+      }",method,
+"        if (cachedResult != null) {
+          EncodedImage cachedEncodedImage;
+          try {
+            cachedEncodedImage = new EncodedImage(cachedResult);
+            cachedEncodedImage.copyMetaDataFrom(newResult);
+          } finally {
+            CloseableReference.closeSafely(cachedResult);
+          }
+          try {
+            getConsumer().onProgressUpdate(1f);
+            getConsumer().onNewResult(cachedEncodedImage, status);
+            return;
+          } finally {
+            EncodedImage.closeSafely(cachedEncodedImage);
+          }
+        }",method,
+"public class MockParameterInfoUIContext implements ParameterInfoUIContext {
+    private final PsiElement myParameterOwner;
+    private final int myCurrentParameterIndex;
+    private final ArrayList<String> result = new ArrayList<String>();
+    MockParameterInfoUIContext(PsiElement parameterOwner, int currentParameterIndex) {
+        myParameterOwner = parameterOwner;
+        myCurrentParameterIndex = currentParameterIndex;
+    }
+    @Override
+    public String setupUIComponentPresentation(String text, int highlightStartOffset, int highlightEndOffset,
+                                             boolean isDisabled, boolean strikeout,
+                                             boolean isDisabledBeforeHighlight, Color background) {
+        String highlightedText;
+        if (highlightStartOffset != -1 && highlightEndOffset != -1) {
+            highlightedText = text.substring(0, highlightStartOffset)
+                              + ""<highlight>""
+                              + text.substring(highlightStartOffset, highlightEndOffset)
+                              + ""</highlight>""
+                              + text.substring(highlightEndOffset);
+        }
+        else {
+            highlightedText = text;
+        }
+        String resultText = ""Text: ("" + highlightedText + ""), "" +
+                            ""Disabled: "" + isDisabled + "", "" +
+                            ""Strikeout: "" + strikeout + "", "" +
+                            ""Green: "" + background.equals(KotlinParameterInfoWithCallHandlerBase.GREEN_BACKGROUND);
+        result.add(resultText);
+        // return value not used, just return something
+        return resultText;
+    }
+    @Override
+    public boolean isUIComponentEnabled() {
+        return false;
+    }
+    @Override
+    public void setUIComponentEnabled(boolean enabled) {
+    }
+    @Override
+    public int getCurrentParameterIndex() {
+        return myCurrentParameterIndex;
+    }
+    @Override
+    public PsiElement getParameterOwner() {
+        return myParameterOwner;
+    }
+    @Override
+    public Color getDefaultParameterColor() {
+        return HintUtil.INFORMATION_COLOR;
+    }
+    public String getResultText() {
+        StringBuilder stringBuilder = new StringBuilder();
+        Collections.sort(result);
+        for (String s : result) {
+            stringBuilder.append(s).append(""\n"");
+        }
+        return stringBuilder.toString().trim();
+    }
+}",class,
+"    MockParameterInfoUIContext(PsiElement parameterOwner, int currentParameterIndex) {
+        myParameterOwner = parameterOwner;
+        myCurrentParameterIndex = currentParameterIndex;
+    }",method,
+"    @Override
+    public String setupUIComponentPresentation(String text, int highlightStartOffset, int highlightEndOffset,
+                                             boolean isDisabled, boolean strikeout,
+                                             boolean isDisabledBeforeHighlight, Color background) {
+        String highlightedText;
+        if (highlightStartOffset != -1 && highlightEndOffset != -1) {
+            highlightedText = text.substring(0, highlightStartOffset)
+                              + ""<highlight>""
+                              + text.substring(highlightStartOffset, highlightEndOffset)
+                              + ""</highlight>""
+                              + text.substring(highlightEndOffset);
+        }
+        else {
+            highlightedText = text;
+        }
+        String resultText = ""Text: ("" + highlightedText + ""), "" +
+                            ""Disabled: "" + isDisabled + "", "" +
+                            ""Strikeout: "" + strikeout + "", "" +
+                            ""Green: "" + background.equals(KotlinParameterInfoWithCallHandlerBase.GREEN_BACKGROUND);
+        result.add(resultText);
+        // return value not used, just return something
+        return resultText;
+    }",method,
+"        if (highlightStartOffset != -1 && highlightEndOffset != -1) {
+            highlightedText = text.substring(0, highlightStartOffset)
+                              + ""<highlight>""
+                              + text.substring(highlightStartOffset, highlightEndOffset)
+                              + ""</highlight>""
+                              + text.substring(highlightEndOffset);
+        }",method,
+"    @Override
+    public boolean isUIComponentEnabled() {
+        return false;
+    }",method,
+"    @Override
+    public void setUIComponentEnabled(boolean enabled) {
+    }",method,
+"    @Override
+    public int getCurrentParameterIndex() {
+        return myCurrentParameterIndex;
+    }",method,
+"    @Override
+    public PsiElement getParameterOwner() {
+        return myParameterOwner;
+    }",method,
+"    @Override
+    public Color getDefaultParameterColor() {
+        return HintUtil.INFORMATION_COLOR;
+    }",method,
+"    public String getResultText() {
+        StringBuilder stringBuilder = new StringBuilder();
+        Collections.sort(result);
+        for (String s : result) {
+            stringBuilder.append(s).append(""\n"");
+        }
+        return stringBuilder.toString().trim();
+    }",method,
+"        for (String s : result) {
+            stringBuilder.append(s).append(""\n"");
+        }",method,
+"@ThreadSafe
+class NewSessionRequestQueue {
+  private static final Logger log = Logger.getLogger(NewSessionRequestQueue.class.getName());
+  private final List<RequestHandler> newSessionRequests = new ArrayList<>();
+  public synchronized void add(RequestHandler request) {
+    newSessionRequests.add(request);
+  }
+  public synchronized void processQueue(
+      Predicate<RequestHandler> handlerConsumer,
+      Prioritizer prioritizer) {
+    final List<RequestHandler> copy;
+    if (prioritizer != null) {
+      copy = new ArrayList<>(newSessionRequests);
+      Collections.sort(copy);
+    } else {
+      copy = newSessionRequests;
+    }
+    List<RequestHandler> matched = new ArrayList<>();
+    for (RequestHandler request : copy) {
+      if (handlerConsumer.test(request)) {
+        matched.add(request);
+      }
+    }
+    for (RequestHandler req : matched) {
+      boolean ok = removeNewSessionRequest(req);
+      if (!ok) {
+        log.severe(""Bug removing request "" + req);
+      }
+    }
+  }
+  public synchronized void clearNewSessionRequests() {
+    newSessionRequests.clear();
+  }
+  public synchronized boolean removeNewSessionRequest(RequestHandler request) {
+    return newSessionRequests.remove(request);
+  }
+  public synchronized Iterable<DesiredCapabilities> getDesiredCapabilities() {
+    List<DesiredCapabilities> result = new ArrayList<>();
+    for (RequestHandler req : newSessionRequests) {
+      result.add(new DesiredCapabilities(req.getRequest().getDesiredCapabilities()));
+    }
+    return result;
+  }
+  public synchronized int getNewSessionRequestCount() {
+    return newSessionRequests.size();
+  }
+  public synchronized void stop() {
+    for (RequestHandler newSessionRequest : newSessionRequests) {
+      newSessionRequest.stop();
+    }
+  }
+}",class,
+"  public synchronized void add(RequestHandler request) {
+    newSessionRequests.add(request);
+  }",method,
+"  public synchronized void processQueue(
+      Predicate<RequestHandler> handlerConsumer,
+      Prioritizer prioritizer) {
+    final List<RequestHandler> copy;
+    if (prioritizer != null) {
+      copy = new ArrayList<>(newSessionRequests);
+      Collections.sort(copy);
+    } else {
+      copy = newSessionRequests;
+    }
+    List<RequestHandler> matched = new ArrayList<>();
+    for (RequestHandler request : copy) {
+      if (handlerConsumer.test(request)) {
+        matched.add(request);
+      }
+    }
+    for (RequestHandler req : matched) {
+      boolean ok = removeNewSessionRequest(req);
+      if (!ok) {
+        log.severe(""Bug removing request "" + req);
+      }
+    }
+  }",method,
+"    if (prioritizer != null) {
+      copy = new ArrayList<>(newSessionRequests);
+      Collections.sort(copy);
+    }",method,
+"    for (RequestHandler request : copy) {
+      if (handlerConsumer.test(request)) {
+        matched.add(request);
+      }
+    }",method,
+"    for (RequestHandler req : matched) {
+      boolean ok = removeNewSessionRequest(req);
+      if (!ok) {
+        log.severe(""Bug removing request "" + req);
+      }
+    }",method,
+"      if (!ok) {
+        log.severe(""Bug removing request "" + req);
+      }",method,
+"  public synchronized void clearNewSessionRequests() {
+    newSessionRequests.clear();
+  }",method,
+"  public synchronized boolean removeNewSessionRequest(RequestHandler request) {
+    return newSessionRequests.remove(request);
+  }",method,
+"  public synchronized Iterable<DesiredCapabilities> getDesiredCapabilities() {
+    List<DesiredCapabilities> result = new ArrayList<>();
+    for (RequestHandler req : newSessionRequests) {
+      result.add(new DesiredCapabilities(req.getRequest().getDesiredCapabilities()));
+    }
+    return result;
+  }",method,
+"    for (RequestHandler req : newSessionRequests) {
+      result.add(new DesiredCapabilities(req.getRequest().getDesiredCapabilities()));
+    }",method,
+"  public synchronized int getNewSessionRequestCount() {
+    return newSessionRequests.size();
+  }",method,
+"  public synchronized void stop() {
+    for (RequestHandler newSessionRequest : newSessionRequests) {
+      newSessionRequest.stop();
+    }
+  }",method,
+"    for (RequestHandler newSessionRequest : newSessionRequests) {
+      newSessionRequest.stop();
+    }",method,
+"public final class TryFunction
+{
+    private TryFunction() {}
+    @TypeParameter(""T"")
+    @TypeParameterSpecialization(name = ""T"", nativeContainerType = long.class)
+    @SqlNullable
+    @SqlType(""T"")
+    public static Long tryLong(@SqlType(""function(T)"") TryLongLambda function)
+    {
+        try {
+            return function.apply();
+        }
+        catch (PrestoException e) {
+            propagateIfUnhandled(e);
+            return null;
+        }
+    }
+    @TypeParameter(""T"")
+    @TypeParameterSpecialization(name = ""T"", nativeContainerType = double.class)
+    @SqlNullable
+    @SqlType(""T"")
+    public static Double tryDouble(@SqlType(""function(T)"") TryDoubleLambda function)
+    {
+        try {
+            return function.apply();
+        }
+        catch (PrestoException e) {
+            propagateIfUnhandled(e);
+            return null;
+        }
+    }
+    @TypeParameter(""T"")
+    @TypeParameterSpecialization(name = ""T"", nativeContainerType = boolean.class)
+    @SqlNullable
+    @SqlType(""T"")
+    public static Boolean tryBoolean(@SqlType(""function(T)"") TryBooleanLambda function)
+    {
+        try {
+            return function.apply();
+        }
+        catch (PrestoException e) {
+            propagateIfUnhandled(e);
+            return null;
+        }
+    }
+    @TypeParameter(""T"")
+    @TypeParameterSpecialization(name = ""T"", nativeContainerType = Slice.class)
+    @SqlNullable
+    @SqlType(""T"")
+    public static Slice trySlice(@SqlType(""function(T)"") TrySliceLambda function)
+    {
+        try {
+            return function.apply();
+        }
+        catch (PrestoException e) {
+            propagateIfUnhandled(e);
+            return null;
+        }
+    }
+    @TypeParameter(""T"")
+    @TypeParameterSpecialization(name = ""T"", nativeContainerType = Block.class)
+    @SqlNullable
+    @SqlType(""T"")
+    public static Block tryBlock(@SqlType(""function(T)"") TryBlockLambda function)
+    {
+        try {
+            return function.apply();
+        }
+        catch (PrestoException e) {
+            propagateIfUnhandled(e);
+            return null;
+        }
+    }
+    @TypeParameter(""T"")
+    @TypeParameterSpecialization(name = ""T"", nativeContainerType = void.class)
+    @SqlNullable
+    @SqlType(""T"")
+    public static Void tryVoid(@SqlType(""function(T)"") TryVoidLambda function)
+    {
+        try {
+            return function.apply();
+        }
+        catch (PrestoException e) {
+            propagateIfUnhandled(e);
+            return null;
+        }
+    }
+    @FunctionalInterface
+    public interface TryLongLambda
+            extends LambdaFunctionInterface
+    {
+        Long apply();
+    }
+    @FunctionalInterface
+    public interface TryDoubleLambda
+            extends LambdaFunctionInterface
+    {
+        Double apply();
+    }
+    @FunctionalInterface
+    public interface TryBooleanLambda
+            extends LambdaFunctionInterface
+    {
+        Boolean apply();
+    }
+    @FunctionalInterface
+    public interface TrySliceLambda
+            extends LambdaFunctionInterface
+    {
+        Slice apply();
+    }
+    @FunctionalInterface
+    public interface TryBlockLambda
+            extends LambdaFunctionInterface
+    {
+        Block apply();
+    }
+    @FunctionalInterface
+    public interface TryVoidLambda
+            extends LambdaFunctionInterface
+    {
+        Void apply();
+    }
+    private static void propagateIfUnhandled(PrestoException e)
+            throws PrestoException
+    {
+        int errorCode = e.getErrorCode().getCode();
+        if (errorCode == DIVISION_BY_ZERO.toErrorCode().getCode()
+                || errorCode == INVALID_CAST_ARGUMENT.toErrorCode().getCode()
+                || errorCode == INVALID_FUNCTION_ARGUMENT.toErrorCode().getCode()
+                || errorCode == NUMERIC_VALUE_OUT_OF_RANGE.toErrorCode().getCode()) {
+            return;
+        }
+        throw e;
+    }
+}",class,
+    private TryFunction() {},method,
+"        catch (PrestoException e) {
+            propagateIfUnhandled(e);
+            return null;
+        }",method,
+"        catch (PrestoException e) {
+            propagateIfUnhandled(e);
+            return null;
+        }",method,
+"        catch (PrestoException e) {
+            propagateIfUnhandled(e);
+            return null;
+        }",method,
+"        catch (PrestoException e) {
+            propagateIfUnhandled(e);
+            return null;
+        }",method,
+"        catch (PrestoException e) {
+            propagateIfUnhandled(e);
+            return null;
+        }",method,
+"        catch (PrestoException e) {
+            propagateIfUnhandled(e);
+            return null;
+        }",method,
+"    private static void propagateIfUnhandled(PrestoException e)
+            throws PrestoException
+    {
+        int errorCode = e.getErrorCode().getCode();
+        if (errorCode == DIVISION_BY_ZERO.toErrorCode().getCode()
+                || errorCode == INVALID_CAST_ARGUMENT.toErrorCode().getCode()
+                || errorCode == INVALID_FUNCTION_ARGUMENT.toErrorCode().getCode()
+                || errorCode == NUMERIC_VALUE_OUT_OF_RANGE.toErrorCode().getCode()) {
+            return;
+        }
+        throw e;
+    }",method,
+"public class StaticLayoutBidiTest {
+    public static final int REQ_DL = 2; // Layout.DIR_REQUEST_DEFAULT_LTR;
+    public static final int REQ_DR = -2; // Layout.DIR_REQUEST_DEFAULT_RTL;
+    public static final int REQ_L = 1; // Layout.DIR_REQUEST_LTR;
+    public static final int REQ_R = -1; // Layout.DIR_REQUEST_RTL;
+    public static final int L = Layout.DIR_LEFT_TO_RIGHT;
+    public static final int R = Layout.DIR_RIGHT_TO_LEFT;
+    public static final String SP = "" "";
+    public static final String ALEF = ""\u05d0"";
+    public static final String BET = ""\u05d1"";
+    public static final String GIMEL = ""\u05d2"";
+    public static final String DALET = ""\u05d3"";
+    @Test
+    public void testAllLtr() {
+        expectNativeBidi(REQ_DL, ""a test"", ""000000"", L);
+    }
+    @Test
+    public void testLtrRtl() {
+        expectNativeBidi(REQ_DL, ""abc "" + ALEF + BET + GIMEL, ""0000111"", L);
+    }
+    @Test
+    public void testAllRtl() {
+        expectNativeBidi(REQ_DL, ALEF + SP + ALEF + BET + GIMEL + DALET, ""111111"", R);
+    }
+    @Test
+    public void testRtlLtr() {
+        expectNativeBidi(REQ_DL,  ALEF + BET + GIMEL + "" abc"", ""1111222"", R);
+    }
+    @Test
+    public void testRAllLtr() {
+        expectNativeBidi(REQ_R, ""a test"", ""222222"", R);
+    }
+    @Test
+    public void testRLtrRtl() {
+        expectNativeBidi(REQ_R, ""abc "" + ALEF + BET + GIMEL, ""2221111"", R);
+    }
+    @Test
+    public void testLAllRtl() {
+        expectNativeBidi(REQ_L, ALEF + SP + ALEF + BET + GIMEL + DALET, ""111111"", L);
+    }
+    @Test
+    public void testLRtlLtr() {
+        expectNativeBidi(REQ_DL,  ALEF + BET + GIMEL + "" abc"", ""1111222"", R);
+    }
+    @Test
+    public void testNativeBidi() {
+        expectNativeBidi(REQ_L,  ALEF + BET + GIMEL + "" abc"", ""1110000"", L);
+    }
+    private void expectNativeBidi(int dir, String text,
+            String expectedLevels, int expectedDir) {
+        char[] chs = text.toCharArray();
+        int n = chs.length;
+        byte[] chInfo = new byte[n];
+        int resultDir = AndroidBidi.bidi(dir, chs, chInfo, n, false);
+        {
+            StringBuilder sb = new StringBuilder(""info:"");
+            for (int i = 0; i < n; ++i) {
+                sb.append("" "").append(String.valueOf(chInfo[i]));
+            }
+            Log.i(""BIDI"", sb.toString());
+        }
+        char[] resultLevelChars = new char[n];
+        for (int i = 0; i < n; ++i) {
+            resultLevelChars[i] = (char)('0' + chInfo[i]);
+        }
+        String resultLevels = new String(resultLevelChars);
+        assertEquals(""direction"", expectedDir, resultDir);
+        assertEquals(""levels"", expectedLevels, resultLevels);
+    }
+}",class,
+"    @Test
+    public void testAllLtr() {
+        expectNativeBidi(REQ_DL, ""a test"", ""000000"", L);
+    }",method,
+"    @Test
+    public void testLtrRtl() {
+        expectNativeBidi(REQ_DL, ""abc "" + ALEF + BET + GIMEL, ""0000111"", L);
+    }",method,
+"    @Test
+    public void testAllRtl() {
+        expectNativeBidi(REQ_DL, ALEF + SP + ALEF + BET + GIMEL + DALET, ""111111"", R);
+    }",method,
+"    @Test
+    public void testRtlLtr() {
+        expectNativeBidi(REQ_DL,  ALEF + BET + GIMEL + "" abc"", ""1111222"", R);
+    }",method,
+"    @Test
+    public void testRAllLtr() {
+        expectNativeBidi(REQ_R, ""a test"", ""222222"", R);
+    }",method,
+"    @Test
+    public void testRLtrRtl() {
+        expectNativeBidi(REQ_R, ""abc "" + ALEF + BET + GIMEL, ""2221111"", R);
+    }",method,
+"    @Test
+    public void testLAllRtl() {
+        expectNativeBidi(REQ_L, ALEF + SP + ALEF + BET + GIMEL + DALET, ""111111"", L);
+    }",method,
+"    @Test
+    public void testLRtlLtr() {
+        expectNativeBidi(REQ_DL,  ALEF + BET + GIMEL + "" abc"", ""1111222"", R);
+    }",method,
+"    @Test
+    public void testNativeBidi() {
+        expectNativeBidi(REQ_L,  ALEF + BET + GIMEL + "" abc"", ""1110000"", L);
+    }",method,
+"    private void expectNativeBidi(int dir, String text,
+            String expectedLevels, int expectedDir) {
+        char[] chs = text.toCharArray();
+        int n = chs.length;
+        byte[] chInfo = new byte[n];
+        int resultDir = AndroidBidi.bidi(dir, chs, chInfo, n, false);
+        {
+            StringBuilder sb = new StringBuilder(""info:"");
+            for (int i = 0; i < n; ++i) {
+                sb.append("" "").append(String.valueOf(chInfo[i]));
+            }
+            Log.i(""BIDI"", sb.toString());
+        }
+        char[] resultLevelChars = new char[n];
+        for (int i = 0; i < n; ++i) {
+            resultLevelChars[i] = (char)('0' + chInfo[i]);
+        }
+        String resultLevels = new String(resultLevelChars);
+        assertEquals(""direction"", expectedDir, resultDir);
+        assertEquals(""levels"", expectedLevels, resultLevels);
+    }",method,
+"            for (int i = 0; i < n; ++i) {
+                sb.append("" "").append(String.valueOf(chInfo[i]));
+            }",method,
+"        for (int i = 0; i < n; ++i) {
+            resultLevelChars[i] = (char)('0' + chInfo[i]);
+        }",method,
+"public class InnerClassesInfo implements VisitorAccepter
+{
+    public int u2innerClassIndex;
+    public int u2outerClassIndex;
+    public int u2innerNameIndex;
+    public int u2innerClassAccessFlags;
+    public Object visitorInfo;
+    protected int getInnerClassIndex()
+    {
+        return u2innerClassIndex;
+    }
+    protected int getInnerNameIndex()
+    {
+        return u2innerNameIndex;
+    }
+    protected void setInnerNameIndex(int index)
+    {
+        u2innerNameIndex = index;
+    }
+    public void innerClassConstantAccept(Clazz clazz, ConstantVisitor constantVisitor)
+    {
+        if (u2innerClassIndex != 0)
+        {
+            clazz.constantPoolEntryAccept(u2innerClassIndex, constantVisitor);
+        }
+    }
+    public void outerClassConstantAccept(Clazz clazz, ConstantVisitor constantVisitor)
+    {
+        if (u2outerClassIndex != 0)
+        {
+            clazz.constantPoolEntryAccept(u2outerClassIndex, constantVisitor);
+        }
+    }
+    public void innerNameConstantAccept(Clazz clazz, ConstantVisitor constantVisitor)
+    {
+        if (u2innerNameIndex != 0)
+        {
+            clazz.constantPoolEntryAccept(u2innerNameIndex, constantVisitor);
+        }
+    }
+    // Implementations for VisitorAccepter.
+    public Object getVisitorInfo()
+    {
+        return visitorInfo;
+    }
+    public void setVisitorInfo(Object visitorInfo)
+    {
+        this.visitorInfo = visitorInfo;
+    }
+}",class,
+"public class LineNumberInfo
+{
+    public int u2startPC;
+    public int u2lineNumber;
+    public LineNumberInfo()
+    {
+    }
+    public LineNumberInfo(int u2startPC, int u2lineNumber)
+    {
+        this.u2startPC    = u2startPC;
+        this.u2lineNumber = u2lineNumber;
+    }
+    public String getSource()
+    {
+        return null;
+    }
+}",class,
+"    protected int getInnerClassIndex()
+    {
+        return u2innerClassIndex;
+    }",method,
+"    protected int getInnerNameIndex()
+    {
+        return u2innerNameIndex;
+    }",method,
+"    protected void setInnerNameIndex(int index)
+    {
+        u2innerNameIndex = index;
+    }",method,
+"    public void innerClassConstantAccept(Clazz clazz, ConstantVisitor constantVisitor)
+    {
+        if (u2innerClassIndex != 0)
+        {
+            clazz.constantPoolEntryAccept(u2innerClassIndex, constantVisitor);
+        }
+    }",method,
+"        if (u2innerClassIndex != 0)
+        {
+            clazz.constantPoolEntryAccept(u2innerClassIndex, constantVisitor);
+        }",method,
+"    public void outerClassConstantAccept(Clazz clazz, ConstantVisitor constantVisitor)
+    {
+        if (u2outerClassIndex != 0)
+        {
+            clazz.constantPoolEntryAccept(u2outerClassIndex, constantVisitor);
+        }
+    }",method,
+"        if (u2outerClassIndex != 0)
+        {
+            clazz.constantPoolEntryAccept(u2outerClassIndex, constantVisitor);
+        }",method,
+"    public void innerNameConstantAccept(Clazz clazz, ConstantVisitor constantVisitor)
+    {
+        if (u2innerNameIndex != 0)
+        {
+            clazz.constantPoolEntryAccept(u2innerNameIndex, constantVisitor);
+        }
+    }",method,
+"        if (u2innerNameIndex != 0)
+        {
+            clazz.constantPoolEntryAccept(u2innerNameIndex, constantVisitor);
+        }",method,
+"    public Object getVisitorInfo()
+    {
+        return visitorInfo;
+    }",method,
+"    public void setVisitorInfo(Object visitorInfo)
+    {
+        this.visitorInfo = visitorInfo;
+    }",method,
+"    public LineNumberInfo()
+    {
+    }",method,
+"    public LineNumberInfo(int u2startPC, int u2lineNumber)
+    {
+        this.u2startPC    = u2startPC;
+        this.u2lineNumber = u2lineNumber;
+    }",method,
+"    public String getSource()
+    {
+        return null;
+    }",method,
+"public class OracleAlterTableTest6 extends OracleTest {
+    public void test_0() throws Exception {
+        String sql = //
+        ""ALTER TABLE wl_service_record add ( service_type VARCHAR2(32) )"";
+        OracleStatementParser parser = new OracleStatementParser(sql);
+        List<SQLStatement> statementList = parser.parseStatementList();
+        SQLStatement statemen = statementList.get(0);
+        print(statementList);
+        Assert.assertEquals(1, statementList.size());
+        OracleSchemaStatVisitor visitor = new OracleSchemaStatVisitor();
+        statemen.accept(visitor);
+        System.out.println(""Tables : "" + visitor.getTables());
+        System.out.println(""fields : "" + visitor.getColumns());
+        System.out.println(""coditions : "" + visitor.getConditions());
+        System.out.println(""relationships : "" + visitor.getRelationships());
+        System.out.println(""orderBy : "" + visitor.getOrderByColumns());
+        Assert.assertEquals(1, visitor.getTables().size());
+        Assert.assertTrue(visitor.getTables().containsKey(new TableStat.Name(""wl_service_record"")));
+        Assert.assertEquals(1, visitor.getColumns().size());
+         Assert.assertTrue(visitor.getColumns().contains(new TableStat.Column(""wl_service_record"", ""service_type"")));
+        // Assert.assertTrue(visitor.getColumns().contains(new TableStat.Column(""pivot_table"", ""YEAR"")));
+        // Assert.assertTrue(visitor.getColumns().contains(new TableStat.Column(""pivot_table"", ""order_mode"")));
+    }
+}",class,
+"    public void test_0() throws Exception {
+        String sql = //
+        ""ALTER TABLE wl_service_record add ( service_type VARCHAR2(32) )"";
+        OracleStatementParser parser = new OracleStatementParser(sql);
+        List<SQLStatement> statementList = parser.parseStatementList();
+        SQLStatement statemen = statementList.get(0);
+        print(statementList);
+        Assert.assertEquals(1, statementList.size());
+        OracleSchemaStatVisitor visitor = new OracleSchemaStatVisitor();
+        statemen.accept(visitor);
+        System.out.println(""Tables : "" + visitor.getTables());
+        System.out.println(""fields : "" + visitor.getColumns());
+        System.out.println(""coditions : "" + visitor.getConditions());
+        System.out.println(""relationships : "" + visitor.getRelationships());
+        System.out.println(""orderBy : "" + visitor.getOrderByColumns());
+        Assert.assertEquals(1, visitor.getTables().size());
+        Assert.assertTrue(visitor.getTables().containsKey(new TableStat.Name(""wl_service_record"")));
+        Assert.assertEquals(1, visitor.getColumns().size());
+         Assert.assertTrue(visitor.getColumns().contains(new TableStat.Column(""wl_service_record"", ""service_type"")));
+        // Assert.assertTrue(visitor.getColumns().contains(new TableStat.Column(""pivot_table"", ""YEAR"")));
+        // Assert.assertTrue(visitor.getColumns().contains(new TableStat.Column(""pivot_table"", ""order_mode"")));
+    }",method,
+"public class RenamePyVariableProcessor extends RenamePyElementProcessor {
+  @Override
+  public boolean canProcessElement(@NotNull PsiElement element) {
+    // extension ordering in python-plugin-common.xml ensures that classes and functions are handled by their own processors
+    return element instanceof PyElement && !(element instanceof PyReferenceExpression);
+  }
+  @Override
+  public boolean isToSearchInComments(PsiElement element) {
+    return PyCodeInsightSettings.getInstance().RENAME_SEARCH_IN_COMMENTS_FOR_VARIABLE;
+  }
+  @Override
+  public void setToSearchInComments(PsiElement element, boolean enabled) {
+    PyCodeInsightSettings.getInstance().RENAME_SEARCH_IN_COMMENTS_FOR_VARIABLE = enabled;
+  }
+  @Override
+  public boolean isToSearchForTextOccurrences(PsiElement element) {
+    return PyCodeInsightSettings.getInstance().RENAME_SEARCH_NON_CODE_FOR_VARIABLE;
+  }
+  @Override
+  public void setToSearchForTextOccurrences(PsiElement element, boolean enabled) {
+    PyCodeInsightSettings.getInstance().RENAME_SEARCH_NON_CODE_FOR_VARIABLE = enabled;
+  }
+  @Nullable
+  @Override
+  public PsiElement substituteElementToRename(PsiElement element, @Nullable Editor editor) {
+    if (element instanceof PyLambdaExpression) {
+      final PyLambdaExpression lambdaExpression = (PyLambdaExpression)element;
+      final ScopeOwner owner = ScopeUtil.getScopeOwner(lambdaExpression);
+      if (owner instanceof PyClass) {
+        final PyClass cls = (PyClass)owner;
+        final Property property = cls.findPropertyByCallable(lambdaExpression);
+        if (property != null) {
+          final PyTargetExpression site = property.getDefinitionSite();
+          if (site != null) {
+            return site;
+          }
+        }
+      }
+      return null;
+    }
+    return element;
+  }
+}",class,
+"  @Override
+  public boolean canProcessElement(@NotNull PsiElement element) {
+    // extension ordering in python-plugin-common.xml ensures that classes and functions are handled by their own processors
+    return element instanceof PyElement && !(element instanceof PyReferenceExpression);
+  }",method,
+"  @Override
+  public boolean isToSearchInComments(PsiElement element) {
+    return PyCodeInsightSettings.getInstance().RENAME_SEARCH_IN_COMMENTS_FOR_VARIABLE;
+  }",method,
+"  @Override
+  public void setToSearchInComments(PsiElement element, boolean enabled) {
+    PyCodeInsightSettings.getInstance().RENAME_SEARCH_IN_COMMENTS_FOR_VARIABLE = enabled;
+  }",method,
+"  @Override
+  public boolean isToSearchForTextOccurrences(PsiElement element) {
+    return PyCodeInsightSettings.getInstance().RENAME_SEARCH_NON_CODE_FOR_VARIABLE;
+  }",method,
+"  @Override
+  public void setToSearchForTextOccurrences(PsiElement element, boolean enabled) {
+    PyCodeInsightSettings.getInstance().RENAME_SEARCH_NON_CODE_FOR_VARIABLE = enabled;
+  }",method,
+"  @Nullable
+  @Override
+  public PsiElement substituteElementToRename(PsiElement element, @Nullable Editor editor) {
+    if (element instanceof PyLambdaExpression) {
+      final PyLambdaExpression lambdaExpression = (PyLambdaExpression)element;
+      final ScopeOwner owner = ScopeUtil.getScopeOwner(lambdaExpression);
+      if (owner instanceof PyClass) {
+        final PyClass cls = (PyClass)owner;
+        final Property property = cls.findPropertyByCallable(lambdaExpression);
+        if (property != null) {
+          final PyTargetExpression site = property.getDefinitionSite();
+          if (site != null) {
+            return site;
+          }
+        }
+      }
+      return null;
+    }
+    return element;
+  }",method,
+"    if (element instanceof PyLambdaExpression) {
+      final PyLambdaExpression lambdaExpression = (PyLambdaExpression)element;
+      final ScopeOwner owner = ScopeUtil.getScopeOwner(lambdaExpression);
+      if (owner instanceof PyClass) {
+        final PyClass cls = (PyClass)owner;
+        final Property property = cls.findPropertyByCallable(lambdaExpression);
+        if (property != null) {
+          final PyTargetExpression site = property.getDefinitionSite();
+          if (site != null) {
+            return site;
+          }
+        }
+      }
+      return null;
+    }",method,
+"      if (owner instanceof PyClass) {
+        final PyClass cls = (PyClass)owner;
+        final Property property = cls.findPropertyByCallable(lambdaExpression);
+        if (property != null) {
+          final PyTargetExpression site = property.getDefinitionSite();
+          if (site != null) {
+            return site;
+          }
+        }
+      }",method,
+"        if (property != null) {
+          final PyTargetExpression site = property.getDefinitionSite();
+          if (site != null) {
+            return site;
+          }
+        }",method,
+"          if (site != null) {
+            return site;
+          }",method,
+"public class ReadOp implements TransactionOperation, TransactionSingleOpOperation {
+    final protected OtpErlangString key;
+    protected OtpErlangObject resultRaw = null;
+    protected boolean resultCompressed = false;
+    public ReadOp(final OtpErlangString key) {
+        this.key = key;
+    }
+    public ReadOp(final String key) {
+        this.key = new OtpErlangString(key);
+    }
+    public OtpErlangObject getErlang(final boolean compressed) {
+        return new OtpErlangTuple(new OtpErlangObject[] {
+                CommonErlangObjects.readAtom, key });
+    }
+    public OtpErlangString getKey() {
+        return key;
+    }
+    public void setResult(final OtpErlangObject resultRaw, final boolean compressed) {
+        this.resultRaw = resultRaw;
+        this.resultCompressed = compressed;
+    }
+    public OtpErlangObject getResult() {
+        return this.resultRaw;
+    }
+    public boolean getResultCompressed() {
+        return this.resultCompressed;
+    }
+    public ErlangValue processResult() throws NotFoundException,
+            UnknownException {
+        try {
+            final OtpErlangTuple received = (OtpErlangTuple) resultRaw;
+            final OtpErlangObject state = received.elementAt(0);
+            if (received.arity() != 2) {
+                throw new UnknownException(resultRaw);
+            }
+            if (state.equals(CommonErlangObjects.okAtom)) {
+                OtpErlangObject result = received.elementAt(1);
+                if (resultCompressed) {
+                    result = CommonErlangObjects.decode(result);
+                }
+                return new ErlangValue(result);
+            } else if (state.equals(CommonErlangObjects.failAtom)) {
+                final OtpErlangObject reason = received.elementAt(1);
+                if (reason.equals(CommonErlangObjects.notFoundAtom)) {
+                    throw new NotFoundException(resultRaw);
+                }
+            }
+            throw new UnknownException(resultRaw);
+        } catch (final ClassCastException e) {
+            // e.printStackTrace();
+            throw new UnknownException(e, resultRaw);
+        } catch (final OtpErlangDecodeException e) {
+            // e.printStackTrace();
+            throw new UnknownException(e, resultRaw);
+        }
+    }
+    public ErlangValue processResultSingle() throws NotFoundException,
+            KeyChangedException, NotANumberException, NotAListException,
+            AbortException, UnknownException {
+        return processResult();
+    }
+    @Override
+    public String toString() {
+        return ""read("" + key + "")"";
+    }
+}",class,
+"    public ReadOp(final OtpErlangString key) {
+        this.key = key;
+    }",method,
+"    public ReadOp(final String key) {
+        this.key = new OtpErlangString(key);
+    }",method,
+"    public OtpErlangObject getErlang(final boolean compressed) {
+        return new OtpErlangTuple(new OtpErlangObject[] {
+                CommonErlangObjects.readAtom, key });
+    }",method,
+"    public OtpErlangString getKey() {
+        return key;
+    }",method,
+"    public void setResult(final OtpErlangObject resultRaw, final boolean compressed) {
+        this.resultRaw = resultRaw;
+        this.resultCompressed = compressed;
+    }",method,

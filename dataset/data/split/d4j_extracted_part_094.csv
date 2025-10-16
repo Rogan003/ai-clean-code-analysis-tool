@@ -1,0 +1,1378 @@
+code_snippet,type,score
+"  public void Expand(Vector3 e) {
+    CollisionJNI.btDbvtAabbMm_Expand(swigCPtr, this, e);
+  }",method,
+"  public void SignedExpand(Vector3 e) {
+    CollisionJNI.btDbvtAabbMm_SignedExpand(swigCPtr, this, e);
+  }",method,
+"  public boolean Contain(btDbvtAabbMm a) {
+    return CollisionJNI.btDbvtAabbMm_Contain(swigCPtr, this, btDbvtAabbMm.getCPtr(a), a);
+  }",method,
+"  public int Classify(Vector3 n, float o, int s) {
+    return CollisionJNI.btDbvtAabbMm_Classify(swigCPtr, this, n, o, s);
+  }",method,
+"  public float ProjectMinimum(Vector3 v, long signs) {
+    return CollisionJNI.btDbvtAabbMm_ProjectMinimum(swigCPtr, this, v, signs);
+  }",method,
+"  public Vector3 tMins() {
+	return CollisionJNI.btDbvtAabbMm_tMins(swigCPtr, this);
+}",method,
+"  public Vector3 tMaxs() {
+	return CollisionJNI.btDbvtAabbMm_tMaxs(swigCPtr, this);
+}",method,
+"  public btDbvtAabbMm() {
+    this(CollisionJNI.new_btDbvtAabbMm(), true);
+  }",method,
+"public final class TrackEncryptionBox {
+  private static final String TAG = ""TrackEncryptionBox"";
+  public final boolean isEncrypted;
+  @Nullable public final String schemeType;
+  public final TrackOutput.CryptoData cryptoData;
+  public final int initializationVectorSize;
+  public final byte[] defaultInitializationVector;
+  public TrackEncryptionBox(boolean isEncrypted, @Nullable String schemeType,
+      int initializationVectorSize, byte[] keyId, int defaultEncryptedBlocks,
+      int defaultClearBlocks, @Nullable byte[] defaultInitializationVector) {
+    Assertions.checkArgument(initializationVectorSize == 0 ^ defaultInitializationVector == null);
+    this.isEncrypted = isEncrypted;
+    this.schemeType = schemeType;
+    this.initializationVectorSize = initializationVectorSize;
+    this.defaultInitializationVector = defaultInitializationVector;
+    cryptoData = new TrackOutput.CryptoData(schemeToCryptoMode(schemeType), keyId,
+        defaultEncryptedBlocks, defaultClearBlocks);
+  }
+  @C.CryptoMode
+  private static int schemeToCryptoMode(@Nullable String schemeType) {
+    if (schemeType == null) {
+      // If unknown, assume cenc.
+      return C.CRYPTO_MODE_AES_CTR;
+    }
+    switch (schemeType) {
+      case C.CENC_TYPE_cenc:
+      case C.CENC_TYPE_cens:
+        return C.CRYPTO_MODE_AES_CTR;
+      case C.CENC_TYPE_cbc1:
+      case C.CENC_TYPE_cbcs:
+        return C.CRYPTO_MODE_AES_CBC;
+      default:
+        Log.w(TAG, ""Unsupported protection scheme type '"" + schemeType + ""'. Assuming AES-CTR ""
+            + ""crypto mode."");
+        return C.CRYPTO_MODE_AES_CTR;
+    }
+  }
+}",class,
+"  public TrackEncryptionBox(boolean isEncrypted, @Nullable String schemeType,
+      int initializationVectorSize, byte[] keyId, int defaultEncryptedBlocks,
+      int defaultClearBlocks, @Nullable byte[] defaultInitializationVector) {
+    Assertions.checkArgument(initializationVectorSize == 0 ^ defaultInitializationVector == null);
+    this.isEncrypted = isEncrypted;
+    this.schemeType = schemeType;
+    this.initializationVectorSize = initializationVectorSize;
+    this.defaultInitializationVector = defaultInitializationVector;
+    cryptoData = new TrackOutput.CryptoData(schemeToCryptoMode(schemeType), keyId,
+        defaultEncryptedBlocks, defaultClearBlocks);
+  }",method,
+"  @C.CryptoMode
+  private static int schemeToCryptoMode(@Nullable String schemeType) {
+    if (schemeType == null) {
+      // If unknown, assume cenc.
+      return C.CRYPTO_MODE_AES_CTR;
+    }
+    switch (schemeType) {
+      case C.CENC_TYPE_cenc:
+      case C.CENC_TYPE_cens:
+        return C.CRYPTO_MODE_AES_CTR;
+      case C.CENC_TYPE_cbc1:
+      case C.CENC_TYPE_cbcs:
+        return C.CRYPTO_MODE_AES_CBC;
+      default:
+        Log.w(TAG, ""Unsupported protection scheme type '"" + schemeType + ""'. Assuming AES-CTR ""
+            + ""crypto mode."");
+        return C.CRYPTO_MODE_AES_CTR;
+    }
+  }",method,
+"    if (schemeType == null) {
+      // If unknown, assume cenc.
+      return C.CRYPTO_MODE_AES_CTR;
+    }",method,
+"    switch (schemeType) {
+      case C.CENC_TYPE_cenc:
+      case C.CENC_TYPE_cens:
+        return C.CRYPTO_MODE_AES_CTR;
+      case C.CENC_TYPE_cbc1:
+      case C.CENC_TYPE_cbcs:
+        return C.CRYPTO_MODE_AES_CBC;
+      default:
+        Log.w(TAG, ""Unsupported protection scheme type '"" + schemeType + ""'. Assuming AES-CTR ""
+            + ""crypto mode."");
+        return C.CRYPTO_MODE_AES_CTR;
+    }",method,
+"public class EndpointTest {
+  @Rule
+  public ExpectedException thrown = ExpectedException.none();
+  @Test
+  public void messageWhenMissingServiceName() {
+    thrown.expect(NullPointerException.class);
+    thrown.expectMessage(""serviceName"");
+    Endpoint.builder().ipv4(127 << 24 | 1).build();
+  }
+  @Test
+  public void missingIpv4CoercesTo0() {
+    assertThat(Endpoint.builder().serviceName(""foo"").build().ipv4)
+        .isEqualTo(0);
+  }
+  @Test
+  public void builderWithPort_0CoercesToNull() {
+    assertThat(Endpoint.builder().serviceName(""foo"").port(0).build().port)
+        .isNull();
+  }
+  @Test
+  public void builderWithPort_highest() {
+    short port = Endpoint.builder().serviceName(""foo"").port(65535).build().port;
+    assertThat(port)
+        .isEqualTo((short) -1); // an unsigned short of 65535 is the same as -1
+    assertThat(port & 0xffff)
+        .isEqualTo(65535);
+  }
+  @Test
+  public void builderWithPort_highest_short() {
+    short port = Endpoint.builder().serviceName(""foo"").port(new Short((short) 65535)).build().port;
+    assertThat(port)
+        .isEqualTo((short) -1); // an unsigned short of 65535 is the same as -1
+    assertThat(port & 0xffff)
+        .isEqualTo(65535);
+  }
+  @Test
+  public void ip_addr_ipv4() throws UnknownHostException {
+    Endpoint.Builder builder = Endpoint.builder().serviceName(""foo"");
+    assertThat(builder.parseIp(Inet4Address.getByName(""1.2.3.4""))).isTrue();
+    Endpoint endpoint = builder.build();
+    assertThat(endpoint.ipv4)
+        .isEqualTo(1 << 24 | 2 << 16 | 3 << 8 | 4);
+    assertThat(endpoint.ipv6)
+        .isNull();
+  }
+  @Test
+  public void ip_string_ipv4() throws UnknownHostException {
+    Endpoint.Builder builder = Endpoint.builder().serviceName(""foo"");
+    assertThat(builder.parseIp(""1.2.3.4"")).isTrue();
+    Endpoint endpoint = builder.build();
+    assertThat(endpoint.ipv4)
+        .isEqualTo(1 << 24 | 2 << 16 | 3 << 8 | 4);
+    assertThat(endpoint.ipv6)
+        .isNull();
+  }
+  @Test
+  public void ipv6() throws UnknownHostException {
+    byte[] ipv6 = Inet6Address.getByName(""2001:db8::c001"").getAddress();
+    Endpoint endpoint = Endpoint.builder().serviceName(""foo"").ipv6(ipv6).build();
+    assertThat(endpoint.ipv4)
+        .isEqualTo(0);
+    assertThat(endpoint.ipv6)
+        .isEqualTo(ipv6);
+  }
+  @Test
+  public void ip_addr_ipv6() throws UnknownHostException {
+    InetAddress ipv6 = Inet6Address.getByName(""2001:db8::c001"");
+    Endpoint.Builder builder = Endpoint.builder().serviceName(""foo"");
+    assertThat(builder.parseIp(ipv6)).isTrue();
+    Endpoint endpoint = builder.build();
+    assertThat(endpoint.ipv4)
+        .isEqualTo(0);
+    assertThat(endpoint.ipv6)
+        .isEqualTo(ipv6.getAddress());
+  }
+  @Test
+  public void ip_string_ipv6() throws UnknownHostException {
+    byte[] ipv6 = Inet6Address.getByName(""2001:db8::c001"").getAddress();
+    Endpoint.Builder builder = Endpoint.builder().serviceName(""foo"");
+    assertThat(builder.parseIp(""2001:db8::c001"")).isTrue();
+    Endpoint endpoint = builder.build();
+    assertThat(endpoint.ipv4)
+        .isEqualTo(0);
+    assertThat(endpoint.ipv6)
+        .isEqualTo(ipv6);
+  }
+  @Test
+  public void ipv6_mappedIpv4() throws UnknownHostException {
+    // ::FFFF:1.2.3.4
+    byte[] ipv6_mapped = new byte[16];
+    ipv6_mapped[10] = (byte) 0xff;
+    ipv6_mapped[11] = (byte) 0xff;
+    ipv6_mapped[12] = (byte) 1;
+    ipv6_mapped[13] = (byte) 2;
+    ipv6_mapped[14] = (byte) 3;
+    ipv6_mapped[15] = (byte) 4;
+    Endpoint endpoint = Endpoint.builder().serviceName(""foo"").ipv6(ipv6_mapped).build();
+    assertThat(endpoint.ipv4)
+        .isEqualTo(1 << 24 | 2 << 16 | 3 << 8 | 4);
+    assertThat(endpoint.ipv6)
+        .isNull();
+  }
+  @Test
+  public void ip_string_mappedIpv4() throws UnknownHostException {
+    Endpoint.Builder builder = Endpoint.builder().serviceName(""foo"");
+    assertThat(builder.parseIp(""::FFFF:1.2.3.4"")).isTrue();
+    Endpoint endpoint = builder.build();
+    assertThat(endpoint.ipv4)
+        .isEqualTo(1 << 24 | 2 << 16 | 3 << 8 | 4);
+    assertThat(endpoint.ipv6)
+        .isNull();
+  }
+  @Test
+  public void ip_string_compatIpv4() throws UnknownHostException {
+    Endpoint.Builder builder = Endpoint.builder().serviceName(""foo"");
+    assertThat(builder.parseIp(""::0000:1.2.3.4"")).isTrue();
+    Endpoint endpoint = builder.build();
+    assertThat(endpoint.ipv4)
+        .isEqualTo(1 << 24 | 2 << 16 | 3 << 8 | 4);
+    assertThat(endpoint.ipv6)
+        .isNull();
+  }
+  @Test
+  public void ipv6_notMappedIpv4() throws UnknownHostException {
+    // ::FFEF:1.2.3.4
+    byte[] ipv6_mapped = new byte[16];
+    ipv6_mapped[10] = (byte) 0xff;
+    ipv6_mapped[11] = (byte) 0xef;
+    ipv6_mapped[12] = (byte) 1;
+    ipv6_mapped[13] = (byte) 2;
+    ipv6_mapped[14] = (byte) 3;
+    ipv6_mapped[15] = (byte) 4;
+    Endpoint endpoint = Endpoint.builder().serviceName(""foo"").ipv6(ipv6_mapped).build();
+    assertThat(endpoint.ipv4)
+        .isZero();
+    assertThat(endpoint.ipv6)
+        .isEqualTo(ipv6_mapped);
+  }
+  @Test
+  public void ipv6_compatIpv4() throws UnknownHostException {
+    // ::1.2.3.4
+    byte[] ipv6_mapped = new byte[16];
+    ipv6_mapped[12] = (byte) 1;
+    ipv6_mapped[13] = (byte) 2;
+    ipv6_mapped[14] = (byte) 3;
+    ipv6_mapped[15] = (byte) 4;
+    Endpoint endpoint = Endpoint.builder().serviceName(""foo"").ipv6(ipv6_mapped).build();
+    assertThat(endpoint.ipv4)
+        .isEqualTo(1 << 24 | 2 << 16 | 3 << 8 | 4);
+    assertThat(endpoint.ipv6)
+        .isNull();
+  }
+  @Test
+  public void ipv6_localhost() throws UnknownHostException {
+    byte[] ipv6_localhost = new byte[16];
+    ipv6_localhost[15] = 1;
+    Endpoint endpoint = Endpoint.builder().serviceName(""foo"").ipv6(ipv6_localhost).build();
+    assertThat(endpoint.ipv4)
+        .isZero();
+    assertThat(endpoint.ipv6)
+        .isEqualTo(ipv6_localhost);
+  }
+  @Test
+  public void ip_string_ipv6_localhost() throws UnknownHostException {
+    byte[] ipv6_localhost = new byte[16];
+    ipv6_localhost[15] = 1;
+    Endpoint.Builder builder = Endpoint.builder().serviceName(""foo"");
+    assertThat(builder.parseIp(""::1"")).isTrue();
+    Endpoint endpoint = builder.build();
+    assertThat(endpoint.ipv4)
+        .isZero();
+    assertThat(endpoint.ipv6)
+        .isEqualTo(ipv6_localhost);
+  }
+  @Test
+  public void ipv6_notLocalhost() throws UnknownHostException {
+    byte[] ipv6_localhost = new byte[16];
+    ipv6_localhost[15] = 2;
+    Endpoint endpoint = Endpoint.builder().serviceName(""foo"").ipv6(ipv6_localhost).build();
+    assertThat(endpoint.ipv4)
+        .isEqualTo(2);
+    assertThat(endpoint.ipv6)
+        .isNull();
+  }
+  @Test
+  public void builderWithPort_negativeIsInvalid() {
+    assertThat(Endpoint.builder().serviceName(""foo"").port(-1).build().port).isNull();
+  }
+  @Test
+  public void builderWithPort_tooHighIsInvalid() {
+    thrown.expect(IllegalArgumentException.class);
+    thrown.expectMessage(""invalid port 65536"");
+    Endpoint.builder().serviceName(""foo"").port(65536).build();
+  }
+  @Test
+  public void lowercasesServiceName() {
+    assertThat(Endpoint.builder().serviceName(""fFf"").ipv4(127 << 24 | 1).build().serviceName)
+        .isEqualTo(""fff"");
+  }
+  @Test
+  public void testToStringIsJson_minimal() {
+    assertThat(Endpoint.builder().serviceName(""foo"").build())
+        .hasToString(""{\""serviceName\"":\""foo\""}"");
+  }
+  @Test
+  public void testToStringIsJson_ipv4() {
+    assertThat(Endpoint.builder().serviceName(""foo"").ipv4(127 << 24 | 1).build())
+        .hasToString(""{\""serviceName\"":\""foo\"",\""ipv4\"":\""127.0.0.1\""}"");
+  }
+  @Test
+  public void testToStringIsJson_ipv4Port() {
+    assertThat(Endpoint.builder().serviceName(""foo"").ipv4(127 << 24 | 1).port(80).build())
+        .hasToString(""{\""serviceName\"":\""foo\"",\""ipv4\"":\""127.0.0.1\"",\""port\"":80}"");
+  }
+  @Test
+  public void testToStringIsJson_ipv6() throws UnknownHostException {
+    assertThat(Endpoint.builder().serviceName(""foo"")
+        .ipv6(Inet6Address.getByName(""2001:db8::c001"").getAddress()).build())
+        .hasToString(""{\""serviceName\"":\""foo\"",\""ipv6\"":\""2001:db8::c001\""}"");
+  }
+}",class,
+"  @Test
+  public void messageWhenMissingServiceName() {
+    thrown.expect(NullPointerException.class);
+    thrown.expectMessage(""serviceName"");
+    Endpoint.builder().ipv4(127 << 24 | 1).build();
+  }",method,
+"  @Test
+  public void missingIpv4CoercesTo0() {
+    assertThat(Endpoint.builder().serviceName(""foo"").build().ipv4)
+        .isEqualTo(0);
+  }",method,
+"  @Test
+  public void builderWithPort_0CoercesToNull() {
+    assertThat(Endpoint.builder().serviceName(""foo"").port(0).build().port)
+        .isNull();
+  }",method,
+"  @Test
+  public void builderWithPort_highest() {
+    short port = Endpoint.builder().serviceName(""foo"").port(65535).build().port;
+    assertThat(port)
+        .isEqualTo((short) -1); // an unsigned short of 65535 is the same as -1
+    assertThat(port & 0xffff)
+        .isEqualTo(65535);
+  }",method,
+"  @Test
+  public void builderWithPort_highest_short() {
+    short port = Endpoint.builder().serviceName(""foo"").port(new Short((short) 65535)).build().port;
+    assertThat(port)
+        .isEqualTo((short) -1); // an unsigned short of 65535 is the same as -1
+    assertThat(port & 0xffff)
+        .isEqualTo(65535);
+  }",method,
+"  @Test
+  public void ip_addr_ipv4() throws UnknownHostException {
+    Endpoint.Builder builder = Endpoint.builder().serviceName(""foo"");
+    assertThat(builder.parseIp(Inet4Address.getByName(""1.2.3.4""))).isTrue();
+    Endpoint endpoint = builder.build();
+    assertThat(endpoint.ipv4)
+        .isEqualTo(1 << 24 | 2 << 16 | 3 << 8 | 4);
+    assertThat(endpoint.ipv6)
+        .isNull();
+  }",method,
+"  @Test
+  public void ip_string_ipv4() throws UnknownHostException {
+    Endpoint.Builder builder = Endpoint.builder().serviceName(""foo"");
+    assertThat(builder.parseIp(""1.2.3.4"")).isTrue();
+    Endpoint endpoint = builder.build();
+    assertThat(endpoint.ipv4)
+        .isEqualTo(1 << 24 | 2 << 16 | 3 << 8 | 4);
+    assertThat(endpoint.ipv6)
+        .isNull();
+  }",method,
+"  @Test
+  public void ipv6() throws UnknownHostException {
+    byte[] ipv6 = Inet6Address.getByName(""2001:db8::c001"").getAddress();
+    Endpoint endpoint = Endpoint.builder().serviceName(""foo"").ipv6(ipv6).build();
+    assertThat(endpoint.ipv4)
+        .isEqualTo(0);
+    assertThat(endpoint.ipv6)
+        .isEqualTo(ipv6);
+  }",method,
+"  @Test
+  public void ip_addr_ipv6() throws UnknownHostException {
+    InetAddress ipv6 = Inet6Address.getByName(""2001:db8::c001"");
+    Endpoint.Builder builder = Endpoint.builder().serviceName(""foo"");
+    assertThat(builder.parseIp(ipv6)).isTrue();
+    Endpoint endpoint = builder.build();
+    assertThat(endpoint.ipv4)
+        .isEqualTo(0);
+    assertThat(endpoint.ipv6)
+        .isEqualTo(ipv6.getAddress());
+  }",method,
+"  @Test
+  public void ip_string_ipv6() throws UnknownHostException {
+    byte[] ipv6 = Inet6Address.getByName(""2001:db8::c001"").getAddress();
+    Endpoint.Builder builder = Endpoint.builder().serviceName(""foo"");
+    assertThat(builder.parseIp(""2001:db8::c001"")).isTrue();
+    Endpoint endpoint = builder.build();
+    assertThat(endpoint.ipv4)
+        .isEqualTo(0);
+    assertThat(endpoint.ipv6)
+        .isEqualTo(ipv6);
+  }",method,
+"  @Test
+  public void ipv6_mappedIpv4() throws UnknownHostException {
+    // ::FFFF:1.2.3.4
+    byte[] ipv6_mapped = new byte[16];
+    ipv6_mapped[10] = (byte) 0xff;
+    ipv6_mapped[11] = (byte) 0xff;
+    ipv6_mapped[12] = (byte) 1;
+    ipv6_mapped[13] = (byte) 2;
+    ipv6_mapped[14] = (byte) 3;
+    ipv6_mapped[15] = (byte) 4;
+    Endpoint endpoint = Endpoint.builder().serviceName(""foo"").ipv6(ipv6_mapped).build();
+    assertThat(endpoint.ipv4)
+        .isEqualTo(1 << 24 | 2 << 16 | 3 << 8 | 4);
+    assertThat(endpoint.ipv6)
+        .isNull();
+  }",method,
+"  @Test
+  public void ip_string_mappedIpv4() throws UnknownHostException {
+    Endpoint.Builder builder = Endpoint.builder().serviceName(""foo"");
+    assertThat(builder.parseIp(""::FFFF:1.2.3.4"")).isTrue();
+    Endpoint endpoint = builder.build();
+    assertThat(endpoint.ipv4)
+        .isEqualTo(1 << 24 | 2 << 16 | 3 << 8 | 4);
+    assertThat(endpoint.ipv6)
+        .isNull();
+  }",method,
+"  @Test
+  public void ip_string_compatIpv4() throws UnknownHostException {
+    Endpoint.Builder builder = Endpoint.builder().serviceName(""foo"");
+    assertThat(builder.parseIp(""::0000:1.2.3.4"")).isTrue();
+    Endpoint endpoint = builder.build();
+    assertThat(endpoint.ipv4)
+        .isEqualTo(1 << 24 | 2 << 16 | 3 << 8 | 4);
+    assertThat(endpoint.ipv6)
+        .isNull();
+  }",method,
+"  @Test
+  public void ipv6_notMappedIpv4() throws UnknownHostException {
+    // ::FFEF:1.2.3.4
+    byte[] ipv6_mapped = new byte[16];
+    ipv6_mapped[10] = (byte) 0xff;
+    ipv6_mapped[11] = (byte) 0xef;
+    ipv6_mapped[12] = (byte) 1;
+    ipv6_mapped[13] = (byte) 2;
+    ipv6_mapped[14] = (byte) 3;
+    ipv6_mapped[15] = (byte) 4;
+    Endpoint endpoint = Endpoint.builder().serviceName(""foo"").ipv6(ipv6_mapped).build();
+    assertThat(endpoint.ipv4)
+        .isZero();
+    assertThat(endpoint.ipv6)
+        .isEqualTo(ipv6_mapped);
+  }",method,
+"  @Test
+  public void ipv6_compatIpv4() throws UnknownHostException {
+    // ::1.2.3.4
+    byte[] ipv6_mapped = new byte[16];
+    ipv6_mapped[12] = (byte) 1;
+    ipv6_mapped[13] = (byte) 2;
+    ipv6_mapped[14] = (byte) 3;
+    ipv6_mapped[15] = (byte) 4;
+    Endpoint endpoint = Endpoint.builder().serviceName(""foo"").ipv6(ipv6_mapped).build();
+    assertThat(endpoint.ipv4)
+        .isEqualTo(1 << 24 | 2 << 16 | 3 << 8 | 4);
+    assertThat(endpoint.ipv6)
+        .isNull();
+  }",method,
+"  @Test
+  public void ipv6_localhost() throws UnknownHostException {
+    byte[] ipv6_localhost = new byte[16];
+    ipv6_localhost[15] = 1;
+    Endpoint endpoint = Endpoint.builder().serviceName(""foo"").ipv6(ipv6_localhost).build();
+    assertThat(endpoint.ipv4)
+        .isZero();
+    assertThat(endpoint.ipv6)
+        .isEqualTo(ipv6_localhost);
+  }",method,
+"  @Test
+  public void ip_string_ipv6_localhost() throws UnknownHostException {
+    byte[] ipv6_localhost = new byte[16];
+    ipv6_localhost[15] = 1;
+    Endpoint.Builder builder = Endpoint.builder().serviceName(""foo"");
+    assertThat(builder.parseIp(""::1"")).isTrue();
+    Endpoint endpoint = builder.build();
+    assertThat(endpoint.ipv4)
+        .isZero();
+    assertThat(endpoint.ipv6)
+        .isEqualTo(ipv6_localhost);
+  }",method,
+"  @Test
+  public void ipv6_notLocalhost() throws UnknownHostException {
+    byte[] ipv6_localhost = new byte[16];
+    ipv6_localhost[15] = 2;
+    Endpoint endpoint = Endpoint.builder().serviceName(""foo"").ipv6(ipv6_localhost).build();
+    assertThat(endpoint.ipv4)
+        .isEqualTo(2);
+    assertThat(endpoint.ipv6)
+        .isNull();
+  }",method,
+"  @Test
+  public void builderWithPort_negativeIsInvalid() {
+    assertThat(Endpoint.builder().serviceName(""foo"").port(-1).build().port).isNull();
+  }",method,
+"  @Test
+  public void builderWithPort_tooHighIsInvalid() {
+    thrown.expect(IllegalArgumentException.class);
+    thrown.expectMessage(""invalid port 65536"");
+    Endpoint.builder().serviceName(""foo"").port(65536).build();
+  }",method,
+"  @Test
+  public void lowercasesServiceName() {
+    assertThat(Endpoint.builder().serviceName(""fFf"").ipv4(127 << 24 | 1).build().serviceName)
+        .isEqualTo(""fff"");
+  }",method,
+"  @Test
+  public void testToStringIsJson_minimal() {
+    assertThat(Endpoint.builder().serviceName(""foo"").build())
+        .hasToString(""{\""serviceName\"":\""foo\""}"");
+  }",method,
+"  @Test
+  public void testToStringIsJson_ipv4() {
+    assertThat(Endpoint.builder().serviceName(""foo"").ipv4(127 << 24 | 1).build())
+        .hasToString(""{\""serviceName\"":\""foo\"",\""ipv4\"":\""127.0.0.1\""}"");
+  }",method,
+"  @Test
+  public void testToStringIsJson_ipv4Port() {
+    assertThat(Endpoint.builder().serviceName(""foo"").ipv4(127 << 24 | 1).port(80).build())
+        .hasToString(""{\""serviceName\"":\""foo\"",\""ipv4\"":\""127.0.0.1\"",\""port\"":80}"");
+  }",method,
+"  @Test
+  public void testToStringIsJson_ipv6() throws UnknownHostException {
+    assertThat(Endpoint.builder().serviceName(""foo"")
+        .ipv6(Inet6Address.getByName(""2001:db8::c001"").getAddress()).build())
+        .hasToString(""{\""serviceName\"":\""foo\"",\""ipv6\"":\""2001:db8::c001\""}"");
+  }",method,
+"public class IndexResponseTests extends ESTestCase {
+    public void testToXContent() {
+        {
+            IndexResponse indexResponse = new IndexResponse(new ShardId(""index"", ""index_uuid"", 0), ""type"", ""id"", 3, 17, 5, true);
+            String output = Strings.toString(indexResponse);
+            assertEquals(""{\""_index\"":\""index\"",\""_type\"":\""type\"",\""_id\"":\""id\"",\""_version\"":5,\""result\"":\""created\"",\""_shards\"":null,"" +
+                    ""\""_seq_no\"":3,\""_primary_term\"":17}"", output);
+        }
+        {
+            IndexResponse indexResponse = new IndexResponse(new ShardId(""index"", ""index_uuid"", 0), ""type"", ""id"", -1, 17, 7, true);
+            indexResponse.setForcedRefresh(true);
+            indexResponse.setShardInfo(new ReplicationResponse.ShardInfo(10, 5));
+            String output = Strings.toString(indexResponse);
+            assertEquals(""{\""_index\"":\""index\"",\""_type\"":\""type\"",\""_id\"":\""id\"",\""_version\"":7,\""result\"":\""created\"","" +
+                    ""\""forced_refresh\"":true,\""_shards\"":{\""total\"":10,\""successful\"":5,\""failed\"":0}}"", output);
+        }
+    }
+    public void testToAndFromXContent() throws IOException {
+        doFromXContentTestWithRandomFields(false);
+    }
+    public void testFromXContentWithRandomFields() throws IOException {
+        doFromXContentTestWithRandomFields(true);
+    }
+    private void doFromXContentTestWithRandomFields(boolean addRandomFields) throws IOException {
+        final Tuple<IndexResponse, IndexResponse> tuple = randomIndexResponse();
+        IndexResponse indexResponse = tuple.v1();
+        IndexResponse expectedIndexResponse = tuple.v2();
+        boolean humanReadable = randomBoolean();
+        XContentType xContentType = randomFrom(XContentType.values());
+        BytesReference originalBytes = toShuffledXContent(indexResponse, xContentType, ToXContent.EMPTY_PARAMS, humanReadable);
+        BytesReference mutated;
+        if (addRandomFields) {
+            // The ShardInfo.Failure's exception is rendered out in a ""reason"" object. We shouldn't add anything random there
+            // because exception rendering and parsing are very permissive: any extra object or field would be rendered as
+            // a exception custom metadata and be parsed back as a custom header, making it impossible to compare the results
+            // in this test.
+            Predicate<String> excludeFilter = path -> path.contains(""reason"");
+            mutated = insertRandomFields(xContentType, originalBytes, excludeFilter, random());
+        } else {
+            mutated = originalBytes;
+        }
+        IndexResponse parsedIndexResponse;
+        try (XContentParser parser = createParser(xContentType.xContent(), mutated)) {
+            parsedIndexResponse = IndexResponse.fromXContent(parser);
+            assertNull(parser.nextToken());
+        }
+        // We can't use equals() to compare the original and the parsed index response
+        // because the random index response can contain shard failures with exceptions,
+        // and those exceptions are not parsed back with the same types.
+        assertDocWriteResponse(expectedIndexResponse, parsedIndexResponse);
+    }
+    public static void assertDocWriteResponse(DocWriteResponse expected, DocWriteResponse actual) {
+        assertEquals(expected.getIndex(), actual.getIndex());
+        assertEquals(expected.getType(), actual.getType());
+        assertEquals(expected.getId(), actual.getId());
+        assertEquals(expected.getSeqNo(), actual.getSeqNo());
+        assertEquals(expected.getResult(), actual.getResult());
+        assertEquals(expected.getShardId(), actual.getShardId());
+        assertEquals(expected.forcedRefresh(), actual.forcedRefresh());
+        assertEquals(expected.status(), actual.status());
+        assertShardInfo(expected.getShardInfo(), actual.getShardInfo());
+    }
+    public static Tuple<IndexResponse, IndexResponse> randomIndexResponse() {
+        String index = randomAlphaOfLength(5);
+        String indexUUid = randomAlphaOfLength(5);
+        int shardId = randomIntBetween(0, 5);
+        String type = randomAlphaOfLength(5);
+        String id = randomAlphaOfLength(5);
+        long seqNo = randomFrom(SequenceNumbers.UNASSIGNED_SEQ_NO, randomNonNegativeLong(), (long) randomIntBetween(0, 10000));
+        long primaryTerm = seqNo == SequenceNumbers.UNASSIGNED_SEQ_NO ? 0 : randomIntBetween(1, 10000);
+        long version = randomBoolean() ? randomNonNegativeLong() : randomIntBetween(0, 10000);
+        boolean created = randomBoolean();
+        boolean forcedRefresh = randomBoolean();
+        Tuple<ReplicationResponse.ShardInfo, ReplicationResponse.ShardInfo> shardInfos = RandomObjects.randomShardInfo(random());
+        IndexResponse actual = new IndexResponse(new ShardId(index, indexUUid, shardId), type, id, seqNo, primaryTerm, version, created);
+        actual.setForcedRefresh(forcedRefresh);
+        actual.setShardInfo(shardInfos.v1());
+        IndexResponse expected =
+                new IndexResponse(new ShardId(index, INDEX_UUID_NA_VALUE, -1), type, id, seqNo, primaryTerm, version, created);
+        expected.setForcedRefresh(forcedRefresh);
+        expected.setShardInfo(shardInfos.v2());
+        return Tuple.tuple(actual, expected);
+    }
+}",class,
+"    public void testToXContent() {
+        {
+            IndexResponse indexResponse = new IndexResponse(new ShardId(""index"", ""index_uuid"", 0), ""type"", ""id"", 3, 17, 5, true);
+            String output = Strings.toString(indexResponse);
+            assertEquals(""{\""_index\"":\""index\"",\""_type\"":\""type\"",\""_id\"":\""id\"",\""_version\"":5,\""result\"":\""created\"",\""_shards\"":null,"" +
+                    ""\""_seq_no\"":3,\""_primary_term\"":17}"", output);
+        }
+        {
+            IndexResponse indexResponse = new IndexResponse(new ShardId(""index"", ""index_uuid"", 0), ""type"", ""id"", -1, 17, 7, true);
+            indexResponse.setForcedRefresh(true);
+            indexResponse.setShardInfo(new ReplicationResponse.ShardInfo(10, 5));
+            String output = Strings.toString(indexResponse);
+            assertEquals(""{\""_index\"":\""index\"",\""_type\"":\""type\"",\""_id\"":\""id\"",\""_version\"":7,\""result\"":\""created\"","" +
+                    ""\""forced_refresh\"":true,\""_shards\"":{\""total\"":10,\""successful\"":5,\""failed\"":0}}"", output);
+        }
+    }",method,
+"    public void testToAndFromXContent() throws IOException {
+        doFromXContentTestWithRandomFields(false);
+    }",method,
+"    public void testFromXContentWithRandomFields() throws IOException {
+        doFromXContentTestWithRandomFields(true);
+    }",method,
+"    private void doFromXContentTestWithRandomFields(boolean addRandomFields) throws IOException {
+        final Tuple<IndexResponse, IndexResponse> tuple = randomIndexResponse();
+        IndexResponse indexResponse = tuple.v1();
+        IndexResponse expectedIndexResponse = tuple.v2();
+        boolean humanReadable = randomBoolean();
+        XContentType xContentType = randomFrom(XContentType.values());
+        BytesReference originalBytes = toShuffledXContent(indexResponse, xContentType, ToXContent.EMPTY_PARAMS, humanReadable);
+        BytesReference mutated;
+        if (addRandomFields) {
+            // The ShardInfo.Failure's exception is rendered out in a ""reason"" object. We shouldn't add anything random there
+            // because exception rendering and parsing are very permissive: any extra object or field would be rendered as
+            // a exception custom metadata and be parsed back as a custom header, making it impossible to compare the results
+            // in this test.
+            Predicate<String> excludeFilter = path -> path.contains(""reason"");
+            mutated = insertRandomFields(xContentType, originalBytes, excludeFilter, random());
+        } else {
+            mutated = originalBytes;
+        }
+        IndexResponse parsedIndexResponse;
+        try (XContentParser parser = createParser(xContentType.xContent(), mutated)) {
+            parsedIndexResponse = IndexResponse.fromXContent(parser);
+            assertNull(parser.nextToken());
+        }
+        // We can't use equals() to compare the original and the parsed index response
+        // because the random index response can contain shard failures with exceptions,
+        // and those exceptions are not parsed back with the same types.
+        assertDocWriteResponse(expectedIndexResponse, parsedIndexResponse);
+    }",method,
+"        if (addRandomFields) {
+            // The ShardInfo.Failure's exception is rendered out in a ""reason"" object. We shouldn't add anything random there
+            // because exception rendering and parsing are very permissive: any extra object or field would be rendered as
+            // a exception custom metadata and be parsed back as a custom header, making it impossible to compare the results
+            // in this test.
+            Predicate<String> excludeFilter = path -> path.contains(""reason"");
+            mutated = insertRandomFields(xContentType, originalBytes, excludeFilter, random());
+        }",method,
+"    public static void assertDocWriteResponse(DocWriteResponse expected, DocWriteResponse actual) {
+        assertEquals(expected.getIndex(), actual.getIndex());
+        assertEquals(expected.getType(), actual.getType());
+        assertEquals(expected.getId(), actual.getId());
+        assertEquals(expected.getSeqNo(), actual.getSeqNo());
+        assertEquals(expected.getResult(), actual.getResult());
+        assertEquals(expected.getShardId(), actual.getShardId());
+        assertEquals(expected.forcedRefresh(), actual.forcedRefresh());
+        assertEquals(expected.status(), actual.status());
+        assertShardInfo(expected.getShardInfo(), actual.getShardInfo());
+    }",method,
+"    public static Tuple<IndexResponse, IndexResponse> randomIndexResponse() {
+        String index = randomAlphaOfLength(5);
+        String indexUUid = randomAlphaOfLength(5);
+        int shardId = randomIntBetween(0, 5);
+        String type = randomAlphaOfLength(5);
+        String id = randomAlphaOfLength(5);
+        long seqNo = randomFrom(SequenceNumbers.UNASSIGNED_SEQ_NO, randomNonNegativeLong(), (long) randomIntBetween(0, 10000));
+        long primaryTerm = seqNo == SequenceNumbers.UNASSIGNED_SEQ_NO ? 0 : randomIntBetween(1, 10000);
+        long version = randomBoolean() ? randomNonNegativeLong() : randomIntBetween(0, 10000);
+        boolean created = randomBoolean();
+        boolean forcedRefresh = randomBoolean();
+        Tuple<ReplicationResponse.ShardInfo, ReplicationResponse.ShardInfo> shardInfos = RandomObjects.randomShardInfo(random());
+        IndexResponse actual = new IndexResponse(new ShardId(index, indexUUid, shardId), type, id, seqNo, primaryTerm, version, created);
+        actual.setForcedRefresh(forcedRefresh);
+        actual.setShardInfo(shardInfos.v1());
+        IndexResponse expected =
+                new IndexResponse(new ShardId(index, INDEX_UUID_NA_VALUE, -1), type, id, seqNo, primaryTerm, version, created);
+        expected.setForcedRefresh(forcedRefresh);
+        expected.setShardInfo(shardInfos.v2());
+        return Tuple.tuple(actual, expected);
+    }",method,
+"public final class ShaderData extends jitb.lang.Object {
+	public static ShaderData JITB$fromParameters(final ShaderParameter[] parameters, final ShaderInput[] inputs) {
+		return new ShaderData(parameters, inputs);
+	}
+	private final HashMap<String, Object> _dynamic = new HashMap<String, Object>();
+	private final ShaderParameter[] _parameters;
+	private final ShaderInput[] _inputs;
+	public ShaderData(ByteArray byteCode) {
+		this(ShaderUtil.getPbj(byteCode));
+	}
+	ShaderData(Pbj pbj) {
+		_parameters = ShaderUtil.getShaderParameters(pbj);
+		_inputs = ShaderUtil.getShaderTextures(pbj);
+	}
+	private ShaderData(final ShaderParameter[] parameters, final ShaderInput[] inputs) {
+		_parameters = parameters;
+		_inputs = inputs;
+	}
+	@Override
+	public Object JITB$getProperty(final String property) {
+		for(final ShaderParameter parameter : _parameters) {
+			if(null != parameter && parameter.name().equals(property)) {
+				return parameter;
+			}
+		}
+		for(final ShaderInput input : _inputs) {
+			if(null != input && input.name().equals(property)) {
+				return input;
+			}
+		}
+		System.out.println(""Warning: ShaderData property \""""+property+""\"" is not known."");
+		return _dynamic.get(property);
+	}
+	@Override
+	public void JITB$setProperty(String property, Object value) {
+		int n;
+		n= _parameters.length;
+		while(--n > -1) {
+			if(null != _parameters[n] && _parameters[n].name().equals(property)) {
+				if(value instanceof ShaderParameter) {
+					_parameters[n] = (ShaderParameter)value;
+				} else {
+					ErrorUtil.flashThrow(ErrorUtil.error1034(value, ShaderParameter.class));
+				}
+				return;
+			}
+		}
+		n = _inputs.length;
+		while(--n > -1) {
+			if(null != _inputs[n] && _inputs[n].name().equals(property)) {
+				if(value instanceof ShaderInput) {
+					_inputs[n] = (ShaderInput)value;
+				} else {
+					ErrorUtil.flashThrow(ErrorUtil.error1034(value, ShaderInput.class));
+				}
+				return;
+			}
+		}
+		System.out.println(""Warning: ShaderData property \""""+property+""\"" is not known."");
+		_dynamic.put(property, value);
+	}
+	public void JITB$applyParameters(final int programId) {
+		for(final ShaderParameter parameter : _parameters) {
+			if(null != parameter) {
+				parameter.JITB$applyParameter(programId);
+			}
+		}
+		for(final ShaderInput input : _inputs) {
+			if(null != input) {
+				input.JITB$applyInput(programId);
+			}
+		}
+	}
+	public void JITB$unapplyParameters() {
+		for(final ShaderInput input : _inputs) {
+			if(null != input) {
+				input.JITB$unapplyInput();
+			}
+		}
+	}
+	public ShaderInput[] JITB$inputs() {
+		return _inputs;
+	}
+	public ShaderParameter[] JITB$parameters() {
+		return _parameters;
+	}
+}",class,
+"	public static ShaderData JITB$fromParameters(final ShaderParameter[] parameters, final ShaderInput[] inputs) {
+		return new ShaderData(parameters, inputs);
+	}",method,
+"	public ShaderData(ByteArray byteCode) {
+		this(ShaderUtil.getPbj(byteCode));
+	}",method,
+"	ShaderData(Pbj pbj) {
+		_parameters = ShaderUtil.getShaderParameters(pbj);
+		_inputs = ShaderUtil.getShaderTextures(pbj);
+	}",method,
+"	private ShaderData(final ShaderParameter[] parameters, final ShaderInput[] inputs) {
+		_parameters = parameters;
+		_inputs = inputs;
+	}",method,
+"	@Override
+	public Object JITB$getProperty(final String property) {
+		for(final ShaderParameter parameter : _parameters) {
+			if(null != parameter && parameter.name().equals(property)) {
+				return parameter;
+			}
+		}
+		for(final ShaderInput input : _inputs) {
+			if(null != input && input.name().equals(property)) {
+				return input;
+			}
+		}
+		System.out.println(""Warning: ShaderData property \""""+property+""\"" is not known."");
+		return _dynamic.get(property);
+	}",method,
+"		for(final ShaderParameter parameter : _parameters) {
+			if(null != parameter && parameter.name().equals(property)) {
+				return parameter;
+			}
+		}",method,
+"		for(final ShaderInput input : _inputs) {
+			if(null != input && input.name().equals(property)) {
+				return input;
+			}
+		}",method,
+"	@Override
+	public void JITB$setProperty(String property, Object value) {
+		int n;
+		n= _parameters.length;
+		while(--n > -1) {
+			if(null != _parameters[n] && _parameters[n].name().equals(property)) {
+				if(value instanceof ShaderParameter) {
+					_parameters[n] = (ShaderParameter)value;
+				} else {
+					ErrorUtil.flashThrow(ErrorUtil.error1034(value, ShaderParameter.class));
+				}
+				return;
+			}
+		}
+		n = _inputs.length;
+		while(--n > -1) {
+			if(null != _inputs[n] && _inputs[n].name().equals(property)) {
+				if(value instanceof ShaderInput) {
+					_inputs[n] = (ShaderInput)value;
+				} else {
+					ErrorUtil.flashThrow(ErrorUtil.error1034(value, ShaderInput.class));
+				}
+				return;
+			}
+		}
+		System.out.println(""Warning: ShaderData property \""""+property+""\"" is not known."");
+		_dynamic.put(property, value);
+	}",method,
+"		while(--n > -1) {
+			if(null != _parameters[n] && _parameters[n].name().equals(property)) {
+				if(value instanceof ShaderParameter) {
+					_parameters[n] = (ShaderParameter)value;
+				} else {
+					ErrorUtil.flashThrow(ErrorUtil.error1034(value, ShaderParameter.class));
+				}
+				return;
+			}
+		}",method,
+"				if(value instanceof ShaderParameter) {
+					_parameters[n] = (ShaderParameter)value;
+				}",method,
+"		while(--n > -1) {
+			if(null != _inputs[n] && _inputs[n].name().equals(property)) {
+				if(value instanceof ShaderInput) {
+					_inputs[n] = (ShaderInput)value;
+				} else {
+					ErrorUtil.flashThrow(ErrorUtil.error1034(value, ShaderInput.class));
+				}
+				return;
+			}
+		}",method,
+"				if(value instanceof ShaderInput) {
+					_inputs[n] = (ShaderInput)value;
+				}",method,
+"	public void JITB$applyParameters(final int programId) {
+		for(final ShaderParameter parameter : _parameters) {
+			if(null != parameter) {
+				parameter.JITB$applyParameter(programId);
+			}
+		}
+		for(final ShaderInput input : _inputs) {
+			if(null != input) {
+				input.JITB$applyInput(programId);
+			}
+		}
+	}",method,
+"		for(final ShaderParameter parameter : _parameters) {
+			if(null != parameter) {
+				parameter.JITB$applyParameter(programId);
+			}
+		}",method,
+"			if(null != parameter) {
+				parameter.JITB$applyParameter(programId);
+			}",method,
+"		for(final ShaderInput input : _inputs) {
+			if(null != input) {
+				input.JITB$applyInput(programId);
+			}
+		}",method,
+"			if(null != input) {
+				input.JITB$applyInput(programId);
+			}",method,
+"	public void JITB$unapplyParameters() {
+		for(final ShaderInput input : _inputs) {
+			if(null != input) {
+				input.JITB$unapplyInput();
+			}
+		}
+	}",method,
+"		for(final ShaderInput input : _inputs) {
+			if(null != input) {
+				input.JITB$unapplyInput();
+			}
+		}",method,
+"			if(null != input) {
+				input.JITB$unapplyInput();
+			}",method,
+"	public ShaderInput[] JITB$inputs() {
+		return _inputs;
+	}",method,
+"	public ShaderParameter[] JITB$parameters() {
+		return _parameters;
+	}",method,
+"public class FileUtils
+{
+	public static void copy(String source, String destination) throws IOException
+	{
+		copy(new File(source), new File(destination));
+	}
+	public static void copy(File source, File destination) throws IOException
+	{
+		InputStream in = new FileInputStream(source);
+		OutputStream out = new FileOutputStream(destination);
+		copy(in, out);
+	}
+	public static void copy(InputStream in, OutputStream out) throws IOException
+	{
+		byte[] buffer = new byte[4096];
+		int length;
+		while ((length = in.read(buffer)) > 0)
+			out.write(buffer, 0, length);
+		in.close();
+		out.close();
+	}
+	public static void protect(File file)
+	{
+		file.setWritable(false, false);
+		file.setReadable(false, false);
+		file.setWritable(true, true);
+		file.setReadable(true, true);
+	}
+	public static String extractFileFromArchiveBase64(String archiveBytesBase64, String filePath) throws IOException
+	{
+		return Base64.encodeBytes(extractFileFromArchive(Base64.decode(archiveBytesBase64), filePath));
+	}
+	public static byte[] extractFileFromArchive(byte[] archiveBytes, String filePath) throws IOException
+	{
+		File archiveFile = File.createTempFile(""FileUtils-"", "".zip"");
+		FileUtils.copy(new ByteArrayInputStream(archiveBytes), new FileOutputStream(archiveFile));
+		return extractFileFromArchive(archiveFile, filePath);
+	}
+	public static byte[] extractFileFromArchive(File archiveFile, String filePath) throws IOException
+	{
+		ZipFile archive = null;
+		InputStream in = null;
+		ByteArrayOutputStream out = null;
+		try
+		{
+			archive = new ZipFile(archiveFile);
+			ZipEntry entry = archive.getEntry(filePath);
+			if (entry == null)
+				return null;
+			in = archive.getInputStream(entry);
+			out = new ByteArrayOutputStream();
+			FileUtils.copy(in, out);
+		}
+		finally
+		{
+			if (in != null)
+				in.close();
+			if (out != null)
+				out.close();
+			if (archive != null)
+				archive.close();
+		}
+		return out.toByteArray();
+	}
+}",class,
+"	public static void copy(String source, String destination) throws IOException
+	{
+		copy(new File(source), new File(destination));
+	}",method,
+"	public static void copy(File source, File destination) throws IOException
+	{
+		InputStream in = new FileInputStream(source);
+		OutputStream out = new FileOutputStream(destination);
+		copy(in, out);
+	}",method,
+"	public static void copy(InputStream in, OutputStream out) throws IOException
+	{
+		byte[] buffer = new byte[4096];
+		int length;
+		while ((length = in.read(buffer)) > 0)
+			out.write(buffer, 0, length);
+		in.close();
+		out.close();
+	}",method,
+"	public static void protect(File file)
+	{
+		file.setWritable(false, false);
+		file.setReadable(false, false);
+		file.setWritable(true, true);
+		file.setReadable(true, true);
+	}",method,
+"	public static String extractFileFromArchiveBase64(String archiveBytesBase64, String filePath) throws IOException
+	{
+		return Base64.encodeBytes(extractFileFromArchive(Base64.decode(archiveBytesBase64), filePath));
+	}",method,
+"	public static byte[] extractFileFromArchive(byte[] archiveBytes, String filePath) throws IOException
+	{
+		File archiveFile = File.createTempFile(""FileUtils-"", "".zip"");
+		FileUtils.copy(new ByteArrayInputStream(archiveBytes), new FileOutputStream(archiveFile));
+		return extractFileFromArchive(archiveFile, filePath);
+	}",method,
+"	public static byte[] extractFileFromArchive(File archiveFile, String filePath) throws IOException
+	{
+		ZipFile archive = null;
+		InputStream in = null;
+		ByteArrayOutputStream out = null;
+		try
+		{
+			archive = new ZipFile(archiveFile);
+			ZipEntry entry = archive.getEntry(filePath);
+			if (entry == null)
+				return null;
+			in = archive.getInputStream(entry);
+			out = new ByteArrayOutputStream();
+			FileUtils.copy(in, out);
+		}
+		finally
+		{
+			if (in != null)
+				in.close();
+			if (out != null)
+				out.close();
+			if (archive != null)
+				archive.close();
+		}
+		return out.toByteArray();
+	}",method,
+"public class ResumeThreadAction extends DebuggerAction{
+  public void actionPerformed(final AnActionEvent e) {
+    DebuggerTreeNodeImpl[] selectedNode = getSelectedNodes(e.getDataContext());
+    final DebuggerContextImpl debuggerContext = getDebuggerContext(e.getDataContext());
+    final DebugProcessImpl debugProcess = debuggerContext.getDebugProcess();
+    if (debugProcess == null) return;
+    //noinspection ConstantConditions
+    for (final DebuggerTreeNodeImpl debuggerTreeNode : selectedNode) {
+      final ThreadDescriptorImpl threadDescriptor = ((ThreadDescriptorImpl)debuggerTreeNode.getDescriptor());
+      if (threadDescriptor.isSuspended()) {
+        final ThreadReferenceProxyImpl thread = threadDescriptor.getThreadReference();
+        debugProcess.getManagerThread().schedule(new DebuggerCommandImpl() {
+          @Override
+          protected void action() throws Exception {
+            SuspendContextImpl suspendingContext = SuspendManagerUtil.getSuspendingContext(debugProcess.getSuspendManager(), thread);
+            if (suspendingContext != null) {
+              debugProcess.createResumeThreadCommand(suspendingContext, thread).run();
+            }
+            debuggerTreeNode.calcValue();
+          }
+        });
+      }
+    }
+  }
+  public void update(AnActionEvent e) {
+    DebuggerTreeNodeImpl[] selectedNodes = getSelectedNodes(e.getDataContext());
+    boolean visible = false;
+    boolean enabled = false;
+    String text = DebuggerBundle.message(""action.resume.thread.text.resume"");
+    if(selectedNodes != null && selectedNodes.length > 0){
+      visible = true;
+      enabled = true;
+      for (DebuggerTreeNodeImpl selectedNode : selectedNodes) {
+        final NodeDescriptorImpl threadDescriptor = selectedNode.getDescriptor();
+        if (!(threadDescriptor instanceof ThreadDescriptorImpl) || !((ThreadDescriptorImpl)threadDescriptor).isSuspended()) {
+          visible = false;
+          break;
+        }
+      }
+    }
+    final Presentation presentation = e.getPresentation();
+    presentation.setText(text);
+    presentation.setVisible(visible);
+    presentation.setEnabled(enabled);
+  }
+}",class,
+"  public void actionPerformed(final AnActionEvent e) {
+    DebuggerTreeNodeImpl[] selectedNode = getSelectedNodes(e.getDataContext());
+    final DebuggerContextImpl debuggerContext = getDebuggerContext(e.getDataContext());
+    final DebugProcessImpl debugProcess = debuggerContext.getDebugProcess();
+    if (debugProcess == null) return;
+    //noinspection ConstantConditions
+    for (final DebuggerTreeNodeImpl debuggerTreeNode : selectedNode) {
+      final ThreadDescriptorImpl threadDescriptor = ((ThreadDescriptorImpl)debuggerTreeNode.getDescriptor());
+      if (threadDescriptor.isSuspended()) {
+        final ThreadReferenceProxyImpl thread = threadDescriptor.getThreadReference();
+        debugProcess.getManagerThread().schedule(new DebuggerCommandImpl() {
+          @Override
+          protected void action() throws Exception {
+            SuspendContextImpl suspendingContext = SuspendManagerUtil.getSuspendingContext(debugProcess.getSuspendManager(), thread);
+            if (suspendingContext != null) {
+              debugProcess.createResumeThreadCommand(suspendingContext, thread).run();
+            }
+            debuggerTreeNode.calcValue();
+          }
+        });
+      }
+    }
+  }",method,
+"    for (final DebuggerTreeNodeImpl debuggerTreeNode : selectedNode) {
+      final ThreadDescriptorImpl threadDescriptor = ((ThreadDescriptorImpl)debuggerTreeNode.getDescriptor());
+      if (threadDescriptor.isSuspended()) {
+        final ThreadReferenceProxyImpl thread = threadDescriptor.getThreadReference();
+        debugProcess.getManagerThread().schedule(new DebuggerCommandImpl() {
+          @Override
+          protected void action() throws Exception {
+            SuspendContextImpl suspendingContext = SuspendManagerUtil.getSuspendingContext(debugProcess.getSuspendManager(), thread);
+            if (suspendingContext != null) {
+              debugProcess.createResumeThreadCommand(suspendingContext, thread).run();
+            }
+            debuggerTreeNode.calcValue();
+          }
+        });
+      }
+    }",method,
+"          @Override
+          protected void action() throws Exception {
+            SuspendContextImpl suspendingContext = SuspendManagerUtil.getSuspendingContext(debugProcess.getSuspendManager(), thread);
+            if (suspendingContext != null) {
+              debugProcess.createResumeThreadCommand(suspendingContext, thread).run();
+            }
+            debuggerTreeNode.calcValue();
+          }",method,
+"            if (suspendingContext != null) {
+              debugProcess.createResumeThreadCommand(suspendingContext, thread).run();
+            }",method,
+"  public void update(AnActionEvent e) {
+    DebuggerTreeNodeImpl[] selectedNodes = getSelectedNodes(e.getDataContext());
+    boolean visible = false;
+    boolean enabled = false;
+    String text = DebuggerBundle.message(""action.resume.thread.text.resume"");
+    if(selectedNodes != null && selectedNodes.length > 0){
+      visible = true;
+      enabled = true;
+      for (DebuggerTreeNodeImpl selectedNode : selectedNodes) {
+        final NodeDescriptorImpl threadDescriptor = selectedNode.getDescriptor();
+        if (!(threadDescriptor instanceof ThreadDescriptorImpl) || !((ThreadDescriptorImpl)threadDescriptor).isSuspended()) {
+          visible = false;
+          break;
+        }
+      }
+    }
+    final Presentation presentation = e.getPresentation();
+    presentation.setText(text);
+    presentation.setVisible(visible);
+    presentation.setEnabled(enabled);
+  }",method,
+"    if(selectedNodes != null && selectedNodes.length > 0){
+      visible = true;
+      enabled = true;
+      for (DebuggerTreeNodeImpl selectedNode : selectedNodes) {
+        final NodeDescriptorImpl threadDescriptor = selectedNode.getDescriptor();
+        if (!(threadDescriptor instanceof ThreadDescriptorImpl) || !((ThreadDescriptorImpl)threadDescriptor).isSuspended()) {
+          visible = false;
+          break;
+        }
+      }
+    }",method,
+"      for (DebuggerTreeNodeImpl selectedNode : selectedNodes) {
+        final NodeDescriptorImpl threadDescriptor = selectedNode.getDescriptor();
+        if (!(threadDescriptor instanceof ThreadDescriptorImpl) || !((ThreadDescriptorImpl)threadDescriptor).isSuspended()) {
+          visible = false;
+          break;
+        }
+      }",method,
+"public class FusedLocationHardwareSecure extends IFusedLocationHardware.Stub {
+    private final IFusedLocationHardware mLocationHardware;
+    private final Context mContext;
+    private final String mPermissionId;
+    public FusedLocationHardwareSecure(
+            IFusedLocationHardware locationHardware,
+            Context context,
+            String permissionId) {
+        mLocationHardware = locationHardware;
+        mContext = context;
+        mPermissionId = permissionId;
+    }
+    private void checkPermissions() {
+        mContext.enforceCallingPermission(
+                mPermissionId,
+                String.format(
+                        ""Permission '%s' not granted to access FusedLocationHardware"",
+                        mPermissionId));
+    }
+    @Override
+    public void registerSink(IFusedLocationHardwareSink eventSink) throws RemoteException {
+        checkPermissions();
+        mLocationHardware.registerSink(eventSink);
+    }
+    @Override
+    public void unregisterSink(IFusedLocationHardwareSink eventSink) throws RemoteException {
+        checkPermissions();
+        mLocationHardware.unregisterSink(eventSink);
+    }
+    @Override
+    public int getSupportedBatchSize() throws RemoteException {
+        checkPermissions();
+        return mLocationHardware.getSupportedBatchSize();
+    }
+    @Override
+    public void startBatching(int id, FusedBatchOptions batchOptions) throws RemoteException {
+        checkPermissions();
+        mLocationHardware.startBatching(id, batchOptions);
+    }
+    @Override
+    public void stopBatching(int id) throws RemoteException {
+        checkPermissions();
+        mLocationHardware.stopBatching(id);
+    }
+    @Override
+    public void updateBatchingOptions(
+            int id,
+            FusedBatchOptions batchoOptions
+            ) throws RemoteException {
+        checkPermissions();
+        mLocationHardware.updateBatchingOptions(id, batchoOptions);
+    }
+    @Override
+    public void requestBatchOfLocations(int batchSizeRequested) throws RemoteException {
+        checkPermissions();
+        mLocationHardware.requestBatchOfLocations(batchSizeRequested);
+    }
+    @Override
+    public boolean supportsDiagnosticDataInjection() throws RemoteException {
+        checkPermissions();
+        return mLocationHardware.supportsDiagnosticDataInjection();
+    }
+    @Override
+    public void injectDiagnosticData(String data) throws RemoteException {
+        checkPermissions();
+        mLocationHardware.injectDiagnosticData(data);
+    }
+    @Override
+    public boolean supportsDeviceContextInjection() throws RemoteException {
+        checkPermissions();
+        return mLocationHardware.supportsDeviceContextInjection();
+    }
+    @Override
+    public void injectDeviceContext(int deviceEnabledContext) throws RemoteException {
+        checkPermissions();
+        mLocationHardware.injectDeviceContext(deviceEnabledContext);
+    }
+    @Override
+    public void flushBatchedLocations() throws RemoteException {
+        checkPermissions();
+        mLocationHardware.flushBatchedLocations();
+    }
+    @Override
+    public int getVersion() throws RemoteException {
+        checkPermissions();
+        return mLocationHardware.getVersion();
+    }
+}",class,
+"    public FusedLocationHardwareSecure(
+            IFusedLocationHardware locationHardware,
+            Context context,
+            String permissionId) {
+        mLocationHardware = locationHardware;
+        mContext = context;
+        mPermissionId = permissionId;
+    }",method,
+"    private void checkPermissions() {
+        mContext.enforceCallingPermission(
+                mPermissionId,
+                String.format(
+                        ""Permission '%s' not granted to access FusedLocationHardware"",
+                        mPermissionId));
+    }",method,
+"    @Override
+    public void registerSink(IFusedLocationHardwareSink eventSink) throws RemoteException {
+        checkPermissions();
+        mLocationHardware.registerSink(eventSink);
+    }",method,
+"    @Override
+    public void unregisterSink(IFusedLocationHardwareSink eventSink) throws RemoteException {
+        checkPermissions();
+        mLocationHardware.unregisterSink(eventSink);
+    }",method,
+"    @Override
+    public int getSupportedBatchSize() throws RemoteException {
+        checkPermissions();
+        return mLocationHardware.getSupportedBatchSize();
+    }",method,
+"    @Override
+    public void startBatching(int id, FusedBatchOptions batchOptions) throws RemoteException {
+        checkPermissions();
+        mLocationHardware.startBatching(id, batchOptions);
+    }",method,
+"    @Override
+    public void stopBatching(int id) throws RemoteException {
+        checkPermissions();
+        mLocationHardware.stopBatching(id);
+    }",method,
+"    @Override
+    public void updateBatchingOptions(
+            int id,
+            FusedBatchOptions batchoOptions
+            ) throws RemoteException {
+        checkPermissions();
+        mLocationHardware.updateBatchingOptions(id, batchoOptions);
+    }",method,
+"    @Override
+    public void requestBatchOfLocations(int batchSizeRequested) throws RemoteException {
+        checkPermissions();
+        mLocationHardware.requestBatchOfLocations(batchSizeRequested);
+    }",method,
+"    @Override
+    public boolean supportsDiagnosticDataInjection() throws RemoteException {
+        checkPermissions();
+        return mLocationHardware.supportsDiagnosticDataInjection();
+    }",method,
+"    @Override
+    public void injectDiagnosticData(String data) throws RemoteException {
+        checkPermissions();
+        mLocationHardware.injectDiagnosticData(data);
+    }",method,
+"    @Override
+    public boolean supportsDeviceContextInjection() throws RemoteException {
+        checkPermissions();
+        return mLocationHardware.supportsDeviceContextInjection();
+    }",method,
+"    @Override
+    public void injectDeviceContext(int deviceEnabledContext) throws RemoteException {
+        checkPermissions();
+        mLocationHardware.injectDeviceContext(deviceEnabledContext);
+    }",method,
+"    @Override
+    public void flushBatchedLocations() throws RemoteException {
+        checkPermissions();
+        mLocationHardware.flushBatchedLocations();
+    }",method,
