@@ -10,7 +10,7 @@ from sklearn.metrics import accuracy_score, confusion_matrix
 from sklearn.neighbors import KNeighborsClassifier
 import torch
 
-from src.data import load_csv_for_kind, split_df, compute_method_features, compute_class_features, build_vocab_from_texts, encode_texts, guess_method_signature
+from src.data import load_csv_for_kind, split_df, compute_method_features, compute_class_features, build_vocab_from_texts, encode_texts, get_method_object
 from src.heuristics import method_heuristics, class_heuristics
 from src.tokenizer import SimpleVocab, java_code_tokenize
 from src.models.cnn import TextCNN
@@ -61,8 +61,8 @@ def predict_heuristics(kind: str, texts: List[str]) -> Tuple[np.ndarray, np.ndar
     preds = []
     if kind == "methods":
         for src in texts:
-            name, params = guess_method_signature(src)
-            h = method_heuristics(src, name, params)
+            method_obj = get_method_object(src)
+            h = method_heuristics(src, method_obj)
             probs.append(h.proba)
             preds.append(h.label)
     else:

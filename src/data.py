@@ -6,10 +6,11 @@ from typing import List, Tuple, Dict
 
 import numpy as np
 import pandas as pd
+from javalang.tree import MethodDeclaration
 from sklearn.model_selection import train_test_split
 
-from .tokenizer import java_code_tokenize, SimpleVocab
-from .heuristics import method_heuristics, class_heuristics
+from src.tokenizer import java_code_tokenize, SimpleVocab
+from src.heuristics import method_heuristics, class_heuristics
 
 
 @dataclass
@@ -30,6 +31,18 @@ def load_csv_for_kind(kind: str) -> pd.DataFrame:
         raise FileNotFoundError(f"Expected dataset at {expected} not found.")
     # drop rows with any nulls
     df = df.dropna(how="any").reset_index(drop=True)
+
+    # drop rows with unparseable code snippets (methods only for now)
+    if kind == "methods":
+        code_col = df.columns[0]
+        def is_parseable(code):
+            try:
+                return get_method_object(str(code)) is not None
+            except:
+                return False
+        valid_mask = df[code_col].apply(is_parseable)
+        df = df[valid_mask].reset_index(drop=True)
+
     return df
 
 
@@ -55,18 +68,15 @@ def split_df(df: pd.DataFrame, test_size: float = 0.2, seed: int = 42) -> Split:
 
 # --- Lightweight helpers for signature extraction ---
 import re
+import javalang
 
 
-def guess_method_signature(code: str) -> Tuple[str, List[str]]:
-    # naive: match 'returnType name(type p1, type p2) {'
-    m = re.search(r"\b([a-zA-Z_][\w]*)\s*\(([^)]*)\)\s*\{", code)
-    if not m:
-        return "method", []
-    name = m.group(1)
-    params = [p.strip() for p in m.group(2).split(",") if p.strip()]
-    # take only param names if present else types
-    params = [pp.split()[-1] if " " in pp else pp for pp in params]
-    return name, params
+def get_method_object(code: str) -> MethodDeclaration:
+    # Wrap method in a class because this library won't work otherwise :)
+    wrapped_code = f"class TempClass {{ {code} }}"
+    tree = javalang.parse.parse(wrapped_code)
+    for _, node in tree.filter(javalang.tree.MethodDeclaration):
+        return node
 
 
 def guess_class_name(code: str) -> str:
@@ -80,8 +90,8 @@ def compute_method_features(codes: List[str]) -> Tuple[np.ndarray, List[int], Li
     feats: List[List[float]] = []
     labels_h: List[int] = []
     for src in codes:
-        name, params = guess_method_signature(src)
-        h = method_heuristics(src, name, params)
+        method_obj = get_method_object(src)
+        h = method_heuristics(src, method_obj)
         feats.append(h.features)
         labels_h.append(h.label)
 
@@ -110,3 +120,11 @@ def build_vocab_from_texts(texts: List[str], max_size: int = 30000, min_freq: in
 def encode_texts(texts: List[str], vocab: SimpleVocab, max_len: int = 512) -> np.ndarray:
     arr = np.stack([np.array(vocab.encode(java_code_tokenize(t), max_len=max_len), dtype=np.int64) for t in texts])
     return arr
+
+if __name__ == "__main__":
+    method_code = """
+    public void something(int a, int b) {
+        int c = a + b;
+        System.out.println(c);
+    }"""
+    print(get_method_object(method_code))

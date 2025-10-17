@@ -4,6 +4,8 @@ import re
 from dataclasses import dataclass
 from typing import List, Tuple
 
+from javalang.tree import MethodDeclaration
+
 try:
     import javalang  # type: ignore
 except Exception:  # javalang will be added to requirements
@@ -11,6 +13,22 @@ except Exception:  # javalang will be added to requirements
 
 
 _CAMEL_RE = re.compile(r"^[a-z]+(?:[A-Z][a-z0-9]*)*$")
+
+
+def get_all_vars_from_method(method_obj: MethodDeclaration) -> List[str]:
+    vars = []
+
+    # Add parameter names
+    if method_obj.parameters:
+        for param in method_obj.parameters:
+            vars.append(param.name)
+
+    # Add local variable declarations
+    for _, node in method_obj.filter(javalang.tree.LocalVariableDeclaration):
+        for declarator in node.declarators:
+            vars.append(declarator.name)
+
+    return vars
 
 
 def is_camel_case(name: str) -> bool:
@@ -30,31 +48,46 @@ def comment_chars(src: str) -> int:
     return total
 
 
-def deepest_brace_nesting(src: str) -> int: # TODO: maybe could be improved
-    depth = best = 0
-    in_str = False
-    esc = False
-    for ch in src:
-        if ch == '"' and not esc:
-            in_str = not in_str
-        esc = (ch == "\\" and not esc)
-        if in_str:
-            continue
-        if ch == "{":
-            depth += 1
-            best = max(best, depth)
-        elif ch == "}":
-            depth = max(0, depth - 1)
-    return best
+def deepest_brace_nesting(method_obj: MethodDeclaration) -> int:
+    # Statements that increase nesting depth
+    nesting_nodes = (
+        javalang.tree.IfStatement,
+        javalang.tree.ForStatement,
+        javalang.tree.WhileStatement,
+        javalang.tree.DoStatement,
+        javalang.tree.SwitchStatement,
+        javalang.tree.TryStatement,
+        javalang.tree.SynchronizedStatement,
+        javalang.tree.BlockStatement,
+    )
+    
+    max_depth = 0
+    for path, node in method_obj.filter(nesting_nodes):
+        # Count how many nesting nodes are in the path (ancestors)
+        depth = sum(1 for ancestor in path if isinstance(ancestor, nesting_nodes))
+        max_depth = max(max_depth, depth)
+    
+    return max_depth
 
 
 def longest_line_len(src: str) -> int:
     return max((len(line) for line in src.splitlines() or [""]), default=0)
 
 
-def cyclomatic_approx(src: str) -> int: # TODO: could be improved
-    # basic approx: count branching keywords / boolean ops
-    return sum(len(re.findall(pat, src)) for pat in [r"\bif\b", r"\bfor\b", r"\bwhile\b", r"\bcase\b", r"\bcatch\b", r"&&", r"\|\|", r"\?\s*:"])
+def cyclomatic_approx(method_obj: MethodDeclaration) -> int: # Unfortunately this won't work for recursive calls
+    loop_nodes = (
+        javalang.tree.ForStatement,
+        javalang.tree.WhileStatement,
+        javalang.tree.DoStatement,
+    )
+    
+    max_depth = 0
+    for path, node in method_obj.filter(loop_nodes):
+        # Count how many loop nodes are in the path (ancestors)
+        depth = sum(1 for ancestor in path if isinstance(ancestor, loop_nodes))
+        max_depth = max(max_depth, depth)
+    
+    return max_depth
 
 
 def returns_count(src: str) -> int:
@@ -72,12 +105,13 @@ class HeuristicResult:
 
 # --- Feature bin helpers (0 good, 1 medium, 2 bad) ---
 
-def bin_by_thresholds(val: float, t1: float, t2: float) -> int:
-    if val < t1:
+def bin_by_thresholds(val: float, t1: float, t2: float, min: float = 0.0) -> int:
+    if val < min or val >= t2:
+        return 2
+    elif val < t1:
         return 0
-    if val < t2:
-        return 1
-    return 2
+
+    return 1
 
 
 def map_bins_to_label(avg_bin: float) -> Tuple[int, float, List[float]]:
@@ -98,31 +132,37 @@ def map_bins_to_label(avg_bin: float) -> Tuple[int, float, List[float]]:
 
 # --- Public API ---
 
-def method_heuristics(method_src: str, method_name: str, parameters: List[str]) -> HeuristicResult:
-    name_len = len(method_name or "")
-    name_special = count_special_chars(method_name)
-    name_camel = 0 if is_camel_case(method_name) else 2
+def method_heuristics(method_src: str, method_obj: MethodDeclaration) -> HeuristicResult:
+    name_len = len(method_obj.name)
+    name_special = count_special_chars(method_obj.name)
+    name_camel = 0 if is_camel_case(method_obj.name) else 2
 
-    loc = len([l for l in method_src.splitlines() if l.strip()])
-    n_params = len(parameters)
+    all_vars = get_all_vars_from_method(method_obj) # TODO: Mean may not be the best possible way to calculate this
+    variable_len = sum(len(var) for var in all_vars) / len(all_vars) if all_vars else 0
+    variable_special = sum(count_special_chars(var) for var in all_vars) / len(all_vars) if all_vars else 0
+    variable_camel = max(2, sum(1 for var in all_vars if not is_camel_case(var))) if all_vars else 0
+
+    method_length = len([l for l in method_src.splitlines()])
+    n_params = len(method_obj.parameters)
     comm = comment_chars(method_src)
-    indent = deepest_brace_nesting(method_src)
+    indent = deepest_brace_nesting(method_obj)
     long_line = longest_line_len(method_src)
-    cyc = cyclomatic_approx(method_src)
+    cyc = cyclomatic_approx(method_obj)
     rets = returns_count(method_src)
 
-    # TODO: Check parameter names, check if all heuristics are respected here
-
     bins = [
-        bin_by_thresholds(name_len, 3, 21),  # 3+ && <20, 21+
-        bin_by_thresholds(name_special, 1, 2),  # 0,1,2+
+        bin_by_thresholds(name_len, 11, 21, 3),
+        bin_by_thresholds(name_special, 1, 2),
         name_camel,
-        bin_by_thresholds(loc, 10, 31),
+        bin_by_thresholds(variable_len, 8, 15),
+        bin_by_thresholds(variable_special, 1, 2),
+        variable_camel,
+        bin_by_thresholds(method_length, 10, 31),
         bin_by_thresholds(n_params, 2, 5),
         bin_by_thresholds(comm, 50, 101),
         bin_by_thresholds(indent, 3, 5),
         bin_by_thresholds(long_line, 80, 111),
-        bin_by_thresholds(cyc, 4, 8),  # rough mapping
+        bin_by_thresholds(cyc, 2, 3),
         bin_by_thresholds(rets, 2, 4),
     ]
 
@@ -133,7 +173,10 @@ def method_heuristics(method_src: str, method_name: str, parameters: List[str]) 
         name_len,
         name_special,
         1 if name_camel == 0 else 0,
-        loc,
+        variable_len,
+        variable_special,
+        1 if variable_camel == 0 else 0,
+        method_length,
         n_params,
         comm,
         indent,
@@ -145,6 +188,9 @@ def method_heuristics(method_src: str, method_name: str, parameters: List[str]) 
         "name_len",
         "name_special",
         "is_camel",
+        "variable_len",
+        "variable_special",
+        "variable_camel",
         "loc",
         "n_params",
         "comment_chars",
