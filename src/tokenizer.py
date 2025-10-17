@@ -7,6 +7,10 @@ from typing import List, Iterable, Dict
 PAD = "<PAD>"
 UNK = "<UNK>"
 
+"""
+TOKENIZER USED TO SPLIT JAVA CODE INTO TOKENS AND VOCABULARY FOR CNN TRAINING
+"""
+
 
 def java_code_tokenize(text: str) -> List[str]:
     """Tokenize Java code:
@@ -52,24 +56,23 @@ def java_code_tokenize(text: str) -> List[str]:
 class SimpleVocab:
     def __init__(self, stoi: Dict[str, int]):
         self.stoi = {PAD: 0, UNK: 1, **{k: v for k, v in stoi.items() if k not in {PAD, UNK}}}
-        # rebuild to ensure contiguous indices starting at 0
         items = [PAD, UNK] + [k for k in stoi.keys() if k not in {PAD, UNK}]
         self.stoi = {tok: i for i, tok in enumerate(items)}
         self.itos = {i: tok for tok, i in self.stoi.items()}
 
     @classmethod
-    def build(cls, token_seqs: Iterable[List[str]], max_size: int = 30000, min_freq: int = 1) -> "SimpleVocab":
+    def build(cls, token_seqs: Iterable[List[str]], max_size: int = 30000, min_freq: int = 2) -> "SimpleVocab":
         counter = Counter()
         for seq in token_seqs:
             counter.update(seq)
         most_common = [(tok, c) for tok, c in counter.items() if c >= min_freq]
         most_common.sort(key=lambda x: (-x[1], x[0]))
         stoi = {}
-        for tok, _ in most_common[: max_size - 2]:  # reserve for PAD/UNK
+        for tok, _ in most_common[: max_size - 2]:  # reserved for PAD/UNK, must start from 2
             stoi.setdefault(tok, len(stoi) + 2)
         return cls(stoi)
 
-    def encode(self, tokens: List[str], max_len: int = 512) -> List[int]:
+    def encode(self, tokens: List[str], max_len: int = 512) -> List[int]: # encoding list of tokens from some code snippet
         ids = [self.stoi.get(t, 1) for t in tokens]  # 1 -> UNK
         if len(ids) >= max_len:
             return ids[:max_len]

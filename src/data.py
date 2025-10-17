@@ -27,7 +27,6 @@ class Split:
 
 def load_csv_for_kind(kind: str) -> pd.DataFrame:
     assert kind in {"methods", "classes"}
-    # primary expected locations
     expected = os.path.join("dataset", f"official_dataset_{kind}.csv")
     if os.path.exists(expected):
         df = pd.read_csv(expected)
@@ -106,7 +105,7 @@ def get_class_obj(code: str) -> ClassDeclaration:
 
 
 # --- Feature/heuristic wrappers ---
-# TODO: These 2 methods just calculate features for already existing code snippets. These methods won't need to exist like this once we save the method/class features in the dataset
+# TODO: These 2 methods just calculate features for already existing code snippets. These methods won't need to exist like this once I save the method/class features in the dataset
 def compute_method_features(codes: List[str]) -> np.ndarray:
     feats: List[List[float]] = []
 

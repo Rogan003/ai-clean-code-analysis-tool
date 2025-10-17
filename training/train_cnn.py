@@ -35,7 +35,7 @@ def train_one(kind: str, out_dir: str = "training/checkpoints", max_len: int = 5
     val_ds = ArrayDataset(Xval_ids, yval)
 
     model = TextCNN(vocab_size=len(vocab.stoi))
-    cfg = TrainConfig(epochs=6, batch_size=64, lr=1e-3, max_len=max_len)
+    cfg = TrainConfig(epochs=8, batch_size=64, lr=1e-3, max_len=max_len)
 
     train_loader = DataLoader(train_ds, batch_size=cfg.batch_size, shuffle=True)
     val_loader = DataLoader(val_ds, batch_size=cfg.batch_size)

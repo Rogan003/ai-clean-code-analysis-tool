@@ -8,22 +8,25 @@ import torch
 import torch.nn as nn
 from torch.utils.data import Dataset, DataLoader
 
+"""
+CNN MODEL TO RECOGNIZE CODE TEXT PATTERNS AND CLASSIFY CODE INTO ONE OF 3 CLASSES
+"""
 
-class TextCNN(nn.Module): # TODO: Improve this! This is one of the key things in this project.
-    def __init__(self, vocab_size: int, embed_dim: int = 128, num_classes: int = 3, kernel_sizes=(3, 5, 7), num_filters: int = 64, dropout: float = 0.2):
+class TextCNN(nn.Module):
+    def __init__(self, vocab_size: int, embed_dim: int = 128, num_classes: int = 3, kernel_sizes=(3, 5, 7, 9), num_filters: int = 64, dropout: float = 0.2):
         super().__init__()
         self.embed = nn.Embedding(vocab_size, embed_dim, padding_idx=0)
         self.convs = nn.ModuleList([nn.Conv1d(embed_dim, num_filters, k, padding=k // 2) for k in kernel_sizes])
         self.act = nn.ReLU()
         self.dropout = nn.Dropout(dropout)
-        self.fc = nn.Linear(num_filters * len(kernel_sizes) * 2, num_classes)  # max + avg pools
+        self.fc = nn.Linear(num_filters * len(kernel_sizes) * 2, num_classes)
 
-    def forward(self, x):  # x: (B, L)
-        emb = self.embed(x)  # (B, L, E)
-        t = emb.transpose(1, 2)  # (B, E, L)
+    def forward(self, x):
+        emb = self.embed(x)
+        t = emb.transpose(1, 2)
         feats = []
         for conv in self.convs:
-            h = self.act(conv(t))  # (B, C, L)
+            h = self.act(conv(t))
             maxp = torch.amax(h, dim=-1)
             avgp = torch.mean(h, dim=-1)
             feats.append(torch.cat([maxp, avgp], dim=1))
@@ -77,7 +80,6 @@ def train_textcnn(model: TextCNN, train_loader: DataLoader, val_loader: DataLoad
             pred = torch.argmax(logits, dim=1)
             total += y.size(0)
             correct += int((pred == y).sum())
-        train_acc = correct / max(1, total)
 
         # val
         model.eval()

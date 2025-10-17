@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import re
 from dataclasses import dataclass
-from typing import List, Tuple
+from typing import List
 
 from javalang.tree import MethodDeclaration, ClassDeclaration
 
@@ -22,12 +22,10 @@ _CAMEL_RE = re.compile(r"^[a-z]+(?:[A-Z][a-z0-9]*)*$")
 def get_all_vars_from_method(method_obj: MethodDeclaration) -> List[str]:
     vars = []
 
-    # Add parameter names
     if method_obj.parameters:
         for param in method_obj.parameters:
             vars.append(param.name)
 
-    # Add local variable declarations
     for _, node in method_obj.filter(javalang.tree.LocalVariableDeclaration):
         for declarator in node.declarators:
             vars.append(declarator.name)
@@ -53,7 +51,6 @@ def comment_chars(src: str) -> int:
 
 
 def deepest_brace_nesting(method_obj: MethodDeclaration) -> int:
-    # Statements that increase nesting depth
     nesting_nodes = (
         javalang.tree.IfStatement,
         javalang.tree.ForStatement,
@@ -116,7 +113,6 @@ def bin_by_thresholds(val: float, t1: float, t2: float, min: float = 0.0) -> int
 
 
 def map_bins_to_label(avg_bin: float) -> int:
-    # average of bins in [0,2]
     if avg_bin < 0.5:
         label = 0
     elif avg_bin < 1.3:
@@ -126,8 +122,6 @@ def map_bins_to_label(avg_bin: float) -> int:
 
     return label
 
-
-# --- Public API ---
 
 def method_heuristics(method_src: str, method_obj: MethodDeclaration) -> HeuristicResult:
     name_len = len(method_obj.name)
@@ -185,18 +179,15 @@ def method_heuristics(method_src: str, method_obj: MethodDeclaration) -> Heurist
 
 
 def _is_getter_or_setter(method: MethodDeclaration) -> bool:
-    """Check if a method is a getter or setter based on naming conventions."""
     name = method.name
     return (name.startswith("get") or name.startswith("set") or
             name.startswith("is") or name.startswith("has"))
 
 
 def _get_public_methods_without_getters_setters(class_obj: ClassDeclaration) -> int:
-    """Count public methods excluding getters and setters using class_obj."""
     count = 0
     for member in class_obj.body:
         if isinstance(member, MethodDeclaration):
-            # Check if method is public (default in Java if no modifier specified)
             is_public = not member.modifiers or 'public' in member.modifiers
             if is_public and not _is_getter_or_setter(member):
                 count += 1
@@ -208,7 +199,6 @@ def _calculate_cohesion(class_obj: ClassDeclaration) -> float:
     Calculate class cohesion using LCOM (Lack of Cohesion of Methods) approach.
     Returns a value between 0 (no cohesion) and 1 (perfect cohesion).
     """
-    # Extract field names from class_obj
     field_names = []
     for member in class_obj.body:
         if isinstance(member, javalang.tree.FieldDeclaration):
@@ -218,7 +208,6 @@ def _calculate_cohesion(class_obj: ClassDeclaration) -> float:
     if not field_names:
         return 1.0
 
-    # Get all methods
     methods = [m for m in class_obj.body if isinstance(m, MethodDeclaration)]
     if not methods:
         return 1.0
@@ -233,7 +222,6 @@ def _calculate_cohesion(class_obj: ClassDeclaration) -> float:
                 fields_accessed.add(node.member)
         total_field_accesses += len(fields_accessed)
 
-    # Cohesion = (total field accesses) / (methods * fields)
     max_possible_accesses = len(methods) * len(field_names)
     cohesion = total_field_accesses / max_possible_accesses if max_possible_accesses > 0 else 1.0
 
@@ -248,10 +236,8 @@ def class_heuristics(class_src: str, class_obj: ClassDeclaration, avg_method_sco
     else:
         avg_method_score = 2
 
-    # Count public methods without getters/setters using class_obj
     public_non_gs = _get_public_methods_without_getters_setters(class_obj)
 
-    # Extract field information from class_obj
     fields = []
     for member in class_obj.body:
         if isinstance(member, javalang.tree.FieldDeclaration):
@@ -267,7 +253,6 @@ def class_heuristics(class_src: str, class_obj: ClassDeclaration, avg_method_sco
     name_special = count_special_chars(class_obj.name)
     name_camel = 0 if (class_obj.name and class_obj.name[0].isupper() and is_camel_case(class_obj.name[0].lower() + class_obj.name[1:])) else 2
 
-    # Calculate cohesion using class_obj
     cohesion = _calculate_cohesion(class_obj)
 
     bins = [
