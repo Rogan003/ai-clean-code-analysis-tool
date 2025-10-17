@@ -7,10 +7,14 @@ from typing import List, Tuple
 from javalang.tree import MethodDeclaration, ClassDeclaration
 
 try:
-    import javalang  # type: ignore
-except Exception:  # javalang will be added to requirements
-    javalang = None  # noqa: N816
+    import javalang
+except Exception:
+    javalang = None
 
+"""
+ALL METHODS FOR CALCULATING HEURISTICS
+HERE, WE CALCULATE HEURISTICS FOR A CLASS/METHOD AND FOR EVERY HEURISTIC WE DETERMINE THE CLASS OF THAT HEURISTIC
+"""
 
 _CAMEL_RE = re.compile(r"^[a-z]+(?:[A-Z][a-z0-9]*)*$")
 
@@ -97,10 +101,7 @@ def returns_count(src: str) -> int:
 @dataclass
 class HeuristicResult:
     features: List[float]
-    feature_names: List[str]
-    score: float  # 0..2 where 0 good, 1 warn, 2 bad
     label: int  # 0 green, 1 yellow, 2 red
-    proba: List[float]  # pseudo-probabilities for 3 classes
 
 
 # --- Feature bin helpers (0 good, 1 medium, 2 bad) ---
@@ -114,7 +115,7 @@ def bin_by_thresholds(val: float, t1: float, t2: float, min: float = 0.0) -> int
     return 1
 
 
-def map_bins_to_label(avg_bin: float) -> Tuple[int, float, List[float]]:
+def map_bins_to_label(avg_bin: float) -> int:
     # average of bins in [0,2]
     if avg_bin < 0.5:
         label = 0
@@ -122,12 +123,8 @@ def map_bins_to_label(avg_bin: float) -> Tuple[int, float, List[float]]:
         label = 1
     else:
         label = 2
-    # pseudo probabilities biased by avg_bin
-    p_red = max(0.0, min(1.0, avg_bin / 2.0))
-    p_green = max(0.0, min(1.0, (2.0 - avg_bin) / 2.0))
-    p_yellow = max(0.0, 1.0 - p_red - p_green)
-    s = p_green + p_yellow + p_red
-    return label, avg_bin, [p_green / s, p_yellow / s, p_red / s]
+
+    return label
 
 
 # --- Public API ---
@@ -167,7 +164,7 @@ def method_heuristics(method_src: str, method_obj: MethodDeclaration) -> Heurist
     ]
 
     avg_bin = sum(bins) / len(bins)
-    label, score, proba = map_bins_to_label(avg_bin)
+    label = map_bins_to_label(avg_bin)
 
     feats = [
         name_len,
@@ -184,22 +181,7 @@ def method_heuristics(method_src: str, method_obj: MethodDeclaration) -> Heurist
         cyc,
         rets,
     ]
-    names = [
-        "name_len",
-        "name_special",
-        "is_camel",
-        "variable_len",
-        "variable_special",
-        "variable_camel",
-        "loc",
-        "n_params",
-        "comment_chars",
-        "nesting",
-        "longest_line",
-        "cyclomatic",
-        "returns",
-    ]
-    return HeuristicResult(features=feats, feature_names=names, score=score, label=label, proba=proba)
+    return HeuristicResult(features=feats, label=label)
 
 
 def _is_getter_or_setter(method: MethodDeclaration) -> bool:
@@ -302,7 +284,7 @@ def class_heuristics(class_src: str, class_obj: ClassDeclaration, avg_method_sco
     ]
 
     avg_bin = sum(bins) / len(bins)
-    label, score, proba = map_bins_to_label(avg_bin)
+    label = map_bins_to_label(avg_bin)
 
     feats = [
         name_len,
@@ -315,16 +297,4 @@ def class_heuristics(class_src: str, class_obj: ClassDeclaration, avg_method_sco
         1.0 - cohesion,
         1 if name_camel == 0 else 0,
     ]
-    names = [
-        "name_len",
-        "name_special",
-        "avg_field_name_len",
-        "avg_field_name_special",
-        "public_methods_no_gs",
-        "n_fields",
-        "average_method_score"
-        "comment_chars",
-        "cohesion_inverted",
-        "is_camel",
-    ]
-    return HeuristicResult(features=feats, feature_names=names, score=score, label=label, proba=proba)
+    return HeuristicResult(features=feats, label=label)

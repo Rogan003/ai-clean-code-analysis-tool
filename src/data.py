@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import os
 from dataclasses import dataclass
-from typing import List, Tuple, Dict
+from typing import List, Dict
 
 import numpy as np
 import pandas as pd
@@ -12,6 +12,10 @@ from sklearn.model_selection import train_test_split
 from src.tokenizer import java_code_tokenize, SimpleVocab
 from src.heuristics import method_heuristics, class_heuristics
 
+"""
+BASICALLY - LOADING THE DATA, SPLITTING AND EXTRACTING FEATURES FOR THE MODEL 
+(some of which we could keep in the dataset honestly)
+"""
 
 @dataclass
 class Split:
@@ -32,7 +36,7 @@ def load_csv_for_kind(kind: str) -> pd.DataFrame:
     # drop rows with any nulls
     df = df.dropna(how="any").reset_index(drop=True)
 
-    # drop rows with unparseable code snippets (methods only for now)
+    # drop rows with unparseable code snippets
     if kind == "methods":
         code_col = df.columns[0]
         def is_parseable(code):
@@ -76,8 +80,7 @@ def split_df(df: pd.DataFrame, test_size: float = 0.2, seed: int = 42) -> Split:
     return Split(X_train, y_train, X_test, y_test)
 
 
-# --- Lightweight helpers for signature extraction ---
-import re
+# --- Lightweight helpers for java code parsing ---
 import javalang
 
 
@@ -103,43 +106,40 @@ def get_class_obj(code: str) -> ClassDeclaration:
 
 
 # --- Feature/heuristic wrappers ---
-
-def compute_method_features(codes: List[str]) -> Tuple[np.ndarray, List[int], List[List[float]]]:
+# TODO: These 2 methods just calculate features for already existing code snippets. These methods won't need to exist like this once we save the method/class features in the dataset
+def compute_method_features(codes: List[str]) -> np.ndarray:
     feats: List[List[float]] = []
-    labels_h: List[int] = []
+
     for src in codes:
         method_obj = get_method_object(str(src))
         if method_obj is None:
-            # Skip unparseable methods - use default neutral features
             continue
         h = method_heuristics(str(src), method_obj)
         feats.append(h.features)
-        labels_h.append(h.label)
 
-    return np.array(feats, dtype=float), labels_h, feats
+    return np.array(feats, dtype=float)
 
 
-def compute_class_features(codes: List[str], avg_method_scores: List[float]) -> Tuple[np.ndarray, List[int], List[List[float]]]:
+def compute_class_features(codes: List[str], avg_method_scores: List[float]) -> np.ndarray:
     feats: List[List[float]] = []
-    labels_h: List[int] = []
+
     for src, score in zip(codes, avg_method_scores):
         class_obj = get_class_obj(src)
         h = class_heuristics(src, class_obj, score)
         feats.append(h.features)
-        labels_h.append(h.label)
 
-    return np.array(feats, dtype=float), labels_h, feats
+    return np.array(feats, dtype=float)
 
 
 # --- Tokenization helpers for CNN ---
 
-def build_vocab_from_texts(texts: List[str], max_size: int = 30000, min_freq: int = 1) -> SimpleVocab:
-    token_seqs = (java_code_tokenize(t) for t in texts)
+def build_vocab_from_codes(codes: List[str], max_size: int = 30000, min_freq: int = 1) -> SimpleVocab:
+    token_seqs = (java_code_tokenize(t) for t in codes)
     return SimpleVocab.build(token_seqs, max_size=max_size, min_freq=min_freq)
 
 
-def encode_texts(texts: List[str], vocab: SimpleVocab, max_len: int = 512) -> np.ndarray:
-    arr = np.stack([np.array(vocab.encode(java_code_tokenize(t), max_len=max_len), dtype=np.int64) for t in texts])
+def encode_codes(codes: List[str], vocab: SimpleVocab, max_len: int = 512) -> np.ndarray:
+    arr = np.stack([np.array(vocab.encode(java_code_tokenize(t), max_len=max_len), dtype=np.int64) for t in codes])
     return arr
 
 if __name__ == "__main__":

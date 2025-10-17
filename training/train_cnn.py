@@ -8,7 +8,7 @@ from sklearn.model_selection import train_test_split
 import torch
 from torch.utils.data import DataLoader
 
-from src.data import load_csv_for_kind, split_df, build_vocab_from_texts, encode_texts
+from src.data import load_csv_for_kind, split_df, build_vocab_from_codes, encode_codes
 from src.models.cnn import TextCNN, ArrayDataset, TrainConfig, train_textcnn
 
 
@@ -21,12 +21,12 @@ def train_one(kind: str, out_dir: str = "training/checkpoints", max_len: int = 5
     # further split train into train/val for early selection
     X_tr, X_val, y_tr, y_val = train_test_split(code_only, split.y_train, test_size=0.1, random_state=42, stratify=split.y_train)
 
-    vocab = build_vocab_from_texts(X_tr)
+    vocab = build_vocab_from_codes(X_tr)
     np.save(os.path.join(out_dir, f"{kind}_vocab_size.npy"), np.array([len(vocab.stoi)]))
     vocab.save(os.path.join(out_dir, f"{kind}_vocab.json"))
 
-    Xtr_ids = encode_texts(X_tr, vocab, max_len=max_len)
-    Xval_ids = encode_texts(X_val, vocab, max_len=max_len)
+    Xtr_ids = encode_codes(X_tr, vocab, max_len=max_len)
+    Xval_ids = encode_codes(X_val, vocab, max_len=max_len)
 
     ytr = np.array(y_tr, dtype=np.int64)
     yval = np.array(y_val, dtype=np.int64)
