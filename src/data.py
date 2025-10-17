@@ -6,7 +6,7 @@ from typing import List, Tuple, Dict
 
 import numpy as np
 import pandas as pd
-from javalang.tree import MethodDeclaration
+from javalang.tree import MethodDeclaration, ClassDeclaration
 from sklearn.model_selection import train_test_split
 
 from src.tokenizer import java_code_tokenize, SimpleVocab
@@ -42,16 +42,26 @@ def load_csv_for_kind(kind: str) -> pd.DataFrame:
                 return False
         valid_mask = df[code_col].apply(is_parseable)
         df = df[valid_mask].reset_index(drop=True)
+    else:
+        code_col = df.columns[0]
+
+        def is_parseable(code):
+            try:
+                return get_class_obj(str(code)) is not None
+            except:
+                return False
+
+        valid_mask = df[code_col].apply(is_parseable)
+        df = df[valid_mask].reset_index(drop=True)
 
     return df
 
 
 def split_df(df: pd.DataFrame, test_size: float = 0.2, seed: int = 42) -> Split:
-    code_col = df.columns[0]
+    code_col = df.columns[[0, 2]].tolist() if len(df.columns) > 2 else [df.columns[0]]
     score_col = df.columns[1]
-    avg_method_score_col = df.columns[2] if len(df.columns) > 2 else None # TODO: Inject
 
-    X = df[code_col].astype(str).tolist()
+    X = df[code_col].astype(str).values.tolist()
     y_raw = df[score_col].tolist()
 
     score_and_labels_map: Dict = {"good": 0, "Green": 0, "changes_recommended": 1, "Yellow": 1, "changes_required": 2, "Red": 2}
@@ -72,16 +82,24 @@ import javalang
 
 
 def get_method_object(code: str) -> MethodDeclaration:
-    # Wrap method in a class because this library won't work otherwise :)
-    wrapped_code = f"class TempClass {{ {code} }}"
-    tree = javalang.parse.parse(wrapped_code)
-    for _, node in tree.filter(javalang.tree.MethodDeclaration):
-        return node
+    try:
+        # Wrap method in a class because this library won't work otherwise :)
+        wrapped_code = f"class TempClass {{ {code} }}"
+        tree = javalang.parse.parse(wrapped_code)
+        for _, node in tree.filter(javalang.tree.MethodDeclaration):
+            return node
+    except Exception:
+        # Return None if parsing fails
+        return None
 
 
-def guess_class_name(code: str) -> str:
-    m = re.search(r"\bclass\s+([A-Z][A-Za-z0-9_]*)\b", code)
-    return m.group(1) if m else "MyClass"
+def get_class_obj(code: str) -> ClassDeclaration:
+    try:
+        tree = javalang.parse.parse(code)
+        for _, node in tree.filter(javalang.tree.ClassDeclaration):
+            return node
+    except Exception:
+        return None
 
 
 # --- Feature/heuristic wrappers ---
@@ -90,20 +108,23 @@ def compute_method_features(codes: List[str]) -> Tuple[np.ndarray, List[int], Li
     feats: List[List[float]] = []
     labels_h: List[int] = []
     for src in codes:
-        method_obj = get_method_object(src)
-        h = method_heuristics(src, method_obj)
+        method_obj = get_method_object(str(src))
+        if method_obj is None:
+            # Skip unparseable methods - use default neutral features
+            continue
+        h = method_heuristics(str(src), method_obj)
         feats.append(h.features)
         labels_h.append(h.label)
 
     return np.array(feats, dtype=float), labels_h, feats
 
 
-def compute_class_features(codes: List[str]) -> Tuple[np.ndarray, List[int], List[List[float]]]:
+def compute_class_features(codes: List[str], avg_method_scores: List[float]) -> Tuple[np.ndarray, List[int], List[List[float]]]:
     feats: List[List[float]] = []
     labels_h: List[int] = []
-    for src in codes:
-        cls = guess_class_name(src)
-        h = class_heuristics(src, cls)
+    for src, score in zip(codes, avg_method_scores):
+        class_obj = get_class_obj(src)
+        h = class_heuristics(src, class_obj, score)
         feats.append(h.features)
         labels_h.append(h.label)
 

@@ -10,9 +10,9 @@ from sklearn.metrics import accuracy_score, confusion_matrix
 from sklearn.neighbors import KNeighborsClassifier
 import torch
 
-from src.data import load_csv_for_kind, split_df, compute_method_features, compute_class_features, build_vocab_from_texts, encode_texts, get_method_object
+from src.data import load_csv_for_kind, split_df, compute_method_features, compute_class_features, get_class_obj, encode_texts, get_method_object
 from src.heuristics import method_heuristics, class_heuristics
-from src.tokenizer import SimpleVocab, java_code_tokenize
+from src.tokenizer import SimpleVocab
 from src.models.cnn import TextCNN
 
 
@@ -42,12 +42,19 @@ def predict_cnn(model: TextCNN, vocab: SimpleVocab, texts: List[str], max_len: i
 
 
 def predict_knn(kind: str, X_train_src: List[str], y_train: List[int], X_test_src: List[str]) -> Tuple[np.ndarray, np.ndarray]:
+    # Extract just the code (first element if list)
+    X_train_code = [x[0] if isinstance(x, list) else x for x in X_train_src]
+    X_test_code = [x[0] if isinstance(x, list) else x for x in X_test_src]
+
     if kind == "methods":
-        Xtr_feats, feat_names, _ = compute_method_features(X_train_src)
-        Xte_feats, _, _ = compute_method_features(X_test_src)
+        Xtr_feats, feat_names, _ = compute_method_features(X_train_code)
+        Xte_feats, _, _ = compute_method_features(X_test_code)
     else:
-        Xtr_feats, feat_names, _ = compute_class_features(X_train_src)
-        Xte_feats, _, _ = compute_class_features(X_test_src)
+        # For classes, need avg method scores
+        X_train_scores = [x[1] if isinstance(x, list) and len(x) > 1 else 0.0 for x in X_train_src]
+        X_test_scores = [x[1] if isinstance(x, list) and len(x) > 1 else 0.0 for x in X_test_src]
+        Xtr_feats, feat_names, _ = compute_class_features(X_train_code, X_train_scores)
+        Xte_feats, _, _ = compute_class_features(X_test_code, X_test_scores)
 
     knn = KNeighborsClassifier(n_neighbors=7, weights="distance")
     knn.fit(Xtr_feats, y_train)
@@ -56,7 +63,7 @@ def predict_knn(kind: str, X_train_src: List[str], y_train: List[int], X_test_sr
     return proba, preds
 
 
-def predict_heuristics(kind: str, texts: List[str]) -> Tuple[np.ndarray, np.ndarray]:
+def predict_heuristics(kind: str, texts: List[str], avg_method_scores: List[float | None]) -> Tuple[np.ndarray, np.ndarray]:
     probs = []
     preds = []
     if kind == "methods":
@@ -66,9 +73,9 @@ def predict_heuristics(kind: str, texts: List[str]) -> Tuple[np.ndarray, np.ndar
             probs.append(h.proba)
             preds.append(h.label)
     else:
-        for src in texts:
-            cname = "MyClass"
-            h = class_heuristics(src, cname)
+        for src, score in zip(texts, avg_method_scores):
+            class_obj = get_class_obj(src)
+            h = class_heuristics(src, class_obj, score)
             probs.append(h.proba)
             preds.append(h.label)
     return np.array(probs), np.array(preds)
@@ -103,26 +110,22 @@ def evaluate_kind(kind: str, ckpt_dir: str, weights=(0.1, 0.5, 0.4), out_dir: st
     df = load_csv_for_kind(kind)
     split = split_df(df, test_size=0.2, seed=42)
 
+    code_only = [x[0] if isinstance(x, list) else x for x in split.X_test]
+    avg_method_scores = [x[1] if kind == "classes" else None for x in split.X_test]
+
     # Heuristics
-    h_probs, h_preds = predict_heuristics(kind, split.X_test)
+    h_probs, h_preds = predict_heuristics(kind, code_only, avg_method_scores)
 
     # KNN (runtime fit)
     knn_probs, knn_preds = predict_knn(kind, split.X_train, split.y_train, split.X_test)
 
     # CNN
     cnn_model, cnn_vocab = load_cnn(kind, ckpt_dir)
-    cnn_probs = predict_cnn(cnn_model, cnn_vocab, split.X_test)
+    cnn_probs = predict_cnn(cnn_model, cnn_vocab, code_only)
     cnn_preds = cnn_probs.argmax(axis=1)
 
-    # If evaluating classes, optionally mix in average method probabilities into CNN probs for classes
-    if kind == "classes":
-        method_model, method_vocab = load_cnn("methods", ckpt_dir)
-        method_avg_probs = np.stack(average_method_probs_over_class(method_model, method_vocab, split.X_test))
-        cnn_probs = (cnn_probs + method_avg_probs) / 2.0
-        cnn_preds = cnn_probs.argmax(axis=1)
-
     # Weighted ensemble
-    w_h, w_knn, w_cnn = weights  # default 0.1, 0.5, 0.4 per README (KNN strongest)
+    w_h, w_knn, w_cnn = weights  # default 0.1, 0.5, 0.4 (KNN strongest)
     final_probs = w_h * h_probs + w_knn * knn_probs + w_cnn * cnn_probs
     final_preds = final_probs.argmax(axis=1)
 

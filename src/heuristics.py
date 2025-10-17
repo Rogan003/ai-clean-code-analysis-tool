@@ -4,7 +4,7 @@ import re
 from dataclasses import dataclass
 from typing import List, Tuple
 
-from javalang.tree import MethodDeclaration
+from javalang.tree import MethodDeclaration, ClassDeclaration
 
 try:
     import javalang  # type: ignore
@@ -202,44 +202,102 @@ def method_heuristics(method_src: str, method_obj: MethodDeclaration) -> Heurist
     return HeuristicResult(features=feats, feature_names=names, score=score, label=label, proba=proba)
 
 
-def class_heuristics(class_src: str, class_name: str) -> HeuristicResult:
-    # exclude getters/setters heuristically
-    public_non_gs = len([m for m in re.findall(r"public\s+\w+\s+(\w+)\s*\(", class_src) if not (m.startswith("get") or m.startswith("set"))])
-    fields = re.findall(r"(?:public|private|protected)\s+\w[\w<>,\s\[\]]*\s+(\w+)\s*(?:=|;)", class_src)
+def _is_getter_or_setter(method: MethodDeclaration) -> bool:
+    """Check if a method is a getter or setter based on naming conventions."""
+    name = method.name
+    return (name.startswith("get") or name.startswith("set") or
+            name.startswith("is") or name.startswith("has"))
+
+
+def _get_public_methods_without_getters_setters(class_obj: ClassDeclaration) -> int:
+    """Count public methods excluding getters and setters using class_obj."""
+    count = 0
+    for member in class_obj.body:
+        if isinstance(member, MethodDeclaration):
+            # Check if method is public (default in Java if no modifier specified)
+            is_public = not member.modifiers or 'public' in member.modifiers
+            if is_public and not _is_getter_or_setter(member):
+                count += 1
+    return count
+
+
+def _calculate_cohesion(class_obj: ClassDeclaration) -> float:
+    """
+    Calculate class cohesion using LCOM (Lack of Cohesion of Methods) approach.
+    Returns a value between 0 (no cohesion) and 1 (perfect cohesion).
+    """
+    # Extract field names from class_obj
+    field_names = []
+    for member in class_obj.body:
+        if isinstance(member, javalang.tree.FieldDeclaration):
+            for declarator in member.declarators:
+                field_names.append(declarator.name)
+
+    if not field_names:
+        return 1.0
+
+    # Get all methods
+    methods = [m for m in class_obj.body if isinstance(m, MethodDeclaration)]
+    if not methods:
+        return 1.0
+
+    # Count how many fields each method accesses
+    total_field_accesses = 0
+    for method in methods:
+        fields_accessed = set()
+        # Check all variable accesses in the method
+        for _, node in method.filter(javalang.tree.MemberReference):
+            if node.member in field_names:
+                fields_accessed.add(node.member)
+        total_field_accesses += len(fields_accessed)
+
+    # Cohesion = (total field accesses) / (methods * fields)
+    max_possible_accesses = len(methods) * len(field_names)
+    cohesion = total_field_accesses / max_possible_accesses if max_possible_accesses > 0 else 1.0
+
+    return cohesion
+
+
+def class_heuristics(class_src: str, class_obj: ClassDeclaration, avg_method_score: float) -> HeuristicResult:
+    if avg_method_score == "good":
+        avg_method_score = 0
+    elif avg_method_score == "changes_recommended":
+        avg_method_score = 1
+    else:
+        avg_method_score = 2
+
+    # Count public methods without getters/setters using class_obj
+    public_non_gs = _get_public_methods_without_getters_setters(class_obj)
+
+    # Extract field information from class_obj
+    fields = []
+    for member in class_obj.body:
+        if isinstance(member, javalang.tree.FieldDeclaration):
+            for declarator in member.declarators:
+                fields.append(declarator.name)
+
     n_vars = len(fields)
     prop_name_lens = [len(n) for n in fields]
     prop_name_special = [count_special_chars(n) for n in fields]
 
-    avg_method_score_ref = None  # placeholder: external pipeline should inject this
-
     comm = comment_chars(class_src)
-    name_len = len(class_name or "")
-    name_special = count_special_chars(class_name)
-    name_camel = 0 if (class_name and class_name[0].isupper() and is_camel_case(class_name[0].lower() + class_name[1:])) else 2
+    name_len = len(class_obj.name or "")
+    name_special = count_special_chars(class_obj.name)
+    name_camel = 0 if (class_obj.name and class_obj.name[0].isupper() and is_camel_case(class_obj.name[0].lower() + class_obj.name[1:])) else 2
 
-    # cohesion proxy: how many methods reference how many fields (very rough)
-    methods_bodies = re.findall(r"\)\s*\{(.*?)\}", class_src, flags=re.S) # TODO: improve
-    use_counts = 0
-    for body in methods_bodies:
-        used = 0
-        for f in set(fields):
-            if re.search(r"\b" + re.escape(f) + r"\b", body):
-                used += 1
-        use_counts += used
-    cohesion = (use_counts / (len(methods_bodies) * max(1, len(set(fields))))) if methods_bodies else 1.0
-
-    # TODO: Check field names, check if all heuristics are respected here
+    # Calculate cohesion using class_obj
+    cohesion = _calculate_cohesion(class_obj)
 
     bins = [
-        bin_by_thresholds(name_len, 3, 21),
+        bin_by_thresholds(name_len, 11, 21, 3),
+        bin_by_thresholds(name_special, 1, 2),
         bin_by_thresholds(int(sum(prop_name_lens) / max(1, len(prop_name_lens))), 3, 19),
         bin_by_thresholds(int(sum(prop_name_special) / max(1, len(prop_name_special))), 1, 2),
         bin_by_thresholds(public_non_gs, 5, 8),
         bin_by_thresholds(n_vars, 7, 11),
-        # average method score to be injected; keep neutral (1) if unknown
-        1,
+        avg_method_score,
         bin_by_thresholds(comm, 150, 301),
-        bin_by_thresholds(1.0 - cohesion, 0.3, 0.6),  # lower cohesion -> worse
+        bin_by_thresholds(1.0 - cohesion, 0.3, 0.6),
         name_camel,
     ]
 
@@ -253,15 +311,18 @@ def class_heuristics(class_src: str, class_name: str) -> HeuristicResult:
         public_non_gs,
         n_vars,
         comm,
+        avg_method_score,
         1.0 - cohesion,
         1 if name_camel == 0 else 0,
     ]
     names = [
         "name_len",
+        "name_special",
         "avg_field_name_len",
         "avg_field_name_special",
         "public_methods_no_gs",
         "n_fields",
+        "average_method_score"
         "comment_chars",
         "cohesion_inverted",
         "is_camel",

@@ -17,8 +17,9 @@ def train_one(kind: str, out_dir: str = "training/checkpoints", max_len: int = 5
     df = load_csv_for_kind(kind)
     split = split_df(df, test_size=0.2, seed=42)
 
+    code_only = [x[0] if isinstance(x, list) else x for x in split.X_train]
     # further split train into train/val for early selection
-    X_tr, X_val, y_tr, y_val = train_test_split(split.X_train, split.y_train, test_size=0.1, random_state=42, stratify=split.y_train)
+    X_tr, X_val, y_tr, y_val = train_test_split(code_only, split.y_train, test_size=0.1, random_state=42, stratify=split.y_train)
 
     vocab = build_vocab_from_texts(X_tr)
     np.save(os.path.join(out_dir, f"{kind}_vocab_size.npy"), np.array([len(vocab.stoi)]))
