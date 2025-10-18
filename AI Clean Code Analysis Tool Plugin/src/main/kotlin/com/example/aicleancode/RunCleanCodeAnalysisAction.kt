@@ -5,6 +5,7 @@ import com.intellij.notification.Notification
 import com.intellij.notification.NotificationType
 import com.intellij.notification.Notifications
 import com.intellij.openapi.actionSystem.*
+import com.intellij.openapi.application.ApplicationManager
 import com.intellij.openapi.editor.Editor
 import com.intellij.openapi.editor.markup.EffectType
 import com.intellij.openapi.editor.markup.HighlighterLayer
@@ -39,49 +40,117 @@ class RunCleanCodeAnalysisAction : AnAction("AI Clean Code Analysis"), DumbAware
             return
         }
 
-        // Clear previous demo highlighters if any
+        // Clear previous highlighters
         DemoHighlighters.removeForEditor(editor)
 
-        // Add colored highlights for the demo method ranges
-        addDemoHighlights(editor)
-
-        // Show a small dialog with the hardcoded report
-        val psiFile = PsiManager.getInstance(project).findFile(vFile)
-        val fileName = psiFile?.name ?: vFile.name
-        CleanCodeAnalysisDialog(project, fileName) { openDocs() }.show()
-
+        // Show notification that analysis is starting
         Notifications.Bus.notify(
             Notification(
                 "AI Clean Code Analysis",
-                "AI Clean Code Analysis Finished",
-                "Demo results generated for ${vFile.name}",
+                "AI Clean Code Analysis Started",
+                "Analyzing ${vFile.name}...",
                 NotificationType.INFORMATION
             ),
             project
         )
+
+        // Run analysis in background thread
+        ApplicationManager.getApplication().executeOnPooledThread {
+            try {
+                val psiFile = PsiManager.getInstance(project).findFile(vFile) ?: return@executeOnPooledThread
+                val document = editor.document
+
+                // Extract methods and classes
+                val extractor = JavaCodeExtractor()
+                val elements = extractor.extractMethodsAndClass(psiFile, document)
+
+                // Create API service
+                val apiService = CleanCodeApiService()
+
+                // Track method predictions per class for class analysis
+                var currentClassMethodPredictions = mutableListOf<Int>()
+
+                // Analyze each element in order; methods should come before their class (as ensured by JavaCodeExtractor)
+                for (element in elements) {
+                    when (element.type) {
+                        ElementType.METHOD -> {
+                            val prediction = apiService.predictMethod(element.code)
+                            if (prediction != null) {
+                                currentClassMethodPredictions.add(prediction.prediction)
+                                // Highlight method on UI thread
+                                ApplicationManager.getApplication().invokeLater {
+                                    highlightElement(editor, element, prediction.prediction)
+                                }
+                            }
+                        }
+                        ElementType.CLASS -> {
+                            // Calculate average method score for the just-seen methods belonging to this class
+                            val avgScore = if (currentClassMethodPredictions.isNotEmpty()) {
+                                extractor.calculateAverageMethodScore(currentClassMethodPredictions)
+                            } else null
+
+                            val prediction = apiService.predictClass(element.code, avgScore)
+                            if (prediction != null) {
+                                // Highlight class on UI thread
+                                ApplicationManager.getApplication().invokeLater {
+                                    highlightElement(editor, element, prediction.prediction)
+                                }
+                            }
+
+                            // Reset for next class
+                            currentClassMethodPredictions = mutableListOf()
+                        }
+                    }
+                }
+
+                // Show completion notification
+                ApplicationManager.getApplication().invokeLater {
+                    Notifications.Bus.notify(
+                        Notification(
+                            "AI Clean Code Analysis",
+                            "AI Clean Code Analysis Finished",
+                            "Analysis complete for ${vFile.name}",
+                            NotificationType.INFORMATION
+                        ),
+                        project
+                    )
+                }
+
+            } catch (ex: Exception) {
+                ApplicationManager.getApplication().invokeLater {
+                    Notifications.Bus.notify(
+                        Notification(
+                            "AI Clean Code Analysis",
+                            "AI Clean Code Analysis Failed",
+                            "Error: ${ex.message}. Make sure the API server is running on http://localhost:8000",
+                            NotificationType.ERROR
+                        ),
+                        project
+                    )
+                }
+            }
+        }
     }
 
-    private fun addDemoHighlights(editor: Editor) {
+    private fun highlightElement(editor: Editor, element: CodeElement, prediction: Int) {
         // Define fill attributes
+        val green = TextAttributes(null, JBColor(Color(232, 245, 233), Color(39, 51, 43)), JBColor.GREEN.darker(), EffectType.BOXED, Font.BOLD)
         val yellow = TextAttributes(null, JBColor(Color(255, 243, 205), Color(58, 50, 35)), JBColor.YELLOW.darker(), EffectType.BOXED, Font.PLAIN)
         val red = TextAttributes(null, JBColor(Color(255, 235, 238), Color(63, 40, 43)), JBColor.RED, EffectType.BOXED, Font.BOLD)
-        val green = TextAttributes(null, JBColor(Color(232, 245, 233), Color(39, 51, 43)), JBColor.GREEN.darker(), EffectType.BOXED, Font.BOLD)
 
         // Define stripe attributes
+        val errorStripeGreen = TextAttributes(null, null, JBColor(0x43A047, 0x43A047), EffectType.LINE_UNDERSCORE, Font.BOLD)
         val errorStripeYellow = TextAttributes(null, null, JBColor(0xFFC107, 0xFFC107), EffectType.LINE_UNDERSCORE, Font.PLAIN)
         val errorStripeRed = TextAttributes(null, null, JBColor(0xE53935, 0xE53935), EffectType.LINE_UNDERSCORE, Font.BOLD)
-        val errorStripeGreen = TextAttributes(null, null, JBColor(0x43A047, 0x43A047), EffectType.LINE_UNDERSCORE, Font.BOLD)
 
-        val highlighters = mutableListOf<com.intellij.openapi.editor.markup.RangeHighlighter>()
+        val (fillAttrs, stripeAttrs, layer) = when (prediction) {
+            0 -> Triple(green, errorStripeGreen, HighlighterLayer.ADDITIONAL_SYNTAX)
+            1 -> Triple(yellow, errorStripeYellow, HighlighterLayer.WARNING)
+            else -> Triple(red, errorStripeRed, HighlighterLayer.ERROR)
+        }
 
-        // Existing demo highlights
-        highlighters += highlightLines(editor, 12, 15, yellow, errorStripeYellow, HighlighterLayer.WARNING)
-        highlighters += highlightLines(editor, 17, 20, red, errorStripeRed, HighlighterLayer.ERROR)
-
-        // New: green highlight for line 1 (class name)
-        highlighters += highlightLines(editor, 1, 1, green, errorStripeGreen, HighlighterLayer.ADDITIONAL_SYNTAX)
-
-        DemoHighlighters.storeForEditor(editor, highlighters)
+        val highlighters = highlightLines(editor, element.startLine, element.endLine, fillAttrs, stripeAttrs, layer)
+        DemoHighlighters.addForEditor(editor, highlighters)
     }
 
     // Helper to highlight a 1-based line range with both fill and stripe markers
@@ -118,10 +187,11 @@ private object DemoHighlighters {
         editor.putUserData(EditorHighlighterKey, null)
     }
 
-    fun storeForEditor(editor: Editor, list: List<com.intellij.openapi.editor.markup.RangeHighlighter>) {
-        removeForEditor(editor)
-        editor.putUserData(EditorHighlighterKey, list)
+    fun addForEditor(editor: Editor, list: List<com.intellij.openapi.editor.markup.RangeHighlighter>) {
+        val existing = editor.getUserData(EditorHighlighterKey)?.toMutableList() ?: mutableListOf()
+        existing.addAll(list)
+        editor.putUserData(EditorHighlighterKey, existing)
     }
 
-    private val EditorHighlighterKey = com.intellij.openapi.util.Key.create<List<com.intellij.openapi.editor.markup.RangeHighlighter>>(key)
+    private val EditorHighlighterKey = com.intellij.openapi.util.Key.create<MutableList<com.intellij.openapi.editor.markup.RangeHighlighter>>(key)
 }

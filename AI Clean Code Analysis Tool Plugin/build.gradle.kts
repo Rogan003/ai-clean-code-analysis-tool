@@ -21,9 +21,11 @@ dependencies {
         testFramework(org.jetbrains.intellij.platform.gradle.TestFrameworkType.Platform)
 
         // Add plugin dependencies for compilation here:
-
+        bundledPlugin("com.intellij.java")
 
     }
+    implementation("com.google.code.gson:gson:2.10.1")
+    implementation("com.squareup.okhttp3:okhttp:4.12.0")
 }
 
 intellijPlatform {
