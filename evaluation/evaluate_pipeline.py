@@ -10,8 +10,7 @@ from sklearn.metrics import accuracy_score, confusion_matrix
 from sklearn.neighbors import KNeighborsClassifier
 import torch
 
-from src.data import load_csv_for_kind, split_df, compute_method_features, compute_class_features, get_class_obj, encode_codes, get_method_object
-from src.heuristics import method_heuristics, class_heuristics
+from src.data import load_csv_for_kind, split_df, compute_method_features, compute_class_features, encode_codes
 from src.tokenizer import SimpleVocab
 from src.models.cnn import TextCNN
 
@@ -40,42 +39,32 @@ def predict_cnn(model: TextCNN, vocab: SimpleVocab, texts: List[str], max_len: i
     return probs.argmax(axis=1)
 
 
-def predict_knn(kind: str, X_train_src: List[str], y_train: List[int], X_test_src: List[str], k: int = 35) -> np.ndarray:
-    X_train_code = [x[0] if isinstance(x, list) else x for x in X_train_src]
-    X_test_code = [x[0] if isinstance(x, list) else x for x in X_test_src]
-
+def predict_knn(df_train, df_test, y_train: List[int], kind: str, k: int = 35) -> np.ndarray:
+    """
+    Predict using KNN with precomputed heuristic features from dataframe.
+    """
     if kind == "methods":
-        Xtr_feats = compute_method_features(X_train_code)
-        Xte_feats = compute_method_features(X_test_code)
+        Xtr_feats = compute_method_features(df_train)
+        Xte_feats = compute_method_features(df_test)
     else:
-        # For classes, need avg method scores
-        X_train_scores = [x[1] if isinstance(x, list) and len(x) > 1 else 0.0 for x in X_train_src]
-        X_test_scores = [x[1] if isinstance(x, list) and len(x) > 1 else 0.0 for x in X_test_src]
-        Xtr_feats = compute_class_features(X_train_code, X_train_scores)
-        Xte_feats = compute_class_features(X_test_code, X_test_scores)
+        Xtr_feats = compute_class_features(df_train)
+        Xte_feats = compute_class_features(df_test)
 
     knn = KNeighborsClassifier(n_neighbors=k, weights="distance")
     knn.fit(Xtr_feats, y_train)
-    probs= knn.predict_proba(Xte_feats)
+    probs = knn.predict_proba(Xte_feats)
     preds = probs.argmax(axis=1)
     return preds
 
 
-def predict_heuristics(kind: str, texts: List[str], avg_method_scores: List[float | None]) -> np.ndarray:
-    preds = []
+def predict_heuristics(df) -> np.ndarray:
+    """
+    Get heuristic predictions from dataframe (uses precomputed h_label column).
+    """
+    if 'h_label' not in df.columns:
+        raise ValueError("Missing h_label column. Run dataset/scripts/add_heuristics_to_csv.py first.")
 
-    if kind == "methods":
-        for src in texts:
-            method_obj = get_method_object(src)
-            h = method_heuristics(src, method_obj)
-            preds.append(h.label)
-    else:
-        for src, score in zip(texts, avg_method_scores):
-            class_obj = get_class_obj(src)
-            h = class_heuristics(src, class_obj, score)
-            preds.append(h.label)
-
-    return np.array(preds)
+    return df['h_label'].values.astype(int)
 
 
 def evaluate_kind(kind: str, ckpt_dir: str, weights=(0.1, 0.5, 0.4), out_dir: str = "evaluation/plots"):
@@ -83,15 +72,15 @@ def evaluate_kind(kind: str, ckpt_dir: str, weights=(0.1, 0.5, 0.4), out_dir: st
     df = load_csv_for_kind(kind)
     split = split_df(df, test_size=0.2, seed=42)
 
+    # Extract code only for CNN
     code_only = [x[0] if isinstance(x, list) else x for x in split.X_test]
-    avg_method_scores = [x[1] if kind == "classes" else None for x in split.X_test]
 
-    # Heuristics
-    h_preds = predict_heuristics(kind, code_only, avg_method_scores)
+    # Heuristics (from precomputed h_label)
+    h_preds = predict_heuristics(split.df_test)
 
-    # KNN (runtime fit)
+    # KNN (runtime fit with precomputed features)
     k = 58 if kind == "methods" else 92
-    knn_preds = predict_knn(kind, split.X_train, split.y_train, split.X_test, k)
+    knn_preds = predict_knn(split.df_train, split.df_test, split.y_train, kind, k)
 
     # CNN
     cnn_model, cnn_vocab = load_cnn(kind, ckpt_dir)
@@ -161,7 +150,7 @@ def choosing_best_k(out_dir: str = "evaluation/plots"):
 
         # Test K from 1 to 100
         k_values = range(1, 101)
-        accuracies = [accuracy_score(y_true, predict_knn(kind, split.X_train, split.y_train, split.X_test, k=k))
+        accuracies = [accuracy_score(y_true, predict_knn(split.df_train, split.df_test, split.y_train, kind, k=k))
                       for k in k_values]
 
         # Find best K

@@ -36,11 +36,11 @@ class CleanCodeAnalysisDialog(
                     .align(Align.FILL)
             }
             row {
-                cell(statusPill("Changes recommended: method lines 12–15", warningColor))
+                cell(statusPill("Changes recommended", warningColor))
                     .align(Align.FILL)
             }
             row {
-                cell(statusPill("Changes required: method lines 17–20", errorColor))
+                cell(statusPill("Changes required", errorColor))
                     .align(Align.FILL)
             }
             separator()

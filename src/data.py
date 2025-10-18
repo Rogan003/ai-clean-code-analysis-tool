@@ -10,7 +10,6 @@ from javalang.tree import MethodDeclaration, ClassDeclaration
 from sklearn.model_selection import train_test_split
 
 from src.tokenizer import java_code_tokenize, SimpleVocab
-from src.heuristics import method_heuristics, class_heuristics
 
 """
 BASICALLY - LOADING THE DATA, SPLITTING AND EXTRACTING FEATURES FOR THE MODEL 
@@ -23,6 +22,8 @@ class Split:
     y_train: List[int]
     X_test: List[str]
     y_test: List[int]
+    df_train: pd.DataFrame = None  # DataFrame with heuristic features for train set
+    df_test: pd.DataFrame = None   # DataFrame with heuristic features for test set
 
 
 def load_csv_for_kind(kind: str) -> pd.DataFrame:
@@ -61,10 +62,11 @@ def load_csv_for_kind(kind: str) -> pd.DataFrame:
 
 
 def split_df(df: pd.DataFrame, test_size: float = 0.2, seed: int = 42) -> Split:
-    code_col = df.columns[[0, 2]].tolist() if len(df.columns) > 2 else [df.columns[0]]
-    score_col = df.columns[1]
-
-    X = df[code_col].astype(str).values.tolist()
+    """
+    Split dataframe into train/test sets.
+    Returns code snippets along with their metadata and the split dataframes with heuristics.
+    """
+    score_col = 'score'
     y_raw = df[score_col].tolist()
 
     score_and_labels_map: Dict = {"good": 0, "Green": 0, "changes_recommended": 1, "Yellow": 1, "changes_required": 2, "Red": 2}
@@ -73,10 +75,26 @@ def split_df(df: pd.DataFrame, test_size: float = 0.2, seed: int = 42) -> Split:
         if isinstance(v, str) and v in score_and_labels_map:
             y.append(score_and_labels_map[v])
 
-    X_train, X_test, y_train, y_test = train_test_split(
-        X, y, test_size=test_size, random_state=seed, stratify=y if len(set(y)) > 1 else None
+    # Split the dataframe
+    df_train, df_test, y_train, y_test = train_test_split(
+        df, y, test_size=test_size, random_state=seed, stratify=y if len(set(y)) > 1 else None
     )
-    return Split(X_train, y_train, X_test, y_test)
+
+    # Reset indices
+    df_train = df_train.reset_index(drop=True)
+    df_test = df_test.reset_index(drop=True)
+
+    # Extract X data (code snippets + metadata)
+    if 'average_method_score' in df.columns:
+        # Classes dataset
+        X_train = df_train[['code_snippet', 'average_method_score']].values.tolist()
+        X_test = df_test[['code_snippet', 'average_method_score']].values.tolist()
+    else:
+        # Methods dataset
+        X_train = df_train[['code_snippet']].values.tolist()
+        X_test = df_test[['code_snippet']].values.tolist()
+
+    return Split(X_train, y_train, X_test, y_test, df_train, df_test)
 
 
 # --- Lightweight helpers for java code parsing ---
@@ -105,29 +123,46 @@ def get_class_obj(code: str) -> ClassDeclaration:
 
 
 # --- Feature/heuristic wrappers ---
-# TODO: These 2 methods just calculate features for already existing code snippets. These methods won't need to exist like this once I save the method/class features in the dataset
-def compute_method_features(codes: List[str]) -> np.ndarray:
-    feats: List[List[float]] = []
+def compute_method_features(df: pd.DataFrame) -> np.ndarray:
+    """
+    Extract method heuristic features from DataFrame.
+    Expected columns: h_name_len, h_name_special, h_name_camel, h_variable_len,
+                     h_variable_special, h_variable_camel, h_method_length, h_n_params,
+                     h_comment_chars, h_indent, h_long_line, h_cyclomatic, h_returns
+    """
+    feature_cols = [
+        'h_name_len', 'h_name_special', 'h_name_camel', 'h_variable_len',
+        'h_variable_special', 'h_variable_camel', 'h_method_length', 'h_n_params',
+        'h_comment_chars', 'h_indent', 'h_long_line', 'h_cyclomatic', 'h_returns'
+    ]
 
-    for src in codes:
-        method_obj = get_method_object(str(src))
-        if method_obj is None:
-            continue
-        h = method_heuristics(str(src), method_obj)
-        feats.append(h.features)
+    # Check if all required columns exist
+    missing_cols = [col for col in feature_cols if col not in df.columns]
+    if missing_cols:
+        raise ValueError(f"Missing heuristic columns: {missing_cols}. Run dataset/scripts/add_heuristics_to_csv.py first.")
 
-    return np.array(feats, dtype=float)
+    return df[feature_cols].values.astype(float)
 
 
-def compute_class_features(codes: List[str], avg_method_scores: List[float]) -> np.ndarray:
-    feats: List[List[float]] = []
+def compute_class_features(df: pd.DataFrame) -> np.ndarray:
+    """
+    Extract class heuristic features from DataFrame.
+    Expected columns: h_name_len, h_prop_name_len_avg, h_prop_name_special_avg,
+                     h_public_non_gs, h_n_vars, h_comment_chars, h_avg_method_score,
+                     h_lack_of_cohesion, h_name_camel
+    """
+    feature_cols = [
+        'h_name_len', 'h_prop_name_len_avg', 'h_prop_name_special_avg',
+        'h_public_non_gs', 'h_n_vars', 'h_comment_chars', 'h_avg_method_score',
+        'h_lack_of_cohesion', 'h_name_camel'
+    ]
 
-    for src, score in zip(codes, avg_method_scores):
-        class_obj = get_class_obj(src)
-        h = class_heuristics(src, class_obj, score)
-        feats.append(h.features)
+    # Check if all required columns exist
+    missing_cols = [col for col in feature_cols if col not in df.columns]
+    if missing_cols:
+        raise ValueError(f"Missing heuristic columns: {missing_cols}. Run dataset/scripts/add_heuristics_to_csv.py first.")
 
-    return np.array(feats, dtype=float)
+    return df[feature_cols].values.astype(float)
 
 
 # --- Tokenization helpers for CNN ---
